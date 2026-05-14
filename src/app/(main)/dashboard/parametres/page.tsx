@@ -1,0 +1,642 @@
+"use client";
+
+import { useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  AlertTriangle, Building2, Check, Download, FileText,
+  HelpCircle, Image, Phone, Shield, Upload, ExternalLink
+} from "lucide-react";
+import { toast } from "sonner";
+
+import { PageShell } from "@/components/behar/page-shell";
+import { Panel, PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
+import { PwaInstaller } from "@/components/behar/pwa-installer";
+import { LicenseCard } from "@/components/behar/license-card";
+import { useBeharStore, type WorkshopSettings } from "@/lib/behar-store";
+
+/* ── Tabs ──────────────────────────────────────────── */
+const TABS = [
+  { key: "atelier", label: "Informations atelier", href: "/dashboard/parametres" },
+  { key: "appareils", label: "Catalogue appareils", href: "/dashboard/parametres/appareils" },
+  { key: "catalogue", label: "Tarifs & prestations", href: "/dashboard/parametres/catalogue" },
+  { key: "equipe", label: "Équipe & permissions", href: "/dashboard/parametres/equipe" },
+] as const;
+
+/* ── Helpers ──────────────────────────────────────── */
+const inputCls =
+  "h-11 w-full rounded-[14px] border border-[#E7E4DC] bg-white px-4 text-[15px] text-[#1A1916] outline-none transition-all duration-200 placeholder:text-[#CDCBC5] hover:border-[#D1CFCA] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/8";
+const areaCls =
+  "min-h-[88px] w-full rounded-[14px] border border-[#E7E4DC] bg-white px-4 py-3 text-[15px] text-[#1A1916] outline-none transition-all duration-200 placeholder:text-[#CDCBC5] hover:border-[#D1CFCA] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/8";
+const selectCls =
+  "h-11 w-full rounded-[14px] border border-[#E7E4DC] bg-white px-4 text-[15px] text-[#1A1916] outline-none transition-all duration-200 hover:border-[#D1CFCA] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/8 appearance-none";
+
+const blockedValues = new Set(["hj", "test", "undefined", "null", "nan", "none", "aucun", "n/a"]);
+
+function normalizeSpaces(value: unknown): string {
+  return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+
+function digitsOnly(value: unknown): string {
+  return String(value ?? "").replace(/\D/g, "");
+}
+
+function isWeakText(value: unknown, minLength = 3): boolean {
+  const normalized = normalizeSpaces(value).toLowerCase();
+  if (!normalized || normalized.length < minLength) return true;
+  if (blockedValues.has(normalized)) return true;
+  if (/^0+$/.test(normalized) || /^1?2?3+$/.test(normalized)) return true;
+  return /^[^a-zà-ÿ]*$/i.test(normalized);
+}
+
+function isValidPhoneNumber(value: unknown): boolean {
+  const raw = normalizeSpaces(value);
+  const compact = raw.replace(/[\s().-]/g, "");
+  if (!/^\+\d{7,15}$/.test(compact)) return false;
+  if (compact.startsWith("+33")) return /^\+33[1-9]\d{8}$/.test(compact);
+  return true;
+}
+
+function isValidEmail(value: unknown): boolean {
+  const email = normalizeSpaces(value);
+  if (blockedValues.has(email.toLowerCase())) return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+}
+
+function isInvalidLegalNumber(value: unknown, length: number): boolean {
+  const digits = digitsOnly(value);
+  return digits.length !== length || /^0+$/.test(digits) || /^123+$/.test(digits);
+}
+
+const cityByPostalCode: Record<string, string[]> = {
+  "06000": ["Nice"],
+  "13001": ["Marseille"],
+  "31000": ["Toulouse"],
+  "33000": ["Bordeaux"],
+  "34000": ["Montpellier"],
+  "44000": ["Nantes"],
+  "59000": ["Lille"],
+  "67000": ["Strasbourg"],
+  "69001": ["Lyon"],
+  "69002": ["Lyon"],
+  "69003": ["Lyon"],
+  "69004": ["Lyon"],
+  "69005": ["Lyon"],
+  "69006": ["Lyon"],
+  "69007": ["Lyon"],
+  "69008": ["Lyon"],
+  "69009": ["Lyon"],
+  "74100": ["Annemasse", "Ambilly", "Ville-la-Grand", "Vétraz-Monthoux"],
+  "75001": ["Paris"],
+  "75002": ["Paris"],
+  "75003": ["Paris"],
+  "75004": ["Paris"],
+  "75005": ["Paris"],
+  "75006": ["Paris"],
+  "75007": ["Paris"],
+  "75008": ["Paris"],
+  "75009": ["Paris"],
+  "75010": ["Paris"],
+  "75011": ["Paris"],
+  "75012": ["Paris"],
+  "75013": ["Paris"],
+  "75014": ["Paris"],
+  "75015": ["Paris"],
+  "75016": ["Paris"],
+  "75017": ["Paris"],
+  "75018": ["Paris"],
+  "75019": ["Paris"],
+  "75020": ["Paris"],
+};
+
+const callingCodeOptions = [
+  { code: "+33", label: "France" },
+  { code: "+41", label: "Suisse" },
+  { code: "+32", label: "Belgique" },
+  { code: "+352", label: "Luxembourg" },
+  { code: "+34", label: "Espagne" },
+  { code: "+39", label: "Italie" },
+  { code: "+49", label: "Allemagne" },
+  { code: "+44", label: "Royaume-Uni" },
+  { code: "+1", label: "USA / Canada" },
+  { code: "+212", label: "Maroc" },
+  { code: "+213", label: "Algérie" },
+  { code: "+216", label: "Tunisie" },
+] as const;
+
+function phoneParts(value: unknown): { prefix: string; local: string } {
+  const raw = normalizeSpaces(value);
+  const match = raw.match(/^(\+\d{1,4})\s*(.*)$/);
+  if (!match) {
+    const digits = digitsOnly(raw);
+    if (digits.startsWith("0")) return { prefix: "+33", local: digits.slice(1) };
+    return { prefix: "+33", local: digits };
+  }
+  return { prefix: match[1], local: digitsOnly(match[2]) };
+}
+
+function formatPhoneLocal(prefix: string, value: unknown): string {
+  const digits = digitsOnly(value).slice(0, 12);
+  if (prefix === "+33") return digits.slice(0, 9).replace(/(\d)(?=(?:\d{2})+$)/g, "$1 ").trim();
+  return digits.replace(/(\d{3})(?=\d)/g, "$1 ").trim();
+}
+
+function Field({ label, hint, error, children, required }: {
+  label: string; hint?: string; error?: string; children: React.ReactNode; required?: boolean;
+}) {
+  return (
+    <label className="block space-y-1.5">
+      <span className="text-[13px] font-medium text-[#1A1916]">
+        {label}{required && <span className="text-[#2A9D8F] ml-0.5">*</span>}
+      </span>
+      {children}
+      {error && <p className="text-[12px] text-[#DC3545] font-medium">{error}</p>}
+      {hint && !error && <p className="text-[11px] text-[#B0AEA8]">{hint}</p>}
+    </label>
+  );
+}
+
+function Section({ icon: Icon, title, description, children, className }: {
+  icon: any; title: string; description?: string; children: React.ReactNode; className?: string;
+}) {
+  return (
+    <Panel className={`p-6 ${className || ""}`}>
+      <div className="flex items-start gap-3 mb-5">
+        <div className="size-9 rounded-[12px] bg-[#F6F7F4] flex items-center justify-center text-[#2A9D8F] shrink-0">
+          <Icon className="size-[18px]" />
+        </div>
+        <div>
+          <h3 className="font-semibold text-[#1A1916] text-[15px] tracking-tight">{title}</h3>
+          {description && <p className="mt-0.5 text-[12px] text-[#B0AEA8] leading-relaxed">{description}</p>}
+        </div>
+      </div>
+      {children}
+    </Panel>
+  );
+}
+
+/* ── Page ─────────────────────────────────────────── */
+export default function SettingsPage() {
+  const store = useBeharStore();
+  const canViewSettings = store.hasPermission("canViewSettings");
+  const canEditSettings = store.hasPermission("canEditSettings");
+  const canExportData = store.hasPermission("canExportData");
+  const canImportData = store.hasPermission("canImportData");
+  const canBackupData = store.hasPermission("canBackupData");
+  const importRef = useRef<HTMLInputElement | null>(null);
+  const logoRef = useRef<HTMLInputElement | null>(null);
+  const [draft, setDraft] = useState<WorkshopSettings>(store.workshopSettings);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saved, setSaved] = useState(true);
+  const pathname = usePathname();
+
+  const setField = <K extends keyof WorkshopSettings>(key: K, value: WorkshopSettings[K]) => {
+    setDraft((prev) => ({ ...prev, [key]: value }));
+    setSaved(false);
+    setErrors((prev) => ({ ...prev, [key]: "" }));
+  };
+
+  const validate = (): boolean => {
+    const e: Record<string, string> = {};
+    const name = normalizeSpaces(draft.name);
+    const commercialName = normalizeSpaces(draft.commercialName);
+    const address = normalizeSpaces(draft.address);
+    const city = normalizeSpaces(draft.city);
+    const postalCode = normalizeSpaces(draft.postalCode);
+    const siret = digitsOnly(draft.siret);
+
+    if (isWeakText(name)) e.name = "Renseignez un nom d'atelier réel.";
+    if (commercialName && isWeakText(commercialName)) e.commercialName = "Renseignez un nom commercial réel ou laissez vide.";
+    if (!isValidPhoneNumber(draft.phone)) e.phone = "Numéro international requis : indicatif puis 7 à 15 chiffres.";
+    if (!isValidEmail(draft.email)) e.email = "Renseignez un email valide.";
+    if (isWeakText(address, 6)) e.address = "Adresse complète obligatoire.";
+    if (!/^\d{5}$/.test(postalCode) || /^0+$/.test(postalCode)) e.postalCode = "Code postal obligatoire à 5 chiffres.";
+    if (isWeakText(city)) e.city = "Renseignez une ville réelle.";
+    if (isInvalidLegalNumber(siret, 14)) e.siret = "SIRET obligatoire : 14 chiffres, hors valeurs de test.";
+    if (typeof draft.vatApplicable !== "boolean") e.vatApplicable = "Sélectionnez un régime de TVA.";
+    if (draft.tvaNumber && isWeakText(draft.tvaNumber, 4)) e.tvaNumber = "Numéro TVA invalide.";
+    if (draft.tvaMention && isWeakText(draft.tvaMention, 8)) e.tvaMention = "Mention TVA trop courte ou invalide.";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const save = () => {
+    if (!store.requirePermission("canEditSettings", "Enregistrer les paramètres")) {
+      toast.error("Action réservée au gérant/admin.");
+      return;
+    }
+    if (!validate()) { toast.error("Corrigez les erreurs avant d'enregistrer."); return; }
+    const city = normalizeSpaces(draft.city);
+    const postalCode = normalizeSpaces(draft.postalCode);
+    const siret = digitsOnly(draft.siret);
+    store.saveWorkshopSettings({
+      ...draft,
+      name: normalizeSpaces(draft.name),
+      commercialName: normalizeSpaces(draft.commercialName),
+      phone: normalizeSpaces(draft.phone),
+      email: normalizeSpaces(draft.email).toLowerCase(),
+      address: normalizeSpaces(draft.address),
+      postalCode,
+      city,
+      siret,
+      tvaNumber: normalizeSpaces(draft.tvaNumber),
+      postalCity: [postalCode, city].filter(Boolean).join(" ").trim(),
+      isMicroEnterprise: !draft.vatApplicable,
+      tvaMention: draft.vatApplicable ? "" : normalizeSpaces(draft.tvaMention),
+    });
+    setSaved(true);
+    toast.success("Paramètres enregistrés.");
+  };
+
+  const dataSnapshot = useMemo(() => ({
+    workshopSettings: store.workshopSettings, workshopInfo: store.workshopInfo,
+    onboardingCompleted: store.onboardingCompleted, configuredAt: store.configuredAt,
+    updatedAt: store.updatedAt, customers: store.customers, repairs: store.repairs,
+    quotes: store.quotes, invoices: store.invoices, payments: store.payments,
+    appointments: store.appointments, stockItems: store.stockItems,
+    documents: store.documents, messageLogs: store.messageLogs,
+    selectedCustomerId: store.selectedCustomerId, selectedRepairId: store.selectedRepairId,
+    selectedQuoteId: store.selectedQuoteId, selectedInvoiceId: store.selectedInvoiceId,
+    selectedPaymentId: store.selectedPaymentId, selectedAppointmentId: store.selectedAppointmentId,
+    selectedStockItemId: store.selectedStockItemId, selectedDocumentId: store.selectedDocumentId,
+  }), [store]);
+
+  const exportJson = () => {
+    if (!store.requirePermission("canExportData", "Exporter les données")) {
+      toast.error("Export réservé au gérant/admin.");
+      return;
+    }
+    const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), state: dataSnapshot }, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `behar-tech-donnees-locales-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = async (file: File) => {
+    if (!store.requirePermission("canImportData", "Importer les données")) {
+      toast.error("Import réservé au gérant/admin.");
+      return;
+    }
+    try {
+      const raw = await file.text();
+      const parsed = JSON.parse(raw);
+      const importedState = parsed.state ?? parsed;
+      localStorage.setItem("behar-tech-local-demo-v3", JSON.stringify({ state: importedState, version: 1 }));
+      toast.success("Import terminé. Rechargement...");
+      window.location.reload();
+    } catch { toast.error("Import impossible."); }
+  };
+
+  const handleLogoImport = (file: File) => {
+    const isImage = file.type.startsWith("image/") || file.name.toLowerCase().endsWith(".svg");
+    if (!isImage) {
+      toast.error("Choisissez une image PNG, JPG, WEBP ou SVG.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Logo trop lourd. Taille maximale : 2 Mo.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      if (!result) {
+        toast.error("Logo illisible.");
+        return;
+      }
+      setField("logoUrl", result);
+      toast.success("Logo ajouté.");
+    };
+    reader.onerror = () => toast.error("Import du logo impossible.");
+    reader.readAsDataURL(file);
+  };
+
+  const logoPreview = draft.logoUrl && draft.logoUrl.length > 10;
+  const siren = digitsOnly(draft.siret).slice(0, 9).replace(/(\d{3})(?=\d)/g, "$1 ");
+  const postalCities = cityByPostalCode[normalizeSpaces(draft.postalCode)] ?? [];
+  const phone = phoneParts(draft.phone);
+  const phoneLocal = formatPhoneLocal(phone.prefix, phone.local);
+  const setInternationalPhone = (prefixValue: string, localValue: string) => {
+    const normalizedPrefix = `+${digitsOnly(prefixValue).slice(0, 4) || "33"}`;
+    const local = formatPhoneLocal(normalizedPrefix, localValue);
+    setField("phone", local ? `${normalizedPrefix} ${local}` : normalizedPrefix);
+  };
+  const setPostalCode = (value: string) => {
+    const postalCode = digitsOnly(value).slice(0, 5);
+    setField("postalCode", postalCode);
+    const cities = cityByPostalCode[postalCode] ?? [];
+    if (cities.length === 1) {
+      setField("city", cities[0]);
+    } else if (cities.length > 1 && (!draft.city || !cities.includes(draft.city))) {
+      setField("city", cities[0]);
+    }
+  };
+
+  if (!canViewSettings) {
+    return (
+      <PageShell title="Réglages" subtitle="Accès réservé au gérant/admin.">
+        <Panel className="max-w-xl p-6">
+          <div className="flex items-start gap-3">
+            <div className="grid size-10 place-items-center rounded-[12px] bg-[#FFF4DE] text-[#9A6A17]">
+              <Shield className="size-5" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-[#1A1916] text-lg">Paramètres non accessibles</h2>
+              <p className="mt-1 text-[#6B6B6B] text-sm">
+                Votre profil actuel ne permet pas d'ouvrir ou modifier les réglages atelier.
+              </p>
+            </div>
+          </div>
+        </Panel>
+      </PageShell>
+    );
+  }
+
+  return (
+    <PageShell title="Réglages" subtitle="Gérez les informations de votre atelier et vos préférences.">
+      {/* Tabs + Save bar */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <nav className="flex max-w-full gap-1 overflow-x-auto border-b border-[#F1F1EF]">
+          {TABS.map((t) => {
+            const isActive = t.key === "atelier"
+              ? pathname === "/dashboard/parametres"
+              : pathname?.includes((t.href as string).split("?")[0]) && (t.href as string) !== "/dashboard/parametres";
+            return (
+              <Link key={t.key} href={t.href} prefetch={false}
+                className={`shrink-0 px-4 py-2.5 text-[13px] font-medium transition-colors border-b-2 -mb-px ${
+                  isActive || (t.key === "atelier" && pathname === "/dashboard/parametres")
+                    ? "border-[#2A9D8F] text-[#1A1916]"
+                    : "border-transparent text-[#8A8984] hover:text-[#1A1916]"
+                }`}
+              >{t.label}</Link>
+            );
+          })}
+        </nav>
+        <div className="flex items-center gap-3">
+          <PrimaryButton onClick={save} className="h-10 gap-2 px-5" disabled={!canEditSettings}>
+            <Check className="size-4" /> Enregistrer les modifications
+          </PrimaryButton>
+          <span className="text-[12px] text-[#B0AEA8]">
+            {saved ? "Toutes les modifications sont enregistrées" : "Modifications non enregistrées"}
+          </span>
+        </div>
+      </div>
+
+      {/* Grid */}
+      <div className="grid gap-5 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+        {/* Col 1 — Identité */}
+        <Section icon={Building2} title="Identité atelier" description="Le nom de l'atelier apparaîtra sur vos documents.">
+          <div className="grid gap-4">
+            <Field label="Nom de l'atelier" required error={errors.name}>
+              <input className={inputCls} value={draft.name || ""} onChange={(e) => setField("name", e.target.value)} />
+            </Field>
+            <Field label="Nom commercial" hint="Optionnel" error={errors.commercialName}>
+              <input className={inputCls} value={draft.commercialName || ""} onChange={(e) => setField("commercialName", e.target.value)} />
+            </Field>
+            <Field label="Site web" hint="Optionnel">
+              <input className={inputCls} value={draft.website || ""} onChange={(e) => setField("website", e.target.value)} placeholder="https://behartechpro.fr" />
+            </Field>
+            <Field label="Pays">
+              <select className={selectCls} value={draft.country || "France"} onChange={(e) => setField("country", e.target.value)}>
+                <option>France</option><option>Belgique</option><option>Suisse</option><option>Luxembourg</option>
+              </select>
+            </Field>
+          </div>
+        </Section>
+
+        {/* Col 2 — Coordonnées */}
+        <Section icon={Phone} title="Coordonnées" description="Ces informations apparaîtront sur vos documents.">
+          <div className="grid gap-4">
+            <Field label="Téléphone" required error={errors.phone}>
+              <div className="grid grid-cols-[132px_1fr] gap-2">
+                <select
+                  className={`${selectCls} px-3`}
+                  value={callingCodeOptions.some((option) => option.code === phone.prefix) ? phone.prefix : "+33"}
+                  onChange={(e) => setInternationalPhone(e.target.value, phone.local)}
+                  aria-label="Indicatif téléphonique"
+                >
+                  {callingCodeOptions.map((option) => (
+                    <option key={option.code} value={option.code}>{option.code} · {option.label}</option>
+                  ))}
+                </select>
+                <input
+                  className={inputCls}
+                  inputMode="tel"
+                  value={phoneLocal}
+                  onChange={(e) => setInternationalPhone(phone.prefix, e.target.value)}
+                  placeholder={phone.prefix === "+33" ? "6 12 34 56 78" : "Numéro local"}
+                  aria-label="Numéro local"
+                />
+              </div>
+            </Field>
+            <Field label="Email" required error={errors.email}>
+              <input className={inputCls} type="email" value={draft.email || ""} onChange={(e) => setField("email", e.target.value)} />
+            </Field>
+            <Field label="Adresse" required error={errors.address}>
+              <input className={inputCls} value={draft.address || ""} onChange={(e) => setField("address", e.target.value)} />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Code postal" required error={errors.postalCode}>
+                <input className={inputCls} inputMode="numeric" value={draft.postalCode || ""} onChange={(e) => setPostalCode(e.target.value)} />
+              </Field>
+              <Field label="Ville" required error={errors.city}>
+                {postalCities.length > 0 ? (
+                  <select className={selectCls} value={draft.city || postalCities[0]} onChange={(e) => setField("city", e.target.value)}>
+                    {postalCities.map((city) => <option key={city} value={city}>{city}</option>)}
+                  </select>
+                ) : (
+                  <input className={inputCls} value={draft.city || ""} onChange={(e) => setField("city", e.target.value)} />
+                )}
+              </Field>
+            </div>
+          </div>
+        </Section>
+
+        {/* Col 3 — Logo */}
+        <Section icon={Image} title="Logo & apparence" description="Le logo sera visible sur vos devis, factures et reçus.">
+          <div className="space-y-4">
+            {/* Preview */}
+            <div className="flex items-center justify-center rounded-[16px] border border-[#F1F1EF] bg-[#FAFAF8] py-6">
+              {logoPreview ? (
+                <img src={draft.logoUrl} alt="Logo" className="max-h-16 max-w-[200px] object-contain" />
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[20px] font-bold tracking-[-0.02em] text-[#1A1916]">BEHAR</span>
+                  <span className="text-[8px] text-[#1A1916]">●</span>
+                  <span className="text-[20px] font-bold tracking-[-0.02em] text-[#1A1916]">TECH</span>
+                  <span className="ml-1 text-[10px] font-semibold text-[#2A9D8F]">PRO</span>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <input
+                ref={logoRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleLogoImport(file);
+                  e.currentTarget.value = "";
+                }}
+              />
+              <SecondaryButton className="flex-1 h-10 text-xs" onClick={() => logoRef.current?.click()}>
+                <Upload className="size-3.5" /> Importer un logo
+              </SecondaryButton>
+              {logoPreview && (
+                <SecondaryButton className="h-10 text-xs text-[#DC3545]" onClick={() => { setField("logoUrl", ""); toast.success("Logo supprimé."); }}>
+                  Supprimer
+                </SecondaryButton>
+              )}
+            </div>
+            {/* Toggle */}
+            <label className="flex items-center justify-between rounded-[14px] border border-[#F1F1EF] bg-[#FAFAF8] px-4 py-3 cursor-pointer">
+              <span className="text-[13px] font-medium text-[#1A1916]">Afficher le logo sur les documents</span>
+              <div className="relative">
+                <input type="checkbox" className="sr-only peer" checked={Boolean(draft.showLogo)} onChange={(e) => setField("showLogo", e.target.checked)} />
+                <div className="w-10 h-[22px] rounded-full bg-[#E7E4DC] peer-checked:bg-[#2A9D8F] transition-colors" />
+                <div className="absolute top-[3px] left-[3px] w-4 h-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-[18px]" />
+              </div>
+            </label>
+          </div>
+        </Section>
+      </div>
+
+      {/* Row 2 */}
+      <div className="grid gap-5 xl:grid-cols-3 mt-5">
+        {/* Informations légales */}
+        <Section icon={Shield} title="Informations légales" description="Ces informations apparaîtront sur vos documents.">
+          <div className="grid gap-4">
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="SIREN" hint="9 chiffres">
+                <input className={`${inputCls} bg-[#FAFAF8] text-[#6B6B6B]`} value={siren} readOnly aria-readonly="true" />
+              </Field>
+              <Field label="SIRET" required error={errors.siret} hint="14 chiffres">
+                <div className="relative">
+                  <input className={inputCls} inputMode="numeric" value={draft.siret || ""} onChange={(e) => setField("siret", digitsOnly(e.target.value).slice(0, 14))} />
+                  {draft.siret && /^\d{14}$/.test(digitsOnly(draft.siret)) && !errors.siret && (
+                    <Check className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-[#2A9D8F]" />
+                  )}
+                </div>
+              </Field>
+            </div>
+            <Field label="TVA Intracommunautaire" hint="Optionnel" error={errors.tvaNumber}>
+              <input className={inputCls} value={draft.tvaNumber || ""} onChange={(e) => setField("tvaNumber", e.target.value)} />
+            </Field>
+            <Field label="Mention TVA" error={errors.tvaMention}>
+              <input className={inputCls} value={draft.tvaMention || ""} onChange={(e) => setField("tvaMention", e.target.value)} />
+            </Field>
+          </div>
+        </Section>
+
+        {/* TVA & documents */}
+        <Section icon={FileText} title="TVA & documents" description="Choisissez le régime de TVA pour vos documents.">
+          <div className="space-y-4">
+            {/* Radio cards */}
+            <button type="button" onClick={() => { setField("vatApplicable", true); setSaved(false); }}
+              className={`w-full text-left rounded-[14px] border p-4 transition-all ${draft.vatApplicable ? "border-[#2A9D8F] bg-[#F8FCFA] shadow-[0_0_0_1px_#2A9D8F]" : "border-[#E7E4DC] hover:border-[#D1CFCA]"}`}>
+              <div className="flex items-center gap-3">
+                <div className={`size-4 rounded-full border-2 flex items-center justify-center ${draft.vatApplicable ? "border-[#2A9D8F]" : "border-[#CDCBC5]"}`}>
+                  {draft.vatApplicable && <div className="size-2 rounded-full bg-[#2A9D8F]" />}
+                </div>
+                <div>
+                  <p className="text-[13px] font-semibold text-[#1A1916]">TVA applicable (20%)</p>
+                  <p className="text-[11px] text-[#8A8984] mt-0.5">La TVA de 20% sera appliquée sur vos documents.</p>
+                </div>
+              </div>
+            </button>
+            <button type="button" onClick={() => { setField("vatApplicable", false); setSaved(false); }}
+              className={`w-full text-left rounded-[14px] border p-4 transition-all ${!draft.vatApplicable ? "border-[#2A9D8F] bg-[#F8FCFA] shadow-[0_0_0_1px_#2A9D8F]" : "border-[#E7E4DC] hover:border-[#D1CFCA]"}`}>
+              <div className="flex items-center gap-3">
+                <div className={`size-4 rounded-full border-2 flex items-center justify-center ${!draft.vatApplicable ? "border-[#2A9D8F]" : "border-[#CDCBC5]"}`}>
+                  {!draft.vatApplicable && <div className="size-2 rounded-full bg-[#2A9D8F]" />}
+                </div>
+                <div>
+                  <p className="text-[13px] font-semibold text-[#1A1916]">TVA non applicable</p>
+                  <p className="text-[11px] text-[#8A8984] mt-0.5">Article 293 B du CGI. Pas de TVA sur vos documents.</p>
+                </div>
+              </div>
+            </button>
+            {errors.vatApplicable && <p className="text-[12px] text-[#DC3545] font-medium">{errors.vatApplicable}</p>}
+            <Field label="Mention affichée sur les documents" hint="Cette mention apparaîtra sur vos documents si nécessaire." error={errors.tvaMention}>
+              <textarea className={areaCls} value={draft.tvaMention || ""} onChange={(e) => setField("tvaMention", e.target.value)} maxLength={120} rows={2} />
+              <p className="text-right text-[10px] text-[#CDCBC5]">{(draft.tvaMention || "").length}/120</p>
+            </Field>
+          </div>
+        </Section>
+
+        {/* Licence */}
+        <LicenseCard />
+      </div>
+
+      {/* Row 3 */}
+      <div className="grid gap-5 xl:grid-cols-3 mt-5">
+        {/* Installation */}
+        <PwaInstaller />
+
+        {/* Sauvegarde */}
+        <Section icon={Download} title="Sauvegarde & export" description="Sauvegardez vos données ou exportez vos paramètres.">
+          <div className="grid gap-3">
+            <SecondaryButton className="h-10 w-full" onClick={exportJson} disabled={!canExportData}>
+              <Download className="size-4" /> Exporter les paramètres
+            </SecondaryButton>
+            <input ref={importRef} type="file" accept=".json,application/json" className="hidden"
+              onChange={(e) => { const file = e.target.files?.[0]; if (file) void handleImport(file); }} />
+            <SecondaryButton className="h-10 w-full" onClick={() => importRef.current?.click()} disabled={!canImportData}>
+              <Upload className="size-4" /> Voir les sauvegardes
+            </SecondaryButton>
+          </div>
+          <button type="button" className="mt-4 flex items-center gap-1.5 text-[12px] text-[#DC3545]/60 hover:text-[#DC3545] transition-colors"
+            disabled={!canBackupData}
+            onClick={() => {
+              if (!store.requirePermission("canBackupData", "Réinitialiser les données")) {
+                toast.error("Réinitialisation réservée au gérant/admin.");
+                return;
+              }
+              if (window.confirm("Cette action efface les données locales. Elle est irréversible.")) {
+                store.resetDemo();
+                store.setOnboardingCompleted(false);
+                toast.success("Données réinitialisées.");
+              }
+            }}>
+            <AlertTriangle className="size-3" /> Réinitialiser les données locales
+          </button>
+        </Section>
+
+        {/* Documents — préfixes & conditions */}
+        <Section icon={FileText} title="Numérotation & conditions" description="Préfixes et numéros de vos documents.">
+          <div className="grid gap-3 grid-cols-2">
+            <Field label="Préfixe réparation"><input className={inputCls} value={draft.repairPrefix || "REP"} onChange={(e) => setField("repairPrefix", e.target.value)} /></Field>
+            <Field label="N° suivant"><input className={inputCls} type="number" min={1} value={String(draft.nextRepairNumber || 1)} onChange={(e) => setField("nextRepairNumber", Number(e.target.value) || 1)} /></Field>
+            <Field label="Préfixe devis"><input className={inputCls} value={draft.quotePrefix || "DEV"} onChange={(e) => setField("quotePrefix", e.target.value)} /></Field>
+            <Field label="N° suivant"><input className={inputCls} type="number" min={1} value={String(draft.nextQuoteNumber || 1)} onChange={(e) => setField("nextQuoteNumber", Number(e.target.value) || 1)} /></Field>
+            <Field label="Préfixe facture"><input className={inputCls} value={draft.invoicePrefix || "FAC"} onChange={(e) => setField("invoicePrefix", e.target.value)} /></Field>
+            <Field label="N° suivant"><input className={inputCls} type="number" min={1} value={String(draft.nextInvoiceNumber || 1)} onChange={(e) => setField("nextInvoiceNumber", Number(e.target.value) || 1)} /></Field>
+            <Field label="Préfixe reçu"><input className={inputCls} value={draft.receiptPrefix || "REC"} onChange={(e) => setField("receiptPrefix", e.target.value)} /></Field>
+            <Field label="N° suivant"><input className={inputCls} type="number" min={1} value={String(draft.nextReceiptNumber || 1)} onChange={(e) => setField("nextReceiptNumber", Number(e.target.value) || 1)} /></Field>
+          </div>
+          <div className="mt-4 grid gap-3">
+            <Field label="Conditions devis"><textarea className={areaCls} value={draft.quoteTerms || ""} onChange={(e) => setField("quoteTerms", e.target.value)} rows={2} /></Field>
+            <Field label="Conditions facture"><textarea className={areaCls} value={draft.invoiceTerms || ""} onChange={(e) => setField("invoiceTerms", e.target.value)} rows={2} /></Field>
+            <Field label="Pied de page document"><textarea className={areaCls} value={draft.documentFooter || ""} onChange={(e) => setField("documentFooter", e.target.value)} rows={2} /></Field>
+          </div>
+        </Section>
+      </div>
+
+      {/* Sidebar help */}
+      <div className="mt-6 rounded-[16px] border border-[#F1F1EF] bg-[#FAFAF8] px-5 py-4 flex items-start gap-3 max-w-sm">
+        <HelpCircle className="size-5 text-[#2A9D8F] shrink-0 mt-0.5" />
+        <div>
+          <p className="text-[13px] font-semibold text-[#1A1916]">Besoin d'aide ?</p>
+          <p className="mt-0.5 text-[12px] text-[#8A8984]">Consultez notre centre d'aide ou contactez le support.</p>
+          <a href="#" className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-[#2A9D8F] hover:underline">
+            Centre d'aide <ExternalLink className="size-3" />
+          </a>
+        </div>
+      </div>
+    </PageShell>
+  );
+}

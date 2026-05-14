@@ -1,0 +1,89 @@
+/* 
+label: Tangerine
+value: tangerine  
+*/
+
+:root[data-theme-preset="tangerine"] {
+  --radius: 0.625rem;
+  --card: #ffffff;
+  --card-foreground: #1a1916;
+  --popover: #ffffff;
+  --popover-foreground: #1a1916;
+  --primary: #f4a261;
+  --primary-foreground: #ffffff;
+  --secondary: #fdf2e9;
+  --secondary-foreground: #1a1916;
+  --muted: #fdf2e9;
+  --muted-foreground: #6b6b6b;
+  --accent: #fdf2e9;
+  --accent-foreground: #e76f51;
+  --destructive: #c84848;
+  --border: rgba(231, 111, 81, 0.15);
+  --input: rgba(231, 111, 81, 0.1);
+  --ring: rgba(244, 162, 97, 0.4);
+  --chart-1: #f4a261;
+  --chart-2: #e76f51;
+  --chart-3: #2a9d8f;
+  --chart-4: #e9c46a;
+  --chart-5: #264653;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1a1916;
+  --sidebar-primary: #f4a261;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #fdf2e9;
+  --sidebar-accent-foreground: #e76f51;
+  --sidebar-border: rgba(231, 111, 81, 0.1);
+  --sidebar-ring: rgba(244, 162, 97, 0.4);
+  --background: #fafaf8;
+  --foreground: #1a1916;
+  --shadow-2xs: 0px 1px 3px 0px rgba(0, 0, 0, 0.05);
+  --shadow-xs: 0px 1px 3px 0px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0px 1px 3px 0px rgba(0, 0, 0, 0.1), 0px 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.1), 0px 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0px 1px 3px 0px rgba(0, 0, 0, 0.1), 0px 2px 4px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0px 1px 3px 0px rgba(0, 0, 0, 0.1), 0px 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0px 1px 3px 0px rgba(0, 0, 0, 0.1), 0px 8px 10px -1px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0px 1px 3px 0px rgba(0, 0, 0, 0.25);
+}
+
+.dark:root[data-theme-preset="tangerine"] {
+  --background: #1a1a1a;
+  --foreground: #fdf2e9;
+  --card: #262626;
+  --card-foreground: #fdf2e9;
+  --popover: #262626;
+  --popover-foreground: #fdf2e9;
+  --primary: #f4a261;
+  --primary-foreground: #1a1a1a;
+  --secondary: #333333;
+  --secondary-foreground: #fdf2e9;
+  --muted: #333333;
+  --muted-foreground: #a1a1a1;
+  --accent: #f4a261;
+  --accent-foreground: #ffffff;
+  --destructive: #7f1d1d;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.15);
+  --ring: #f4a261;
+  --chart-1: #f4a261;
+  --chart-2: #e76f51;
+  --chart-3: #2a9d8f;
+  --chart-4: #e9c46a;
+  --chart-5: #264653;
+  --sidebar: #262626;
+  --sidebar-foreground: #fdf2e9;
+  --sidebar-primary: #f4a261;
+  --sidebar-primary-foreground: #1a1a1a;
+  --sidebar-accent: #333333;
+  --sidebar-accent-foreground: #fdf2e9;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-ring: #f4a261;
+  --shadow-2xs: 0px 1px 3px 0px rgba(0, 0, 0, 0.5);
+  --shadow-xs: 0px 1px 3px 0px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0px 1px 3px 0px rgba(0, 0, 0, 0.5), 0px 1px 2px -1px rgba(0, 0, 0, 0.5);
+  --shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.5), 0px 1px 2px -1px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0px 1px 3px 0px rgba(0, 0, 0, 0.5), 0px 2px 4px -1px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0px 1px 3px 0px rgba(0, 0, 0, 0.5), 0px 4px 6px -1px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0px 1px 3px 0px rgba(0, 0, 0, 0.5), 0px 8px 10px -1px rgba(0, 0, 0, 0.5);
+  --shadow-2xl: 0px 1px 3px 0px rgba(0, 0, 0, 0.5);
+}

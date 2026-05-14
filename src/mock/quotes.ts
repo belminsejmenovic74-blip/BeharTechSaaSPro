@@ -1,0 +1,43 @@
+export const quote = {
+  id: "quote_dv_2048",
+  shop_id: "shop_atelier_belmin",
+  number: "DV-2048",
+  status: "Brouillon",
+  date: "21 mai 2026",
+  customer: {
+    name: "Belmin",
+    phone: "06 12 34 56 78",
+    email: "belmin@example.com",
+    device: "iPhone 13",
+    issue: "Écran cassé",
+  },
+  lines: [
+    {
+      id: "line_screen",
+      shop_id: "shop_atelier_belmin",
+      description: "Remplacement écran iPhone 13",
+      quantity: 1,
+      unitPrice: "150,00 €",
+      total: "150,00 €",
+    },
+    {
+      id: "line_labor",
+      shop_id: "shop_atelier_belmin",
+      description: "Main d’œuvre",
+      quantity: 1,
+      unitPrice: "30,00 €",
+      total: "30,00 €",
+    },
+    {
+      id: "line_protector",
+      shop_id: "shop_atelier_belmin",
+      description: "Protection écran (optionnel)",
+      quantity: 1,
+      unitPrice: "10,00 €",
+      total: "10,00 €",
+    },
+  ],
+  subtotal: "190,00 €",
+  tax: "0,00 €",
+  total: "190,00 €",
+};

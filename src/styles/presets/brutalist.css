@@ -1,0 +1,89 @@
+/* 
+label: Brutalist
+value: brutalist 
+*/
+
+:root[data-theme-preset="brutalist"] {
+  --radius: 0px;
+  --card: #ffffff;
+  --card-foreground: #000000;
+  --popover: #ffffff;
+  --popover-foreground: #000000;
+  --primary: #000000;
+  --primary-foreground: #ffffff;
+  --secondary: #f3f4f6;
+  --secondary-foreground: #000000;
+  --muted: #f3f4f6;
+  --muted-foreground: #4b5563;
+  --accent: #ffde00;
+  --accent-foreground: #000000;
+  --destructive: #ff0000;
+  --border: #000000;
+  --input: #000000;
+  --ring: #000000;
+  --chart-1: #000000;
+  --chart-2: #ff0000;
+  --chart-3: #00ff00;
+  --chart-4: #0000ff;
+  --chart-5: #ffff00;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #000000;
+  --sidebar-primary: #000000;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f3f4f6;
+  --sidebar-accent-foreground: #000000;
+  --sidebar-border: #000000;
+  --sidebar-ring: #000000;
+  --background: #ffffff;
+  --foreground: #000000;
+  --shadow-2xs: 2px 2px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-xs: 3px 3px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-sm: 4px 4px 0px 0px rgba(0, 0, 0, 1);
+  --shadow: 5px 5px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-md: 6px 6px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-lg: 8px 8px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-xl: 10px 10px 0px 0px rgba(0, 0, 0, 1);
+  --shadow-2xl: 12px 12px 0px 0px rgba(0, 0, 0, 1);
+}
+
+.dark:root[data-theme-preset="brutalist"] {
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #111111;
+  --card-foreground: #ffffff;
+  --popover: #111111;
+  --popover-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #ffffff;
+  --muted: #1a1a1a;
+  --muted-foreground: #9ca3af;
+  --accent: #ffffff;
+  --accent-foreground: #000000;
+  --destructive: #ff0000;
+  --border: #ffffff;
+  --input: #ffffff;
+  --ring: #ffffff;
+  --chart-1: #ffffff;
+  --chart-2: #ff0000;
+  --chart-3: #00ff00;
+  --chart-4: #0000ff;
+  --chart-5: #ffff00;
+  --sidebar: #111111;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #1a1a1a;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #ffffff;
+  --sidebar-ring: #ffffff;
+  --shadow-2xs: 2px 2px 0px 0px rgba(255, 255, 255, 1);
+  --shadow-xs: 3px 3px 0px 0px rgba(255, 255, 255, 1);
+  --shadow-sm: 4px 4px 0px 0px rgba(255, 255, 255, 1);
+  --shadow: 5px 5px 0px 0px rgba(255, 255, 255, 1);
+  --shadow-md: 6px 6px 0px 0px rgba(255, 255, 255, 1);
+  --shadow-lg: 8px 8px 0px 0px rgba(255, 255, 255, 1);
+  --shadow-xl: 10px 10px 0px 0px rgba(255, 255, 255, 1);
+  --shadow-2xl: 12px 12px 0px 0px rgba(255, 255, 255, 1);
+}

@@ -1,0 +1,1262 @@
+"use client";
+
+import { type ReactNode, useEffect, useMemo, useState } from "react";
+
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+
+import {
+  CreditCard,
+  Edit3,
+  FileText,
+  Mail,
+  MoreHorizontal,
+  Plus,
+  Printer,
+  Receipt,
+  ReceiptText,
+  Search,
+  Send,
+  Trash2,
+  WalletCards,
+  Wrench,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useShallow } from "zustand/react/shallow";
+
+import { KanbanBoard } from "@/components/behar/kanban";
+import { RepairIntakeScreen, RepairIntakeSummaryCard } from "@/components/behar/repair-intake-condition";
+import { RepairModal } from "@/components/behar/repair-create-modal";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import {
+  buildInvoiceLinesFromRepair,
+  formatEuro,
+  formatIsoToDisplay,
+  type Invoice,
+  type PaymentMethod,
+  paymentMethods,
+  type Quote,
+  type RepairStatus,
+  useBeharStore,
+} from "@/lib/behar-store";
+import { displayCustomerName, isCounterCustomer } from "@/lib/customer-display";
+import { sendRealSms } from "@/lib/send-sms";
+import { cn } from "@/lib/utils";
+import type { RepairCard } from "@/mock/repairs";
+
+import { DeviceThumb, Panel, PrimaryButton, SecondaryButton, StatusBadge, Timeline } from "./primitives";
+import { useDocument } from "./print-provider";
+
+const statuses: RepairStatus[] = ["Reçu", "Diagnostic", "Préparation / Réparation", "Test final", "Prêt"];
+
+function nextStatusLabel(from: RepairStatus): string | null {
+  switch (from) {
+    case "Reçu":
+      return "Passer en diagnostic";
+    case "Diagnostic":
+      return "Passer en préparation / réparation";
+    case "Préparation / Réparation":
+      return "Passer en test final";
+    case "Test final":
+      return "Marquer comme prêt";
+    default:
+      return null;
+  }
+}
+
+function invoiceUiStatus(inv: Invoice | undefined): "À créer" | "Créée" | "Payée" {
+  if (!inv) return "À créer";
+  if (inv.status === "Payée") return "Payée";
+  return "Créée";
+}
+
+function quoteUiSummary(quotes: Quote[], acceptedQuote: Quote | undefined): "Aucun" | "Créé" | "Accepté" {
+  const related = quotes;
+  if (acceptedQuote) return "Accepté";
+  if (related.length > 0) return "Créé";
+  return "Aucun";
+}
+
+export function RepairsWorkspace() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const {
+    workshopInfo,
+    repairs,
+    customers,
+    quotes,
+    invoices,
+    payments,
+    documents,
+    stockItems,
+    selectedRepairId,
+    setSelected,
+    convertQuoteToInvoice,
+    addInvoice,
+    markInvoicePaid,
+    addPartToRepair,
+    addSaleLinesToRepair,
+    markRepairSaleLineDelivered,
+    removePartFromRepair,
+    sendMessage,
+    updateRepair,
+    changeRepairStatus,
+    deleteRepair,
+    createInvoiceFromRepair,
+    confirmPartUsage,
+    addRepair,
+    addDocument,
+  } = useBeharStore(
+    useShallow((s) => ({
+      workshopInfo: s.workshopInfo,
+      repairs: s.repairs,
+      customers: s.customers,
+      quotes: s.quotes,
+      invoices: s.invoices,
+      payments: s.payments,
+      documents: s.documents,
+      stockItems: s.stockItems,
+      selectedRepairId: s.selectedRepairId,
+      setSelected: s.setSelected,
+      convertQuoteToInvoice: s.convertQuoteToInvoice,
+      addInvoice: s.addInvoice,
+      markInvoicePaid: s.markInvoicePaid,
+      addPartToRepair: s.addPartToRepair,
+      addSaleLinesToRepair: s.addSaleLinesToRepair,
+      markRepairSaleLineDelivered: s.markRepairSaleLineDelivered,
+      removePartFromRepair: s.removePartFromRepair,
+      sendMessage: s.sendMessage,
+      updateRepair: s.updateRepair,
+      changeRepairStatus: s.changeRepairStatus,
+      deleteRepair: s.deleteRepair,
+      createInvoiceFromRepair: s.createInvoiceFromRepair,
+      confirmPartUsage: s.confirmPartUsage,
+      addRepair: s.addRepair,
+      addDocument: s.addDocument,
+    })),
+  );
+  const { print, download } = useDocument();
+  const [modal, setModal] = useState<"create" | "edit" | null>(null);
+  const [draftStatus, setDraftStatus] = useState<RepairStatus>("Reçu");
+  const [selectedStockItemId, setSelectedStockItemId] = useState("");
+  const [partQuantity, setPartQuantity] = useState(1);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<RepairStatus | "all">("all");
+  const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "unpaid">("all");
+  const [isSendingSms, setIsSendingSms] = useState(false);
+  const [paymentNote, setPaymentNote] = useState("");
+  const [repairPayMethod, setRepairPayMethod] = useState<PaymentMethod>("Carte");
+  const [importOpen, setImportOpen] = useState(false);
+  const [prefillFromQuote, setPrefillFromQuote] = useState<any>(null);
+  const [detailMode, setDetailMode] = useState<"repair" | "intake">("repair");
+
+  const selectedRepair = repairs.find((repair) => repair.id === selectedRepairId);
+
+  const fullRepairHistory = useMemo(() => {
+    if (!selectedRepair) return [];
+    
+    const items: any[] = (selectedRepair.history ?? []).map((h: string) => ({ text: h }));
+    
+    // Add linked quotes
+    quotes
+      .filter((q) => q.repairId === selectedRepair.id)
+      .forEach((q) => {
+        items.push({
+          text: `Devis ${q.number}`,
+          detail: `${q.status} — ${formatEuro(q.totalAmount)}`,
+          icon: ReceiptText,
+          date: q.date,
+          type: "quote",
+          id: q.id
+        });
+      });
+      
+    // Add linked invoices
+    invoices
+      .filter((i) => i.repairId === selectedRepair.id)
+      .forEach((i) => {
+        items.push({
+          text: `Facture ${i.number}`,
+          detail: `${i.status} — ${formatEuro(i.paidAmount ?? 0)} / ${formatEuro(i.lines.reduce((acc, l) => acc + (l.quantity * l.unitPrice), 0))}`,
+          icon: ReceiptText,
+          date: i.date,
+          type: "invoice",
+          id: i.id
+        });
+      });
+
+    return items.sort((a, b) => {
+       // Strings don't have date, so we treat them as oldest or keep order
+       if (a.date && b.date) return b.date.localeCompare(a.date);
+       return 0;
+    });
+  }, [selectedRepair, quotes, invoices]);
+  const selectedStockItem = stockItems.find((item) => item.id === selectedStockItemId);
+  const maxPartQuantity = Math.max(1, selectedStockItem?.stock ?? 1);
+  const selectedCustomer = selectedRepair
+    ? customers.find((customer) => customer.id === selectedRepair.customerId)
+    : undefined;
+  const relatedQuotes = selectedRepair
+    ? quotes.filter((quote) => quote.repairId === selectedRepair.id || selectedRepair.quoteIds?.includes(quote.id))
+    : [];
+  const acceptedQuote = relatedQuotes.find((quote) => quote.status === "Accepté");
+  const relatedInvoices = selectedRepair
+    ? invoices.filter(
+        (invoice) => invoice.repairId === selectedRepair.id || selectedRepair.invoiceIds?.includes(invoice.id),
+      )
+    : [];
+  const relatedPayments = selectedRepair
+    ? payments.filter(
+        (payment) => payment.repairId === selectedRepair.id || selectedRepair.paymentIds?.includes(payment.id),
+      )
+    : [];
+  const acceptedQuoteInvoice = acceptedQuote
+    ? (invoices.find((invoice) => invoice.id === acceptedQuote.invoiceId) ??
+      invoices.find((invoice) => invoice.quoteId === acceptedQuote.id))
+    : undefined;
+  const primaryInvoice = acceptedQuoteInvoice ?? relatedInvoices[0];
+
+  const repairPaidAmount = relatedPayments
+    .filter((payment) => payment.status === "Payé")
+    .reduce((sum, payment) => sum + payment.amount, 0);
+
+  const totalClientAmount =
+    typeof selectedRepair?.total === "number" && Number.isFinite(selectedRepair.total)
+      ? selectedRepair.total
+      : typeof selectedRepair?.amount === "number" && Number.isFinite(selectedRepair.amount)
+        ? selectedRepair.amount
+        : 0;
+  const resteAPayer =
+    typeof totalClientAmount === "number" && Number.isFinite(totalClientAmount)
+      ? Math.max(0, totalClientAmount - repairPaidAmount)
+      : 0;
+
+  const paymentLabel = repairPaidAmount >= totalClientAmount && totalClientAmount > 0 ? "Payé" : "Non payé";
+
+  const filteredRepairs = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return repairs.filter((repair) => {
+      if (statusFilter !== "all" && repair.status !== statusFilter) return false;
+
+      const paid = payments
+        .filter((payment) => payment.repairId === repair.id && payment.status === "Payé")
+        .reduce((sum, payment) => sum + payment.amount, 0);
+      const total = typeof repair.total === "number" ? repair.total : (repair.amount ?? 0);
+      if (paymentFilter === "paid" && !(paid >= total && total > 0)) return false;
+      if (paymentFilter === "unpaid" && !(total > 0 && paid < total)) return false;
+
+      if (!q) return true;
+      const cust = customers.find((c) => c.id === repair.customerId);
+      const displayName = displayCustomerName(cust);
+      const needle = `${repair.number} ${repair.device} ${repair.issue} ${displayName}`.toLowerCase();
+      return needle.includes(q);
+    });
+  }, [repairs, search, statusFilter, paymentFilter, payments, customers]);
+
+  const compatibleStockItems = selectedRepair
+    ? stockItems.filter(
+        (item) =>
+          item.modelIds.includes(selectedRepair.modelId ?? "") ||
+          item.compatibleModels.includes(selectedRepair.deviceModel ?? selectedRepair.model),
+      )
+    : [];
+  const genericStockItems = selectedRepair
+    ? stockItems.filter((item) => !compatibleStockItems.some((compatible) => compatible.id === item.id))
+    : stockItems;
+
+  const snap = selectedRepair?.selectedPriceSnapshot;
+
+  const columns = useMemo(
+    () =>
+      statuses.map((status) => ({
+        title: status,
+        count: filteredRepairs.filter((repair) => repair.status === status).length,
+        cards: filteredRepairs
+          .filter((repair) => repair.status === status)
+          .map((repair) => {
+            const customer = customers.find((entry) => entry.id === repair.customerId);
+            const invs = invoices.filter((i) => i.repairId === repair.id);
+            const pays = payments.filter((p) => p.repairId === repair.id && p.status === "Payé");
+            const paid = pays.reduce((s, p) => s + p.amount, 0);
+            const total = typeof repair.total === "number" ? repair.total : (repair.amount ?? 0);
+            const hasInvoice = invs.length > 0 || Boolean(repair.invoiceIds?.length);
+            return {
+              id: repair.id,
+              shop_id: repair.shopId,
+              number: repair.number,
+              device: repair.device,
+              issue: repair.issue,
+              customer: displayCustomerName(customer),
+              time: formatIsoToDisplay(repair.droppedAt),
+              status: repair.status,
+              totalLabel: formatEuro(total),
+              paidLabel: formatEuro(paid),
+              paymentPaid: total > 0 && paid >= total,
+              showCounterBadge: isCounterCustomer(customer),
+              showInvoiceBadge: total > 0 && !hasInvoice,
+              showReadyBadge: repair.status === "Prêt",
+            } satisfies RepairCard;
+          }),
+      })),
+    [filteredRepairs, customers, invoices, payments],
+  );
+
+  const openCreate = (status: RepairStatus = "Reçu") => {
+    setDraftStatus(status);
+    setModal("create");
+  };
+
+  const ensureIntakeDocument = () => {
+    if (!selectedRepair) return "";
+    const existing = documents.find((document) => document.type === "intake" && document.repairId === selectedRepair.id);
+    if (existing) return existing.id;
+    return addDocument({
+      type: "intake",
+      title: `Bon de prise en charge - ${selectedRepair.number}`,
+      customerId: selectedRepair.customerId,
+      repairId: selectedRepair.id,
+    });
+  };
+
+  const openIntakeDocuments = () => {
+    const documentId = ensureIntakeDocument();
+    if (documentId) setSelected("document", documentId);
+    router.push("/dashboard/documents");
+  };
+
+  useEffect(() => {
+    setDetailMode("repair");
+  }, [selectedRepairId]);
+
+  useEffect(() => {
+    if (searchParams?.get("create") === "1") {
+      setDraftStatus("Reçu");
+      setModal("create");
+      router.replace("/dashboard/reparations");
+    }
+  }, [searchParams, router]);
+
+  const createQuoteAction = () => {
+    if (!selectedRepair) return;
+    const cust = selectedCustomer;
+    if (!cust) {
+      toast.error("Ajoutez un client avant de créer un devis.");
+      return;
+    }
+    if (totalClientAmount <= 0) {
+      toast.error("Ajoutez un tarif avant de créer un devis.");
+      return;
+    }
+    if (acceptedQuote) {
+      toast.info(`Le devis accepté ${acceptedQuote.number} est déjà lié à cette réparation.`);
+      setSelected("quote", acceptedQuote.id);
+      return;
+    }
+    if (relatedQuotes.length > 0) {
+      const existing = relatedQuotes[0];
+      const ok = window.confirm(
+        `Un devis (${existing.number} — ${existing.status}) existe déjà pour cette réparation.\n\nVoulez-vous créer un nouveau devis ?`,
+      );
+      if (!ok) {
+        setSelected("quote", existing.id);
+        return;
+      }
+    }
+    setSelected("repair", selectedRepair.id);
+    router.push("/dashboard/devis?create=1&origin=repair");
+    toast.success("Préparation du nouveau devis à partir de cette réparation.");
+  };
+
+  const createInvoiceAction = () => {
+    if (!selectedRepair) return;
+
+    const existingByQuote = acceptedQuote ? invoices.find((inv) => inv.quoteId === acceptedQuote.id) : undefined;
+    const existingByRepair = invoices.find((inv) => inv.repairId === selectedRepair.id);
+    const existingInvoice = existingByQuote ?? existingByRepair;
+
+    if (existingInvoice) {
+      setSelected("invoice", existingInvoice.id);
+      router.push("/dashboard/factures");
+      toast.info("Cette facture existe déjà.");
+      return;
+    }
+
+    if (acceptedQuote) {
+      const invoiceId = convertQuoteToInvoice(acceptedQuote.id);
+      if (invoiceId) {
+        setSelected("invoice", invoiceId);
+        router.push("/dashboard/factures");
+        toast.success(`Facture créée depuis le devis ${acceptedQuote.number}`);
+        return;
+      }
+    }
+
+    const built = buildInvoiceLinesFromRepair(selectedRepair);
+    if (!built.ok || !built.lines.length) {
+      toast.error("Ajoutez un tarif avant de créer une facture.");
+      return;
+    }
+
+    const id = addInvoice({
+      customerId: selectedRepair.customerId,
+      repairId: selectedRepair.id,
+      lines: built.lines,
+      status: "Envoyée",
+      sourceType: "repair",
+      sourceNumber: selectedRepair.number,
+    });
+
+    if (id) {
+      setSelected("invoice", id);
+      router.push("/dashboard/factures");
+      toast.success("Facture créée. Le paiement est en attente.");
+    } else {
+      toast.error("Impossible de créer la facture.");
+    }
+  };
+
+  const markPaidAction = (method: PaymentMethod = "Carte") => {
+    if (!selectedRepair) return;
+    if (!primaryInvoice?.id) {
+      const id = createInvoiceFromRepair(selectedRepair.id);
+      if (!id) {
+        toast.error("Ajoutez un tarif avant de créer une facture.");
+        return;
+      }
+      const pid = markInvoicePaid(id, method, paymentNote);
+      if (pid) {
+        toast.success("Paiement enregistré.");
+        setPaymentNote("");
+      } else toast.error("Encaissement impossible pour le moment.");
+      return;
+    }
+    if (primaryInvoice.status === "Payée") {
+      toast.info("Cette réparation est déjà payée.");
+      return;
+    }
+    const pid = markInvoicePaid(primaryInvoice.id, method, paymentNote);
+    if (pid) {
+      toast.success("Paiement enregistré.");
+      setPaymentNote("");
+    } else toast.error("Encaissement impossible pour le moment.");
+  };
+
+  const normalizePartQuantity = (value: number) => {
+    if (!Number.isFinite(value) || value < 1) return 1;
+    return Math.min(Math.floor(value), maxPartQuantity);
+  };
+
+  const addSelectedPart = () => {
+    if (!(selectedRepair && selectedStockItem)) {
+      toast.error("Sélectionnez un produit du stock.");
+      return;
+    }
+    if (primaryInvoice || repairPaidAmount > 0) {
+      toast.error("Cette réparation est déjà facturée. Créez une vente séparée.");
+      return;
+    }
+    const quantity = normalizePartQuantity(partQuantity);
+    if (quantity > selectedStockItem.stock) {
+      setPartQuantity(maxPartQuantity);
+      toast.error(`Stock insuffisant pour ${selectedStockItem.name} (${selectedStockItem.stock} disponible).`);
+      return;
+    }
+    const ok = addSaleLinesToRepair(selectedRepair.id, [
+      {
+        stockItemId: selectedStockItem.id,
+        name: selectedStockItem.name,
+        sku: selectedStockItem.sku,
+        quantity,
+        unitPrice: selectedStockItem.salePrice,
+        total: selectedStockItem.salePrice * quantity,
+        purchasePriceInternal: selectedStockItem.purchasePrice,
+        supplierInternal: selectedStockItem.supplier,
+      },
+    ]);
+    if (ok) {
+      toast.success("Produit ajouté au dossier.");
+      setSelectedStockItemId("");
+      setPartQuantity(1);
+    } else {
+      toast.error(`Stock insuffisant pour ${selectedStockItem.name}.`);
+    }
+  };
+
+  const send = async (channel: "SMS" | "Email") => {
+    if (!(selectedRepair && selectedCustomer)) {
+      toast.error("Aucun client lié à cette réparation.");
+      return;
+    }
+
+    if (channel === "Email") {
+      sendMessage({
+        customerId: selectedCustomer.id,
+        repairId: selectedRepair.id,
+        channel,
+        subject: "Votre réparation est prête",
+        body: `Bonjour ${displayCustomerName(selectedCustomer)}, votre ${selectedRepair.device} est prêt.`,
+      });
+      toast.success("Email ajouté à l’historique.");
+      return;
+    }
+
+    const message = `Bonjour ${displayCustomerName(selectedCustomer)}, votre ${selectedRepair.device} est prêt. — Behar Tech`;
+
+    if (!/^(\+?\d[\d\s.-]{7,})$/.test(selectedCustomer.phone)) {
+      toast.error("Numéro de téléphone invalide ou manquant.");
+      return;
+    }
+
+    if (!window.confirm(`Envoyer ce SMS au client (${selectedCustomer.phone}) ?\n\n"${message}"`)) {
+      return;
+    }
+
+    setIsSendingSms(true);
+    try {
+      await sendRealSms(selectedCustomer.phone, message);
+      toast.success("SMS envoyé.");
+      sendMessage({
+        body: message,
+        channel: "SMS",
+        customerId: selectedCustomer.id,
+        repairId: selectedRepair.id,
+        subject: "Réparation prête",
+      });
+
+      updateRepair(selectedRepair.id, {
+        history: [...selectedRepair.history, `SMS envoyé à ${selectedCustomer.phone}`],
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erreur lors de l’envoi.");
+    } finally {
+      setIsSendingSms(false);
+    }
+  };
+
+  const primaryAction =
+    selectedRepair &&
+    (() => {
+      const st = selectedRepair.status;
+      if (["Restitué", "Annulé"].includes(st)) {
+        return null;
+      }
+      if (!["Prêt", "Restitué", "Annulé"].includes(st)) {
+        const next = (
+          {
+            Reçu: "Diagnostic" as RepairStatus,
+            Diagnostic: "Préparation / Réparation" as RepairStatus,
+            "Préparation / Réparation": "Test final" as RepairStatus,
+            "Test final": "Prêt" as RepairStatus,
+          } as Partial<Record<RepairStatus, RepairStatus>>
+        )[st];
+        if (!next) return null;
+        return {
+          label: nextStatusLabel(st) ?? "Avancer",
+          onClick: () => changeRepairStatus(selectedRepair.id, next),
+        };
+      }
+
+      if (totalClientAmount <= 0) {
+        return {
+          label: "Ajouter un tarif",
+          onClick: () => setModal("edit"),
+        };
+      }
+
+      if (!primaryInvoice) {
+        return {
+          label: "Créer facture",
+          onClick: createInvoiceAction,
+        };
+      }
+
+      if (primaryInvoice.status !== "Payée" && resteAPayer > 0) {
+        return {
+          label: `Marquer payée (${formatEuro(resteAPayer)})`,
+          onClick: () => markPaidAction(repairPayMethod),
+        };
+      }
+
+      const payRec = payments.find((p) => p.invoiceId === primaryInvoice.id && p.status === "Payé");
+      return {
+        label: "Voir reçu",
+        onClick: () => {
+          if (payRec) print("payment", payRec.id);
+          else toast.info("Téléchargez le reçu depuis la facture une fois le paiement enregistré.");
+        },
+      };
+    })();
+
+  const subtleHintCounter =
+    isCounterCustomer(selectedCustomer) &&
+    "Vous pouvez facturer un client comptoir et compléter son identité plus tard.";
+
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-5">
+      <div className="flex shrink-0 flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
+        <div className="flex w-full min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+          <label className="relative block w-full min-w-[200px] max-w-[400px] sm:max-w-[320px]">
+            <Search className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3.5 size-4 text-[#8A8984]" />
+            <Input
+              className="h-11 rounded-[14px] border-[#E7E4DC] bg-white pr-4 pl-10 text-sm placeholder:text-[#8A8984]"
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Rechercher dossier, appareil, client…"
+              type="search"
+              value={search}
+            />
+          </label>
+          <select
+            className={cn(
+              "h-11 cursor-pointer rounded-[14px] border border-[#E7E4DC] bg-white px-3.5 font-medium text-[#1A1916] text-sm shadow-[0_4px_14px_rgba(26,25,22,0.025)] outline-none transition focus:border-[#2A9D8F]",
+            )}
+            onChange={(event) =>
+              setStatusFilter(event.target.value === "all" ? "all" : (event.target.value as RepairStatus))
+            }
+            value={statusFilter}
+          >
+            <option value="all">Statut · Tous</option>
+            {statuses.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+          <select
+            className="h-11 cursor-pointer rounded-[14px] border border-[#E7E4DC] bg-white px-3.5 font-medium text-[#1A1916] text-sm outline-none transition focus:border-[#2A9D8F]"
+            onChange={(event) => setPaymentFilter(event.target.value as typeof paymentFilter)}
+            value={paymentFilter}
+          >
+            <option value="all">Paiement · Tous</option>
+            <option value="unpaid">Non payé</option>
+            <option value="paid">Payé</option>
+          </select>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <SecondaryButton className="h-11 gap-2 px-4" onClick={() => setImportOpen(true)}>
+            <FileText className="size-4" />
+            Importer d'un devis
+          </SecondaryButton>
+          <PrimaryButton className="h-11 shrink-0 gap-2 px-6" onClick={() => openCreate()}>
+            <Plus className="size-4" />
+            Nouvelle réparation
+          </PrimaryButton>
+        </div>
+      </div>
+
+      <section
+        className={
+          detailMode === "intake" && selectedRepair
+            ? "grid min-h-0 flex-1 gap-4 grid-cols-1"
+            : "grid min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] 2xl:grid-cols-[minmax(0,1fr)_400px]"
+        }
+      >
+        {!(detailMode === "intake" && selectedRepair) && (
+          <KanbanBoard
+            columns={columns}
+            onAdd={(status) => openCreate(status as RepairStatus)}
+            onSelect={(id) => setSelected("repair", id)}
+            selectedId={selectedRepair?.id ?? ""}
+            onMoveCard={(cardId, _from, toStatus) => {
+              if (!statuses.includes(toStatus as RepairStatus)) return;
+              changeRepairStatus(cardId, toStatus as RepairStatus);
+              toast.success(`Statut : ${toStatus}`);
+            }}
+          />
+        )}
+
+        {importOpen && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <Panel className="w-full max-w-md p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-bold text-lg text-[#1A1916]">Choisir un devis</h3>
+                <button onClick={() => setImportOpen(false)}><X className="size-5" /></button>
+              </div>
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                {quotes.filter(q => q.status === "Accepté" || q.status === "Envoyé").map(q => {
+                  const c = customers.find(cust => cust.id === q.customerId);
+                  return (
+                    <button
+                      key={q.id}
+                      onClick={() => {
+                        const total = q.lines.reduce((acc, l) => acc + l.quantity * l.unitPrice, 0);
+                        const firstLine = q.lines[0]?.description || "";
+                        const [issue, device] = firstLine.includes(" — ") 
+                          ? firstLine.split(" — ") 
+                          : [firstLine, ""];
+
+                        setPrefillFromQuote({
+                          customerId: q.customerId,
+                          device: device.trim() || "Appareil",
+                          model: device.trim() || "",
+                          issue: issue.trim() || "Réparation",
+                          amount: total,
+                          notes: q.notes || "",
+                          quoteId: q.id
+                        });
+                        setModal("create");
+                        setImportOpen(false);
+                      }}
+                      className="w-full flex items-center justify-between p-3 rounded-xl border border-[#E7E4DC] hover:border-[#2A9D8F] hover:bg-[#F1FAF8] transition-all text-left"
+                    >
+                      <div>
+                        <p className="font-bold text-sm text-[#1A1916]">{q.number} — {c?.name}</p>
+                        <p className="text-xs text-[#6B6B6B]">{q.lines[0]?.description || "Sans description"}</p>
+                      </div>
+                      <span className="text-xs font-bold text-[#2A9D8F]">{formatEuro(q.lines.reduce((acc, l) => acc + l.quantity * l.unitPrice, 0))}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </Panel>
+          </div>
+        )}
+
+        <Panel className="flex min-h-0 flex-col overflow-hidden rounded-[20px] border-[#E5E3DC] bg-white/92 p-[18px] shadow-[0_12px_40px_rgba(26,25,22,0.045)] backdrop-blur-sm xl:max-h-[calc(100svh-168px)]">
+          {selectedRepair ? (
+            <div className="flex min-h-0 flex-1 flex-col">
+              <div className="mb-4 shrink-0 border-[#EDEAE3] border-b pb-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-[#1A1916] text-[11px] uppercase tracking-[0.08em]">Réparation</p>
+                    <h2 className="mt-1 truncate font-semibold text-[#1A1916] text-[22px] leading-tight tracking-tight">
+                      {selectedRepair.number}
+                    </h2>
+                    <div className="mt-3">
+                      <StatusBadge status={selectedRepair.status} />
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E7E4DC] bg-white px-3.5 font-medium text-[#1A1916] text-sm hover:bg-[#FAFAF8]"
+                          type="button"
+                        >
+                          Actions
+                          <MoreHorizontal className="size-4 text-[#6B6B6B]" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-[220px]" sideOffset={6}>
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onClick={() => setModal("edit")}
+                          onSelect={(e) => e.preventDefault()}
+                        >
+                          <Edit3 className="mr-2 size-4" /> Modifier la réparation
+                        </DropdownMenuItem>
+                        {isCounterCustomer(selectedCustomer) ? (
+                          <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={() => setModal("edit")}
+                            onSelect={(e) => e.preventDefault()}
+                          >
+                            <WalletCards className="mr-2 size-4" /> Compléter le client
+                          </DropdownMenuItem>
+                        ) : null}
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onClick={() => createQuoteAction()}
+                          onSelect={(e) => e.preventDefault()}
+                        >
+                          <FileText className="mr-2 size-4" /> Créer un devis
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onClick={() => setDetailMode("intake")}
+                          onSelect={(e) => e.preventDefault()}
+                        >
+                          <ReceiptText className="mr-2 size-4" /> Anti-litige
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          disabled={!(selectedRepair && primaryInvoice)}
+                          onClick={() => {
+                            const inv = primaryInvoice ?? invoices.find((i) => i.repairId === selectedRepair!.id);
+                            if (inv) {
+                              router.push("/dashboard/factures");
+                              setSelected("invoice", inv.id);
+                            }
+                          }}
+                          onSelect={(e) => e.preventDefault()}
+                        >
+                          <FileText className="mr-2 size-4" /> Voir facture
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          disabled={!(selectedRepair && primaryInvoice)}
+                          onClick={() => {
+                            const inv = primaryInvoice ?? invoices.find((i) => i.repairId === selectedRepair!.id);
+                            if (inv) download("invoice", inv.id);
+                          }}
+                          onSelect={(e) => e.preventDefault()}
+                        >
+                          <Receipt className="mr-2 size-4" /> Télécharger PDF
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          disabled={!(selectedRepair && primaryInvoice)}
+                          onClick={() => {
+                            const inv = primaryInvoice ?? invoices.find((i) => i.repairId === selectedRepair!.id);
+                            if (inv) print("invoice", inv.id);
+                          }}
+                          onSelect={(e) => e.preventDefault()}
+                        >
+                          <Printer className="mr-2 size-4" /> Imprimer facture
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          disabled={selectedRepair.status !== "Prêt"}
+                          onClick={() => send("Email")}
+                          onSelect={(e) => e.preventDefault()}
+                        >
+                          <Mail className="mr-2 size-4" /> Email au client
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          disabled={
+                            selectedRepair.status !== "Prêt" ||
+                            isSendingSms ||
+                            !selectedCustomer?.phone ||
+                            selectedCustomer.phone === "Non renseigné" ||
+                            !/^(\+?\d[\d\s.-]{7,})$/.test(selectedCustomer.phone ?? "")
+                          }
+                          onClick={() => send("SMS")}
+                          onSelect={(e) => e.preventDefault()}
+                        >
+                          <Send className="mr-2 size-4" /> SMS prêt
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="cursor-pointer text-[#B42318]"
+                          onClick={() => {
+                            if (window.confirm("Supprimer cette réparation ?")) {
+                              deleteRepair(selectedRepair.id);
+                              toast.success("Réparation supprimée.");
+                            }
+                          }}
+                          onSelect={(e) => e.preventDefault()}
+                        >
+                          <Trash2 className="mr-2 size-4" /> Supprimer
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <button
+                      aria-label="Fermer le panneau"
+                      className="grid size-10 place-items-center rounded-[12px] text-[#6B6B6B] hover:bg-[#F6F7F4]"
+                      onClick={() => setSelected("repair", "")}
+                      type="button"
+                    >
+                      <X className="size-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {detailMode === "intake" ? (
+                <RepairIntakeScreen
+                  customer={selectedCustomer}
+                  onBack={() => setDetailMode("repair")}
+                  onDownload={() => {
+                    ensureIntakeDocument();
+                    download("intake", selectedRepair.id);
+                  }}
+                  onOpenDocuments={openIntakeDocuments}
+                  onSave={(intakeCondition) => {
+                    ensureIntakeDocument();
+                    updateRepair(selectedRepair.id, { intakeCondition });
+                  }}
+                  repair={selectedRepair}
+                />
+              ) : (
+              <div className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1 pb-4">
+                <div className="rounded-[16px] border border-[#E7E4DC] bg-[#FAFAF8]/80 px-5 py-4">
+                  {primaryAction ? (
+                    <>
+                      {selectedRepair.status === "Prêt" && primaryInvoice?.status !== "Payée" && resteAPayer > 0 && (
+                        <div className="mt-4 space-y-2 rounded-[12px] border border-[#E7E4DC] bg-white p-3">
+                          <p className="text-[#6B6B6B] text-xs">Méthode d’encaissement simulée</p>
+                          <select
+                            className="h-10 w-full rounded-[10px] border border-[#E7E4DC] bg-white px-2 text-sm outline-none focus:border-[#2A9D8F]"
+                            onChange={(event) => setRepairPayMethod(event.target.value as PaymentMethod)}
+                            value={repairPayMethod}
+                          >
+                            {paymentMethods.map((m) => (
+                              <option key={m} value={m}>
+                                {m === "Carte" ? "Carte bancaire" : m}
+                              </option>
+                            ))}
+                          </select>
+                          <textarea
+                            className="min-h-[48px] w-full rounded-[10px] border border-[#E7E4DC] bg-white px-3 py-2 text-xs outline-none placeholder:text-[#8A8984] focus:border-[#2A9D8F]"
+                            onChange={(e) => setPaymentNote(e.target.value)}
+                            placeholder="Note facultative…"
+                            value={paymentNote}
+                          />
+                        </div>
+                      )}
+                      <PrimaryButton className="mt-4 h-11 w-full" onClick={primaryAction.onClick}>
+                        {primaryAction.label.startsWith("Marquer payée") ? (
+                          <CreditCard className="mr-2 size-4" />
+                        ) : primaryAction.label === "Voir reçu" ? (
+                          <Receipt className="mr-2 size-4" />
+                        ) : primaryAction.label === "Créer facture" ? (
+                          <FileText className="mr-2 size-4" />
+                        ) : primaryAction.label === "Ajouter un tarif" ? (
+                          <Edit3 className="mr-2 size-4" />
+                        ) : (
+                          <Wrench className="mr-2 size-4" />
+                        )}
+                        {primaryAction.label}
+                      </PrimaryButton>
+                      {subtleHintCounter ? (
+                        <p className="mt-3 text-[#6B6B6B] text-[11px] leading-relaxed">{subtleHintCounter}</p>
+                      ) : null}
+                    </>
+                  ) : (
+                    <p className="mt-3 text-[#6B6B6B] text-sm">Aucune action disponible pour ce statut.</p>
+                  )}
+                </div>
+
+                <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-sm">
+                  <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Client</h3>
+                  <Link
+                    href={`/dashboard/clients?id=${selectedCustomer?.id}`}
+                    className="mt-3 block font-semibold text-[#1A1916] text-lg hover:text-[#2A9D8F] transition-colors"
+                  >
+                    {displayCustomerName(selectedCustomer)}
+                  </Link>
+                  {isCounterCustomer(selectedCustomer) ? (
+                    <button
+                      className="mt-2 cursor-pointer rounded-lg border border-transparent bg-transparent px-0 font-medium text-[#2A9D8F] text-sm hover:underline"
+                      onClick={() => setModal("edit")}
+                      type="button"
+                    >
+                      Compléter le client
+                    </button>
+                  ) : null}
+                  {!isCounterCustomer(selectedCustomer) && selectedCustomer ? (
+                    <div className="mt-2 space-y-1 text-[#6B6B6B] text-sm">
+                      {selectedCustomer.phone && selectedCustomer.phone !== "Non renseigné" ? (
+                        <p>{selectedCustomer.phone}</p>
+                      ) : (
+                        <p>Téléphone non renseigné</p>
+                      )}
+                      {selectedCustomer.email && selectedCustomer.email !== "Non renseigné" ? (
+                        <p>{selectedCustomer.email}</p>
+                      ) : (
+                        <p>E-mail non renseigné</p>
+                      )}
+                    </div>
+                  ) : null}
+                </section>
+
+                <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4">
+                  <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Appareil</h3>
+                  <dl className="mt-4 space-y-2 text-sm">
+                    <Detail label="Type" value={selectedRepair.deviceType ?? "—"} />
+                    <Detail label="Marque" value={selectedRepair.brandName ?? "—"} />
+                    <Detail label="Modèle" value={selectedRepair.deviceModel ?? selectedRepair.model} />
+                    <Detail label="IMEI / série" value={selectedRepair.imei?.trim() || "—"} />
+                  </dl>
+                </section>
+
+                <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4">
+                  <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Intervention</h3>
+                  <p className="mt-4 font-semibold text-[#1A1916] text-base">{selectedRepair.issue}</p>
+                  {selectedRepair.notes?.trim() ? (
+                    <p className="mt-2 rounded-[12px] bg-[#FAFAF8] p-3 text-[#6B6B6B] text-[13px] leading-relaxed">
+                      {selectedRepair.notes}
+                    </p>
+                  ) : (
+                    <p className="mt-2 text-[#6B6B6B] text-sm">Aucune note interne.</p>
+                  )}
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <span className="text-[#6B6B6B] text-xs">Statut atelier</span>
+                    <StatusBadge className="h-7 px-2.5 text-[11px]" status={selectedRepair.status} />
+                  </div>
+                </section>
+
+                <RepairIntakeSummaryCard
+                  customer={selectedCustomer}
+                  onDownload={() => {
+                    ensureIntakeDocument();
+                    download("intake", selectedRepair.id);
+                  }}
+                  onOpen={() => setDetailMode("intake")}
+                  onOpenDocuments={openIntakeDocuments}
+                  repair={selectedRepair}
+                />
+
+                <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4">
+                  <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Tarification</h3>
+                  <div className="mt-4 grid gap-2 text-[13px]">
+                    <Line
+                      label="Prix pièce / prestation"
+                      value={snap?.prixVentePiece ? formatEuro(snap.prixVentePiece) : "—"}
+                    />
+                    <Line label="Main-d’œuvre" value={formatEuro(selectedRepair.laborPrice ?? 0)} />
+                  </div>
+                  {snap && (snap.prixAchat || snap.marge) ? (
+                    <p className="mt-4 text-[#8A897E] text-[11px]">
+                      Prix achat interne {snap.prixAchat != null ? formatEuro(snap.prixAchat) : "—"}
+                      {" · "}Marge {snap.marge != null ? formatEuro(snap.marge) : "—"}
+                    </p>
+                  ) : null}
+                  <div className="mt-5 rounded-[14px] bg-[#E7F5F1]/65 px-4 py-5">
+                    <p className="text-[#1A1916] text-xs uppercase tracking-[0.04em]">Total client</p>
+                    <p className="mt-2 font-semibold text-[#1A1916] text-[28px] leading-none tracking-tight tabular-nums">
+                      {formatEuro(totalClientAmount)}
+                      {workshopInfo.vatApplicable && <span className="ml-2 text-xs font-medium text-[#6B6B6B]">TTC</span>}
+                    </p>
+                    <div className="mt-5 grid gap-2 border-black/[0.06] border-t pt-5 text-[13px]">
+                      <div className="flex justify-between gap-4">
+                        <span className="text-[#6B6B6B]">Payé</span>
+                        <span className="font-medium tabular-nums text-[#1A1916]">{formatEuro(repairPaidAmount)}</span>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <span className="font-medium text-[#1A1916]">Reste à payer</span>
+                        <span className="font-semibold tabular-nums text-[#2A9D8F]">{formatEuro(resteAPayer)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                    <span className="rounded-full bg-[#F1F1EF] px-2.5 py-1 font-semibold text-[#6B6B6B]">
+                      {paymentLabel}
+                    </span>
+                  </div>
+                </section>
+
+                <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4">
+                  <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Facturation</h3>
+                  <dl className="mt-4 space-y-2 text-[13px]">
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-[#6B6B6B]">Facture</dt>
+                      <dd className="font-medium text-[#1A1916]">
+                        {primaryInvoice ? (
+                          <Link
+                            href="/dashboard/factures"
+                            onClick={() => setSelected("invoice", primaryInvoice.id)}
+                            className="text-[#2A9D8F] hover:underline"
+                          >
+                            Facture {primaryInvoice.number}
+                          </Link>
+                        ) : (
+                          "À créer"
+                        )}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-[#6B6B6B]">Devis</dt>
+                      <dd className="font-medium text-[#1A1916]">
+                        {acceptedQuote ? (
+                          <Link
+                            href="/dashboard/devis"
+                            onClick={() => setSelected("quote", acceptedQuote.id)}
+                            className="text-[#2A9D8F] hover:underline"
+                          >
+                            Devis {acceptedQuote.number}
+                          </Link>
+                        ) : relatedQuotes.length > 0 ? (
+                          <Link
+                            href="/dashboard/devis"
+                            onClick={() => setSelected("quote", relatedQuotes[0].id)}
+                            className="text-[#2A9D8F] hover:underline"
+                          >
+                            {relatedQuotes.length} devis lié(s)
+                          </Link>
+                        ) : (
+                          "Aucun"
+                        )}
+                      </dd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-[#6B6B6B]">Paiement</dt>
+                      <dd className="font-medium text-[#1A1916]">{paymentLabel}</dd>
+                    </div>
+                  </dl>
+                </section>
+
+                <section className="rounded-[16px] border border-[#E7E4DC] px-[14px] py-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="font-semibold text-[#1A1916] text-sm">Produits et accessoires</h3>
+                    {(selectedRepair.repairSaleLines?.length ?? 0) > 0 ? (
+                      <span className="rounded-full bg-[#E8F7F3] px-3 py-1 font-semibold text-[#147065] text-xs">
+                        {selectedRepair.repairSaleLines?.length ?? 0}
+                      </span>
+                    ) : null}
+                  </div>
+                  {primaryInvoice || repairPaidAmount > 0 ? (
+                    <p className="mt-3 rounded-[12px] border border-[#F2C8C3] bg-[#FFF7F6] p-3 text-[#7A271A] text-xs">
+                      Cette réparation est déjà facturée. Créez une vente séparée.
+                    </p>
+                  ) : (
+                    <div className="mt-3 grid grid-cols-[minmax(0,1fr)_80px_auto] gap-2">
+                      <select
+                        aria-label="Produit du stock"
+                        className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm"
+                        onChange={(event) => {
+                          setSelectedStockItemId(event.target.value);
+                          setPartQuantity(1);
+                        }}
+                        value={selectedStockItemId}
+                      >
+                        <option value="">Ajouter produit / accessoire</option>
+                        {compatibleStockItems.length > 0 ? (
+                          <optgroup label="Compatibles">
+                            {compatibleStockItems.map((item) => (
+                              <option disabled={item.stock <= 0} key={item.id} value={item.id}>
+                                {item.name} · {formatEuro(item.salePrice)} · ×{item.stock}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ) : null}
+                        <optgroup label="Stock général">
+                          {genericStockItems.map((item) => (
+                            <option disabled={item.stock <= 0} key={item.id} value={item.id}>
+                              {item.name} · {formatEuro(item.salePrice)} · ×{item.stock}
+                            </option>
+                          ))}
+                        </optgroup>
+                      </select>
+                      <input
+                        aria-label="Quantité"
+                        className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-2 text-center text-sm"
+                        max={maxPartQuantity}
+                        min={1}
+                        onBlur={() => setPartQuantity(normalizePartQuantity(partQuantity))}
+                        onChange={(event) => setPartQuantity(normalizePartQuantity(Number(event.target.value)))}
+                        step={1}
+                        type="number"
+                        value={partQuantity}
+                      />
+                      <SecondaryButton
+                        aria-label="Ajouter au dossier"
+                        className="h-10 px-2"
+                        disabled={!(selectedStockItem && selectedStockItem.stock > 0)}
+                        onClick={addSelectedPart}
+                      >
+                        <Plus className="size-4" />
+                      </SecondaryButton>
+                    </div>
+                  )}
+                  <div className="mt-4 space-y-2">
+                    {(selectedRepair.repairSaleLines?.length ?? 0) === 0 ? (
+                      <p className="text-[#6B6B6B] text-xs">Aucun produit ajouté à cette réparation.</p>
+                    ) : (
+                      (selectedRepair.repairSaleLines ?? []).map((line) => (
+                        <div
+                          className="flex items-center justify-between gap-3 rounded-[12px] border border-[#EFECE5] px-3 py-2 text-sm"
+                          key={line.id}
+                        >
+                          <div className="min-w-0">
+                            <p className="font-medium text-[#1A1916]">{line.name}</p>
+                            <p className="text-[#6B6B6B] text-xs">
+                              {line.sku ? `SKU ${line.sku} · ` : ""}Qté {line.quantity} · {formatEuro(line.unitPrice)} / u · ligne {formatEuro(line.total)}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="rounded-full bg-[#FAFAF8] px-2 py-1 text-[10px] font-semibold text-[#6B6B6B]">
+                              {line.status === "draft"
+                                ? "À remettre"
+                                : line.status === "confirmed"
+                                  ? "Remis"
+                                  : line.status === "invoiced"
+                                    ? "Facturé"
+                                    : "Payé"}
+                            </span>
+                            {!line.stockDecremented && line.status === "draft" ? (
+                              <button
+                                className="h-8 rounded-lg bg-[#E8F7F3] px-2 text-[#167B70] text-[11px] font-bold hover:bg-[#D7F0E9] transition"
+                                onClick={() => {
+                                  if (window.confirm(`Marquer ${line.name} comme remis ? Le stock sera décrémenté.`)) {
+                                    const ok = markRepairSaleLineDelivered(selectedRepair.id, line.id);
+                                    toast[ok ? "success" : "error"](ok ? "Accessoire remis et stock décrémenté." : "Stock insuffisant ou ligne déjà traitée.");
+                                  }
+                                }}
+                              >
+                                Marquer remis
+                              </button>
+                            ) : null}
+                            {line.status === "draft" ? (
+                            <button
+                              aria-label={`Retirer`}
+                              className="grid size-8 place-items-center rounded-lg text-[#B42318] hover:bg-[#FFF5F5]"
+                              onClick={() => {
+                                updateRepair(selectedRepair.id, {
+                                  repairSaleLines: (selectedRepair.repairSaleLines ?? []).filter((entry) => entry.id !== line.id),
+                                });
+                                toast.success("Produit retiré.");
+                              }}
+                              type="button"
+                            >
+                              <X className="size-4" />
+                            </button>
+                            ) : null}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </section>
+
+                <section>
+                  <h3 className="mb-3 font-semibold text-[#1A1916] text-sm">Historique & Documents</h3>
+                  <Timeline items={fullRepairHistory} />
+                </section>
+              </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4 py-14 text-center">
+              <DeviceThumb />
+              <p className="text-[#1A1916] text-sm">Sélectionnez une carte ou créez une réparation.</p>
+              <SecondaryButton className="h-10" onClick={() => openCreate()}>
+                Nouvelle réparation
+              </SecondaryButton>
+            </div>
+          )}
+        </Panel>
+      </section>
+
+      {modal && (
+        <RepairModal
+          key={modal + (prefillFromQuote?.quoteId || selectedRepair?.id || "new")}
+          initial={prefillFromQuote || (modal === "edit" ? selectedRepair : undefined)}
+          initialStatus={draftStatus}
+          onClose={() => {
+            setModal(null);
+            setPrefillFromQuote(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function Detail({ label, value }: Readonly<{ label: string; value: ReactNode }>) {
+  return (
+    <div className="flex justify-between gap-4 py-2">
+      <dt className="text-[#6B6B6B]">{label}</dt>
+      <dd className="truncate text-right font-medium text-[#1A1916]">{value ?? "—"}</dd>
+    </div>
+  );
+}
+
+function Line({ label, value }: Readonly<{ label: string; value: string }>) {
+  return (
+    <div className="flex justify-between gap-6">
+      <span className="text-[#6B6B6B]">{label}</span>
+      <span className="truncate font-semibold text-[#1A1916] tabular-nums">{value}</span>
+    </div>
+  );
+}
