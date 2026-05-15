@@ -10,6 +10,7 @@ import {
   FileStack,
   FileText,
   Home,
+  LogOut,
   Package,
   Receipt,
   Settings,
@@ -43,6 +44,10 @@ export function DashboardSidebar() {
   const workshopName = useBeharStore((s) => s.workshopSettings.name || s.workshopInfo.name);
   const workshopLogo = useBeharStore((s) => s.workshopSettings.logoUrl || s.workshopInfo.logoUrl || "");
   const canViewSettings = useBeharStore((s) => s.hasPermission("canViewSettings"));
+  const currentUser = useBeharStore((s) => s.currentUser);
+  const logout = useBeharStore((s) => s.logout);
+  const userRoleLabel =
+    currentUser.role === "admin" ? "Gérant" : currentUser.role === "technician" ? "Technicien" : "Accueil";
   const workshopInitials = workshopName
     .split(" ")
     .filter(Boolean)
@@ -84,32 +89,50 @@ export function DashboardSidebar() {
             </Link>
           );
         })}
-        
-        <SidebarInstallButton />
       </nav>
 
-      <Link
-        href={canViewSettings ? "/dashboard/parametres" : "/dashboard"}
-        className="flex items-center gap-3 rounded-[14px] border border-[#F1F1EF] bg-white px-3 py-3 text-left transition-colors duration-200 hover:bg-[#FAFAF8]"
-      >
-        {workshopLogo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            alt={`Logo ${workshopName}`}
-            className="size-9 rounded-[10px] border border-[#F1F1EF] bg-white object-cover"
-            src={workshopLogo}
-          />
-        ) : (
-          <span className="grid size-9 place-items-center rounded-[10px] bg-[#1A1916] font-semibold text-white text-[11px] tracking-wide">
-            {workshopInitials || "AT"}
+      <div className="space-y-2">
+        <div className="flex items-center gap-3 rounded-[14px] border border-[#F1F1EF] bg-white px-3 py-2.5">
+          <span className="grid size-9 place-items-center rounded-full bg-[#EAF6F2] font-semibold text-[#2A9D8F] text-[13px]">
+            {currentUser.name.charAt(0).toUpperCase()}
           </span>
-        )}
-        <div className="flex-1 leading-tight">
-          <div className="font-medium text-[#1A1916] text-[13px]">{workshopName}</div>
-          <div className="text-[#B0AEA8] text-[11px]">Atelier principal</div>
+          <div className="flex-1 leading-tight min-w-0">
+            <div className="truncate font-medium text-[#1A1916] text-[13px]">{currentUser.name}</div>
+            <div className="text-[#8A8984] text-[11px]">{userRoleLabel}</div>
+          </div>
+          <button
+            type="button"
+            onClick={() => logout()}
+            className="grid size-8 place-items-center rounded-[10px] text-[#B42318] transition hover:bg-[#FDF2F2]"
+            title="Changer d'utilisateur"
+            aria-label="Déconnexion"
+          >
+            <LogOut className="size-4" />
+          </button>
         </div>
-        <ChevronsUpDown className="size-4 text-[#CDCBC5]" />
-      </Link>
+        <Link
+          href={canViewSettings ? "/dashboard/parametres" : "/dashboard"}
+          className="flex items-center gap-3 rounded-[14px] border border-[#F1F1EF] bg-white px-3 py-3 text-left transition-colors duration-200 hover:bg-[#FAFAF8]"
+        >
+          {workshopLogo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              alt={`Logo ${workshopName}`}
+              className="size-9 rounded-[10px] border border-[#F1F1EF] bg-white object-cover"
+              src={workshopLogo}
+            />
+          ) : (
+            <span className="grid size-9 place-items-center rounded-[10px] bg-[#1A1916] font-semibold text-white text-[11px] tracking-wide">
+              {workshopInitials || "AT"}
+            </span>
+          )}
+          <div className="flex-1 leading-tight">
+            <div className="font-medium text-[#1A1916] text-[13px]">{workshopName}</div>
+            <div className="text-[#B0AEA8] text-[11px]">Atelier principal</div>
+          </div>
+          <ChevronsUpDown className="size-4 text-[#CDCBC5]" />
+        </Link>
+      </div>
     </aside>
   );
 }

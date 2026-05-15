@@ -604,11 +604,16 @@ export type StoreState = {
   users: CurrentUser[];
   auditLogs: AuditLogEntry[];
   notifications: AppNotification[];
+  /** Messages d'accueil affichés sur l'écran de connexion PIN, indexés par rôle. */
+  roleGreetings: Record<UserRole, string[]>;
+  updateRoleGreetings: (role: UserRole, messages: string[]) => void;
+  resetRoleGreetings: (role?: UserRole) => void;
 
   // Local roles / audit
   sessionUserId?: string;
   setCurrentUser: (id: string) => void;
   loginWithPin: (pin: string) => { ok: boolean; reason?: "invalid" | "disabled"; user?: CurrentUser };
+  loginWithUserPin: (userId: string, pin: string) => { ok: boolean; reason?: "invalid" | "disabled"; user?: CurrentUser };
   logout: () => void;
   hasPermission: (permission: PermissionKey) => boolean;
   requirePermission: (permission: PermissionKey, actionName?: string) => boolean;
@@ -923,6 +928,45 @@ const withRolePermissions = (
     permissionOverrides,
     permissions: resolveUserPermissions({ role: user.role, permissionOverrides }),
   };
+};
+
+export const DEFAULT_ROLE_GREETINGS: Record<UserRole, string[]> = {
+  admin: [
+    "Le boss est là. Le café est prêt ?",
+    "On regarde le CA du jour ou on attend l'apéro ?",
+    "Les factures ne se signent pas toutes seules.",
+    "Prêt à valider les marges du jour ?",
+    "Direction commerciale : ON.",
+    "Aujourd'hui on bat le record du mois.",
+    "Un client heureux = une étoile Google. À toi de jouer.",
+    "Café, KPI, décisions. Dans cet ordre.",
+    "Le patron est dans la place 👔",
+    "Stratégie, finance, équipe. Triple combo.",
+  ],
+  technician: [
+    "Fer à souder chaud, c'est parti pour la soudure 🔥",
+    "Sors le tournevis pentalobe, on a du boulot.",
+    "Écran HS, batterie morte ? Tu vas leur redonner vie.",
+    "Prêt pour la microsoudure du jour ?",
+    "Attention aux flex, ils sont fragiles aujourd'hui.",
+    "Diagnostic en cours… café aussi.",
+    "Le chiffon microfibre est à droite. Toujours.",
+    "Aujourd'hui, zéro vis perdue. Promis ?",
+    "Le multimètre t'attend, partenaire.",
+    "Mode ninja réparation : activé 🥷",
+  ],
+  frontdesk: [
+    "Sourire en place, client suivant !",
+    "Le téléphone va sonner dans 3, 2, 1…",
+    "Prêt à expliquer pour la 50ᵉ fois que l'écran cassé n'est pas garanti ?",
+    "Devis, encaissement, sourire. Le triptyque magique.",
+    "Aujourd'hui on dit OUI aux clients, NON au stress.",
+    "Patience niveau Bouddha 🧘 activée.",
+    "Premier client de la journée : champion !",
+    "Café à portée de main, c'est l'essentiel.",
+    "Tu es la première impression de l'atelier. No pressure.",
+    "Tickets à imprimer, RDV à caler, légende à devenir.",
+  ],
 };
 
 const defaultUsers: CurrentUser[] = [
@@ -2358,9 +2402,15 @@ const normalizePersistedState = (state: unknown) => {
       ),
     ]
     : defaultUsers;
+  const persistedSessionId =
+    typeof (persisted as any).sessionUserId === "string" ? (persisted as any).sessionUserId : undefined;
   const persistedCurrentId =
     typeof (persisted as any).currentUser?.id === "string" ? (persisted as any).currentUser.id : defaultCurrentUser.id;
-  const currentUser = users.find((user) => user.id === persistedCurrentId) ?? defaultCurrentUser;
+  // Priorité au sessionUserId si présent et actif ; sinon currentUser persisté ; sinon admin par défaut.
+  const currentUser =
+    (persistedSessionId && users.find((u) => u.id === persistedSessionId && u.active)) ||
+    users.find((user) => user.id === persistedCurrentId) ||
+    defaultCurrentUser;
 
   return {
     workshopInfo: asWorkshopInfo(workshopSettings),
@@ -2416,10 +2466,26 @@ const normalizePersistedState = (state: unknown) => {
     teamMembers: Array.isArray((persisted as any).teamMembers) ? (persisted as any).teamMembers : [],
     currentUser,
     users,
+    sessionUserId:
+      typeof (persisted as any).sessionUserId === "string" &&
+      users.some((u) => u.id === (persisted as any).sessionUserId && u.active)
+        ? (persisted as any).sessionUserId
+        : undefined,
     auditLogs: Array.isArray((persisted as any).auditLogs) ? ((persisted as any).auditLogs as AuditLogEntry[]) : [],
     notifications: Array.isArray((persisted as any).notifications)
       ? ((persisted as any).notifications as AppNotification[])
       : [],
+    roleGreetings: {
+      admin: Array.isArray((persisted as any).roleGreetings?.admin) && (persisted as any).roleGreetings.admin.length > 0
+        ? (persisted as any).roleGreetings.admin
+        : [...DEFAULT_ROLE_GREETINGS.admin],
+      technician: Array.isArray((persisted as any).roleGreetings?.technician) && (persisted as any).roleGreetings.technician.length > 0
+        ? (persisted as any).roleGreetings.technician
+        : [...DEFAULT_ROLE_GREETINGS.technician],
+      frontdesk: Array.isArray((persisted as any).roleGreetings?.frontdesk) && (persisted as any).roleGreetings.frontdesk.length > 0
+        ? (persisted as any).roleGreetings.frontdesk
+        : [...DEFAULT_ROLE_GREETINGS.frontdesk],
+    },
   };
   } catch (error) {
     console.error("[behar-store] Error normalizing state, returning safe default:", error);
@@ -2530,6 +2596,11 @@ function createSeed() {
     users: defaultUsers,
     auditLogs: [] as AuditLogEntry[],
     notifications: [] as AppNotification[],
+    roleGreetings: {
+      admin: [...DEFAULT_ROLE_GREETINGS.admin],
+      technician: [...DEFAULT_ROLE_GREETINGS.technician],
+      frontdesk: [...DEFAULT_ROLE_GREETINGS.frontdesk],
+    },
   };
 }
 
@@ -2641,6 +2712,71 @@ export const useBeharStore = create<StoreState>()(
           /* ignore */
         }
         return { ok: true, user: hydrated };
+      },
+      loginWithUserPin: (userId, pin) => {
+        const trimmed = (pin || "").trim();
+        if (!trimmed) return { ok: false, reason: "invalid" };
+        const user = get().users.find((entry) => entry.id === userId);
+        if (!user) return { ok: false, reason: "invalid" };
+        if (!user.active) return { ok: false, reason: "disabled" };
+        if (user.pin !== trimmed) return { ok: false, reason: "invalid" };
+        const hydrated = withRolePermissions({ ...user, updatedAt: new Date().toISOString() });
+        set((state) => ({
+          currentUser: hydrated,
+          sessionUserId: hydrated.id,
+          users: state.users.map((u) => (u.id === user.id ? { ...u, updatedAt: hydrated.updatedAt } : u)),
+        }));
+        try {
+          get().addAuditLog({
+            action: "auth.login",
+            targetType: "user",
+            targetId: user.id,
+            message: `${user.name} s'est connecté`,
+          });
+        } catch {
+          /* ignore */
+        }
+        return { ok: true, user: hydrated };
+      },
+      updateRoleGreetings: (role, messages) => {
+        if (!get().hasPermission("canManageUsers")) {
+          return;
+        }
+        const cleaned = messages.map((m) => m.trim()).filter(Boolean);
+        if (cleaned.length === 0) {
+          // Pas de liste vide — on remet les défauts
+          set((state) => ({
+            roleGreetings: { ...state.roleGreetings, [role]: [...DEFAULT_ROLE_GREETINGS[role]] },
+          }));
+          return;
+        }
+        set((state) => ({
+          roleGreetings: { ...state.roleGreetings, [role]: cleaned },
+        }));
+        try {
+          get().addAuditLog({
+            action: "settings.greetings.update",
+            targetType: "role",
+            targetId: role,
+            message: `Messages d'accueil ${role} modifiés (${cleaned.length} entrées)`,
+          });
+        } catch { /* ignore */ }
+      },
+      resetRoleGreetings: (role) => {
+        if (!get().hasPermission("canManageUsers")) return;
+        if (role) {
+          set((state) => ({
+            roleGreetings: { ...state.roleGreetings, [role]: [...DEFAULT_ROLE_GREETINGS[role]] },
+          }));
+        } else {
+          set({
+            roleGreetings: {
+              admin: [...DEFAULT_ROLE_GREETINGS.admin],
+              technician: [...DEFAULT_ROLE_GREETINGS.technician],
+              frontdesk: [...DEFAULT_ROLE_GREETINGS.frontdesk],
+            },
+          });
+        }
       },
       logout: () => {
         const actor = get().currentUser;

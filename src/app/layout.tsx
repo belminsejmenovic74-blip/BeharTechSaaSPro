@@ -16,8 +16,8 @@ export const metadata: Metadata = {
   description: APP_CONFIG.meta.description,
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: "/assets/logos/app-icon.jpeg",
-    apple: "/assets/logos/app-icon.jpeg",
+    icon: "/assets/logos/app-icon-512.png",
+    apple: "/assets/logos/app-icon-512.png",
   },
 };
 

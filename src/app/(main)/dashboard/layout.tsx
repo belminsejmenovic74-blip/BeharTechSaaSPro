@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { AutoSyncProvider } from "@/components/behar/auto-sync-provider";
 import { DashboardSidebar } from "@/components/behar/dashboard-sidebar";
 import { InstallationGate } from "@/components/behar/installation-gate";
 import { MobileBottomNav } from "@/components/behar/mobile-bottom-nav";
@@ -12,6 +13,7 @@ export default function Layout({ children }: Readonly<{ children: ReactNode }>) 
     <PrintProvider>
       <InstallationGate>
         <PinLoginGate>
+          <AutoSyncProvider />
           <div className="min-h-svh bg-[#FAFAF8] text-[#1A1916]">
             <DashboardSidebar />
             <div className="flex min-h-svh flex-col md:pl-[230px]">

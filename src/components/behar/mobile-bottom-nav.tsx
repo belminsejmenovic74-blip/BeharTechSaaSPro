@@ -12,6 +12,7 @@ import {
   FileText,
   Folder,
   Home,
+  LogOut,
   MoreHorizontal,
   Package,
   Receipt,
@@ -22,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 
+import { useBeharStore } from "@/lib/behar-store";
 import { cn } from "@/lib/utils";
 
 const mobileItems = [
@@ -45,8 +47,12 @@ const moreItems = [
 export function MobileBottomNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const currentUser = useBeharStore((s) => s.currentUser);
+  const logout = useBeharStore((s) => s.logout);
 
   const moreActive = moreItems.some((m) => pathname.startsWith(m.href));
+  const roleLabel =
+    currentUser.role === "admin" ? "Gérant" : currentUser.role === "technician" ? "Technicien" : "Accueil";
 
   return (
     <>
@@ -122,6 +128,30 @@ export function MobileBottomNav() {
                 <X className="size-4" strokeWidth={2.2} />
               </button>
             </div>
+            {/* Bloc utilisateur connecté + Déconnexion */}
+            <div className="mx-4 mb-4 mt-1 flex items-center justify-between gap-3 rounded-[16px] bg-[#FAFAF8] px-4 py-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#EAF6F2] font-semibold text-[#2A9D8F]">
+                  {currentUser.name.charAt(0).toUpperCase()}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-[#1A1916] text-[14px] leading-tight">{currentUser.name}</p>
+                  <p className="mt-0.5 text-[#8A8984] text-[11.5px]">{roleLabel}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  logout();
+                }}
+                className="inline-flex h-9 items-center gap-1.5 rounded-full bg-white px-3 font-semibold text-[#B42318] text-[12.5px] transition active:scale-95"
+                aria-label="Déconnexion"
+              >
+                <LogOut className="size-3.5" /> Déconnexion
+              </button>
+            </div>
+
             <div className="grid grid-cols-2 gap-3 px-4 pb-6">
               {moreItems.map((item) => {
                 const Icon = item.icon;

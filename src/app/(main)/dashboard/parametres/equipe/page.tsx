@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import { Check, ChevronRight, KeyRound, Pencil, Plus, ShieldCheck, Trash2, UserCog, X } from "lucide-react";
+import { Check, ChevronRight, KeyRound, MessageCircle, Pencil, Plus, RotateCcw, ShieldCheck, Trash2, UserCog, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageShell } from "@/components/behar/page-shell";
@@ -16,7 +16,7 @@ import {
 } from "@/lib/behar-store";
 import { cn } from "@/lib/utils";
 
-type Mode = "list" | "create" | "edit" | "permissions" | "audit";
+type Mode = "list" | "create" | "edit" | "permissions" | "audit" | "greetings";
 
 // Groupes UI des permissions
 const permissionGroups: Array<{ title: string; keys: PermissionKey[] }> = [
@@ -207,6 +207,9 @@ export default function TeamPage() {
       subtitle="Gérez les membres, leurs rôles et leurs autorisations."
       actions={
         <>
+          <SecondaryButton className="h-10" onClick={() => setMode("greetings")}>
+            <MessageCircle className="size-4" /> Messages
+          </SecondaryButton>
           {canViewAudit && (
             <SecondaryButton className="h-10" onClick={() => setMode("audit")}>
               Historique
@@ -304,6 +307,10 @@ export default function TeamPage() {
 
       {mode === "audit" && (
         <AuditLogView logs={auditLogs} onClose={() => setMode("list")} />
+      )}
+
+      {mode === "greetings" && (
+        <GreetingsEditor onClose={() => setMode("list")} />
       )}
     </PageShell>
   );
@@ -663,4 +670,121 @@ function AuditLogView({
       </div>
     </div>
   );
+}
+
+function GreetingsEditor({ onClose }: Readonly<{ onClose: () => void }>) {
+  const roleGreetings = useBeharStore((s) => s.roleGreetings);
+  const updateRoleGreetings = useBeharStore((s) => s.updateRoleGreetings);
+  const resetRoleGreetings = useBeharStore((s) => s.resetRoleGreetings);
+  const [activeRole, setActiveRole] = useState<UserRole>("admin");
+  // Texte brut multilignes — chaque ligne = un message
+  const [draft, setDraft] = useState<Record<UserRole, string>>({
+    admin: roleGreetings.admin.join("\n"),
+    technician: roleGreetings.technician.join("\n"),
+    frontdesk: roleGreetings.frontdesk.join("\n"),
+  });
+
+  const handleSave = () => {
+    const messages = draft[activeRole].split("\n").map((m) => m.trim()).filter(Boolean);
+    updateRoleGreetings(activeRole, messages);
+    toast.success(`Messages ${roleName(activeRole)} sauvegardés (${messages.length})`);
+  };
+
+  const handleReset = () => {
+    if (!window.confirm(`Restaurer les messages d'origine pour le rôle ${roleName(activeRole)} ?`)) return;
+    resetRoleGreetings(activeRole);
+    // Recharger le brouillon depuis le store après reset
+    setTimeout(() => {
+      const fresh = useBeharStore.getState().roleGreetings[activeRole];
+      setDraft((d) => ({ ...d, [activeRole]: fresh.join("\n") }));
+    }, 0);
+    toast.success("Messages remis à l'origine");
+  };
+
+  const tabs: { role: UserRole; label: string }[] = [
+    { role: "admin", label: "Gérant" },
+    { role: "technician", label: "Technicien" },
+    { role: "frontdesk", label: "Accueil" },
+  ];
+
+  const count = draft[activeRole].split("\n").map((m) => m.trim()).filter(Boolean).length;
+
+  return (
+    <div className="mx-auto max-w-[720px]">
+      <div className="rounded-[20px] border border-[#E7E4DC] bg-white shadow-[0_2px_8px_rgba(26,25,22,0.04)]">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3 border-b border-[#F1F1EF] p-5">
+          <div>
+            <div className="flex items-center gap-2">
+              <MessageCircle className="size-5 text-[#2A9D8F]" />
+              <h2 className="font-semibold text-[#1A1916] text-[19px] tracking-tight">
+                Messages d'accueil
+              </h2>
+            </div>
+            <p className="mt-1 text-[#6B6B6B] text-[13px]">
+              Personnalisez les messages affichés sur l'écran de connexion, par rôle. Un message par ligne.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#6B6B6B] transition hover:bg-[#E7E4DC]"
+            aria-label="Fermer"
+          >
+            <X className="size-4" strokeWidth={2.2} />
+          </button>
+        </div>
+
+        {/* Role tabs */}
+        <div className="flex gap-1.5 border-b border-[#F1F1EF] px-5 pt-3">
+          {tabs.map((t) => (
+            <button
+              key={t.role}
+              type="button"
+              onClick={() => setActiveRole(t.role)}
+              className={cn(
+                "rounded-t-[10px] px-4 py-2 text-[13px] font-medium transition border-b-2 -mb-px",
+                activeRole === t.role
+                  ? "border-[#2A9D8F] text-[#1A1916]"
+                  : "border-transparent text-[#8A8984] hover:text-[#1A1916]",
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Editor */}
+        <div className="p-5">
+          <p className="mb-2 text-[#6B6B6B] text-[12px]">
+            {count} message{count > 1 ? "s" : ""} — un par ligne. Vide = messages par défaut restaurés.
+          </p>
+          <textarea
+            value={draft[activeRole]}
+            onChange={(e) => setDraft((d) => ({ ...d, [activeRole]: e.target.value }))}
+            rows={14}
+            className="w-full resize-y rounded-[12px] border border-[#E7E4DC] bg-white p-3 text-[14px] text-[#1A1916] leading-relaxed outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
+            placeholder="Un message par ligne…"
+          />
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+            <SecondaryButton className="h-10" onClick={handleReset}>
+              <RotateCcw className="size-4" /> Restaurer les messages d'origine
+            </SecondaryButton>
+            <div className="flex gap-2">
+              <SecondaryButton className="h-10" onClick={onClose}>Annuler</SecondaryButton>
+              <PrimaryButton className="h-10" onClick={handleSave}>
+                <Check className="size-4" /> Enregistrer
+              </PrimaryButton>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function roleName(role: UserRole): string {
+  if (role === "admin") return "Gérant";
+  if (role === "technician") return "Technicien";
+  return "Accueil";
 }

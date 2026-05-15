@@ -21,17 +21,46 @@ export function LicenseActivation() {
     }
 
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 1200));
+    await new Promise((r) => setTimeout(r, 800));
 
-    const result = activateLicense(key.trim());
+    const trimmedKey = key.trim();
+    const result = activateLicense(trimmedKey);
 
-    if (result) {
-      setSuccess(true);
-      toast.success("Licence activée avec succès.");
-    } else {
+    if (!result) {
       setError("Clé invalide. Vérifiez votre licence.");
       toast.error("Clé invalide.");
+      setIsLoading(false);
+      return;
     }
+
+    // ── Netflix-style restore : on cherche un atelier existant pour cette licence ──
+    try {
+      const { downloadSnapshotByLicense } = await import("@/lib/cloud-sync");
+      const remote = await downloadSnapshotByLicense(trimmedKey);
+      if (remote.ok) {
+        const dateStr = new Date(remote.updatedAt).toLocaleString("fr-FR", {
+          dateStyle: "short",
+          timeStyle: "short",
+        });
+        const sizeKo = Math.round(remote.sizeBytes / 1024);
+        const wsName = remote.workshopName ? ` (${remote.workshopName})` : "";
+        if (window.confirm(
+          `Nous avons retrouvé vos données${wsName}.\n\nDernière sauvegarde : ${dateStr} · ${sizeKo} Ko\n\nLes restaurer maintenant ?`,
+        )) {
+          // On écrit le snapshot dans localStorage et on recharge pour que Zustand rehydrate
+          const STORAGE_KEY = "behar-tech-local-demo-v3";
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: remote.state, version: 1 }));
+          toast.success("Données restaurées. Chargement…");
+          window.location.reload();
+          return;
+        }
+      }
+    } catch {
+      // Si Supabase est inaccessible ou erreur réseau, on continue en local — pas bloquant
+    }
+
+    setSuccess(true);
+    toast.success("Licence activée.");
     setIsLoading(false);
   };
 

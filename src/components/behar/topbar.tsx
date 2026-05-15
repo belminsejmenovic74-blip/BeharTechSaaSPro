@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Bell, FileText, LogOut, Menu, Plus, Search, UserRound, X } from "lucide-react";
 
 import { PrimaryButton } from "@/components/behar/primitives";
+import { SyncStatusBadge } from "@/components/behar/sync-status-badge";
 import { type AppNotification, useBeharStore } from "@/lib/behar-store";
 import { cn } from "@/lib/utils";
 
@@ -252,7 +253,8 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
         )}
       </label>
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-3">
+        <SyncStatusBadge />
         <div className="relative hidden lg:block">
           <button
             type="button"

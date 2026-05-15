@@ -1,17 +1,16 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  AlertTriangle, Building2, Check, Download, FileText,
-  HelpCircle, Image, Phone, Shield, Upload, ExternalLink
+  AlertTriangle, Building2, Check, CloudDownload, CloudUpload,
+  Download, FileText, HelpCircle, Image, Loader2, Phone, Shield, Upload, ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageShell } from "@/components/behar/page-shell";
 import { Panel, PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
-import { PwaInstaller } from "@/components/behar/pwa-installer";
 import { LicenseCard } from "@/components/behar/license-card";
 import { useBeharStore, type WorkshopSettings } from "@/lib/behar-store";
 
@@ -574,9 +573,6 @@ export default function SettingsPage() {
 
       {/* Row 3 */}
       <div className="grid gap-5 xl:grid-cols-3 mt-5">
-        {/* Installation */}
-        <PwaInstaller />
-
         {/* Sauvegarde */}
         <Section icon={Download} title="Sauvegarde & export" description="Sauvegardez vos données ou exportez vos paramètres.">
           <div className="grid gap-3">
@@ -589,7 +585,9 @@ export default function SettingsPage() {
               <Upload className="size-4" /> Voir les sauvegardes
             </SecondaryButton>
           </div>
-          <button type="button" className="mt-4 flex items-center gap-1.5 text-[12px] text-[#DC3545]/60 hover:text-[#DC3545] transition-colors"
+          <CloudSyncBlock />
+          <InstallAppLink />
+          <button type="button" className="mt-3 flex items-center gap-1.5 text-[12px] text-[#DC3545]/60 hover:text-[#DC3545] transition-colors"
             disabled={!canBackupData}
             onClick={() => {
               if (!store.requirePermission("canBackupData", "Réinitialiser les données")) {
@@ -638,5 +636,186 @@ export default function SettingsPage() {
         </div>
       </div>
     </PageShell>
+  );
+}
+
+/* ── Sauvegarde (auto-sync silencieux, action manuelle optionnelle) ──── */
+function CloudSyncBlock() {
+  const [busy, setBusy] = useState<"upload" | "restore" | null>(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | undefined>();
+
+  useEffect(() => {
+    void import("@/lib/cloud-sync").then(({ getLocalSyncInfo, subscribeSyncState }) => {
+      setLastSyncedAt(getLocalSyncInfo().lastSyncedAt);
+      return subscribeSyncState((s) => {
+        if (s.lastSyncedAt) setLastSyncedAt(s.lastSyncedAt);
+      });
+    });
+  }, []);
+
+  const onSave = async () => {
+    setBusy("upload");
+    try {
+      const { uploadSnapshot } = await import("@/lib/cloud-sync");
+      const result = await uploadSnapshot();
+      if (result.ok) {
+        setLastSyncedAt(result.updatedAt);
+        toast.success("Données sauvegardées.");
+      } else {
+        toast.error(result.error);
+      }
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const onRestore = async () => {
+    if (!window.confirm("Récupérer la dernière sauvegarde remplace vos données locales actuelles. Continuer ?")) return;
+    setBusy("restore");
+    try {
+      const { restoreFromLicense } = await import("@/lib/cloud-sync");
+      const state = JSON.parse(window.localStorage.getItem("behar-tech-local-demo-v3") || "{}");
+      const licenseKey = state?.state?.licenseKey || state?.licenseKey;
+      if (!licenseKey) {
+        toast.error("Aucune licence active.");
+        return;
+      }
+      const result = await restoreFromLicense(licenseKey);
+      if (!result.ok) {
+        const msg = result.error === "not_found"
+          ? "Aucune sauvegarde disponible."
+          : result.error === "no_license"
+            ? "Licence manquante."
+            : "Erreur réseau.";
+        toast.error(msg);
+      }
+      // En cas de succès, le reload est automatique
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="mt-4 rounded-[14px] border border-[#E7E4DC] bg-[#FAFAF8] p-3">
+      <p className="font-semibold text-[#1A1916] text-[13px]">Sauvegarde</p>
+      <p className="mt-1 text-[#8A8984] text-[11.5px] leading-snug">
+        Vos données sont sauvegardées automatiquement. Vous pouvez aussi forcer une sauvegarde ou récupérer la dernière.
+      </p>
+
+      {lastSyncedAt && (
+        <p className="mt-2 flex items-center gap-1.5 text-[#147065] text-[11.5px] font-medium">
+          <Check className="size-3" />
+          Dernière sauvegarde : {new Date(lastSyncedAt).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}
+        </p>
+      )}
+
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <button type="button" onClick={onSave} disabled={busy !== null}
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-[12.5px] font-medium text-[#1A1916] transition active:scale-95 disabled:opacity-50 hover:bg-[#FAFAF8]">
+          {busy === "upload" ? <Loader2 className="size-3.5 animate-spin" /> : <CloudUpload className="size-3.5" />}
+          Sauvegarder
+        </button>
+        <button type="button" onClick={onRestore} disabled={busy !== null}
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-[12.5px] font-medium text-[#1A1916] transition active:scale-95 disabled:opacity-50 hover:bg-[#FAFAF8]">
+          {busy === "restore" ? <Loader2 className="size-3.5 animate-spin" /> : <CloudDownload className="size-3.5" />}
+          Restaurer
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── Lien discret "Installer l'app" (PWA) ─────────────────────────── */
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+};
+
+function InstallAppLink() {
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [installed, setInstalled] = useState(false);
+  const [isIos, setIsIos] = useState(false);
+  const [iosOpen, setIosOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const standalone =
+      window.matchMedia?.("(display-mode: standalone)").matches ||
+      (window.navigator as unknown as { standalone?: boolean }).standalone === true;
+    setInstalled(Boolean(standalone));
+
+    const ua = navigator.userAgent || "";
+    setIsIos(/iPad|iPhone|iPod/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua));
+
+    const global = (window as unknown as { deferredInstallPrompt?: BeforeInstallPromptEvent }).deferredInstallPrompt;
+    if (global) setInstallPrompt(global);
+
+    const onAvailable = () => {
+      const p = (window as unknown as { deferredInstallPrompt?: BeforeInstallPromptEvent }).deferredInstallPrompt;
+      if (p) setInstallPrompt(p);
+    };
+    const onBeforePrompt = (e: Event) => { e.preventDefault(); setInstallPrompt(e as BeforeInstallPromptEvent); };
+    const onInstalled = () => { setInstalled(true); setInstallPrompt(null); toast.success("Application installée."); };
+
+    window.addEventListener("pwa-prompt-available", onAvailable);
+    window.addEventListener("beforeinstallprompt", onBeforePrompt);
+    window.addEventListener("appinstalled", onInstalled);
+    return () => {
+      window.removeEventListener("pwa-prompt-available", onAvailable);
+      window.removeEventListener("beforeinstallprompt", onBeforePrompt);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
+  }, []);
+
+  if (installed) {
+    return (
+      <p className="mt-3 flex items-center gap-1.5 text-[12px] text-[#8A8984]">
+        <Check className="size-3 text-[#2A9D8F]" /> Application installée
+      </p>
+    );
+  }
+
+  const handleClick = async () => {
+    if (installPrompt) {
+      try {
+        await installPrompt.prompt();
+        const choice = await installPrompt.userChoice;
+        if (choice.outcome === "accepted") setInstalled(true);
+      } catch { /* ignore */ }
+      setInstallPrompt(null);
+      return;
+    }
+    if (isIos) { setIosOpen(true); return; }
+    toast.message("Ouvrez ce site dans Chrome / Edge puis cliquez sur l'icône Installer dans la barre d'adresse.");
+  };
+
+  return (
+    <>
+      <button type="button" onClick={handleClick}
+        className="mt-3 flex items-center gap-1.5 text-[12px] text-[#8A8984] hover:text-[#2A9D8F] transition-colors">
+        <Download className="size-3" /> Installer l'application
+      </button>
+
+      {iosOpen && (
+        <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true">
+          <button type="button" className="absolute inset-0 bg-[#1A1916]/40 backdrop-blur-sm" onClick={() => setIosOpen(false)} aria-label="Fermer" />
+          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-[28px] bg-white pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_-20px_60px_rgba(26,25,22,0.18)]">
+            <div className="flex justify-center pt-2 pb-1">
+              <span className="h-1 w-9 rounded-full bg-[#D1CFCA]" aria-hidden />
+            </div>
+            <div className="px-6 pt-3 pb-4">
+              <p className="font-semibold text-[#1A1916] text-[20px] tracking-tight">Installer sur iPhone / iPad</p>
+              <p className="mt-1 text-[#8A8984] text-[13px]">Safari : touchez l'icône <strong>Partager</strong>, puis <strong>« Sur l'écran d'accueil »</strong>.</p>
+            </div>
+            <div className="px-5 pb-5">
+              <button type="button" onClick={() => setIosOpen(false)}
+                className="w-full h-11 rounded-[12px] bg-[#1A1916] text-white font-semibold text-[14px]">
+                Compris
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

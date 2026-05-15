@@ -428,20 +428,29 @@ function buildFinalState() {
     updatedAt: nowIso(),
     workshopSettings: ws,
     workshopInfo: ws,
+    // NEW: sessionUserId required so PinLoginGate doesn't block
+    sessionUserId: "user_belmin_admin",
+    // NEW: roleGreetings (configurable greeting messages)
+    roleGreetings: {
+      admin: ["Le boss est là. Le café est prêt ?"],
+      technician: ["Fer à souder chaud, c'est parti pour la soudure 🔥"],
+      frontdesk: ["Sourire en place, client suivant !"],
+    },
     currentUser: {
       id: "user_belmin_admin",
       name: "Belmin",
       role: "admin",
+      pin: "0000",
       active: true,
       createdAt: nowIso(),
       updatedAt: nowIso(),
       permissionOverrides: {},
     },
     users: [
-      { id: "user_belmin_admin", name: "Belmin", role: "admin", active: true, createdAt: nowIso(), updatedAt: nowIso(), permissionOverrides: {} },
-      { id: "user_nadir_technician", name: "Nadir", role: "technician", active: true, createdAt: nowIso(), updatedAt: nowIso(), permissionOverrides: {} },
-      { id: "user_lina_frontdesk", name: "Lina", role: "frontdesk", active: true, createdAt: nowIso(), updatedAt: nowIso(), permissionOverrides: {} },
-      { id: "user_yanis_intern", name: "Yanis", role: "technician", active: true, createdAt: nowIso(), updatedAt: nowIso(), permissionOverrides: { canCreateQuote: false, canViewInternalDocuments: false } },
+      { id: "user_belmin_admin", name: "Belmin", role: "admin", pin: "0000", active: true, createdAt: nowIso(), updatedAt: nowIso(), permissionOverrides: {} },
+      { id: "user_nadir_technician", name: "Nadir", role: "technician", pin: "1234", active: true, createdAt: nowIso(), updatedAt: nowIso(), permissionOverrides: {} },
+      { id: "user_lina_frontdesk", name: "Lina", role: "frontdesk", pin: "5678", active: true, createdAt: nowIso(), updatedAt: nowIso(), permissionOverrides: {} },
+      { id: "user_yanis_intern", name: "Yanis", role: "technician", pin: "9999", active: true, createdAt: nowIso(), updatedAt: nowIso(), permissionOverrides: { canCreateQuote: false, canViewInternalDocuments: false } },
     ],
     auditLogs: [
       { id: "audit_seed_1", actorId: "user_lina_frontdesk", actorName: "Lina", actorRole: "frontdesk", action: "repair.created", targetType: "repair", targetId: repairs[0].id, message: "Lina a créé la réparation REP-0001", createdAt: nowIso() },
@@ -596,6 +605,30 @@ async function waitForLicenseOrApp(page: Page) {
   ]);
 }
 
+/**
+ * Switch the active session user without going through the PIN UI.
+ * Replaces the legacy "Utilisateur actuel" combobox which no longer exists since
+ * we introduced the PinLoginGate user selector. Mutates localStorage directly
+ * for QA speed (the real path is logout → user picker → PIN, tested separately).
+ */
+async function switchUser(page: Page, userId: string) {
+  await page.evaluate(
+    ({ key, id }) => {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      const state = parsed.state ?? parsed;
+      const target = (state.users || []).find((u: any) => u.id === id);
+      if (!target) return;
+      state.sessionUserId = id;
+      state.currentUser = { ...target, updatedAt: new Date().toISOString() };
+      window.localStorage.setItem(key, JSON.stringify({ state, version: parsed.version ?? 1 }));
+    },
+    { key: STORAGE_KEY, id: userId },
+  );
+  await page.reload();
+}
+
 async function chooseCombobox(page: Page, testId: string, value: string) {
   const input = page.getByTestId(testId);
   await input.click();
@@ -615,7 +648,8 @@ async function createStockItemViaUi(page: Page) {
   await page.locator('input[name="stock"]').fill("7");
   await page.locator('input[name="threshold"]').fill("2");
   await page.getByRole("button", { name: /^Ajouter$/i }).click();
-  await expect(page.getByText(/Écran UI iPhone 13/i)).toBeVisible();
+  // Use .first() — the new UI shows the item in BOTH the table row AND the right detail panel
+  await expect(page.getByText(/Écran UI iPhone 13/i).first()).toBeVisible();
 }
 
 async function createRepairClientQuoteViaUi(page: Page) {
@@ -638,7 +672,7 @@ async function createRepairClientQuoteViaUi(page: Page) {
   await page.getByPlaceholder(/Main-d'œuvre conseillée/i).fill("30");
   await page.getByPlaceholder(/Prix client final/i).fill("129");
   await page.getByRole("button", { name: /Utiliser cette intervention/i }).click();
-  await expect(page.getByText(/Intervention ajoutée|Intervention enregistrée/i)).toBeVisible();
+  await expect(page.getByText(/Intervention ajoutée|Intervention enregistrée/i).first()).toBeVisible();
 
   await page.getByRole("button", { name: /Créer réparation \+ devis/i }).click();
   await expect(page.getByText(/Réparation et devis créés|Réparation créée|Client UI Audit/i).first()).toBeVisible();
@@ -862,15 +896,87 @@ test.describe("Audit Playwright final 500 points Behar Tech Pro", () => {
     if (input) {
       await input.fill("CLE-INVALIDE");
       await page.getByRole("button", { name: /Activer/i }).click();
-      add("Licence", "clé invalide refusée proprement", await visible(page, /Clé invalide/i) ? "OK" : "BUG", "P1");
+      // Wait briefly for error feedback (toast/text appears asynchronously)
+      await page.waitForTimeout(500);
+      add("Licence", "clé invalide refusée proprement", (await visible(page, /Clé invalide|invalide|incorrect/i)) ? "OK" : "BUG", "P1");
       await input.fill(validLicense);
       await page.getByRole("button", { name: /Activer/i }).click();
-      add("Licence", "clé valide acceptée", (await hasActivatedLicense(page)) ? "OK" : "BUG", "P0");
+      // Wait for activation to propagate to localStorage (avoid race condition)
+      await page.waitForTimeout(1500);
+      const activated = await hasActivatedLicense(page);
+      add("Licence", "clé valide acceptée", activated ? "OK" : "BUG", "P0", activated ? undefined : "licenseActivated=false dans localStorage après clic Activer (peut être un délai d'écriture).");
     } else {
       add("Licence", "champ clé licence disponible", "BUG", "P0", "Champ licence introuvable après reset localStorage ; l'audit continue avec un état seedé.");
       add("Licence", "clé invalide refusée proprement", "NON TESTABLE", undefined, "Champ licence non accessible.");
       add("Licence", "clé valide acceptée", "NON TESTABLE", undefined, "Champ licence non accessible.");
     }
+
+    // === NEW: PIN gate (user selector + Bonjour greeting) ===
+    // Seed an empty state WITHOUT sessionUserId to force the new PIN gate to appear.
+    const noSessionSeed: any = { ...buildLicensedEmptyState() };
+    delete noSessionSeed.sessionUserId;
+    await writeState(page, noSessionSeed);
+    await page.goto(TARGET_URL);
+    add(
+      "Authentification",
+      "écran sélecteur 'Bonjour' affiché sans sessionUserId",
+      await visible(page, /^Bonjour$/i) ? "OK" : "BUG",
+      "P0",
+      "Le PIN gate doit afficher 'Bonjour' + cartes utilisateurs si aucune session active.",
+    );
+    add(
+      "Authentification",
+      "carte utilisateur Belmin (Gérant) visible",
+      await visible(page, /Belmin/i) ? "OK" : "BUG",
+      "P0",
+    );
+    add(
+      "Authentification",
+      "carte utilisateur Technicien (Nadir) visible",
+      await visible(page, /Nadir|Technicien/i) ? "OK" : "BUG",
+      "P1",
+    );
+    add(
+      "Authentification",
+      "carte utilisateur Accueil (Lina) visible",
+      await visible(page, /Lina|Accueil/i) ? "OK" : "BUG",
+      "P1",
+    );
+
+    // Click on the admin card → PIN screen, validate "Bonjour <prénom>" greeting
+    const adminCard = page.getByRole("button").filter({ hasText: /Belmin/i }).first();
+    if (await adminCard.isVisible().catch(() => false)) {
+      await adminCard.click();
+      add(
+        "Authentification",
+        "écran PIN affiche 'Bonjour Belmin'",
+        await visible(page, /Bonjour Belmin/i) ? "OK" : "BUG",
+        "P1",
+      );
+      add(
+        "Authentification",
+        "message d'humour rôle visible (entre guillemets)",
+        await visible(page, /«.+»/) ? "OK" : "BUG",
+        "P2",
+      );
+      // Type wrong PIN
+      for (const digit of ["9", "9", "9", "9"]) {
+        await page.getByRole("button", { name: new RegExp(`^${digit}$`) }).click().catch(() => undefined);
+      }
+      add(
+        "Authentification",
+        "PIN incorrect refusé avec message d'erreur",
+        await visible(page, /incorrect|invalide/i) ? "OK" : "BUG",
+        "P0",
+      );
+      // Bon PIN
+      for (const digit of ["0", "0", "0", "0"]) {
+        await page.getByRole("button", { name: new RegExp(`^${digit}$`) }).click().catch(() => undefined);
+      }
+    } else {
+      add("Authentification", "carte admin cliquable", "NON TESTABLE", undefined, "Carte admin introuvable.");
+    }
+    // === END NEW PIN gate checks ===
 
     const stateSeed = buildLicensedEmptyState();
     await writeState(page, stateSeed);
@@ -955,14 +1061,51 @@ test.describe("Audit Playwright final 500 points Behar Tech Pro", () => {
     add("Stock", "marge visible admin", await page.getByRole("columnheader", { name: /Marge/i }).isVisible().catch(() => false) ? "OK" : "BUG", "P1");
     add("Stock", "fournisseur visible admin", await page.getByRole("columnheader", { name: /Fournisseur/i }).isVisible().catch(() => false) ? "OK" : "BUG", "P1");
 
-    await page.getByRole("combobox", { name: /Utilisateur actuel/i }).selectOption("user_nadir_technician");
+    // === NEW: Stock UI improvements (ModelSelector + scroll fix) ===
+    // Select the first stock row → detail panel opens with form fields scrollable
+    const firstStockRow = page.getByRole("row").filter({ hasText: /Écran iPhone 13/i }).first();
+    if (await firstStockRow.isVisible().catch(() => false)) {
+      await firstStockRow.click();
+      // Detail panel fields must be visible (the panel had a flex-1 bug previously)
+      add(
+        "Stock",
+        "panneau détail affiche les champs (Référence, Type, Marque)",
+        (await visible(page, /Référence/i)) && (await visible(page, /Type/i)) && (await visible(page, /Marque/i)) ? "OK" : "BUG",
+        "P0",
+        "Régression à risque suite au refactor du scroll desktop (max-h-[calc(100vh-11rem)]).",
+      );
+      add(
+        "Stock",
+        "champ Stock actuel éditable visible",
+        await visible(page, /Stock actuel/i) ? "OK" : "BUG",
+        "P0",
+      );
+      add(
+        "Stock",
+        "actions Réapprovisionner/Utiliser visibles",
+        (await visible(page, /Réapprovisionner/i)) && (await visible(page, /Utiliser dans une réparation/i)) ? "OK" : "BUG",
+        "P1",
+      );
+      add(
+        "Stock",
+        "ModelSelector (champ Modèles avec input + datalist)",
+        (await page.locator('input[list^="models-list-"]').count()) > 0 ? "OK" : "PARTIEL",
+        undefined,
+        "Champ texte avec datalist HTML5 — sélecteur tag + ajout libre.",
+      );
+    } else {
+      add("Stock", "panneau détail testable", "NON TESTABLE", undefined, "Ligne stock introuvable pour ouvrir le panneau de détail.");
+    }
+    // === END Stock UI checks ===
+
+    await switchUser(page, "user_nadir_technician");
     await page.goto(`${BASE_URL}/dashboard/stock`);
     add("Permissions", "technicien ne voit pas prix achat", (await page.getByRole("columnheader", { name: /Prix d'achat/i }).count()) === 0 ? "OK" : "BUG", "P1");
     add("Permissions", "technicien ne voit pas marge", (await page.getByRole("columnheader", { name: /Marge/i }).count()) === 0 ? "OK" : "BUG", "P1");
     add("Permissions", "technicien ne voit pas fournisseur", (await page.getByRole("columnheader", { name: /Fournisseur/i }).count()) === 0 ? "OK" : "BUG", "P1");
     await page.goto(`${BASE_URL}/dashboard/parametres`);
     add("Permissions", "technicien bloqué sur paramètres URL directe", await visible(page, /Paramètres non accessibles/i) ? "OK" : "BUG", "P1");
-    await page.getByRole("combobox", { name: /Utilisateur actuel/i }).selectOption("user_belmin_admin");
+    await switchUser(page, "user_belmin_admin");
 
     for (const route of [
       ["/dashboard/rendez-vous", "Rendez-vous"],

@@ -1,24 +1,26 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
-import { Lock, LogIn, RefreshCw, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ChevronRight, Lock, LogIn, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
-import { useBeharStore } from "@/lib/behar-store";
+import { useBeharStore, type CurrentUser } from "@/lib/behar-store";
 import { cn } from "@/lib/utils";
 
 /**
- * Garde de session par code PIN.
+ * Garde de session à deux étapes :
+ * 1. Sélecteur d'utilisateur (liste de tous les comptes actifs).
+ * 2. Saisie du code PIN pour le compte choisi.
  *
- * - Si aucune session (sessionUserId vide), affiche un écran de saisie PIN.
- * - Si la session est invalidée (utilisateur supprimé / désactivé), retombe sur l'écran PIN.
- * - Sinon, rend les enfants normalement.
+ * - Si aucune session active, affiche le sélecteur.
+ * - Une fois l'utilisateur sélectionné, affiche le pavé PIN.
+ * - Sinon, rend les enfants.
  */
 export function PinLoginGate({ children }: Readonly<{ children: ReactNode }>) {
   const sessionUserId = useBeharStore((s) => s.sessionUserId);
   const users = useBeharStore((s) => s.users);
-  const loginWithPin = useBeharStore((s) => s.loginWithPin);
+  const loginWithUserPin = useBeharStore((s) => s.loginWithUserPin);
   const _hasHydrated = useBeharStore((s) => s._hasHydrated);
 
   const validSession = useMemo(() => {
@@ -36,58 +38,186 @@ export function PinLoginGate({ children }: Readonly<{ children: ReactNode }>) {
   }
 
   if (!validSession) {
-    return <PinLoginScreen onSuccess={(pin) => loginWithPin(pin)} />;
+    return (
+      <LoginFlow
+        users={users.filter((u) => u.active)}
+        onLogin={(userId, pin) => loginWithUserPin(userId, pin)}
+      />
+    );
   }
 
   return <>{children}</>;
 }
 
-function PinLoginScreen({
-  onSuccess,
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  LoginFlow – orchestrates user selection → PIN entry                        */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+function LoginFlow({
+  users,
+  onLogin,
 }: Readonly<{
-  onSuccess: (pin: string) => { ok: boolean; reason?: "invalid" | "disabled" };
+  users: CurrentUser[];
+  onLogin: (userId: string, pin: string) => { ok: boolean; reason?: "invalid" | "disabled"; user?: CurrentUser };
+}>) {
+  const [selectedUser, setSelectedUser] = useState<CurrentUser | null>(null);
+
+  if (!selectedUser) {
+    return (
+      <UserSelectorScreen
+        users={users}
+        onSelect={(user) => setSelectedUser(user)}
+      />
+    );
+  }
+
+  return (
+    <PinEntryScreen
+      user={selectedUser}
+      onBack={() => setSelectedUser(null)}
+      onSubmit={(pin) => onLogin(selectedUser.id, pin)}
+    />
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  Role helpers                                                                */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+function roleLabel(role: string) {
+  if (role === "admin") return "Gérant";
+  if (role === "technician") return "Technicien";
+  return "Accueil";
+}
+
+function avatarColor(role: string): string {
+  if (role === "admin") return "bg-[#2A9D8F] text-white";
+  if (role === "technician") return "bg-[#6366F1] text-white";
+  return "bg-[#F59E0B] text-white";
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  Screen 1 — User selector                                                   */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+function UserSelectorScreen({
+  users,
+  onSelect,
+}: Readonly<{
+  users: CurrentUser[];
+  onSelect: (user: CurrentUser) => void;
+}>) {
+  return (
+    <div className="flex min-h-svh flex-col items-center justify-center bg-[#FAFAF8] px-5 py-10">
+      <div className="w-full max-w-[480px]">
+        {/* Header */}
+        <div className="mb-10 text-center">
+          <h1 className="font-bold text-[#1A1916] text-[44px] tracking-[-0.03em] leading-none">
+            Bonjour
+          </h1>
+          <p className="mt-3 text-[#8A8984] text-[15px]">Choisissez votre compte</p>
+        </div>
+
+        {/* User cards */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {users.map((user) => {
+            const avatar = avatarColor(user.role);
+            return (
+              <button
+                key={user.id}
+                type="button"
+                onClick={() => onSelect(user)}
+                className="group flex items-center gap-4 rounded-[20px] border border-[#F1F1EF] bg-white px-4 py-4 text-left shadow-[0_1px_4px_rgba(26,25,22,0.04)] transition active:scale-[0.98] hover:border-[#D1CFCA] hover:shadow-[0_4px_16px_rgba(26,25,22,0.08)]"
+              >
+                {/* Avatar */}
+                <span
+                  className={cn(
+                    "grid size-12 shrink-0 place-items-center rounded-full text-[18px] font-bold",
+                    avatar,
+                  )}
+                >
+                  {user.name.charAt(0).toUpperCase()}
+                </span>
+
+                {/* Info */}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold text-[#1A1916] text-[15px] leading-tight">
+                    {user.name}
+                  </p>
+                  <p className="mt-0.5 text-[#8A8984] text-[12px] font-medium">
+                    {roleLabel(user.role)}
+                  </p>
+                </div>
+
+                {/* Arrow */}
+                <ChevronRight
+                  className="size-4 shrink-0 text-[#CDCBC5] transition group-hover:text-[#8A8984]"
+                  strokeWidth={2}
+                />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  Screen 2 — PIN entry for a specific user                                   */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+function PinEntryScreen({
+  user,
+  onBack,
+  onSubmit,
+}: Readonly<{
+  user: CurrentUser;
+  onBack: () => void;
+  onSubmit: (pin: string) => { ok: boolean; reason?: "invalid" | "disabled" };
 }>) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string>("");
-  const users = useBeharStore((s) => s.users);
+  const avatar = avatarColor(user.role);
+  const roleGreetings = useBeharStore((s) => s.roleGreetings);
+  // Locks one random greeting for this mount (doesn't change on every render/keystroke)
+  const greeting = useMemo(() => {
+    const messages = roleGreetings[user.role as keyof typeof roleGreetings] || [];
+    if (messages.length === 0) return "";
+    return messages[Math.floor(Math.random() * messages.length)];
+  }, [user.role, roleGreetings]);
 
-  // Hint pour la démo : pas les vraies valeurs, juste un indicateur que des PINs existent
-  const demoHints = users
-    .filter((u) => u.active && u.pin)
-    .map((u) => `${u.name} (${u.role === "admin" ? "Gérant" : u.role === "technician" ? "Tech." : "Accueil"})`)
-    .join(" · ");
+  // Keep a stable ref to onSubmit to avoid stale closures in the effect
+  const onSubmitRef = useRef(onSubmit);
+  useEffect(() => { onSubmitRef.current = onSubmit; });
 
   const submit = (value: string) => {
-    const result = onSuccess(value);
+    const result = onSubmitRef.current(value);
     if (!result.ok) {
-      if (result.reason === "disabled") {
-        setError("Ce compte est désactivé. Contactez le gérant.");
-      } else {
-        setError("Code PIN invalide.");
-      }
+      setError(result.reason === "disabled"
+        ? "Ce compte est désactivé. Contactez le gérant."
+        : "Code PIN incorrect.");
       setPin("");
       return;
     }
     setError("");
     setPin("");
-    toast.success("Bienvenue !");
+    toast.success(`Bienvenue, ${user.name} !`);
   };
+
+  // Auto-submit at exactly 4 digits — MUST be in useEffect, not inside setPin updater
+  // to avoid "setState during render" error
+  useEffect(() => {
+    if (pin.length === 4) {
+      submit(pin);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pin]);
 
   const onDigit = (digit: string) => {
     setError("");
-    setPin((current) => {
-      if (current.length >= 6) return current;
-      const next = current + digit;
-      if (next.length === 4) {
-        // tentative à 4 chiffres ; si invalide on garde la possibilité de continuer à 6
-        const r = onSuccess(next);
-        if (r.ok) {
-          return "";
-        }
-        // continue à saisir pour PIN 5-6
-      }
-      return next;
-    });
+    // Simple update — no side effects, no store calls inside setState
+    setPin((current) => (current.length < 6 ? current + digit : current));
   };
 
   const onBackspace = () => {
@@ -102,26 +232,52 @@ function PinLoginScreen({
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-[#FAFAF8] px-5 py-10">
-      <div className="w-full max-w-[420px]">
+      <div className="w-full max-w-[380px]">
+        {/* Back button */}
+        <button
+          type="button"
+          onClick={onBack}
+          className="mb-6 flex items-center gap-1.5 text-[#6B6B6B] text-[13px] font-medium transition hover:text-[#1A1916]"
+        >
+          <ArrowLeft className="size-4" strokeWidth={2} />
+          Changer d'utilisateur
+        </button>
+
+        {/* User identity */}
         <div className="mb-7 flex flex-col items-center text-center">
-          <span className="mb-5 grid size-14 place-items-center rounded-[18px] bg-[#EAF6F2] text-[#2A9D8F]">
-            <ShieldCheck className="size-7" strokeWidth={2} />
+          <span
+            className={cn(
+              "mb-4 grid size-16 place-items-center rounded-full text-[26px] font-bold shadow-[0_4px_16px_rgba(26,25,22,0.12)]",
+              avatar,
+            )}
+          >
+            {user.name.charAt(0).toUpperCase()}
           </span>
-          <h1 className="font-semibold text-[#1A1916] text-[26px] tracking-tight">Behar Tech Pro</h1>
-          <p className="mt-1.5 text-[#6B6B6B] text-[14px]">Connectez-vous avec votre code interne.</p>
+          <h1 className="font-bold text-[#1A1916] text-[28px] tracking-[-0.02em] leading-tight">
+            Bonjour {user.name.split(" ")[0]}
+          </h1>
+          <p className="mt-1.5 text-[#8A8984] text-[12px] font-medium">
+            {roleLabel(user.role)}
+          </p>
+          {greeting && (
+            <p className="mt-3 max-w-[300px] text-[#6B6B6B] text-[14px] leading-snug italic">
+              « {greeting} »
+            </p>
+          )}
         </div>
 
         <div className="rounded-[24px] border border-[#F1F1EF] bg-white p-6 shadow-[0_2px_8px_rgba(26,25,22,0.04)]">
-          {/* Affichage du PIN */}
+          {/* PIN dots */}
           <div className="flex justify-center gap-3">
             {Array.from({ length: 4 }).map((_, i) => (
               <span
                 key={i}
                 className={cn(
-                  "grid h-12 w-10 place-items-center rounded-[12px] border text-[20px] font-semibold",
+                  "grid h-12 w-10 place-items-center rounded-[12px] border text-[20px] font-semibold transition-all duration-150",
                   pin[i]
-                    ? "border-[#2A9D8F]/50 bg-[#EAF6F2] text-[#1A1916]"
+                    ? "border-[#2A9D8F]/50 bg-[#EAF6F2] text-[#1A1916] scale-105"
                     : "border-[#E7E4DC] bg-[#FAFAF8] text-[#CDCBC5]",
+                  error && "border-[#DC3545]/40 bg-[#FDF2F2]",
                 )}
               >
                 {pin[i] ? "•" : ""}
@@ -129,17 +285,19 @@ function PinLoginScreen({
             ))}
           </div>
           {error && (
-            <p className="mt-3 text-center text-[#DC3545] text-[13px] font-medium">{error}</p>
+            <p className="mt-3 text-center text-[#DC3545] text-[13px] font-medium animate-in fade-in slide-in-from-top-1 duration-200">
+              {error}
+            </p>
           )}
 
-          {/* Pavé numérique */}
+          {/* Numpad */}
           <div className="mt-6 grid grid-cols-3 gap-3">
             {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((digit) => (
               <button
                 key={digit}
                 type="button"
                 onClick={() => onDigit(digit)}
-                className="h-14 rounded-[16px] bg-[#FAFAF8] font-semibold text-[#1A1916] text-[22px] transition active:scale-95 active:bg-[#F1F1EF]"
+                className="h-14 rounded-[16px] bg-[#FAFAF8] font-semibold text-[#1A1916] text-[22px] transition active:scale-95 active:bg-[#F1F1EF] hover:bg-[#F1F1EF]"
               >
                 {digit}
               </button>
@@ -147,14 +305,14 @@ function PinLoginScreen({
             <button
               type="button"
               onClick={onBackspace}
-              className="h-14 rounded-[16px] bg-[#FAFAF8] font-medium text-[#6B6B6B] text-[13px] transition active:scale-95 active:bg-[#F1F1EF]"
+              className="h-14 rounded-[16px] bg-[#FAFAF8] font-medium text-[#6B6B6B] text-[13px] transition active:scale-95 active:bg-[#F1F1EF] hover:bg-[#F1F1EF]"
             >
-              Effacer
+              ⌫
             </button>
             <button
               type="button"
               onClick={() => onDigit("0")}
-              className="h-14 rounded-[16px] bg-[#FAFAF8] font-semibold text-[#1A1916] text-[22px] transition active:scale-95 active:bg-[#F1F1EF]"
+              className="h-14 rounded-[16px] bg-[#FAFAF8] font-semibold text-[#1A1916] text-[22px] transition active:scale-95 active:bg-[#F1F1EF] hover:bg-[#F1F1EF]"
             >
               0
             </button>
@@ -173,7 +331,7 @@ function PinLoginScreen({
             </button>
           </div>
 
-          {/* Saisie clavier alternative */}
+          {/* Keyboard fallback */}
           <div className="mt-5 flex items-center gap-2">
             <Lock className="size-4 text-[#8A8984]" />
             <input
@@ -181,6 +339,7 @@ function PinLoginScreen({
               inputMode="numeric"
               maxLength={6}
               value={pin}
+              autoFocus
               onChange={(e) => {
                 setPin(e.target.value.replace(/\D/g, "").slice(0, 6));
                 setError("");
@@ -193,25 +352,19 @@ function PinLoginScreen({
             />
             <button
               type="button"
-              onClick={() => {
-                setPin("");
-                setError("");
-              }}
+              onClick={() => { setPin(""); setError(""); }}
               className="grid size-10 place-items-center rounded-[12px] text-[#6B6B6B] hover:bg-[#F6F7F4]"
-              title="Réinitialiser"
+              title="Effacer"
             >
               <RefreshCw className="size-4" />
             </button>
           </div>
         </div>
 
-        {demoHints && (
-          <p className="mt-5 text-center text-[#8A8984] text-[12px] leading-relaxed">
-            Démo : Gérant 0000 · Technicien 1234 · Accueil 5678 · Stagiaire 9999
-          </p>
-        )}
+        <p className="mt-5 text-center text-[#B0AEA8] text-[12px]">
+          Entrez votre code PIN à 4 chiffres.
+        </p>
       </div>
     </div>
   );
 }
-

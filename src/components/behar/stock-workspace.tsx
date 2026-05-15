@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import type { LucideIcon } from "lucide-react";
-import { Filter, Plus, Search, Trash2 } from "lucide-react";
+import { Filter, Plus, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { type DeviceType, formatEuro, type StockItem, useBeharStore } from "@/lib/behar-store";
@@ -27,11 +27,88 @@ import {
 } from "./primitives";
 import { StockImportModal } from "./stock-import-modal";
 
+/** Model selector: type freely or pick from suggestions, adds as chips */
+function ModelSelector({
+  availableModels,
+  selected,
+  onChange,
+  disabled,
+}: Readonly<{
+  availableModels: string[];
+  selected: string[];
+  onChange: (models: string[]) => void;
+  disabled?: boolean;
+}>) {
+  const [input, setInput] = useState("");
+  const listId = `models-list-${Math.random().toString(36).slice(2)}`;
+
+  const add = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed || selected.includes(trimmed)) { setInput(""); return; }
+    onChange([...selected, trimmed]);
+    setInput("");
+  };
+
+  const remove = (model: string) => onChange(selected.filter((m) => m !== model));
+
+  return (
+    <div className="flex flex-col gap-2">
+      {/* Chips */}
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {selected.map((model) => (
+            <span key={model} className="inline-flex items-center gap-1 rounded-full bg-[#EAF6F2] px-2.5 py-1 text-[12px] font-medium text-[#147065]">
+              {model}
+              {!disabled && (
+                <button type="button" onClick={() => remove(model)}
+                  className="ml-0.5 grid size-3.5 place-items-center rounded-full hover:bg-[#2A9D8F] hover:text-white transition"
+                  aria-label={`Retirer ${model}`}>
+                  <X className="size-2.5" strokeWidth={2.5} />
+                </button>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Input + datalist */}
+      {!disabled && (
+        <>
+          <datalist id={listId}>
+            {availableModels.filter((m) => !selected.includes(m)).map((m) => (
+              <option key={m} value={m} />
+            ))}
+          </datalist>
+          <div className="flex gap-1.5">
+            <input
+              list={listId}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(input); } }}
+              placeholder={availableModels.length > 0 ? "Sélectionner ou saisir…" : "Saisir un modèle…"}
+              className="h-9 flex-1 rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-[13px] text-[#1A1916] outline-none transition placeholder:text-[#8A8984] focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
+            />
+            <button
+              type="button"
+              onClick={() => add(input)}
+              disabled={!input.trim()}
+              className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F] transition hover:bg-[#2A9D8F] hover:text-white disabled:opacity-40"
+            >
+              <Plus className="size-4" strokeWidth={2.2} />
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function StockWorkspace() {
   const store = useBeharStore();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [filterLowStock, setFilterLowStock] = useState(false);
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
   const filteredItems = store.stockItems.filter((item) => {
     const q = search.toLowerCase();
@@ -76,20 +153,19 @@ export function StockWorkspace() {
 
   return (
     <PageShell
-      fitScreen
       searchPlaceholder="Rechercher..."
       title="Stock"
       subtitle="Pièces, composants et fournisseurs de votre atelier."
     >
-      <div className="flex h-full min-h-0 flex-col gap-4">
-        <section className="grid shrink-0 gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="flex flex-col gap-4">
+        <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
           {dynamicKpis.map((kpi) => (
             <StockMetricCard {...kpi} key={kpi.label} />
           ))}
         </section>
 
-        <section className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_330px] 2xl:grid-cols-[minmax(0,1fr)_350px]">
-          <TableShell className="min-h-[620px] md:h-full md:min-h-0">
+        <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_330px] 2xl:grid-cols-[minmax(0,1fr)_350px]">
+          <TableShell className="min-h-[400px]">
             <div className="sticky top-0 z-10 flex items-center gap-3 border-[#E7E4DC] border-b bg-white p-3">
               <label className="relative block flex-1">
                 <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6B6B6B]" />
@@ -198,7 +274,10 @@ export function StockWorkspace() {
                   <button
                     key={item.id}
                     className={`block w-full text-left px-4 py-3 transition active:bg-[#F6F7F4] ${item.id === selected?.id ? "bg-[#EAF6F2]" : "bg-white"}`}
-                    onClick={() => store.setSelected("stockItem", item.id)}
+                    onClick={() => {
+                      store.setSelected("stockItem", item.id);
+                      setMobileDetailOpen(true);
+                    }}
                     type="button"
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -234,12 +313,230 @@ export function StockWorkspace() {
             </div>
           </TableShell>
 
-          {selected && <StockDetail item={selected} />}
+          {/* Desktop detail panel — sticky so it stays in view while the page scrolls */}
+          {selected && (
+            <div className="hidden md:block">
+              <div className="sticky top-6">
+                <StockDetail item={selected} />
+              </div>
+            </div>
+          )}
         </section>
       </div>
 
       {open && <StockModal onClose={() => setOpen(false)} />}
+
+      {/* Mobile bottom sheet drawer */}
+      {mobileDetailOpen && selected && (
+        <div className="fixed inset-0 z-[60] md:hidden" role="dialog" aria-modal="true">
+          {/* Backdrop */}
+          <button
+            type="button"
+            className="absolute inset-0 bg-[#1A1916]/40 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={() => setMobileDetailOpen(false)}
+            aria-label="Fermer"
+          />
+          {/* Sheet */}
+          <div className="absolute inset-x-0 bottom-0 max-h-[92vh] flex flex-col rounded-t-[28px] bg-white shadow-[0_-20px_60px_rgba(26,25,22,0.18)] animate-in slide-in-from-bottom duration-300">
+            {/* Handle */}
+            <div className="flex justify-center pt-2.5 pb-1 shrink-0">
+              <span className="h-1 w-9 rounded-full bg-[#D1CFCA]" aria-hidden />
+            </div>
+            {/* Header */}
+            <div className="flex items-center justify-between gap-3 px-5 pt-2 pb-3 shrink-0 border-b border-[#F1F1EF]">
+              <p className="font-semibold text-[#1A1916] text-[17px] truncate">{selected.name}</p>
+              <button
+                type="button"
+                onClick={() => setMobileDetailOpen(false)}
+                className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#6B6B6B] active:scale-90 shrink-0"
+                aria-label="Fermer"
+              >
+                <X className="size-4" strokeWidth={2.2} />
+              </button>
+            </div>
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto">
+              <StockDetailMobile item={selected} onClose={() => setMobileDetailOpen(false)} />
+            </div>
+          </div>
+        </div>
+      )}
     </PageShell>
+  );
+}
+
+/** Mobile version — inside a scrollable bottom sheet, no fixed height constraints */
+function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClose: () => void }>) {
+  const store = useBeharStore();
+  const router = useRouter();
+  const [targetRepairId, setTargetRepairId] = useState(store.selectedRepairId || "");
+  const canManageStock = store.hasPermission("canManageStock");
+  const canUseStockItem = store.hasPermission("canUseStockItem");
+  const canViewPurchasePrice = store.hasPermission("canViewPurchasePrice");
+  const canViewMargin = store.hasPermission("canViewMargin");
+  const canViewSupplier = store.hasPermission("canViewSupplier");
+  const margin = item.salePrice - item.purchasePrice;
+  const rate = item.salePrice > 0 ? (margin / item.salePrice) * 100 : 0;
+  const categoryMapping: Record<string, DeviceCategory> = {
+    Smartphone: "smartphone",
+    Tablette: "tablet",
+    Ordinateur: "computer",
+    Console: "console",
+  };
+  const category = categoryMapping[item.deviceType] || "smartphone";
+  const availableBrands = getDeviceBrands(category);
+  const availableModels = getModelsByBrand(item.brandName || "", category);
+  const availableCategories = store.partCategories.filter((cat) => cat.deviceTypes.includes(item.deviceType));
+
+  const inputClass = "h-10 w-full rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-right text-[15px] text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+  const textInputClass = "h-10 w-full rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-[15px] text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+  const rowClass = "flex items-start justify-between gap-3 py-3 border-b border-[#F1F1EF] last:border-0";
+  const labelClass = "shrink-0 w-[110px] text-[#6B6B6B] text-[13px] pt-2.5 font-medium";
+
+  return (
+    <div className="px-4 pb-10 pt-3">
+      <StatusBadge
+        className="mb-3"
+        status={item.stock === 0 ? "Rupture" : item.stock <= item.threshold ? "Stock faible" : "En stock"}
+      />
+      {item.stock <= item.threshold && (
+        <p className="mb-3 rounded-[12px] bg-[#FFF4DE] px-3 py-2 text-[#9A6A17] text-sm">
+          Alerte stock bas : réapprovisionnement conseillé.
+        </p>
+      )}
+
+      <PartPlaceholder className="h-36 rounded-[16px] mb-4" />
+
+      {/* Fields */}
+      <div className="rounded-[16px] border border-[#F1F1EF] bg-[#FAFAF8] px-4 divide-y divide-[#F1F1EF] mb-4">
+        <div className={rowClass}>
+          <span className={labelClass}>Référence</span>
+          <input className={textInputClass} value={item.sku} readOnly={!canManageStock}
+            onChange={(e) => store.updateStockItem(item.id, { sku: e.target.value })} />
+        </div>
+        <div className={rowClass}>
+          <span className={labelClass}>Type</span>
+          <select className={textInputClass} value={item.deviceType} disabled={!canManageStock}
+            onChange={(e) => store.updateStockItem(item.id, { deviceType: e.target.value as StockItem["deviceType"], brandId: undefined, brandName: undefined, modelIds: [], compatibleModels: [] })}>
+            {["Smartphone", "Tablette", "Ordinateur", "Console"].map((t) => <option key={t}>{t}</option>)}
+          </select>
+        </div>
+        <div className={rowClass}>
+          <span className={labelClass}>Marque</span>
+          <select className={textInputClass} value={item.brandName ?? ""} disabled={!canManageStock}
+            onChange={(e) => store.updateStockItem(item.id, { brandId: e.target.value, brandName: e.target.value, modelIds: [], compatibleModels: [] })}>
+            <option value="">Générique</option>
+            {availableBrands.map((b) => <option key={b.brand} value={b.brand}>{b.brand}</option>)}
+            <option value="Autre">Autre</option>
+          </select>
+        </div>
+        <div className={rowClass}>
+          <span className={labelClass}>Modèles</span>
+          <div className="flex-1">
+            <ModelSelector
+              availableModels={availableModels}
+              selected={item.compatibleModels}
+              disabled={!canManageStock}
+              onChange={(models) => store.updateStockItem(item.id, { modelIds: models, compatibleModels: models })}
+            />
+          </div>
+        </div>
+        <div className={rowClass}>
+          <span className={labelClass}>Catégorie</span>
+          <select className={textInputClass} value={item.categoryId} disabled={!canManageStock}
+            onChange={(e) => { const cat = store.partCategories.find((c) => c.id === e.target.value); store.updateStockItem(item.id, { categoryId: cat?.id, categoryName: cat?.name }); }}>
+            {availableCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+        {canViewPurchasePrice && (
+          <div className={rowClass}>
+            <span className={labelClass}>Prix d'achat</span>
+            <input className={inputClass} type="number" min={0} step="0.01" value={item.purchasePrice} readOnly={!canManageStock}
+              onChange={(e) => store.updateStockItem(item.id, { purchasePrice: Math.max(0, Number(e.target.value)) })} />
+          </div>
+        )}
+        <div className={rowClass}>
+          <span className={labelClass}>Prix de vente</span>
+          <input className={inputClass} type="number" min={0} step="0.01" value={item.salePrice} readOnly={!canManageStock}
+            onChange={(e) => store.updateStockItem(item.id, { salePrice: Math.max(0, Number(e.target.value)) })} />
+        </div>
+        {canViewMargin && (
+          <div className={rowClass}>
+            <span className={labelClass}>Marge brute</span>
+            <span className="pt-2 text-[15px] font-semibold text-[#1A1916]">{formatEuro(margin)} <span className="text-[#2A9D8F] font-medium text-[13px]">({rate.toFixed(1).replace(".", ",")} %)</span></span>
+          </div>
+        )}
+        <div className={rowClass}>
+          <span className={labelClass}>Stock actuel</span>
+          <input className={inputClass} type="number" min={0} value={item.quantity} readOnly={!canManageStock}
+            onChange={(e) => store.updateStockItem(item.id, { quantity: Math.max(0, Number(e.target.value)) })} />
+        </div>
+        <div className={rowClass}>
+          <span className={labelClass}>Seuil d'alerte</span>
+          <input className={inputClass} type="number" min={0} value={item.threshold} readOnly={!canManageStock}
+            onChange={(e) => store.updateStockItem(item.id, { threshold: Math.max(0, Number(e.target.value)) })} />
+        </div>
+        {canViewSupplier && (
+          <div className={rowClass}>
+            <span className={labelClass}>Fournisseur</span>
+            <input className={textInputClass} value={item.supplier} readOnly={!canManageStock}
+              onChange={(e) => store.updateStockItem(item.id, { supplier: e.target.value })} />
+          </div>
+        )}
+        <div className={rowClass}>
+          <span className={labelClass}>Délai moyen</span>
+          <input className={textInputClass} value={item.leadTime} readOnly={!canManageStock}
+            onChange={(e) => store.updateStockItem(item.id, { leadTime: e.target.value })} />
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="grid gap-2">
+        <PrimaryButton className="h-12 w-full text-[15px]" disabled={!canManageStock}
+          onClick={() => {
+            const qty = Number(window.prompt("Quantité à ajouter au stock", "5") || 0);
+            if (!Number.isFinite(qty) || qty <= 0) { toast.error("Quantité invalide"); return; }
+            store.restockItem(item.id, qty);
+            toast.success("Stock mis à jour");
+          }}>
+          Réapprovisionner
+        </PrimaryButton>
+        <select
+          className="h-11 w-full rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-[15px] text-[#1A1916] outline-none"
+          disabled={store.repairs.length === 0}
+          value={targetRepairId}
+          onChange={(e) => setTargetRepairId(e.target.value)}>
+          <option value="">Sélectionnez une réparation</option>
+          {store.repairs.map((r) => <option key={r.id} value={r.id}>{r.number} - {r.device} ({r.status})</option>)}
+        </select>
+        <SecondaryButton className="h-11 w-full" disabled={store.repairs.length === 0 || !canUseStockItem}
+          onClick={() => {
+            const repair = store.repairs.find((r) => r.id === targetRepairId);
+            if (!repair) { toast.error("Sélectionnez une réparation."); return; }
+            if (!window.confirm(`Utiliser 1 x ${item.name} sur ${repair.number} ?`)) return;
+            const ok = store.addPartToRepair(repair.id, item.id, 1);
+            toast[ok ? "success" : "error"](ok ? `Pièce ajoutée à ${repair.device}` : `Stock insuffisant`);
+          }}>
+          Utiliser dans une réparation
+        </SecondaryButton>
+        {item.priceBookItemId && (
+          <SecondaryButton className="h-11 w-full" onClick={() => { router.push("/dashboard/parametres/catalogue"); onClose(); }}>
+            Voir dans Catalogue Prix
+          </SecondaryButton>
+        )}
+        <SecondaryButton className="h-11 w-full text-[#B42318]" disabled={!canManageStock}
+          onClick={() => {
+            if (window.confirm("Supprimer cette pièce ?")) {
+              store.deleteStockItem(item.id);
+              toast.success("Pièce supprimée");
+              onClose();
+            }
+          }}>
+          <Trash2 className="size-4" />
+          Supprimer la pièce
+        </SecondaryButton>
+      </div>
+    </div>
   );
 }
 
@@ -270,8 +567,8 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
   const textInputClass =
     "h-9 w-full rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-sm text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
   return (
-    <Panel className="flex min-h-0 flex-col overflow-hidden rounded-[14px] p-4 md:h-full">
-      <div className="mb-4 shrink-0">
+    <Panel className="overflow-y-auto rounded-[14px] p-4 md:max-h-[calc(100vh-11rem)]">
+      <div className="mb-4">
         <input
           className={`${textInputClass} h-11 font-semibold text-xl`}
           onChange={(event) => store.updateStockItem(item.id, { name: event.target.value })}
@@ -288,8 +585,8 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
           </p>
         )}
       </div>
-      <PartPlaceholder className="h-40 shrink-0 rounded-[14px]" />
-      <dl className="mt-4 min-h-0 flex-1 divide-y divide-[#E7E4DC] overflow-hidden">
+      <PartPlaceholder className="h-36 rounded-[14px]" />
+      <dl className="mt-4 divide-y divide-[#E7E4DC]">
         <DetailRow
           className="py-2"
           label="Référence"
@@ -357,23 +654,12 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
           className="py-2"
           label="Modèles"
           value={
-            <select
-              className={`${textInputClass} min-h-24`}
-              multiple
-              onChange={(event) => {
-                const modelIds = Array.from(event.currentTarget.selectedOptions).map((option) => option.value);
-                store.updateStockItem(item.id, { modelIds, compatibleModels: modelIds });
-              }}
+            <ModelSelector
+              availableModels={availableModels}
+              selected={item.compatibleModels}
               disabled={!canManageStock}
-              value={item.modelIds}
-            >
-              {availableModels.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-              <option value="Autre">Autre</option>
-            </select>
+              onChange={(models) => store.updateStockItem(item.id, { modelIds: models, compatibleModels: models })}
+            />
           }
         />
         <DetailRow
@@ -499,7 +785,7 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
           }
         />
       </dl>
-      <div className="mt-4 grid shrink-0 gap-2 border-[#E7E4DC] border-t pt-4">
+      <div className="mt-4 grid gap-2 border-[#E7E4DC] border-t pt-4">
         <PrimaryButton
           className="h-10 w-full"
           disabled={!canManageStock}
@@ -631,6 +917,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
   const [deviceType, setDeviceType] = useState<string>("Smartphone");
   const [brandName, setBrandName] = useState("Apple");
   const [categoryId, setCategoryId] = useState("cat_screen");
+  const [selectedModels, setSelectedModels] = useState<string[]>([]);
 
   const categoryMapping: Record<string, DeviceCategory> = {
     Smartphone: "smartphone",
@@ -663,7 +950,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
             const quantity = Math.max(0, Number(data.get("stock") || 0));
             const threshold = Math.max(0, Number(data.get("threshold") || 0));
             const category = store.partCategories.find((entry) => entry.id === categoryId);
-            const modelIds = data.getAll("modelIds").map(String).filter(Boolean);
+            const modelIds = selectedModels;
             store.addStockItem({
               sku: String(data.get("sku") || `REF-${Date.now()}`),
               name,
@@ -704,6 +991,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
               setDeviceType(nextType);
               setBrandName(firstBrand);
               setCategoryId(firstCategory?.id ?? "cat_other");
+              setSelectedModels([]);
             }}
             value={deviceType}
           >
@@ -713,7 +1001,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
           </select>
           <select
             className="h-11 rounded-xl border border-black/[0.08] px-3"
-            onChange={(event) => setBrandName(event.target.value)}
+            onChange={(event) => { setBrandName(event.target.value); setSelectedModels([]); }}
             value={brandName}
           >
             {availableBrands.map((b) => (
@@ -724,21 +1012,17 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
             <option value="Autre">Autre</option>
           </select>
 
-          <label className="text-[#6B6B6B] text-sm md:col-span-2">
-            Modèles compatibles
-            <select
-              className="mt-1 min-h-28 w-full rounded-xl border border-black/[0.08] px-3 py-2"
-              multiple
-              name="modelIds"
-            >
-              {availableModels.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-              <option value="Autre">Autre</option>
-            </select>
-          </label>
+          <div className="md:col-span-2">
+            <p className="mb-1.5 text-[#6B6B6B] text-sm font-medium">Modèles compatibles</p>
+            <ModelSelector
+              availableModels={availableModels}
+              selected={selectedModels}
+              onChange={(models) => {
+                setSelectedModels(models);
+                // Reset when brand/type changes — handled in brand/type onChange
+              }}
+            />
+          </div>
           <select
             className="h-11 rounded-xl border border-black/[0.08] px-3"
             onChange={(event) => setCategoryId(event.target.value)}
