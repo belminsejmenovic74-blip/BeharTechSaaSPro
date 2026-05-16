@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Check, CloudOff, Loader2, AlertCircle } from "lucide-react";
 
-import { subscribeSyncState, type SyncState } from "@/lib/cloud-sync";
+import { subscribeWorkshopSyncState, type WorkshopSyncState } from "@/lib/workshop-sync";
 import { cn } from "@/lib/utils";
 
 /**
@@ -11,11 +11,11 @@ import { cn } from "@/lib/utils";
  * S'affiche dans le topbar, très discret.
  */
 export function SyncStatusBadge({ className }: Readonly<{ className?: string }>) {
-  const [state, setState] = useState<SyncState>({ status: "idle" });
+  const [state, setState] = useState<WorkshopSyncState>({ status: "idle" });
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
-    const unsubscribe = subscribeSyncState(setState);
+    const unsubscribe = subscribeWorkshopSyncState(setState);
     // Tick chaque 30 sec pour rafraîchir "il y a X sec"
     const interval = setInterval(() => setNow(Date.now()), 30_000);
     return () => { unsubscribe(); clearInterval(interval); };
@@ -25,8 +25,10 @@ export function SyncStatusBadge({ className }: Readonly<{ className?: string }>)
 
   const config = (() => {
     switch (state.status) {
-      case "syncing":
-        return { icon: Loader2, label: "Synchronisation…", color: "text-[#8A8984]", spin: true };
+      case "loading":
+        return { icon: Loader2, label: "Chargement cloud…", color: "text-[#8A8984]", spin: true };
+      case "saving":
+        return { icon: Loader2, label: "Sauvegarde…", color: "text-[#8A8984]", spin: true };
       case "synced": {
         const rel = state.lastSyncedAt ? relativeTime(now - new Date(state.lastSyncedAt).getTime()) : "à l'instant";
         return { icon: Check, label: `Sauvegardé ${rel}`, color: "text-[#2A9D8F]" };

@@ -13,6 +13,13 @@ import { PageShell } from "@/components/behar/page-shell";
 import { Panel, PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
 import { LicenseCard } from "@/components/behar/license-card";
 import { useBeharStore, type WorkshopSettings } from "@/lib/behar-store";
+import {
+  hydrateStoreFromCloud,
+  loadSnapshotByLicenseKey,
+  normalizeLicenseKey,
+  saveSnapshotState,
+  subscribeWorkshopSyncState,
+} from "@/lib/workshop-sync";
 
 /* ── Tabs ──────────────────────────────────────────── */
 const TABS = [
@@ -645,25 +652,26 @@ function CloudSyncBlock() {
   const [lastSyncedAt, setLastSyncedAt] = useState<string | undefined>();
 
   useEffect(() => {
-    void import("@/lib/cloud-sync").then(({ getLocalSyncInfo, subscribeSyncState }) => {
-      setLastSyncedAt(getLocalSyncInfo().lastSyncedAt);
-      return subscribeSyncState((s) => {
-        if (s.lastSyncedAt) setLastSyncedAt(s.lastSyncedAt);
-      });
+    setLastSyncedAt(useBeharStore.getState().cloudSync?.lastSyncedAt);
+    return subscribeWorkshopSyncState((s) => {
+      if (s.lastSyncedAt) setLastSyncedAt(s.lastSyncedAt);
     });
   }, []);
 
   const onSave = async () => {
     setBusy("upload");
     try {
-      const { uploadSnapshot } = await import("@/lib/cloud-sync");
-      const result = await uploadSnapshot();
-      if (result.ok) {
-        setLastSyncedAt(result.updatedAt);
-        toast.success("Données sauvegardées.");
-      } else {
-        toast.error(result.error);
+      const state = useBeharStore.getState();
+      const license = normalizeLicenseKey(state.licenseKey);
+      if (!license) {
+        toast.error("Aucune licence active.");
+        return;
       }
+      const result = await saveSnapshotState(license, state as any);
+      setLastSyncedAt(result.updatedAt);
+      toast.success("Données sauvegardées.");
+    } catch (error: any) {
+      toast.error(error?.message || "Sauvegarde impossible.");
     } finally {
       setBusy(null);
     }
@@ -673,23 +681,21 @@ function CloudSyncBlock() {
     if (!window.confirm("Récupérer la dernière sauvegarde remplace vos données locales actuelles. Continuer ?")) return;
     setBusy("restore");
     try {
-      const { restoreFromLicense } = await import("@/lib/cloud-sync");
-      const state = JSON.parse(window.localStorage.getItem("behar-tech-local-demo-v3") || "{}");
-      const licenseKey = state?.state?.licenseKey || state?.licenseKey;
-      if (!licenseKey) {
+      const license = normalizeLicenseKey(useBeharStore.getState().licenseKey);
+      if (!license) {
         toast.error("Aucune licence active.");
         return;
       }
-      const result = await restoreFromLicense(licenseKey);
-      if (!result.ok) {
-        const msg = result.error === "not_found"
-          ? "Aucune sauvegarde disponible."
-          : result.error === "no_license"
-            ? "Licence manquante."
-            : "Erreur réseau.";
-        toast.error(msg);
+      const snapshot = await loadSnapshotByLicenseKey(license);
+      if (!snapshot) {
+        toast.error("Aucune sauvegarde disponible.");
+        return;
       }
-      // En cas de succès, le reload est automatique
+      hydrateStoreFromCloud(snapshot);
+      setLastSyncedAt(snapshot.updatedAt);
+      toast.success("Données restaurées.");
+    } catch (error: any) {
+      toast.error(error?.message || "Restauration impossible.");
     } finally {
       setBusy(null);
     }

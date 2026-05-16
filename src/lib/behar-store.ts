@@ -570,6 +570,11 @@ export type LicenseInfo = {
 export type StoreState = {
   _hasHydrated: boolean;
   setHasHydrated: (v: boolean) => void;
+  cloudSync?: {
+    workshopId?: string;
+    lastSyncedAt?: string;
+    localUpdatedAt?: string;
+  };
   workshopInfo: WorkshopInfo;
   workshopSettings: WorkshopSettings;
   onboardingCompleted: boolean;
@@ -3028,7 +3033,6 @@ export const useBeharStore = create<StoreState>()(
             licenseKey: key.toUpperCase().trim(),
             licensePlan: "Pilote",
             licenseActivatedAt: new Date().toISOString(),
-            onboardingCompleted: false, // Force re-onboarding on new activation
           });
           return true;
         }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CheckCircle2, AlertCircle, Lock, Shield, Zap, Layers, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { useBeharStore } from "@/lib/behar-store";
+import { ensureCloudStateForLicense, normalizeLicenseKey } from "@/lib/workshop-sync";
 import { cn } from "@/lib/utils";
 
 export function LicenseActivation() {
@@ -23,8 +24,8 @@ export function LicenseActivation() {
     setIsLoading(true);
     await new Promise((r) => setTimeout(r, 800));
 
-    const trimmedKey = key.trim();
-    const result = activateLicense(trimmedKey);
+    const normalizedKey = normalizeLicenseKey(key);
+    const result = activateLicense(normalizedKey);
 
     if (!result) {
       setError("Clé invalide. Vérifiez votre licence.");
@@ -33,34 +34,23 @@ export function LicenseActivation() {
       return;
     }
 
-    // ── Netflix-style restore : on cherche un atelier existant pour cette licence ──
     try {
-      const { downloadSnapshotByLicense } = await import("@/lib/cloud-sync");
-      const remote = await downloadSnapshotByLicense(trimmedKey);
-      if (remote.ok) {
-        const dateStr = new Date(remote.updatedAt).toLocaleString("fr-FR", {
-          dateStyle: "short",
-          timeStyle: "short",
-        });
-        const sizeKo = Math.round(remote.sizeBytes / 1024);
-        const wsName = remote.workshopName ? ` (${remote.workshopName})` : "";
-        if (window.confirm(
-          `Nous avons retrouvé vos données${wsName}.\n\nDernière sauvegarde : ${dateStr} · ${sizeKo} Ko\n\nLes restaurer maintenant ?`,
-        )) {
-          // On écrit le snapshot dans localStorage et on recharge pour que Zustand rehydrate
-          const STORAGE_KEY = "behar-tech-local-demo-v3";
-          window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: remote.state, version: 1 }));
-          toast.success("Données restaurées. Chargement…");
-          window.location.reload();
-          return;
-        }
+      const result = await ensureCloudStateForLicense(normalizedKey);
+      if (result === "loaded") {
+        toast.success("Atelier cloud chargé.");
+      } else if (result === "created") {
+        toast.success("Licence activée. Atelier cloud créé.");
+      } else {
+        toast.warning("Licence activée hors ligne. Les données seront sauvegardées au retour du réseau.");
       }
-    } catch {
-      // Si Supabase est inaccessible ou erreur réseau, on continue en local — pas bloquant
+    } catch (error: any) {
+      setError(error?.message || "Impossible de charger l'atelier cloud.");
+      toast.error("Chargement cloud impossible.");
+      setIsLoading(false);
+      return;
     }
 
     setSuccess(true);
-    toast.success("Licence activée.");
     setIsLoading(false);
   };
 

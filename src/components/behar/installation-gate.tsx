@@ -4,13 +4,18 @@ import { useEffect, useState } from "react";
 import { OnboardingWizard } from "@/components/behar/onboarding-wizard";
 import { LicenseActivation } from "@/components/behar/license-activation";
 import { useBeharStore } from "@/lib/behar-store";
+import { ensureCloudStateForLicense, normalizeLicenseKey } from "@/lib/workshop-sync";
 
 export function InstallationGate({ children }: { children: React.ReactNode }) {
   const hasHydrated = useBeharStore((s) => s._hasHydrated);
   const setHasHydrated = useBeharStore((s) => s.setHasHydrated);
   const licenseActivated = useBeharStore((s) => s.licenseActivated);
+  const licenseKey = useBeharStore((s) => s.licenseKey);
   const onboardingCompleted = useBeharStore((s) => s.onboardingCompleted);
   const [hydrationTimedOut, setHydrationTimedOut] = useState(false);
+  const [cloudCheckedKey, setCloudCheckedKey] = useState("");
+  const [cloudLoading, setCloudLoading] = useState(false);
+  const normalizedActiveKey = normalizeLicenseKey(licenseKey);
 
   useEffect(() => {
     if (hasHydrated) return;
@@ -22,6 +27,28 @@ export function InstallationGate({ children }: { children: React.ReactNode }) {
 
     return () => window.clearTimeout(timer);
   }, [hasHydrated, setHasHydrated]);
+
+  useEffect(() => {
+    if (!hasHydrated || !licenseActivated) return;
+    const normalizedKey = normalizeLicenseKey(licenseKey);
+    if (!normalizedKey || cloudCheckedKey === normalizedKey || cloudLoading) return;
+
+    let cancelled = false;
+    setCloudLoading(true);
+    ensureCloudStateForLicense(normalizedKey)
+      .catch((error) => {
+        console.error("[installation-gate] cloud bootstrap failed", error);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setCloudCheckedKey(normalizedKey);
+        setCloudLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cloudCheckedKey, cloudLoading, hasHydrated, licenseActivated, licenseKey]);
 
   // Wait for the store to rehydrate from localStorage before making any routing decision.
   // Without this, the initial state (licenseActivated: false) would flash the license screen
@@ -39,6 +66,17 @@ export function InstallationGate({ children }: { children: React.ReactNode }) {
 
   if (!licenseActivated) {
     return <LicenseActivation />;
+  }
+
+  if (cloudLoading || (normalizedActiveKey && cloudCheckedKey !== normalizedActiveKey)) {
+    return (
+      <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[#FAFAF8]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="size-10 rounded-full border-2 border-[#E7E4DC] border-t-[#2A9D8F] animate-spin" />
+          <p className="text-[#6B6B6B] text-sm">Chargement de l’atelier cloud…</p>
+        </div>
+      </div>
+    );
   }
 
   if (onboardingCompleted) {
