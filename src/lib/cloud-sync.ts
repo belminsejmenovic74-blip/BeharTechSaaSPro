@@ -348,11 +348,31 @@ let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let autoSyncEnabled = true;
 let setupDone = false;
 
+/** Backoff exponentiel : 2s, 4s, 8s (max 3 tentatives). */
+async function uploadWithRetry(maxRetries = 3): Promise<UploadResult> {
+  let lastResult: UploadResult = { ok: false, error: "no_attempt" };
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    lastResult = await uploadSnapshot({ silent: false });
+    if (lastResult.ok) return lastResult;
+    // Pas de retry si la cause n'est pas réseau/temporaire (ex: licence manquante)
+    const msg = lastResult.error || "";
+    const isTransient =
+      /fetch|Network|timeout|503|502|504|temporar|réseau/i.test(msg) ||
+      syncState.status === "offline";
+    if (!isTransient) return lastResult;
+    if (attempt < maxRetries - 1) {
+      const delay = 2000 * Math.pow(2, attempt);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  return lastResult;
+}
+
 function scheduleSync() {
   if (!autoSyncEnabled) return;
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
-    void uploadSnapshot({ silent: false });
+    void uploadWithRetry();
   }, DEBOUNCE_MS);
 }
 

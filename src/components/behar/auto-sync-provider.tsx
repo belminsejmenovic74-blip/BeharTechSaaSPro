@@ -20,8 +20,7 @@ export function AutoSyncProvider() {
 
     let cancelled = false;
 
-    // Check après 2 sec (laisse l'app se charger d'abord)
-    const t = setTimeout(async () => {
+    const runCheck = async () => {
       const fresher = await checkCloudFresher();
       if (cancelled || !fresher) return;
 
@@ -41,6 +40,7 @@ export function AutoSyncProvider() {
       toast(
         "Données plus récentes disponibles",
         {
+          id: "cloud-newer-available",
           description: `Un autre poste a modifié les données (${dateStr}). Actualiser ?`,
           duration: 12_000,
           onDismiss: () => {
@@ -68,11 +68,21 @@ export function AutoSyncProvider() {
           },
         },
       );
-    }, 2000);
+    };
+
+    // 1er check après 2 sec (laisse l'app se charger).
+    const initial = setTimeout(runCheck, 2000);
+    // Polling périodique pour détecter les modifs faites depuis un autre device.
+    const interval = window.setInterval(runCheck, 60_000);
+    // Re-check immédiat au retour du réseau.
+    const onOnline = () => { void runCheck(); };
+    window.addEventListener("online", onOnline);
 
     return () => {
       cancelled = true;
-      clearTimeout(t);
+      clearTimeout(initial);
+      window.clearInterval(interval);
+      window.removeEventListener("online", onOnline);
     };
   }, []);
 
