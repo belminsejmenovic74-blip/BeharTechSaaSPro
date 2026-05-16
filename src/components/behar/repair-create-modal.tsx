@@ -705,8 +705,17 @@ export function RepairModal({
       data-testid="new-repair-modal"
     >
       <div className={`relative flex w-full ${view === "intake" ? "max-w-6xl" : "max-w-5xl"} flex-col overflow-hidden rounded-[20px] border border-[#E7E4DC] bg-white shadow-2xl md:max-h-[92vh] ${view === "intake" ? "" : "md:flex-row"}`}>
+        {/* Croix X de fermeture globale — toujours visible, ferme le modal peu importe la vue */}
+        <button
+          aria-label="Fermer"
+          className="absolute top-3 right-3 z-10 grid size-9 place-items-center rounded-full bg-white/90 text-[#6B6B6B] shadow-sm backdrop-blur transition hover:bg-white hover:text-[#1A1916]"
+          onClick={onClose}
+          type="button"
+        >
+          <X className="size-4" />
+        </button>
         {view === "intake" ? (
-          <div className="flex min-h-0 flex-1 flex-col p-4 md:p-6">
+          <div className="flex min-h-[500px] flex-1 flex-col p-4 md:p-6">
             <RepairIntakeScreen
               repair={{
                 id: initial?.id ?? "draft",
@@ -1526,7 +1535,13 @@ export function RepairModal({
               </div>
               <SecondaryButton
                 className="h-10"
-                onClick={() => setView("intake")}
+                onClick={() => {
+                  if (!initial) {
+                    toast.info("Créez d'abord la réparation pour compléter l'état d'entrée.");
+                    return;
+                  }
+                  setView("intake");
+                }}
                 type="button"
               >
                 {intakeDraft ? "Modifier l'état d'entrée" : "Compléter l'état d'entrée"}

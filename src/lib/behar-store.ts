@@ -1470,7 +1470,6 @@ export function buildInvoiceLinesFromRepair(
     normalizeText(snap?.piece) ||
     "Réparation";
 
-  const laborLineTotal = clampMoney(repair.laborPrice ?? repair.amount ?? repair.total ?? snap?.prixClientTotal ?? 0);
   const accessoryLines = (repair.repairSaleLines ?? []).map((line) => ({
     id: uid("line"),
     description: line.sku ? `${line.name} (${line.sku})` : line.name,
@@ -1478,9 +1477,28 @@ export function buildInvoiceLinesFromRepair(
     unitPrice: line.unitPrice,
     total: line.total,
   }));
-  const finalPrice = clampMoney(laborLineTotal + accessoryLines.reduce((sum, line) => sum + line.total, 0));
+  const accessoriesTotal = accessoryLines.reduce((sum, line) => sum + line.total, 0);
+  // Total client réel : pièce(s) + main-d'œuvre. Priorité au total enregistré sur la réparation,
+  // puis snapshot, puis somme laborPrice + parts. laborPrice seul n'est PAS le total client.
+  const partsSaleTotal = (repair.parts ?? []).reduce(
+    (sum, part) => sum + clampMoney(part.salePrice) * (part.quantity || 0),
+    0,
+  );
+  const fallbackSum = clampMoney((repair.laborPrice ?? 0) + partsSaleTotal);
+  const customerTotalRaw =
+    repair.total && repair.total > 0
+      ? repair.total
+      : repair.amount && repair.amount > 0
+        ? repair.amount
+        : snap?.prixClientTotal && snap.prixClientTotal > 0
+          ? snap.prixClientTotal
+          : fallbackSum;
+  // Le total réparation peut déjà inclure les accessoires (cf. normalizeRepair) : on les retire
+  // pour éviter le double comptage, puisque les accessoryLines sont ajoutées séparément.
+  const laborLineTotal = clampMoney(Math.max(0, customerTotalRaw - accessoriesTotal));
+  const finalPrice = clampMoney(laborLineTotal + accessoriesTotal);
   if (finalPrice <= 0) {
-    return { ok: false, message: "Ajoutez un tarif à la réparation avant de facturer." };
+    return { ok: false, message: "Ajoutez un tarif client avant de créer une facture." };
   }
 
   const deviceTail = [brandLabel, modelLabel].filter(Boolean).join(" ").trim();

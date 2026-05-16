@@ -36,91 +36,163 @@ export const usePrint = useDocument;
 
 export function PrintProvider({ children }: { children: ReactNode }) {
   const store = useBeharStore();
-  const [activeDoc, setActiveDoc] = useState<{ type: DocumentType; id: string; action: "print" | "download" } | null>(
-    null,
-  );
+  const [activeDoc, setActiveDoc] = useState<{
+    type: DocumentType;
+    id: string;
+    action: "print" | "download";
+    /** Identifiant unique de la requête, pour rejeter les callbacks périmés. */
+    reqId: number;
+  } | null>(null);
   const hiddenContainerRef = useRef<HTMLDivElement>(null);
-  const print = (type: DocumentType, id: string) => {
-    setActiveDoc({ type, id, action: "print" });
-  };
+  /** Empêche les double-clics : tant qu'un download est en cours, on ignore. */
+  const inFlightRef = useRef(false);
+  /** Compteur pour générer des IDs de requête uniques. */
+  const reqCounterRef = useRef(0);
 
-  const download = (type: DocumentType, id: string) => {
-    setActiveDoc({ type, id, action: "download" });
-  };
+  const print = useCallback((type: DocumentType, id: string) => {
+    setActiveDoc({ type, id, action: "print", reqId: ++reqCounterRef.current });
+  }, []);
 
-  const getFilename = useCallback(
-    (type: DocumentType, id: string) => {
-      if (type === "intake") {
-        const repair = store.repairs.find((repair) => repair.id === id);
-        return `bon-prise-en-charge-${repair?.number || id}.pdf`;
-      }
-      if (type === "quote") {
-        const quote = store.quotes.find((quote) => quote.id === id);
-        return `devis-${quote?.number || id}.pdf`;
-      }
-      if (type === "invoice") {
-        const invoice = store.invoices.find((invoice) => invoice.id === id);
-        return `facture-${invoice?.number || id}.pdf`;
-      }
-      if (type === "payment") {
-        const payment = store.payments.find((payment) => payment.id === id);
-        return `recu-paiement-${payment?.paymentNumber || id}.pdf`;
-      }
-      if (type === "internal") {
-        const repair = store.repairs.find((repair) => repair.id === id);
-        return `fiche-interne-${repair?.number || id}.pdf`;
-      }
-      if (type === "sale-receipt") {
-        const sale = store.sales.find((s) => s.id === id);
-        return `recu-vente-${sale?.number || id}.pdf`;
-      }
-      return `document-${id}.pdf`;
-    },
-    [store.invoices, store.payments, store.quotes, store.repairs, store.sales],
-  );
+  const download = useCallback((type: DocumentType, id: string) => {
+    if (inFlightRef.current) {
+      // Un download est déjà en cours — on ne relance pas.
+      toast.info("Un téléchargement est déjà en cours…");
+      return;
+    }
+    setActiveDoc({ type, id, action: "download", reqId: ++reqCounterRef.current });
+  }, []);
+
+  // Refs pour découpler les fonctions de résolution du store : on évite que
+  // chaque mutation du store ne ré-exécute l'effet de génération PDF.
+  const storeRef = useRef(store);
+  useEffect(() => {
+    storeRef.current = store;
+  }, [store]);
+
+  const getFilename = useCallback((type: DocumentType, id: string) => {
+    const s = storeRef.current;
+    if (type === "intake") {
+      const repair = s.repairs.find((repair) => repair.id === id);
+      return `bon-prise-en-charge-${repair?.number || id}.pdf`;
+    }
+    if (type === "quote") {
+      const quote = s.quotes.find((quote) => quote.id === id);
+      return `devis-${quote?.number || id}.pdf`;
+    }
+    if (type === "invoice") {
+      const invoice = s.invoices.find((invoice) => invoice.id === id);
+      return `facture-${invoice?.number || id}.pdf`;
+    }
+    if (type === "payment") {
+      const payment = s.payments.find((payment) => payment.id === id);
+      return `recu-paiement-${payment?.paymentNumber || id}.pdf`;
+    }
+    if (type === "internal") {
+      const repair = s.repairs.find((repair) => repair.id === id);
+      return `fiche-interne-${repair?.number || id}.pdf`;
+    }
+    if (type === "sale-receipt") {
+      const sale = s.sales.find((sale) => sale.id === id);
+      return `recu-vente-${sale?.number || id}.pdf`;
+    }
+    return `document-${id}.pdf`;
+  }, []);
 
   useEffect(() => {
     if (!activeDoc) return;
+    const currentReqId = activeDoc.reqId;
 
     if (activeDoc.action === "print") {
       const timer = setTimeout(() => {
         try {
           window.print();
-          setTimeout(() => setActiveDoc(null), 2000);
         } catch (error) {
           console.error("Print error:", error);
           toast.error("Erreur d'impression");
-          setActiveDoc(null);
+        } finally {
+          // Toujours libérer, même si window.print échoue
+          setTimeout(() => {
+            setActiveDoc((current) => (current?.reqId === currentReqId ? null : current));
+          }, 1500);
         }
       }, 500);
       return () => clearTimeout(timer);
     }
 
-    if (activeDoc.action === "download") {
-      const processingToast = toast.loading("1/3 : Analyse du document...");
+    // ── Download ──────────────────────────────────────────────────────────
+    inFlightRef.current = true;
+    const processingToast = toast.loading("1/3 : Analyse du document…");
+    let settled = false;
+    let cancelled = false;
 
-      const timer = setTimeout(async () => {
-        try {
-          if (!hiddenContainerRef.current) throw new Error("Conteneur absent");
+    const finish = (kind: "ok" | "error" | "missing" | "timeout", payload?: string) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(safetyTimer);
+      clearTimeout(startTimer);
+      if (kind === "ok") {
+        toast.success(`3/3 : Téléchargé : ${payload}`, { id: processingToast });
+      } else if (kind === "missing") {
+        toast.error(payload || "Document introuvable.", { id: processingToast });
+      } else if (kind === "timeout") {
+        toast.error("Impossible de générer le PDF. Réessayez.", { id: processingToast });
+      } else {
+        toast.error("Impossible de générer le PDF. Réessayez.", { id: processingToast });
+      }
+      inFlightRef.current = false;
+      // Libère le state pour permettre une nouvelle génération
+      setActiveDoc((current) => (current?.reqId === currentReqId ? null : current));
+    };
 
-          const docElement = hiddenContainerRef.current.querySelector('[data-pdf-paginate="true"], .print-document') as HTMLElement;
-          if (!docElement) throw new Error("Contenu introuvable (rendu en cours...)");
+    // Safety net : si la génération met plus de 45 sec, on libère tout
+    const safetyTimer = setTimeout(() => {
+      if (cancelled) return;
+      finish("timeout");
+    }, 45_000);
 
-          toast.loading("2/3 : Création du PDF...", { id: processingToast });
-          const filename = getFilename(activeDoc.type, activeDoc.id);
-
-          await generatePdfFromElement(docElement, filename);
-          toast.success(`3/3 : Téléchargé : ${filename}`, { id: processingToast });
-        } catch (error) {
-          console.error("Download error:", error);
-          toast.error(`Erreur : ${error instanceof Error ? error.message : "Échec"}`, { id: processingToast });
-        } finally {
-          setActiveDoc(null);
+    const startTimer = setTimeout(async () => {
+      if (cancelled) return;
+      try {
+        if (!hiddenContainerRef.current) {
+          finish("missing", "Conteneur PDF absent.");
+          return;
         }
-      }, 1200);
-      return () => clearTimeout(timer);
-    }
-  }, [activeDoc, getFilename]);
+
+        const docElement = hiddenContainerRef.current.querySelector(
+          '[data-pdf-paginate="true"], .print-document',
+        ) as HTMLElement | null;
+        if (!docElement) {
+          finish("missing", "Document lié introuvable.");
+          return;
+        }
+
+        toast.loading("2/3 : Création du PDF…", { id: processingToast });
+        const filename = getFilename(activeDoc.type, activeDoc.id);
+
+        await generatePdfFromElement(docElement, filename);
+        if (!cancelled) finish("ok", filename);
+      } catch (error) {
+        console.error("Download error:", error);
+        if (!cancelled) finish("error");
+      }
+    }, 1200);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(startTimer);
+      clearTimeout(safetyTimer);
+      // Si l'effet est démonté avant la fin (changement d'activeDoc, unmount),
+      // on dismiss le toast de chargement pour ne jamais le laisser pendre.
+      if (!settled) {
+        toast.dismiss(processingToast);
+        inFlightRef.current = false;
+      }
+    };
+    // ⚠️ Volontairement, on ne met PAS getFilename en deps : on a déjà découplé
+    // via storeRef pour que les mutations du store ne ré-exécutent pas l'effet
+    // pendant qu'un PDF est en cours.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeDoc]);
 
   const renderDocument = () => {
     if (!activeDoc) return null;

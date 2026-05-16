@@ -22,6 +22,17 @@ export function PinLoginGate({ children }: Readonly<{ children: ReactNode }>) {
   const users = useBeharStore((s) => s.users);
   const loginWithUserPin = useBeharStore((s) => s.loginWithUserPin);
   const _hasHydrated = useBeharStore((s) => s._hasHydrated);
+  const setHasHydrated = useBeharStore((s) => s.setHasHydrated);
+  const [hydrationTimedOut, setHydrationTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (_hasHydrated) return;
+    const t = window.setTimeout(() => {
+      setHydrationTimedOut(true);
+      setHasHydrated(true);
+    }, 600);
+    return () => window.clearTimeout(t);
+  }, [_hasHydrated, setHasHydrated]);
 
   const validSession = useMemo(() => {
     if (!sessionUserId) return false;
@@ -29,7 +40,7 @@ export function PinLoginGate({ children }: Readonly<{ children: ReactNode }>) {
     return Boolean(user?.active);
   }, [sessionUserId, users]);
 
-  if (!_hasHydrated) {
+  if (!_hasHydrated && !hydrationTimedOut) {
     return (
       <div className="flex min-h-svh items-center justify-center bg-[#FAFAF8] text-[#6B6B6B]">
         Chargement…

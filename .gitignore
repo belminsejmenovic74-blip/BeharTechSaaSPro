@@ -8,6 +8,10 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
+/qa-results/screenshots/
+*.webm
 
 # next.js
 /.next/
@@ -46,3 +50,8 @@ src-tauri/gen/
 .github/workflows/tauri_release.yml
 
 .github/workflows/tauri-release.yml
+
+# Binaires desktop (générés)
+public/telecharger/*.dmg
+public/telecharger/*.exe
+public/telecharger/*.deb

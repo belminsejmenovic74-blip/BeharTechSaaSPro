@@ -1,16 +1,13 @@
 "use client";
 
-import { ArrowRight, Download, MonitorSmartphone, Apple, HardDrive } from "lucide-react";
-
-const APP_URL = "https://behartechpro.fr/";
-
-const DOWNLOADS = {
-  windows: "/telecharger/Behar-Tech-Pro-Setup.exe",
-  mac: "/telecharger/Behar-Tech-Pro-Mac.dmg",
-  linux: "/telecharger/Behar-Tech-Pro-Linux.deb",
-};
+import { ArrowRight, MonitorSmartphone, Apple, HardDrive } from "lucide-react";
 
 export default function DownloadPage() {
+  // Tant qu'aucun vrai installateur signé n'est publié, on ne propose pas de
+  // faux téléchargements. Les boutons restent désactivés et un CTA principal
+  // dirige vers la version web.
+  const desktopReady = false;
+
   return (
     <div className="min-h-svh bg-[#FAFAF8] flex flex-col items-center justify-center px-5 py-10">
       <div className="w-full max-w-[480px] text-center">
@@ -35,50 +32,63 @@ export default function DownloadPage() {
           Application installable pour atelier de réparation.
         </p>
 
+        {/* CTA principal — version navigateur, toujours disponible */}
         <div className="mt-10 grid gap-2.5">
           <a
-            href={DOWNLOADS.windows}
-            download
+            href="/dashboard"
             className="group inline-flex h-14 items-center justify-center gap-3 rounded-[14px] bg-[#1A1916] text-[15px] font-semibold text-white shadow-[0_4px_16px_rgba(26,25,22,0.15)] transition hover:bg-[#2A2922] active:scale-[0.98]"
           >
-            <MonitorSmartphone className="size-5" strokeWidth={1.8} />
-            <span>Télécharger pour Windows</span>
-            <Download className="size-4 transition-transform group-hover:translate-y-0.5" strokeWidth={2} />
+            <span>Ouvrir Behar Tech Pro dans le navigateur</span>
+            <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
           </a>
+        </div>
 
-          <a
-            href={DOWNLOADS.mac}
-            download
-            className="group inline-flex h-14 items-center justify-center gap-3 rounded-[14px] border border-[#E7E4DC] bg-white text-[15px] font-semibold text-[#1A1916] transition hover:border-[#1A1916]/30 hover:bg-[#FAFAF8] active:scale-[0.98]"
+        {/* Boutons desktop — désactivés tant qu'il n'y a pas de vrai installateur */}
+        <div className="mt-6 grid gap-2.5">
+          <button
+            type="button"
+            disabled
+            aria-disabled="true"
+            title="Version desktop bientôt disponible"
+            className="inline-flex h-14 cursor-not-allowed items-center justify-center gap-3 rounded-[14px] border border-[#E7E4DC] bg-[#F5F4F0] text-[15px] font-semibold text-[#A09F9A] opacity-80"
+          >
+            <MonitorSmartphone className="size-5" strokeWidth={1.8} />
+            <span>Windows — bientôt disponible</span>
+          </button>
+
+          <button
+            type="button"
+            disabled
+            aria-disabled="true"
+            title="Version desktop bientôt disponible"
+            className="inline-flex h-14 cursor-not-allowed items-center justify-center gap-3 rounded-[14px] border border-[#E7E4DC] bg-[#F5F4F0] text-[15px] font-semibold text-[#A09F9A] opacity-80"
           >
             <Apple className="size-5" strokeWidth={1.8} />
-            <span>Télécharger pour Mac</span>
-            <Download className="size-4 transition-transform group-hover:translate-y-0.5" strokeWidth={2} />
-          </a>
+            <span>Mac — bientôt disponible</span>
+          </button>
 
-          <a
-            href={DOWNLOADS.linux}
-            download
-            className="group inline-flex h-14 items-center justify-center gap-3 rounded-[14px] border border-[#E7E4DC] bg-white text-[15px] font-semibold text-[#1A1916] transition hover:border-[#1A1916]/30 hover:bg-[#FAFAF8] active:scale-[0.98]"
+          <button
+            type="button"
+            disabled
+            aria-disabled="true"
+            title="Version desktop bientôt disponible"
+            className="inline-flex h-14 cursor-not-allowed items-center justify-center gap-3 rounded-[14px] border border-[#E7E4DC] bg-[#F5F4F0] text-[15px] font-semibold text-[#A09F9A] opacity-80"
           >
             <HardDrive className="size-5" strokeWidth={1.8} />
-            <span>Télécharger pour Linux</span>
-            <Download className="size-4 transition-transform group-hover:translate-y-0.5" strokeWidth={2} />
-          </a>
+            <span>Linux — bientôt disponible</span>
+          </button>
+
+          <p className="mt-2 text-[12px] text-[#6B6B6B]">
+            Version desktop bientôt disponible — utilisez la version navigateur en attendant.
+          </p>
         </div>
 
-        <div className="mt-8 border-t border-[#F1F1EF] pt-6">
-          <a
-            href={APP_URL}
-            className="inline-flex items-center gap-1.5 text-[13px] text-[#6B6B6B] transition-colors hover:text-[#1A1916]"
-          >
-            Utiliser dans le navigateur <ArrowRight className="size-3.5" />
-          </a>
-        </div>
+        {/* Hint développeur : quand `desktopReady` passera à true et que les vrais
+            installateurs signés seront dans /public/downloads/, restaurer les
+            <a href="/downloads/Behar-Tech-Pro-Setup.exe" download> etc. */}
+        {desktopReady ? null : null}
 
-        <p className="mt-6 text-xs text-[#6B6B6B]">
-          Version actuelle : 1.0.0
-        </p>
+        <p className="mt-10 text-xs text-[#6B6B6B]">Version actuelle : 1.0.0</p>
       </div>
     </div>
   );

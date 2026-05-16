@@ -18,7 +18,7 @@ export function InstallationGate({ children }: { children: React.ReactNode }) {
     const timer = window.setTimeout(() => {
       setHydrationTimedOut(true);
       setHasHydrated(true);
-    }, 2500);
+    }, 600);
 
     return () => window.clearTimeout(timer);
   }, [hasHydrated, setHasHydrated]);

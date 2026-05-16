@@ -82,16 +82,6 @@ function serviceDescription(line: QuoteLine, repair?: Repair): string {
   return alreadyDetailed ? base : `${device} — ${issue || base}`;
 }
 
-function initials(workshop: WorkshopInfo): string {
-  return text(workshop.name, defaultWorkshopInfo.name)
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
-}
-
 function Badge({ children, tone = "accent" }: Readonly<{ children: ReactNode; tone?: "accent" | "neutral" }>) {
   return (
     <span
@@ -152,18 +142,10 @@ function DocumentHeader({
   badge,
   workshop,
 }: Readonly<{ title: string; number?: string; date?: string; badge?: string; workshop: WorkshopInfo }>) {
-  const logo = workshop.showLogo !== false ? workshop.logoUrl?.trim() : "";
-  const atelierName = text(workshop.name, defaultWorkshopInfo.name);
+  const atelierName = text(workshop.name, "BEHAR • TECH PRO");
   return (
     <header className="flex items-start justify-between gap-10 border-b border-[#E8E8E5] pb-8">
-      <div className="flex max-w-[390px] gap-4">
-        {logo ? (
-          <img src={logo} alt={atelierName} className="h-14 w-14 rounded-[14px] object-contain" />
-        ) : (
-          <div className="grid h-14 w-14 shrink-0 place-items-center rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] font-semibold text-[#2A9D8F] text-lg">
-            {initials(workshop) || "BT"}
-          </div>
-        )}
+      <div className="max-w-[390px]">
         <div className="text-[12px] leading-relaxed text-[#6B6B6B]">
           <p className="font-semibold text-[#1A1916] text-[16px] tracking-tight">{atelierName}</p>
           {workshop.commercialName ? <p>{text(workshop.commercialName)}</p> : null}
@@ -195,7 +177,7 @@ function DocumentFooter({ workshop }: Readonly<{ workshop: WorkshopInfo }>) {
       {methods.length ? <p>Moyens de paiement acceptés : {methods.join(" · ")}</p> : null}
       {workshop.documentFooter ? <p>{text(workshop.documentFooter)}</p> : null}
       <p>
-        {text(workshop.name, defaultWorkshopInfo.name)} · SIRET {text(workshop.siret)} · {text(workshop.email)} ·{" "}
+        {text(workshop.name, "BEHAR • TECH PRO")} · SIRET {text(workshop.siret)} · {text(workshop.email)} ·{" "}
         {text(workshop.phone)} · Page 1/1
       </p>
     </footer>
@@ -373,19 +355,11 @@ function intakeAccessories(repair: Repair) {
 
 function IntakePdfHeader({ repair, workshop }: Readonly<{ repair: Repair; workshop?: WorkshopInfo }>) {
   const ws = workshop ?? ({} as WorkshopInfo);
-  const logo = ws.showLogo !== false ? ws.logoUrl?.trim() : "";
   return (
     <header className="flex items-start justify-between gap-8">
-      <div className="flex gap-5">
-        {logo ? (
-          <img alt={text(ws.name, "Logo atelier")} className="h-[96px] w-[96px] rounded-[12px] border border-[#E8E8E5] object-contain p-2" src={logo} />
-        ) : (
-          <div className="grid h-[96px] w-[96px] place-items-center rounded-[12px] border border-dashed border-[#CFCFCA] bg-[#FAFAF8] text-center font-semibold text-[#1A1916] text-[11px] leading-tight">
-            VOTRE LOGO ICI
-          </div>
-        )}
+      <div>
         <div className="text-[12px] leading-relaxed text-[#1A1916]">
-          <p className="font-bold text-[15px] uppercase">{text(ws.name, "Nom de votre atelier")}</p>
+          <p className="font-bold text-[15px] uppercase">{text(ws.name, "BEHAR • TECH PRO")}</p>
           <p>{text(ws.address)}</p>
           <p>{text(ws.postalCity, `${text(ws.postalCode)} ${text(ws.city)}`)}</p>
           <p>tél. : {text(ws.phone)}</p>
@@ -632,10 +606,70 @@ export function InvoiceDocument({
       ) : null}
       <PremiumTable repair={repair} rows={invoice.lines ?? []} />
       <TotalsCard lines={invoice.lines ?? []} paid={paidAmount} showBalance total={total} workshop={ws} />
-      <NoticeCard title="Mentions légales">
-        {text(ws.invoiceTerms, "Facture émise conformément aux informations communiquées par le client. Paiement à réception sauf accord contraire.")}
-      </NoticeCard>
+      <InvoiceLegalMentions invoice={invoice} workshop={ws} />
     </DocumentLayout>
+  );
+}
+
+/**
+ * Mentions obligatoires sur une facture française (art. 242 nonies A CGI,
+ * art. L441-9 Code de commerce, art. L441-10 pour les pénalités).
+ */
+function InvoiceLegalMentions({ invoice, workshop }: Readonly<{ invoice: Invoice; workshop: WorkshopInfo }>) {
+  const ws = workshop;
+  const issuedAt = invoice.date ? dateLabel(invoice.date) : "Non renseignée";
+  const paid = invoice.status === "Payée";
+  const dueLabel = paid ? "Réglée" : "Paiement à réception de facture";
+  return (
+    <section className="grid gap-4 md:grid-cols-2">
+      <div className="rounded-[14px] border border-[#E8E8E5] bg-white p-5 print:rounded-none">
+        <h3 className="mb-3 font-semibold text-[#1A1916] text-[13px] uppercase tracking-wide">Conditions de règlement</h3>
+        <dl className="grid gap-1 text-[12px] text-[#1A1916]">
+          <KeyValue label="Date d'émission" value={issuedAt} />
+          <KeyValue label="Date d'échéance" value={dueLabel} />
+          <KeyValue label="Mode de règlement" value={dash(invoice.paymentMethod)} />
+          {invoice.paidAt ? <KeyValue label="Date de paiement" value={dateLabel(invoice.paidAt)} /> : null}
+        </dl>
+        <p className="mt-3 text-[10px] leading-relaxed text-[#6B6B6B]">
+          Pas d'escompte pour règlement anticipé. En cas de retard de paiement, application de pénalités au taux de trois
+          fois le taux d'intérêt légal en vigueur (art. L441-10 Code de commerce), exigibles sans rappel préalable, ainsi
+          qu'une indemnité forfaitaire pour frais de recouvrement de 40 € (art. D441-5 Code de commerce).
+        </p>
+      </div>
+
+      <div className="rounded-[14px] border border-[#E8E8E5] bg-white p-5 print:rounded-none">
+        <h3 className="mb-3 font-semibold text-[#1A1916] text-[13px] uppercase tracking-wide">Émetteur</h3>
+        <dl className="grid gap-1 text-[12px] text-[#1A1916]">
+          <KeyValue label="Raison sociale" value={text(ws.name, "BEHAR • TECH PRO")} />
+          {ws.commercialName ? <KeyValue label="Nom commercial" value={text(ws.commercialName)} /> : null}
+          <KeyValue
+            label="Adresse"
+            value={[
+              text(ws.address),
+              text(ws.postalCity, `${dash(ws.postalCode)} ${dash(ws.city)}`),
+              text(ws.country, "France"),
+            ]
+              .filter(Boolean)
+              .join(" — ")}
+          />
+          <KeyValue label="SIRET / SIREN" value={text(ws.siret)} />
+          {ws.tvaNumber ? <KeyValue label="N° TVA intracom." value={text(ws.tvaNumber)} /> : null}
+          <KeyValue label="Contact" value={`${text(ws.email)} · ${text(ws.phone)}`} />
+        </dl>
+        {!ws.vatApplicable ? (
+          <p className="mt-3 text-[10px] leading-relaxed text-[#6B6B6B]">
+            TVA non applicable, article 293 B du CGI.
+          </p>
+        ) : null}
+      </div>
+
+      {ws.invoiceTerms ? (
+        <div className="md:col-span-2 rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] p-5 print:rounded-none">
+          <h3 className="mb-2 font-semibold text-[#1A1916] text-[13px]">Mentions complémentaires</h3>
+          <p className="text-[#6B6B6B] text-[11px] leading-relaxed">{text(ws.invoiceTerms)}</p>
+        </div>
+      ) : null}
+    </section>
   );
 }
 

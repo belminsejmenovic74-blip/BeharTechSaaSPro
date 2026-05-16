@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const baseURL = process.env.BEHAR_BASE_URL ?? "http://localhost:3000";
-const slowMo = Number(process.env.PLAYWRIGHT_SLOWMO ?? process.env.BEHAR_TEST_SLOWMO ?? "250");
+const baseURL = process.env.BEHAR_BASE_URL ?? "http://127.0.0.1:3000";
+const slowMo = Number(process.env.PLAYWRIGHT_SLOWMO ?? process.env.BEHAR_TEST_SLOWMO ?? "120");
 const headless = (process.env.PLAYWRIGHT_HEADLESS ?? "false").toLowerCase() === "true";
 
 export default defineConfig({
@@ -36,9 +36,9 @@ export default defineConfig({
   ],
   webServer: {
     command: "npm run dev",
-    url: `${baseURL}/dashboard/`,
+    url: baseURL,
     reuseExistingServer: true,
-    timeout: 300_000,
+    timeout: 120_000,
     stdout: "pipe",
     stderr: "pipe",
   },
