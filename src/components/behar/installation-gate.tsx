@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { OnboardingWizard } from "@/components/behar/onboarding-wizard";
 import { LicenseActivation } from "@/components/behar/license-activation";
 import { useBeharStore } from "@/lib/behar-store";
@@ -15,6 +15,7 @@ export function InstallationGate({ children }: { children: React.ReactNode }) {
   const [hydrationTimedOut, setHydrationTimedOut] = useState(false);
   const [cloudCheckedKey, setCloudCheckedKey] = useState("");
   const [cloudLoading, setCloudLoading] = useState(false);
+  const cloudCheckInFlightKey = useRef("");
   const normalizedActiveKey = normalizeLicenseKey(licenseKey);
 
   useEffect(() => {
@@ -31,15 +32,19 @@ export function InstallationGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!hasHydrated || !licenseActivated) return;
     const normalizedKey = normalizeLicenseKey(licenseKey);
-    if (!normalizedKey || cloudCheckedKey === normalizedKey || cloudLoading) return;
+    if (!normalizedKey || cloudCheckedKey === normalizedKey || cloudCheckInFlightKey.current === normalizedKey) return;
 
     let cancelled = false;
+    cloudCheckInFlightKey.current = normalizedKey;
     setCloudLoading(true);
     ensureCloudStateForLicense(normalizedKey)
       .catch((error) => {
         console.error("[installation-gate] cloud bootstrap failed", error);
       })
       .finally(() => {
+        if (cloudCheckInFlightKey.current === normalizedKey) {
+          cloudCheckInFlightKey.current = "";
+        }
         if (cancelled) return;
         setCloudCheckedKey(normalizedKey);
         setCloudLoading(false);
@@ -48,7 +53,7 @@ export function InstallationGate({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [cloudCheckedKey, cloudLoading, hasHydrated, licenseActivated, licenseKey]);
+  }, [cloudCheckedKey, hasHydrated, licenseActivated, licenseKey]);
 
   // Wait for the store to rehydrate from localStorage before making any routing decision.
   // Without this, the initial state (licenseActivated: false) would flash the license screen
