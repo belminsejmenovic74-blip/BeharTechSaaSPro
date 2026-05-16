@@ -128,7 +128,11 @@ function rowToSnapshot(row: any, fallbackLicense: string): WorkshopSnapshot {
 
 export async function loadSnapshotByLicenseKey(key: string): Promise<WorkshopSnapshot | null> {
   const normalizedKey = normalizeLicenseKey(key);
-  if (!normalizedKey || !isSupabaseConfigured()) return null;
+  if (!normalizedKey) return null;
+  if (!isSupabaseConfigured()) {
+    markSyncStatus("error", { lastError: "Supabase non configuré sur ce déploiement." });
+    return null;
+  }
   const supabase = getSupabase();
   if (!supabase) return null;
 
@@ -173,7 +177,10 @@ export async function createSnapshotForLicenseKey(
 ): Promise<WorkshopSnapshot> {
   const normalizedKey = normalizeLicenseKey(key);
   if (!normalizedKey) throw new Error("Licence requise.");
-  if (!isSupabaseConfigured()) throw new Error("Supabase non configuré.");
+  if (!isSupabaseConfigured()) {
+    markSyncStatus("error", { lastError: "Supabase non configuré sur ce déploiement." });
+    throw new Error("Supabase non configuré sur ce déploiement.");
+  }
   const supabase = getSupabase();
   if (!supabase) throw new Error("Client Supabase indisponible.");
 
@@ -230,7 +237,10 @@ export async function saveSnapshotState(
 ): Promise<WorkshopSnapshot> {
   const normalizedKey = normalizeLicenseKey(key);
   if (!normalizedKey) throw new Error("Licence requise.");
-  if (!isSupabaseConfigured()) throw new Error("Supabase non configuré.");
+  if (!isSupabaseConfigured()) {
+    markSyncStatus("error", { lastError: "Supabase non configuré sur ce déploiement." });
+    throw new Error("Supabase non configuré sur ce déploiement.");
+  }
   const supabase = getSupabase();
   if (!supabase) throw new Error("Client Supabase indisponible.");
 
@@ -309,7 +319,7 @@ export async function ensureCloudStateForLicense(key: string): Promise<"loaded" 
 
   if (!isSupabaseConfigured()) {
     cacheWorkshopState(localState);
-    markSyncStatus("offline", { lastError: "Supabase non configuré." });
+    markSyncStatus("error", { lastError: "Supabase non configuré sur ce déploiement." });
     return "offline";
   }
 

@@ -41,7 +41,7 @@ export function LicenseActivation() {
       } else if (result === "created") {
         toast.success("Licence activée. Atelier cloud créé.");
       } else {
-        toast.warning("Licence activée hors ligne. Les données seront sauvegardées au retour du réseau.");
+        toast.warning("Licence activée localement. Configurez Supabase sur Vercel pour activer la synchronisation cloud.");
       }
     } catch (error: any) {
       setError(error?.message || "Impossible de charger l'atelier cloud.");
