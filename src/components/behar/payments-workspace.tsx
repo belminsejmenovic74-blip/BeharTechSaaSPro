@@ -7,12 +7,14 @@ import { useRouter } from "next/navigation";
 
 import {
   AlertCircle,
+  Banknote,
   CalendarCheck,
   Check,
   Clock,
   CreditCard,
   Download,
   FileText,
+  Landmark,
   Link2,
   MoreHorizontal,
   Plus,
@@ -178,7 +180,14 @@ export function PaymentsWorkspace() {
         presetRepairId={selectedRepairPreset}
       />
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {/* Mobile : strip horizontal de KPI compacts */}
+      <section className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 md:hidden scrollbar-none">
+        <MobileKpi label="Encaissé ce mois" value={formatEuro(totalEncaisse)} helper="paiements réussis" tone="teal" />
+        <MobileKpi label="En attente" value={formatEuro(pendingTotal)} helper="à régler" tone="amber" />
+        <MobileKpi label="Aujourd'hui" value={formatEuro(todayAmount)} helper={`${todayCount} paiements`} tone="teal" />
+      </section>
+
+      <section className="hidden md:grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           label="Total encaissé"
           value={formatEuro(totalEncaisse)}
@@ -310,42 +319,48 @@ export function PaymentsWorkspace() {
                 </tbody>
               </table>
             </div>
-            {/* Vue cartes mobile */}
-            <div className="md:hidden divide-y divide-[#EFEDE6]">
+            {/* Vue cartes mobile premium */}
+            <div className="md:hidden space-y-2.5 bg-[#FAFAF8] p-3">
               {filteredPayments.length === 0 ? (
-                <p className="px-4 py-8 text-center text-[#6B6B6B] text-sm">Aucun paiement.</p>
+                <p className="rounded-[16px] bg-white px-4 py-10 text-center text-[#6B6B6B] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+                  Aucun paiement.
+                </p>
               ) : (
                 filteredPayments.map((payment) => {
                   const entryCustomer = store.customers.find((entry) => entry.id === payment.customerId);
                   const entryInvoice = store.invoices.find((entry) => entry.id === payment.invoiceId);
                   const entrySale = store.sales.find((entry) => entry.id === payment.saleId);
-                  const active = payment.id === selected?.id;
                   return (
                     <button
                       key={payment.id}
                       onClick={() => store.setSelected("payment", payment.id)}
-                      className={cn(
-                        "block w-full text-left px-4 py-3 transition active:bg-[#F6F7F4]",
-                        active ? "bg-[#E7F5F1]" : "bg-white",
-                      )}
+                      className="block w-full rounded-[18px] bg-white p-3.5 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
                       type="button"
                     >
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <PaymentMethodTile method={payment.method} />
                         <div className="min-w-0 flex-1">
-                          <p className="font-mono text-[#2A9D8F] text-[12px]">{payment.paymentNumber}</p>
-                          <p className="mt-0.5 font-semibold text-[#1A1916] text-sm truncate">{displayCustomerName(entryCustomer)}</p>
-                          <p className="mt-0.5 text-[#6B6B6B] text-[11px] truncate">
-                            {entryInvoice?.number ?? entrySale?.number ?? "—"} · {formatPaymentMethodLabel(payment.method)}
+                          <div className="flex items-baseline justify-between gap-2">
+                            <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
+                              {displayCustomerName(entryCustomer)}
+                            </p>
+                            <p className="shrink-0 font-bold text-[#1A1916] text-[15px] tabular-nums">
+                              {formatEuro(payment.amount)}
+                            </p>
+                          </div>
+                          <p className="mt-0.5 font-mono text-[#2A9D8F] text-[11px]">
+                            {payment.paymentNumber}
                           </p>
-                          <p className="mt-0.5 text-[#8A8984] text-[11px]">{payment.date}</p>
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <p className="font-semibold text-[#1A1916] text-sm">{formatEuro(payment.amount)}</p>
-                          <span className="mt-1 inline-block">
-                            <StatusPill tone={PAYMENT_STATUS_TONE[payment.status] as PillTone}>
-                              {payment.status}
-                            </StatusPill>
-                          </span>
+                          <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">
+                            {entryInvoice?.number ?? entrySale?.number ?? "—"} · {payment.date}
+                          </p>
+                          {payment.status !== "Payé" && (
+                            <div className="mt-2">
+                              <StatusPill tone={PAYMENT_STATUS_TONE[payment.status] as PillTone}>
+                                {payment.status}
+                              </StatusPill>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </button>
@@ -727,5 +742,50 @@ function CreatePaymentModal({
         </div>
       </div>
     </Modal>
+  );
+}
+
+
+function MobileKpi({
+  label,
+  value,
+  helper,
+  tone,
+}: Readonly<{ label: string; value: string; helper?: string; tone: "teal" | "amber" }>) {
+  const t = tone === "teal"
+    ? { bg: "bg-[#EAF6F2]", text: "text-[#2A9D8F]" }
+    : { bg: "bg-[#FCF1DF]", text: "text-[#C2841C]" };
+  return (
+    <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+      <span className={cn("grid size-9 place-items-center rounded-[10px]", t.bg, t.text)}>
+        <Wallet className="size-[18px]" strokeWidth={2} />
+      </span>
+      <p className="mt-3 text-[#8A8984] text-[11px] font-medium leading-tight tracking-tight">{label}</p>
+      <p className={cn("mt-1.5 font-bold text-[20px] leading-none tracking-tight tabular-nums", t.text)}>
+        {value}
+      </p>
+      {helper && <p className="mt-1.5 truncate text-[#8A8984] text-[10px] font-medium">{helper}</p>}
+    </div>
+  );
+}
+
+function PaymentMethodTile({ method }: Readonly<{ method: PaymentMethod }>) {
+  const config = (() => {
+    if (method === "Carte")
+      return { Icon: CreditCard, bg: "bg-[#EAF6F2]", color: "text-[#2A9D8F]", label: "Carte" };
+    if (method === "Espèces")
+      return { Icon: Banknote, bg: "bg-[#FCF1DF]", color: "text-[#C2841C]", label: "Espèces" };
+    if (method === "Virement")
+      return { Icon: Landmark, bg: "bg-[#E6EFFB]", color: "text-[#2F6FD0]", label: "Virement" };
+    return { Icon: Link2, bg: "bg-[#EFEAF8]", color: "text-[#7B5BC2]", label: "En ligne" };
+  })();
+  const { Icon, bg, color, label } = config;
+  return (
+    <div className="flex shrink-0 flex-col items-center gap-1">
+      <span className={cn("grid size-12 place-items-center rounded-[14px]", bg, color)}>
+        <Icon className="size-[20px]" strokeWidth={2} />
+      </span>
+      <span className={cn("text-[10px] font-semibold tracking-tight", color)}>{label}</span>
+    </div>
   );
 }

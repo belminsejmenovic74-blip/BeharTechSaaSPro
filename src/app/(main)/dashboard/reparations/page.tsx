@@ -9,7 +9,7 @@ export default function RepairsPage() {
       fitScreen
       searchPlaceholder="Rechercher une réparation, client, appareil..."
       title="Réparations"
-      subtitle="Atelier Kanban · priorisez ce qui doit avancer ensuite."
+      subtitle="Priorisez les dossiers à faire avancer."
     >
       <Suspense fallback={null}>
         <RepairsWorkspace />

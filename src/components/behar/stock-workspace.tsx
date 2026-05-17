@@ -5,10 +5,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import type { LucideIcon } from "lucide-react";
-import { Filter, Plus, Search, Trash2, X } from "lucide-react";
+import { AlertTriangle, Filter, Package, Plus, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { type DeviceType, formatEuro, type StockItem, useBeharStore } from "@/lib/behar-store";
+import { cn } from "@/lib/utils";
 import { stockKpis } from "@/mock/stock";
 
 import { type DeviceCategory, getDeviceBrands, getModelsByBrand } from "../../data/deviceCatalog";
@@ -158,7 +159,34 @@ export function StockWorkspace() {
       subtitle="Pièces, composants et fournisseurs de votre atelier."
     >
       <div className="flex flex-col gap-4">
-        <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+        {/* Mobile : strip horizontal de KPI compacts */}
+        <section className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 md:hidden scrollbar-none">
+          {dynamicKpis.map((kpi) => (
+            <div
+              key={kpi.label}
+              className="w-[42%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]"
+            >
+              <span className={cn(
+                "grid size-9 place-items-center rounded-[10px]",
+                kpi.negative ? "bg-[#FDECEC] text-[#B42318]" : "bg-[#EAF6F2] text-[#2A9D8F]",
+              )}>
+                <Package className="size-[18px]" strokeWidth={2} />
+              </span>
+              <p className="mt-3 text-[#8A8984] text-[11px] font-medium leading-tight tracking-tight">
+                {kpi.label}
+              </p>
+              <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tracking-tight tabular-nums">
+                {kpi.value}
+              </p>
+              {kpi.helper && (
+                <p className="mt-1.5 truncate text-[#8A8984] text-[10px] font-medium">{kpi.helper}</p>
+              )}
+            </div>
+          ))}
+        </section>
+
+        {/* Desktop : grille KPI standard */}
+        <section className="hidden md:grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
           {dynamicKpis.map((kpi) => (
             <StockMetricCard {...kpi} key={kpi.label} />
           ))}
@@ -265,51 +293,87 @@ export function StockWorkspace() {
                 })}
               </tbody>
             </table>
-            {/* Vue cartes mobile */}
-            <div className="md:hidden divide-y divide-[#E7E4DC]">
-              {filteredItems.map((item) => {
+            {/* Vue cartes mobile premium */}
+            <div className="md:hidden space-y-2.5 p-3 bg-[#FAFAF8]">
+              {filteredItems.length === 0 ? (
+                <p className="rounded-[16px] bg-white px-4 py-10 text-center text-[#6B6B6B] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+                  Aucune pièce.
+                </p>
+              ) : filteredItems.map((item) => {
                 const margin = item.salePrice - item.purchasePrice;
                 const rate = item.salePrice > 0 ? (margin / item.salePrice) * 100 : 0;
+                const isOut = item.quantity === 0;
+                const isLow = item.quantity > 0 && item.quantity <= item.threshold;
                 return (
                   <button
                     key={item.id}
-                    className={`block w-full text-left px-4 py-3 transition active:bg-[#F6F7F4] ${item.id === selected?.id ? "bg-[#EAF6F2]" : "bg-white"}`}
+                    className="block w-full rounded-[18px] bg-white p-3.5 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
                     onClick={() => {
                       store.setSelected("stockItem", item.id);
                       setMobileDetailOpen(true);
                     }}
                     type="button"
                   >
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <span className={cn(
+                        "grid size-12 shrink-0 place-items-center rounded-[14px]",
+                        isOut ? "bg-[#FDECEC] text-[#B42318]" : "bg-[#FAFAF8] text-[#1A1916]",
+                      )}>
+                        <Package className="size-[20px]" strokeWidth={1.8} />
+                      </span>
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-[#1A1916] text-sm truncate">{item.name}</p>
-                        <p className="mt-0.5 text-[#6B6B6B] text-xs truncate">
-                          {item.sku} · {item.categoryName}
+                        <div className="flex items-baseline justify-between gap-2">
+                          <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
+                            {item.name}
+                          </p>
+                          {(isOut || isLow) && (
+                            <span className={cn(
+                              "shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                              isOut ? "bg-[#FDECEC] text-[#B42318]" : "bg-[#FFF4E5] text-[#9A6A17]",
+                            )}>
+                              {isOut ? <AlertTriangle className="size-3" /> : null}
+                              {isOut ? "Rupture" : "Stock bas"}
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">
+                          SKU {item.sku} · {item.categoryName}
                         </p>
-                        <p className="mt-0.5 text-[#8A8984] text-[11px] truncate">
-                          {item.brandName || "Non défini"} · {item.compatibleModels.length ? item.compatibleModels.join(", ") : "Non défini"}
-                        </p>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <p className="font-semibold text-[#1A1916] text-sm">{formatEuro(item.salePrice)}</p>
-                        {canViewMargin && (
-                          <p className="text-[#2A9D8F] text-[11px] font-medium">{rate.toFixed(1).replace(".", ",")} %</p>
+                        <div className="mt-2.5 grid grid-cols-3 gap-2">
+                          <div>
+                            <p className="text-[#8A8984] text-[10px] font-medium uppercase tracking-wider">Stock</p>
+                            <p className={cn(
+                              "mt-0.5 font-semibold text-[14px] tabular-nums",
+                              isOut ? "text-[#B42318]" : isLow ? "text-[#9A6A17]" : "text-[#2A9D8F]",
+                            )}>
+                              {item.quantity}
+                            </p>
+                          </div>
+                          {canViewPurchasePrice && (
+                            <div>
+                              <p className="text-[#8A8984] text-[10px] font-medium uppercase tracking-wider">Achat</p>
+                              <p className="mt-0.5 font-semibold text-[#1A1916] text-[14px] tabular-nums">
+                                {formatEuro(item.purchasePrice)}
+                              </p>
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-[#8A8984] text-[10px] font-medium uppercase tracking-wider">Vente</p>
+                            <p className="mt-0.5 font-semibold text-[#1A1916] text-[14px] tabular-nums">
+                              {formatEuro(item.salePrice)}
+                            </p>
+                          </div>
+                        </div>
+                        {canViewMargin && rate > 0 && (
+                          <p className="mt-2 text-[#2A9D8F] text-[11px] font-medium">
+                            Marge {rate.toFixed(0)} %
+                          </p>
                         )}
                       </div>
-                    </div>
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className="text-[#6B6B6B] text-[11px]">Stock&nbsp;<span className="font-semibold text-[#1A1916]">{item.quantity}</span> / Seuil {item.threshold}</span>
-                      {item.quantity === 0 && <StatusBadge className="h-5 px-1.5 text-[10px]" status="Rupture" />}
-                      {item.quantity > 0 && item.quantity <= item.threshold && (
-                        <StatusBadge className="h-5 px-1.5 text-[10px]" status="Stock faible" />
-                      )}
                     </div>
                   </button>
                 );
               })}
-              {filteredItems.length === 0 && (
-                <p className="px-4 py-8 text-center text-[#6B6B6B] text-sm">Aucune pièce.</p>
-              )}
             </div>
           </TableShell>
 

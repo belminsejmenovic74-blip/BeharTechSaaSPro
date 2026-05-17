@@ -601,7 +601,55 @@ export function RepairsWorkspace() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-5">
-      <div className="flex shrink-0 flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
+      {/* Mobile : barre recherche compacte + chips statut horizontaux */}
+      <div className="md:hidden">
+        <label className="relative block">
+          <Search className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3.5 size-4 text-[#8A8984]" />
+          <Input
+            className="h-12 rounded-[14px] border-[#E7E4DC] bg-white pr-4 pl-10 text-sm placeholder:text-[#8A8984]"
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher…"
+            type="search"
+            value={search}
+          />
+        </label>
+        <div className="-mx-1 mt-3 flex items-center gap-2 overflow-x-auto px-1 pb-1 scrollbar-none">
+          {(["all", ...statuses] as const).map((s) => {
+            const active = statusFilter === s;
+            const label = s === "all" ? "Tous" : s === "Préparation / Réparation" ? "Réparation" : s;
+            const count = s === "all" ? filteredRepairs.length : repairs.filter((r) => r.status === s).length;
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setStatusFilter(s as RepairStatus | "all")}
+                className={cn(
+                  "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-[12.5px] font-semibold tracking-tight transition active:scale-95",
+                  active
+                    ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
+                    : "border-[#E7E4DC] bg-white text-[#1A1916]",
+                )}
+              >
+                {label}
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 py-px text-[10px] font-bold",
+                    active ? "bg-white/25 text-white" : "bg-[#F1F1EF] text-[#6B6B6B]",
+                  )}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <PrimaryButton className="mt-3 h-11 w-full gap-2" onClick={() => openCreate()}>
+          <Plus className="size-4" /> Nouvelle réparation
+        </PrimaryButton>
+      </div>
+
+      {/* Desktop : ancienne barre filtres + actions */}
+      <div className="hidden shrink-0 md:flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
         <div className="flex w-full min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
           <label className="relative block w-full min-w-[200px] max-w-[400px] sm:max-w-[320px]">
             <Search className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3.5 size-4 text-[#8A8984]" />
@@ -651,12 +699,73 @@ export function RepairsWorkspace() {
         </div>
       </div>
 
+      {/* Mobile : liste verticale des réparations filtrées */}
+      <div className="md:hidden">
+        {filteredRepairs.length === 0 ? (
+          <div className="rounded-[20px] bg-white p-10 text-center shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+            <p className="text-[#8A8984] text-sm">
+              {search || statusFilter !== "all"
+                ? "Aucune réparation ne correspond aux filtres."
+                : "Aucune réparation pour l'instant."}
+            </p>
+          </div>
+        ) : (
+          <ul className="space-y-2.5">
+            {filteredRepairs.map((repair) => {
+              const customer = customers.find((c) => c.id === repair.customerId);
+              const paid = payments
+                .filter((p) => p.repairId === repair.id && p.status === "Payé")
+                .reduce((s, p) => s + p.amount, 0);
+              const total = typeof repair.total === "number" ? repair.total : (repair.amount ?? 0);
+              const fullyPaid = total > 0 && paid >= total;
+              return (
+                <li key={repair.id}>
+                  <button
+                    type="button"
+                    onClick={() => setSelected("repair", repair.id)}
+                    className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
+                  >
+                    <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FAFAF8] text-[#1A1916]">
+                      <Wrench className="size-[18px]" strokeWidth={1.8} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
+                          {displayCustomerName(customer)}
+                        </p>
+                        <span className="shrink-0 font-mono text-[#8A8984] text-[10.5px]">
+                          {repair.number}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 truncate text-[#1A1916] text-[13px]">{repair.device}</p>
+                      <p className="mt-0.5 truncate text-[#8A8984] text-[12px]">{repair.issue}</p>
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <StatusBadge status={repair.status} />
+                        <span
+                          className={cn(
+                            "rounded-full px-2 py-0.5 text-[10.5px] font-semibold tabular-nums",
+                            fullyPaid ? "bg-[#EAF6F2] text-[#2A9D8F]" : "bg-[#FDECEC] text-[#B42318]",
+                          )}
+                        >
+                          {fullyPaid ? "Payé" : formatEuro(Math.max(0, total - paid))}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
       <section
-        className={
+        className={cn(
+          "hidden md:grid",
           detailMode === "intake" && selectedRepair
-            ? "grid min-h-0 flex-1 gap-4 grid-cols-1"
-            : "grid min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] 2xl:grid-cols-[minmax(0,1fr)_400px]"
-        }
+            ? "min-h-0 flex-1 gap-4 grid-cols-1"
+            : "min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] 2xl:grid-cols-[minmax(0,1fr)_400px]",
+        )}
       >
         {!(detailMode === "intake" && selectedRepair) && (
           <KanbanBoard
