@@ -496,12 +496,30 @@ function NewSaleModal({ onClose }: Readonly<{ onClose: () => void }>) {
     }
 
     if (mode === "repair") {
-      const ok = store.addSaleLinesToRepair(selectedRepairId, cart);
+      if (!selectedRepair) {
+        toast.error("Sélectionnez une réparation à rattacher.");
+        return;
+      }
+      const repairCustomer = store.customers.find((entry) => entry.id === selectedRepair.customerId);
+      const saleId = store.addSale({
+        customerId: selectedRepair.customerId,
+        customerName: repairCustomer?.name || "Client comptoir",
+        lines: cart,
+        repairId: selectedRepairId,
+        status: "Rattachée",
+      });
+      if (!saleId) {
+        toast.error("Impossible de créer la vente rattachée.");
+        return;
+      }
+      const ok = store.addSaleLinesToRepair(selectedRepairId, cart, saleId);
       if (!ok) {
+        store.deleteSale(saleId);
         toast.error("Cette réparation est déjà facturée. Créez une vente séparée.");
         return;
       }
-      toast.success("Produits ajoutés au dossier réparation.");
+      store.setSelected("sale", saleId);
+      toast.success("Produits ajoutés au dossier réparation et vente rattachée enregistrée.");
       onClose();
       return;
     }
