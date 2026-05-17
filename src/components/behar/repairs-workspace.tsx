@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import {
   ArrowLeft,
+  CalendarDays,
   CreditCard,
   Edit3,
   FileText,
@@ -49,6 +50,7 @@ import {
   useBeharStore,
 } from "@/lib/behar-store";
 import { displayCustomerName, isCounterCustomer } from "@/lib/customer-display";
+import { formatDeviceLabel } from "@/lib/format-device";
 import { sendRealSms } from "@/lib/send-sms";
 import { cn } from "@/lib/utils";
 import type { RepairCard } from "@/mock/repairs";
@@ -98,6 +100,7 @@ export function RepairsWorkspace() {
     payments,
     documents,
     stockItems,
+    appointments,
     selectedRepairId,
     setSelected,
     convertQuoteToInvoice,
@@ -125,6 +128,7 @@ export function RepairsWorkspace() {
       payments: s.payments,
       documents: s.documents,
       stockItems: s.stockItems,
+      appointments: s.appointments,
       selectedRepairId: s.selectedRepairId,
       setSelected: s.setSelected,
       convertQuoteToInvoice: s.convertQuoteToInvoice,
@@ -701,26 +705,8 @@ export function RepairsWorkspace() {
         </div>
       </div>
 
-      {/* Mobile : colonnes défilables avec glisser-déposer tactile */}
-      <div className="md:hidden h-[620px] min-h-0 overflow-hidden">
-        <KanbanBoard
-          compact
-          columns={columns}
-          onSelect={(id) => {
-            setSelected("repair", id);
-            setMobileDetailOpen(true);
-          }}
-          selectedId={selectedRepair?.id ?? ""}
-          onMoveCard={(cardId, _from, toStatus) => {
-            if (!statuses.includes(toStatus as RepairStatus)) return;
-            changeRepairStatus(cardId, toStatus as RepairStatus);
-            toast.success(`Statut : ${toStatus}`);
-          }}
-        />
-      </div>
-
-      {/* Mobile legacy list kept out of the visual flow while cards move to columns. */}
-      <div className="hidden">
+      {/* Mobile : liste verticale (pas de kanban — il déborde sur iPhone) */}
+      <div className="md:hidden">
         {filteredRepairs.length === 0 ? (
           <div className="rounded-[20px] bg-white p-10 text-center shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
             <p className="text-[#8A8984] text-sm">
@@ -738,6 +724,9 @@ export function RepairsWorkspace() {
                 .reduce((s, p) => s + p.amount, 0);
               const total = typeof repair.total === "number" ? repair.total : (repair.amount ?? 0);
               const fullyPaid = total > 0 && paid >= total;
+              const linkedAppointment = repair.appointmentId
+                ? appointments.find((a) => a.id === repair.appointmentId)
+                : appointments.find((a) => a.repairId === repair.id);
               return (
                 <li key={repair.id}>
                   <button
@@ -760,8 +749,14 @@ export function RepairsWorkspace() {
                           {repair.number}
                         </span>
                       </div>
-                      <p className="mt-0.5 truncate text-[#1A1916] text-[13px]">{repair.device}</p>
+                      <p className="mt-0.5 truncate text-[#1A1916] text-[13px]">{formatDeviceLabel(repair)}</p>
                       <p className="mt-0.5 truncate text-[#8A8984] text-[12px]">{repair.issue}</p>
+                      {linkedAppointment && (
+                        <p className="mt-0.5 inline-flex items-center gap-1 text-[#2A9D8F] text-[11px] font-medium">
+                          <CalendarDays className="size-3" />
+                          RDV {linkedAppointment.date}{linkedAppointment.time ? ` · ${linkedAppointment.time}` : ""}
+                        </p>
+                      )}
                       <div className="mt-2 flex items-center justify-between gap-2">
                         <StatusBadge status={repair.status} />
                         <span
@@ -1120,6 +1115,40 @@ export function RepairsWorkspace() {
                     <Detail label="IMEI / série" value={selectedRepair.imei?.trim() || "—"} />
                   </dl>
                 </section>
+
+                {(() => {
+                  const linkedAppointment = selectedRepair.appointmentId
+                    ? appointments.find((a) => a.id === selectedRepair.appointmentId)
+                    : appointments.find((a) => a.repairId === selectedRepair.id);
+                  if (!linkedAppointment) return null;
+                  return (
+                    <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">
+                            Rendez-vous lié
+                          </h3>
+                          <p className="mt-2 inline-flex items-center gap-2 font-semibold text-[#1A1916] text-sm">
+                            <CalendarDays className="size-4 text-[#2A9D8F]" />
+                            {linkedAppointment.date}
+                            {linkedAppointment.time ? ` · ${linkedAppointment.time}` : ""}
+                          </p>
+                          <p className="mt-0.5 text-[#6B6B6B] text-[12px]">
+                            {linkedAppointment.status || "Prévu"}
+                            {linkedAppointment.duration ? ` · ${linkedAppointment.duration}` : ""}
+                          </p>
+                        </div>
+                        <Link
+                          href="/dashboard/rendez-vous"
+                          onClick={() => setSelected("appointment", linkedAppointment.id)}
+                          className="inline-flex h-8 items-center rounded-full border border-[#E7E4DC] bg-white px-3 font-medium text-[#1A1916] text-[12px] hover:border-[#2A9D8F]"
+                        >
+                          Voir
+                        </Link>
+                      </div>
+                    </section>
+                  );
+                })()}
 
                 <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4">
                   <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Intervention</h3>

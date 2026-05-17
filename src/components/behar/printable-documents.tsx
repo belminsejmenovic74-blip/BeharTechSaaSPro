@@ -17,6 +17,7 @@ import {
   type WorkshopInfo,
   workshopInfo as defaultWorkshopInfo,
 } from "@/lib/behar-store";
+import { formatDeviceLabel } from "@/lib/format-device";
 
 const COLORS = {
   ink: "#1A1916",
@@ -106,11 +107,7 @@ function customerName(customer?: Customer | null): string {
 }
 
 function deviceName(repair?: Repair | null): string {
-  if (!repair) return "Appareil non renseigné";
-  const brand = text(repair.brandName, "").trim();
-  const model = text(repair.deviceModel ?? repair.model, "").trim();
-  const combined = `${brand} ${model}`.replace(/\s+/g, " ").trim();
-  return combined || text(repair.device, "Appareil non renseigné");
+  return formatDeviceLabel(repair, "Appareil non renseigné");
 }
 
 function serviceDescription(line: QuoteLine, repair?: Repair): string {

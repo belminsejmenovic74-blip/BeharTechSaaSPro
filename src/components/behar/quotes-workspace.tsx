@@ -32,6 +32,7 @@ import {
   useBeharStore 
 } from "@/lib/behar-store";
 import { displayCustomerName } from "@/lib/customer-display";
+import { formatDeviceLabel } from "@/lib/format-device";
 import { cn } from "@/lib/utils";
 import { useDocument } from "./print-provider";
 import {
@@ -467,7 +468,7 @@ export function CreateQuoteModal({
           issue: r.issue,
           lines: f.lines[0].description === "" ? [{
             id: "1",
-            description: `${r.issue} — ${r.brandName} ${r.deviceModel ?? r.model}`.trim(),
+            description: `${r.issue} — ${formatDeviceLabel(r, "")}`.trim(),
             quantity: 1,
             unitPrice: r.amount ?? 0,
             total: r.amount ?? 0

@@ -293,6 +293,23 @@ export function AppointmentsWorkspace() {
               <DetailRow label="Canal" value={selected.channel} />
               <DetailRow label="Source" value={selected.source} />
               <DetailRow label="Technicien" value={selected.technician} />
+              {selectedRepair && (
+                <DetailRow
+                  label="Réparation liée"
+                  value={
+                    <button
+                      type="button"
+                      onClick={() => {
+                        store.setSelected("repair", selectedRepair.id);
+                        router.push("/dashboard/reparations");
+                      }}
+                      className="font-semibold text-[#2A9D8F] underline-offset-2 hover:underline"
+                    >
+                      {selectedRepair.number}
+                    </button>
+                  }
+                />
+              )}
             </dl>
 
             <div className="mt-7 grid gap-3 border-[#E7E4DC] border-t pt-5">
@@ -330,7 +347,7 @@ export function AppointmentsWorkspace() {
                 }}
               >
                 <RotateCw className="size-4" />
-                Reporter
+                Modifier
               </SecondaryButton>
               <SecondaryButton className="h-12 w-full text-base" onClick={() => setPreviewOpen(true)}>
                 <Eye className="size-4" />
@@ -494,7 +511,7 @@ export function AppointmentsWorkspace() {
             toast.success("Rendez-vous modifié.");
           }}
           store={store}
-          title="Reporter le rendez-vous"
+          title="Modifier le rendez-vous"
         />
       )}
 

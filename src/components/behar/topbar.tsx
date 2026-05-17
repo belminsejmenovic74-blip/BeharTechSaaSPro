@@ -9,6 +9,7 @@ import { Bell, FileText, LogOut, Menu, Plus, Search, UserRound, X } from "lucide
 import { PrimaryButton } from "@/components/behar/primitives";
 import { SyncStatusBadge } from "@/components/behar/sync-status-badge";
 import { type AppNotification, useBeharStore } from "@/lib/behar-store";
+import { formatDeviceLabel } from "@/lib/format-device";
 import { cn } from "@/lib/utils";
 
 type NotificationItem = {
@@ -75,7 +76,7 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
         out.push({
           id: `rep-${repair.id}`,
           title: `Réparation ${repair.number} prête`,
-          hint: `${customer?.name ?? "Client"} · ${repair.brandName ?? ""} ${repair.deviceModel ?? repair.model ?? ""}`.trim(),
+          hint: `${customer?.name ?? "Client"} · ${formatDeviceLabel(repair, "")}`.trim(),
           href: "/dashboard/reparations",
           tone: "ok",
         });

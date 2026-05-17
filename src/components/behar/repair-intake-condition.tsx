@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import type { Customer, Repair, RepairIntakeCondition } from "@/lib/behar-store";
 import { displayCustomerName } from "@/lib/customer-display";
+import { formatDeviceLabel } from "@/lib/format-device";
 
 import { PrimaryButton, SecondaryButton, StatusBadge } from "./primitives";
 
@@ -79,7 +80,7 @@ function dateTime(value?: string) {
 }
 
 function deviceName(repair: Repair) {
-  return clean(`${repair.brandName ?? ""} ${repair.deviceModel ?? repair.model ?? ""}`.trim(), repair.device);
+  return formatDeviceLabel(repair, clean(repair.device, "Appareil"));
 }
 
 export function RepairIntakeSummaryCard({

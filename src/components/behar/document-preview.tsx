@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { PrimaryButton, SecondaryButton, StatusBadge } from "@/components/behar/primitives";
 import { type BeharDocument, type DocumentType, formatEuro, useBeharStore } from "@/lib/behar-store";
+import { formatDeviceLabel } from "@/lib/format-device";
 
 import { useDocument } from "./print-provider";
 import {
@@ -100,9 +101,7 @@ export function DocumentPreview() {
 
       const isCounter = customer?.type === "counter";
       const customerLabel = isCounter ? "Client comptoir" : (customer?.name ?? "Client");
-      const deviceLabel = repair
-        ? `${repair.brandName ?? ""} ${repair.deviceModel ?? repair.model ?? ""}`.trim() || repair.device
-        : "";
+      const deviceLabel = repair ? formatDeviceLabel(repair, "") : "";
 
       const interventionLabel = repair?.issue ?? "";
 
