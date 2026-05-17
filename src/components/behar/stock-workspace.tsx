@@ -996,8 +996,8 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
   const availableCategories = store.partCategories.filter((cat) => cat.deviceTypes.includes(deviceType as DeviceType));
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1A1916]/24 p-4 backdrop-blur-sm">
-      <Panel className="mx-auto my-8 max-h-[calc(100svh-4rem)] max-w-2xl overflow-y-auto p-6">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1A1916]/24 p-0 backdrop-blur-sm md:p-4">
+      <Panel className="mx-auto my-0 min-h-svh max-w-none overflow-y-auto rounded-none p-5 md:my-8 md:max-h-[calc(100svh-4rem)] md:max-w-2xl md:min-h-0 md:rounded-[20px] md:p-6">
         <h2 className="font-semibold text-2xl text-[#1A1916]">Nouvelle pièce</h2>
         <form
           className="mt-5 grid gap-3 md:grid-cols-2"

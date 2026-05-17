@@ -440,16 +440,16 @@ export function Modal({
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-stretch justify-stretch p-0 md:items-center md:justify-center md:p-4">
       <div className="fixed inset-0 bg-[#1A1916]/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
-      <Panel className={cn("relative z-10 w-full flex flex-col max-h-[90vh]", maxWidth)}>
-        <div className="flex items-center justify-between border-b border-[#F1F1EF] px-7 py-5">
+      <Panel className={cn("relative z-10 w-full flex flex-col min-h-svh rounded-none md:min-h-0 md:max-h-[90vh] md:rounded-[20px]", maxWidth)}>
+        <div className="flex items-center justify-between border-b border-[#F1F1EF] px-5 py-4 md:px-7 md:py-5">
           <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">{title}</h2>
-          <button className="grid size-8 place-items-center rounded-full text-[#8A8984] transition hover:bg-[#F1F1EF] hover:text-[#6B6B6B]" onClick={onClose} type="button">
+          <button className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#6B6B6B] transition hover:bg-[#E7E4DC] hover:text-[#1A1916] md:size-8 md:bg-transparent" onClick={onClose} type="button" aria-label="Fermer">
             <XCircle className="size-5" />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-7">{children}</div>
+        <div className="flex-1 overflow-y-auto p-5 md:p-7">{children}</div>
       </Panel>
     </div>,
     document.body,

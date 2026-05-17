@@ -365,8 +365,8 @@ export function AppointmentsWorkspace() {
       )}
 
       {previewOpen && selected && customer && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-[#1A1916]/20 p-6 backdrop-blur-sm">
-          <Panel className="w-full max-w-[480px] p-6">
+        <div className="fixed inset-0 z-50 grid place-items-stretch bg-[#1A1916]/20 p-0 backdrop-blur-sm md:place-items-center md:p-6">
+          <Panel className="w-full max-w-none min-h-svh rounded-none p-5 md:max-w-[480px] md:min-h-0 md:rounded-[20px] md:p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="font-semibold text-2xl text-[#1A1916]">Aperçu réparation</h2>
@@ -448,8 +448,8 @@ function AppointmentModal({
   }, [deviceState.deviceLabel]);
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-[#1A1916]/20 p-4 backdrop-blur-sm">
-      <Panel className="max-h-[calc(100svh-2rem)] w-full max-w-[520px] overflow-y-auto p-6">
+    <div className="fixed inset-0 z-50 grid place-items-stretch overflow-y-auto bg-[#1A1916]/20 p-0 backdrop-blur-sm md:place-items-center md:p-4">
+      <Panel className="w-full max-w-none min-h-svh overflow-y-auto rounded-none p-5 md:max-h-[calc(100svh-2rem)] md:max-w-[520px] md:min-h-0 md:rounded-[20px] md:p-6">
         <h2 className="font-semibold text-2xl text-[#1A1916]">{title}</h2>
         <p className="mt-2 text-[#6B6B6B] text-sm">Le client reçoit un email simulé après validation.</p>
         <div className="mt-6 grid gap-4">

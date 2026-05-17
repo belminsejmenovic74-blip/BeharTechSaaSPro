@@ -32,8 +32,8 @@ export function StockImportModal() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1A1916]/24 p-4 backdrop-blur-sm">
-      <Panel className="mx-auto my-8 max-w-6xl p-6">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1A1916]/24 p-0 backdrop-blur-sm md:p-4">
+      <Panel className="mx-auto my-0 min-h-svh max-w-none rounded-none p-5 md:my-8 md:max-w-6xl md:min-h-0 md:rounded-[20px] md:p-6">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
             <h2 className="font-semibold text-2xl text-[#1A1916]">Importer un stock Excel / CSV</h2>

@@ -434,8 +434,8 @@ export function InvoicesWorkspace() {
       )}
 
       {paymentOpen && selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <Panel className="w-full max-w-sm p-6 animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-stretch justify-stretch bg-black/40 backdrop-blur-sm p-0 md:items-center md:justify-center md:p-4">
+          <Panel className="w-full min-h-svh max-w-none rounded-none p-5 animate-in zoom-in-95 duration-200 md:max-w-sm md:min-h-0 md:rounded-[20px] md:p-6">
             <h3 className="text-lg font-bold text-[#1A1916] mb-6">Nouveau paiement</h3>
             
             <div className="space-y-5">
@@ -660,8 +660,8 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
   const isFormValid = customerInfo.name && lines.length > 0 && lines.some((l) => l.description.trim() !== "");
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="relative flex h-[90vh] w-full max-w-[1200px] flex-col overflow-hidden rounded-[16px] border border-[#E7E4DC] bg-[#FAFAF8] shadow-2xl animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-stretch justify-stretch bg-black/40 backdrop-blur-sm p-0 md:items-center md:justify-center md:p-4">
+      <div className="relative flex min-h-svh w-full max-w-none flex-col overflow-hidden rounded-none border border-[#E7E4DC] bg-[#FAFAF8] shadow-2xl animate-in fade-in zoom-in duration-200 md:h-[90vh] md:min-h-0 md:max-w-[1200px] md:rounded-[16px]">
         {/* Header */}
         <div className="flex items-center justify-between px-8 py-6 border-b border-[#F1F1EF] bg-white">
           <div>
