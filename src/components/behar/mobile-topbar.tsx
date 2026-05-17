@@ -10,7 +10,6 @@ import {
   Bell,
   CalendarDays,
   CreditCard,
-  FileSpreadsheet,
   FileText,
   Folder,
   Home,
@@ -40,7 +39,6 @@ const allModules = [
   { label: "Stock", href: "/dashboard/stock", icon: Package },
   { label: "Documents", href: "/dashboard/documents", icon: Folder },
   { label: "Paramètres", href: "/dashboard/parametres", icon: Settings },
-  { label: "Catalogue prix", href: "/dashboard/parametres/catalogue", icon: FileSpreadsheet },
 ] as const;
 
 /**
@@ -92,8 +90,8 @@ export function MobileTopbar() {
             aria-label="Fermer"
             className="absolute inset-0 bg-[#1A1916]/40 backdrop-blur-sm animate-in fade-in duration-200"
           />
-          <aside className="absolute inset-y-0 right-0 flex w-[86%] max-w-[360px] flex-col bg-white shadow-[-10px_0_40px_rgba(26,25,22,0.18)] animate-in slide-in-from-right duration-300">
-            <div className="flex items-center justify-between px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-3">
+          <aside className="absolute inset-0 flex flex-col bg-white animate-in fade-in slide-in-from-right-2 duration-200">
+            <div className="flex items-center justify-between px-5 pr-10 pt-[max(1rem,env(safe-area-inset-top))] pb-3">
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-[#1A1916] text-[13px] tracking-[0.18em]">BEHAR</span>
                 <span className="size-[5px] rounded-full bg-[#2A9D8F]" aria-hidden />
@@ -103,13 +101,13 @@ export function MobileTopbar() {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Fermer le menu"
-                className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#1A1916] transition active:scale-90"
+                className="grid size-9 shrink-0 place-items-center rounded-full bg-[#F1F1EF] text-[#1A1916] transition active:scale-90"
               >
                 <X className="size-4" strokeWidth={2.2} />
               </button>
             </div>
 
-            <div className="mx-5 mt-2 flex items-center justify-between gap-3 rounded-[16px] bg-[#FAFAF8] px-4 py-3">
+            <div className="mt-2 ml-5 mr-8 flex items-center justify-between gap-3 rounded-[16px] bg-[#FAFAF8] px-4 py-3">
               <div className="flex min-w-0 items-center gap-3">
                 <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#EAF6F2] font-semibold text-[#2A9D8F]">
                   {currentUser.name.charAt(0).toUpperCase()}

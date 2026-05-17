@@ -66,7 +66,11 @@ export function AppointmentsWorkspace() {
   const [reportingId, setReportingId] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [form, setForm] = useState({
+    customerType: "existing" as "existing" | "new" | "counter",
     customerId: store.customers[0]?.id ?? "",
+    newCustomerName: "",
+    newCustomerPhone: "",
+    newCustomerEmail: "",
     date: toInputDate(new Date()),
     time: "14:30",
     duration: "30 min",
@@ -107,10 +111,92 @@ export function AppointmentsWorkspace() {
       ))
     : undefined;
 
+  // Mobile : regroupement par tranche (Aujourd'hui / Demain / Cette semaine)
+  const mobileGroups = groupAppointmentsForMobile(store.appointments);
+
   return (
     <div className="space-y-5">
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
-        <Panel className="min-w-0 overflow-hidden p-0">
+      {/* Mobile : Aujourd'hui / Demain / Cette semaine */}
+      <section className="md:hidden space-y-4">
+        <PrimaryButton
+          className="h-11 w-full gap-2"
+          onClick={() => {
+            const today = new Date();
+            setForm((current) => ({
+              ...current,
+              customerType: "existing",
+              customerId: customer?.id ?? store.customers[0]?.id ?? "",
+              date: toInputDate(today),
+              device: customer?.device ?? store.customers[0]?.device ?? "iPhone 13",
+              issue: customer?.lastRepair ?? store.customers[0]?.lastRepair ?? "Diagnostic",
+            }));
+            setCreateOpen(true);
+          }}
+        >
+          <Plus className="size-4" /> Nouveau rendez-vous
+        </PrimaryButton>
+
+        {(["today", "tomorrow", "week"] as const).map((bucket) => {
+          const list = mobileGroups[bucket];
+          const title = bucket === "today" ? "Aujourd'hui" : bucket === "tomorrow" ? "Demain" : "Cette semaine";
+          return (
+            <div key={bucket}>
+              <div className="mb-2 flex items-baseline justify-between">
+                <h3 className="font-semibold text-[#1A1916] text-[15px] tracking-tight">{title}</h3>
+                <span className="text-[#8A8984] text-[11px] font-semibold">{list.length} RDV</span>
+              </div>
+              {list.length === 0 ? (
+                <div className="rounded-[16px] bg-white p-5 text-center shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+                  <p className="text-[#8A8984] text-[13px]">Aucun rendez-vous prévu.</p>
+                </div>
+              ) : (
+                <ul className="space-y-2">
+                  {list.map((appointment) => {
+                    const apptCustomer = store.customers.find((c) => c.id === appointment.customerId);
+                    return (
+                      <li key={appointment.id}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            store.setSelected("appointment", appointment.id);
+                            setMobileDetailOpen(true);
+                          }}
+                          className="flex w-full items-start gap-3 rounded-[16px] bg-white p-3.5 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
+                        >
+                          <div className="flex w-14 shrink-0 flex-col items-center justify-center rounded-[12px] bg-[#F1F1EF] px-2 py-2.5">
+                            <span className="font-semibold text-[#1A1916] text-[15px] leading-none tabular-nums">
+                              {appointment.time}
+                            </span>
+                            <span className="mt-1 text-[#8A8984] text-[10px]">{appointment.duration}</span>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-semibold text-[#1A1916] text-[14px]">
+                              {apptCustomer?.name || "Client comptoir"}
+                            </p>
+                            <p className="mt-0.5 truncate text-[#1A1916] text-[13px]">{appointment.device}</p>
+                            <p className="mt-0.5 truncate text-[#8A8984] text-[12px]">{appointment.issue}</p>
+                            <div className="mt-1.5 flex items-center gap-2">
+                              <StatusBadge status={appointment.status} />
+                              {appointment.channel ? (
+                                <span className="rounded-full bg-[#F1F1EF] px-2 py-0.5 text-[10px] text-[#6B6B6B]">
+                                  {appointment.channel}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          );
+        })}
+      </section>
+
+      <section className="grid gap-5 md:grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
+        <Panel className="hidden md:block min-w-0 overflow-hidden p-0">
           <div className="flex h-[72px] items-center justify-between gap-3 overflow-hidden border-[#E7E4DC] border-b px-5">
             <div className="flex min-w-0 shrink-0 items-center gap-2">
               <SecondaryButton className="h-10 px-3" onClick={() => setWeekOffset((value) => value - 1)}>
@@ -131,6 +217,7 @@ export function AppointmentsWorkspace() {
                   const firstDay = weekDays[2] ?? weekDays[0];
                   setForm((current) => ({
                     ...current,
+                    customerType: "existing",
                     customerId: customer?.id ?? store.customers[0]?.id ?? "",
                     date: toInputDate(firstDay.date),
                     device: customer?.device ?? store.customers[0]?.device ?? "iPhone 13",
@@ -187,8 +274,9 @@ export function AppointmentsWorkspace() {
               </div>
               <button
                 aria-label="Options"
-                className="text-[#6B6B6B] hover:text-[#1A1916]"
-                onClick={() => toast.message("Action bientôt disponible.")}
+                className="cursor-not-allowed text-[#B0AEA8]"
+                disabled
+                title="Options avancées bientôt disponibles"
                 type="button"
               >
                 <MoreHorizontal className="size-5" />
@@ -224,7 +312,11 @@ export function AppointmentsWorkspace() {
                 onClick={() => {
                   setReportingId(selected.id);
                   setForm({
+                    customerType: "existing",
                     customerId: selected.customerId,
+                    newCustomerName: "",
+                    newCustomerPhone: "",
+                    newCustomerEmail: "",
                     date: displayToInputDate(selected.date),
                     time: selected.time,
                     duration: selected.duration,
@@ -287,8 +379,33 @@ export function AppointmentsWorkspace() {
           onChange={setForm}
           onClose={() => setCreateOpen(false)}
           onSubmit={() => {
-            const createdCustomer = store.customers.find((entry) => entry.id === form.customerId);
-            if (!createdCustomer) {
+            let customerId = form.customerId;
+            if (form.customerType === "counter") {
+              customerId = store.addCustomer({
+                name: "Client comptoir",
+                type: "counter",
+                phone: "Non renseigné",
+                email: "Non renseigné",
+                device: form.device,
+                lastRepair: form.issue,
+                source: "Rendez-vous comptoir",
+              });
+            } else if (form.customerType === "new") {
+              if (!form.newCustomerName.trim()) {
+                toast.error("Ajoutez le nom du nouveau client.");
+                return;
+              }
+              customerId = store.addCustomer({
+                name: form.newCustomerName.trim(),
+                phone: form.newCustomerPhone.trim() || "Non renseigné",
+                email: form.newCustomerEmail.trim() || "Non renseigné",
+                device: form.device,
+                lastRepair: form.issue,
+                source: "Rendez-vous",
+              });
+            }
+            const createdCustomer = store.customers.find((entry) => entry.id === customerId);
+            if (!customerId || (form.customerType === "existing" && !createdCustomer)) {
               toast.error("Sélectionnez un client.");
               return;
             }
@@ -306,7 +423,7 @@ export function AppointmentsWorkspace() {
             }
             const date = inputToDisplayDate(form.date);
             const id = store.addAppointment({
-              customerId: createdCustomer.id,
+              customerId,
               device: form.device,
               issue: form.issue,
               date,
@@ -470,28 +587,77 @@ function AppointmentModal({
         <h2 className="font-semibold text-2xl text-[#1A1916]">{title}</h2>
         <p className="mt-2 text-[#6B6B6B] text-sm">Le client reçoit un email simulé après validation.</p>
         <div className="mt-6 grid gap-4">
-          <label className="grid gap-2 text-[#1A1916] text-sm">
-            Client
-            <select
-              className="h-11 rounded-[13px] border border-[#E7E4DC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
-              onChange={(event) => {
-                const customer = store.customers.find((entry) => entry.id === event.target.value);
-                onChange({
-                  ...form,
-                  customerId: event.target.value,
-                  device: customer?.device ?? form.device,
-                  issue: customer?.lastRepair ?? form.issue,
-                });
-              }}
-              value={form.customerId}
-            >
-              {store.customers.map((customer) => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.name}
-                </option>
+          <div className="grid gap-3 text-[#1A1916] text-sm">
+            <span>Client</span>
+            <div className="flex flex-wrap gap-3">
+              {[
+                ["existing", "Client existant"],
+                ["new", "Nouveau client"],
+                ["counter", "Client comptoir"],
+              ].map(([value, label]) => (
+                <label className="flex cursor-pointer items-center gap-2" key={value}>
+                  <input
+                    checked={form.customerType === value}
+                    className="accent-[#167B70]"
+                    name="appointmentCustomerType"
+                    onChange={() => onChange({ ...form, customerType: value as AppointmentForm["customerType"] })}
+                    type="radio"
+                  />
+                  {label}
+                </label>
               ))}
-            </select>
-          </label>
+            </div>
+            {form.customerType === "existing" ? (
+              <select
+                className="h-11 rounded-[13px] border border-[#E7E4DC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+                onChange={(event) => {
+                  const customer = store.customers.find((entry) => entry.id === event.target.value);
+                  onChange({
+                    ...form,
+                    customerId: event.target.value,
+                    device: customer?.device ?? form.device,
+                    issue: customer?.lastRepair ?? form.issue,
+                  });
+                }}
+                value={form.customerId}
+              >
+                {store.customers.map((customer) => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            {form.customerType === "new" ? (
+              <div className="grid gap-2 sm:grid-cols-3">
+                <input
+                  className="h-11 rounded-[13px] border border-[#E7E4DC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+                  onChange={(event) => onChange({ ...form, newCustomerName: event.target.value })}
+                  placeholder="Nom du client"
+                  value={form.newCustomerName}
+                />
+                <input
+                  className="h-11 rounded-[13px] border border-[#E7E4DC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+                  inputMode="tel"
+                  onChange={(event) => onChange({ ...form, newCustomerPhone: event.target.value })}
+                  placeholder="Téléphone"
+                  value={form.newCustomerPhone}
+                />
+                <input
+                  className="h-11 rounded-[13px] border border-[#E7E4DC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+                  onChange={(event) => onChange({ ...form, newCustomerEmail: event.target.value })}
+                  placeholder="Email"
+                  type="email"
+                  value={form.newCustomerEmail}
+                />
+              </div>
+            ) : null}
+            {form.customerType === "counter" ? (
+              <p className="rounded-[13px] border border-[#E7E4DC] bg-[#FAFAF8] px-4 py-3 text-[#6B6B6B]">
+                Un client comptoir séparé sera créé pour ce rendez-vous.
+              </p>
+            ) : null}
+          </div>
           <div className="rounded-2xl bg-[#F1F1EF]/50 p-4 border border-[#E7E4DC]/50 shadow-sm">
             <div className="mb-4 text-[#1A1916] font-semibold text-sm">Détails du créneau</div>
             <div className="grid gap-4">
@@ -763,7 +929,11 @@ function AppointmentStat({
 }
 
 type AppointmentForm = {
+  customerType: "existing" | "new" | "counter";
   customerId: string;
+  newCustomerName: string;
+  newCustomerPhone: string;
+  newCustomerEmail: string;
   date: string;
   time: string;
   duration: string;
@@ -879,6 +1049,50 @@ function displayToInputDate(display: string) {
 
 function toInputDate(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function timeToMinutes(time: string): number {
+  const [hh = "0", mm = "0"] = time.split(":");
+  const h = Number(hh);
+  const m = Number(mm);
+  if (Number.isNaN(h) || Number.isNaN(m)) return 0;
+  return h * 60 + m;
+}
+
+function groupAppointmentsForMobile(appointments: Appointment[]) {
+  const todayIso = toInputDate(new Date());
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowIso = toInputDate(tomorrow);
+  const weekEnd = new Date();
+  weekEnd.setDate(weekEnd.getDate() + 7);
+  const weekEndIso = toInputDate(weekEnd);
+
+  const buckets: { today: Appointment[]; tomorrow: Appointment[]; week: Appointment[] } = {
+    today: [],
+    tomorrow: [],
+    week: [],
+  };
+
+  for (const appointment of appointments) {
+    if (appointment.status === "annulé") continue;
+    const iso = displayToInputDate(appointment.date);
+    if (!iso) continue;
+    if (iso === todayIso) buckets.today.push(appointment);
+    else if (iso === tomorrowIso) buckets.tomorrow.push(appointment);
+    else if (iso > todayIso && iso <= weekEndIso) buckets.week.push(appointment);
+  }
+
+  const sortByTime = (a: Appointment, b: Appointment) => {
+    const isoA = displayToInputDate(a.date);
+    const isoB = displayToInputDate(b.date);
+    if (isoA !== isoB) return isoA < isoB ? -1 : 1;
+    return timeToMinutes(a.time) - timeToMinutes(b.time);
+  };
+  buckets.today.sort(sortByTime);
+  buckets.tomorrow.sort(sortByTime);
+  buckets.week.sort(sortByTime);
+  return buckets;
 }
 
 function monthName(date: Date) {

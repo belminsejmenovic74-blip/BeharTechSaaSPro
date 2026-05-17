@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 export function PinLoginGate({ children }: Readonly<{ children: ReactNode }>) {
   const sessionUserId = useBeharStore((s) => s.sessionUserId);
   const users = useBeharStore((s) => s.users);
+  const workshopInfo = useBeharStore((s) => s.workshopInfo);
   const loginWithUserPin = useBeharStore((s) => s.loginWithUserPin);
   const _hasHydrated = useBeharStore((s) => s._hasHydrated);
   const setHasHydrated = useBeharStore((s) => s.setHasHydrated);
@@ -49,9 +50,25 @@ export function PinLoginGate({ children }: Readonly<{ children: ReactNode }>) {
   }
 
   if (!validSession) {
+    // Le gérant principal hérite du nom configuré dans Atelier si le compte
+    // utilisateur n'a pas été personnalisé (encore "Gérant" par défaut).
+    const managerDisplayName =
+      (workshopInfo?.managerSignature && workshopInfo.managerSignature.trim()) ||
+      (workshopInfo?.name && workshopInfo.name.trim()) ||
+      "";
+    const visibleUsers = users
+      .filter((u) => u.active)
+      .map((u) => {
+        if (u.role !== "admin") return u;
+        const isDefault = !u.name?.trim() || u.name.trim() === "Gérant";
+        if (isDefault && managerDisplayName) {
+          return { ...u, name: managerDisplayName };
+        }
+        return u;
+      });
     return (
       <LoginFlow
-        users={users.filter((u) => u.active)}
+        users={visibleUsers}
         onLogin={(userId, pin) => loginWithUserPin(userId, pin)}
       />
     );
@@ -98,7 +115,19 @@ function LoginFlow({
 function roleLabel(role: string) {
   if (role === "admin") return "Gérant";
   if (role === "technician") return "Technicien";
-  return "Accueil";
+  if (role === "frontdesk") return "Accueil";
+  return "Compte";
+}
+
+function roleSubtitle(role: string, displayName: string) {
+  // Si le nom affiché correspond au libellé du rôle (pas de personnalisation
+  // côté atelier), on garde un sous-titre informatif au lieu de répéter.
+  const label = roleLabel(role);
+  if (displayName.trim().toLowerCase() === label.toLowerCase()) {
+    if (role === "admin") return "Compte principal";
+    return label;
+  }
+  return label;
 }
 
 function avatarColor(role: string): string {
@@ -156,7 +185,7 @@ function UserSelectorScreen({
                     {user.name}
                   </p>
                   <p className="mt-0.5 text-[#8A8984] text-[12px] font-medium">
-                    {roleLabel(user.role)}
+                    {roleSubtitle(user.role, user.name)}
                   </p>
                 </div>
 

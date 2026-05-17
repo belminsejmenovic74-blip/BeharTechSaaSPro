@@ -78,7 +78,7 @@ export function TabBar<T extends string>({
   counts?: Partial<Record<T, number>>;
 }>) {
   return (
-    <div className="inline-flex h-10 items-center gap-1 rounded-[12px] border border-[#E7E4DC] bg-white p-1">
+    <div className="flex h-10 max-w-full items-center gap-1 overflow-x-auto rounded-[12px] border border-[#E7E4DC] bg-white p-1 scrollbar-none">
       {tabs.map((tab) => {
         const active = tab.value === value;
         const count = counts?.[tab.value];
@@ -88,7 +88,7 @@ export function TabBar<T extends string>({
             type="button"
             onClick={() => onChange(tab.value)}
             className={cn(
-              "h-8 rounded-[9px] px-3 font-medium text-[13px] transition",
+              "h-8 shrink-0 rounded-[9px] px-3 font-medium text-[13px] transition",
               active ? "bg-[#E7F5F1] text-[#1d6f65]" : "text-[#6B6B6B] hover:bg-[#FAFAF8] hover:text-[#1A1916]",
             )}
           >

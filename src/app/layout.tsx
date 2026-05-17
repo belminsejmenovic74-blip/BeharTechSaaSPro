@@ -60,7 +60,22 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
 
                   if ('serviceWorker' in navigator) {
                     window.addEventListener('load', function() {
-                      navigator.serviceWorker.register('/sw.js');
+                      const isLocalDev = ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname);
+
+                      if (isLocalDev) {
+                        navigator.serviceWorker.getRegistrations()
+                          .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+                          .then(() => {
+                            if (!window.caches) return undefined;
+                            return caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))));
+                          })
+                          .catch(() => undefined);
+                        return;
+                      }
+
+                      navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+                        .then((registration) => registration.update().catch(() => undefined))
+                        .catch(() => undefined);
                     });
                   }
                 `,

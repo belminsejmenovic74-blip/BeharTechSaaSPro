@@ -26,8 +26,14 @@ export function DashboardWorkspace() {
     (total, invoice) => total + invoice.lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0),
     0,
   );
-  const todaysAppointments = store.appointments.filter((appointment) => appointment.date === new Date().toISOString().slice(0, 10)).length;
   const today = displayDate(new Date());
+  const todayIsoLocal = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  })();
+  const todaysAppointments = store.appointments.filter(
+    (appointment) => appointment.date === today || appointment.date === todayIsoLocal,
+  ).length;
   const selectedPaid = selected
     ? store.payments.some((payment) => payment.repairId === selected.id && payment.status === "Payé")
     : false;
@@ -189,14 +195,14 @@ export function DashboardWorkspace() {
           <Panel className="p-5">
             <div className="mb-5 flex items-start justify-between">
               <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">{selected.device}</h2>
-              <button
-                aria-label="Options"
-                className="text-[#6B6B6B] hover:text-[#1A1916]"
-                onClick={() => toast.message("Action bientôt disponible.")}
-                type="button"
+              <Link
+                aria-label="Ouvrir le dossier réparation"
+                className="rounded-full p-1 text-[#6B6B6B] transition hover:bg-[#F6F7F4] hover:text-[#1A1916]"
+                href="/dashboard/reparations"
+                onClick={() => store.setSelected("repair", selected.id)}
               >
                 <MoreHorizontal className="size-5" />
-              </button>
+              </Link>
             </div>
 
             <dl className="space-y-0.5">
@@ -227,13 +233,18 @@ export function DashboardWorkspace() {
               className="mt-5 w-full"
               disabled={selectedPaid}
               onClick={() => {
-                const existingInvoice = store.invoices.find((invoice) => invoice.repairId === selected.id);
-                if (!existingInvoice) {
-                  toast.info("Créez d'abord une facture depuis le module Factures.");
+                if (selectedPaid) return;
+                const total = typeof selected.total === "number" ? selected.total : selected.amount ?? 0;
+                if (total <= 0) {
+                  toast.error("Ajoutez un tarif à la réparation avant d'encaisser.");
                   return;
                 }
-                store.setSelected("invoice", existingInvoice.id);
-                toast.info("Passez par la facture pour encaisser le paiement.");
+                const paymentId = store.markRepairAsPaid(selected.id, "Carte", "");
+                if (paymentId) {
+                  toast.success(`Paiement encaissé (${formatEuro(total)}).`);
+                } else {
+                  toast.error("Encaissement impossible. Vérifiez le tarif et le stock.");
+                }
               }}
             >
               {selectedPaid ? "Déjà encaissé" : "Encaisser"}
@@ -245,7 +256,7 @@ export function DashboardWorkspace() {
       <section className="grid gap-4 xl:grid-cols-[1.05fr_1fr]">
         <Panel className="p-4">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Chiffre d'affaires</h2>
+            <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">CA encaissé par jour</h2>
             <span className="text-[#8A8984] text-[13px]">30 derniers jours</span>
           </div>
           <RevenueChart />
@@ -306,10 +317,17 @@ function displayDate(date: Date) {
 }
 
 function isCurrentMonthLabel(value: string) {
+  if (!value) return false;
+  // Démo : libellés relatifs créés par les mocks comptent comme « ce mois ».
+  if (/^aujourd['’]hui/i.test(value)) return true;
+  if (/^hier/i.test(value)) return true;
   const now = new Date();
   const year = String(now.getFullYear());
   const month = monthNames[now.getMonth()];
   const short = shortMonthNames[now.getMonth()];
+  // Format ISO « 2026-05-17 »
+  const isoPrefix = `${year}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  if (value.startsWith(isoPrefix)) return true;
   return value.includes(year) && (value.includes(month) || value.includes(short));
 }
 

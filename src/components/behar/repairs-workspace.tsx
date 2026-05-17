@@ -701,8 +701,26 @@ export function RepairsWorkspace() {
         </div>
       </div>
 
-      {/* Mobile : liste verticale des réparations filtrées */}
-      <div className="md:hidden">
+      {/* Mobile : colonnes défilables avec glisser-déposer tactile */}
+      <div className="md:hidden h-[620px] min-h-0 overflow-hidden">
+        <KanbanBoard
+          compact
+          columns={columns}
+          onSelect={(id) => {
+            setSelected("repair", id);
+            setMobileDetailOpen(true);
+          }}
+          selectedId={selectedRepair?.id ?? ""}
+          onMoveCard={(cardId, _from, toStatus) => {
+            if (!statuses.includes(toStatus as RepairStatus)) return;
+            changeRepairStatus(cardId, toStatus as RepairStatus);
+            toast.success(`Statut : ${toStatus}`);
+          }}
+        />
+      </div>
+
+      {/* Mobile legacy list kept out of the visual flow while cards move to columns. */}
+      <div className="hidden">
         {filteredRepairs.length === 0 ? (
           <div className="rounded-[20px] bg-white p-10 text-center shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
             <p className="text-[#8A8984] text-sm">
@@ -770,14 +788,14 @@ export function RepairsWorkspace() {
           mobileDetailOpen && selectedRepair
             ? "fixed inset-0 z-40 block overflow-y-auto bg-[#FAFAF8] md:relative md:inset-auto md:z-auto md:bg-transparent md:overflow-visible"
             : "hidden md:grid",
-          "md:grid md:min-h-0 md:flex-1 md:gap-4",
+          "md:grid md:min-h-0 md:flex-1 md:gap-4 md:grid-rows-[minmax(0,1fr)]",
           detailMode === "intake" && selectedRepair
             ? "md:grid-cols-1"
             : "xl:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] 2xl:grid-cols-[minmax(0,1fr)_400px]",
         )}
       >
         {/* Kanban : desktop uniquement */}
-        <div className="hidden md:block min-h-0">
+        <div className="hidden md:flex md:min-h-0 md:h-full md:flex-col md:overflow-hidden">
           {!(detailMode === "intake" && selectedRepair) && (
             <KanbanBoard
               columns={columns}

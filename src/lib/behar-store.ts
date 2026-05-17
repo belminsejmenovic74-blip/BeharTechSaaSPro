@@ -6,6 +6,8 @@ import { persist } from "zustand/middleware";
 import {
   createPriceBookItem,
   normalizePriceBookItem,
+  priceBookDuplicateKey,
+  type PriceBookDeviceType,
   type PriceBookInput,
   type PriceBookItem,
   seedPriceBookExamples,
@@ -975,6 +977,10 @@ export const DEFAULT_ROLE_GREETINGS: Record<UserRole, string[]> = {
   ],
 };
 
+// Seuls les comptes réellement actifs apparaissent à l'écran de choix.
+// Le gérant est actif par défaut (compte principal de l'atelier).
+// Les autres rôles restent seedés pour le démarrage mais ne sont
+// visibles qu'une fois explicitement activés via Paramètres > Équipe.
 const defaultUsers: CurrentUser[] = [
   withRolePermissions({
     id: "user_belmin_admin",
@@ -990,7 +996,7 @@ const defaultUsers: CurrentUser[] = [
     name: "Technicien",
     role: "technician",
     pin: "1234",
-    active: true,
+    active: false,
     createdAt: userSeedDate,
     updatedAt: userSeedDate,
   }),
@@ -999,7 +1005,7 @@ const defaultUsers: CurrentUser[] = [
     name: "Accueil",
     role: "frontdesk",
     pin: "5678",
-    active: true,
+    active: false,
     createdAt: userSeedDate,
     updatedAt: userSeedDate,
   }),
@@ -1008,7 +1014,7 @@ const defaultUsers: CurrentUser[] = [
     name: "Stagiaire",
     role: "technician",
     pin: "9999",
-    active: true,
+    active: false,
     createdAt: userSeedDate,
     updatedAt: userSeedDate,
     permissionOverrides: {
@@ -1261,10 +1267,10 @@ const normalizeText = (value: unknown, fallback = "") => {
 };
 const normalizePhone = (value: unknown) => String(value ?? "").replace(/\D/g, "");
 const counterCustomerId = "customer_counter";
-const createCounterCustomer = (createdAt = nowLabel()): Customer => ({
-  id: counterCustomerId,
+const createCounterCustomer = (createdAt = nowLabel(), id = counterCustomerId, name = "Client comptoir"): Customer => ({
+  id,
   shopId,
-  name: "Client comptoir",
+  name,
   type: "counter",
   initials: "CC",
   phone: "",
@@ -1419,14 +1425,15 @@ const getValidCustomerId = (customerId: unknown, customers: Customer[], fallback
   return customers[0]?.id ?? "";
 };
 const ensureCounterCustomer = (customers: Customer[]) => {
-  const cleaned = customers.filter((customer) => customer.name !== "Anonyme");
-  const existing = cleaned.find((customer) => customer.type === "counter" || customer.id === counterCustomerId || customer.name === "Client comptoir");
-  if (!existing) return [createCounterCustomer(), ...cleaned];
-  return cleaned.map((customer) =>
-    customer.id === existing.id
-      ? { ...customer, id: counterCustomerId, type: "counter" as const, name: "Client comptoir", initials: "CC" }
-      : customer,
-  );
+  const cleaned = customers
+    .filter((customer) => customer.name !== "Anonyme")
+    .map((customer) =>
+      customer.type === "counter" || customer.id === counterCustomerId || customer.name.startsWith("Client comptoir")
+        ? { ...customer, type: "counter" as const, initials: customer.initials || "CC" }
+        : customer,
+    );
+  if (cleaned.some((customer) => customer.id === counterCustomerId)) return cleaned;
+  return [createCounterCustomer(), ...cleaned];
 };
 
 /** Ligne éditable devis (placeholders autorisés). */
@@ -1691,9 +1698,11 @@ const normalizeRepair = (
     ? appointments.find((appointment) => appointment.id === repair.appointmentId)
     : undefined;
   const linkedCustomerId = normalizeText(linkedAppointment?.customerId);
+  // Source de vérité = repair.customerId. On ne retombe sur le client du RDV
+  // qu'en dernier recours (cas anciens dossiers sans customerId direct).
   const customerId = customers.length
-    ? getValidCustomerId(linkedCustomerId || repair.customerId, customers)
-    : normalizeText(linkedCustomerId || repair.customerId);
+    ? getValidCustomerId(repair.customerId || linkedCustomerId, customers)
+    : normalizeText(repair.customerId || linkedCustomerId);
   const parts = Array.isArray(repair.parts)
     ? repair.parts.map((part) => ({
       stockItemId: normalizeText(part.stockItemId),
@@ -2024,7 +2033,20 @@ const normalizeStockItem = (item: Partial<StockItem> & { skipModelInference?: bo
       : item.skipModelInference
         ? undefined
         : findBrandByName(name);
-  const modelIds = uniqueIds(Array.isArray(item.modelIds) ? item.modelIds : []);
+  const rawModelIds = Array.isArray(item.modelIds) ? item.modelIds : [];
+  const modelFromName = inferModelFromPartName(name, item.brandName);
+  const compatibleModelInputs = uniqueIds([
+    modelFromName,
+    ...(Array.isArray(item.compatibleModels) ? item.compatibleModels : []),
+  ]);
+  const modelIds = uniqueIds([
+    ...compatibleModelInputs.map((modelName) => findModelIdByName(modelName, brand?.id)),
+    ...rawModelIds.map((modelIdOrName) =>
+      deviceModels.some((model) => model.id === modelIdOrName)
+        ? modelIdOrName
+        : findModelIdByName(modelIdOrName, brand?.id),
+    ),
+  ]);
   // Inférence du modèle désactivée si skipModelInference=true OU si compatibleModels
   // est fourni explicitement (même vide) par l'appelant — on respecte le choix
   // utilisateur pour éviter de coller un modèle par défaut comme "iPhone SE 1re génération".
@@ -2032,12 +2054,13 @@ const normalizeStockItem = (item: Partial<StockItem> & { skipModelInference?: bo
     !item.skipModelInference &&
     !modelIds.length &&
     !Array.isArray(item.compatibleModels);
-  const inferredModel = inferenceAllowed ? findModelByName(name, brand?.id) : undefined;
+  const inferredModelName = inferenceAllowed ? modelFromName : undefined;
+  const inferredModel = inferredModelName ? findModelByName(inferredModelName, brand?.id) : undefined;
   const finalModelIds = uniqueIds([...modelIds, inferredModel?.id]);
   const firstModel = finalModelIds.length ? deviceModels.find((entry) => entry.id === finalModelIds[0]) : undefined;
   const effectiveBrand = brand ?? deviceBrands.find((entry) => entry.id === firstModel?.brandId);
   const compatibleModels = uniqueIds([
-    ...(Array.isArray(item.compatibleModels) ? item.compatibleModels : []),
+    ...compatibleModelInputs,
     ...finalModelIds.map((modelId) => deviceModels.find((entry) => entry.id === modelId)?.name),
   ]);
   const deviceType = normalizeDeviceType(firstModel?.deviceType ?? item.deviceType ?? category?.deviceTypes[0]);
@@ -2072,7 +2095,7 @@ const normalizeStockItem = (item: Partial<StockItem> & { skipModelInference?: bo
 };
 
 const CATEGORY_TO_INTERVENTION: Record<string, string> = {
-  "Écran": "Écran cassé",
+  "Écran": "Écran",
   "Batterie": "Batterie",
   "Connecteur de charge": "Connecteur de charge",
   "Connecteur": "Connecteur de charge",
@@ -2188,17 +2211,67 @@ const syncPriceBookToStockItems = (pbItems: PriceBookItem[], stockItems: StockIt
   return nextStock;
 };
 
+// Déduit le modèle d'appareil à partir du nom de la pièce quand l'utilisateur
+// n'a sélectionné aucun modèle compatible. Ex. "Écran iPhone 13" → "iPhone 13".
+const inferModelFromPartName = (partName: string, brandName?: string): string | undefined => {
+  const cleanName = String(partName || "").trim();
+  if (!cleanName) return undefined;
+  const brand = brandName ? findBrandByName(brandName) : undefined;
+  const normalizedName = cleanName
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/\s+/g, " ");
+  return deviceModels
+    .filter((model) => !brand?.id || model.brandId === brand.id)
+    .filter((model) => {
+      const normalizedModel = model.name
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/\p{M}/gu, "")
+        .replace(/\s+/g, " ");
+      return normalizedName.includes(normalizedModel);
+    })
+    .sort((a, b) => b.name.length - a.name.length)[0]?.name;
+};
+
+const findModelIdByName = (modelName: string | undefined, brandId?: string): string | undefined => {
+  if (!modelName) return undefined;
+  return findModelByName(modelName, brandId)?.id;
+};
+
+const stockDeviceTypeToPriceBook = (deviceType: DeviceType | undefined): PriceBookDeviceType => {
+  switch (deviceType) {
+    case "Smartphone":
+      return "smartphone";
+    case "Tablette":
+      return "tablet";
+    case "Ordinateur":
+      return "computer";
+    case "Console":
+      return "console";
+    default:
+      return "other";
+  }
+};
+
 const syncStockToPriceBookItems = (stockItems: StockItem[], pbItems: PriceBookItem[]): PriceBookItem[] => {
   let nextPB = [...pbItems];
   stockItems.forEach((s) => {
+    if (s.salePrice <= 0 && s.purchasePrice <= 0) return;
+    // Détermine le modèle effectif : sélection utilisateur → sinon déduction
+    // depuis le nom (ex. "Ecran iPhone 13") → sinon "Générique" en dernier recours.
+    const inferredModel = s.compatibleModels[0] || inferModelFromPartName(s.name, s.brandName);
+    const effectiveModel = inferredModel || "Générique";
+
     // 1. Find by ID link
     let pbIndex = nextPB.findIndex(pb => pb.id === s.priceBookItemId || pb.stockItemId === s.id);
-    
+
     // 2. Find by SKU
     if (pbIndex === -1 && s.sku) {
       pbIndex = nextPB.findIndex(pb => pb.sku === s.sku || pb.sku === s.reference);
     }
-    
+
     // 3. Find by Type + Brand + Model + Intervention
     if (pbIndex === -1) {
       const intervention = getInterventionFromCategory(s.categoryName || s.category);
@@ -2212,7 +2285,7 @@ const syncStockToPriceBookItems = (stockItems: StockItem[], pbItems: PriceBookIt
           interventionAliases.includes(pbReparationLower);
         return (
           pb.marque.toLowerCase() === s.brandName?.toLowerCase() &&
-          pb.modele.toLowerCase() === (s.compatibleModels[0]?.toLowerCase() || "générique") &&
+          pb.modele.toLowerCase() === effectiveModel.toLowerCase() &&
           reparationMatches
         );
       });
@@ -2230,12 +2303,12 @@ const syncStockToPriceBookItems = (stockItems: StockItem[], pbItems: PriceBookIt
         fournisseur: s.supplier !== "Non renseigné" ? s.supplier : existing.fournisseur,
         updatedAt: new Date().toISOString(),
       };
-      
+
       // Recalculate totals using the store helper if possible, or manual logic
       const total = nextItem.prixVentePiece + nextItem.mainOeuvre;
       const marge = total - nextItem.prixAchat;
       const margePourcentage = total > 0 ? (marge / total) * 100 : 0;
-      
+
       nextPB[pbIndex] = {
         ...nextItem,
         prixClientTotal: total,
@@ -2243,11 +2316,13 @@ const syncStockToPriceBookItems = (stockItems: StockItem[], pbItems: PriceBookIt
         margePourcentage,
       };
     } else {
-      // Create new price book item
+      // Create new price book item — utilise le modèle déduit pour que
+      // l'entrée apparaisse dans le bon nœud de l'arborescence (ex. iPhone 13).
       const intervention = getInterventionFromCategory(s.categoryName || s.category);
       const newItem = createPriceBookItem({
+        typeAppareil: stockDeviceTypeToPriceBook(s.deviceType),
         marque: s.brandName || "Autre",
-        modele: s.compatibleModels[0] || "Générique",
+        modele: effectiveModel,
         piece: s.name,
         reparation: intervention,
         qualite: "Standard",
@@ -2470,15 +2545,15 @@ const normalizePersistedState = (state: unknown) => {
     selectedSaleId: typeof (persisted as any).selectedSaleId === "string" ? (persisted as any).selectedSaleId : "",
     messageLogs: Array.isArray(persisted.messageLogs) ? persisted.messageLogs : seed.messageLogs,
     priceBookItems: (() => {
-      if (!Array.isArray(persisted.priceBookItems)) return seed.priceBookItems;
+      if (!Array.isArray(persisted.priceBookItems)) return syncStockToPriceBookItems(stockItems, seed.priceBookItems);
       const normalized = persisted.priceBookItems
         .map((item) => normalizePriceBookItem(item))
         .filter((item): item is PriceBookItem => Boolean(item));
       const hasExamples = normalized.some((item) => item.source === "behar_example");
-      if (hasExamples) return normalized;
+      if (hasExamples) return syncStockToPriceBookItems(stockItems, normalized);
       const existingIds = new Set(normalized.map((item) => item.id));
       const examples = seed.priceBookItems.filter((item) => !existingIds.has(item.id));
-      return [...normalized, ...examples];
+      return syncStockToPriceBookItems(stockItems, [...normalized, ...examples]);
     })(),
     // Licence — must be restored from persisted state, never reset by merge
     licenseActivated: Boolean((persisted as any).licenseActivated),
@@ -3129,9 +3204,31 @@ export const useBeharStore = create<StoreState>()(
           );
           if (existing) return existing.id;
         }
-        if (cleanName === "Anonyme" || cleanName === "Client comptoir") {
-          set((state) => ({ customers: ensureCounterCustomer(state.customers), selectedCustomerId: counterCustomerId }));
-          return counterCustomerId;
+        if (cleanName === "Anonyme" || cleanName === "Client comptoir" || input.type === "counter") {
+          const id = uid("customer_counter");
+          const now = nowLabel();
+          const existingCounterCount = get().customers.filter(
+            (customer) => customer.type === "counter" || customer.name.startsWith("Client comptoir"),
+          ).length;
+          const label = `Client comptoir ${String(existingCounterCount + 1).padStart(3, "0")}`;
+          const customer: Customer = {
+            ...createCounterCustomer(now, id, label),
+            device: input.device || "Non renseigné",
+            lastRepair: input.lastRepair || "Aucune",
+            source: input.source || "Comptoir",
+            notes: input.notes,
+            tags: input.tags,
+            status: input.status || "Client comptoir",
+            ...actorFields(actor),
+          };
+          set((state) => ({ customers: [customer, ...ensureCounterCustomer(state.customers)], selectedCustomerId: id }));
+          get().addAuditLog({
+            action: "client.counter_created",
+            targetType: "client",
+            targetId: id,
+            message: `${actor.name} a créé ${customer.name}`,
+          });
+          return id;
         }
         const id = uid("customer");
         const customer: Customer = {
@@ -3322,17 +3419,26 @@ export const useBeharStore = create<StoreState>()(
           if (!get().requirePermission("canEditRepair", "Modifier une réparation")) return;
           const actor = get().currentUser ?? defaultCurrentUser;
           set((state) => {
+          // Détecter explicitement si le patch fournit un customerId valide
+          const patchProvidesCustomer =
+            patch.customerId !== undefined &&
+            patch.customerId !== null &&
+            normalizeText(patch.customerId) !== "";
           const repairs = state.repairs.map((repair) => {
             if (repair.id !== id) return repair;
             const appointmentId = patch.appointmentId ?? repair.appointmentId;
             const linkedAppointment = appointmentId
               ? state.appointments.find((appointment) => appointment.id === appointmentId)
               : undefined;
-            const nextCustomerId = getValidCustomerId(
-              linkedAppointment?.customerId ?? patch.customerId ?? repair.customerId,
-              state.customers,
-              repair.customerId,
-            );
+            // Si l'utilisateur change explicitement de client → patch gagne.
+            // Sinon, on tente l'appointment puis on retombe sur l'existant.
+            const nextCustomerId = patchProvidesCustomer
+              ? getValidCustomerId(patch.customerId, state.customers, repair.customerId)
+              : getValidCustomerId(
+                  linkedAppointment?.customerId ?? repair.customerId,
+                  state.customers,
+                  repair.customerId,
+                );
             const changes: string[] = [];
             if (nextCustomerId !== repair.customerId) changes.push("client");
             if (patch.issue !== undefined && patch.issue !== repair.issue) changes.push("problème");
@@ -3372,9 +3478,20 @@ export const useBeharStore = create<StoreState>()(
           const targetRepair = repairs.find((r) => r.id === id);
           let appointments = state.appointments.map((appointment) => {
             const linkedRepair = repairs.find((repair) => repair.appointmentId === appointment.id);
-            return linkedRepair
-              ? { ...appointment, repairId: linkedRepair.id, status: "Converti en réparation", confirmed: true }
-              : appointment;
+            if (!linkedRepair) return appointment;
+            // Propage le client de la réparation vers le rendez-vous lié pour
+            // éviter qu'un ancien "Client comptoir" reste affiché côté RDV.
+            const nextCustomerId =
+              linkedRepair.customerId && linkedRepair.customerId !== appointment.customerId
+                ? linkedRepair.customerId
+                : appointment.customerId;
+            return {
+              ...appointment,
+              customerId: nextCustomerId,
+              repairId: linkedRepair.id,
+              status: "Converti en réparation",
+              confirmed: true,
+            };
           });
           if (targetRepair) {
             appointments = syncPickup(targetRepair, appointments, state.customers);
@@ -4591,14 +4708,21 @@ export const useBeharStore = create<StoreState>()(
       },
       updateAppointment: (id, patch) =>
         set((state) => {
+          const patchProvidesCustomer =
+            patch.customerId !== undefined &&
+            patch.customerId !== null &&
+            normalizeText(patch.customerId) !== "";
           const appointments = state.appointments.map((appointment) => {
             if (appointment.id !== id) return appointment;
             const linkedRepair = state.repairs.find((repair) => repair.id === (patch.repairId ?? appointment.repairId));
-            const customerId = getValidCustomerId(
-              linkedRepair?.customerId ?? patch.customerId ?? appointment.customerId,
-              state.customers,
-              appointment.customerId,
-            );
+            // Patch explicite gagne ; sinon réparation liée ; sinon existant.
+            const customerId = patchProvidesCustomer
+              ? getValidCustomerId(patch.customerId, state.customers, appointment.customerId)
+              : getValidCustomerId(
+                  linkedRepair?.customerId ?? appointment.customerId,
+                  state.customers,
+                  appointment.customerId,
+                );
             return normalizeAppointment({ ...appointment, ...patch, customerId }, state.customers, state.repairs);
           });
           const repairs = state.repairs.map((repair) => {
@@ -4689,11 +4813,23 @@ export const useBeharStore = create<StoreState>()(
         if (!get().requirePermission("canManageStock", "Créer une pièce")) return "";
         const actor = get().currentUser ?? defaultCurrentUser;
         const id = uid("stock");
+        // Si aucun modèle compatible n'est sélectionné, on tente d'en déduire
+        // un depuis le nom de la pièce ("Écran iPhone 13" → iPhone 13).
+        // Ça évite qu'une pièce reste « Modèles : Non défini » et que sa
+        // synchro catalogue retombe sur l'entrée Générique invisible.
+        const hasModels = Array.isArray(input.compatibleModels) && input.compatibleModels.length > 0;
+        const inferredModel = hasModels ? undefined : inferModelFromPartName(input.name ?? "", input.brandName);
+        const enrichedInput = inferredModel
+          ? {
+              ...input,
+              compatibleModels: [inferredModel],
+            }
+          : input;
         const item = normalizeStockItem({
           id,
           shopId,
-          leadTime: input.leadTime || "2 à 3 jours",
-          ...input,
+          leadTime: enrichedInput.leadTime || "2 à 3 jours",
+          ...enrichedInput,
           ...actorFields(actor),
         });
         set((state) => {
@@ -4854,18 +4990,22 @@ export const useBeharStore = create<StoreState>()(
         {
           if (!get().requirePermission("canManageStock", "Réapprovisionner")) return;
           const actor = get().currentUser ?? defaultCurrentUser;
-          set((state) => ({
-          stockItems: state.stockItems.map((item) =>
-            item.id === id
-              ? {
-                ...item,
-                quantity: item.quantity + clampQuantity(quantity),
-                stock: item.stock + clampQuantity(quantity),
-                ...updateActorFields(actor),
-              }
-              : item,
-          ),
-        }));
+          set((state) => {
+            const stockItems = state.stockItems.map((item) =>
+              item.id === id
+                ? {
+                  ...item,
+                  quantity: item.quantity + clampQuantity(quantity),
+                  stock: item.stock + clampQuantity(quantity),
+                  ...updateActorFields(actor),
+                }
+                : item,
+            );
+            return {
+              stockItems,
+              priceBookItems: syncStockToPriceBookItems(stockItems, state.priceBookItems),
+            };
+          });
           const item = get().stockItems.find((entry) => entry.id === id);
           get().addAuditLog({
             action: "stock.quantity_changed",
@@ -4894,7 +5034,7 @@ export const useBeharStore = create<StoreState>()(
               );
             }
           }
-          return { stockItems };
+          return { stockItems, priceBookItems: syncStockToPriceBookItems(stockItems, state.priceBookItems) };
         }),
       sendMessage: (input) => {
         const log: MessageLog = {
@@ -5003,6 +5143,31 @@ export const useBeharStore = create<StoreState>()(
       },
       addPriceBookItem: (input) => {
         const item = createPriceBookItem({ ...input, source: input.source ?? "manual" });
+        // Anti-doublon : si une entrée existe déjà avec la même clé
+        // (type+marque+modèle+intervention+sku), on met à jour ses prix
+        // au lieu de créer une copie. Évite la prolifération des entrées
+        // catalogue à chaque nouvelle réparation au tarif manuel.
+        const key = priceBookDuplicateKey(item);
+        const existing = get().priceBookItems.find((pb) => priceBookDuplicateKey(pb) === key);
+        if (existing) {
+          set((state) => {
+            const priceBookItems = state.priceBookItems.map((pb) =>
+              pb.id === existing.id
+                ? updatePriceBookItem(pb, {
+                    prixAchat: item.prixAchat || pb.prixAchat,
+                    prixVentePiece: item.prixVentePiece || pb.prixVentePiece,
+                    mainOeuvre: item.mainOeuvre || pb.mainOeuvre,
+                    fournisseur: item.fournisseur ?? pb.fournisseur,
+                    notes: item.notes ?? pb.notes,
+                    isActive: true,
+                  })
+                : pb,
+            );
+            const stockItems = syncPriceBookToStockItems(priceBookItems, state.stockItems);
+            return { priceBookItems, stockItems };
+          });
+          return existing.id;
+        }
         set((state) => {
           const priceBookItems = [item, ...state.priceBookItems];
           const stockItems = syncPriceBookToStockItems(priceBookItems, state.stockItems);

@@ -184,15 +184,9 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
                   </span>
                 )}
               </div>
-              <label className="inline-flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="size-4 rounded border-[#E7E4DC] text-[#2A9D8F] focus:ring-[#2A9D8F]/10"
-                  checked={Boolean(draft.showLogo)}
-                  onChange={(e) => setField("showLogo", e.target.checked)}
-                />
-                <span className="text-sm text-[#6B6B6B]">Afficher le logo sur les documents</span>
-              </label>
+              <p className="text-[12px] text-[#8A8984] leading-relaxed">
+                Si vous importez un logo, il apparaîtra automatiquement sur vos documents.
+              </p>
             </div>
           </Field>
           <Field label="Téléphone">

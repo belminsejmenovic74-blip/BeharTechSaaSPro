@@ -194,12 +194,6 @@ function DocumentHeader({
   return (
     <header className="flex items-start justify-between gap-10 border-b border-[#E8E8E5] pb-8">
       <div className="max-w-[390px]">
-        {/* Logo lockup BEHAR • TECH */}
-        <div className="mb-3 inline-flex items-center gap-1.5">
-          <span className="font-bold text-[#1A1916] text-[14px] tracking-[0.18em]">BEHAR</span>
-          <span className="size-[5px] rounded-full" style={{ backgroundColor: theme.accent }} aria-hidden />
-          <span className="font-bold text-[#1A1916] text-[14px] tracking-[0.18em]">TECH</span>
-        </div>
         <div className="text-[12px] leading-relaxed text-[#6B6B6B]">
           <p className="font-semibold text-[#1A1916] text-[15px] tracking-tight">{atelierName}</p>
           {workshop.commercialName ? <p>{text(workshop.commercialName)}</p> : null}
@@ -342,7 +336,9 @@ function TotalsCard({
           <TotalLine label={`TVA ${Math.round(vat.rate * 100)}%`} value={money(vat.tva)} />
         </>
       ) : (
-        <p className="mb-3 text-right text-[#6B6B6B] text-[11px]">TVA non applicable — article 293 B du CGI</p>
+        <p className="mb-3 text-right text-[#6B6B6B] text-[11px]">
+          {text(ws.tvaMention, "TVA non applicable, art. 293 B du CGI")}
+        </p>
       )}
       <TotalLine emphasize label={showBalance ? "Total facture" : "Total à payer"} value={money(finalTotal)} />
       {showBalance ? (
@@ -771,7 +767,7 @@ function InvoiceLegalMentions({
         </dl>
         {!ws.vatApplicable ? (
           <p className="mt-3 text-[10px] leading-relaxed text-[#6B6B6B]">
-            TVA non applicable, article 293 B du CGI.
+            {text(ws.tvaMention, "TVA non applicable, art. 293 B du CGI")}
           </p>
         ) : null}
       </div>

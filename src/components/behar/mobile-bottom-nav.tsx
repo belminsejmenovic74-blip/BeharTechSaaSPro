@@ -8,7 +8,6 @@ import { usePathname } from "next/navigation";
 import {
   CalendarDays,
   CreditCard,
-  FileSpreadsheet,
   FileText,
   Folder,
   Home,
@@ -41,7 +40,7 @@ const moreItems = [
   { label: "Stock", href: "/dashboard/stock", icon: Package },
   { label: "Documents", href: "/dashboard/documents", icon: Folder },
   { label: "Paramètres", href: "/dashboard/parametres", icon: Settings },
-  { label: "Catalogue prix", href: "/dashboard/parametres/catalogue", icon: FileSpreadsheet },
+  { label: "Catalogue prix", href: "/dashboard/parametres/catalogue", icon: FileText },
 ] as const;
 
 export function MobileBottomNav() {

@@ -181,7 +181,7 @@ export function PaymentsWorkspace() {
       />
 
       {/* Mobile : strip horizontal de KPI compacts */}
-      <section className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 md:hidden scrollbar-none">
+      <section className="grid max-w-full min-w-0 gap-3 pb-1 min-[360px]:flex min-[360px]:overflow-x-auto md:hidden scrollbar-none">
         <MobileKpi label="Encaissé ce mois" value={formatEuro(totalEncaisse)} helper="paiements réussis" tone="teal" />
         <MobileKpi label="En attente" value={formatEuro(pendingTotal)} helper="à régler" tone="amber" />
         <MobileKpi label="Aujourd'hui" value={formatEuro(todayAmount)} helper={`${todayCount} paiements`} tone="teal" />
@@ -221,9 +221,11 @@ export function PaymentsWorkspace() {
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <TabBar tabs={METHOD_TABS} value={methodFilter} onChange={setMethodFilter} />
-              <label className="relative block w-full max-w-[280px]">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+              <div className="w-full min-w-0 overflow-x-auto pb-1 sm:w-auto sm:pb-0 scrollbar-none">
+                <TabBar tabs={METHOD_TABS} value={methodFilter} onChange={setMethodFilter} />
+              </div>
+              <label className="relative block w-full min-w-0 max-w-[280px]">
                 <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6B6B6B]" />
                 <input
                   className="h-10 w-full rounded-[12px] border border-[#E7E4DC] bg-white pr-4 pl-10 text-sm outline-none transition placeholder:text-[#8A8984] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
@@ -235,7 +237,7 @@ export function PaymentsWorkspace() {
               </label>
             </div>
             <SecondaryButton
-              className={filterOverdue ? "border-[#B42318] bg-[#FFF1F0] text-[#B42318]" : ""}
+              className={cn("w-full sm:w-auto", filterOverdue ? "border-[#B42318] bg-[#FFF1F0] text-[#B42318]" : "")}
               onClick={() => setFilterOverdue(!filterOverdue)}
             >
               <SlidersHorizontal className="size-4" />
@@ -756,7 +758,7 @@ function MobileKpi({
     ? { bg: "bg-[#EAF6F2]", text: "text-[#2A9D8F]" }
     : { bg: "bg-[#FCF1DF]", text: "text-[#C2841C]" };
   return (
-    <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+    <div className="w-full shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)] min-[360px]:w-[44%]">
       <span className={cn("grid size-9 place-items-center rounded-[10px]", t.bg, t.text)}>
         <Wallet className="size-[18px]" strokeWidth={2} />
       </span>

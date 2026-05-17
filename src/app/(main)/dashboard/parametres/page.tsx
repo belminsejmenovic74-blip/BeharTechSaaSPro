@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   AlertTriangle, Building2, Check, CloudDownload, CloudUpload,
-  Download, FileText, HelpCircle, Image, Loader2, Phone, Shield, Upload, ExternalLink
+  Download, FileText, HelpCircle, Loader2, Phone, Shield, Upload, ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -190,7 +190,6 @@ export default function SettingsPage() {
   const canImportData = store.hasPermission("canImportData");
   const canBackupData = store.hasPermission("canBackupData");
   const importRef = useRef<HTMLInputElement | null>(null);
-  const logoRef = useRef<HTMLInputElement | null>(null);
   const [draft, setDraft] = useState<WorkshopSettings>(store.workshopSettings);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(true);
@@ -296,31 +295,6 @@ export default function SettingsPage() {
     } catch { toast.error("Import impossible."); }
   };
 
-  const handleLogoImport = (file: File) => {
-    const isImage = file.type.startsWith("image/") || file.name.toLowerCase().endsWith(".svg");
-    if (!isImage) {
-      toast.error("Choisissez une image PNG, JPG, WEBP ou SVG.");
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Logo trop lourd. Taille maximale : 2 Mo.");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === "string" ? reader.result : "";
-      if (!result) {
-        toast.error("Logo illisible.");
-        return;
-      }
-      setField("logoUrl", result);
-      toast.success("Logo ajouté.");
-    };
-    reader.onerror = () => toast.error("Import du logo impossible.");
-    reader.readAsDataURL(file);
-  };
-
-  const logoPreview = draft.logoUrl && draft.logoUrl.length > 10;
   const siren = digitsOnly(draft.siret).slice(0, 9).replace(/(\d{3})(?=\d)/g, "$1 ");
   const postalCities = cityByPostalCode[normalizeSpaces(draft.postalCode)] ?? [];
   const phone = phoneParts(draft.phone);
@@ -364,8 +338,8 @@ export default function SettingsPage() {
   return (
     <PageShell title="Réglages" subtitle="Gérez les informations de votre atelier et vos préférences.">
       {/* Tabs + Save bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <nav className="flex max-w-full gap-1 overflow-x-auto border-b border-[#F1F1EF]">
+      <div className="mb-6 flex min-w-0 flex-wrap items-start justify-between gap-4">
+        <nav className="flex w-full min-w-0 max-w-full gap-1 overflow-x-auto border-b border-[#F1F1EF] lg:w-auto">
           {TABS.map((t) => {
             const isActive = t.key === "atelier"
               ? pathname === "/dashboard/parametres"
@@ -381,11 +355,11 @@ export default function SettingsPage() {
             );
           })}
         </nav>
-        <div className="flex items-center gap-3">
-          <PrimaryButton onClick={save} className="h-10 gap-2 px-5" disabled={!canEditSettings}>
+        <div className="flex w-full min-w-0 flex-col items-stretch gap-2 sm:flex-row sm:items-center lg:w-auto">
+          <PrimaryButton onClick={save} className="h-10 w-full gap-2 px-5 sm:w-auto" disabled={!canEditSettings}>
             <Check className="size-4" /> Enregistrer les modifications
           </PrimaryButton>
-          <span className="text-[12px] text-[#B0AEA8]">
+          <span className="max-w-full text-[12px] text-[#B0AEA8] sm:max-w-[180px]">
             {saved ? "Toutes les modifications sont enregistrées" : "Modifications non enregistrées"}
           </span>
         </div>
@@ -461,54 +435,6 @@ export default function SettingsPage() {
           </div>
         </Section>
 
-        {/* Col 3 — Logo */}
-        <Section icon={Image} title="Logo & apparence" description="Le logo sera visible sur vos devis, factures et reçus.">
-          <div className="space-y-4">
-            {/* Preview */}
-            <div className="flex items-center justify-center rounded-[16px] border border-[#F1F1EF] bg-[#FAFAF8] py-6">
-              {logoPreview ? (
-                <img src={draft.logoUrl} alt="Logo" className="max-h-16 max-w-[200px] object-contain" />
-              ) : (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[20px] font-bold tracking-[-0.02em] text-[#1A1916]">BEHAR</span>
-                  <span className="text-[8px] text-[#1A1916]">●</span>
-                  <span className="text-[20px] font-bold tracking-[-0.02em] text-[#1A1916]">TECH</span>
-                  <span className="ml-1 text-[10px] font-semibold text-[#2A9D8F]">PRO</span>
-                </div>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <input
-                ref={logoRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleLogoImport(file);
-                  e.currentTarget.value = "";
-                }}
-              />
-              <SecondaryButton className="flex-1 h-10 text-xs" onClick={() => logoRef.current?.click()}>
-                <Upload className="size-3.5" /> Importer un logo
-              </SecondaryButton>
-              {logoPreview && (
-                <SecondaryButton className="h-10 text-xs text-[#DC3545]" onClick={() => { setField("logoUrl", ""); toast.success("Logo supprimé."); }}>
-                  Supprimer
-                </SecondaryButton>
-              )}
-            </div>
-            {/* Toggle */}
-            <label className="flex items-center justify-between rounded-[14px] border border-[#F1F1EF] bg-[#FAFAF8] px-4 py-3 cursor-pointer">
-              <span className="text-[13px] font-medium text-[#1A1916]">Afficher le logo sur les documents</span>
-              <div className="relative">
-                <input type="checkbox" className="sr-only peer" checked={Boolean(draft.showLogo)} onChange={(e) => setField("showLogo", e.target.checked)} />
-                <div className="w-10 h-[22px] rounded-full bg-[#E7E4DC] peer-checked:bg-[#2A9D8F] transition-colors" />
-                <div className="absolute top-[3px] left-[3px] w-4 h-4 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-[18px]" />
-              </div>
-            </label>
-          </div>
-        </Section>
       </div>
 
       {/* Row 2 */}
@@ -542,7 +468,12 @@ export default function SettingsPage() {
         <Section icon={FileText} title="TVA & documents" description="Choisissez le régime de TVA pour vos documents.">
           <div className="space-y-4">
             {/* Radio cards */}
-            <button type="button" onClick={() => { setField("vatApplicable", true); setSaved(false); }}
+            <button type="button" onClick={() => {
+              setField("vatApplicable", true);
+              // En TVA applicable, la mention 293 B n'a pas de sens.
+              setField("tvaMention", "");
+              setSaved(false);
+            }}
               className={`w-full text-left rounded-[14px] border p-4 transition-all ${draft.vatApplicable ? "border-[#2A9D8F] bg-[#F8FCFA] shadow-[0_0_0_1px_#2A9D8F]" : "border-[#E7E4DC] hover:border-[#D1CFCA]"}`}>
               <div className="flex items-center gap-3">
                 <div className={`size-4 rounded-full border-2 flex items-center justify-center ${draft.vatApplicable ? "border-[#2A9D8F]" : "border-[#CDCBC5]"}`}>
@@ -550,11 +481,19 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <p className="text-[13px] font-semibold text-[#1A1916]">TVA applicable (20%)</p>
-                  <p className="text-[11px] text-[#8A8984] mt-0.5">La TVA de 20% sera appliquée sur vos documents.</p>
+                  <p className="text-[11px] text-[#8A8984] mt-0.5">Les devis et factures affichent HT, TVA 20%, TTC.</p>
                 </div>
               </div>
             </button>
-            <button type="button" onClick={() => { setField("vatApplicable", false); setSaved(false); }}
+            <button type="button" onClick={() => {
+              setField("vatApplicable", false);
+              // Pré-remplit la mention légale standard si vide pour éviter
+              // qu'un document parte sans mention obligatoire.
+              if (!draft.tvaMention || !draft.tvaMention.trim()) {
+                setField("tvaMention", "TVA non applicable, art. 293 B du CGI");
+              }
+              setSaved(false);
+            }}
               className={`w-full text-left rounded-[14px] border p-4 transition-all ${!draft.vatApplicable ? "border-[#2A9D8F] bg-[#F8FCFA] shadow-[0_0_0_1px_#2A9D8F]" : "border-[#E7E4DC] hover:border-[#D1CFCA]"}`}>
               <div className="flex items-center gap-3">
                 <div className={`size-4 rounded-full border-2 flex items-center justify-center ${!draft.vatApplicable ? "border-[#2A9D8F]" : "border-[#CDCBC5]"}`}>
@@ -562,15 +501,17 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <p className="text-[13px] font-semibold text-[#1A1916]">TVA non applicable</p>
-                  <p className="text-[11px] text-[#8A8984] mt-0.5">Article 293 B du CGI. Pas de TVA sur vos documents.</p>
+                  <p className="text-[11px] text-[#8A8984] mt-0.5">Aucune TVA sur les documents · mention art. 293 B du CGI ajoutée.</p>
                 </div>
               </div>
             </button>
             {errors.vatApplicable && <p className="text-[12px] text-[#DC3545] font-medium">{errors.vatApplicable}</p>}
-            <Field label="Mention affichée sur les documents" hint="Cette mention apparaîtra sur vos documents si nécessaire." error={errors.tvaMention}>
-              <textarea className={areaCls} value={draft.tvaMention || ""} onChange={(e) => setField("tvaMention", e.target.value)} maxLength={120} rows={2} />
-              <p className="text-right text-[10px] text-[#CDCBC5]">{(draft.tvaMention || "").length}/120</p>
-            </Field>
+            {!draft.vatApplicable && (
+              <Field label="Mention affichée sur les documents" hint="Cette mention apparaîtra sur vos devis et factures." error={errors.tvaMention}>
+                <textarea className={areaCls} value={draft.tvaMention || ""} onChange={(e) => setField("tvaMention", e.target.value)} maxLength={120} rows={2} />
+                <p className="text-right text-[10px] text-[#CDCBC5]">{(draft.tvaMention || "").length}/120</p>
+              </Field>
+            )}
           </div>
         </Section>
 
@@ -640,9 +581,13 @@ export default function SettingsPage() {
         <div>
           <p className="text-[13px] font-semibold text-[#1A1916]">Besoin d'aide ?</p>
           <p className="mt-0.5 text-[12px] text-[#8A8984]">Consultez notre centre d'aide ou contactez le support.</p>
-          <a href="#" className="mt-2 inline-flex items-center gap-1 text-[12px] font-medium text-[#2A9D8F] hover:underline">
-            Centre d'aide <ExternalLink className="size-3" />
-          </a>
+          <button
+            type="button"
+            disabled
+            className="mt-2 inline-flex cursor-not-allowed items-center gap-1 text-[12px] font-medium text-[#8A8984]"
+          >
+            Centre d'aide bientôt disponible <ExternalLink className="size-3" />
+          </button>
         </div>
       </div>
     </PageShell>

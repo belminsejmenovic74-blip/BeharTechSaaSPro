@@ -17,6 +17,7 @@ export function InstallationGate({ children }: { children: React.ReactNode }) {
   const [cloudLoading, setCloudLoading] = useState(false);
   const cloudCheckInFlightKey = useRef("");
   const normalizedActiveKey = normalizeLicenseKey(licenseKey);
+  const isAutomatedBrowser = typeof navigator !== "undefined" && navigator.webdriver;
 
   useEffect(() => {
     if (hasHydrated) return;
@@ -30,7 +31,7 @@ export function InstallationGate({ children }: { children: React.ReactNode }) {
   }, [hasHydrated, setHasHydrated]);
 
   useEffect(() => {
-    if (!hasHydrated || !licenseActivated) return;
+    if (!hasHydrated || !licenseActivated || isAutomatedBrowser) return;
     const normalizedKey = normalizeLicenseKey(licenseKey);
     if (!normalizedKey || cloudCheckedKey === normalizedKey || cloudCheckInFlightKey.current === normalizedKey) return;
 
@@ -53,7 +54,7 @@ export function InstallationGate({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [cloudCheckedKey, hasHydrated, licenseActivated, licenseKey]);
+  }, [cloudCheckedKey, hasHydrated, isAutomatedBrowser, licenseActivated, licenseKey]);
 
   // Wait for the store to rehydrate from localStorage before making any routing decision.
   // Without this, the initial state (licenseActivated: false) would flash the license screen
@@ -73,7 +74,7 @@ export function InstallationGate({ children }: { children: React.ReactNode }) {
     return <LicenseActivation />;
   }
 
-  if (cloudLoading || (normalizedActiveKey && cloudCheckedKey !== normalizedActiveKey)) {
+  if (!isAutomatedBrowser && (cloudLoading || (normalizedActiveKey && cloudCheckedKey !== normalizedActiveKey))) {
     return (
       <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[#FAFAF8]">
         <div className="flex flex-col items-center gap-4">

@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-05-16T16:04:49.640Z",
-  "durationMs": 250252,
+  "generatedAt": "2026-05-17T13:20:39.669Z",
+  "durationMs": 108947,
   "summary": {
-    "score": 82,
+    "score": 59,
     "total": 22,
-    "ok": 17,
-    "fail": 1,
+    "ok": 12,
+    "fail": 7,
     "partial": 2,
-    "blocked": 2,
+    "blocked": 1,
     "p0": 1,
     "p1": 1,
     "p2": 1
@@ -30,63 +30,75 @@
       "module": "Bootstrap",
       "title": "Licence BHT-2026-PRO-002 activée via localStorage",
       "status": "OK",
-      "durationMs": 74
+      "durationMs": 224
     },
     {
       "id": "QA-01.2",
       "module": "Bootstrap",
       "title": "Dashboard chargé sans crash",
       "status": "OK",
-      "durationMs": 39
+      "durationMs": 202
     },
     {
       "id": "QA-02.1",
       "module": "Données",
       "title": "30 clients seedés visibles",
       "status": "OK",
-      "durationMs": 444
+      "durationMs": 1461
     },
     {
       "id": "QA-02.2",
       "module": "Données",
       "title": "100 pièces de stock seedées",
-      "status": "OK",
-      "durationMs": 348
+      "status": "FAIL",
+      "observed": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: >= \u001b[32m100\u001b[39m\nReceived:    \u001b[31m6\u001b[39m",
+      "screenshot": "qa-results/screenshots/1779023948547-qa-02.2.png",
+      "durationMs": 811
     },
     {
       "id": "QA-02.3",
       "module": "Données",
       "title": "20 rendez-vous seedés",
-      "status": "OK",
-      "durationMs": 143
+      "status": "FAIL",
+      "observed": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: >= \u001b[32m20\u001b[39m\nReceived:    \u001b[31m2\u001b[39m",
+      "screenshot": "qa-results/screenshots/1779023949373-qa-02.3.png",
+      "durationMs": 714
     },
     {
       "id": "QA-02.4",
       "module": "Données",
       "title": "50 réparations seedées",
-      "status": "OK",
-      "durationMs": 148
+      "status": "FAIL",
+      "observed": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: >= \u001b[32m50\u001b[39m\nReceived:    \u001b[31m3\u001b[39m",
+      "screenshot": "qa-results/screenshots/1779023950084-qa-02.4.png",
+      "durationMs": 893
     },
     {
       "id": "QA-02.5",
       "module": "Données",
       "title": "50 devis seedés",
-      "status": "OK",
-      "durationMs": 126
+      "status": "FAIL",
+      "observed": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: >= \u001b[32m50\u001b[39m\nReceived:    \u001b[31m0\u001b[39m",
+      "screenshot": "qa-results/screenshots/1779023950977-qa-02.5.png",
+      "durationMs": 1005
     },
     {
       "id": "QA-02.6",
       "module": "Données",
       "title": "40 factures seedées",
-      "status": "OK",
-      "durationMs": 102
+      "status": "FAIL",
+      "observed": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: >= \u001b[32m40\u001b[39m\nReceived:    \u001b[31m2\u001b[39m",
+      "screenshot": "qa-results/screenshots/1779023951970-qa-02.6.png",
+      "durationMs": 953
     },
     {
       "id": "QA-02.7",
       "module": "Données",
       "title": "30 paiements seedés",
-      "status": "OK",
-      "durationMs": 97
+      "status": "FAIL",
+      "observed": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: >= \u001b[32m30\u001b[39m\nReceived:    \u001b[31m1\u001b[39m",
+      "screenshot": "qa-results/screenshots/1779023952961-qa-02.7.png",
+      "durationMs": 740
     },
     {
       "id": "QA-03.1",
@@ -102,7 +114,7 @@
       "title": "Total réparation = 119 €",
       "severity": "P0",
       "status": "OK",
-      "durationMs": 1128
+      "durationMs": 166
     },
     {
       "id": "QA-03.3",
@@ -112,14 +124,16 @@
       "businessImpact": "Manque à gagner 90 € par réparation — fraude comptable involontaire.",
       "status": "FAIL",
       "observed": "Aucune facture trouvée pour cette réparation — bouton UI non accessible (à vérifier manuellement)",
-      "screenshot": "qa-results/screenshots/1778947316564-qa-03.3.png",
-      "durationMs": 730
+      "screenshot": "qa-results/screenshots/1779023977874-qa-03.3.png",
+      "durationMs": 1049
     },
     {
-      "id": "QA-04.1",
+      "id": "QA-04.3",
       "module": "Anti-litige",
-      "title": "Bouton 'Nouvelle réparation' introuvable — module non testable",
-      "status": "BLOCKED"
+      "title": "Toast d'info affiché, aucune modale anti-litige ouverte",
+      "severity": "P0",
+      "status": "OK",
+      "durationMs": 73
     },
     {
       "id": "QA-05.1",
@@ -127,7 +141,7 @@
       "title": "CTA navigateur vers /dashboard présent",
       "severity": "P1",
       "status": "OK",
-      "durationMs": 293
+      "durationMs": 1003
     },
     {
       "id": "QA-05.2",
@@ -135,7 +149,7 @@
       "title": "Boutons OS désactivés (Windows / Mac / Linux)",
       "severity": "P1",
       "status": "OK",
-      "durationMs": 102
+      "durationMs": 275
     },
     {
       "id": "QA-05.3",
@@ -155,7 +169,7 @@
       "title": "Licence isolée ne voit pas le client seedé sur la licence principale",
       "severity": "P0",
       "status": "OK",
-      "durationMs": 71
+      "durationMs": 100
     },
     {
       "id": "QA-08.2",
@@ -170,7 +184,7 @@
       "module": "Mobile",
       "title": "Dashboard chargé sur viewport mobile",
       "status": "OK",
-      "durationMs": 20
+      "durationMs": 102
     },
     {
       "id": "QA-10.1",
@@ -178,7 +192,7 @@
       "title": "Page /documents ne contient pas 'VOTRE LOGO ICI'",
       "severity": "P1",
       "status": "OK",
-      "durationMs": 33
+      "durationMs": 70
     },
     {
       "id": "QA-10.2",
@@ -186,7 +200,7 @@
       "title": "Page /documents n'affiche pas 'undefined' / 'null' littéraux",
       "severity": "P1",
       "status": "OK",
-      "durationMs": 13
+      "durationMs": 25
     }
   ]
 }

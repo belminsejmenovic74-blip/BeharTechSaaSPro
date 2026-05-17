@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Plus } from "lucide-react";
 
@@ -25,17 +25,31 @@ export function KanbanBoard({
 }>) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+  const suppressNextClickRef = useRef(false);
+  const pointerDragRef = useRef<{
+    cardId: string;
+    fromStatus: string;
+    startX: number;
+    startY: number;
+    active: boolean;
+  } | null>(null);
+
+  const columnAtPoint = (clientX: number, clientY: number) => {
+    const element = document.elementFromPoint(clientX, clientY);
+    return element?.closest<HTMLElement>("[data-kanban-column]")?.dataset.kanbanColumn ?? null;
+  };
 
   return (
     <div
       className={cn(
-        "grid gap-2.5 overflow-x-auto pb-1",
-        compact ? "grid-cols-[repeat(4,minmax(160px,1fr))]" : "grid-cols-[repeat(5,minmax(164px,1fr))]",
+        "grid h-full min-h-0 gap-2.5 overflow-x-auto pb-1",
+        compact ? "grid-cols-[repeat(5,minmax(145px,1fr))]" : "grid-cols-[repeat(5,minmax(164px,1fr))]",
       )}
     >
       {columns.map((column) => (
         <div
           key={column.title}
+          data-kanban-column={column.title}
           onDragOver={(e: React.DragEvent<HTMLDivElement>) => {
             if (!onMoveCard) return;
             e.preventDefault();
@@ -61,7 +75,7 @@ export function KanbanBoard({
         >
           <Panel
             className={cn(
-              "flex h-[690px] min-w-0 flex-col rounded-[14px] p-3 shadow-[0_8px_22px_rgba(26,25,22,0.025)] md:h-full md:min-h-[500px] transition",
+              "flex h-[690px] min-h-0 min-w-0 flex-col rounded-[14px] p-3 shadow-[0_8px_22px_rgba(26,25,22,0.025)] md:h-full md:min-h-[420px] transition",
               dragOverColumn === column.title && "ring-2 ring-[#2A9D8F]/40 bg-[#F3FBF8]/30",
             )}
           >
@@ -76,7 +90,10 @@ export function KanbanBoard({
                 <RepairCardView
                   card={card}
                   key={card.id}
-                  onSelect={onSelect}
+                  onSelect={(id) => {
+                    if (suppressNextClickRef.current) return;
+                    onSelect?.(id);
+                  }}
                   selected={card.id === selectedId}
                   draggable={Boolean(onMoveCard)}
                   isDragging={draggingId === card.id}
@@ -87,6 +104,48 @@ export function KanbanBoard({
                     setDraggingId(card.id);
                   }}
                   onDragEnd={() => {
+                    setDraggingId(null);
+                    setDragOverColumn(null);
+                  }}
+                  onPointerDown={(e) => {
+                    if (!onMoveCard || e.pointerType === "mouse") return;
+                    pointerDragRef.current = {
+                      cardId: card.id,
+                      fromStatus: column.title,
+                      startX: e.clientX,
+                      startY: e.clientY,
+                      active: false,
+                    };
+                  }}
+                  onPointerMove={(e) => {
+                    const current = pointerDragRef.current;
+                    if (!onMoveCard || !current || current.cardId !== card.id) return;
+                    const moved = Math.hypot(e.clientX - current.startX, e.clientY - current.startY);
+                    if (!current.active && moved < 8) return;
+                    e.preventDefault();
+                    current.active = true;
+                    setDraggingId(current.cardId);
+                    const over = columnAtPoint(e.clientX, e.clientY);
+                    setDragOverColumn(over);
+                  }}
+                  onPointerUp={(e) => {
+                    const current = pointerDragRef.current;
+                    if (!onMoveCard || !current || current.cardId !== card.id) return;
+                    const over = columnAtPoint(e.clientX, e.clientY);
+                    const shouldMove = current.active && over && over !== current.fromStatus;
+                    if (current.active) {
+                      suppressNextClickRef.current = true;
+                      window.setTimeout(() => {
+                        suppressNextClickRef.current = false;
+                      }, 0);
+                    }
+                    pointerDragRef.current = null;
+                    setDraggingId(null);
+                    setDragOverColumn(null);
+                    if (shouldMove) onMoveCard(current.cardId, current.fromStatus, over);
+                  }}
+                  onPointerCancel={() => {
+                    pointerDragRef.current = null;
                     setDraggingId(null);
                     setDragOverColumn(null);
                   }}
@@ -118,6 +177,10 @@ function RepairCardView({
   isDragging,
   onDragStart,
   onDragEnd,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel,
 }: Readonly<{
   card: RepairCard;
   selected?: boolean;
@@ -126,19 +189,27 @@ function RepairCardView({
   isDragging?: boolean;
   onDragStart?: (e: React.DragEvent<HTMLButtonElement>) => void;
   onDragEnd?: () => void;
+  onPointerDown?: (e: React.PointerEvent<HTMLButtonElement>) => void;
+  onPointerMove?: (e: React.PointerEvent<HTMLButtonElement>) => void;
+  onPointerUp?: (e: React.PointerEvent<HTMLButtonElement>) => void;
+  onPointerCancel?: () => void;
 }>) {
   return (
     <button
       className={cn(
         "w-full rounded-[14px] border border-[#E7E4DC] bg-white/95 p-[14px] text-left shadow-[0_10px_28px_rgba(26,25,22,0.035)] backdrop-blur-[2px] transition hover:border-[#2A9D8F]/40",
         selected && "border-[#2A9D8F] bg-[#F3FBFA] shadow-[0_14px_32px_rgba(42,157,143,0.10)]",
-        draggable && "cursor-grab active:cursor-grabbing",
+        draggable && "cursor-grab touch-none active:cursor-grabbing",
         isDragging && "opacity-50",
       )}
       draggable={draggable}
       onClick={() => onSelect?.(card.id)}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
       type="button"
     >
       <div className="min-w-0">

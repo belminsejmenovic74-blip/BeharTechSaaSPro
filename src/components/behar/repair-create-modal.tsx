@@ -441,6 +441,7 @@ export function RepairModal({
     if (clientType === "anonyme") {
       return addCustomer({
         name: "Client comptoir",
+        type: "counter",
         phone: "Non renseigné",
         email: "Non renseigné",
         device: modelFull,
@@ -497,7 +498,15 @@ export function RepairModal({
     const finalIssue = canonicalizeIntervention(intervention.trim());
     let savedPbId: string | undefined;
 
-    if (saveToCatalog && !initial) {
+    // Sauvegarde automatique au catalogue dès qu'on saisit un tarif manuel
+    // significatif (pas de catalogue choisi, prix > 0, marque/modèle/intervention
+    // renseignés). Le réparateur peut décocher s'il ne veut pas l'enregistrer.
+    const isManualPricing = !selectedCatalogItem || !selectedCatalogId;
+    const hasMeaningfulPrice = totalClient > 0 && prixPieceNum + mainNum > 0;
+    const canAutoSaveToCatalog =
+      isManualPricing && hasMeaningfulPrice && marque.trim() && modele.trim() && finalIssue;
+    const shouldSaveToCatalog = (saveToCatalog || canAutoSaveToCatalog) && !initial;
+    if (shouldSaveToCatalog) {
       savedPbId = addPriceBookItem({
         source: "manual",
         typeAppareil: uiTypeToPriceBook(deviceType),

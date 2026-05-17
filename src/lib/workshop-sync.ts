@@ -150,24 +150,13 @@ export async function loadSnapshotByLicenseKey(key: string): Promise<WorkshopSna
   markSyncStatus("loading");
   try {
     const selectColumns = "id, workshop_id, license_key, workshop_name, state, state_size_bytes, updated_at";
-    const byNormalized = await supabase
+    const { data, error } = await supabase
       .from("workshop_snapshots")
       .select(selectColumns)
-      .eq("license_key_normalized", normalizedKey)
+      .ilike("license_key", normalizedKey)
       .order("updated_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-
-    const shouldFallback = byNormalized.error && /license_key_normalized|column/i.test(byNormalized.error.message || "");
-    const { data, error } = shouldFallback
-      ? await supabase
-          .from("workshop_snapshots")
-          .select(selectColumns)
-          .ilike("license_key", normalizedKey)
-          .order("updated_at", { ascending: false })
-          .limit(1)
-          .maybeSingle()
-      : byNormalized;
 
     if (error) {
       markSyncStatus(isNetworkError(error.message) ? "offline" : "error", { lastError: error.message });

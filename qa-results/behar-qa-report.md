@@ -1,14 +1,14 @@
 # Behar Tech Pro — Rapport QA Playwright complet
 
-_Généré le 2026-05-16T16:04:49.643Z — durée 250.3 s_
+_Généré le 2026-05-17T13:20:39.671Z — durée 108.9 s_
 
 ## Résumé
-- **Score global** : 82/100
+- **Score global** : 59/100
 - **Checkpoints** : 22
-- OK : 17
-- FAIL : 1
+- OK : 12
+- FAIL : 7
 - PARTIAL : 2
-- BLOCKED : 2
+- BLOCKED : 1
 - P0 : 1
 - P1 : 1
 - P2 : 1
@@ -21,7 +21,7 @@ PAS VENDABLE — bloqueurs P0 à corriger avant toute vente.
 - **Module** : Facturation
 - **Statut** : FAIL (P0)
 - **Obtenu** : Aucune facture trouvée pour cette réparation — bouton UI non accessible (à vérifier manuellement)
-- **Capture** : qa-results/screenshots/1778947316564-qa-03.3.png
+- **Capture** : qa-results/screenshots/1779023977874-qa-03.3.png
 - **Impact business** : Manque à gagner 90 € par réparation — fraude comptable involontaire.
 
 ## P1 (importants)

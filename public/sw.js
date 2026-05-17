@@ -4,7 +4,7 @@
  * Cache versionné pour pouvoir invalider proprement.
  */
 
-const VERSION = "behar-tech-pro-v4";
+const VERSION = "behar-tech-pro-v5";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
@@ -46,6 +46,10 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  // Next.js gère déjà ses chunks versionnés via HTTP. Les cacher ici peut
+  // mélanger un ancien runtime avec de nouveaux modules après un rebuild.
+  if (url.pathname.startsWith("/_next/")) return;
+
   // Navigation (HTML) : network-first, fallback cache, puis index minimal offline.
   if (request.mode === "navigate" || request.destination === "document") {
     event.respondWith(
@@ -73,13 +77,10 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Assets statiques : cache-first
+  // Assets statiques applicatifs : cache-first
   if (
     request.destination === "image" ||
-    request.destination === "style" ||
-    request.destination === "script" ||
     request.destination === "font" ||
-    url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/assets/")
   ) {
     event.respondWith(
