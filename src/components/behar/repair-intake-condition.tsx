@@ -1,8 +1,8 @@
 "use client";
 
-import { type ChangeEvent, type ReactNode, useMemo, useState } from "react";
+import { type ChangeEvent, type MouseEvent, type PointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
-import { ArrowLeft, Download, Eye, FileCheck2, ImagePlus, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, Eye, FileCheck2, ImagePlus, PenLine, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import type { Customer, Repair, RepairIntakeCondition } from "@/lib/behar-store";
@@ -29,6 +29,7 @@ const intakeFields = [
 ] as const;
 
 const accessoryOptions = ["Aucun", "Carte SIM", "Coque", "Chargeur", "Câble", "Boîte", "Stylet", "Autre"];
+const accessMethodOptions = ["Aucun", "Code PIN", "Mot de passe", "Schéma", "Empreinte / biométrie", "Non communiqué"] as const;
 
 type IntakeFieldKey = (typeof intakeFields)[number]["key"];
 
@@ -45,7 +46,8 @@ export function isIntakeValidated(intake?: RepairIntakeCondition) {
       intake.diagnosticAuthorized &&
       intake.nonTestableAccepted &&
       clean(intake.signerName, "") &&
-      clean(intake.signedAt, ""),
+      clean(intake.signatureDataUrl, "") &&
+      clean(intake.signatureSignedAt ?? intake.signedAt, ""),
   );
 }
 
@@ -64,10 +66,20 @@ function createDraft(intake?: RepairIntakeCondition): RepairIntakeCondition {
     biometricState: "Non renseigné",
     networkState: "Non renseigné",
     passcodeState: "Non renseigné",
+    accessMethod: "Non communiqué",
     accessories: [],
     photos: [],
     createdAt: now,
     ...intake,
+    updatedAt: now,
+  };
+}
+
+function patchDraft(intake: RepairIntakeCondition | undefined, patch: Partial<RepairIntakeCondition>) {
+  const now = new Date().toISOString();
+  return {
+    ...createDraft(intake),
+    ...patch,
     updatedAt: now,
   };
 }
@@ -123,11 +135,12 @@ export function RepairIntakeSummaryCard({
           <SummaryLine label="Appareil" value={clean(intake?.powerState)} />
           <SummaryLine label="Écran" value={clean(intake?.screenState)} />
           <SummaryLine label="Châssis" value={clean(intake?.frameState)} />
+          <SummaryLine label="Accès appareil" value={clean(intake?.accessMethod, "Non communiqué")} />
           <SummaryLine label="Accessoires" value={accessories.length ? accessories.join(", ") : "Aucun accessoire fourni"} />
           <SummaryLine label="Défauts visibles" value={clean(intake?.visibleDefects)} />
           <SummaryLine label="Validation client" value={validated ? "Oui" : "Non"} />
-          <SummaryLine label="Signataire" value={clean(intake?.signerName)} />
-          <SummaryLine label="Date validation" value={dateTime(intake?.signedAt)} />
+          <SummaryLine label="Signataire" value={clean(intake?.signerName, "À signer")} />
+          <SummaryLine label="Date signature" value={intake?.signatureSignedAt || intake?.signedAt ? dateTime(intake.signatureSignedAt ?? intake.signedAt) : "À signer"} />
         </dl>
       ) : null}
 
@@ -175,13 +188,15 @@ export function RepairIntakeScreen({
     setDraft((current) => ({ ...current, [key]: value, updatedAt: new Date().toISOString() }));
   };
 
-  const save = (withValidation = false) => {
+  const save = (_withValidation = false) => {
+    const signatureDate = draft.signatureDataUrl
+      ? draft.signatureSignedAt || draft.signedAt || new Date().toISOString()
+      : draft.signatureSignedAt;
     const next: RepairIntakeCondition = {
       ...draft,
-      signedAt:
-        withValidation || (draft.customerConfirmed && draft.diagnosticAuthorized && draft.nonTestableAccepted && clean(draft.signerName, ""))
-          ? draft.signedAt || new Date().toISOString()
-          : draft.signedAt,
+      signedAt: signatureDate,
+      signedBy: draft.signerName || draft.signedBy,
+      signatureSignedAt: signatureDate,
       createdAt: draft.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -235,10 +250,11 @@ export function RepairIntakeScreen({
       ["Réparation", repair.number],
       ["Statut", validated ? "État d'entrée validé" : "État d'entrée incomplet"],
       ["Validation client", validated ? "Oui" : "Non"],
-      ["Signataire", clean(draft.signerName)],
-      ["Date", dateTime(draft.signedAt)],
+      ["Accès", clean(draft.accessMethod, "Non communiqué")],
+      ["Signataire", clean(draft.signerName, "À signer")],
+      ["Date", draft.signatureSignedAt || draft.signedAt ? dateTime(draft.signatureSignedAt ?? draft.signedAt) : "À signer"],
     ],
-    [customer, draft.signerName, draft.signedAt, repair, validated],
+    [customer, draft.accessMethod, draft.signerName, draft.signatureSignedAt, draft.signedAt, repair, validated],
   );
 
   // Champs prioritaires (vus en premier sur mobile)
@@ -278,6 +294,11 @@ export function RepairIntakeScreen({
               ))}
             </div>
           </section>
+
+          <AccessDevicePanel
+            intake={draft}
+            onChange={(patch) => setDraft((current) => ({ ...current, ...patch, updatedAt: new Date().toISOString() }))}
+          />
 
           {/* Plus de détails : 6 autres selects (replié sur mobile, ouvert sur desktop) */}
           <Accordion title="Tests détaillés" count={advancedFields.length}>
@@ -353,7 +374,24 @@ export function RepairIntakeScreen({
                 value={draft.signerName ?? ""}
               />
             </label>
-            {draft.signedAt ? <p className="mt-2 text-[#167B70] text-[12px] md:text-sm">Signé · {dateTime(draft.signedAt)}</p> : null}
+            <div className="mt-3">
+              <SignaturePad
+                signerName={draft.signerName}
+                signedAt={draft.signatureSignedAt ?? draft.signedAt}
+                value={draft.signatureDataUrl}
+                onChange={(dataUrl) => {
+                  const signedAt = dataUrl ? new Date().toISOString() : undefined;
+                  setDraft((current) => ({
+                    ...current,
+                    signatureDataUrl: dataUrl,
+                    signatureSignedAt: signedAt,
+                    signedAt,
+                    signedBy: dataUrl ? current.signerName || current.signedBy : undefined,
+                    updatedAt: new Date().toISOString(),
+                  }));
+                }}
+              />
+            </div>
           </section>
 
           {/* Notes & déclaration (collapsibles) */}
@@ -414,6 +452,7 @@ export function RepairIntakeScreen({
             <SummaryLine label="Écran" value={clean(draft.screenState)} />
             <SummaryLine label="Châssis / dos" value={clean(draft.frameState)} />
             <SummaryLine label="Batterie / charge" value={clean(draft.chargingState)} />
+            <SummaryLine label="Accès" value={clean(draft.accessMethod, "Non communiqué")} />
           </div>
           <div className="mt-6 grid gap-2">
             <SecondaryButton onClick={onDownload}>
@@ -446,6 +485,391 @@ export function RepairIntakeScreen({
           <SecondaryButton className="h-10 min-w-[130px]" onClick={onBack}>Annuler</SecondaryButton>
           <PrimaryButton className="h-10 min-w-[160px]" onClick={() => save(false)}>Enregistrer</PrimaryButton>
         </div>
+      </div>
+    </div>
+  );
+}
+
+export function RepairIntakeQuickPanel({
+  value,
+  onChange,
+  onOpenFull,
+}: Readonly<{
+  value?: RepairIntakeCondition;
+  onChange: (condition: RepairIntakeCondition) => void;
+  onOpenFull?: () => void;
+}>) {
+  const draft = value ?? createDraft();
+  const setField = <K extends keyof RepairIntakeCondition>(key: K, fieldValue: RepairIntakeCondition[K]) => {
+    onChange(patchDraft(draft, { [key]: fieldValue }));
+  };
+  const setPatch = (patch: Partial<RepairIntakeCondition>) => onChange(patchDraft(draft, patch));
+  const toggleAccessory = (name: string) => {
+    const existing = draft.accessories ?? [];
+    if (name === "Aucun") {
+      setField("accessories", existing.includes("Aucun") ? [] : ["Aucun"]);
+      return;
+    }
+    const withoutNone = existing.filter((entry) => entry !== "Aucun");
+    setField("accessories", withoutNone.includes(name) ? withoutNone.filter((entry) => entry !== name) : [...withoutNone, name]);
+  };
+
+  return (
+    <section className="space-y-4 rounded-[16px] border border-[#E7E4DC] bg-[#FAFAF8] p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="flex items-center gap-2 font-medium text-[#1A1916] text-sm">
+            <FileCheck2 className="size-4 text-[#2A9D8F]" />
+            <span>5. État d'entrée / anti-litige</span>
+          </p>
+          <p className="mt-1 text-[#6B6B6B] text-xs">Optionnel mais recommandé, enregistré avec la réparation.</p>
+        </div>
+        {onOpenFull ? (
+          <SecondaryButton className="h-9 px-3 text-[12px]" onClick={onOpenFull} type="button">
+            Fiche complète
+          </SecondaryButton>
+        ) : null}
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        {intakeFields
+          .filter((field) => ["generalCondition", "chargingState", "screenState", "frameState", "audioState", "chargingPortState", "networkState", "biometricState"].includes(field.key))
+          .map((field) => (
+            <label className="text-[#1A1916] text-[11px] font-medium" key={field.key}>
+              {field.label}
+              <select
+                className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-2.5 text-[12.5px] outline-none focus:border-[#2A9D8F]"
+                onChange={(event) => setField(field.key as IntakeFieldKey, event.target.value as never)}
+                value={clean(draft[field.key], missing)}
+              >
+                {field.options.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </label>
+          ))}
+      </div>
+
+      <div>
+        <p className="mb-2 font-medium text-[#1A1916] text-[12px]">Accessoires confiés</p>
+        <div className="flex flex-wrap gap-1.5">
+          {accessoryOptions.map((name) => {
+            const checked = (draft.accessories ?? []).includes(name);
+            return (
+              <label
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[12px] font-medium transition ${checked ? "border-[#2A9D8F] bg-[#E8F7F3] text-[#167B70]" : "border-[#E8E8E5] bg-white text-[#6B6B6B]"}`}
+                key={name}
+              >
+                <input checked={checked} className="size-3 accent-[#2A9D8F]" onChange={() => toggleAccessory(name)} type="checkbox" />
+                {name}
+              </label>
+            );
+          })}
+        </div>
+        {(draft.accessories ?? []).includes("Autre") ? (
+          <input
+            className="mt-2 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[12.5px] outline-none focus:border-[#2A9D8F]"
+            onChange={(event) => setField("accessoriesOther", event.target.value)}
+            placeholder="Préciser l'accessoire"
+            value={draft.accessoriesOther ?? ""}
+          />
+        ) : null}
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <CompactTextArea
+          label="Défauts visibles"
+          onChange={(next) => setField("visibleDefects", next)}
+          placeholder="Rayures, fissures, dos cassé..."
+          value={draft.visibleDefects ?? ""}
+        />
+        <CompactTextArea
+          label="Déclaration client / notes"
+          onChange={(next) => setField("customerStatement", next)}
+          placeholder="Symptôme déclaré, contexte, réserve..."
+          value={draft.customerStatement ?? ""}
+        />
+      </div>
+
+      <AccessDevicePanel intake={draft} onChange={setPatch} compact />
+
+      <div className="grid gap-3 md:grid-cols-[1fr_1.2fr]">
+        <div className="space-y-2">
+          <p className="font-medium text-[#1A1916] text-[12px]">Validation client</p>
+          <CheckLine checked={Boolean(draft.customerConfirmed)} onChange={(checked) => setField("customerConfirmed", checked)}>
+            État d'entrée confirmé.
+          </CheckLine>
+          <CheckLine checked={Boolean(draft.diagnosticAuthorized)} onChange={(checked) => setField("diagnosticAuthorized", checked)}>
+            Diagnostic / ouverture autorisé.
+          </CheckLine>
+          <CheckLine checked={Boolean(draft.nonTestableAccepted)} onChange={(checked) => setField("nonTestableAccepted", checked)}>
+            Défauts non testables acceptés.
+          </CheckLine>
+          <input
+            className="h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[12.5px] outline-none focus:border-[#2A9D8F]"
+            onChange={(event) => setField("signerName", event.target.value)}
+            placeholder="Nom du signataire"
+            value={draft.signerName ?? ""}
+          />
+        </div>
+        <SignaturePad
+          signerName={draft.signerName}
+          signedAt={draft.signatureSignedAt ?? draft.signedAt}
+          value={draft.signatureDataUrl}
+          onChange={(dataUrl) => {
+            const signedAt = dataUrl ? new Date().toISOString() : undefined;
+            setPatch({
+              signatureDataUrl: dataUrl,
+              signatureSignedAt: signedAt,
+              signedAt,
+              signedBy: dataUrl ? draft.signerName || draft.signedBy : undefined,
+            });
+          }}
+        />
+      </div>
+    </section>
+  );
+}
+
+function AccessDevicePanel({
+  intake,
+  onChange,
+  compact = false,
+}: Readonly<{
+  intake: RepairIntakeCondition;
+  onChange: (patch: Partial<RepairIntakeCondition>) => void;
+  compact?: boolean;
+}>) {
+  const method = intake.accessMethod && intake.accessMethod !== "Non renseigné" ? intake.accessMethod : "Non communiqué";
+  const showCode = method === "Code PIN" || method === "Mot de passe";
+  const showPattern = method === "Schéma";
+  return (
+    <section className={compact ? "rounded-[14px] border border-[#E8E8E5] bg-white p-3" : "mt-5 rounded-[14px] border border-[#E8E8E5] bg-white p-4 md:mt-7"}>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="font-semibold text-[#1A1916] text-[13px] md:text-sm">6. Accès appareil</h3>
+        <span className="rounded-full bg-[#EAF6F2] px-2.5 py-1 font-semibold text-[#167B70] text-[10.5px]">Sécurisé</span>
+      </div>
+      <div className="mt-3 grid gap-3 md:grid-cols-3">
+        <label className="block text-[#1A1916] text-[11px] font-medium md:text-[12px]">
+          Type d'accès
+          <select
+            className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-2.5 text-[12.5px] outline-none focus:border-[#2A9D8F] md:h-11 md:rounded-[12px] md:text-sm"
+            onChange={(event) => {
+              const next = event.target.value as RepairIntakeCondition["accessMethod"];
+              onChange({
+                accessMethod: next,
+                passcodeState: next === "Aucun" ? "Sans code" : next === "Non communiqué" ? "Code non fourni" : "Code fourni",
+                ...(next !== "Schéma" ? { patternData: undefined } : {}),
+                ...(next !== "Code PIN" && next !== "Mot de passe" ? { accessCode: undefined } : {}),
+              });
+            }}
+            value={method}
+          >
+            {accessMethodOptions.map((option) => (
+              <option key={option} value={option}>{option}</option>
+            ))}
+          </select>
+        </label>
+        {showCode ? (
+          <label className="block text-[#1A1916] text-[11px] font-medium md:text-[12px]">
+            Valeur du code
+            <input
+              className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[12.5px] outline-none focus:border-[#2A9D8F] md:h-11 md:rounded-[12px] md:text-sm"
+              onChange={(event) => onChange({ accessCode: event.target.value })}
+              placeholder={method === "Code PIN" ? "Ex. 123456" : "Mot de passe confié"}
+              value={intake.accessCode ?? ""}
+            />
+          </label>
+        ) : null}
+        <label className={`block text-[#1A1916] text-[11px] font-medium md:text-[12px] ${showPattern ? "md:col-span-1" : showCode ? "" : "md:col-span-2"}`}>
+          Note accès
+          <input
+            className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[12.5px] outline-none focus:border-[#2A9D8F] md:h-11 md:rounded-[12px] md:text-sm"
+            onChange={(event) => onChange({ accessNote: event.target.value })}
+            placeholder="Ex. code non communiqué, test en présence du client..."
+            value={intake.accessNote ?? ""}
+          />
+        </label>
+      </div>
+      {showPattern ? (
+        <div className="mt-3">
+          <PatternPicker
+            value={intake.patternData?.points ?? []}
+            onChange={(points) => onChange({ patternData: points.length ? { points, label: points.join("-") } : undefined })}
+          />
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function PatternPicker({ value, onChange }: Readonly<{ value: number[]; onChange: (points: number[]) => void }>) {
+  const addPoint = (point: number) => {
+    if (value.includes(point)) return;
+    onChange([...value, point]);
+  };
+  return (
+    <div className="flex flex-wrap items-center gap-4">
+      <div className="grid w-[132px] grid-cols-3 gap-2">
+        {Array.from({ length: 9 }, (_, index) => index + 1).map((point) => {
+          const order = value.indexOf(point) + 1;
+          return (
+            <button
+              aria-label={`Point ${point}`}
+              className={`grid size-9 place-items-center rounded-full border text-[12px] font-semibold transition ${
+                order
+                  ? "border-[#2A9D8F] bg-[#E8F7F3] text-[#167B70]"
+                  : "border-[#D8D8D2] bg-white text-[#6B6B6B] hover:border-[#2A9D8F]"
+              }`}
+              key={point}
+              onClick={() => addPoint(point)}
+              type="button"
+            >
+              {order || ""}
+            </button>
+          );
+        })}
+      </div>
+      <div className="min-w-[180px] flex-1">
+        <p className="text-[#6B6B6B] text-[12px] leading-relaxed">
+          Touchez les points dans l'ordre du schéma. La séquence visuelle est enregistrée avec la réparation.
+        </p>
+        <div className="mt-2 flex gap-2">
+          <span className="rounded-full bg-[#FAFAF8] px-3 py-1 text-[#1A1916] text-[12px]">
+            {value.length ? value.join(" → ") : "Aucun schéma"}
+          </span>
+          {value.length ? (
+            <button className="text-[#167B70] text-[12px] font-medium" onClick={() => onChange([])} type="button">
+              Réinitialiser
+            </button>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SignaturePad({
+  value,
+  signerName,
+  signedAt,
+  onChange,
+}: Readonly<{
+  value?: string;
+  signerName?: string;
+  signedAt?: string;
+  onChange: (dataUrl?: string) => void;
+}>) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const drawingRef = useRef(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.lineWidth = 2.4;
+    context.strokeStyle = "#1A1916";
+    if (!value) return;
+    const image = new Image();
+    image.onload = () => context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    image.src = value;
+  }, [value]);
+
+  const pointFromClient = (clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: ((clientX - rect.left) / rect.width) * canvas.width,
+      y: ((clientY - rect.top) / rect.height) * canvas.height,
+    };
+  };
+  const startAt = (clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext("2d");
+    if (!canvas || !context) return;
+    drawingRef.current = true;
+    const p = pointFromClient(clientX, clientY);
+    context.beginPath();
+    context.moveTo(p.x, p.y);
+  };
+  const moveAt = (clientX: number, clientY: number) => {
+    if (!drawingRef.current) return;
+    const context = canvasRef.current?.getContext("2d");
+    if (!context) return;
+    const p = pointFromClient(clientX, clientY);
+    context.lineTo(p.x, p.y);
+    context.stroke();
+  };
+  const finishCanvas = () => {
+    if (!drawingRef.current) return;
+    drawingRef.current = false;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    onChange(canvas.toDataURL("image/png"));
+  };
+  const start = (event: PointerEvent<HTMLCanvasElement>) => {
+    canvasRef.current?.setPointerCapture(event.pointerId);
+    startAt(event.clientX, event.clientY);
+  };
+  const move = (event: PointerEvent<HTMLCanvasElement>) => {
+    moveAt(event.clientX, event.clientY);
+  };
+  const finish = (event: PointerEvent<HTMLCanvasElement>) => {
+    try {
+      canvasRef.current?.releasePointerCapture(event.pointerId);
+    } catch {
+      // Pointer capture can already be released by the browser.
+    }
+    finishCanvas();
+  };
+  const startMouse = (event: MouseEvent<HTMLCanvasElement>) => {
+    if (drawingRef.current) return;
+    startAt(event.clientX, event.clientY);
+  };
+  const moveMouse = (event: MouseEvent<HTMLCanvasElement>) => {
+    moveAt(event.clientX, event.clientY);
+  };
+
+  return (
+    <div className="rounded-[14px] border border-[#E8E8E5] bg-white p-3">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <p className="flex items-center gap-2 font-medium text-[#1A1916] text-[12px]">
+          <PenLine className="size-4 text-[#2A9D8F]" />
+          7. Signature client
+        </p>
+        {signedAt ? <span className="text-[#167B70] text-[11px]">{dateTime(signedAt)}</span> : <span className="text-[#6B6B6B] text-[11px]">À signer</span>}
+      </div>
+      <canvas
+        ref={canvasRef}
+        aria-label="Signature client"
+        className="h-[118px] w-full rounded-[10px] border border-dashed border-[#D8D8D2] bg-[#FAFAF8]"
+        height={180}
+        onPointerCancel={finish}
+        onPointerDown={start}
+        onPointerMove={move}
+        onPointerUp={finish}
+        onMouseDown={startMouse}
+        onMouseLeave={finishCanvas}
+        onMouseMove={moveMouse}
+        onMouseUp={finishCanvas}
+        style={{ touchAction: "none" }}
+        width={520}
+      />
+      <div className="mt-2 flex items-center justify-between gap-3">
+        <span className="truncate text-[#6B6B6B] text-[11px]">{clean(signerName, "Nom du signataire à renseigner")}</span>
+        <button
+          className="inline-flex items-center gap-1.5 rounded-full border border-[#E8E8E5] bg-white px-2.5 py-1 text-[#6B6B6B] text-[11px] font-medium hover:border-[#2A9D8F] hover:text-[#167B70]"
+          onClick={() => onChange(undefined)}
+          type="button"
+        >
+          <RotateCcw className="size-3" />
+          Effacer
+        </button>
       </div>
     </div>
   );

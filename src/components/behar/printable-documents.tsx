@@ -134,7 +134,7 @@ function Badge({ children, tone = "accent" }: Readonly<{ children: ReactNode; to
 
 function KeyValue({ label, value }: Readonly<{ label: string; value: ReactNode }>) {
   return (
-    <div className="grid grid-cols-[112px_1fr] gap-3 text-[12px] leading-relaxed">
+    <div className="grid grid-cols-[128px_1fr] gap-3 text-[12px] leading-relaxed">
       <span className="text-[#6B6B6B]">{label}</span>
       <span className="font-medium text-[#1A1916]">{value}</span>
     </div>
@@ -143,8 +143,8 @@ function KeyValue({ label, value }: Readonly<{ label: string; value: ReactNode }
 
 function PremiumCard({ title, children }: Readonly<{ title: string; children: ReactNode }>) {
   return (
-    <section className="print-avoid-break rounded-[14px] border border-[#E8E8E5] bg-white p-5 shadow-[0_12px_30px_rgba(26,25,22,0.035)] print:rounded-none print:shadow-none">
-      <h3 className="mb-4 font-semibold text-[#1A1916] text-[13px] uppercase tracking-wide">{title}</h3>
+    <section className="print-avoid-break rounded-[14px] border border-[#E8E8E5] bg-white p-4 shadow-[0_12px_30px_rgba(26,25,22,0.035)] print:rounded-none print:shadow-none">
+      <h3 className="mb-3 font-semibold text-[#1A1916] text-[13px] uppercase tracking-wide">{title}</h3>
       <div className="space-y-2">{children}</div>
     </section>
   );
@@ -189,8 +189,8 @@ function DocumentHeader({
   const atelierName = text(workshop.name, "BEHAR • TECH PRO");
   const theme = DOC_THEME[type];
   return (
-    <header className="flex items-start justify-between gap-10 border-b border-[#E8E8E5] pb-8">
-      <div className="max-w-[390px]">
+    <header className="flex items-start justify-between gap-8 border-b border-[#E8E8E5] pb-6">
+      <div className="max-w-[470px]">
         <div className="text-[12px] leading-relaxed text-[#6B6B6B]">
           <p className="font-semibold text-[#1A1916] text-[15px] tracking-tight">{atelierName}</p>
           {workshop.commercialName ? <p>{text(workshop.commercialName)}</p> : null}
@@ -204,7 +204,7 @@ function DocumentHeader({
         </div>
       </div>
 
-      <div className="min-w-[230px] text-right">
+      <div className="min-w-[245px] text-right">
         <span
           className="inline-flex rounded-full px-3.5 py-1.5 font-bold text-[11px] uppercase tracking-[0.16em]"
           style={{ backgroundColor: theme.soft, color: theme.chipText }}
@@ -260,7 +260,7 @@ function DocumentLayout({
   const theme = DOC_THEME[type];
   return (
     <article
-      className="print-document pdf-page relative mx-auto flex min-h-[1123px] w-full max-w-[794px] flex-col overflow-hidden rounded-[18px] border border-[#E8E8E5] bg-white p-10 text-[#1A1916] shadow-[0_18px_60px_rgba(26,25,22,0.06)] print:min-h-screen print:rounded-none print:border-0 print:p-8 print:shadow-none"
+      className="print-document pdf-page relative mx-auto flex min-h-[1123px] w-full max-w-[860px] flex-col overflow-hidden rounded-[18px] border border-[#E8E8E5] bg-white p-8 text-[#1A1916] shadow-[0_18px_60px_rgba(26,25,22,0.06)] print:min-h-screen print:rounded-none print:border-0 print:p-6 print:shadow-none"
       style={{ color: COLORS.ink }}
     >
       {/* Bande de couleur en haut du doc, code visuel par type */}
@@ -270,7 +270,7 @@ function DocumentLayout({
         style={{ backgroundColor: theme.accent }}
       />
       <DocumentHeader badge={badge} date={date} number={number} type={type} workshop={ws} />
-      <main className="flex-1 space-y-6 py-7">{children}</main>
+      <main className="flex-1 space-y-5 py-6">{children}</main>
       <DocumentFooter workshop={ws} page={page} pageCount={pageCount} />
     </article>
   );
@@ -283,7 +283,7 @@ function DocumentIntro({
   quote,
 }: Readonly<{ customer?: Customer | null; repair?: Repair | null; invoice?: Invoice; quote?: Quote }>) {
   return (
-    <div className="grid gap-5 md:grid-cols-2">
+    <div className="grid gap-4 md:grid-cols-2">
       <ClientCard customer={customer} />
       <RepairCard invoice={invoice} quote={quote} repair={repair} />
     </div>
@@ -294,7 +294,7 @@ function PremiumTable({ rows, repair }: Readonly<{ rows: QuoteLine[]; repair?: R
   const safeRows = rows.length ? rows : [{ id: "empty", description: "Prestation atelier", quantity: 1, unitPrice: 0, total: 0 }];
   return (
     <section className="print-avoid-break overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-white print:rounded-none">
-      <div className="grid grid-cols-[1fr_82px_118px_118px] bg-[#FAFAF8] px-5 py-3 font-semibold text-[#6B6B6B] text-[11px] uppercase tracking-wide">
+      <div className="grid grid-cols-[1fr_70px_112px_112px] bg-[#FAFAF8] px-4 py-3 font-semibold text-[#6B6B6B] text-[11px] uppercase tracking-wide">
         <span>Désignation</span>
         <span className="text-center">Qté</span>
         <span className="text-right">Prix unitaire</span>
@@ -302,7 +302,7 @@ function PremiumTable({ rows, repair }: Readonly<{ rows: QuoteLine[]; repair?: R
       </div>
       <div className="divide-y divide-[#E8E8E5]">
         {safeRows.map((line) => (
-          <div className="grid grid-cols-[1fr_82px_118px_118px] items-center px-5 py-5 text-[13px]" key={line.id}>
+          <div className="grid grid-cols-[1fr_70px_112px_112px] items-center px-4 py-4 text-[13px]" key={line.id}>
             <span className="font-medium text-[#1A1916]">{serviceDescription(line, repair)}</span>
             <span className="text-center text-[#6B6B6B]">{text(line.quantity, "1")}</span>
             <span className="text-right text-[#6B6B6B]">{money(line.unitPrice)}</span>
@@ -326,7 +326,7 @@ function TotalsCard({
   const finalTotal = ws.vatApplicable ? vat.ttc : total;
   const balance = Math.max(finalTotal - paid, 0);
   return (
-    <section className="ml-auto w-full max-w-[330px] rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] p-5">
+    <section className="ml-auto w-full max-w-[360px] rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] p-4">
       {ws.vatApplicable ? (
         <>
           <TotalLine label="Sous-total HT" value={money(vat.ht)} />
@@ -409,6 +409,17 @@ function intakeValue(repair: Repair, key: (typeof intakeRows)[number][1]) {
   return text(repair.intakeCondition?.[key], "Non renseigné");
 }
 
+function accessSummary(repair: Repair) {
+  const intake = repair.intakeCondition;
+  const method = text(intake?.accessMethod, "");
+  if (!method || method === "Non renseigné") return "Non communiqué";
+  if (method === "Code PIN" || method === "Mot de passe") {
+    return intake?.accessCode ? `${method} confié au dossier` : method;
+  }
+  if (method === "Schéma") return intake?.patternData?.points?.length ? "Schéma enregistré" : "Schéma à compléter";
+  return method;
+}
+
 function intakeAccessories(repair: Repair) {
   const intake = repair.intakeCondition;
   const values = (intake?.accessories ?? []).filter(Boolean);
@@ -434,6 +445,49 @@ function IntakeKeyValue({ label, value }: Readonly<{ label: string; value: React
       <span className="text-[#6B6B6B]">{label}</span>
       <span className="font-medium text-[#1A1916]">{value}</span>
     </div>
+  );
+}
+
+function PatternMini({ points }: Readonly<{ points?: number[] }>) {
+  if (!points?.length) return null;
+  return (
+    <div className="mt-2 grid w-[78px] grid-cols-3 gap-1">
+      {Array.from({ length: 9 }, (_, index) => index + 1).map((point) => {
+        const order = points.indexOf(point) + 1;
+        return (
+          <span
+            className={`grid size-5 place-items-center rounded-full border text-[8px] font-bold ${
+              order ? "border-[#8C5B0E] bg-[#FCF1DF] text-[#8C5B0E]" : "border-[#D8D8D2] bg-white text-transparent"
+            }`}
+            key={point}
+          >
+            {order || ""}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function IntakeSignatureBlock({ repair }: Readonly<{ repair: Repair }>) {
+  const intake = repair.intakeCondition;
+  const signedAt = intake?.signatureSignedAt ?? intake?.signedAt;
+  const hasSignature = Boolean(intake?.signatureDataUrl);
+  return (
+    <IntakeBox title="Signature">
+      <div className="min-h-[92px] rounded-[8px] border border-dashed border-[#D8D8D2] bg-[#FAFAF8] p-2">
+        {hasSignature ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img alt="Signature client" className="h-[64px] w-full object-contain" src={intake?.signatureDataUrl} />
+        ) : (
+          <div className="grid h-[64px] place-items-center text-[#8A8984] text-[11px]">À signer</div>
+        )}
+      </div>
+      <div className="mt-2 grid gap-1">
+        <IntakeKeyValue label="Signataire" value={hasSignature ? text(intake?.signedBy ?? intake?.signerName, "Client") : "Client"} />
+        <IntakeKeyValue label="Date" value={hasSignature && signedAt ? dateTimeLabel(signedAt) : "À signer"} />
+      </div>
+    </IntakeBox>
   );
 }
 
@@ -463,8 +517,8 @@ export function RepairIntakeDocument({
     repair.intakeCondition?.customerConfirmed &&
       repair.intakeCondition?.diagnosticAuthorized &&
       repair.intakeCondition?.nonTestableAccepted &&
-      text(repair.intakeCondition?.signerName, "") &&
-      text(repair.intakeCondition?.signedAt, ""),
+      text(repair.intakeCondition?.signatureDataUrl, "") &&
+      text(repair.intakeCondition?.signatureSignedAt ?? repair.intakeCondition?.signedAt, ""),
   );
 
   return (
@@ -490,7 +544,8 @@ export function RepairIntakeDocument({
             <IntakeKeyValue label="Type · Marque" value={`${text(repair.deviceType)} · ${text(repair.brandName)}`} />
             <IntakeKeyValue label="Modèle" value={text(repair.deviceModel ?? repair.model)} />
             <IntakeKeyValue label="IMEI / série" value={text(repair.imei)} />
-            <IntakeKeyValue label="Code appareil" value={intakeValue(repair, "passcodeState")} />
+            <IntakeKeyValue label="Accès appareil" value={accessSummary(repair)} />
+            {repair.intakeCondition?.accessMethod === "Schéma" ? <PatternMini points={repair.intakeCondition.patternData?.points} /> : null}
           </IntakeBox>
         </div>
 
@@ -536,7 +591,7 @@ export function RepairIntakeDocument({
         </div>
 
         {/* Validation + Signature */}
-        <div className="grid grid-cols-[1.4fr_1fr] gap-3">
+        <div className="grid grid-cols-[1.35fr_1fr] gap-3">
           <IntakeBox title="Validation client">
             <div className="space-y-1.5 text-[11.5px] leading-relaxed">
               {customerValidationRows.map(([label, key]) => {
@@ -559,23 +614,7 @@ export function RepairIntakeDocument({
               })}
             </div>
           </IntakeBox>
-          <IntakeBox title="Signature">
-            <IntakeKeyValue label="Signataire" value={text(repair.intakeCondition?.signerName)} />
-            <IntakeKeyValue
-              label="Date et heure"
-              value={repair.intakeCondition?.signedAt ? dateTimeLabel(repair.intakeCondition.signedAt) : "Non signé."}
-            />
-            <div
-              className="mt-2 rounded-[6px] border px-3 py-3 text-center text-[11.5px] font-medium"
-              style={{
-                borderColor: isValidated ? "#8C5B0E" : "#D8D8D2",
-                backgroundColor: isValidated ? "#FCF1DF" : "#FAFAF8",
-                color: isValidated ? "#8C5B0E" : "#1A1916",
-              }}
-            >
-              {isValidated ? "Validation enregistrée" : "Non signé"}
-            </div>
-          </IntakeBox>
+          <IntakeSignatureBlock repair={repair} />
         </div>
 
         {/* Mentions légales obligatoires */}

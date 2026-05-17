@@ -1113,6 +1113,16 @@ export function RepairsWorkspace() {
                     <Detail label="Marque" value={selectedRepair.brandName ?? "—"} />
                     <Detail label="Modèle" value={selectedRepair.deviceModel ?? selectedRepair.model} />
                     <Detail label="IMEI / série" value={selectedRepair.imei?.trim() || "—"} />
+                    <Detail label="Accès appareil" value={selectedRepair.intakeCondition?.accessMethod ?? "Non communiqué"} />
+                    {selectedRepair.intakeCondition?.accessCode ? (
+                      <Detail label="Code / mot de passe" value={selectedRepair.intakeCondition.accessCode} />
+                    ) : null}
+                    {selectedRepair.intakeCondition?.patternData?.points?.length ? (
+                      <Detail label="Schéma" value={selectedRepair.intakeCondition.patternData.points.join(" → ")} />
+                    ) : null}
+                    {selectedRepair.intakeCondition?.accessNote ? (
+                      <Detail label="Note accès" value={selectedRepair.intakeCondition.accessNote} />
+                    ) : null}
                   </dl>
                 </section>
 

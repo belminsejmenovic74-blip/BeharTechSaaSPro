@@ -4,12 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
-import { Check, ChevronDown, FileText, Mail, Phone, ReceiptText, Sparkles, Tag, User, Wrench, X } from "lucide-react";
+import { Check, ChevronDown, FileText, Mail, Phone, Sparkles, Tag, User, Wrench, X } from "lucide-react";
 import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
 
 import { Combobox, PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
-import { RepairIntakeScreen } from "@/components/behar/repair-intake-condition";
+import { RepairIntakeQuickPanel, RepairIntakeScreen } from "@/components/behar/repair-intake-condition";
 import { deviceCatalog } from "@/data/deviceCatalog";
 import {
   deviceBrands,
@@ -1520,42 +1520,11 @@ export function RepairModal({
               )}
             </section>
 
-            {/* État d'entrée / anti-litige (optionnel) */}
-            <section className="space-y-3 rounded-[16px] border border-[#E7E4DC] bg-[#FAFAF8] p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-medium text-[#1A1916] text-sm flex items-center gap-2">
-                    <ReceiptText className="size-4 text-[#2A9D8F]" />
-                    État d'entrée / anti-litige
-                  </p>
-                  <p className="mt-1 text-[#6B6B6B] text-xs">
-                    Optionnel — notez l'état visible de l'appareil au dépôt pour éviter les litiges.
-                  </p>
-                </div>
-                {intakeDraft ? (
-                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#EAF6F2] px-2.5 py-1 text-[11px] font-semibold text-[#147065]">
-                    <Check className="size-3" /> État d'entrée préparé
-                  </span>
-                ) : (
-                  <span className="inline-flex shrink-0 items-center rounded-full bg-[#FCEFCC] px-2.5 py-1 text-[11px] font-semibold text-[#8A6914]">
-                    Optionnel
-                  </span>
-                )}
-              </div>
-              <SecondaryButton
-                className="h-10"
-                onClick={() => {
-                  if (!initial) {
-                    toast.info("Créez d'abord la réparation pour compléter l'état d'entrée.");
-                    return;
-                  }
-                  setView("intake");
-                }}
-                type="button"
-              >
-                {intakeDraft ? "Modifier l'état d'entrée" : "Compléter l'état d'entrée"}
-              </SecondaryButton>
-            </section>
+            <RepairIntakeQuickPanel
+              value={intakeDraft}
+              onChange={setIntakeDraft}
+              onOpenFull={() => setView("intake")}
+            />
           </form>
         </div>
 

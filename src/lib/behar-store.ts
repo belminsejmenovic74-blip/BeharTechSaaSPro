@@ -244,6 +244,13 @@ export type RepairIntakeCondition = {
   biometricState?: "OK" | "Ne fonctionne pas" | "Non testable" | "Non concerné" | "Non renseigné";
   networkState?: "OK" | "Non testé" | "SIM absente" | "Défaut signalé" | "Non renseigné";
   passcodeState?: "Code fourni" | "Code non fourni" | "Sans code" | "Déverrouillage impossible" | "Non renseigné";
+  accessMethod?: "Aucun" | "Code PIN" | "Mot de passe" | "Schéma" | "Empreinte / biométrie" | "Non communiqué" | "Non renseigné";
+  accessCode?: string;
+  accessNote?: string;
+  patternData?: {
+    points: number[];
+    label?: string;
+  };
   accessories?: string[];
   accessoriesOther?: string;
   visibleDefects?: string;
@@ -260,6 +267,9 @@ export type RepairIntakeCondition = {
   nonTestableAccepted?: boolean;
   signerName?: string;
   signedAt?: string;
+  signedBy?: string;
+  signatureDataUrl?: string;
+  signatureSignedAt?: string;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -1580,6 +1590,7 @@ const intakeSelectFallbacks = {
   biometricState: ["OK", "Ne fonctionne pas", "Non testable", "Non concerné", "Non renseigné"],
   networkState: ["OK", "Non testé", "SIM absente", "Défaut signalé", "Non renseigné"],
   passcodeState: ["Code fourni", "Code non fourni", "Sans code", "Déverrouillage impossible", "Non renseigné"],
+  accessMethod: ["Aucun", "Code PIN", "Mot de passe", "Schéma", "Empreinte / biométrie", "Non communiqué", "Non renseigné"],
 } as const;
 
 const normalizeIntakeSelect = <K extends keyof typeof intakeSelectFallbacks>(
@@ -1596,9 +1607,27 @@ const normalizeIntakeText = (value: unknown): string | undefined => {
   return /^(undefined|null|nan)$/i.test(str.trim()) ? undefined : str;
 };
 
+const normalizePatternData = (value: unknown): RepairIntakeCondition["patternData"] | undefined => {
+  if (!value || typeof value !== "object") return undefined;
+  const input = value as { points?: unknown; label?: unknown };
+  const points = Array.isArray(input.points)
+    ? input.points
+        .map((point) => Number(point))
+        .filter((point) => Number.isInteger(point) && point >= 1 && point <= 9)
+        .slice(0, 9)
+    : [];
+  if (!points.length) return undefined;
+  return {
+    points: Array.from(new Set(points)),
+    label: normalizeIntakeText(input.label) ?? points.join("-"),
+  };
+};
+
 const normalizeIntakeCondition = (condition: unknown): RepairIntakeCondition | undefined => {
   if (!condition || typeof condition !== "object") return undefined;
   const input = condition as Partial<RepairIntakeCondition>;
+  const signatureSignedAt = normalizeIntakeText(input.signatureSignedAt ?? input.signedAt);
+  const signedBy = normalizeIntakeText(input.signedBy ?? input.signerName);
   return {
     generalCondition: normalizeIntakeSelect("generalCondition", input.generalCondition),
     powerState: normalizeIntakeSelect("powerState", input.powerState),
@@ -1612,6 +1641,10 @@ const normalizeIntakeCondition = (condition: unknown): RepairIntakeCondition | u
     biometricState: normalizeIntakeSelect("biometricState", input.biometricState),
     networkState: normalizeIntakeSelect("networkState", input.networkState),
     passcodeState: normalizeIntakeSelect("passcodeState", input.passcodeState),
+    accessMethod: input.accessMethod ? normalizeIntakeSelect("accessMethod", input.accessMethod) : "Non communiqué",
+    accessCode: normalizeIntakeText(input.accessCode),
+    accessNote: normalizeIntakeText(input.accessNote),
+    patternData: normalizePatternData(input.patternData),
     accessories: Array.isArray(input.accessories)
       ? input.accessories.map((entry) => normalizeIntakeText(entry)).filter(Boolean) as string[]
       : [],
@@ -1632,8 +1665,11 @@ const normalizeIntakeCondition = (condition: unknown): RepairIntakeCondition | u
     customerConfirmed: Boolean(input.customerConfirmed),
     diagnosticAuthorized: Boolean(input.diagnosticAuthorized),
     nonTestableAccepted: Boolean(input.nonTestableAccepted),
-    signerName: normalizeIntakeText(input.signerName),
-    signedAt: normalizeIntakeText(input.signedAt),
+    signerName: normalizeIntakeText(input.signerName ?? input.signedBy),
+    signedAt: signatureSignedAt,
+    signedBy,
+    signatureDataUrl: normalizeIntakeText(input.signatureDataUrl),
+    signatureSignedAt,
     createdAt: normalizeIntakeText(input.createdAt),
     updatedAt: normalizeIntakeText(input.updatedAt),
   };
