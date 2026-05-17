@@ -3191,8 +3191,12 @@ export const useBeharStore = create<StoreState>()(
         set((state) => {
           const hasLinkedAppointments = state.appointments.some((appointment) => appointment.customerId === id);
           const hasLinkedRepairs = state.repairs.some((repair) => repair.customerId === id);
-          if (hasLinkedAppointments || hasLinkedRepairs) return state;
+          const hasPaidSales = state.sales.some(
+            (sale) => sale.customerId === id && sale.status === "Payée",
+          );
+          if (hasLinkedAppointments || hasLinkedRepairs || hasPaidSales) return state;
           const customers = state.customers.filter((customer) => customer.id !== id);
+          const sales = state.sales.filter((sale) => sale.customerId !== id);
           return {
             appointments: state.appointments.filter((appointment) => appointment.customerId !== id),
             customers,
@@ -3200,6 +3204,10 @@ export const useBeharStore = create<StoreState>()(
             messageLogs: state.messageLogs.filter((message) => message.customerId !== id),
             payments: state.payments.filter((payment) => payment.customerId !== id),
             quotes: state.quotes.filter((quote) => quote.customerId !== id),
+            sales,
+            selectedSaleId: sales.some((sale) => sale.id === state.selectedSaleId)
+              ? state.selectedSaleId
+              : sales[0]?.id ?? "",
             repairs: state.repairs,
             selectedCustomerId: customers[0]?.id ?? "",
           };
@@ -3396,6 +3404,12 @@ export const useBeharStore = create<StoreState>()(
               }
               : stockItem;
           });
+          const sales = state.sales
+            .filter((sale) => sale.repairId !== id || sale.status !== "Rattachée")
+            .map((sale) => (sale.repairId === id ? { ...sale, repairId: undefined } : sale));
+          const selectedSaleId = sales.some((sale) => sale.id === state.selectedSaleId)
+            ? state.selectedSaleId
+            : sales[0]?.id ?? "";
           return {
             appointments: state.appointments
               .filter((a) => a.repairId !== id || a.type !== "repair_pickup")
@@ -3406,7 +3420,9 @@ export const useBeharStore = create<StoreState>()(
               ),
             customers: deriveCustomers(state.customers, repairs, state.payments),
             repairs,
+            sales,
             selectedRepairId: repairs[0]?.id ?? "",
+            selectedSaleId,
             stockItems,
           };
         });
@@ -3882,6 +3898,7 @@ export const useBeharStore = create<StoreState>()(
           const required = nextStatus === "Accepté" ? "canAcceptQuote" : "canEditQuote";
           if (!get().requirePermission(required, "Modifier un devis")) return;
           const actor = get().currentUser ?? defaultCurrentUser;
+          const previousStatus = get().quotes.find((q) => q.id === id)?.status;
           set((state) => {
           const previous = state.quotes.find((quote) => quote.id === id);
           const quotes = state.quotes.map((quote) => {
@@ -3932,6 +3949,19 @@ export const useBeharStore = create<StoreState>()(
               targetType: "quote",
               targetId: id,
             });
+            if (previousStatus !== "Accepté" && !quote.invoiceId) {
+              const invoiceId = get().convertQuoteToInvoice(id);
+              if (invoiceId) {
+                const invoice = get().invoices.find((inv) => inv.id === invoiceId);
+                get().addNotification({
+                  type: "info",
+                  title: "Facture créée",
+                  message: `Facture ${invoice?.number ?? ""} générée depuis le devis ${quote.number}.`,
+                  targetType: "invoice",
+                  targetId: invoiceId,
+                });
+              }
+            }
           }
         },
       deleteQuote: (id) =>
@@ -4305,6 +4335,20 @@ export const useBeharStore = create<StoreState>()(
               ? { ...item, quantity: Math.max(0, item.quantity - quantityToRemove), stock: Math.max(0, item.stock - quantityToRemove) }
               : item;
           });
+          const sales = invoice.repairId
+            ? state.sales.map((sale) =>
+                sale.repairId === invoice.repairId && sale.status === "Rattachée"
+                  ? {
+                      ...sale,
+                      status: "Payée" as SaleStatus,
+                      paymentMethod: method,
+                      paymentId,
+                      documentId: `doc_${paymentId}`,
+                      paidAt: timestamp,
+                    }
+                  : sale,
+              )
+            : state.sales;
           return {
             workshopSettings: {
               ...state.workshopSettings,
@@ -4319,6 +4363,7 @@ export const useBeharStore = create<StoreState>()(
             invoices,
             payments,
             repairs,
+            sales,
             stockItems,
             customers: deriveCustomers(state.customers, repairs, payments),
             selectedPaymentId: paymentId,
@@ -4709,9 +4754,53 @@ export const useBeharStore = create<StoreState>()(
                 createdAt: nowLabel(),
               }
               : undefined;
+          const newSalePrice = patch.salePrice === undefined ? undefined : clampMoney(patch.salePrice);
+          const sales = newSalePrice === undefined
+            ? state.sales
+            : state.sales.map((sale) => {
+                if (sale.status !== "Brouillon") return sale;
+                if (!sale.lines.some((l) => l.stockItemId === id)) return sale;
+                const lines = sale.lines.map((l) =>
+                  l.stockItemId === id ? { ...l, unitPrice: newSalePrice, total: l.quantity * newSalePrice } : l,
+                );
+                const subtotal = lines.reduce((s, l) => s + l.total, 0);
+                return { ...sale, lines, subtotal, total: subtotal + (sale.taxAmount ?? 0) };
+              });
+          const repairs = newSalePrice === undefined
+            ? state.repairs
+            : state.repairs.map((repair) => {
+                const draftSaleLines = repair.repairSaleLines ?? [];
+                const partsTouched = repair.parts.some((p) => p.stockItemId === id);
+                const saleLinesTouched = draftSaleLines.some(
+                  (l) => l.stockItemId === id && l.status === "draft",
+                );
+                if (!partsTouched && !saleLinesTouched) return repair;
+                const isLocked = state.invoices.some((inv) => inv.repairId === repair.id && inv.status === "Payée")
+                  || repair.status === "Restitué"
+                  || repair.status === "Annulé";
+                if (isLocked) return repair;
+                const parts = partsTouched
+                  ? repair.parts.map((p) =>
+                      p.stockItemId === id ? { ...p, salePrice: newSalePrice } : p,
+                    )
+                  : repair.parts;
+                const nextSaleLines = saleLinesTouched
+                  ? draftSaleLines.map((l) =>
+                      l.stockItemId === id && l.status === "draft"
+                        ? { ...l, unitPrice: newSalePrice, total: l.quantity * newSalePrice }
+                        : l,
+                    )
+                  : draftSaleLines;
+                const accessoriesTotal = nextSaleLines.reduce((sum, l) => sum + l.total, 0);
+                const base = clampMoney(repair.laborPrice ?? 0);
+                const amount = clampMoney(base + repairPartsTotal(parts) + accessoriesTotal);
+                return { ...repair, parts, repairSaleLines: nextSaleLines, amount, total: amount };
+              });
           return {
             stockItems,
             priceBookItems,
+            sales,
+            repairs,
             notifications: lowStockNotification
               ? [lowStockNotification, ...state.notifications].slice(0, 100)
               : state.notifications,
@@ -4728,8 +4817,34 @@ export const useBeharStore = create<StoreState>()(
         },
       deleteStockItem: (id) => {
         if (!get().requirePermission("canManageStock", "Supprimer une pièce")) return;
-        set((state) => {
-          const stockItems = state.stockItems.filter((item) => item.id !== id);
+        const state = get();
+        const item = state.stockItems.find((entry) => entry.id === id);
+        const referencedByDraftSale = state.sales.some(
+          (sale) => sale.status === "Brouillon" && sale.lines.some((l) => l.stockItemId === id),
+        );
+        const referencedByOpenRepair = state.repairs.some((repair) => {
+          if (repair.status === "Restitué" || repair.status === "Annulé") return false;
+          const invoiced = state.invoices.some(
+            (inv) => inv.repairId === repair.id && inv.status === "Payée",
+          );
+          if (invoiced) return false;
+          return repair.parts.some((p) => p.stockItemId === id)
+            || (repair.repairSaleLines ?? []).some(
+              (l) => l.stockItemId === id && l.status !== "paid",
+            );
+        });
+        if (referencedByDraftSale || referencedByOpenRepair) {
+          get().addNotification({
+            type: "warning",
+            title: "Suppression bloquée",
+            message: `${item?.name ?? "Cette pièce"} est utilisée dans une vente brouillon ou une réparation en cours. Retirez-la d'abord.`,
+            targetType: "stock",
+            targetId: id,
+          });
+          return;
+        }
+        set((current) => {
+          const stockItems = current.stockItems.filter((entry) => entry.id !== id);
           return { stockItems, selectedStockItemId: stockItems[0]?.id ?? "" };
         });
       },
@@ -4968,7 +5083,18 @@ export const useBeharStore = create<StoreState>()(
         if (!get().requirePermission("canTakePayment", "Encaisser une vente")) return "";
         const state = get();
         const sale = state.sales.find((s) => s.id === saleId);
-        if (!sale || (sale.status !== "Brouillon" && sale.status !== "Payée")) return sale?.paymentId ?? "";
+        if (!sale) return "";
+        if (sale.status === "Rattachée") {
+          get().addNotification({
+            type: "info",
+            title: "Vente rattachée à une réparation",
+            message: `La vente ${sale.number} sera encaissée automatiquement quand la facture de la réparation liée sera payée.`,
+            targetType: "sale",
+            targetId: sale.id,
+          });
+          return "";
+        }
+        if (sale.status !== "Brouillon" && sale.status !== "Payée") return sale.paymentId ?? "";
         if (!sale.lines.length || sale.total <= 0) return "";
         if (sale.status === "Payée" && sale.paymentId) return sale.paymentId;
 
