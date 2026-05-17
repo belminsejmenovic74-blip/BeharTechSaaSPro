@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import {
+  ArrowLeft,
   CreditCard,
   Edit3,
   FileText,
@@ -157,6 +158,7 @@ export function RepairsWorkspace() {
   const [importOpen, setImportOpen] = useState(false);
   const [prefillFromQuote, setPrefillFromQuote] = useState<any>(null);
   const [detailMode, setDetailMode] = useState<"repair" | "intake">("repair");
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
   const selectedRepair = repairs.find((repair) => repair.id === selectedRepairId);
 
@@ -722,7 +724,10 @@ export function RepairsWorkspace() {
                 <li key={repair.id}>
                   <button
                     type="button"
-                    onClick={() => setSelected("repair", repair.id)}
+                    onClick={() => {
+                      setSelected("repair", repair.id);
+                      setMobileDetailOpen(true);
+                    }}
                     className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
                   >
                     <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FAFAF8] text-[#1A1916]">
@@ -761,25 +766,32 @@ export function RepairsWorkspace() {
 
       <section
         className={cn(
-          "hidden md:grid",
+          // Mobile : overlay full-screen when detail open. Desktop : grid.
+          mobileDetailOpen && selectedRepair
+            ? "fixed inset-0 z-40 block overflow-y-auto bg-[#FAFAF8] md:relative md:inset-auto md:z-auto md:bg-transparent md:overflow-visible"
+            : "hidden md:grid",
+          "md:grid md:min-h-0 md:flex-1 md:gap-4",
           detailMode === "intake" && selectedRepair
-            ? "min-h-0 flex-1 gap-4 grid-cols-1"
-            : "min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] 2xl:grid-cols-[minmax(0,1fr)_400px]",
+            ? "md:grid-cols-1"
+            : "xl:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] 2xl:grid-cols-[minmax(0,1fr)_400px]",
         )}
       >
-        {!(detailMode === "intake" && selectedRepair) && (
-          <KanbanBoard
-            columns={columns}
-            onAdd={(status) => openCreate(status as RepairStatus)}
-            onSelect={(id) => setSelected("repair", id)}
-            selectedId={selectedRepair?.id ?? ""}
-            onMoveCard={(cardId, _from, toStatus) => {
-              if (!statuses.includes(toStatus as RepairStatus)) return;
-              changeRepairStatus(cardId, toStatus as RepairStatus);
-              toast.success(`Statut : ${toStatus}`);
-            }}
-          />
-        )}
+        {/* Kanban : desktop uniquement */}
+        <div className="hidden md:block min-h-0">
+          {!(detailMode === "intake" && selectedRepair) && (
+            <KanbanBoard
+              columns={columns}
+              onAdd={(status) => openCreate(status as RepairStatus)}
+              onSelect={(id) => setSelected("repair", id)}
+              selectedId={selectedRepair?.id ?? ""}
+              onMoveCard={(cardId, _from, toStatus) => {
+                if (!statuses.includes(toStatus as RepairStatus)) return;
+                changeRepairStatus(cardId, toStatus as RepairStatus);
+                toast.success(`Statut : ${toStatus}`);
+              }}
+            />
+          )}
+        </div>
 
         {importOpen && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -828,7 +840,19 @@ export function RepairsWorkspace() {
           </div>
         )}
 
-        <Panel className="flex min-h-0 flex-col overflow-hidden rounded-[20px] border-[#E5E3DC] bg-white/92 p-[18px] shadow-[0_12px_40px_rgba(26,25,22,0.045)] backdrop-blur-sm xl:max-h-[calc(100svh-168px)]">
+        <Panel className="flex min-h-0 flex-col overflow-hidden rounded-none md:rounded-[20px] border-0 md:border md:border-[#E5E3DC] bg-white/92 p-4 md:p-[18px] shadow-none md:shadow-[0_12px_40px_rgba(26,25,22,0.045)] backdrop-blur-sm xl:max-h-[calc(100svh-168px)]">
+          {/* Mobile back button */}
+          <div className="md:hidden -mx-4 -mt-4 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#F1F1EF] bg-white/95 backdrop-blur-xl px-4 py-3">
+            <button
+              type="button"
+              onClick={() => setMobileDetailOpen(false)}
+              className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#1A1916] transition active:scale-90"
+              aria-label="Retour à la liste"
+            >
+              <ArrowLeft className="size-4" />
+            </button>
+            <span className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Détail réparation</span>
+          </div>
           {selectedRepair ? (
             <div className="flex min-h-0 flex-1 flex-col">
               <div className="mb-4 shrink-0 border-[#EDEAE3] border-b pb-4">

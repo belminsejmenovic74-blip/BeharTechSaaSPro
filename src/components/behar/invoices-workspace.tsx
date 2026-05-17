@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 
 import {
   AlertCircle,
+  ArrowLeft,
   ArrowRight,
   Calendar,
   Check,
@@ -55,6 +56,7 @@ import {
   useBeharStore,
 } from "@/lib/behar-store";
 import { displayCustomerName, isCounterCustomer } from "@/lib/customer-display";
+import { cn } from "@/lib/utils";
 
 import { useDocument } from "./print-provider";
 
@@ -89,6 +91,7 @@ export function InvoicesWorkspace() {
   const [linesEditing, setLinesEditing] = useState(false);
   const [invoiceSearch, setInvoiceSearch] = useState("");
   const [invoiceFilterTab, setInvoiceFilterTab] = useState<"all" | "unpaid" | "paid" | "counter" | "month">("all");
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
   const visibleInvoices = useMemo(() => {
     const q = invoiceSearch.trim().toLowerCase();
@@ -236,7 +239,10 @@ export function InvoicesWorkspace() {
                 <li key={invoice.id}>
                   <button
                     type="button"
-                    onClick={() => store.setSelected("invoice", invoice.id)}
+                    onClick={() => {
+                      store.setSelected("invoice", invoice.id);
+                      setMobileDetailOpen(true);
+                    }}
                     className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
                   >
                     <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FAFAF8] text-[#1A1916]">
@@ -314,7 +320,24 @@ export function InvoicesWorkspace() {
       </div>
 
       {selected && (
-        <Panel className="hidden md:flex h-full min-h-0 flex-col overflow-hidden rounded-[20px] border-[#E5E3DC] bg-white p-5 shadow-[0_12px_40px_rgba(26,25,22,0.045)]">
+        <Panel className={cn(
+          mobileDetailOpen
+            ? "fixed inset-0 z-40 overflow-y-auto bg-white p-5 flex flex-col"
+            : "hidden",
+          "md:relative md:inset-auto md:z-auto md:flex md:h-full md:min-h-0 md:flex-col md:overflow-hidden md:rounded-[20px] md:border md:border-[#E5E3DC] md:bg-white md:p-5 md:shadow-[0_12px_40px_rgba(26,25,22,0.045)]",
+        )}>
+          {/* Mobile back button */}
+          <div className="md:hidden -mx-5 -mt-5 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#F1F1EF] bg-white/95 backdrop-blur-xl px-4 py-3">
+            <button
+              type="button"
+              onClick={() => setMobileDetailOpen(false)}
+              className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#1A1916] transition active:scale-90"
+              aria-label="Retour"
+            >
+              <ArrowLeft className="size-4" />
+            </button>
+            <span className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Détail facture</span>
+          </div>
           <div className="mb-6 shrink-0 flex items-start justify-between gap-4">
             <div>
               <h2 className="font-bold text-[#1A1916] text-xl tracking-tight">Facture {selected.number}</h2>
@@ -759,23 +782,23 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
     <div className="fixed inset-0 z-50 flex items-stretch justify-stretch bg-black/40 backdrop-blur-sm p-0 md:items-center md:justify-center md:p-4">
       <div className="relative flex min-h-svh w-full max-w-none flex-col overflow-hidden rounded-none border border-[#E7E4DC] bg-[#FAFAF8] shadow-2xl animate-in fade-in zoom-in duration-200 md:h-[90vh] md:min-h-0 md:max-w-[1200px] md:rounded-[16px]">
         {/* Header */}
-        <div className="flex items-center justify-between px-8 py-6 border-b border-[#F1F1EF] bg-white">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#F1F1EF] bg-white md:px-8 md:py-6">
           <div>
-            <h2 className="text-[22px] font-bold text-[#1A1916]">Choisissez comment créer cette facture</h2>
-            <p className="mt-1 text-sm text-[#6B6B6B]">Facturation rapide et professionnelle.</p>
+            <h2 className="text-[18px] font-bold text-[#1A1916] md:text-[22px]">Nouvelle facture</h2>
+            <p className="mt-0.5 text-[12.5px] text-[#6B6B6B] md:mt-1 md:text-sm">Facturation rapide</p>
           </div>
-          <button onClick={onClose} className="text-[#B0AEA8] transition hover:text-[#1A1916]">
-            <X className="size-6" />
+          <button onClick={onClose} className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#1A1916] transition hover:bg-[#E7E4DC] md:size-auto md:bg-transparent md:p-0" aria-label="Fermer">
+            <X className="size-5 md:size-6" />
           </button>
         </div>
 
         <div className="flex flex-1 overflow-hidden relative">
           {/* Left Column - Configuration */}
-          <div className="flex-1 overflow-y-auto px-8 py-8 custom-scrollbar pb-32">
+          <div className="flex-1 overflow-y-auto px-5 py-5 custom-scrollbar pb-32 md:px-8 md:py-8">
             {/* 1. Origine */}
-            <div className="space-y-4">
-              <label className="text-sm font-bold text-[#1A1916]">Origine de la facture</label>
-              <div className="grid grid-cols-4 gap-4">
+            <div className="space-y-3 md:space-y-4">
+              <label className="text-[13px] font-bold text-[#1A1916] md:text-sm">Origine de la facture</label>
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-4">
                 {[
                   { id: "quote", label: "Depuis un devis accepté", icon: <FileText /> },
                   { id: "repair", label: "Depuis une réparation", icon: <Wrench /> },
@@ -1021,8 +1044,8 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
             </div>
           </div>
 
-          {/* Right Column (Aperçu) */}
-          <div className="w-[440px] border-l border-[#F1F1EF] bg-white p-0 flex flex-col overflow-hidden">
+          {/* Right Column (Aperçu) — hidden on mobile */}
+          <div className="hidden lg:flex w-[440px] border-l border-[#F1F1EF] bg-white p-0 flex-col overflow-hidden">
             <div className="flex items-center justify-between p-6 border-b border-[#F1F1EF]">
               <h3 className="text-sm font-bold text-[#1A1916]">Aperçu en direct</h3>
               <div className="flex items-center gap-2 rounded-full bg-[#FEF6E7] px-3 py-1 text-[10px] font-bold text-[#D97706]">

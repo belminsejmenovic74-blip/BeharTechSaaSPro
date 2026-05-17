@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import {
+  ArrowLeft,
   CalendarDays,
   ChevronRight,
   Mail,
@@ -20,6 +21,7 @@ import { toast } from "sonner";
 import { type Customer, formatEuro, formatIsoToDisplay, getNowIso, toLocalIso, useBeharStore } from "@/lib/behar-store";
 import { displayCustomerName } from "@/lib/customer-display";
 import { sendRealSms } from "@/lib/send-sms";
+import { cn } from "@/lib/utils";
 
 import { DeviceSelector } from "../DeviceSelector";
 import { PageShell } from "./page-shell";
@@ -81,6 +83,7 @@ export function CustomersWorkspace() {
   const [appointmentCustomerId, setAppointmentCustomerId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filterVip, setFilterVip] = useState(false);
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
   const filteredCustomers = store.customers.filter((customer) => {
     const q = search.toLowerCase();
@@ -248,7 +251,10 @@ export function CustomersWorkspace() {
             <li key={customer.id}>
               <button
                 type="button"
-                onClick={() => store.setSelected("customer", customer.id)}
+                onClick={() => {
+                  store.setSelected("customer", customer.id);
+                  setMobileDetailOpen(true);
+                }}
                 className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
               >
                 <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#EAF6F2] font-semibold text-[#2A9D8F] text-[12px] uppercase">
@@ -325,7 +331,24 @@ export function CustomersWorkspace() {
         </TableShell>
 
         {selectedCustomer && (
-          <Panel className="hidden md:flex min-h-0 flex-col overflow-hidden rounded-[20px] bg-white border-[#E7E4DC] shadow-[0_1px_3px_rgba(26,25,22,0.04),0_8px_24px_rgba(26,25,22,0.025)] p-5 md:h-full">
+          <Panel className={cn(
+            mobileDetailOpen
+              ? "fixed inset-0 z-40 overflow-y-auto bg-white p-5 flex flex-col"
+              : "hidden",
+            "md:relative md:inset-auto md:z-auto md:flex md:min-h-0 md:flex-col md:overflow-hidden md:rounded-[20px] md:bg-white md:border md:border-[#E7E4DC] md:shadow-[0_1px_3px_rgba(26,25,22,0.04),0_8px_24px_rgba(26,25,22,0.025)] md:p-5 md:h-full",
+          )}>
+            {/* Mobile back button */}
+            <div className="md:hidden -mx-5 -mt-5 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#F1F1EF] bg-white/95 backdrop-blur-xl px-4 py-3">
+              <button
+                type="button"
+                onClick={() => setMobileDetailOpen(false)}
+                className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#1A1916] transition active:scale-90"
+                aria-label="Retour"
+              >
+                <ArrowLeft className="size-4" />
+              </button>
+              <span className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Détail client</span>
+            </div>
             <div className="mb-5 flex shrink-0 items-start gap-4">
               <span className="grid size-14 place-items-center rounded-2xl bg-[#F6F7F4] font-semibold text-[#1A1916] text-xl">
                 {selectedCustomer.initials}

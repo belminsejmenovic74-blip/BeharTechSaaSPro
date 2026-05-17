@@ -2,22 +2,23 @@
 
 import { cloneElement, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  X, 
-  User, 
-  Smartphone, 
-  Plus, 
-  Search, 
-  Trash2, 
-  Check, 
-  ChevronDown, 
-  Calendar, 
-  FileText, 
-  Wrench,
-  Download,
-  Save,
+import {
   AlertCircle,
-  MoreHorizontal
+  ArrowLeft,
+  Calendar,
+  Check,
+  ChevronDown,
+  Download,
+  FileText,
+  MoreHorizontal,
+  Plus,
+  Save,
+  Search,
+  Smartphone,
+  Trash2,
+  User,
+  Wrench,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -31,6 +32,7 @@ import {
   useBeharStore 
 } from "@/lib/behar-store";
 import { displayCustomerName } from "@/lib/customer-display";
+import { cn } from "@/lib/utils";
 import { useDocument } from "./print-provider";
 import {
   Panel,
@@ -72,6 +74,7 @@ export function QuotesWorkspace() {
   const store = useBeharStore();
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [quoteSearch, setQuoteSearch] = useState("");
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
   const { download } = useDocument();
 
@@ -164,7 +167,10 @@ export function QuotesWorkspace() {
                 <li key={quote.id}>
                   <button
                     type="button"
-                    onClick={() => store.setSelected("quote", quote.id)}
+                    onClick={() => {
+                      store.setSelected("quote", quote.id);
+                      setMobileDetailOpen(true);
+                    }}
                     className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
                   >
                     <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FAFAF8] text-[#1A1916]">
@@ -239,7 +245,26 @@ export function QuotesWorkspace() {
       </div>
 
       {selected && (
-        <Panel className="hidden md:flex p-5 flex-col min-h-0">
+        <Panel className={cn(
+          // Mobile: full-screen overlay when open, else hidden
+          mobileDetailOpen
+            ? "fixed inset-0 z-40 overflow-y-auto bg-white p-5 flex flex-col"
+            : "hidden",
+          // Desktop: normal panel
+          "md:relative md:inset-auto md:z-auto md:bg-white md:flex md:p-5 md:overflow-visible md:flex-col md:min-h-0",
+        )}>
+          {/* Mobile back button */}
+          <div className="md:hidden -mx-5 -mt-5 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#F1F1EF] bg-white/95 backdrop-blur-xl px-4 py-3">
+            <button
+              type="button"
+              onClick={() => setMobileDetailOpen(false)}
+              className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#1A1916] transition active:scale-90"
+              aria-label="Retour"
+            >
+              <ArrowLeft className="size-4" />
+            </button>
+            <span className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Détail devis</span>
+          </div>
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
               <h2 className="font-semibold text-[#1A1916] text-xl">Devis #{selected.number}</h2>
@@ -546,25 +571,25 @@ export function CreateQuoteModal({
       <div className="relative flex min-h-svh w-full max-w-none flex-col overflow-hidden rounded-none border border-[#E7E4DC] bg-[#FAFAF8] shadow-2xl animate-in fade-in zoom-in duration-200 md:h-[90vh] md:min-h-0 md:max-w-[1200px] md:rounded-[16px]">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-8 py-6 border-b border-[#F1F1EF] bg-white">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#F1F1EF] bg-white md:px-8 md:py-6">
           <div>
-            <h2 className="text-[22px] font-bold text-[#1A1916]">Choisissez comment créer ce devis</h2>
-            <p className="mt-1 text-sm text-[#6B6B6B]">Établissez une proposition commerciale claire.</p>
+            <h2 className="text-[18px] font-bold text-[#1A1916] md:text-[22px]">Nouveau devis</h2>
+            <p className="mt-0.5 text-[12.5px] text-[#6B6B6B] md:mt-1 md:text-sm">Proposition commerciale</p>
           </div>
-          <button onClick={onClose} className="text-[#B0AEA8] transition hover:text-[#1A1916]">
-            <X className="size-6" />
+          <button onClick={onClose} className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#1A1916] transition hover:bg-[#E7E4DC] md:size-auto md:bg-transparent md:p-0" aria-label="Fermer">
+            <X className="size-5 md:size-6" />
           </button>
         </div>
 
         <div className="flex flex-1 overflow-hidden relative">
-          
+
           {/* Left Column - Configuration */}
-          <div className="flex-1 overflow-y-auto px-8 py-8 custom-scrollbar pb-32">
+          <div className="flex-1 overflow-y-auto px-5 py-5 custom-scrollbar pb-32 md:px-8 md:py-8">
             
             {/* 1. Origine */}
-            <div className="space-y-4">
-              <label className="text-sm font-bold text-[#1A1916]">Origine du devis</label>
-              <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-3 md:space-y-4">
+              <label className="text-[13px] font-bold text-[#1A1916] md:text-sm">Origine du devis</label>
+              <div className="grid grid-cols-3 gap-2 md:gap-4">
                 {[
                   { id: "repair", label: "Depuis une réparation", icon: <Wrench /> },
                   { id: "client", label: "Client existant", icon: <User /> },
@@ -575,16 +600,16 @@ export function CreateQuoteModal({
                     onClick={() => {
                       setForm(f => ({ ...f, origin: opt.id as QuoteOrigin, customerId: "", repairId: "" }));
                     }}
-                    className={`relative flex flex-col items-center justify-center gap-3 rounded-[12px] border h-[110px] transition-all ${
+                    className={`relative flex flex-col items-center justify-center gap-2 rounded-[12px] border h-[86px] transition-all md:gap-3 md:h-[110px] ${
                       form.origin === opt.id
                         ? "border-[#2A9D8F] bg-[#F1FAF8] shadow-sm"
                         : "border-[#E7E4DC] bg-white hover:border-[#2A9D8F]/30"
                     }`}
                   >
                     <div className={`${form.origin === opt.id ? "text-[#2A9D8F]" : "text-[#6B6B6B]"}`}>
-                      {cloneElement(opt.icon as any, { className: "size-6" })}
+                      {cloneElement(opt.icon as any, { className: "size-5 md:size-6" })}
                     </div>
-                    <p className={`text-xs font-semibold text-center px-2 ${form.origin === opt.id ? "text-[#167B70]" : "text-[#1A1916]"}`}>
+                    <p className={`text-[11px] font-semibold text-center px-1 leading-tight md:text-xs md:px-2 ${form.origin === opt.id ? "text-[#167B70]" : "text-[#1A1916]"}`}>
                       {opt.label}
                     </p>
                     {form.origin === opt.id && (
@@ -768,8 +793,8 @@ export function CreateQuoteModal({
             </div>
           </div>
 
-          {/* Right Column - Preview */}
-          <div className="w-[440px] border-l border-[#F1F1EF] bg-[#F6F6F4]/30 flex flex-col overflow-hidden">
+          {/* Right Column - Preview (hidden on mobile) */}
+          <div className="hidden lg:flex w-[440px] border-l border-[#F1F1EF] bg-[#F6F6F4]/30 flex-col overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#F1F1EF] bg-white/50 backdrop-blur-sm">
               <span className="text-[10px] font-bold text-[#B0AEA8] uppercase tracking-widest">Aperçu en direct</span>
               <div className="flex items-center gap-2">

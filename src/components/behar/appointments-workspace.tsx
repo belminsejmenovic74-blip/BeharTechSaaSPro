@@ -79,6 +79,7 @@ export function AppointmentsWorkspace() {
   });
   const [filterConfirmed, setFilterConfirmed] = useState(false);
   const [filterTechnician, setFilterTechnician] = useState("Tous les techniciens");
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
   const weekDays = buildWeekDays(weekOffset);
 
@@ -167,7 +168,10 @@ export function AppointmentsWorkspace() {
                     <li key={appt.id}>
                       <button
                         type="button"
-                        onClick={() => store.setSelected("appointment", appt.id)}
+                        onClick={() => {
+                          store.setSelected("appointment", appt.id);
+                          setMobileDetailOpen(true);
+                        }}
                         className="flex w-full items-center gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
                       >
                         <div className="flex w-14 shrink-0 flex-col items-center rounded-[12px] bg-[#FAFAF8] py-2">
@@ -249,7 +253,23 @@ export function AppointmentsWorkspace() {
         </Panel>
 
         {selected && customer && (
-          <Panel className="p-5">
+          <Panel className={cn(
+            mobileDetailOpen
+              ? "fixed inset-0 z-40 overflow-y-auto bg-white p-5 flex flex-col"
+              : "hidden",
+            "md:relative md:inset-auto md:z-auto md:block md:bg-white md:p-5 md:overflow-visible",
+          )}>
+            <div className="md:hidden -mx-5 -mt-5 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#F1F1EF] bg-white/95 backdrop-blur-xl px-4 py-3">
+              <button
+                type="button"
+                onClick={() => setMobileDetailOpen(false)}
+                className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#1A1916] transition active:scale-90"
+                aria-label="Retour"
+              >
+                <ArrowLeft className="size-4" />
+              </button>
+              <span className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Détail rendez-vous</span>
+            </div>
             <div className="mb-6 flex items-start justify-between gap-4">
               <div>
                 <h2 className="font-semibold text-2xl text-[#1A1916]">{customer.name}</h2>

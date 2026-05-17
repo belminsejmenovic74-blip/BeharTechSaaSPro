@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  ArrowLeft,
   CheckCircle2,
   CreditCard,
   Download,
@@ -67,6 +68,7 @@ export function SalesWorkspace() {
   const store = useBeharStore();
   const [showNewSaleModal, setShowNewSaleModal] = useState(false);
   const [search, setSearch] = useState("");
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
   const filteredSales = store.sales.filter((sale) => {
     const q = search.trim().toLowerCase();
@@ -126,7 +128,10 @@ export function SalesWorkspace() {
             <li key={sale.id}>
               <button
                 type="button"
-                onClick={() => store.setSelected("sale", sale.id)}
+                onClick={() => {
+                  store.setSelected("sale", sale.id);
+                  setMobileDetailOpen(true);
+                }}
                 className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
               >
                 <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#EAF6F2] text-[#2A9D8F]">
@@ -154,6 +159,26 @@ export function SalesWorkspace() {
           ))}
         </ul>
       </div>
+
+      {/* Mobile : detail overlay full-screen */}
+      {mobileDetailOpen && selectedSale && (
+        <div className="fixed inset-0 z-40 overflow-y-auto bg-[#FAFAF8] md:hidden">
+          <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-[#F1F1EF] bg-white/95 backdrop-blur-xl px-4 py-3">
+            <button
+              type="button"
+              onClick={() => setMobileDetailOpen(false)}
+              className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#1A1916] transition active:scale-90"
+              aria-label="Retour"
+            >
+              <ArrowLeft className="size-4" />
+            </button>
+            <span className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Détail vente</span>
+          </div>
+          <div className="p-4">
+            <SaleDetail sale={selectedSale} />
+          </div>
+        </div>
+      )}
 
       {/* Desktop : table + détail */}
       <section className="hidden md:grid min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
