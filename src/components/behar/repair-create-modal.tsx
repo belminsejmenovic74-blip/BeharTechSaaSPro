@@ -701,10 +701,10 @@ export function RepairModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-[#1A1916]/20 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 grid place-items-stretch overflow-y-auto bg-[#1A1916]/20 p-0 backdrop-blur-sm md:place-items-center md:p-4"
       data-testid="new-repair-modal"
     >
-      <div className={`relative flex w-full ${view === "intake" ? "max-w-6xl" : "max-w-5xl"} flex-col overflow-hidden rounded-[20px] border border-[#E7E4DC] bg-white shadow-2xl md:max-h-[92vh] ${view === "intake" ? "" : "md:flex-row"}`}>
+      <div className={`relative flex w-full ${view === "intake" ? "max-w-6xl" : "max-w-5xl"} flex-col overflow-hidden border border-[#E7E4DC] bg-white shadow-2xl min-h-svh md:min-h-0 rounded-none md:rounded-[20px] md:max-h-[92vh] ${view === "intake" ? "" : "md:flex-row"}`}>
         {/* Croix X de fermeture globale — toujours visible, ferme le modal peu importe la vue */}
         <button
           aria-label="Fermer"
@@ -758,15 +758,15 @@ export function RepairModal({
           </div>
         ) : (
         <>
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-6 md:max-h-[92vh] md:p-8">
-          <div className="mb-7 flex items-start justify-between gap-3">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-5 pb-[140px] md:max-h-[92vh] md:p-8 md:pb-8">
+          <div className="mb-6 flex items-start justify-between gap-3 md:mb-7">
             <div>
               <h2 className="font-semibold text-[#1A1916] text-[20px] tracking-tight">
                   {initial ? "Modifier la réparation" : "Nouvelle réparation"}
               </h2>
-              <p className="mt-1 text-[#8A8984] text-[14px]">Client → Appareil → Intervention → Tarif client</p>
+              <p className="mt-1 text-[#8A8984] text-[13px] md:text-[14px]">Client → Appareil → Intervention → Tarif client</p>
             </div>
-            <button className="grid size-9 place-items-center rounded-full text-[#8A8984] transition hover:bg-[#F6F7F4] hover:text-[#6B6B6B]" onClick={onClose} type="button">
+            <button className="grid size-9 place-items-center rounded-full text-[#8A8984] transition hover:bg-[#F6F7F4] hover:text-[#6B6B6B]" onClick={onClose} type="button" aria-label="Fermer">
               <X className="size-5" />
             </button>
           </div>
@@ -1550,8 +1550,44 @@ export function RepairModal({
           </form>
         </div>
 
-        {/* Résumé */}
-        <aside className="flex w-full flex-col border-[#F1F1EF] border-t bg-[#FAFAF8] p-6 md:w-[320px] md:border-t-0 md:border-l">
+        {/* Mobile : barre d'action sticky en bas */}
+        <div
+          className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 border-t border-[#F1F1EF] bg-white/95 px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:hidden"
+          style={{ boxShadow: "0 -10px 24px rgba(26,25,22,0.06)" }}
+        >
+          <div className="min-w-0">
+            <p className="text-[#8A8984] text-[11px] font-medium tracking-tight">Total</p>
+            <p className="font-bold text-[#1A1916] text-[18px] leading-none tracking-tight tabular-nums">
+              {totalClient > 0 ? formatEuro(totalClient) : "À définir"}
+            </p>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <SecondaryButton
+              className="h-11 px-3 text-[12.5px]"
+              disabled={!canSubmitQuote}
+              form="repair-quick-form"
+              type="submit"
+              value="repair-quote"
+              aria-label="Créer réparation et devis"
+            >
+              <FileText className="size-4" />
+              Devis
+            </SecondaryButton>
+            <PrimaryButton
+              className="h-11 px-4 text-[13px]"
+              disabled={!canSubmitRepair}
+              form="repair-quick-form"
+              type="submit"
+              value="repair"
+            >
+              <Check className="size-4" />
+              {initial ? "Enregistrer" : "Créer"}
+            </PrimaryButton>
+          </div>
+        </div>
+
+        {/* Résumé desktop */}
+        <aside className="hidden md:flex w-full flex-col border-[#F1F1EF] border-t bg-[#FAFAF8] p-6 md:w-[320px] md:border-t-0 md:border-l">
           <div className="mb-5">
             <h3 className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Résumé</h3>
           </div>
