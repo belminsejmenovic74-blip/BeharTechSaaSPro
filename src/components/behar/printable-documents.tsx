@@ -27,6 +27,47 @@ const COLORS = {
   accentSoft: "#EAF6F2",
 };
 
+/**
+ * Code couleur par type de document.
+ * Le strip en haut + le chip du titre permettent d'identifier le type au
+ * premier coup d'œil même si le destinataire reçoit plusieurs PDF.
+ */
+export type PrintableDocType = "devis" | "facture" | "recu" | "bon-prise-en-charge";
+
+const DOC_THEME: Record<
+  PrintableDocType,
+  { label: string; accent: string; soft: string; ink: string; chipText: string }
+> = {
+  devis: {
+    label: "DEVIS",
+    accent: "#2F6FD0",
+    soft: "#E6EFFB",
+    ink: "#1E4FA0",
+    chipText: "#1E4FA0",
+  },
+  facture: {
+    label: "FACTURE",
+    accent: "#2A9D8F",
+    soft: "#EAF6F2",
+    ink: "#167B70",
+    chipText: "#167B70",
+  },
+  recu: {
+    label: "REÇU DE PAIEMENT",
+    accent: "#10B981",
+    soft: "#E7F8F0",
+    ink: "#0B7A56",
+    chipText: "#0B7A56",
+  },
+  "bon-prise-en-charge": {
+    label: "BON DE PRISE EN CHARGE",
+    accent: "#C2841C",
+    soft: "#FCF1DF",
+    ink: "#8C5B0E",
+    chipText: "#8C5B0E",
+  },
+};
+
 function text(value: unknown, fallback = "Non renseigné"): string {
   if (value === null || value === undefined) return fallback;
   const str = String(value).replace(/\s+/g, " ").trim();
@@ -136,41 +177,62 @@ function RepairCard({ repair, invoice, quote }: Readonly<{ repair?: Repair | nul
 }
 
 function DocumentHeader({
-  title,
+  type,
   number,
   date,
   badge,
   workshop,
-}: Readonly<{ title: string; number?: string; date?: string; badge?: string; workshop: WorkshopInfo }>) {
+}: Readonly<{
+  type: PrintableDocType;
+  number?: string;
+  date?: string;
+  badge?: string;
+  workshop: WorkshopInfo;
+}>) {
   const atelierName = text(workshop.name, "BEHAR • TECH PRO");
+  const theme = DOC_THEME[type];
   return (
     <header className="flex items-start justify-between gap-10 border-b border-[#E8E8E5] pb-8">
       <div className="max-w-[390px]">
+        {/* Logo lockup BEHAR • TECH */}
+        <div className="mb-3 inline-flex items-center gap-1.5">
+          <span className="font-bold text-[#1A1916] text-[14px] tracking-[0.18em]">BEHAR</span>
+          <span className="size-[5px] rounded-full" style={{ backgroundColor: theme.accent }} aria-hidden />
+          <span className="font-bold text-[#1A1916] text-[14px] tracking-[0.18em]">TECH</span>
+        </div>
         <div className="text-[12px] leading-relaxed text-[#6B6B6B]">
-          <p className="font-semibold text-[#1A1916] text-[16px] tracking-tight">{atelierName}</p>
+          <p className="font-semibold text-[#1A1916] text-[15px] tracking-tight">{atelierName}</p>
           {workshop.commercialName ? <p>{text(workshop.commercialName)}</p> : null}
           <p>{text(workshop.address)}</p>
           <p>
             {text(workshop.postalCity, `${dash(workshop.postalCode)} ${dash(workshop.city)}`)}, {text(workshop.country, "France")}
           </p>
           <p>SIRET : {text(workshop.siret)}</p>
-          {workshop.tvaNumber ? <p>TVA : {text(workshop.tvaNumber)}</p> : null}
+          {workshop.tvaNumber ? <p>TVA intracom. : {text(workshop.tvaNumber)}</p> : null}
           <p>{text(workshop.email)} · {text(workshop.phone)}</p>
         </div>
       </div>
 
-      <div className="min-w-[220px] text-right">
-        <p className="mb-2 text-[#6B6B6B] text-[11px] uppercase tracking-[0.18em]">Document atelier</p>
-        <h2 className="font-semibold text-[#1A1916] text-[30px] leading-tight">{title}</h2>
-        <p className="mt-2 font-semibold text-[#1A1916] text-base">{dash(number)}</p>
-        <p className="mt-1 text-[#6B6B6B] text-[12px]">{date ? dateLabel(date) : "Non renseigné"}</p>
-        {badge ? <div className="mt-4"><Badge>{badge}</Badge></div> : null}
+      <div className="min-w-[230px] text-right">
+        <span
+          className="inline-flex rounded-full px-3.5 py-1.5 font-bold text-[11px] uppercase tracking-[0.16em]"
+          style={{ backgroundColor: theme.soft, color: theme.chipText }}
+        >
+          {theme.label}
+        </span>
+        <p className="mt-4 font-mono font-semibold text-[#1A1916] text-[20px] tracking-tight">{dash(number)}</p>
+        <p className="mt-1 text-[#6B6B6B] text-[12px]">Émis le {date ? dateLabel(date) : "Non renseigné"}</p>
+        {badge ? <div className="mt-3"><Badge>{badge}</Badge></div> : null}
       </div>
     </header>
   );
 }
 
-function DocumentFooter({ workshop }: Readonly<{ workshop: WorkshopInfo }>) {
+function DocumentFooter({
+  workshop,
+  page,
+  pageCount,
+}: Readonly<{ workshop: WorkshopInfo; page: number; pageCount: number }>) {
   const methods = workshop.acceptedPaymentMethods?.filter(Boolean) ?? [];
   return (
     <footer className="mt-auto border-t border-[#E8E8E5] pt-6 text-[#8A8984] text-[10px] leading-relaxed">
@@ -178,36 +240,47 @@ function DocumentFooter({ workshop }: Readonly<{ workshop: WorkshopInfo }>) {
       {workshop.documentFooter ? <p>{text(workshop.documentFooter)}</p> : null}
       <p>
         {text(workshop.name, "BEHAR • TECH PRO")} · SIRET {text(workshop.siret)} · {text(workshop.email)} ·{" "}
-        {text(workshop.phone)} · Page 1/1
+        {text(workshop.phone)} · Page {page}/{pageCount}
       </p>
     </footer>
   );
 }
 
 function DocumentLayout({
-  title,
+  type,
   number,
   date,
   badge,
   workshop = defaultWorkshopInfo,
   children,
+  page = 1,
+  pageCount = 1,
 }: Readonly<{
-  title: string;
+  type: PrintableDocType;
   number?: string;
   date?: string;
   badge?: string;
   workshop?: WorkshopInfo;
   children: ReactNode;
+  page?: number;
+  pageCount?: number;
 }>) {
   const ws = workshop ?? defaultWorkshopInfo;
+  const theme = DOC_THEME[type];
   return (
     <article
-      className="print-document mx-auto flex min-h-[1123px] w-full max-w-[794px] flex-col rounded-[18px] border border-[#E8E8E5] bg-white p-10 text-[#1A1916] shadow-[0_18px_60px_rgba(26,25,22,0.06)] print:min-h-screen print:rounded-none print:border-0 print:p-8 print:shadow-none"
+      className="print-document pdf-page relative mx-auto flex min-h-[1123px] w-full max-w-[794px] flex-col overflow-hidden rounded-[18px] border border-[#E8E8E5] bg-white p-10 text-[#1A1916] shadow-[0_18px_60px_rgba(26,25,22,0.06)] print:min-h-screen print:rounded-none print:border-0 print:p-8 print:shadow-none"
       style={{ color: COLORS.ink }}
     >
-      <DocumentHeader badge={badge} date={date} number={number} title={title} workshop={ws} />
+      {/* Bande de couleur en haut du doc, code visuel par type */}
+      <span
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-1.5"
+        style={{ backgroundColor: theme.accent }}
+      />
+      <DocumentHeader badge={badge} date={date} number={number} type={type} workshop={ws} />
       <main className="flex-1 space-y-6 py-7">{children}</main>
-      <DocumentFooter workshop={ws} />
+      <DocumentFooter workshop={ws} page={page} pageCount={pageCount} />
     </article>
   );
 }
@@ -353,36 +426,10 @@ function intakeAccessories(repair: Repair) {
   return withoutNone;
 }
 
-function IntakePdfHeader({ repair, workshop }: Readonly<{ repair: Repair; workshop?: WorkshopInfo }>) {
-  const ws = workshop ?? ({} as WorkshopInfo);
-  return (
-    <header className="flex items-start justify-between gap-8">
-      <div>
-        <div className="text-[12px] leading-relaxed text-[#1A1916]">
-          <p className="font-bold text-[15px] uppercase">{text(ws.name, "BEHAR • TECH PRO")}</p>
-          <p>{text(ws.address)}</p>
-          <p>{text(ws.postalCity, `${text(ws.postalCode)} ${text(ws.city)}`)}</p>
-          <p>tél. : {text(ws.phone)}</p>
-          <p>{text(ws.email)}</p>
-          <p>SIRET/SIREN : {text(ws.siret)}</p>
-          <p>{ws.tvaNumber ? `TVA : ${text(ws.tvaNumber)}` : text(ws.tvaMention)}</p>
-        </div>
-      </div>
-      <div className="min-w-[150px] rounded-[10px] border border-[#D8D8D2] bg-white px-4 py-4 text-right">
-        <p className="font-bold text-[#1A1916] text-[17px]">N° {text(repair.number)}</p>
-        <p className="mt-2 text-[#6B6B6B] text-[11px]">Date dépôt</p>
-        <p className="font-medium text-[12px]">{dateLabel(repair.droppedAt)}</p>
-        <p className="mt-2 text-[#6B6B6B] text-[11px]">Statut</p>
-        <p className="font-medium text-[12px]">{text(repair.status)}</p>
-      </div>
-    </header>
-  );
-}
-
 function IntakeBox({ title, children }: Readonly<{ title: string; children: ReactNode }>) {
   return (
-    <section className="rounded-[10px] border border-[#E8E8E5] bg-white p-4">
-      <h3 className="mb-3 font-bold text-[#167B70] text-[13px] uppercase tracking-wide">{title}</h3>
+    <section className="rounded-[10px] border border-[#E8E8E5] bg-white p-3">
+      <h3 className="mb-2 font-bold text-[#8C5B0E] text-[11px] uppercase tracking-wide">{title}</h3>
       {children}
     </section>
   );
@@ -390,19 +437,10 @@ function IntakeBox({ title, children }: Readonly<{ title: string; children: Reac
 
 function IntakeKeyValue({ label, value }: Readonly<{ label: string; value: ReactNode }>) {
   return (
-    <div className="grid grid-cols-[108px_1fr] gap-2 text-[12px] leading-relaxed">
+    <div className="grid grid-cols-[108px_1fr] gap-2 text-[11.5px] leading-relaxed">
       <span className="text-[#6B6B6B]">{label}</span>
       <span className="font-medium text-[#1A1916]">{value}</span>
     </div>
-  );
-}
-
-function IntakeFooter({ page }: Readonly<{ page: 1 | 2 }>) {
-  return (
-    <footer className="mt-auto flex items-center justify-between border-[#E8E8E5] border-t pt-4 text-[#6B6B6B] text-[11px]">
-      <span>{page === 1 ? "Merci de conserver ce document. Il pourra être demandé pour tout suivi de réparation." : "Merci de conserver ce document."}</span>
-      <span>Page {page} sur 2</span>
-    </footer>
   );
 }
 
@@ -423,7 +461,10 @@ export function RepairIntakeDocument({
   customer,
   workshop,
 }: Readonly<{ repair: Repair; customer: Customer; workshop?: WorkshopInfo }>) {
+  const ws = workshop ?? defaultWorkshopInfo;
   const photos = (repair.intakeCondition?.photos ?? []).filter((photo) => photo.dataUrl);
+  const hasPhotos = photos.length > 0;
+  const pageCount = hasPhotos ? 2 : 1;
   const accessories = intakeAccessories(repair);
   const isValidated = Boolean(
     repair.intakeCondition?.customerConfirmed &&
@@ -435,127 +476,189 @@ export function RepairIntakeDocument({
 
   return (
     <div className="print-document mx-auto flex w-full max-w-[794px] flex-col gap-6 text-[#1A1916]" data-pdf-paginate="true">
-      <article className="pdf-page flex min-h-[1123px] flex-col rounded-[4px] border border-[#E8E8E5] bg-white p-8 shadow-[0_14px_40px_rgba(26,25,22,0.06)]">
-        <IntakePdfHeader repair={repair} workshop={workshop} />
-        <main className="flex-1 py-6">
-          <h1 className="font-bold text-[#1A1916] text-[28px] tracking-tight">BON DE PRISE EN CHARGE</h1>
-          <p className="mt-1 font-medium text-[#1A1916] text-[13px]">Document remis au client</p>
+      <DocumentLayout
+        type="bon-prise-en-charge"
+        number={repair.number}
+        date={repair.droppedAt}
+        badge={isValidated ? "Signé" : "À signer"}
+        workshop={ws}
+        page={1}
+        pageCount={pageCount}
+      >
+        {/* Client + Appareil */}
+        <div className="grid grid-cols-2 gap-3">
+          <IntakeBox title="Client">
+            <IntakeKeyValue label="Nom" value={customerName(customer)} />
+            <IntakeKeyValue label="Téléphone" value={text(customer.phone)} />
+            <IntakeKeyValue label="Email" value={text(customer.email)} />
+            {customer.address ? <IntakeKeyValue label="Adresse" value={text(customer.address)} /> : null}
+          </IntakeBox>
+          <IntakeBox title="Appareil">
+            <IntakeKeyValue label="Type · Marque" value={`${text(repair.deviceType)} · ${text(repair.brandName)}`} />
+            <IntakeKeyValue label="Modèle" value={text(repair.deviceModel ?? repair.model)} />
+            <IntakeKeyValue label="IMEI / série" value={text(repair.imei)} />
+            <IntakeKeyValue label="Code appareil" value={intakeValue(repair, "passcodeState")} />
+          </IntakeBox>
+        </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-2">
-            <IntakeBox title="Client">
-              <IntakeKeyValue label="Nom" value={customerName(customer)} />
-              <IntakeKeyValue label="Téléphone" value={text(customer.phone)} />
-              <IntakeKeyValue label="Email" value={text(customer.email)} />
-              <IntakeKeyValue label="Adresse" value={text(customer.address)} />
-            </IntakeBox>
-            <IntakeBox title="Appareil">
-              <IntakeKeyValue label="Type" value={text(repair.deviceType)} />
-              <IntakeKeyValue label="Marque" value={text(repair.brandName)} />
-              <IntakeKeyValue label="Modèle" value={text(repair.deviceModel ?? repair.model)} />
-              <IntakeKeyValue label="Couleur" value="Non renseigné" />
-              <IntakeKeyValue label="IMEI / série" value={text(repair.imei)} />
-              <IntakeKeyValue label="Code appareil" value={intakeValue(repair, "passcodeState")} />
-            </IntakeBox>
+        {/* Intervention */}
+        <IntakeBox title="Intervention">
+          <div className="grid grid-cols-3 gap-3">
+            <IntakeKeyValue label="Demande" value={text(repair.issue)} />
+            <IntakeKeyValue label="Statut" value={text(repair.status)} />
+            <IntakeKeyValue label="Date dépôt" value={dateLabel(repair.droppedAt)} />
           </div>
+        </IntakeBox>
 
-          <div className="mt-2">
-            <IntakeBox title="Intervention">
-              <div className="grid grid-cols-3 gap-3">
-                <IntakeKeyValue label="Demande" value={text(repair.issue)} />
-                <IntakeKeyValue label="Statut" value={text(repair.status)} />
-                <IntakeKeyValue label="Date dépôt" value={dateLabel(repair.droppedAt)} />
+        {/* État d'entrée — compact 2 col */}
+        <section className="overflow-hidden rounded-[10px] border border-[#E8E8E5] bg-white">
+          <h3 className="border-[#E8E8E5] border-b px-4 py-2.5 font-bold text-[#8C5B0E] text-[12px] uppercase tracking-wide">
+            État d'entrée appareil
+          </h3>
+          <div className="grid grid-cols-2">
+            {intakeRows.map(([label, key]) => (
+              <div className="grid grid-cols-[130px_1fr] gap-2 border-[#E8E8E5] border-b px-3 py-1.5 text-[11.5px]" key={key}>
+                <span className="text-[#6B6B6B]">{label}</span>
+                <span className="font-medium">{intakeValue(repair, key)}</span>
               </div>
-            </IntakeBox>
+            ))}
           </div>
+        </section>
 
-          <section className="mt-4 overflow-hidden rounded-[10px] border border-[#E8E8E5] bg-white">
-            <h3 className="border-[#E8E8E5] border-b px-4 py-3 font-bold text-[#167B70] text-[13px] uppercase tracking-wide">
-              État d'entrée appareil
-            </h3>
-            <div className="grid grid-cols-2">
-              {intakeRows.map(([label, key]) => (
-                <div className="grid grid-cols-[136px_1fr] gap-2 border-[#E8E8E5] border-b px-3 py-2 text-[12px]" key={key}>
-                  <span className="text-[#6B6B6B]">{label}</span>
-                  <span className="font-medium">{intakeValue(repair, key)}</span>
-                </div>
-              ))}
+        {/* Accessoires + Défauts + Déclaration */}
+        <div className="grid grid-cols-3 gap-3">
+          <IntakeBox title="Accessoires">
+            <p className="text-[11.5px]">{accessories.length ? accessories.join(" · ") : "Aucun."}</p>
+          </IntakeBox>
+          <IntakeBox title="Défauts visibles">
+            <p className="min-h-[42px] whitespace-pre-wrap text-[11.5px] leading-relaxed">
+              {text(repair.intakeCondition?.visibleDefects)}
+            </p>
+          </IntakeBox>
+          <IntakeBox title="Déclaration client">
+            <p className="min-h-[42px] whitespace-pre-wrap text-[11.5px] leading-relaxed">
+              {text(repair.intakeCondition?.customerStatement)}
+            </p>
+          </IntakeBox>
+        </div>
+
+        {/* Validation + Signature */}
+        <div className="grid grid-cols-[1.4fr_1fr] gap-3">
+          <IntakeBox title="Validation client">
+            <div className="space-y-1.5 text-[11.5px] leading-relaxed">
+              {customerValidationRows.map(([label, key]) => {
+                const checked = Boolean(repair.intakeCondition?.[key]);
+                return (
+                  <p key={key} className="flex items-start gap-2">
+                    <span
+                      className="mt-0.5 inline-flex size-3.5 shrink-0 items-center justify-center rounded-[3px] border text-[9px] font-bold leading-none"
+                      style={{
+                        borderColor: checked ? "#8C5B0E" : "#CFCFCA",
+                        backgroundColor: checked ? "#FCF1DF" : "white",
+                        color: "#8C5B0E",
+                      }}
+                    >
+                      {checked ? "✓" : ""}
+                    </span>
+                    {label}
+                  </p>
+                );
+              })}
             </div>
-          </section>
+          </IntakeBox>
+          <IntakeBox title="Signature">
+            <IntakeKeyValue label="Signataire" value={text(repair.intakeCondition?.signerName)} />
+            <IntakeKeyValue
+              label="Date et heure"
+              value={repair.intakeCondition?.signedAt ? dateTimeLabel(repair.intakeCondition.signedAt) : "Non signé."}
+            />
+            <div
+              className="mt-2 rounded-[6px] border px-3 py-3 text-center text-[11.5px] font-medium"
+              style={{
+                borderColor: isValidated ? "#8C5B0E" : "#D8D8D2",
+                backgroundColor: isValidated ? "#FCF1DF" : "#FAFAF8",
+                color: isValidated ? "#8C5B0E" : "#1A1916",
+              }}
+            >
+              {isValidated ? "Validation enregistrée" : "Non signé"}
+            </div>
+          </IntakeBox>
+        </div>
 
-          <div className="mt-2">
-            <IntakeBox title="Accessoires fournis">
-              <p className="text-[12px]">{accessories.length ? accessories.join(" · ") : "Aucun accessoire fourni."}</p>
-            </IntakeBox>
-          </div>
+        {/* Mentions légales obligatoires */}
+        <IntakeLegalMentions />
+      </DocumentLayout>
 
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <IntakeBox title="Défauts visibles">
-              <p className="min-h-[54px] whitespace-pre-wrap text-[12px] leading-relaxed">{text(repair.intakeCondition?.visibleDefects)}</p>
-            </IntakeBox>
-            <IntakeBox title="Déclaration client">
-              <p className="min-h-[54px] whitespace-pre-wrap text-[12px] leading-relaxed">{text(repair.intakeCondition?.customerStatement)}</p>
-            </IntakeBox>
-          </div>
-        </main>
-        <IntakeFooter page={1} />
-      </article>
-
-      <article className="pdf-page flex min-h-[1123px] flex-col rounded-[4px] border border-[#E8E8E5] bg-white p-8 shadow-[0_14px_40px_rgba(26,25,22,0.06)]">
-        <IntakePdfHeader repair={repair} workshop={workshop} />
-        <main className="flex-1 py-6">
-          <h2 className="font-bold text-[#167B70] text-[16px] uppercase tracking-wide">PHOTOS DE L'APPAREIL (facultatives)</h2>
+      {hasPhotos && (
+        <DocumentLayout
+          type="bon-prise-en-charge"
+          number={repair.number}
+          date={repair.droppedAt}
+          badge="Annexe photos"
+          workshop={ws}
+          page={2}
+          pageCount={2}
+        >
+          <h2 className="font-bold text-[#8C5B0E] text-[14px] uppercase tracking-wide">Photos de l'appareil (facultatives)</h2>
           <p className="mt-2 text-[#6B6B6B] text-[12px] leading-relaxed">
-            Les photos sont facultatives et servent uniquement à compléter l'état visuel du dépôt lorsqu'elles sont ajoutées.
+            Photos prises au moment du dépôt. Elles servent uniquement à compléter l'état visuel
+            documenté en page 1.
           </p>
-          {photos.length ? (
-            <div className="mt-4 grid grid-cols-3 gap-3">
-              {photos.slice(0, 6).map((photo) => (
-                <div className="overflow-hidden rounded-[10px] border border-[#E8E8E5] bg-[#FAFAF8]" key={photo.id}>
-                  <img alt={photo.name} className="h-[128px] w-full object-cover" src={photo.dataUrl} />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="mt-4 rounded-[10px] border border-dashed border-[#CFCFCA] bg-[#FAFAF8] px-4 py-8 text-center text-[#6B6B6B] text-[13px]">
-              Aucune photo ajoutée
-            </div>
-          )}
-
-          <div className="mt-5">
-            <IntakeBox title="Validation client">
-              {isValidated ? (
-                <div className="space-y-2">
-                  {customerValidationRows.map(([label, key]) => (
-                    <p className="text-[12px]" key={key}>✓ {repair.intakeCondition?.[key] ? label : `${label} Non renseigné`}</p>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-[12px]">Validation client non enregistrée.</p>
-              )}
-            </IntakeBox>
-          </div>
-
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <IntakeBox title="Signature / validation">
-              <IntakeKeyValue label="Signataire" value={text(repair.intakeCondition?.signerName)} />
-              <IntakeKeyValue label="Date et heure" value={repair.intakeCondition?.signedAt ? dateTimeLabel(repair.intakeCondition.signedAt) : "Non signé."} />
-              <div className="mt-3 rounded-[8px] border border-[#D8D8D2] bg-[#FAFAF8] px-3 py-5 text-center font-medium text-[#1A1916]">
-                {isValidated ? "Validation enregistrée" : "Non signé."}
+          <div className="mt-4 grid grid-cols-2 gap-4">
+            {photos.slice(0, 6).map((photo) => (
+              <div className="overflow-hidden rounded-[10px] border border-[#E8E8E5] bg-[#FAFAF8]" key={photo.id}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img alt={photo.name} className="h-[220px] w-full object-cover" src={photo.dataUrl} />
               </div>
-            </IntakeBox>
-            <IntakeBox title="Informations importantes">
-              <div className="space-y-3 text-[12px] leading-relaxed">
-                <p>Le client reconnaît que l'état d'entrée ci-dessus correspond à l'état visible de l'appareil au moment du dépôt.</p>
-                <p>Certains défauts peuvent ne pas être testables avant diagnostic ou ouverture de l'appareil.</p>
-                <p>Les photos sont facultatives et servent uniquement à compléter l'état visuel du dépôt lorsqu'elles sont ajoutées.</p>
-              </div>
-            </IntakeBox>
+            ))}
           </div>
-
-        </main>
-        <IntakeFooter page={2} />
-      </article>
+        </DocumentLayout>
+      )}
     </div>
+  );
+}
+
+/**
+ * Mentions légales / informations obligatoires pour un bon de prise en charge
+ * en France : RGPD (art. 13 du règlement UE 2016/679), sauvegarde des données
+ * (responsabilité du client), délai estimé de réparation, seuil d'autorisation
+ * de coût supplémentaire (bonne pratique anti-litige).
+ */
+function IntakeLegalMentions() {
+  return (
+    <section className="rounded-[10px] border border-[#E8E8E5] bg-[#FAFAF8] p-4">
+      <h3 className="mb-2 font-bold text-[#8C5B0E] text-[11px] uppercase tracking-wide">
+        Conditions de prise en charge et mentions légales
+      </h3>
+      <ul className="space-y-1.5 text-[10.5px] text-[#1A1916] leading-relaxed">
+        <li>
+          <strong>Sauvegarde des données.</strong> Le client est responsable de la sauvegarde préalable des
+          données présentes sur l'appareil. L'atelier ne pourra être tenu responsable d'une éventuelle perte
+          de données pendant ou après l'intervention.
+        </li>
+        <li>
+          <strong>Délai estimé de réparation.</strong> Sauf indication contraire, le délai d'intervention
+          standard est de 24 à 72 heures ouvrées après diagnostic. Le client est informé en cas de
+          dépassement.
+        </li>
+        <li>
+          <strong>Autorisation de coût.</strong> Tout dépassement supérieur à 20 % de l'estimation initiale
+          fera l'objet d'un nouveau devis présenté au client avant toute intervention complémentaire.
+        </li>
+        <li>
+          <strong>Appareils non récupérés.</strong> Passé un délai de 3 mois après notification de fin de
+          réparation, l'appareil pourra être considéré comme abandonné conformément à l'article 1947 du
+          Code civil.
+        </li>
+        <li>
+          <strong>RGPD (art. 13 du règlement UE 2016/679).</strong> Les données collectées (identité,
+          coordonnées, informations appareil) sont utilisées uniquement pour la gestion de la prise en
+          charge, conservées pendant la durée légale de garantie puis 5 ans à titre comptable. Le client
+          dispose d'un droit d'accès, de rectification, d'effacement et d'opposition exerçable auprès de
+          l'atelier.
+        </li>
+      </ul>
+    </section>
   );
 }
 
@@ -567,12 +670,14 @@ export function QuoteDocument({
 }: Readonly<{ quote: Quote; customer: Customer; repair?: Repair; workshop?: WorkshopInfo }>) {
   const ws = workshop ?? defaultWorkshopInfo;
   return (
-    <DocumentLayout badge={quote.status} date={quote.date} number={quote.number} title="Devis" workshop={ws}>
+    <DocumentLayout badge={quote.status} date={quote.date} number={quote.number} type="devis" workshop={ws}>
       <DocumentIntro customer={customer} quote={quote} repair={repair} />
       <PremiumTable repair={repair} rows={quote.lines ?? []} />
       <TotalsCard lines={quote.lines ?? []} total={getQuoteTotal(quote)} workshop={ws} />
       <NoticeCard title="Validité et accord">
-        Devis valable jusqu'au {dateLabel(quote.expiryDate)}. {text(ws.quoteTerms, "Prix valables sous réserve de disponibilité des pièces.")}
+        Devis <strong>gratuit</strong>, valable jusqu'au {dateLabel(quote.expiryDate)}.{" "}
+        {text(ws.quoteTerms, "Prix valables sous réserve de disponibilité des pièces.")} Le présent devis n'engage le
+        client qu'après acceptation écrite (mention « Bon pour accord » suivie de la date et de la signature).
       </NoticeCard>
       <SignatureGrid accord />
     </DocumentLayout>
@@ -594,7 +699,7 @@ export function InvoiceDocument({
       badge={invoice.status === "Payée" ? "Payée" : "À régler"}
       date={invoice.date}
       number={invoice.number}
-      title="Facture"
+      type="facture"
       workshop={ws}
     >
       <DocumentIntro customer={customer} invoice={invoice} repair={repair} />
@@ -606,26 +711,38 @@ export function InvoiceDocument({
       ) : null}
       <PremiumTable repair={repair} rows={invoice.lines ?? []} />
       <TotalsCard lines={invoice.lines ?? []} paid={paidAmount} showBalance total={total} workshop={ws} />
-      <InvoiceLegalMentions invoice={invoice} workshop={ws} />
+      <InvoiceLegalMentions invoice={invoice} repair={repair} workshop={ws} />
     </DocumentLayout>
   );
 }
 
 /**
  * Mentions obligatoires sur une facture française (art. 242 nonies A CGI,
- * art. L441-9 Code de commerce, art. L441-10 pour les pénalités).
+ * art. L441-9 Code de commerce, art. L441-10 pour les pénalités, art. L612-1
+ * du Code de la consommation pour la médiation B2C).
  */
-function InvoiceLegalMentions({ invoice, workshop }: Readonly<{ invoice: Invoice; workshop: WorkshopInfo }>) {
+function InvoiceLegalMentions({
+  invoice,
+  repair,
+  workshop,
+}: Readonly<{ invoice: Invoice; repair?: Repair; workshop: WorkshopInfo }>) {
   const ws = workshop;
   const issuedAt = invoice.date ? dateLabel(invoice.date) : "Non renseignée";
   const paid = invoice.status === "Payée";
   const dueLabel = paid ? "Réglée" : "Paiement à réception de facture";
+  // Date de prestation : date à laquelle le service a été rendu.
+  // Pour une répa, on prend la date de paiement (souvent égale à la remise),
+  // sinon la date de la facture.
+  const serviceDateRaw = invoice.paidAt ?? invoice.date;
+  const serviceDate = serviceDateRaw ? dateLabel(serviceDateRaw) : issuedAt;
+  void repair;
   return (
     <section className="grid gap-4 md:grid-cols-2">
       <div className="rounded-[14px] border border-[#E8E8E5] bg-white p-5 print:rounded-none">
         <h3 className="mb-3 font-semibold text-[#1A1916] text-[13px] uppercase tracking-wide">Conditions de règlement</h3>
         <dl className="grid gap-1 text-[12px] text-[#1A1916]">
           <KeyValue label="Date d'émission" value={issuedAt} />
+          <KeyValue label="Date de prestation" value={serviceDate} />
           <KeyValue label="Date d'échéance" value={dueLabel} />
           <KeyValue label="Mode de règlement" value={dash(invoice.paymentMethod)} />
           {invoice.paidAt ? <KeyValue label="Date de paiement" value={dateLabel(invoice.paidAt)} /> : null}
@@ -663,6 +780,18 @@ function InvoiceLegalMentions({ invoice, workshop }: Readonly<{ invoice: Invoice
         ) : null}
       </div>
 
+      {/* Médiation de la consommation : obligatoire pour les pros qui vendent à des particuliers
+          (art. L612-1 du Code de la consommation). */}
+      <div className="md:col-span-2 rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] p-5 print:rounded-none">
+        <h3 className="mb-2 font-semibold text-[#1A1916] text-[13px]">Médiation de la consommation</h3>
+        <p className="text-[#6B6B6B] text-[11px] leading-relaxed">
+          Conformément à l'article L612-1 du Code de la consommation, en cas de litige et après avoir contacté notre
+          service client, le consommateur peut recourir gratuitement à un médiateur de la consommation en vue d'une
+          résolution amiable du litige. Les coordonnées du médiateur compétent sont disponibles sur demande auprès
+          de l'atelier.
+        </p>
+      </div>
+
       {ws.invoiceTerms ? (
         <div className="md:col-span-2 rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] p-5 print:rounded-none">
           <h3 className="mb-2 font-semibold text-[#1A1916] text-[13px]">Mentions complémentaires</h3>
@@ -686,12 +815,14 @@ export function PaymentReceiptDocument({
   repair?: Repair;
   workshop?: WorkshopInfo;
 }>) {
+  const invoiceTotal = invoice ? getInvoiceTotal(invoice) : payment.amount;
+  const isFullSettlement = invoice ? Math.abs(payment.amount - invoiceTotal) < 0.01 : true;
   return (
     <DocumentLayout
-      badge="Paiement reçu"
+      badge={isFullSettlement ? "Acquit pour solde" : "Acompte"}
       date={payment.date}
       number={payment.paymentNumber}
-      title="Reçu de paiement"
+      type="recu"
       workshop={workshop}
     >
       <DocumentIntro customer={customer} invoice={invoice} repair={repair} />
@@ -702,8 +833,10 @@ export function PaymentReceiptDocument({
         <KeyValue label="Mode" value={dash(payment.method ?? payment.mode)} />
         <KeyValue label="Statut" value={dash(payment.status)} />
       </PremiumCard>
-      <NoticeCard title="Merci pour votre confiance">
-        Ce reçu confirme l'encaissement du montant indiqué pour la facture et le dossier associés.
+      <NoticeCard title={isFullSettlement ? "Acquit pour solde de tout compte" : "Reçu d'acompte"}>
+        {isFullSettlement
+          ? `Le présent reçu vaut acquit pour solde de tout compte de la facture ${dash(invoice?.number)}. Aucune somme ne reste due au titre de la prestation associée.`
+          : `Le présent reçu constate un acompte sur la facture ${dash(invoice?.number)}. Le solde restant à régler reste exigible selon les conditions de la facture.`}
       </NoticeCard>
     </DocumentLayout>
   );
@@ -755,7 +888,7 @@ export function InternalRepairDocument({
       badge="Document interne"
       date={repair.droppedAt}
       number={repair.number}
-      title="Fiche intervention interne"
+      type="bon-prise-en-charge"
       workshop={workshop}
     >
       <DocumentIntro customer={customer} repair={repair} />
@@ -783,10 +916,10 @@ export function SaleReceiptDocument({
   const ws = workshop ?? defaultWorkshopInfo;
   return (
     <DocumentLayout
-      badge={sale.status === "Payée" ? "Facture acquittée" : "Facture de vente"}
+      badge={sale.status === "Payée" ? "Acquittée" : "À régler"}
       date={sale.paidAt || sale.createdAt}
       number={sale.number}
-      title="Facture de vente"
+      type="facture"
       workshop={ws}
     >
       <DocumentIntro customer={customer} />
