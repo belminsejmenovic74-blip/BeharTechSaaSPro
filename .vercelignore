@@ -2,6 +2,7 @@ node_modules
 .next
 out
 .git
+src-tauri
 .DS_Store
 playwright-report
 test-results
