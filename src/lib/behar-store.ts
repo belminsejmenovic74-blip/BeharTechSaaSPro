@@ -2294,18 +2294,20 @@ const syncStockToPriceBookItems = (stockItems: StockItem[], pbItems: PriceBookIt
     if (pbIndex !== -1) {
       // Update existing Price Book entry
       const existing = nextPB[pbIndex];
+      const stockDrivenLabor = 0;
       const nextItem = {
         ...existing,
         stockItemId: s.id,
         prixAchat: s.purchasePrice,
         prixVentePiece: s.salePrice,
+        mainOeuvre: stockDrivenLabor,
         stockDisponible: s.quantity,
         fournisseur: s.supplier !== "Non renseigné" ? s.supplier : existing.fournisseur,
         updatedAt: new Date().toISOString(),
       };
 
       // Recalculate totals using the store helper if possible, or manual logic
-      const total = nextItem.prixVentePiece + nextItem.mainOeuvre;
+      const total = nextItem.prixVentePiece + stockDrivenLabor;
       const marge = total - nextItem.prixAchat;
       const margePourcentage = total > 0 ? (marge / total) * 100 : 0;
 
@@ -2328,8 +2330,8 @@ const syncStockToPriceBookItems = (stockItems: StockItem[], pbItems: PriceBookIt
         qualite: "Standard",
         prixAchat: s.purchasePrice,
         prixVentePiece: s.salePrice,
-        mainOeuvre: 30, // Default labor
-        prixClientTotal: s.salePrice + 30,
+        mainOeuvre: 0,
+        prixClientTotal: s.salePrice,
         stockDisponible: s.quantity,
         stockItemId: s.id,
         fournisseur: s.supplier !== "Non renseigné" ? s.supplier : undefined,

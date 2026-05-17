@@ -46,9 +46,7 @@ src-tauri/target/
 src-tauri/gen/
 /out/
 
-
 .github/workflows/tauri_release.yml
-
 .github/workflows/tauri-release.yml
 
 # Binaires desktop (générés)
