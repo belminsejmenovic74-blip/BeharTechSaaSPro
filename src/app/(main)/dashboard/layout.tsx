@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { AutoSyncProvider } from "@/components/behar/auto-sync-provider";
 import { DashboardSidebar } from "@/components/behar/dashboard-sidebar";
 import { InstallationGate } from "@/components/behar/installation-gate";
-import { MobileBottomNav } from "@/components/behar/mobile-bottom-nav";
+import { MobileTopbar } from "@/components/behar/mobile-topbar";
 import { PinLoginGate } from "@/components/behar/pin-login-gate";
 import { PrintProvider } from "@/components/behar/print-provider";
 import { Topbar } from "@/components/behar/topbar";
@@ -20,9 +20,9 @@ export default function Layout({ children }: Readonly<{ children: ReactNode }>) 
               <div className="hidden md:block">
                 <Topbar />
               </div>
+              <MobileTopbar />
               <main className="flex-1">{children}</main>
             </div>
-            <MobileBottomNav />
           </div>
         </PinLoginGate>
       </InstallationGate>
