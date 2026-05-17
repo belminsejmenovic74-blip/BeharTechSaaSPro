@@ -1,0 +1,9 @@
+node_modules
+.next
+out
+.git
+.DS_Store
+playwright-report
+test-results
+qa-results
+*.tsbuildinfo
