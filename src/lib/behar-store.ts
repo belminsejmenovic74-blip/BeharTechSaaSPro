@@ -470,6 +470,7 @@ export type WorkshopInfo = {
   tvaMention?: string;
   quoteTerms?: string;
   invoiceTerms?: string;
+  intakeTerms?: string;
   documentFooter?: string;
   acceptedPaymentMethods?: string[];
   businessHours?: string;
@@ -1132,6 +1133,7 @@ const defaultWorkshopInfo: WorkshopInfo = {
   tvaMention: "TVA non applicable — art. 293 B du CGI",
   quoteTerms: "Devis valable 30 jours.",
   invoiceTerms: "Paiement comptant à réception.",
+  intakeTerms: "",
   documentFooter: "Merci pour votre confiance.",
   acceptedPaymentMethods: ["Espèces", "Carte bancaire", "Virement"],
   businessHours: "Lun-Ven 09:00-18:00 · Sam 09:00-13:00",

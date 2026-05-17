@@ -136,6 +136,7 @@ export function OnboardingWizard() {
     businessHours: store.workshopSettings.businessHours || "Lun-Ven 09:00-18:00",
     quoteTerms: store.workshopSettings.quoteTerms || "Valable 30 jours.",
     invoiceTerms: store.workshopSettings.invoiceTerms || "Paiement à réception.",
+    intakeTerms: store.workshopSettings.intakeTerms || "",
     documentFooter: store.workshopSettings.documentFooter || "Merci pour votre confiance.",
     showLogo: store.workshopSettings.showLogo ?? true,
   }));
@@ -199,6 +200,10 @@ export function OnboardingWizard() {
       postalCity: [postalCode, city].filter(Boolean).join(" ").trim(),
       tvaNumber: normalizeSpaces(draft.tvaNumber),
       tvaMention: draft.vatApplicable ? "" : normalizeSpaces(draft.tvaMention),
+      quoteTerms: String(draft.quoteTerms || "").trim(),
+      invoiceTerms: String(draft.invoiceTerms || "").trim(),
+      intakeTerms: String(draft.intakeTerms || "").trim(),
+      documentFooter: String(draft.documentFooter || "").trim(),
       isMicroEnterprise: !draft.vatApplicable,
       configuredAt: new Date().toISOString(),
     });
@@ -531,6 +536,13 @@ function StepSettings({ draft, setField }: any) {
                 className={cn(inputCls, "h-24 py-3 resize-none")} 
                 value={draft.invoiceTerms} 
                 onChange={(e) => setField("invoiceTerms", e.target.value)} 
+              />
+            </Field>
+            <Field label="Conditions bon de prise en charge">
+              <textarea
+                className={cn(inputCls, "h-24 py-3 resize-none")}
+                value={draft.intakeTerms || ""}
+                onChange={(e) => setField("intakeTerms", e.target.value)}
               />
             </Field>
             <div className="md:col-span-2">

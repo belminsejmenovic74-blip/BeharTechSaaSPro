@@ -626,6 +626,9 @@ export default function SettingsPage() {
           <div className="mt-4 grid gap-3">
             <Field label="Conditions devis"><textarea className={areaCls} value={draft.quoteTerms || ""} onChange={(e) => setField("quoteTerms", e.target.value)} rows={2} /></Field>
             <Field label="Conditions facture"><textarea className={areaCls} value={draft.invoiceTerms || ""} onChange={(e) => setField("invoiceTerms", e.target.value)} rows={2} /></Field>
+            <Field label="Conditions bon de prise en charge" hint="Texte libre ajouté aux mentions du bon de prise en charge.">
+              <textarea className={areaCls} value={draft.intakeTerms || ""} onChange={(e) => setField("intakeTerms", e.target.value)} rows={3} />
+            </Field>
             <Field label="Pied de page document"><textarea className={areaCls} value={draft.documentFooter || ""} onChange={(e) => setField("documentFooter", e.target.value)} rows={2} /></Field>
           </div>
         </Section>

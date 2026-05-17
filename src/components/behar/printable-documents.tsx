@@ -586,7 +586,7 @@ export function RepairIntakeDocument({
         </div>
 
         {/* Mentions légales obligatoires */}
-        <IntakeLegalMentions />
+        <IntakeLegalMentions workshop={ws} />
       </DocumentLayout>
 
       {hasPhotos && (
@@ -621,10 +621,14 @@ export function RepairIntakeDocument({
 /**
  * Mentions légales / informations obligatoires pour un bon de prise en charge
  * en France : RGPD (art. 13 du règlement UE 2016/679), sauvegarde des données
- * (responsabilité du client), délai estimé de réparation, seuil d'autorisation
- * de coût supplémentaire (bonne pratique anti-litige).
+ * (responsabilité du client), conditions personnalisées de l'atelier,
+ * appareils non récupérés et information RGPD.
  */
-function IntakeLegalMentions() {
+function IntakeLegalMentions({ workshop }: Readonly<{ workshop: WorkshopInfo }>) {
+  const customTerms = String(workshop.intakeTerms ?? "")
+    .replace(/\r\n/g, "\n")
+    .trim();
+
   return (
     <section className="rounded-[10px] border border-[#E8E8E5] bg-[#FAFAF8] p-4">
       <h3 className="mb-2 font-bold text-[#8C5B0E] text-[11px] uppercase tracking-wide">
@@ -636,15 +640,7 @@ function IntakeLegalMentions() {
           données présentes sur l'appareil. L'atelier ne pourra être tenu responsable d'une éventuelle perte
           de données pendant ou après l'intervention.
         </li>
-        <li>
-          <strong>Délai estimé de réparation.</strong> Sauf indication contraire, le délai d'intervention
-          standard est de 24 à 72 heures ouvrées après diagnostic. Le client est informé en cas de
-          dépassement.
-        </li>
-        <li>
-          <strong>Autorisation de coût.</strong> Tout dépassement supérieur à 20 % de l'estimation initiale
-          fera l'objet d'un nouveau devis présenté au client avant toute intervention complémentaire.
-        </li>
+        {customTerms ? <li className="whitespace-pre-line">{customTerms}</li> : null}
         <li>
           <strong>Appareils non récupérés.</strong> Passé un délai de 3 mois après notification de fin de
           réparation, l'appareil pourra être considéré comme abandonné conformément à l'article 1947 du

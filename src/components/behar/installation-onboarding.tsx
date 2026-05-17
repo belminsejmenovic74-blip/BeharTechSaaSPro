@@ -46,6 +46,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
     businessHours: store.workshopSettings.businessHours || "Lun-Ven 09:00-18:00 · Sam 09:00-13:00",
     quoteTerms: store.workshopSettings.quoteTerms || "Devis valable 30 jours.",
     invoiceTerms: store.workshopSettings.invoiceTerms || "Paiement comptant à réception.",
+    intakeTerms: store.workshopSettings.intakeTerms || "",
     documentFooter: store.workshopSettings.documentFooter || "Merci pour votre confiance.",
     allowCounterClient: store.workshopSettings.allowCounterClient ?? true,
     showLogo: store.workshopSettings.showLogo ?? true,
@@ -107,6 +108,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
       website: String(draft.website || "").trim(),
       quoteTerms: String(draft.quoteTerms || "").trim(),
       invoiceTerms: String(draft.invoiceTerms || "").trim(),
+      intakeTerms: String(draft.intakeTerms || "").trim(),
       documentFooter: String(draft.documentFooter || "").trim(),
       tvaMention: draft.vatApplicable ? "" : String(draft.tvaMention || "").trim(),
       isMicroEnterprise: !draft.vatApplicable,
@@ -384,6 +386,13 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
               className={areaCls}
               value={draft.invoiceTerms || ""}
               onChange={(e) => setField("invoiceTerms", e.target.value)}
+            />
+          </Field>
+          <Field label="Conditions bon de prise en charge">
+            <textarea
+              className={areaCls}
+              value={draft.intakeTerms || ""}
+              onChange={(e) => setField("intakeTerms", e.target.value)}
             />
           </Field>
           <Field label="Pied de page document">
