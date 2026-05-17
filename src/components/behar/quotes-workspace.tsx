@@ -88,11 +88,17 @@ export function QuotesWorkspace() {
   const selected = store.quotes.find((q) => q.id === store.selectedQuoteId) ?? store.quotes[0];
   const customer = selected ? store.customers.find((c) => c.id === selected.customerId) : undefined;
 
+  const acceptedCount = store.quotes.filter((q) => q.status === "Accepté").length;
+  const sentCount = store.quotes.filter((q) => q.status === "Envoyé").length;
+  const totalPending = store.quotes
+    .filter((q) => q.status !== "Refusé" && q.status !== "Facturé")
+    .reduce((sum, q) => sum + getQuoteTotal(q), 0);
+
   return (
     <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_390px]">
       <div className="min-w-0">
         <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
-          <label className="relative block w-full max-w-[360px] min-w-[200px]">
+          <label className="hidden md:block relative w-full max-w-[360px] min-w-[200px]">
             <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6B6B6B]" />
             <input
               className="h-11 w-full rounded-[14px] border border-[#E7E4DC] bg-white pr-4 pl-10 text-sm outline-none transition placeholder:text-[#8A8984] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
@@ -102,20 +108,91 @@ export function QuotesWorkspace() {
               onChange={(e) => setQuoteSearch(e.target.value)}
             />
           </label>
-          <PrimaryButton className="h-11 px-5" onClick={() => setCreateModalOpen(true)}>
+          <PrimaryButton className="h-11 px-5 w-full md:w-auto" onClick={() => setCreateModalOpen(true)}>
             <Plus className="size-4" />
             Nouveau devis
           </PrimaryButton>
         </div>
 
         {createModalOpen && (
-          <CreateQuoteModal 
-            isOpen={createModalOpen} 
-            onClose={() => setCreateModalOpen(false)} 
+          <CreateQuoteModal
+            isOpen={createModalOpen}
+            onClose={() => setCreateModalOpen(false)}
           />
         )}
 
-        <TableShell className="min-h-[650px]">
+        {/* Mobile : KPI strip + recherche + cards */}
+        <div className="md:hidden space-y-4">
+          <section className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 scrollbar-none">
+            <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+              <span className="grid size-9 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F]"><FileText className="size-[18px]" /></span>
+              <p className="mt-3 text-[#8A8984] text-[11px] font-medium leading-tight">Devis envoyés</p>
+              <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">{sentCount}</p>
+              <p className="mt-1.5 text-[#8A8984] text-[10px] font-medium">en attente</p>
+            </div>
+            <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+              <span className="grid size-9 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F]"><FileText className="size-[18px]" /></span>
+              <p className="mt-3 text-[#8A8984] text-[11px] font-medium leading-tight">Acceptés</p>
+              <p className="mt-1.5 font-bold text-[#2A9D8F] text-[20px] leading-none tabular-nums">{acceptedCount}</p>
+              <p className="mt-1.5 text-[#8A8984] text-[10px] font-medium">prêts à facturer</p>
+            </div>
+            <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+              <span className="grid size-9 place-items-center rounded-[10px] bg-[#FCF1DF] text-[#C2841C]"><FileText className="size-[18px]" /></span>
+              <p className="mt-3 text-[#8A8984] text-[11px] font-medium leading-tight">Montant en cours</p>
+              <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">{formatEuro(totalPending)}</p>
+              <p className="mt-1.5 text-[#8A8984] text-[10px] font-medium">non facturés</p>
+            </div>
+          </section>
+
+          <div className="relative">
+            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#8A8984]" />
+            <input
+              className="h-12 w-full rounded-[14px] border border-[#E7E4DC] bg-white pr-4 pl-10 text-sm outline-none focus:border-[#2A9D8F] placeholder:text-[#8A8984]"
+              placeholder="Rechercher un devis…"
+              type="search"
+              value={quoteSearch}
+              onChange={(e) => setQuoteSearch(e.target.value)}
+            />
+          </div>
+
+          <ul className="space-y-2.5">
+            {visibleQuotes.length === 0 ? (
+              <li className="rounded-[18px] bg-white p-10 text-center text-[#8A8984] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">Aucun devis.</li>
+            ) : visibleQuotes.map((quote) => {
+              const entryCustomer = store.customers.find((c) => c.id === quote.customerId);
+              return (
+                <li key={quote.id}>
+                  <button
+                    type="button"
+                    onClick={() => store.setSelected("quote", quote.id)}
+                    className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
+                  >
+                    <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FAFAF8] text-[#1A1916]">
+                      <FileText className="size-[18px]" strokeWidth={1.8} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
+                          {displayCustomerName(entryCustomer)}
+                        </p>
+                        <p className="shrink-0 font-bold text-[#1A1916] text-[15px] tabular-nums">
+                          {formatEuro(getQuoteTotal(quote))}
+                        </p>
+                      </div>
+                      <p className="mt-0.5 font-mono text-[#2A9D8F] text-[11px]">{quote.number}</p>
+                      <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">
+                        {formatIsoToDisplay(quote.date)}
+                      </p>
+                      <div className="mt-2"><StatusBadge status={quote.status} /></div>
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        <TableShell className="hidden md:block min-h-[650px]">
           <table className={tableClassName}>
             <thead className={tableHeadClassName}>
               <tr>
@@ -162,7 +239,7 @@ export function QuotesWorkspace() {
       </div>
 
       {selected && (
-        <Panel className="p-5 flex flex-col min-h-0">
+        <Panel className="hidden md:flex p-5 flex-col min-h-0">
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
               <h2 className="font-semibold text-[#1A1916] text-xl">Devis #{selected.number}</h2>

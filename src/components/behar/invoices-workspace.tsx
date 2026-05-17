@@ -23,6 +23,7 @@ import {
   MoreHorizontal,
   Plus,
   Printer,
+  Receipt,
   Save,
   Search,
   Trash2,
@@ -137,7 +138,7 @@ export function InvoicesWorkspace() {
     <section className="grid h-full min-h-0 gap-4 xl:grid-cols-[minmax(0,1fr)_390px] 2xl:grid-cols-[minmax(0,1fr)_420px]">
       <div className="flex min-w-0 flex-col">
         <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <label className="relative block w-full max-w-[360px]">
+          <label className="hidden md:block relative w-full max-w-[360px]">
             <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#B0AEA8]" />
             <input
               className="h-11 w-full rounded-[14px] border border-[#E7E4DC] bg-white pr-4 pl-10 text-sm outline-none transition placeholder:text-[#B0AEA8] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
@@ -147,9 +148,9 @@ export function InvoicesWorkspace() {
               onChange={(e) => setInvoiceSearch(e.target.value)}
             />
           </label>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full md:w-auto">
              <select
-              className="h-11 cursor-pointer rounded-[14px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none transition focus:border-[#2A9D8F]"
+              className="hidden md:block h-11 cursor-pointer rounded-[14px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none transition focus:border-[#2A9D8F]"
               onChange={(e) => setInvoiceFilterTab(e.target.value as typeof invoiceFilterTab)}
               value={invoiceFilterTab}
             >
@@ -159,7 +160,7 @@ export function InvoicesWorkspace() {
               <option value="counter">Comptoir</option>
               <option value="month">Ce mois</option>
             </select>
-            <PrimaryButton className="h-11 px-5" onClick={() => setCreateModalOpen(true)}>
+            <PrimaryButton className="h-11 w-full md:w-auto md:px-5" onClick={() => setCreateModalOpen(true)}>
               <Plus className="size-4" />
               Nouvelle facture
             </PrimaryButton>
@@ -168,7 +169,102 @@ export function InvoicesWorkspace() {
 
         {createModalOpen && <CreateInvoiceModal onClose={() => setCreateModalOpen(false)} />}
 
-        <TableShell className="min-h-[650px] flex-1">
+        {/* Mobile : KPI + chips statut + cards */}
+        <div className="md:hidden space-y-4">
+          {(() => {
+            const allInvoices = store.invoices;
+            const paid = allInvoices.filter((i) => i.status === "Payée").reduce((s, i) => s + getInvoiceTotal(i), 0);
+            const pending = allInvoices.filter((i) => i.status !== "Payée" && i.status !== "Annulée").reduce((s, i) => s + getInvoiceTotal(i), 0);
+            const count = allInvoices.length;
+            return (
+              <section className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 scrollbar-none">
+                <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+                  <span className="grid size-9 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F]"><Receipt className="size-[18px]" /></span>
+                  <p className="mt-3 text-[#8A8984] text-[11px] font-medium">Total factures</p>
+                  <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">{count}</p>
+                </div>
+                <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+                  <span className="grid size-9 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F]"><Receipt className="size-[18px]" /></span>
+                  <p className="mt-3 text-[#8A8984] text-[11px] font-medium">Encaissé</p>
+                  <p className="mt-1.5 font-bold text-[#2A9D8F] text-[20px] leading-none tabular-nums">{formatEuro(paid)}</p>
+                </div>
+                <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+                  <span className="grid size-9 place-items-center rounded-[10px] bg-[#FCF1DF] text-[#C2841C]"><Receipt className="size-[18px]" /></span>
+                  <p className="mt-3 text-[#8A8984] text-[11px] font-medium">En attente</p>
+                  <p className="mt-1.5 font-bold text-[#C2841C] text-[20px] leading-none tabular-nums">{formatEuro(pending)}</p>
+                </div>
+              </section>
+            );
+          })()}
+
+          <div className="relative">
+            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#8A8984]" />
+            <input
+              className="h-12 w-full rounded-[14px] border border-[#E7E4DC] bg-white pr-4 pl-10 text-sm outline-none focus:border-[#2A9D8F] placeholder:text-[#8A8984]"
+              placeholder="Rechercher une facture…"
+              type="search"
+              value={invoiceSearch}
+              onChange={(e) => setInvoiceSearch(e.target.value)}
+            />
+          </div>
+
+          <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1 scrollbar-none">
+            {(["all", "unpaid", "paid", "month"] as const).map((tab) => {
+              const labels: Record<string, string> = { all: "Toutes", unpaid: "Non payées", paid: "Payées", month: "Ce mois" };
+              const active = invoiceFilterTab === tab;
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setInvoiceFilterTab(tab)}
+                  className={`inline-flex h-9 shrink-0 items-center rounded-full border px-3.5 text-[12.5px] font-semibold transition active:scale-95 ${
+                    active ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : "border-[#E7E4DC] bg-white text-[#1A1916]"
+                  }`}
+                >
+                  {labels[tab]}
+                </button>
+              );
+            })}
+          </div>
+
+          <ul className="space-y-2.5">
+            {visibleInvoices.length === 0 ? (
+              <li className="rounded-[18px] bg-white p-10 text-center text-[#8A8984] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">Aucune facture.</li>
+            ) : visibleInvoices.map((invoice) => {
+              const entryCustomer = store.customers.find((entry) => entry.id === invoice.customerId);
+              return (
+                <li key={invoice.id}>
+                  <button
+                    type="button"
+                    onClick={() => store.setSelected("invoice", invoice.id)}
+                    className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
+                  >
+                    <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FAFAF8] text-[#1A1916]">
+                      <Receipt className="size-[18px]" strokeWidth={1.8} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
+                          {displayCustomerName(entryCustomer)}
+                        </p>
+                        <p className="shrink-0 font-bold text-[#1A1916] text-[15px] tabular-nums">
+                          {formatEuro(getInvoiceTotal(invoice))}
+                        </p>
+                      </div>
+                      <p className="mt-0.5 font-mono text-[#2A9D8F] text-[11px]">{invoice.number}</p>
+                      <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">
+                        {formatIsoToDisplay(invoice.date)} · {invoice.sourceNumber ? `Dossier ${invoice.sourceNumber}` : "Vente directe"}
+                      </p>
+                      <div className="mt-2"><StatusBadge status={invoice.status} /></div>
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        <TableShell className="hidden md:block min-h-[650px] flex-1">
           <table className={tableClassName}>
             <thead className={tableHeadClassName}>
               <tr>
@@ -218,7 +314,7 @@ export function InvoicesWorkspace() {
       </div>
 
       {selected && (
-        <Panel className="flex h-full min-h-0 flex-col overflow-hidden rounded-[20px] border-[#E5E3DC] bg-white p-5 shadow-[0_12px_40px_rgba(26,25,22,0.045)]">
+        <Panel className="hidden md:flex h-full min-h-0 flex-col overflow-hidden rounded-[20px] border-[#E5E3DC] bg-white p-5 shadow-[0_12px_40px_rgba(26,25,22,0.045)]">
           <div className="mb-6 shrink-0 flex items-start justify-between gap-4">
             <div>
               <h2 className="font-bold text-[#1A1916] text-xl tracking-tight">Facture {selected.number}</h2>

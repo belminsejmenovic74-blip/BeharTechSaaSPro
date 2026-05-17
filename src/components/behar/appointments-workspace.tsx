@@ -108,7 +108,103 @@ export function AppointmentsWorkspace() {
 
   return (
     <div className="space-y-5">
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
+      {/* Mobile : KPI + liste verticale RDV */}
+      <div className="md:hidden space-y-4">
+        {(() => {
+          const today = new Date();
+          const todayKey = today.toISOString().slice(0, 10);
+          const todayAppts = store.appointments.filter(
+            (a) => displayToInputDate(a.date) === todayKey || a.date === "Aujourd'hui",
+          );
+          const weekAppts = visibleAppointments;
+          const pending = store.appointments.filter((a) => a.status === "Prévu" || a.status === "Confirmé").length;
+          return (
+            <>
+              <section className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 scrollbar-none">
+                <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+                  <span className="grid size-9 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F]">📅</span>
+                  <p className="mt-3 text-[#8A8984] text-[11px] font-medium">Aujourd'hui</p>
+                  <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">{todayAppts.length}</p>
+                </div>
+                <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+                  <span className="grid size-9 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F]">📋</span>
+                  <p className="mt-3 text-[#8A8984] text-[11px] font-medium">Cette semaine</p>
+                  <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">{weekAppts.length}</p>
+                </div>
+                <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+                  <span className="grid size-9 place-items-center rounded-[10px] bg-[#FCF1DF] text-[#C2841C]">⏳</span>
+                  <p className="mt-3 text-[#8A8984] text-[11px] font-medium">En attente</p>
+                  <p className="mt-1.5 font-bold text-[#C2841C] text-[20px] leading-none tabular-nums">{pending}</p>
+                </div>
+              </section>
+
+              <PrimaryButton
+                className="h-11 w-full"
+                onClick={() => {
+                  const firstDay = weekDays[2] ?? weekDays[0];
+                  setForm((current) => ({
+                    ...current,
+                    customerId: customer?.id ?? store.customers[0]?.id ?? "",
+                    date: toInputDate(firstDay.date),
+                    device: customer?.device ?? store.customers[0]?.device ?? "iPhone 13",
+                    issue: customer?.lastRepair ?? store.customers[0]?.lastRepair ?? "Diagnostic",
+                  }));
+                  setCreateOpen(true);
+                }}
+              >
+                <Plus className="size-4" />
+                Nouveau rendez-vous
+              </PrimaryButton>
+
+              <ul className="space-y-2.5">
+                {visibleAppointments.length === 0 ? (
+                  <li className="rounded-[18px] bg-white p-10 text-center text-[#8A8984] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+                    Aucun rendez-vous cette semaine.
+                  </li>
+                ) : visibleAppointments.map((appt) => {
+                  const apptCustomer = store.customers.find((c) => c.id === appt.customerId);
+                  return (
+                    <li key={appt.id}>
+                      <button
+                        type="button"
+                        onClick={() => store.setSelected("appointment", appt.id)}
+                        className="flex w-full items-center gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
+                      >
+                        <div className="flex w-14 shrink-0 flex-col items-center rounded-[12px] bg-[#FAFAF8] py-2">
+                          <span className="font-bold text-[#1A1916] text-[16px] leading-none tabular-nums">
+                            {appt.time?.split(":")[0] || "—"}
+                          </span>
+                          <span className="text-[#8A8984] text-[10px] mt-0.5">
+                            {appt.time?.split(":")[1] || ""}
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
+                            {apptCustomer?.name || "Client"}
+                          </p>
+                          <p className="mt-0.5 truncate text-[#1A1916] text-[12.5px]">
+                            {appt.device || "—"}
+                          </p>
+                          <p className="mt-0.5 truncate text-[#8A8984] text-[11px]">
+                            {appt.issue || appt.type} · {appt.date}
+                          </p>
+                          <div className="mt-1.5">
+                            <span className="inline-flex rounded-full bg-[#FAFAF8] px-2 py-0.5 text-[10.5px] font-semibold text-[#6B6B6B]">
+                              {appt.status || "Prévu"}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          );
+        })()}
+      </div>
+
+      <section className="hidden md:grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
         <Panel className="min-w-0 overflow-hidden p-0">
           <div className="flex h-[72px] items-center justify-between gap-3 overflow-hidden border-[#E7E4DC] border-b px-5">
             <div className="flex min-w-0 shrink-0 items-center gap-2">
@@ -405,7 +501,7 @@ export function AppointmentsWorkspace() {
         </div>
       )}
 
-      <section className="grid gap-5 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+      <section className="hidden md:grid gap-5 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
         <AppointmentStat
           helper="rendez-vous planifiés"
           icon={CalendarDays}

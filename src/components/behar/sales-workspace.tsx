@@ -91,14 +91,72 @@ export function SalesWorkspace() {
         </PrimaryButton>
       </div>
 
-      <section className="grid shrink-0 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {/* Mobile : strip KPI horizontal */}
+      <section className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 md:hidden scrollbar-none">
+        <MobileKpi label="Ventes du jour" value={String(todaySales.length)} helper="encaissées" icon={ShoppingBag} />
+        <MobileKpi label="CA ventes" value={formatEuro(dailyRevenue)} helper="aujourd'hui" icon={CreditCard} />
+        <MobileKpi label="Panier moyen" value={formatEuro(averageCart)} helper={`${paidSales.length} ventes`} icon={Receipt} />
+      </section>
+
+      <section className="hidden md:grid shrink-0 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard label="Ventes du jour" value={String(todaySales.length)} helper="ventes encaissées" icon={ShoppingBag} />
         <KpiCard label="CA ventes" value={formatEuro(dailyRevenue)} helper="aujourd'hui" icon={CreditCard} />
         <KpiCard label="Panier moyen" value={formatEuro(averageCart)} helper="ventes payées" icon={Receipt} />
         <KpiCard label="Ventes rattachées" value={String(linkedSales)} helper="accessoires sur dossiers" icon={Wrench} />
       </section>
 
-      <section className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+      {/* Mobile : recherche + liste de cards */}
+      <div className="md:hidden">
+        <div className="relative">
+          <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#8A8984]" />
+          <input
+            className="h-12 w-full rounded-[14px] border border-[#E7E4DC] bg-white pr-4 pl-10 text-sm outline-none transition focus:border-[#2A9D8F] placeholder:text-[#8A8984]"
+            placeholder="Rechercher une vente…"
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </div>
+        <ul className="mt-3 space-y-2.5">
+          {filteredSales.length === 0 ? (
+            <li className="rounded-[18px] bg-white p-10 text-center text-[#8A8984] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+              Aucune vente trouvée.
+            </li>
+          ) : filteredSales.map((sale) => (
+            <li key={sale.id}>
+              <button
+                type="button"
+                onClick={() => store.setSelected("sale", sale.id)}
+                className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
+              >
+                <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#EAF6F2] text-[#2A9D8F]">
+                  <ShoppingBag className="size-[18px]" strokeWidth={1.8} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
+                      {sale.customerName || "Client comptoir"}
+                    </p>
+                    <p className="shrink-0 font-bold text-[#1A1916] text-[15px] tabular-nums">
+                      {formatEuro(sale.total)}
+                    </p>
+                  </div>
+                  <p className="mt-0.5 font-mono text-[#2A9D8F] text-[11px]">{sale.number}</p>
+                  <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">
+                    {sale.paidAt || sale.createdAt} · {formatPaymentMethodLabel(sale.paymentMethod) || "—"}
+                  </p>
+                  <div className="mt-2">
+                    <StatusBadge status={sale.status} />
+                  </div>
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Desktop : table + détail */}
+      <section className="hidden md:grid min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
         <TableShell className="min-h-[500px] md:h-full md:min-h-0">
           <div className="sticky top-0 z-10 flex items-center gap-3 border-[#E7E4DC] border-b bg-white p-3">
             <div className="relative flex-1">
@@ -1079,4 +1137,24 @@ function getValidationMessage({
     if (!newClientPhone.trim()) return "Le téléphone du client est obligatoire.";
   }
   return "";
+}
+
+function MobileKpi({
+  label,
+  value,
+  helper,
+  icon: Icon,
+}: Readonly<{ label: string; value: string; helper?: string; icon: typeof ShoppingBag }>) {
+  return (
+    <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+      <span className="grid size-9 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F]">
+        <Icon className="size-[18px]" strokeWidth={2} />
+      </span>
+      <p className="mt-3 text-[#8A8984] text-[11px] font-medium leading-tight tracking-tight">{label}</p>
+      <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tracking-tight tabular-nums">
+        {value}
+      </p>
+      {helper && <p className="mt-1.5 truncate text-[#8A8984] text-[10px] font-medium">{helper}</p>}
+    </div>
+  );
 }

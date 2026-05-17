@@ -205,7 +205,79 @@ export function CustomersWorkspace() {
       subtitle="Suivez vos clients, leurs appareils et leur historique d'interventions."
       toolbar={toolbar}
     >
-      <section className="grid h-full min-h-0 gap-4 xl:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_390px]">
+      {/* Mobile : KPI strip + liste cards */}
+      <div className="md:hidden space-y-4">
+        {(() => {
+          const totalCustomers = filteredCustomers.length;
+          const vipCount = filteredCustomers.filter((c) => c.status === "VIP" || (c as any).vip).length;
+          const totalSpent = filteredCustomers.reduce((s, c) => s + (c.totalSpent ?? 0), 0);
+          return (
+            <section className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 scrollbar-none">
+              <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+                <span className="grid size-9 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F]">
+                  <span className="font-bold text-[14px]">{totalCustomers}</span>
+                </span>
+                <p className="mt-3 text-[#8A8984] text-[11px] font-medium">Clients</p>
+                <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">{totalCustomers}</p>
+                <p className="mt-1.5 text-[#8A8984] text-[10px] font-medium">enregistrés</p>
+              </div>
+              <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+                <span className="grid size-9 place-items-center rounded-[10px] bg-[#FDF3E2] text-[#C2841C]">
+                  <span className="text-[14px]">★</span>
+                </span>
+                <p className="mt-3 text-[#8A8984] text-[11px] font-medium">VIP</p>
+                <p className="mt-1.5 font-bold text-[#C2841C] text-[20px] leading-none tabular-nums">{vipCount}</p>
+                <p className="mt-1.5 text-[#8A8984] text-[10px] font-medium">clients prioritaires</p>
+              </div>
+              <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+                <span className="grid size-9 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F]">€</span>
+                <p className="mt-3 text-[#8A8984] text-[11px] font-medium">CA cumulé</p>
+                <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">{formatEuro(totalSpent)}</p>
+                <p className="mt-1.5 text-[#8A8984] text-[10px] font-medium">historique</p>
+              </div>
+            </section>
+          );
+        })()}
+
+        <ul className="space-y-2.5">
+          {filteredCustomers.length === 0 ? (
+            <li className="rounded-[18px] bg-white p-10 text-center text-[#8A8984] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+              Aucun client.
+            </li>
+          ) : filteredCustomers.map((customer) => (
+            <li key={customer.id}>
+              <button
+                type="button"
+                onClick={() => store.setSelected("customer", customer.id)}
+                className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
+              >
+                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#EAF6F2] font-semibold text-[#2A9D8F] text-[12px] uppercase">
+                  {customer.initials}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
+                      {displayCustomerName(customer)}
+                    </p>
+                    <p className="shrink-0 font-bold text-[#1A1916] text-[14px] tabular-nums">
+                      {formatEuro(customer.totalSpent)}
+                    </p>
+                  </div>
+                  <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">
+                    {customer.device || "—"} · {customer.phone || "—"}
+                  </p>
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <StatusBadge className="h-6 px-2 text-[10px] font-medium" status={customer.status} />
+                    <span className="text-[#8A8984] text-[11px]">{formatIsoToDisplay(customer.lastVisit)}</span>
+                  </div>
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <section className="hidden md:grid h-full min-h-0 gap-4 xl:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_390px]">
         <TableShell className="min-h-[620px] md:h-full md:min-h-0">
           <table className={tableClassName}>
             <thead className={tableHeadClassName}>
@@ -253,7 +325,7 @@ export function CustomersWorkspace() {
         </TableShell>
 
         {selectedCustomer && (
-          <Panel className="flex min-h-0 flex-col overflow-hidden rounded-[20px] bg-white border-[#E7E4DC] shadow-[0_1px_3px_rgba(26,25,22,0.04),0_8px_24px_rgba(26,25,22,0.025)] p-5 md:h-full">
+          <Panel className="hidden md:flex min-h-0 flex-col overflow-hidden rounded-[20px] bg-white border-[#E7E4DC] shadow-[0_1px_3px_rgba(26,25,22,0.04),0_8px_24px_rgba(26,25,22,0.025)] p-5 md:h-full">
             <div className="mb-5 flex shrink-0 items-start gap-4">
               <span className="grid size-14 place-items-center rounded-2xl bg-[#F6F7F4] font-semibold text-[#1A1916] text-xl">
                 {selectedCustomer.initials}
