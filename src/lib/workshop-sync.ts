@@ -92,6 +92,17 @@ function createWorkshopId(): string {
   });
 }
 
+function createRecoveryCode(): string {
+  const bytes = new Uint8Array(8);
+  if (typeof crypto !== "undefined" && "getRandomValues" in crypto) {
+    crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+  }
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+  return `${hex.slice(0, 4)}-${hex.slice(4, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}`;
+}
+
 function withLicenseState(
   key: string,
   state: Partial<StoreState> & Record<string, unknown>,
@@ -201,6 +212,7 @@ export async function createSnapshotForLicenseKey(
       .from("workshop_snapshots")
       .insert({
         workshop_id: workshopId,
+        recovery_code: createRecoveryCode(),
         license_key: normalizedKey,
         workshop_name: state.workshopSettings?.name || state.workshopInfo?.name || null,
         device_label: detectDeviceLabel(),
