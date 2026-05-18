@@ -25,6 +25,11 @@ import {
   type PriceBookSource,
 } from "@/lib/price-book";
 import { deviceCatalog } from "@/data/deviceCatalog";
+import {
+  getDefaultQualityForCategory,
+  getQualitiesForCategory,
+  isQualityValidForCategory,
+} from "@/lib/stock-catalog-link";
 
 type ImportDuplicateAction = "update" | "ignore" | "create";
 
@@ -875,11 +880,11 @@ function FormDialog({
             />
           </Field>
           <Field label="Qualité">
-            <input
+            <QualityField
               value={form.qualite}
-              onChange={(event) => update("qualite", event.target.value)}
-              className={inputClass}
-              placeholder="OLED Premium"
+              category={form.reparation}
+              onChange={(next) => update("qualite", next)}
+              inputClass={inputClass}
             />
           </Field>
           <Field label="SKU">
@@ -1112,6 +1117,78 @@ function ImportPreviewDialog({
           </PrimaryButton>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Champ Qualité contextuel : les options proposées dépendent de la
+ * catégorie/réparation choisie (Écran → OLED/Incell/Hard OLED/…,
+ * Caméra → Normale/Originale/…, etc.). Si la valeur sauvegardée
+ * n'est pas dans la liste contextuelle (legacy data), elle reste
+ * disponible en tant que choix custom pour ne pas perdre la donnée.
+ */
+function QualityField({
+  value,
+  category,
+  onChange,
+  inputClass,
+}: Readonly<{
+  value: string;
+  category: string;
+  onChange: (next: string) => void;
+  inputClass: string;
+}>) {
+  const options = useMemo(() => {
+    const list = getQualitiesForCategory(category);
+    // Si la valeur courante n'est ni vide ni "Autre" ni dans la liste,
+    // on l'ajoute (legacy) en première position pour ne pas l'écraser.
+    if (value && value !== "Autre" && !list.some((q) => q.toLowerCase() === value.toLowerCase())) {
+      return [value, ...list];
+    }
+    return [...list];
+  }, [category, value]);
+
+  // L'utilisateur a choisi "Autre" → on garde un champ texte libre.
+  const isOther = value === "Autre" || (!options.includes(value) && value !== "");
+  const selectValue = options.includes(value) ? value : isOther ? "Autre" : "";
+
+  return (
+    <div className="space-y-2">
+      <select
+        className={inputClass}
+        value={selectValue}
+        onChange={(event) => {
+          const next = event.target.value;
+          if (next === "Autre") {
+            onChange("Autre");
+            return;
+          }
+          onChange(next);
+        }}
+      >
+        {selectValue === "" && <option value="">Choisir une qualité…</option>}
+        {options.map((q) => (
+          <option key={q} value={q}>
+            {q}
+          </option>
+        ))}
+        {!options.includes("Autre") && <option value="Autre">Autre</option>}
+      </select>
+      {selectValue === "Autre" && (
+        <input
+          type="text"
+          className={inputClass}
+          placeholder="Préciser la qualité"
+          value={value === "Autre" ? "" : value}
+          onChange={(event) => onChange(event.target.value || "Autre")}
+        />
+      )}
+      {category && !isQualityValidForCategory(value, category) && value && value !== "Autre" && (
+        <p className="text-[11px] text-[#C2841C]">
+          La qualité « {value} » n'est pas standard pour la catégorie « {category} ».
+        </p>
+      )}
     </div>
   );
 }
