@@ -819,6 +819,7 @@ type StockInput = Pick<StockItem, "purchasePrice" | "threshold" | "supplier"> &
       | "quantity"
       | "leadTime"
       | "salePrice"
+      | "priceBookItemId"
     >
   > & {
     skipModelInference?: boolean;

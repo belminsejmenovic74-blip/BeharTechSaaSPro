@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
@@ -10,6 +10,13 @@ import { toast } from "sonner";
 
 import { type DeviceType, formatEuro, type StockItem, useBeharStore } from "@/lib/behar-store";
 import type { PriceBookItem } from "@/lib/price-book";
+import {
+  findPriceBookBySelection,
+  findStockBySelection,
+  QUALITY_PRESETS,
+  suggestStockName,
+  suggestStockSku,
+} from "@/lib/stock-catalog-link";
 import { cn } from "@/lib/utils";
 import { stockKpis } from "@/mock/stock";
 
@@ -976,7 +983,14 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
   const [deviceType, setDeviceType] = useState<string>("Smartphone");
   const [brandName, setBrandName] = useState("Apple");
   const [categoryId, setCategoryId] = useState("cat_screen");
-  const [selectedModels, setSelectedModels] = useState<string[]>([]);
+  const [selectedModel, setSelectedModel] = useState<string>("");
+  const [quality, setQuality] = useState<string>("Standard");
+  const [nameOverride, setNameOverride] = useState<string>("");
+  const [skuOverride, setSkuOverride] = useState<string>("");
+  const [supplier, setSupplier] = useState<string>("");
+  const [purchasePrice, setPurchasePrice] = useState<string>("");
+  const [stockQty, setStockQty] = useState<string>("1");
+  const [threshold, setThreshold] = useState<string>("1");
 
   const categoryMapping: Record<string, DeviceCategory> = {
     Smartphone: "smartphone",
@@ -988,138 +1002,330 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
   const category = categoryMapping[deviceType] || "smartphone";
   const availableBrands = getDeviceBrands(category);
   const availableModels = getModelsByBrand(brandName, category);
-  const availableCategories = store.partCategories.filter((cat) => cat.deviceTypes.includes(deviceType as DeviceType));
+  const availableCategories = store.partCategories.filter((cat) =>
+    cat.deviceTypes.includes(deviceType as DeviceType),
+  );
+  const selectedCategory = store.partCategories.find((cat) => cat.id === categoryId);
+  const categoryName = selectedCategory?.name ?? "";
+
+  // Auto-suggérés (s'appliquent tant que l'utilisateur n'a pas overridé).
+  const suggestedName = useMemo(
+    () => suggestStockName({ brand: brandName, model: selectedModel, category: categoryName, quality }),
+    [brandName, selectedModel, categoryName, quality],
+  );
+  const suggestedSku = useMemo(
+    () => suggestStockSku({ brand: brandName, model: selectedModel, category: categoryName, quality }),
+    [brandName, selectedModel, categoryName, quality],
+  );
+  const effectiveName = nameOverride.trim() || suggestedName;
+  const effectiveSku = skuOverride.trim() || suggestedSku;
+
+  // Détection doublon stock + tarif lié existant.
+  const existingStock = useMemo(
+    () =>
+      findStockBySelection(store.stockItems, {
+        brand: brandName,
+        model: selectedModel,
+        category: categoryName,
+        quality,
+        sku: effectiveSku,
+      }),
+    [store.stockItems, brandName, selectedModel, categoryName, quality, effectiveSku],
+  );
+
+  const linkedPriceBook = useMemo(
+    () =>
+      findPriceBookBySelection(store.priceBookItems, {
+        brand: brandName,
+        model: selectedModel,
+        category: categoryName,
+        quality,
+      }),
+    [store.priceBookItems, brandName, selectedModel, categoryName, quality],
+  );
+
+  const submit = () => {
+    if (!selectedModel) {
+      toast.error("Sélectionnez un modèle.");
+      return;
+    }
+    if (!categoryName) {
+      toast.error("Sélectionnez une catégorie.");
+      return;
+    }
+    // Si un stock existant correspond, on met à jour au lieu de dupliquer.
+    if (existingStock) {
+      store.updateStockItem(existingStock.id, {
+        name: effectiveName,
+        sku: effectiveSku,
+        brandId: brandName,
+        brandName,
+        compatibleModels: [selectedModel],
+        modelIds: [selectedModel],
+        categoryId: selectedCategory?.id,
+        categoryName,
+        supplier: supplier.trim() || existingStock.supplier || "Non renseigné",
+        purchasePrice: purchasePrice ? Number(purchasePrice) : existingStock.purchasePrice,
+        quantity: Math.max(0, Number(stockQty) || 0) + (existingStock.quantity ?? 0),
+        threshold: Math.max(0, Number(threshold) || 0),
+      });
+      toast.success(`Pièce existante mise à jour (+${Math.max(0, Number(stockQty) || 0)} en stock).`);
+      onClose();
+      return;
+    }
+    store.addStockItem({
+      sku: effectiveSku || `REF-${Date.now()}`,
+      name: effectiveName,
+      deviceType: deviceType as DeviceType,
+      brandId: brandName,
+      brandName,
+      modelIds: [selectedModel],
+      compatibleModels: [selectedModel],
+      categoryId: selectedCategory?.id,
+      categoryName,
+      supplier: supplier.trim() || "Non renseigné",
+      purchasePrice: Math.max(0, Number(purchasePrice) || 0),
+      quantity: Math.max(0, Number(stockQty) || 0),
+      threshold: Math.max(0, Number(threshold) || 0),
+      priceBookItemId: linkedPriceBook?.id,
+    });
+    toast.success("Pièce ajoutée au stock.");
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1A1916]/24 p-0 backdrop-blur-sm md:p-4">
       <Panel className="mx-auto my-0 min-h-svh max-w-none overflow-y-auto rounded-none p-5 md:my-8 md:max-h-[calc(100svh-4rem)] md:max-w-2xl md:min-h-0 md:rounded-[20px] md:p-6">
-        <h2 className="font-semibold text-2xl text-[#1A1916]">Nouvelle pièce</h2>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="font-semibold text-2xl text-[#1A1916]">Nouvelle pièce</h2>
+            <p className="mt-1 text-[#6B6B6B] text-[13px]">
+              Sélection guidée : marque → modèle → catégorie → gamme.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#1A1916] active:scale-90"
+            aria-label="Fermer"
+          >
+            <X className="size-4" strokeWidth={2.2} />
+          </button>
+        </div>
+
         <form
           className="mt-5 grid gap-3 md:grid-cols-2"
           onSubmit={(event) => {
             event.preventDefault();
-            const data = new FormData(event.currentTarget);
-            const name = String(data.get("name") || "").trim();
-            if (!name) {
-              toast.error("Nom de la pièce requis.");
-              return;
-            }
-            const purchasePrice = Math.max(0, Number(data.get("purchasePrice") || 0));
-            const quantity = Math.max(0, Number(data.get("stock") || 0));
-            const threshold = Math.max(0, Number(data.get("threshold") || 0));
-            const category = store.partCategories.find((entry) => entry.id === categoryId);
-            const modelIds = selectedModels;
-            store.addStockItem({
-              sku: String(data.get("sku") || `REF-${Date.now()}`),
-              name,
-              deviceType: deviceType as DeviceType,
-              brandId: brandName,
-              brandName: brandName,
-              modelIds,
-              compatibleModels: modelIds,
-              categoryId: category?.id,
-              categoryName: category?.name,
-              supplier: String(data.get("supplier") || "Non renseigné"),
-              purchasePrice,
-              quantity,
-              threshold,
-            });
-
-            toast.success("Pièce ajoutée au stock.");
-            onClose();
+            submit();
           }}
         >
-          <input className="h-11 rounded-xl border border-black/[0.08] px-3" name="sku" placeholder="SKU" />
-          <input
-            className="h-11 rounded-xl border border-black/[0.08] px-3"
-            name="name"
-            placeholder="Nom de la pièce"
-          />
-          <select
-            className="h-11 rounded-xl border border-black/[0.08] px-3"
-            onChange={(event) => {
-              const nextType = event.target.value;
-              const category = categoryMapping[nextType] || "smartphone";
-              const brands = getDeviceBrands(category);
-              const firstBrand = brands[0]?.brand || "Autre";
-              const firstCategory = store.partCategories.find((cat) =>
-                cat.deviceTypes.includes(nextType as DeviceType),
-              );
-              setDeviceType(nextType);
-              setBrandName(firstBrand);
-              setCategoryId(firstCategory?.id ?? "cat_other");
-              setSelectedModels([]);
-            }}
-            value={deviceType}
-          >
-            {["Smartphone", "Tablette", "Ordinateur", "Console"].map((type) => (
-              <option key={type}>{type}</option>
-            ))}
-          </select>
-          <select
-            className="h-11 rounded-xl border border-black/[0.08] px-3"
-            onChange={(event) => { setBrandName(event.target.value); setSelectedModels([]); }}
-            value={brandName}
-          >
-            {availableBrands.map((b) => (
-              <option key={b.brand} value={b.brand}>
-                {b.brand}
-              </option>
-            ))}
-            <option value="Autre">Autre</option>
-          </select>
-
-          <div className="md:col-span-2">
-            <p className="mb-1.5 text-[#6B6B6B] text-sm font-medium">Modèles compatibles</p>
-            <ModelSelector
-              availableModels={availableModels}
-              selected={selectedModels}
-              onChange={(models) => {
-                setSelectedModels(models);
-                // Reset when brand/type changes — handled in brand/type onChange
+          {/* Type d'appareil */}
+          <label className="block">
+            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Type</span>
+            <select
+              className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              value={deviceType}
+              onChange={(event) => {
+                const nextType = event.target.value;
+                const nextCategory = categoryMapping[nextType] || "smartphone";
+                const brands = getDeviceBrands(nextCategory);
+                const firstBrand = brands[0]?.brand || "Autre";
+                const firstCategory = store.partCategories.find((cat) =>
+                  cat.deviceTypes.includes(nextType as DeviceType),
+                );
+                setDeviceType(nextType);
+                setBrandName(firstBrand);
+                setCategoryId(firstCategory?.id ?? "cat_other");
+                setSelectedModel("");
               }}
+            >
+              {["Smartphone", "Tablette", "Ordinateur", "Console"].map((type) => (
+                <option key={type}>{type}</option>
+              ))}
+            </select>
+          </label>
+
+          {/* Marque */}
+          <label className="block">
+            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Marque</span>
+            <select
+              className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              value={brandName}
+              onChange={(event) => {
+                setBrandName(event.target.value);
+                setSelectedModel("");
+              }}
+            >
+              {availableBrands.map((b) => (
+                <option key={b.brand} value={b.brand}>
+                  {b.brand}
+                </option>
+              ))}
+              <option value="Autre">Autre</option>
+            </select>
+          </label>
+
+          {/* Modèle (sélection guidée — pas de saisie libre) */}
+          <label className="block md:col-span-2">
+            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Modèle</span>
+            <select
+              className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              value={selectedModel}
+              onChange={(event) => setSelectedModel(event.target.value)}
+              required
+            >
+              <option value="">Sélectionnez un modèle…</option>
+              {availableModels.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {/* Catégorie */}
+          <label className="block">
+            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Catégorie</span>
+            <select
+              className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              value={categoryId}
+              onChange={(event) => setCategoryId(event.target.value)}
+            >
+              {availableCategories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {/* Gamme / Qualité */}
+          <label className="block">
+            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Gamme</span>
+            <select
+              className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              value={quality}
+              onChange={(event) => setQuality(event.target.value)}
+            >
+              {QUALITY_PRESETS.map((q) => (
+                <option key={q} value={q}>
+                  {q}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {/* Aperçu auto-rempli (nom / SKU) avec override possible */}
+          <div className="rounded-xl border border-[#E7E4DC] bg-[#FAFAF8] p-3 md:col-span-2">
+            <p className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">
+              Auto-rempli
+            </p>
+            <div className="mt-2 grid gap-2 md:grid-cols-2">
+              <label className="block">
+                <span className="text-[#6B6B6B] text-[11px]">Nom (modifiable)</span>
+                <input
+                  type="text"
+                  className="mt-1 h-10 w-full rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-[13.5px] outline-none focus:border-[#2A9D8F]"
+                  placeholder={suggestedName || "Sélectionnez un modèle"}
+                  value={nameOverride}
+                  onChange={(e) => setNameOverride(e.target.value)}
+                />
+              </label>
+              <label className="block">
+                <span className="text-[#6B6B6B] text-[11px]">SKU (modifiable)</span>
+                <input
+                  type="text"
+                  className="mt-1 h-10 w-full rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-[13.5px] font-mono outline-none focus:border-[#2A9D8F]"
+                  placeholder={suggestedSku || "Sélectionnez un modèle"}
+                  value={skuOverride}
+                  onChange={(e) => setSkuOverride(e.target.value)}
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Détection doublon / tarif lié */}
+          {existingStock && (
+            <div className="rounded-xl border border-[#F2DFA7] bg-[#FFF8EB] p-3 text-[12.5px] text-[#8C5B0E] md:col-span-2">
+              <p className="font-semibold">Pièce déjà existante détectée</p>
+              <p className="mt-1">
+                « {existingStock.name} » — stock actuel : <strong>{existingStock.stock}</strong>.
+                La validation <strong>cumulera</strong> la quantité saisie au stock existant.
+              </p>
+            </div>
+          )}
+          {linkedPriceBook && (
+            <div className="rounded-xl border border-[#DDEFEA] bg-[#EAF6F2] p-3 text-[12.5px] text-[#167B70] md:col-span-2">
+              <p className="font-semibold">Tarif client lié détecté</p>
+              <p className="mt-1">
+                « {linkedPriceBook.reparation} » sur {linkedPriceBook.modele} ({linkedPriceBook.qualite}) :{" "}
+                <strong>{formatEuro(linkedPriceBook.prixClientTotal || linkedPriceBook.prixVentePiece)}</strong>.
+                La pièce sera reliée automatiquement à ce tarif.
+              </p>
+            </div>
+          )}
+          {!linkedPriceBook && selectedModel && (
+            <div className="rounded-xl border border-[#E7E4DC] bg-white p-3 text-[12px] text-[#6B6B6B] md:col-span-2">
+              Aucun tarif client lié pour cette sélection. Vous pourrez en créer un dans
+              Paramètres → Tarifs / Prestations.
+            </div>
+          )}
+
+          {/* Données internes : prix achat, fournisseur, quantité, seuil */}
+          <label className="block">
+            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Fournisseur</span>
+            <input
+              type="text"
+              className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              placeholder="UTOPYA, etc."
+              value={supplier}
+              onChange={(e) => setSupplier(e.target.value)}
             />
+          </label>
+          <label className="block">
+            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Prix d'achat atelier</span>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              placeholder="À renseigner"
+              value={purchasePrice}
+              onChange={(e) => setPurchasePrice(e.target.value)}
+            />
+          </label>
+          <label className="block">
+            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Quantité</span>
+            <input
+              type="number"
+              min="0"
+              className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              value={stockQty}
+              onChange={(e) => setStockQty(e.target.value)}
+            />
+          </label>
+          <label className="block">
+            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Seuil d'alerte</span>
+            <input
+              type="number"
+              min="0"
+              className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              value={threshold}
+              onChange={(e) => setThreshold(e.target.value)}
+            />
+          </label>
+
+          <div className="rounded-xl border border-[#E7E4DC] bg-[#FAFAF8] px-3 py-2.5 text-[12.5px] text-[#6B6B6B] md:col-span-2">
+            Le prix client est défini dans <strong>Paramètres → Tarifs / Prestations</strong>.
+            Stock = inventaire interne, Catalogue = tarifs client.
           </div>
-          <select
-            className="h-11 rounded-xl border border-black/[0.08] px-3"
-            onChange={(event) => setCategoryId(event.target.value)}
-            value={categoryId}
-          >
-            {availableCategories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-          <input
-            className="h-11 rounded-xl border border-black/[0.08] px-3"
-            name="supplier"
-            placeholder="Fournisseur"
-          />
-          <input
-            className="h-11 rounded-xl border border-black/[0.08] px-3"
-            name="purchasePrice"
-            placeholder="Prix achat"
-            type="number"
-          />
-          <div className="rounded-xl border border-[#E7E4DC] bg-[#FAFAF8] px-3 py-2 text-sm text-[#6B6B6B]">
-            Prix client : à définir dans Tarifs / Prestations.
-          </div>
-          <input
-            className="h-11 rounded-xl border border-black/[0.08] px-3"
-            name="stock"
-            placeholder="Stock"
-            type="number"
-          />
-          <input
-            className="h-11 rounded-xl border border-black/[0.08] px-3"
-            name="threshold"
-            placeholder="Seuil"
-            type="number"
-          />
+
           <div className="flex justify-end gap-2 md:col-span-2">
             <SecondaryButton onClick={onClose}>Annuler</SecondaryButton>
-            <PrimaryButton type="submit">Ajouter</PrimaryButton>
+            <PrimaryButton type="submit">
+              {existingStock ? "Mettre à jour le stock" : "Ajouter la pièce"}
+            </PrimaryButton>
           </div>
         </form>
       </Panel>

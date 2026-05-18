@@ -15,7 +15,8 @@ import {
 } from "@/lib/price-book";
 import { getDeviceSeries } from "@/lib/device-series";
 import { getDefaultInterventionsByDeviceType, type InterventionDeviceType } from "@/lib/repair-intervention";
-import type { DeviceBrand, DeviceModel, DeviceType } from "@/lib/behar-store";
+import { type DeviceBrand, type DeviceModel, type DeviceType, useBeharStore } from "@/lib/behar-store";
+import { liveStockForPriceBook } from "@/lib/stock-catalog-link";
 
 const STORE_TYPE_TO_PRICEBOOK: Record<DeviceType, PriceBookDeviceType> = {
   Smartphone: "smartphone",
@@ -356,6 +357,9 @@ function PriceTreeRow({
   onDelete: (item: PriceBookItem) => void;
 }>) {
   const router = useRouter();
+  // Source de vérité du stock = module Stock, jamais PriceBookItem.stockDisponible
+  const stockItems = useBeharStore((s) => s.stockItems);
+  const liveStock = liveStockForPriceBook(item, stockItems);
   const [achat, setAchat] = useState(String(item.prixAchat ?? ""));
   const [vente, setVente] = useState(String(item.prixVentePiece ?? ""));
   const [mo, setMo] = useState(String(item.mainOeuvre ?? ""));
@@ -424,19 +428,29 @@ function PriceTreeRow({
         />
       </td>
       <td className="px-3 py-2 text-center">
-        <div className="flex flex-col items-center">
-          <span className={`font-bold text-sm ${item.stockDisponible && item.stockDisponible > 0 ? "text-[#167B70]" : "text-red-500"}`}>
-            {item.stockDisponible ?? 0}
-          </span>
-          {item.stockItemId && (
-            <button
-              className="text-[9px] text-[#6B6B6B] hover:text-[#167B70] underline"
-              onClick={() => {
-                router.push("/dashboard/stock");
-              }}
-            >
-              Voir Stock
-            </button>
+        <div className="flex flex-col items-center" title="Quantité lue directement depuis le module Stock">
+          {liveStock.item ? (
+            <>
+              <span className={`font-bold text-sm ${liveStock.quantity > 0 ? "text-[#167B70]" : "text-red-500"}`}>
+                {liveStock.quantity}
+              </span>
+              <button
+                className="text-[9px] text-[#6B6B6B] hover:text-[#167B70] underline"
+                onClick={() => router.push("/dashboard/stock")}
+              >
+                Gérer dans Stock
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="font-medium text-[10px] text-[#B0AEA8]">Non lié</span>
+              <button
+                className="mt-0.5 text-[9px] text-[#167B70] hover:underline"
+                onClick={() => router.push("/dashboard/stock")}
+              >
+                Créer la pièce
+              </button>
+            </>
           )}
         </div>
       </td>
