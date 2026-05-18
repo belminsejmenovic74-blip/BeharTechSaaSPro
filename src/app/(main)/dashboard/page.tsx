@@ -63,13 +63,18 @@ function MobileDashboard() {
     .reduce((sum, p) => sum + p.amount, 0);
 
   const todayKey = today ? today.toLocaleDateString("fr-FR") : "";
+  const todayIso = today ? toIsoDate(today) : "";
   const todayLabel = today
     ? today.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })
     : "";
 
-  const todaysAppointments = store.appointments.filter(
-    (a) => a.date === todayKey || a.date === "Aujourd'hui",
-  );
+  const todaysAppointments = store.appointments
+    .filter((a) => a.status !== "annulé")
+    .filter((a) => {
+      const iso = appointmentToIso(a.date);
+      return iso === todayIso || a.date === todayKey || a.date === "Aujourd'hui";
+    })
+    .sort((a, b) => timeRank(a.time) - timeRank(b.time));
 
   const lowStock = store.stockItems.filter((item) => item.stock <= (item.threshold ?? 0));
 
@@ -77,13 +82,18 @@ function MobileDashboard() {
     .filter((p) => p.status === "Payé" && (p.date === todayKey || p.date?.startsWith?.("Aujourd'hui")))
     .reduce((sum, p) => sum + p.amount, 0);
 
-  const pipeline = [
-    { label: "Reçu", value: store.repairs.filter((r) => r.status === "Reçu").length, icon: Wrench },
-    { label: "Diagnostic", value: store.repairs.filter((r) => r.status === "Diagnostic").length, icon: Wrench },
-    { label: "Réparation", value: store.repairs.filter((r) => r.status === "Préparation / Réparation").length, icon: Wrench },
-    { label: "Prêt", value: store.repairs.filter((r) => r.status === "Prêt").length, icon: Wrench },
-  ];
+  const pipelineConfig = [
+    { key: "Reçu", label: "Reçu" },
+    { key: "Diagnostic", label: "Diagnostic" },
+    { key: "Préparation / Réparation", label: "Réparation" },
+    { key: "Prêt", label: "Prêt" },
+  ] as const;
+  const pipeline = pipelineConfig.map((step) => ({
+    ...step,
+    value: store.repairs.filter((r) => r.status === step.key).length,
+  }));
   const pipelineMax = Math.max(1, ...pipeline.map((p) => p.value));
+  const pipelineTotal = pipeline.reduce((sum, p) => sum + p.value, 0);
 
   const recentActivity = [...store.auditLogs]
     .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1))
@@ -134,13 +144,15 @@ function MobileDashboard() {
       {/* Agenda du jour */}
       <SectionCard>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="grid size-7 place-items-center rounded-[8px] bg-[#EAF6F2] text-[#2A9D8F]">
-              <CalendarDays className="size-[15px]" strokeWidth={2.2} />
+          <div className="flex items-center gap-2.5">
+            <span className="grid size-8 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F]">
+              <CalendarDays className="size-[16px]" strokeWidth={2.2} />
             </span>
             <div>
               <p className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Agenda du jour</p>
-              <p className="text-[#8A8984] text-[11.5px]">{todayLabel || "—"}</p>
+              <p className="mt-0.5 text-[#8A8984] text-[11.5px]">
+                {todayLabel ? `${todayLabel.charAt(0).toUpperCase()}${todayLabel.slice(1)}` : "—"}
+              </p>
             </div>
           </div>
           <Link
@@ -153,24 +165,54 @@ function MobileDashboard() {
         </div>
 
         {todaysAppointments.length === 0 ? (
-          <p className="mt-4 rounded-[12px] bg-[#FAFAF8] px-4 py-5 text-center text-[#8A8984] text-[13px]">
-            Aucun rendez-vous prévu aujourd'hui.
-          </p>
+          <Link
+            href="/dashboard/rendez-vous"
+            prefetch={false}
+            className="mt-4 flex items-center gap-3 rounded-[14px] bg-[#FAFAF8] px-4 py-3 transition active:scale-[0.99]"
+          >
+            <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white text-[#8A8984]">
+              <CalendarDays className="size-[15px]" strokeWidth={1.8} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-[#1A1916] text-[13px]">Aucun rendez-vous</p>
+              <p className="mt-0.5 text-[#8A8984] text-[11.5px]">Touchez pour planifier la journée.</p>
+            </div>
+            <ChevronRight className="size-4 shrink-0 text-[#CDCBC5]" strokeWidth={2} />
+          </Link>
         ) : (
-          <ul className="mt-4 space-y-2.5">
+          <ul className="mt-3 divide-y divide-[#F1F1EF]">
             {todaysAppointments.slice(0, 4).map((appt) => {
               const customer = store.customers.find((c) => c.id === appt.customerId);
+              const pillTone = appt.status === "venu" || appt.status === "arrivé"
+                ? "bg-[#E7F8F0] text-[#0B7A56]"
+                : appt.confirmed
+                  ? "bg-[#EAF6F2] text-[#167B70]"
+                  : "bg-[#FCF1DF] text-[#C2841C]";
+              const pillLabel = appt.status === "venu" || appt.status === "arrivé"
+                ? "Arrivé"
+                : appt.confirmed
+                  ? "Confirmé"
+                  : "En attente";
               return (
-                <li key={appt.id} className="flex items-center gap-3">
-                  <span className="size-1.5 shrink-0 rounded-full bg-[#2A9D8F]" />
-                  <span className="w-12 shrink-0 font-semibold text-[#1A1916] text-[13px] tabular-nums">
-                    {appt.time || "—"}
+                <li key={appt.id} className="flex items-center gap-3 py-2.5">
+                  <span className="flex w-12 shrink-0 flex-col items-center">
+                    <span className="size-1.5 rounded-full bg-[#2A9D8F]" aria-hidden />
+                    <span className="mt-1 font-semibold text-[#1A1916] text-[13px] tabular-nums">
+                      {appt.time || "—"}
+                    </span>
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-[#1A1916] text-[13px]">
-                    {customer?.name || "Client"} — {appt.device || appt.type}
-                  </span>
-                  <span className="shrink-0 rounded-full bg-[#FAFAF8] px-2 py-0.5 text-[#6B6B6B] text-[10.5px] font-medium">
-                    {appt.status || "Prévu"}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-[#1A1916] text-[13px]">
+                      {appt.device || appt.type}
+                    </p>
+                    <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">
+                      {customer?.name || "Client comptoir"}
+                    </p>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-semibold tracking-tight ${pillTone}`}
+                  >
+                    {pillLabel}
                   </span>
                 </li>
               );
@@ -182,33 +224,46 @@ function MobileDashboard() {
       {/* Pipeline réparations */}
       <SectionCard>
         <div className="flex items-center justify-between">
-          <p className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Pipeline des réparations</p>
+          <div>
+            <p className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Pipeline réparations</p>
+            <p className="mt-0.5 text-[#8A8984] text-[11.5px]">
+              {pipelineTotal} dossier{pipelineTotal > 1 ? "s" : ""} actif{pipelineTotal > 1 ? "s" : ""}
+            </p>
+          </div>
           <Link
             href="/dashboard/reparations"
             prefetch={false}
             className="text-[#2A9D8F] text-[12px] font-semibold tracking-tight"
           >
-            Atelier
+            Voir
           </Link>
         </div>
-        <div className="mt-4 grid grid-cols-4 gap-2">
-          {pipeline.map((step) => (
-            <div key={step.label} className="flex flex-col items-center gap-2">
-              <span className="grid size-10 place-items-center rounded-[12px] bg-[#FAFAF8]">
-                <step.icon className="size-[16px] text-[#1A1916]" strokeWidth={1.8} />
-              </span>
-              <p className="text-[#8A8984] text-[10.5px] font-medium leading-tight text-center">
-                {step.label}
-              </p>
-              <p className="font-bold text-[#1A1916] text-[17px] tabular-nums leading-none">{step.value}</p>
-              <div className="h-1 w-full overflow-hidden rounded-full bg-[#F1F1EF]">
-                <div
-                  className="h-full rounded-full bg-[#2A9D8F] transition-all"
-                  style={{ width: `${Math.round((step.value / pipelineMax) * 100)}%` }}
-                />
-              </div>
-            </div>
-          ))}
+        <div className="mt-4 grid grid-cols-4 gap-2.5">
+          {pipeline.map((step) => {
+            const ratio = step.value / pipelineMax;
+            return (
+              <Link
+                href={`/dashboard/reparations`}
+                prefetch={false}
+                key={step.key}
+                className="flex flex-col items-center gap-1.5 rounded-[14px] bg-[#FAFAF8] px-1.5 py-3 transition active:scale-[0.96]"
+              >
+                <span className="grid size-9 place-items-center rounded-full bg-white text-[#2A9D8F] shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+                  <Wrench className="size-[15px]" strokeWidth={2.2} />
+                </span>
+                <span className="font-bold text-[#1A1916] text-[18px] tabular-nums leading-none">{step.value}</span>
+                <span className="text-center text-[#6B6B6B] text-[10.5px] font-medium leading-tight">
+                  {step.label}
+                </span>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#E7E4DC]">
+                  <div
+                    className="h-full rounded-full bg-[#2A9D8F] transition-all"
+                    style={{ width: `${Math.max(8, Math.round(ratio * 100))}%` }}
+                  />
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </SectionCard>
 
@@ -346,6 +401,32 @@ function ActivityIcon({ action }: Readonly<{ action: string }>) {
   if (action.startsWith("alert") || action.includes("low"))
     return <AlertTriangle className="size-[16px]" strokeWidth={2} />;
   return <Clock className="size-[16px]" strokeWidth={2} />;
+}
+
+function toIsoDate(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+const MONTH_NAMES_FR = [
+  "janvier", "février", "mars", "avril", "mai", "juin",
+  "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+] as const;
+
+function appointmentToIso(raw: string | undefined): string {
+  if (!raw) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const parts = raw.split(" ");
+  if (parts.length < 3) return "";
+  const [day, month, year] = parts;
+  const monthIndex = MONTH_NAMES_FR.indexOf(month as (typeof MONTH_NAMES_FR)[number]);
+  if (!day || !year || monthIndex < 0) return "";
+  return `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(Number(day)).padStart(2, "0")}`;
+}
+
+function timeRank(time: string | undefined): number {
+  if (!time) return 9_999;
+  const [hh = "0", mm = "0"] = time.split(":");
+  return Number(hh) * 60 + Number(mm);
 }
 
 function formatRelative(iso: string): string {

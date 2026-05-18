@@ -11,7 +11,10 @@ import {
   BarChart3,
   CalendarDays,
   CalendarPlus,
+  CheckCheck,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Clock3,
   Eye,
@@ -97,6 +100,8 @@ export function AppointmentsWorkspace() {
   const [filterTechnician, setFilterTechnician] = useState("Tous les techniciens");
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const [repairPrefillAppointmentId, setRepairPrefillAppointmentId] = useState<string | null>(null);
+  const [mobileSelectedDay, setMobileSelectedDay] = useState<string>(() => toInputDate(new Date()));
+  const [mobileWeekOffset, setMobileWeekOffset] = useState(0);
 
   const weekDays = buildWeekDays(weekOffset);
 
@@ -126,22 +131,242 @@ export function AppointmentsWorkspace() {
     setRepairPrefillAppointmentId(appointment.id);
   };
 
-  // Mobile : regroupement par tranche (Aujourd'hui / Demain / Cette semaine)
-  const mobileGroups = groupAppointmentsForMobile(store.appointments);
+  // ─── Mobile RDV state ─────────────────────────────────────────────────────
+  const todayIso = toInputDate(new Date());
+  const mobileWeekStart = addDays(getMonday(new Date()), mobileWeekOffset * 7);
+  const mobileWeekDays = Array.from({ length: 7 }).map((_, i) => addDays(mobileWeekStart, i));
+  const monthLabel = capitalize(
+    new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" })
+      .format(mobileWeekDays[3] ?? new Date()),
+  );
+
+  const appointmentMatchesIso = (appt: Appointment, iso: string) =>
+    toAppointmentInput(appt) === iso;
+
+  const appointmentsForSelectedDay = store.appointments
+    .filter((appt) => appointmentMatchesIso(appt, mobileSelectedDay) && appt.status !== "annulé")
+    .sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
+
+  const dayBucket = (iso: string) =>
+    store.appointments.filter((appt) => appointmentMatchesIso(appt, iso) && appt.status !== "annulé");
+
+  const mobileKpis = (() => {
+    const list = appointmentsForSelectedDay;
+    const arrived = list.filter((a) => a.status === "venu" || a.status === "arrivé").length;
+    const confirmed = list.filter((a) => a.confirmed && a.status !== "venu" && a.status !== "arrivé").length;
+    const pending = list.filter(
+      (a) => !a.confirmed && a.status !== "venu" && a.status !== "arrivé",
+    ).length;
+    return { confirmed, pending, arrived };
+  })();
+
+  const goToToday = () => {
+    setMobileSelectedDay(todayIso);
+    setMobileWeekOffset(0);
+  };
 
   return (
     <div className="space-y-5">
-      {/* Mobile : Aujourd'hui / Demain / Cette semaine */}
+      {/* Mobile : mini calendrier + KPI jour + agenda + CTA */}
       <section className="md:hidden space-y-4">
+        {/* Mini calendrier — mois + nav semaine + 7 jours cliquables */}
+        <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+          <div className="mb-3 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setMobileWeekOffset((o) => o - 1)}
+              className="grid size-9 place-items-center rounded-full bg-[#FAFAF8] text-[#1A1916] transition active:scale-90"
+              aria-label="Semaine précédente"
+            >
+              <ChevronLeft className="size-4" strokeWidth={2.2} />
+            </button>
+            <button
+              type="button"
+              onClick={goToToday}
+              className="font-semibold text-[#1A1916] text-[15px] tracking-tight"
+            >
+              {monthLabel}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMobileWeekOffset((o) => o + 1)}
+              className="grid size-9 place-items-center rounded-full bg-[#FAFAF8] text-[#1A1916] transition active:scale-90"
+              aria-label="Semaine suivante"
+            >
+              <ChevronRight className="size-4" strokeWidth={2.2} />
+            </button>
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {mobileWeekDays.map((date, idx) => {
+              const iso = toInputDate(date);
+              const isSelected = iso === mobileSelectedDay;
+              const isToday = iso === todayIso;
+              const hasEvents = dayBucket(iso).length > 0;
+              return (
+                <button
+                  key={iso}
+                  type="button"
+                  onClick={() => setMobileSelectedDay(iso)}
+                  className="flex flex-col items-center gap-1 py-1.5"
+                >
+                  <span className="text-[#8A8984] text-[10.5px] font-semibold uppercase tracking-wide">
+                    {dayLabels[idx]?.replace(".", "")}
+                  </span>
+                  <span
+                    className={cn(
+                      "grid size-9 place-items-center rounded-full font-semibold text-[14px] tabular-nums transition",
+                      isSelected
+                        ? "bg-[#2A9D8F] text-white shadow-[0_4px_12px_rgba(42,157,143,0.3)]"
+                        : isToday
+                          ? "bg-[#EAF6F2] text-[#2A9D8F]"
+                          : "text-[#1A1916] hover:bg-[#FAFAF8]",
+                    )}
+                  >
+                    {date.getDate()}
+                  </span>
+                  <span
+                    className={cn(
+                      "size-1 rounded-full",
+                      hasEvents ? (isSelected ? "bg-white" : "bg-[#2A9D8F]") : "bg-transparent",
+                    )}
+                    aria-hidden
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 3 KPI jour : Confirmés / En attente / Arrivés */}
+        <div className="grid grid-cols-3 gap-2.5">
+          <MobileKpiTile
+            icon={CheckCircle2}
+            label="Confirmés"
+            value={mobileKpis.confirmed}
+            tone="teal"
+          />
+          <MobileKpiTile
+            icon={Clock}
+            label="En attente"
+            value={mobileKpis.pending}
+            tone="amber"
+          />
+          <MobileKpiTile
+            icon={CheckCheck}
+            label="Arrivés"
+            value={mobileKpis.arrived}
+            tone="success"
+          />
+        </div>
+
+        {/* Agenda du jour */}
+        <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+          <div className="mb-3 flex items-baseline justify-between">
+            <div>
+              <h3 className="font-semibold text-[#1A1916] text-[15px] tracking-tight">
+                Agenda du jour
+              </h3>
+              <p className="mt-0.5 text-[#8A8984] text-[11.5px]">
+                {capitalize(formatLongDate(mobileSelectedDay))}
+              </p>
+            </div>
+            {mobileSelectedDay !== todayIso && (
+              <button
+                type="button"
+                onClick={goToToday}
+                className="text-[#2A9D8F] text-[12px] font-semibold"
+              >
+                Aujourd'hui
+              </button>
+            )}
+          </div>
+
+          {appointmentsForSelectedDay.length === 0 ? (
+            <div className="flex items-center gap-3 rounded-[14px] bg-[#FAFAF8] px-4 py-3.5">
+              <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white text-[#8A8984]">
+                <CalendarDays className="size-[16px]" strokeWidth={1.8} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-[#1A1916] text-[13px]">Aucun rendez-vous</p>
+                <p className="mt-0.5 text-[#8A8984] text-[11.5px]">Touchez "+" pour en ajouter un.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setForm((current) => ({
+                    ...current,
+                    customerType: "existing",
+                    customerId: customer?.id ?? store.customers[0]?.id ?? "",
+                    date: mobileSelectedDay,
+                    device: customer?.device ?? store.customers[0]?.device ?? "iPhone 13",
+                    issue: customer?.lastRepair ?? store.customers[0]?.lastRepair ?? "Diagnostic",
+                  }));
+                  setCreateOpen(true);
+                }}
+                className="grid size-9 shrink-0 place-items-center rounded-full bg-[#2A9D8F] text-white transition active:scale-90"
+                aria-label="Ajouter un rendez-vous"
+              >
+                <Plus className="size-4" strokeWidth={2.4} />
+              </button>
+            </div>
+          ) : (
+            <ul className="divide-y divide-[#F1F1EF]">
+              {appointmentsForSelectedDay.map((appt) => {
+                const apptCustomer = store.customers.find((c) => c.id === appt.customerId);
+                const linked = findLinkedRepair(appt, store.repairs);
+                const tone = appointmentTone(appt);
+                return (
+                  <li key={appt.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        store.setSelected("appointment", appt.id);
+                        setMobileDetailOpen(true);
+                      }}
+                      className="flex w-full items-center gap-3 py-3 text-left transition active:scale-[0.99]"
+                    >
+                      <span className="flex w-12 shrink-0 flex-col items-center">
+                        <span
+                          className={cn(
+                            "size-2 rounded-full",
+                            tone === "teal" ? "bg-[#2A9D8F]" : tone === "amber" ? "bg-[#C2841C]" : "bg-[#10B981]",
+                          )}
+                          aria-hidden
+                        />
+                        <span className="mt-1.5 font-semibold text-[#1A1916] text-[13px] tabular-nums">
+                          {appt.time}
+                        </span>
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold text-[#1A1916] text-[13.5px]">
+                          {cleanDeviceLabel(appt.device)}{appt.issue ? ` · ${appt.issue}` : ""}
+                        </p>
+                        <p className="mt-0.5 truncate text-[#6B6B6B] text-[12px]">
+                          {apptCustomer?.name || "Client comptoir"}
+                          {linked ? " · Réparation liée" : ""}
+                        </p>
+                      </div>
+                      <span className="flex shrink-0 items-center gap-1.5">
+                        <AppointmentStatusPill status={appt.status} confirmed={appt.confirmed} />
+                        <ChevronRight className="size-4 text-[#CDCBC5]" strokeWidth={2} />
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        {/* CTA Nouveau RDV — toujours visible en bas */}
         <PrimaryButton
-          className="h-11 w-full gap-2"
+          className="h-12 w-full gap-2 shadow-[0_8px_24px_rgba(42,157,143,0.18)]"
           onClick={() => {
-            const today = new Date();
             setForm((current) => ({
               ...current,
               customerType: "existing",
               customerId: customer?.id ?? store.customers[0]?.id ?? "",
-              date: toInputDate(today),
+              date: mobileSelectedDay,
               device: customer?.device ?? store.customers[0]?.device ?? "iPhone 13",
               issue: customer?.lastRepair ?? store.customers[0]?.lastRepair ?? "Diagnostic",
             }));
@@ -150,72 +375,6 @@ export function AppointmentsWorkspace() {
         >
           <Plus className="size-4" /> Nouveau rendez-vous
         </PrimaryButton>
-
-        {(["today", "tomorrow", "week"] as const).map((bucket) => {
-          const list = mobileGroups[bucket];
-          const title = bucket === "today" ? "Aujourd'hui" : bucket === "tomorrow" ? "Demain" : "Cette semaine";
-          return (
-            <div key={bucket}>
-              <div className="mb-2 flex items-baseline justify-between">
-                <h3 className="font-semibold text-[#1A1916] text-[15px] tracking-tight">{title}</h3>
-                <span className="text-[#8A8984] text-[11px] font-semibold">{list.length} RDV</span>
-              </div>
-              {list.length === 0 ? (
-                <div className="rounded-[16px] bg-white p-5 text-center shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-                  <p className="text-[#8A8984] text-[13px]">Aucun rendez-vous prévu.</p>
-                </div>
-              ) : (
-                <ul className="space-y-2">
-                  {list.map((appointment) => {
-                    const apptCustomer = store.customers.find((c) => c.id === appointment.customerId);
-                    const linkedRepair = findLinkedRepair(appointment, store.repairs);
-                    return (
-                      <li key={appointment.id}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            store.setSelected("appointment", appointment.id);
-                            setMobileDetailOpen(true);
-                          }}
-                          className="flex w-full items-start gap-3 rounded-[22px] border border-[#E8E8E5] bg-white p-4 text-left shadow-[0_12px_30px_rgba(26,25,22,0.06)] transition hover:-translate-y-0.5 hover:border-[#DCD9D2] active:scale-[0.99]"
-                        >
-                          <div className="flex w-16 shrink-0 flex-col items-center justify-center rounded-[16px] border border-[#E8E8E5] bg-[#FAFAF8] px-2 py-3">
-                            <span className="font-semibold text-[#1A1916] text-[16px] leading-none tabular-nums">
-                              {appointment.time}
-                            </span>
-                            <span className="mt-1.5 text-[#6B6B6B] text-[10px] font-medium">{appointment.duration}</span>
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-start justify-between gap-2">
-                              <p className="truncate font-semibold text-[#1A1916] text-[15px]">
-                              {apptCustomer?.name || "Client comptoir"}
-                              </p>
-                              {linkedRepair ? (
-                                <span className="shrink-0 rounded-full bg-[#EAF6F2] px-2 py-0.5 text-[10px] font-semibold text-[#167B70]">
-                                  Réparation liée
-                                </span>
-                              ) : null}
-                            </div>
-                            <p className="mt-1 truncate text-[#1A1916] text-[13px]">{cleanDeviceLabel(appointment.device)}</p>
-                            <p className="mt-1 truncate text-[#6B6B6B] text-[12px]">{appointment.issue}</p>
-                            <div className="mt-2 flex flex-wrap items-center gap-2">
-                              <StatusBadge status={appointment.status} />
-                              {appointment.channel ? (
-                                <span className="rounded-full bg-[#F1F1EF] px-2 py-0.5 text-[10px] font-medium text-[#6B6B6B]">
-                                  {appointment.channel}
-                                </span>
-                              ) : null}
-                            </div>
-                          </div>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
-          );
-        })}
       </section>
 
       <section className="grid gap-5 md:grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -1193,3 +1352,85 @@ const monthNames = [
   "novembre",
   "décembre",
 ];
+
+// ─── Helpers mobile UI ─────────────────────────────────────────────────────
+
+function toAppointmentInput(appt: Appointment): string {
+  if (!appt.date) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(appt.date)) return appt.date;
+  return displayToInputDate(appt.date);
+}
+
+function formatLongDate(iso: string): string {
+  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return "—";
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return "—";
+  return new Intl.DateTimeFormat("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(new Date(y, m - 1, d));
+}
+
+function capitalize(value: string): string {
+  if (!value) return value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function appointmentTone(appt: Appointment): "teal" | "amber" | "success" {
+  if (appt.status === "venu" || appt.status === "arrivé") return "success";
+  if (appt.confirmed) return "teal";
+  return "amber";
+}
+
+function MobileKpiTile({
+  icon: Icon,
+  label,
+  value,
+  tone,
+}: Readonly<{
+  icon: LucideIcon;
+  label: string;
+  value: number;
+  tone: "teal" | "amber" | "success";
+}>) {
+  const palette = {
+    teal: { bg: "bg-[#EAF6F2]", text: "text-[#2A9D8F]" },
+    amber: { bg: "bg-[#FCF1DF]", text: "text-[#C2841C]" },
+    success: { bg: "bg-[#E7F8F0]", text: "text-[#0B7A56]" },
+  }[tone];
+  return (
+    <div className="rounded-[16px] border border-[#E8E8E5] bg-white p-3 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+      <span className={cn("grid size-8 place-items-center rounded-[10px]", palette.bg, palette.text)}>
+        <Icon className="size-[15px]" strokeWidth={2.2} />
+      </span>
+      <p className="mt-2.5 text-[#8A8984] text-[10.5px] font-medium leading-tight tracking-tight">{label}</p>
+      <p className={cn("mt-1 font-bold text-[20px] leading-none tabular-nums", palette.text)}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function AppointmentStatusPill({
+  status,
+  confirmed,
+}: Readonly<{ status: string; confirmed?: boolean }>) {
+  const label = (() => {
+    if (status === "venu" || status === "arrivé") return "Arrivé";
+    if (status === "annulé") return "Annulé";
+    if (confirmed) return "Confirmé";
+    return "En attente";
+  })();
+  const tone = (() => {
+    if (status === "venu" || status === "arrivé") return "bg-[#E7F8F0] text-[#0B7A56]";
+    if (status === "annulé") return "bg-[#FDECEC] text-[#B42318]";
+    if (confirmed) return "bg-[#EAF6F2] text-[#167B70]";
+    return "bg-[#FCF1DF] text-[#C2841C]";
+  })();
+  return (
+    <span className={cn("inline-flex shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-semibold tracking-tight", tone)}>
+      {label}
+    </span>
+  );
+}
