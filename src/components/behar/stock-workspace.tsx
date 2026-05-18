@@ -1299,26 +1299,6 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
             </div>
           </div>
 
-          {/* Détection doublon / tarif lié */}
-          {existingStock && (
-            <div className="rounded-xl border border-[#F2DFA7] bg-[#FFF8EB] p-3 text-[12.5px] text-[#8C5B0E] md:col-span-2">
-              <p className="font-semibold">Pièce déjà existante détectée</p>
-              <p className="mt-1">
-                « {existingStock.name} » — stock actuel : <strong>{existingStock.stock}</strong>.
-                La validation <strong>cumulera</strong> la quantité saisie au stock existant.
-              </p>
-            </div>
-          )}
-          {linkedPriceBook && (
-            <div className="rounded-xl border border-[#DDEFEA] bg-[#EAF6F2] p-3 text-[12.5px] text-[#167B70] md:col-span-2">
-              <p className="font-semibold">Tarif client lié détecté</p>
-              <p className="mt-1">
-                « {linkedPriceBook.reparation} » sur {linkedPriceBook.modele} ({linkedPriceBook.qualite}) :{" "}
-                <strong>{formatEuro(linkedPriceBook.prixClientTotal || linkedPriceBook.prixVentePiece)}</strong>.
-                La pièce sera reliée automatiquement à ce tarif.
-              </p>
-            </div>
-          )}
           {!linkedPriceBook && selectedModel && (
             <div className="rounded-xl border border-[#E7E4DC] bg-white p-3 text-[12px] text-[#6B6B6B] md:col-span-2">
               Aucun tarif client lié pour cette sélection. Vous pourrez en créer un dans
