@@ -25,23 +25,135 @@ export type StockItemLite = {
 };
 
 /**
- * Liste préconfigurée des gammes / qualités les plus utilisées par les
- * réparateurs FR. C'est la liste affichée dans les selects "Gamme".
+ * Liste exhaustive des qualités possibles, tous contextes confondus.
+ * À utiliser uniquement comme type. Pour afficher la liste dans une UI,
+ * utiliser getQualitiesForCategory(category) — la qualité dépend toujours
+ * de la catégorie (un écran a OLED/Incell, une caméra a Originale/Compatible).
  */
 export const QUALITY_PRESETS = [
-  "Original",
-  "Original reconditionné",
-  "OEM",
-  "Hard OLED",
-  "Soft OLED",
-  "OLED",
+  // qualités écran
   "Incell",
   "LCD",
   "TFT",
+  "OLED",
+  "Hard OLED",
+  "Soft OLED",
+  // qualités génériques
+  "Original",
+  "Originale",
+  "Original reconditionné",
+  "Reconditionnée",
+  "Reconditionné",
+  "OEM",
+  "Premium",
+  "Normale",
+  "Compatible",
+  "Haute capacité",
+  "Diagnostic",
   "Standard",
+  "Non précisée",
+  "Autre",
 ] as const;
 
 export type QualityPreset = (typeof QUALITY_PRESETS)[number];
+
+/**
+ * Qualités contextuelles par catégorie. Règle absolue : "OLED",
+ * "Hard OLED", "Soft OLED", "Incell", "TFT" n'existent QUE pour l'écran.
+ * Les autres catégories utilisent les variantes génériques (Originale,
+ * OEM, Compatible, Premium, etc.).
+ *
+ * La clé est la version normalisée du nom de catégorie (sans accents,
+ * lowercase), pour que la recherche soit robuste aux variations.
+ */
+const QUALITIES_BY_CATEGORY: Record<string, readonly string[]> = {
+  // Écran
+  ecran: ["Incell", "LCD", "TFT", "OLED", "Hard OLED", "Soft OLED", "Original", "Original reconditionné", "OEM", "Premium", "Autre"],
+
+  // Batterie
+  batterie: ["Normale", "Compatible", "Premium", "Originale", "OEM", "Haute capacité", "Reconditionnée", "Autre"],
+
+  // Caméras
+  "camera arriere": ["Normale", "Compatible", "Originale", "OEM", "Reconditionnée", "Premium", "Autre"],
+  "camera avant": ["Normale", "Compatible", "Originale", "OEM", "Reconditionnée", "Premium", "Autre"],
+  // alias générique "Caméra" sans précision arrière/avant
+  camera: ["Normale", "Compatible", "Originale", "OEM", "Reconditionnée", "Premium", "Autre"],
+
+  // Connecteur de charge
+  "connecteur de charge": ["Normale", "Compatible", "Originale", "OEM", "Premium", "Autre"],
+
+  // Audio
+  "haut-parleur": ["Normale", "Compatible", "Originale", "OEM", "Reconditionné", "Premium", "Autre"],
+  micro: ["Normale", "Compatible", "Originale", "OEM", "Reconditionné", "Premium", "Autre"],
+
+  // Boutons
+  "bouton power": ["Normale", "Compatible", "Originale", "OEM", "Reconditionné", "Premium", "Autre"],
+  "boutons volume": ["Normale", "Compatible", "Originale", "OEM", "Reconditionné", "Premium", "Autre"],
+
+  // Capteurs / biométrie
+  "face id / touch id": ["Normale", "Originale", "Reconditionnée", "Diagnostic", "Autre"],
+  "face id": ["Normale", "Originale", "Reconditionnée", "Diagnostic", "Autre"],
+  "touch id": ["Normale", "Originale", "Reconditionnée", "Diagnostic", "Autre"],
+
+  // SIM
+  "lecteur carte sim": ["Normale", "Compatible", "Originale", "OEM", "Autre"],
+
+  // Coque arrière
+  "dos arriere": ["Normale", "Compatible", "Original", "Original reconditionné", "OEM", "Premium", "Autre"],
+  "vitre arriere": ["Normale", "Compatible", "Original", "Original reconditionné", "OEM", "Premium", "Autre"],
+
+  // Diagnostic (prestation atelier, pas une pièce)
+  diagnostic: ["Diagnostic", "Autre"],
+
+  // Mécanique / consommables
+  "pate thermique": ["Normale", "Premium", "Autre"],
+  joystick: ["Normale", "Compatible", "Originale", "OEM", "Reconditionné", "Premium", "Autre"],
+  ventilateur: ["Normale", "Compatible", "Originale", "OEM", "Reconditionné", "Premium", "Autre"],
+};
+
+const FALLBACK_QUALITIES: readonly string[] = [
+  "Normale",
+  "Compatible",
+  "Originale",
+  "OEM",
+  "Premium",
+  "Autre",
+];
+
+/**
+ * Renvoie la liste des qualités valides pour une catégorie donnée.
+ * Pour une catégorie inconnue, renvoie la liste générique.
+ */
+export function getQualitiesForCategory(category: string | undefined | null): readonly string[] {
+  const key = normalizeKey(category);
+  if (!key) return FALLBACK_QUALITIES;
+  return QUALITIES_BY_CATEGORY[key] ?? FALLBACK_QUALITIES;
+}
+
+/**
+ * Qualité par défaut pour une catégorie donnée.
+ * - Écran → "" (forcer un choix explicite, qu'on traduit en UI en
+ *   "Choisir une qualité…")
+ * - Autres → "Normale"
+ */
+export function getDefaultQualityForCategory(category: string | undefined | null): string {
+  const key = normalizeKey(category);
+  if (key === "ecran") return "";
+  return "Normale";
+}
+
+/**
+ * Indique si une qualité est valide pour la catégorie donnée. Utile
+ * pour décider d'un reset lorsqu'on change de catégorie : si l'ancienne
+ * qualité ("Hard OLED") n'existe pas pour la nouvelle catégorie ("Batterie"),
+ * on doit la remplacer par le défaut.
+ */
+export function isQualityValidForCategory(quality: string, category: string | undefined | null): boolean {
+  if (!quality) return true; // chaîne vide = choix non fait, toujours acceptable
+  const list = getQualitiesForCategory(category);
+  const q = normalizeKey(quality);
+  return list.some((item) => normalizeKey(item) === q);
+}
 
 /**
  * Normalise une chaîne pour la comparaison : lowercase, sans accents,
@@ -143,36 +255,58 @@ function abbreviateCategory(category: string): string {
   const norm = normalizeKey(category);
   const map: Record<string, string> = {
     ecran: "ECRAN",
-    batterie: "BAT",
-    "connecteur de charge": "CHARGE",
-    "camera arriere": "CAMR",
-    "camera avant": "CAMA",
+    batterie: "BATTERIE",
+    "connecteur de charge": "CONNECTEUR-CHARGE",
+    camera: "CAMERA",
+    "camera arriere": "CAMERA-ARR",
+    "camera avant": "CAMERA-AV",
     "haut-parleur": "HP",
-    micro: "MIC",
-    "bouton power": "POW",
-    "boutons volume": "VOL",
-    "vitre arriere": "VITR",
-    chassis: "CHA",
-    autre: "AUT",
+    micro: "MICRO",
+    "bouton power": "POWER",
+    "boutons volume": "VOLUME",
+    "vitre arriere": "VITRE-ARR",
+    "dos arriere": "DOS-ARR",
+    chassis: "CHASSIS",
+    "lecteur carte sim": "SIM",
+    "face id / touch id": "BIOMETRIE",
+    "face id": "FACEID",
+    "touch id": "TOUCHID",
+    diagnostic: "DIAG",
+    joystick: "JOYSTICK",
+    ventilateur: "VENTILO",
+    "pate thermique": "PATE",
+    autre: "AUTRE",
   };
-  return map[norm] ?? norm.replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, 6);
+  return map[norm] ?? norm.replace(/\s+/g, "-").replace(/[^a-z0-9-]/gi, "").toUpperCase().slice(0, 16);
 }
 
 function abbreviateQuality(quality: string): string {
   const norm = normalizeKey(quality);
   const map: Record<string, string> = {
-    original: "ORIG",
-    "original reconditionne": "ORIGRC",
-    oem: "OEM",
-    "hard oled": "HOLED",
-    "soft oled": "SOLED",
+    // écran
+    "hard oled": "HARD-OLED",
+    "soft oled": "SOFT-OLED",
     oled: "OLED",
-    incell: "INCL",
+    incell: "INCELL",
     lcd: "LCD",
     tft: "TFT",
-    standard: "STD",
+    // génériques
+    original: "ORIGINAL",
+    originale: "ORIGINALE",
+    "original reconditionne": "ORIGINAL-RC",
+    reconditionne: "RECONDITIONNE",
+    reconditionnee: "RECONDITIONNEE",
+    oem: "OEM",
+    premium: "PREMIUM",
+    normale: "NORMALE",
+    compatible: "COMPATIBLE",
+    "haute capacite": "HAUTE-CAPACITE",
+    diagnostic: "DIAG",
+    standard: "STANDARD",
+    "non precisee": "",
   };
-  return map[norm] ?? norm.replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, 8);
+  if (norm in map) return map[norm];
+  return norm.replace(/\s+/g, "-").replace(/[^a-z0-9-]/gi, "").toUpperCase().slice(0, 16);
 }
 
 /**

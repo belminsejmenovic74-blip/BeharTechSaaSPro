@@ -13,7 +13,9 @@ import type { PriceBookItem } from "@/lib/price-book";
 import {
   findPriceBookBySelection,
   findStockBySelection,
-  QUALITY_PRESETS,
+  getDefaultQualityForCategory,
+  getQualitiesForCategory,
+  isQualityValidForCategory,
   suggestStockName,
   suggestStockSku,
 } from "@/lib/stock-catalog-link";
@@ -984,7 +986,9 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
   const [brandName, setBrandName] = useState("Apple");
   const [categoryId, setCategoryId] = useState("cat_screen");
   const [selectedModel, setSelectedModel] = useState<string>("");
-  const [quality, setQuality] = useState<string>("Standard");
+  // La qualité par défaut dépend de la catégorie initiale (Écran → "").
+  const [quality, setQuality] = useState<string>(() => getDefaultQualityForCategory("Écran"));
+  const [customQuality, setCustomQuality] = useState<string>("");
   const [nameOverride, setNameOverride] = useState<string>("");
   const [skuOverride, setSkuOverride] = useState<string>("");
   const [supplier, setSupplier] = useState<string>("");
@@ -1008,14 +1012,19 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
   const selectedCategory = store.partCategories.find((cat) => cat.id === categoryId);
   const categoryName = selectedCategory?.name ?? "";
 
+  // Qualités contextuelles : OLED uniquement pour Écran, etc.
+  const availableQualities = useMemo(() => getQualitiesForCategory(categoryName), [categoryName]);
+  // La qualité réelle envoyée au système : si "Autre", on prend le texte libre.
+  const effectiveQuality = quality === "Autre" ? customQuality.trim() : quality;
+
   // Auto-suggérés (s'appliquent tant que l'utilisateur n'a pas overridé).
   const suggestedName = useMemo(
-    () => suggestStockName({ brand: brandName, model: selectedModel, category: categoryName, quality }),
-    [brandName, selectedModel, categoryName, quality],
+    () => suggestStockName({ brand: brandName, model: selectedModel, category: categoryName, quality: effectiveQuality }),
+    [brandName, selectedModel, categoryName, effectiveQuality],
   );
   const suggestedSku = useMemo(
-    () => suggestStockSku({ brand: brandName, model: selectedModel, category: categoryName, quality }),
-    [brandName, selectedModel, categoryName, quality],
+    () => suggestStockSku({ brand: brandName, model: selectedModel, category: categoryName, quality: effectiveQuality }),
+    [brandName, selectedModel, categoryName, effectiveQuality],
   );
   const effectiveName = nameOverride.trim() || suggestedName;
   const effectiveSku = skuOverride.trim() || suggestedSku;
@@ -1027,10 +1036,10 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
         brand: brandName,
         model: selectedModel,
         category: categoryName,
-        quality,
+        quality: effectiveQuality,
         sku: effectiveSku,
       }),
-    [store.stockItems, brandName, selectedModel, categoryName, quality, effectiveSku],
+    [store.stockItems, brandName, selectedModel, categoryName, effectiveQuality, effectiveSku],
   );
 
   const linkedPriceBook = useMemo(
@@ -1039,9 +1048,9 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
         brand: brandName,
         model: selectedModel,
         category: categoryName,
-        quality,
+        quality: effectiveQuality,
       }),
-    [store.priceBookItems, brandName, selectedModel, categoryName, quality],
+    [store.priceBookItems, brandName, selectedModel, categoryName, effectiveQuality],
   );
 
   const submit = () => {
@@ -1051,6 +1060,16 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
     }
     if (!categoryName) {
       toast.error("Sélectionnez une catégorie.");
+      return;
+    }
+    // Écran : la qualité est obligatoire (pas de défaut "Standard" forcé).
+    if (categoryName === "Écran" && !effectiveQuality) {
+      toast.error("Choisissez une qualité d'écran (Incell, OLED, Hard OLED, etc.).");
+      return;
+    }
+    // "Autre" sans précision : on bloque pour éviter un SKU bizarre.
+    if (quality === "Autre" && !customQuality.trim()) {
+      toast.error("Précisez la qualité (champ ‹ Préciser la qualité ›).");
       return;
     }
     // Si un stock existant correspond, on met à jour au lieu de dupliquer.
@@ -1138,6 +1157,12 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
                 setBrandName(firstBrand);
                 setCategoryId(firstCategory?.id ?? "cat_other");
                 setSelectedModel("");
+                // La nouvelle catégorie peut être incompatible avec la qualité actuelle.
+                const nextCategoryName = firstCategory?.name ?? "";
+                if (!isQualityValidForCategory(quality, nextCategoryName)) {
+                  setQuality(getDefaultQualityForCategory(nextCategoryName));
+                  setCustomQuality("");
+                }
               }}
             >
               {["Smartphone", "Tablette", "Ordinateur", "Console"].map((type) => (
@@ -1190,7 +1215,19 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
             <select
               className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
               value={categoryId}
-              onChange={(event) => setCategoryId(event.target.value)}
+              onChange={(event) => {
+                const nextId = event.target.value;
+                const nextCategory = store.partCategories.find((c) => c.id === nextId);
+                const nextName = nextCategory?.name ?? "";
+                setCategoryId(nextId);
+                // Si l'ancienne qualité n'est plus valide pour la nouvelle catégorie
+                // (ex: "Hard OLED" + "Batterie"), on reset au défaut. Sinon on
+                // conserve le choix utilisateur.
+                if (!isQualityValidForCategory(quality, nextName)) {
+                  setQuality(getDefaultQualityForCategory(nextName));
+                  setCustomQuality("");
+                }
+              }}
             >
               {availableCategories.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -1200,7 +1237,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
             </select>
           </label>
 
-          {/* Gamme / Qualité */}
+          {/* Gamme / Qualité (contextuelle selon la catégorie) */}
           <label className="block">
             <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Gamme</span>
             <select
@@ -1208,13 +1245,30 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
               value={quality}
               onChange={(event) => setQuality(event.target.value)}
             >
-              {QUALITY_PRESETS.map((q) => (
+              {quality === "" && <option value="">Choisir une qualité…</option>}
+              {availableQualities.map((q) => (
                 <option key={q} value={q}>
                   {q}
                 </option>
               ))}
             </select>
           </label>
+
+          {/* Champ libre quand la qualité = "Autre" */}
+          {quality === "Autre" && (
+            <label className="block md:col-span-2">
+              <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">
+                Préciser la qualité
+              </span>
+              <input
+                type="text"
+                className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+                placeholder="Ex : Service Pack"
+                value={customQuality}
+                onChange={(e) => setCustomQuality(e.target.value)}
+              />
+            </label>
+          )}
 
           {/* Aperçu auto-rempli (nom / SKU) avec override possible */}
           <div className="rounded-xl border border-[#E7E4DC] bg-[#FAFAF8] p-3 md:col-span-2">
