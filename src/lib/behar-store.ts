@@ -2767,7 +2767,9 @@ function createSeed() {
     invoices: [] as Invoice[],
     payments: [] as Payment[],
     appointments: [] as Appointment[],
-    stockItems: stockMocks.map((item) => normalizeStockItem(item as any)) as StockItem[],
+    // État zéro à la 1re ouverture : pas de stock de démo.
+    // Les mocks restent dispo dans @/mock/stock pour les tests internes.
+    stockItems: [] as StockItem[],
     documents: [] as BeharDocument[],
     messageLogs: [] as MessageLog[],
     priceBookItems: [] as PriceBookItem[],
@@ -3182,12 +3184,18 @@ export const useBeharStore = create<StoreState>()(
         })),
 
       activateLicense: (key: string) => {
+        // Clés actives — à régénérer ici quand tu vends une licence.
+        // Format : BHT-2026-XXXX-YYYY (4 chars + 4 chars) pour qu'elles
+        // soient faciles à dicter au téléphone mais imprévisibles.
         const validKeys = [
-          "BHT-2026-PRO-001",
-          "BHT-2026-PRO-002",
-          "BHT-PILOT-ANNEMASSE",
-          "BHT-BEHAR-TECH-PRO",
-          "BHT-PILOT-EXCLUSIF"
+          // Toi (gérant Behar Tech, accès personnel)
+          "BHT-2026-BEHAR-TECH",
+          // 5 clés client prêtes à distribuer
+          "BHT-2026-9F7K-3M2X",
+          "BHT-2026-4D8N-2P5Y",
+          "BHT-2026-Q6R8-T1V3",
+          "BHT-2026-J5L7-W9Z2",
+          "BHT-2026-A3B6-C8E1",
         ];
         if (validKeys.includes(key.toUpperCase().trim())) {
           set({
