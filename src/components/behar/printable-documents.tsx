@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import {
   type Customer,
+  workshopInfo as defaultWorkshopInfo,
   formatEuro,
   getInvoiceTotal,
   getQuoteTotal,
@@ -15,7 +16,6 @@ import {
   type Sale,
   type StockItem,
   type WorkshopInfo,
-  workshopInfo as defaultWorkshopInfo,
 } from "@/lib/behar-store";
 import { formatDeviceLabel } from "@/lib/format-device";
 
@@ -41,10 +41,10 @@ const DOC_THEME: Record<
 > = {
   devis: {
     label: "DEVIS",
-    accent: "#2F6FD0",
-    soft: "#E6EFFB",
-    ink: "#1E4FA0",
-    chipText: "#1E4FA0",
+    accent: "#2A9D8F",
+    soft: "#EAF6F2",
+    ink: "#167B70",
+    chipText: "#167B70",
   },
   facture: {
     label: "FACTURE",
@@ -55,17 +55,17 @@ const DOC_THEME: Record<
   },
   recu: {
     label: "REÇU DE PAIEMENT",
-    accent: "#10B981",
-    soft: "#E7F8F0",
-    ink: "#0B7A56",
-    chipText: "#0B7A56",
+    accent: "#2A9D8F",
+    soft: "#EAF6F2",
+    ink: "#167B70",
+    chipText: "#167B70",
   },
   "bon-prise-en-charge": {
     label: "BON DE PRISE EN CHARGE",
-    accent: "#C2841C",
-    soft: "#FCF1DF",
-    ink: "#8C5B0E",
-    chipText: "#8C5B0E",
+    accent: "#2A9D8F",
+    soft: "#EAF6F2",
+    ink: "#167B70",
+    chipText: "#167B70",
   },
 };
 
@@ -190,28 +190,27 @@ function DocumentHeader({
   const theme = DOC_THEME[type];
   return (
     <header className="flex items-start justify-between gap-8 border-b border-[#E8E8E5] pb-6">
-      <div className="max-w-[470px]">
+      <div className="min-w-0 max-w-[470px] text-left">
         <div className="text-[12px] leading-relaxed text-[#6B6B6B]">
           <p className="font-semibold text-[#1A1916] text-[15px] tracking-tight">{atelierName}</p>
-          {workshop.commercialName ? <p>{text(workshop.commercialName)}</p> : null}
           <p>{text(workshop.address)}</p>
           <p>
             {text(workshop.postalCity, `${dash(workshop.postalCode)} ${dash(workshop.city)}`)}, {text(workshop.country, "France")}
           </p>
           <p>SIRET : {text(workshop.siret)}</p>
-          {workshop.tvaNumber ? <p>TVA intracom. : {text(workshop.tvaNumber)}</p> : null}
-          <p>{text(workshop.email)} · {text(workshop.phone)}</p>
+          <p>{text(workshop.email)}</p>
+          <p>{text(workshop.phone)}</p>
         </div>
       </div>
 
-      <div className="min-w-[245px] text-right">
+      <div className="min-w-[260px] text-right">
         <span
-          className="inline-flex rounded-full px-3.5 py-1.5 font-bold text-[11px] uppercase tracking-[0.16em]"
+          className="inline-flex max-w-full whitespace-nowrap rounded-full px-3.5 py-1.5 font-bold text-[11px] uppercase tracking-[0.16em]"
           style={{ backgroundColor: theme.soft, color: theme.chipText }}
         >
           {theme.label}
         </span>
-        <p className="mt-4 font-mono font-semibold text-[#1A1916] text-[20px] tracking-tight">{dash(number)}</p>
+        <p className="mt-4 break-words font-mono font-semibold text-[#1A1916] text-[20px] tracking-tight">{dash(number)}</p>
         <p className="mt-1 text-[#6B6B6B] text-[12px]">Émis le {date ? dateLabel(date) : "Non renseigné"}</p>
         {badge ? <div className="mt-3"><Badge>{badge}</Badge></div> : null}
       </div>
@@ -433,7 +432,7 @@ function intakeAccessories(repair: Repair) {
 function IntakeBox({ title, children }: Readonly<{ title: string; children: ReactNode }>) {
   return (
     <section className="rounded-[10px] border border-[#E8E8E5] bg-white p-3">
-      <h3 className="mb-2 font-bold text-[#8C5B0E] text-[11px] uppercase tracking-wide">{title}</h3>
+      <h3 className="mb-2 font-bold text-[#167B70] text-[11px] uppercase tracking-wide">{title}</h3>
       {children}
     </section>
   );
@@ -457,7 +456,7 @@ function PatternMini({ points }: Readonly<{ points?: number[] }>) {
         return (
           <span
             className={`grid size-5 place-items-center rounded-full border text-[8px] font-bold ${
-              order ? "border-[#8C5B0E] bg-[#FCF1DF] text-[#8C5B0E]" : "border-[#D8D8D2] bg-white text-transparent"
+              order ? "border-[#2A9D8F] bg-[#EAF6F2] text-[#167B70]" : "border-[#D8D8D2] bg-white text-transparent"
             }`}
             key={point}
           >
@@ -560,7 +559,7 @@ export function RepairIntakeDocument({
 
         {/* État d'entrée — compact 2 col */}
         <section className="overflow-hidden rounded-[10px] border border-[#E8E8E5] bg-white">
-          <h3 className="border-[#E8E8E5] border-b px-4 py-2.5 font-bold text-[#8C5B0E] text-[12px] uppercase tracking-wide">
+          <h3 className="border-[#E8E8E5] border-b px-4 py-2.5 font-bold text-[#167B70] text-[12px] uppercase tracking-wide">
             État d'entrée appareil
           </h3>
           <div className="grid grid-cols-2">
@@ -601,9 +600,9 @@ export function RepairIntakeDocument({
                     <span
                       className="mt-0.5 inline-flex size-3.5 shrink-0 items-center justify-center rounded-[3px] border text-[9px] font-bold leading-none"
                       style={{
-                        borderColor: checked ? "#8C5B0E" : "#CFCFCA",
-                        backgroundColor: checked ? "#FCF1DF" : "white",
-                        color: "#8C5B0E",
+                        borderColor: checked ? "#2A9D8F" : "#CFCFCA",
+                        backgroundColor: checked ? "#EAF6F2" : "white",
+                        color: "#167B70",
                       }}
                     >
                       {checked ? "✓" : ""}
@@ -631,7 +630,7 @@ export function RepairIntakeDocument({
           page={2}
           pageCount={2}
         >
-          <h2 className="font-bold text-[#8C5B0E] text-[14px] uppercase tracking-wide">Photos de l'appareil (facultatives)</h2>
+          <h2 className="font-bold text-[#167B70] text-[14px] uppercase tracking-wide">Photos de l'appareil (facultatives)</h2>
           <p className="mt-2 text-[#6B6B6B] text-[12px] leading-relaxed">
             Photos prises au moment du dépôt. Elles servent uniquement à compléter l'état visuel
             documenté en page 1.
@@ -663,7 +662,7 @@ function IntakeLegalMentions({ workshop }: Readonly<{ workshop: WorkshopInfo }>)
 
   return (
     <section className="rounded-[10px] border border-[#E8E8E5] bg-[#FAFAF8] p-4">
-      <h3 className="mb-2 font-bold text-[#8C5B0E] text-[11px] uppercase tracking-wide">
+      <h3 className="mb-2 font-bold text-[#167B70] text-[11px] uppercase tracking-wide">
         Conditions de prise en charge et mentions légales
       </h3>
       <ul className="space-y-1.5 text-[10.5px] text-[#1A1916] leading-relaxed">

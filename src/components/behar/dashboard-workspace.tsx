@@ -3,12 +3,12 @@
 import Link from "next/link";
 
 import type { LucideIcon } from "lucide-react";
-import { ArrowRight, MoreHorizontal } from "lucide-react";
+import { ArrowRight, CalendarDays, CheckCheck, MoreHorizontal, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
 import { DetailRow, Panel, PrimaryButton, StatusBadge } from "@/components/behar/primitives";
 import { RevenueChart } from "@/components/behar/revenue-chart";
-import { formatEuro, formatIsoToDisplay, useBeharStore } from "@/lib/behar-store";
+import { formatEuro, formatIsoToDisplay, normalizeAppointmentStatus, useBeharStore } from "@/lib/behar-store";
 import type { RepairCard } from "@/mock/repairs";
 
 export function DashboardWorkspace() {
@@ -31,9 +31,15 @@ export function DashboardWorkspace() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   })();
-  const todaysAppointments = store.appointments.filter(
-    (appointment) => appointment.date === today || appointment.date === todayIsoLocal,
-  ).length;
+  const todaysAppointmentRows = store.appointments
+    .filter(
+      (appointment) =>
+        (appointment.date === today || appointment.date === todayIsoLocal) &&
+        normalizeAppointmentStatus(appointment.status, appointment.confirmed) !== "Annulé" &&
+        normalizeAppointmentStatus(appointment.status, appointment.confirmed) !== "Non venu",
+    )
+    .sort((a, b) => a.time.localeCompare(b.time));
+  const todaysAppointments = todaysAppointmentRows.length;
   const selectedPaid = selected
     ? store.payments.some((payment) => payment.repairId === selected.id && payment.status === "Payé")
     : false;
@@ -174,6 +180,100 @@ export function DashboardWorkspace() {
           <DashboardMetricCard {...kpi} key={kpi.label} />
         ))}
       </section>
+
+      <Panel className="p-4">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Entrées prévues aujourd'hui</h2>
+            <p className="mt-1 text-[#8A8984] text-[13px]">
+              Appareils attendus à l'atelier, séparés des réparations réelles.
+            </p>
+          </div>
+          <Link
+            className="inline-flex items-center gap-1.5 text-[#8A8984] text-[13px] transition-colors hover:text-[#6B6B6B]"
+            href="/dashboard/rendez-vous"
+          >
+            Tous les RDV
+            <ArrowRight className="size-4" />
+          </Link>
+        </div>
+        {todaysAppointmentRows.length === 0 ? (
+          <div className="rounded-[14px] border border-dashed border-[#E8E8E5] bg-[#FAFAF8] px-4 py-6 text-center text-[#6B6B6B] text-sm">
+            Aucun appareil prévu aujourd'hui.
+          </div>
+        ) : (
+          <div className="grid gap-3 xl:grid-cols-3">
+            {todaysAppointmentRows.slice(0, 6).map((appointment) => {
+              const customer = store.customers.find((entry) => entry.id === appointment.customerId);
+              const linkedRepair =
+                store.repairs.find((repair) => repair.id === appointment.repairId) ??
+                store.repairs.find((repair) => repair.appointmentId === appointment.id);
+              const status = normalizeAppointmentStatus(appointment.status, appointment.confirmed, Boolean(linkedRepair));
+              const canMarkArrived = !linkedRepair && status !== "Arrivé" && status !== "Annulé" && status !== "Non venu";
+              const canCreateRepair = !linkedRepair && status === "Arrivé";
+              return (
+                <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FAFAF8] p-4" key={appointment.id}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-mono font-semibold text-[#1A1916] text-sm">{appointment.time || "—"}</p>
+                      <p className="mt-1 truncate font-semibold text-[#1A1916] text-sm">
+                        {customer?.name || "Client comptoir"}
+                      </p>
+                    </div>
+                    <AppointmentBadge status={status} />
+                  </div>
+                  <p className="mt-3 truncate font-medium text-[#1A1916] text-sm">{appointment.device}</p>
+                  <p className="mt-1 truncate text-[#6B6B6B] text-[13px]">{appointment.issue}</p>
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    {linkedRepair ? (
+                      <Link
+                        className="col-span-2 inline-flex h-9 items-center justify-center gap-2 rounded-[12px] bg-[#2A9D8F] px-3 font-semibold text-white text-xs"
+                        href="/dashboard/reparations"
+                        onClick={() => store.setSelected("repair", linkedRepair.id)}
+                      >
+                        <Wrench className="size-3.5" />
+                        Ouvrir réparation liée
+                      </Link>
+                    ) : (
+                      <>
+                        <button
+                          className="inline-flex h-9 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3 font-medium text-[#1A1916] text-xs disabled:cursor-not-allowed disabled:opacity-45"
+                          disabled={!canMarkArrived}
+                          onClick={() => {
+                            store.updateAppointment(appointment.id, { confirmed: true, status: "Arrivé" });
+                            toast.success("Client marqué comme arrivé");
+                          }}
+                          type="button"
+                        >
+                          <CheckCheck className="size-3.5" />
+                          Marquer arrivé
+                        </button>
+                        <button
+                          className="inline-flex h-9 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3 font-medium text-[#1A1916] text-xs disabled:cursor-not-allowed disabled:opacity-45"
+                          disabled={!canCreateRepair}
+                          onClick={() => {
+                            const repairId = store.createRepairFromAppointment(appointment.id);
+                            if (!repairId) {
+                              toast.error("Réparation déjà liée ou impossible à créer");
+                              return;
+                            }
+                            store.setSelected("repair", repairId);
+                            toast.success("Réparation créée depuis le rendez-vous");
+                          }}
+                          type="button"
+                        >
+                          <Wrench className="size-3.5" />
+                          Créer réparation
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Panel>
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_340px]">
         <Panel className="min-w-0 p-4">
@@ -382,6 +482,22 @@ function dashboardTestId(label: string): string {
       .replace(/\p{M}/gu, "")
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-|-$/g, "")}`
+  );
+}
+
+function AppointmentBadge({ status }: Readonly<{ status: string }>) {
+  const tone =
+    status === "Arrivé" || status === "Réparation créée"
+      ? "bg-[#E7F8F0] text-[#0B7A56]"
+      : status === "Annulé" || status === "Non venu"
+        ? "bg-[#FDECEC] text-[#B42318]"
+        : status === "Confirmé"
+          ? "bg-[#EAF6F2] text-[#167B70]"
+          : "bg-[#FAFAF8] text-[#6B6B6B]";
+  return (
+    <span className={`shrink-0 rounded-full px-2.5 py-1 font-semibold text-[11px] ${tone}`}>
+      {status}
+    </span>
   );
 }
 

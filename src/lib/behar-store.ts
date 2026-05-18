@@ -34,6 +34,7 @@ export type InvoiceStatus = "Brouillon" | "Envoyée" | "Payée" | "Annulée";
 export type QuoteStatus = "Brouillon" | "Envoyé" | "Accepté" | "Refusé" | "Facturé";
 export type PaymentStatus = "Payé" | "Annulé" | "Remboursé";
 export type PaymentMethod = "Espèces" | "Carte" | "Virement" | "Paiement en ligne simulé";
+export type AppointmentStatus = "En attente" | "Confirmé" | "Arrivé" | "Réparation créée" | "Annulé" | "Non venu";
 export type DocumentType = "intake" | "quote" | "invoice" | "payment" | "internal" | "summary" | "sale-receipt" | "sale-invoice";
 export type DeviceType = "Smartphone" | "Tablette" | "Ordinateur" | "Console" | "Autre";
 export type UserRole = "admin" | "technician" | "frontdesk";
@@ -324,6 +325,15 @@ export type VatSummary = {
   rate: number;
 };
 
+export const appointmentStatuses: AppointmentStatus[] = [
+  "En attente",
+  "Confirmé",
+  "Arrivé",
+  "Réparation créée",
+  "Annulé",
+  "Non venu",
+];
+
 export type QuoteLine = {
   id: string;
   description: string;
@@ -416,7 +426,7 @@ export type Appointment = {
   source: string;
   technician: string;
   notes: string;
-  status: string;
+  status: AppointmentStatus;
   confirmed: boolean;
   dayIndex: number;
   row: number;
@@ -1299,6 +1309,33 @@ const createCounterCustomer = (createdAt = nowLabel(), id = counterCustomerId, n
 });
 const normalizeRepairStatus = (status: unknown): RepairStatus =>
   repairStatuses.includes(status as RepairStatus) ? (status as RepairStatus) : "Reçu";
+export const normalizeAppointmentStatus = (
+  status: unknown,
+  confirmed = false,
+  hasLinkedRepair = false,
+): AppointmentStatus => {
+  const normalized = normalizeText(status)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (normalized === "annule" || normalized === "annulee") return "Annulé";
+  if (["absent", "no-show", "no show", "non venu", "non-venu"].includes(normalized)) return "Non venu";
+  if (
+    hasLinkedRepair ||
+    ["termine", "terminee", "converti en reparation", "reparation creee"].includes(normalized)
+  ) {
+    return "Réparation créée";
+  }
+  if (["venu", "arrive", "arrivee"].includes(normalized)) return "Arrivé";
+  if (["confirme", "confirmee"].includes(normalized)) return "Confirmé";
+  if (["prevu", "en attente", "attente", "pending"].includes(normalized)) {
+    return confirmed ? "Confirmé" : "En attente";
+  }
+  return confirmed ? "Confirmé" : "En attente";
+};
 const normalizeDeviceType = (type: unknown, fallback: DeviceType = "Smartphone"): DeviceType =>
   deviceTypes.includes(type as DeviceType) ? (type as DeviceType) : fallback;
 const findBrandByName = (name: unknown) => {
@@ -2034,7 +2071,8 @@ const normalizeAppointment = (
   const id = normalizeText(appointment.id, uid("appointment"));
   const linkedRepair = repairs.find((repair) => repair.id === appointment.repairId || repair.appointmentId === id);
   const customerId = getValidCustomerId(appointment.customerId, customers, linkedRepair?.customerId);
-  const status = normalizeText(appointment.status, "prévu");
+  const status = normalizeAppointmentStatus(appointment.status, appointment.confirmed, Boolean(linkedRepair));
+  const confirmed = status === "Confirmé" || status === "Arrivé" || status === "Réparation créée";
   return {
     id,
     shopId: normalizeText(appointment.shopId, shopId),
@@ -2049,8 +2087,8 @@ const normalizeAppointment = (
     source: normalizeText(appointment.source, "Atelier"),
     technician: normalizeText(appointment.technician, "Atelier principal"),
     notes: normalizeText(appointment.notes),
-    status: linkedRepair && status !== "annulé" ? "terminé" : status,
-    confirmed: appointment.confirmed ?? false,
+    status,
+    confirmed,
     dayIndex: clampQuantity(appointment.dayIndex),
     row: clampQuantity(appointment.row),
     color: normalizeText(appointment.color, "mint"),
@@ -3415,7 +3453,7 @@ export const useBeharStore = create<StoreState>()(
                 ? {
                   ...entry,
                   repairId: id,
-                  status: "Converti en réparation",
+                  status: "Réparation créée" as AppointmentStatus,
                   confirmed: true,
                 }
                 : entry,
@@ -3536,7 +3574,7 @@ export const useBeharStore = create<StoreState>()(
               ...appointment,
               customerId: nextCustomerId,
               repairId: linkedRepair.id,
-              status: "Converti en réparation",
+              status: "Réparation créée" as AppointmentStatus,
               confirmed: true,
             };
           });
@@ -3581,7 +3619,7 @@ export const useBeharStore = create<StoreState>()(
               .filter((a) => a.repairId !== id || a.type !== "repair_pickup")
               .map((appointment) =>
                 deletedRepair?.appointmentId === appointment.id || appointment.repairId === id
-                  ? { ...appointment, repairId: undefined, status: "Réparation supprimée" }
+                  ? { ...appointment, repairId: undefined, status: "Arrivé" as AppointmentStatus }
                   : appointment,
               ),
             customers: deriveCustomers(state.customers, repairs, state.payments),
@@ -4732,8 +4770,10 @@ export const useBeharStore = create<StoreState>()(
           source: input.source || "Atelier",
           technician: input.technician || "Atelier principal",
           notes: input.notes || "",
-          status: input.status || (input.confirmed ? "venu" : "prévu"),
-          confirmed: input.confirmed ?? false,
+          status: normalizeAppointmentStatus(input.status, input.confirmed),
+          confirmed: ["Confirmé", "Arrivé", "Réparation créée"].includes(
+            normalizeAppointmentStatus(input.status, input.confirmed),
+          ),
           dayIndex: input.dayIndex ?? 2,
           row: input.row ?? 6,
           color: input.color || "mint",
@@ -4828,10 +4868,16 @@ export const useBeharStore = create<StoreState>()(
           get().repairs.find((repair) => repair.id === appointment.repairId) ??
           get().repairs.find((repair) => repair.appointmentId === appointment.id);
         if (existing) {
-          get().updateRepair(existing.id, { appointmentId: appointment.id, customerId });
+          get().updateRepair(existing.id, {
+            appointmentId: appointment.id,
+            customerId,
+            history: existing.history.includes("Créée depuis rendez-vous")
+              ? existing.history
+              : [...existing.history, "Créée depuis rendez-vous"],
+          });
           get().updateAppointment(appointment.id, {
             repairId: existing.id,
-            status: "terminé",
+            status: "Réparation créée" as AppointmentStatus,
             confirmed: true,
           });
           return existing.id;
@@ -4847,11 +4893,12 @@ export const useBeharStore = create<StoreState>()(
           notes: appointment.notes,
           droppedAt: `${appointment.date}, ${appointment.time}`,
           technician: "Atelier principal",
+          history: ["Réparation créée", "Créée depuis rendez-vous"],
         });
         if (repairId) {
           get().updateAppointment(appointment.id, {
             repairId,
-            status: "terminé",
+            status: "Réparation créée" as AppointmentStatus,
             confirmed: true,
           });
         }

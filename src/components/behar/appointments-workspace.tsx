@@ -31,8 +31,11 @@ import { toast } from "sonner";
 
 import {
   type Appointment,
+  appointmentStatuses,
+  type AppointmentStatus,
   formatIsoToDisplay,
   getNowIso,
+  normalizeAppointmentStatus,
   type Repair,
   type StoreState,
   toLocalIso,
@@ -91,7 +94,7 @@ export function AppointmentsWorkspace() {
     duration: "30 min",
     device: store.customers[0]?.device ?? "iPhone 13",
     issue: store.customers[0]?.lastRepair ?? "Écran cassé",
-    status: "prévu",
+    status: "En attente" as AppointmentStatus,
     notes: "",
     source: "Client venu sur place",
     technician: "Atelier principal",
@@ -144,18 +147,18 @@ export function AppointmentsWorkspace() {
     toAppointmentInput(appt) === iso;
 
   const appointmentsForSelectedDay = store.appointments
-    .filter((appt) => appointmentMatchesIso(appt, mobileSelectedDay) && appt.status !== "annulé")
+    .filter((appt) => appointmentMatchesIso(appt, mobileSelectedDay) && normalizeAppointmentStatus(appt.status) !== "Annulé")
     .sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
 
   const dayBucket = (iso: string) =>
-    store.appointments.filter((appt) => appointmentMatchesIso(appt, iso) && appt.status !== "annulé");
+    store.appointments.filter((appt) => appointmentMatchesIso(appt, iso) && normalizeAppointmentStatus(appt.status) !== "Annulé");
 
   const mobileKpis = (() => {
     const list = appointmentsForSelectedDay;
-    const arrived = list.filter((a) => a.status === "venu" || a.status === "arrivé").length;
-    const confirmed = list.filter((a) => a.confirmed && a.status !== "venu" && a.status !== "arrivé").length;
+    const arrived = list.filter((a) => normalizeAppointmentStatus(a.status) === "Arrivé").length;
+    const confirmed = list.filter((a) => normalizeAppointmentStatus(a.status, a.confirmed) === "Confirmé").length;
     const pending = list.filter(
-      (a) => !a.confirmed && a.status !== "venu" && a.status !== "arrivé",
+      (a) => normalizeAppointmentStatus(a.status, a.confirmed) === "En attente",
     ).length;
     return { confirmed, pending, arrived };
   })();
@@ -519,14 +522,25 @@ export function AppointmentsWorkspace() {
               <PrimaryButton
                 className="h-12 w-full text-base"
                 onClick={() => {
-                  store.updateAppointment(selected.id, { confirmed: true });
-                  store.updateAppointment(selected.id, { confirmed: true, status: "venu" });
+                  store.updateAppointment(selected.id, { confirmed: true, status: "Confirmé" });
                   toast.success("Rendez-vous confirmé");
                 }}
               >
                 <CheckCircle2 className="size-4" />
                 Confirmer
               </PrimaryButton>
+              {!selectedRepair && normalizeAppointmentStatus(selected.status) !== "Arrivé" && (
+                <PrimaryButton
+                  className="h-12 w-full bg-[#1A1916] text-base hover:bg-[#2A2925]"
+                  onClick={() => {
+                    store.updateAppointment(selected.id, { confirmed: true, status: "Arrivé" });
+                    toast.success("Client marqué comme arrivé");
+                  }}
+                >
+                  <CheckCheck className="size-4" />
+                  Marquer arrivé
+                </PrimaryButton>
+              )}
               <SecondaryButton
                 className="h-12 w-full text-base"
                 onClick={() => {
@@ -558,16 +572,21 @@ export function AppointmentsWorkspace() {
               </SecondaryButton>
               <SecondaryButton
                 className="h-12 w-full text-base"
+                disabled={!selectedRepair && normalizeAppointmentStatus(selected.status) !== "Arrivé"}
                 onClick={() => {
                   if (!selected.customerId) {
                     toast.error("Impossible de créer une réparation sans client lié");
+                    return;
+                  }
+                  if (!selectedRepair && normalizeAppointmentStatus(selected.status) !== "Arrivé") {
+                    toast.info("Marquez d'abord le client comme arrivé.");
                     return;
                   }
                   openRepairFlow(selected, selectedRepair);
                 }}
               >
                 <CalendarPlus className="size-4" />
-                {selectedRepair ? "Voir la réparation liée" : "Créer la fiche réparation"}
+                {selectedRepair ? "Ouvrir réparation liée" : "Créer réparation"}
               </SecondaryButton>
               <SecondaryButton
                 className="h-12 w-full text-[#B42318] text-base"
@@ -647,7 +666,7 @@ export function AppointmentsWorkspace() {
               duration: form.duration,
               status: form.status,
               notes: form.notes,
-              confirmed: form.status === "venu",
+              confirmed: ["Confirmé", "Arrivé", "Réparation créée"].includes(normalizeAppointmentStatus(form.status)),
               channel: "Atelier",
               source: form.source,
               technician: form.technician,
@@ -686,7 +705,7 @@ export function AppointmentsWorkspace() {
               return;
             }
             if (
-              form.status === "annulé" &&
+              normalizeAppointmentStatus(form.status) === "Annulé" &&
               selectedRepair &&
               !window.confirm("Ce rendez-vous est lié à une réparation. Confirmer l'annulation ?")
             ) {
@@ -701,7 +720,7 @@ export function AppointmentsWorkspace() {
               issue: form.issue,
               status: form.status,
               notes: form.notes,
-              confirmed: form.status === "venu",
+              confirmed: ["Confirmé", "Arrivé", "Réparation créée"].includes(normalizeAppointmentStatus(form.status)),
               source: form.source,
               technician: form.technician,
               dayIndex: dateToDayIndex(date, buildWeekDays(weekOffset)),
@@ -739,16 +758,21 @@ export function AppointmentsWorkspace() {
             <div className="mt-6 flex justify-end gap-3">
               <SecondaryButton onClick={() => setPreviewOpen(false)}>Fermer</SecondaryButton>
               <PrimaryButton
+                disabled={!selectedRepair && normalizeAppointmentStatus(selected.status) !== "Arrivé"}
                 onClick={() => {
                   if (!selected.customerId) {
                     toast.error("Impossible de créer une réparation sans client lié");
+                    return;
+                  }
+                  if (!selectedRepair && normalizeAppointmentStatus(selected.status) !== "Arrivé") {
+                    toast.info("Marquez d'abord le client comme arrivé.");
                     return;
                   }
                   setPreviewOpen(false);
                   openRepairFlow(selected, selectedRepair);
                 }}
               >
-                {selectedRepair ? "Voir la réparation liée" : "Créer la fiche réparation"}
+                {selectedRepair ? "Ouvrir réparation liée" : "Créer réparation"}
               </PrimaryButton>
             </div>
           </Panel>
@@ -1001,14 +1025,12 @@ function AppointmentModal({
               Statut
               <select
                 className="h-11 rounded-[13px] border border-[#E7E4DC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
-                onChange={(event) => onChange({ ...form, status: event.target.value })}
+                onChange={(event) => onChange({ ...form, status: event.target.value as AppointmentStatus })}
                 value={form.status}
               >
-                <option>prévu</option>
-                <option>venu</option>
-                <option>absent</option>
-                <option>annulé</option>
-                <option>terminé</option>
+                {appointmentStatuses.map((status) => (
+                  <option key={status}>{status}</option>
+                ))}
               </select>
             </label>
           </div>
@@ -1178,7 +1200,7 @@ type AppointmentForm = {
   duration: string;
   device: string;
   issue: string;
-  status: string;
+  status: AppointmentStatus;
   notes: string;
   source: string;
   technician: string;
@@ -1314,7 +1336,7 @@ function groupAppointmentsForMobile(appointments: Appointment[]) {
   };
 
   for (const appointment of appointments) {
-    if (appointment.status === "annulé") continue;
+    if (normalizeAppointmentStatus(appointment.status) === "Annulé") continue;
     const iso = displayToInputDate(appointment.date);
     if (!iso) continue;
     if (iso === todayIso) buckets.today.push(appointment);
@@ -1378,8 +1400,9 @@ function capitalize(value: string): string {
 }
 
 function appointmentTone(appt: Appointment): "teal" | "amber" | "success" {
-  if (appt.status === "venu" || appt.status === "arrivé") return "success";
-  if (appt.confirmed) return "teal";
+  const status = normalizeAppointmentStatus(appt.status, appt.confirmed);
+  if (status === "Arrivé" || status === "Réparation créée") return "success";
+  if (status === "Confirmé") return "teal";
   return "amber";
 }
 
@@ -1416,16 +1439,11 @@ function AppointmentStatusPill({
   status,
   confirmed,
 }: Readonly<{ status: string; confirmed?: boolean }>) {
-  const label = (() => {
-    if (status === "venu" || status === "arrivé") return "Arrivé";
-    if (status === "annulé") return "Annulé";
-    if (confirmed) return "Confirmé";
-    return "En attente";
-  })();
+  const label = normalizeAppointmentStatus(status, confirmed);
   const tone = (() => {
-    if (status === "venu" || status === "arrivé") return "bg-[#E7F8F0] text-[#0B7A56]";
-    if (status === "annulé") return "bg-[#FDECEC] text-[#B42318]";
-    if (confirmed) return "bg-[#EAF6F2] text-[#167B70]";
+    if (label === "Arrivé" || label === "Réparation créée") return "bg-[#E7F8F0] text-[#0B7A56]";
+    if (label === "Annulé" || label === "Non venu") return "bg-[#FDECEC] text-[#B42318]";
+    if (label === "Confirmé") return "bg-[#EAF6F2] text-[#167B70]";
     return "bg-[#FCF1DF] text-[#C2841C]";
   })();
   return (

@@ -42,6 +42,9 @@ import {
   buildInvoiceLinesFromRepair,
   formatEuro,
   formatIsoToDisplay,
+  normalizeAppointmentStatus,
+  type Appointment,
+  type Customer,
   type Invoice,
   type PaymentMethod,
   paymentMethods,
@@ -112,8 +115,10 @@ export function RepairsWorkspace() {
     removePartFromRepair,
     sendMessage,
     updateRepair,
+    updateAppointment,
     changeRepairStatus,
     deleteRepair,
+    createRepairFromAppointment,
     createInvoiceFromRepair,
     confirmPartUsage,
     addRepair,
@@ -140,8 +145,10 @@ export function RepairsWorkspace() {
       removePartFromRepair: s.removePartFromRepair,
       sendMessage: s.sendMessage,
       updateRepair: s.updateRepair,
+      updateAppointment: s.updateAppointment,
       changeRepairStatus: s.changeRepairStatus,
       deleteRepair: s.deleteRepair,
+      createRepairFromAppointment: s.createRepairFromAppointment,
       createInvoiceFromRepair: s.createInvoiceFromRepair,
       confirmPartUsage: s.confirmPartUsage,
       addRepair: s.addRepair,
@@ -209,6 +216,11 @@ export function RepairsWorkspace() {
   const maxPartQuantity = Math.max(1, selectedStockItem?.stock ?? 1);
   const selectedCustomer = selectedRepair
     ? customers.find((customer) => customer.id === selectedRepair.customerId)
+    : undefined;
+  const selectedLinkedAppointment = selectedRepair
+    ? selectedRepair.appointmentId
+      ? appointments.find((appointment) => appointment.id === selectedRepair.appointmentId)
+      : appointments.find((appointment) => appointment.repairId === selectedRepair.id)
     : undefined;
   const relatedQuotes = selectedRepair
     ? quotes.filter((quote) => quote.repairId === selectedRepair.id || selectedRepair.quoteIds?.includes(quote.id))
@@ -604,6 +616,18 @@ export function RepairsWorkspace() {
   const subtleHintCounter =
     isCounterCustomer(selectedCustomer) &&
     "Vous pouvez facturer un client comptoir et compléter son identité plus tard.";
+  const plannedEntries = useMemo(
+    () =>
+      appointments
+        .filter((appointment) => {
+          const linkedRepair = findRepairForAppointment(appointment, repairs);
+          const status = normalizeAppointmentStatus(appointment.status, appointment.confirmed, Boolean(linkedRepair));
+          return !linkedRepair && (status === "En attente" || status === "Confirmé" || status === "Arrivé");
+        })
+        .sort((a, b) => appointmentSortKey(a).localeCompare(appointmentSortKey(b)))
+        .slice(0, 6),
+    [appointments, repairs],
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-5">
@@ -653,6 +677,33 @@ export function RepairsWorkspace() {
           <Plus className="size-4" /> Nouvelle réparation
         </PrimaryButton>
       </div>
+
+      <PlannedEntriesPanel
+        appointments={plannedEntries}
+        customers={customers}
+        onCreateRepair={(appointment) => {
+          const status = normalizeAppointmentStatus(appointment.status, appointment.confirmed);
+          if (status !== "Arrivé") {
+            toast.info("Marquez d'abord le client comme arrivé.");
+            return;
+          }
+          const repairId = createRepairFromAppointment(appointment.id);
+          if (!repairId) {
+            toast.error("Réparation déjà liée ou impossible à créer.");
+            return;
+          }
+          setSelected("repair", repairId);
+          toast.success("Réparation créée depuis le rendez-vous");
+        }}
+        onMarkArrived={(appointment) => {
+          updateAppointment(appointment.id, { confirmed: true, status: "Arrivé" });
+          toast.success("Client marqué comme arrivé");
+        }}
+        onOpenAppointment={(appointment) => {
+          setSelected("appointment", appointment.id);
+          router.push("/dashboard/rendez-vous");
+        }}
+      />
 
       {/* Desktop : ancienne barre filtres + actions */}
       <div className="hidden shrink-0 md:flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
@@ -754,7 +805,7 @@ export function RepairsWorkspace() {
                       {linkedAppointment && (
                         <p className="mt-0.5 inline-flex items-center gap-1 text-[#2A9D8F] text-[11px] font-medium">
                           <CalendarDays className="size-3" />
-                          RDV {linkedAppointment.date}{linkedAppointment.time ? ` · ${linkedAppointment.time}` : ""}
+                          Depuis RDV · {linkedAppointment.date}{linkedAppointment.time ? ` · ${linkedAppointment.time}` : ""}
                         </p>
                       )}
                       <div className="mt-2 flex items-center justify-between gap-2">
@@ -875,8 +926,13 @@ export function RepairsWorkspace() {
                     <h2 className="mt-1 truncate font-semibold text-[#1A1916] text-[22px] leading-tight tracking-tight">
                       {selectedRepair.number}
                     </h2>
-                    <div className="mt-3">
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
                       <StatusBadge status={selectedRepair.status} />
+                      {selectedLinkedAppointment ? (
+                        <span className="inline-flex rounded-full bg-[#EAF6F2] px-2.5 py-1 font-semibold text-[#167B70] text-[11px]">
+                          Depuis RDV
+                        </span>
+                      ) : null}
                     </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
@@ -1136,7 +1192,7 @@ export function RepairsWorkspace() {
                       <div className="flex items-center justify-between gap-3">
                         <div>
                           <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">
-                            Rendez-vous lié
+                            RDV d'origine
                           </h3>
                           <p className="mt-2 inline-flex items-center gap-2 font-semibold text-[#1A1916] text-sm">
                             <CalendarDays className="size-4 text-[#2A9D8F]" />
@@ -1144,7 +1200,7 @@ export function RepairsWorkspace() {
                             {linkedAppointment.time ? ` · ${linkedAppointment.time}` : ""}
                           </p>
                           <p className="mt-0.5 text-[#6B6B6B] text-[12px]">
-                            {linkedAppointment.status || "Prévu"}
+                            {normalizeAppointmentStatus(linkedAppointment.status, linkedAppointment.confirmed, true)}
                             {linkedAppointment.duration ? ` · ${linkedAppointment.duration}` : ""}
                           </p>
                         </div>
@@ -1431,6 +1487,96 @@ export function RepairsWorkspace() {
       )}
     </div>
   );
+}
+
+function PlannedEntriesPanel({
+  appointments,
+  customers,
+  onCreateRepair,
+  onMarkArrived,
+  onOpenAppointment,
+}: Readonly<{
+  appointments: Appointment[];
+  customers: Customer[];
+  onCreateRepair: (appointment: Appointment) => void;
+  onMarkArrived: (appointment: Appointment) => void;
+  onOpenAppointment: (appointment: Appointment) => void;
+}>) {
+  return (
+    <Panel className="shrink-0 p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <h2 className="font-semibold text-[#1A1916] text-[15px] tracking-tight md:text-[17px]">Entrées prévues</h2>
+          <p className="mt-1 text-[#8A8984] text-[12px] md:text-[13px]">
+            Rendez-vous confirmés ou en attente, pas encore dans le pipeline réparation.
+          </p>
+        </div>
+        <span className="rounded-full bg-[#FAFAF8] px-2.5 py-1 font-semibold text-[#6B6B6B] text-xs">
+          {appointments.length}
+        </span>
+      </div>
+      {appointments.length === 0 ? (
+        <div className="rounded-[14px] border border-dashed border-[#E8E8E5] bg-[#FAFAF8] px-4 py-5 text-center text-[#6B6B6B] text-sm">
+          Aucun rendez-vous à transformer pour le moment.
+        </div>
+      ) : (
+        <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+          {appointments.map((appointment) => {
+            const customer = customers.find((entry) => entry.id === appointment.customerId);
+            const status = normalizeAppointmentStatus(appointment.status, appointment.confirmed);
+            const arrived = status === "Arrivé";
+            return (
+              <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FAFAF8] p-4" key={appointment.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-mono font-semibold text-[#1A1916] text-xs">
+                      {appointment.date} · {appointment.time}
+                    </p>
+                    <p className="mt-1 truncate font-semibold text-[#1A1916] text-sm">
+                      {customer?.name || "Client comptoir"}
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-white px-2.5 py-1 font-semibold text-[#167B70] text-[11px]">
+                    {status}
+                  </span>
+                </div>
+                <p className="mt-3 truncate font-medium text-[#1A1916] text-sm">{appointment.device}</p>
+                <p className="mt-1 truncate text-[#6B6B6B] text-[13px]">{appointment.issue}</p>
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  <SecondaryButton className="h-9 px-2 text-xs" onClick={() => onOpenAppointment(appointment)}>
+                    RDV
+                  </SecondaryButton>
+                  <SecondaryButton
+                    className="h-9 px-2 text-xs"
+                    disabled={arrived}
+                    onClick={() => onMarkArrived(appointment)}
+                  >
+                    Arrivé
+                  </SecondaryButton>
+                  <PrimaryButton
+                    className="h-9 px-2 text-xs"
+                    disabled={!arrived}
+                    onClick={() => onCreateRepair(appointment)}
+                  >
+                    Créer
+                  </PrimaryButton>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+function findRepairForAppointment(appointment: Appointment, repairs: { id: string; appointmentId?: string }[]) {
+  return repairs.find((repair) => repair.id === appointment.repairId) ??
+    repairs.find((repair) => repair.appointmentId === appointment.id);
+}
+
+function appointmentSortKey(appointment: Appointment) {
+  return `${appointment.date || ""} ${appointment.time || ""}`;
 }
 
 function Detail({ label, value }: Readonly<{ label: string; value: ReactNode }>) {

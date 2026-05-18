@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+
+import Link from "next/link";
 
 import { Download, ExternalLink, Eye, Mail, Printer, Search, Trash2 } from "lucide-react";
-import Link from "next/link";
 import { toast } from "sonner";
 
 import { PrimaryButton, SecondaryButton, StatusBadge } from "@/components/behar/primitives";
@@ -31,6 +32,7 @@ const TYPE_FILTERS: Array<{ key: FilterType; label: string }> = [
   { key: "sale-receipt", label: "Ventes" },
   { key: "sale-invoice", label: "Factures vente" },
   { key: "internal", label: "Fiches internes" },
+  { key: "summary", label: "Résumés" },
 ];
 
 const TYPE_LABEL: Record<DocumentType, string> = {
@@ -41,8 +43,10 @@ const TYPE_LABEL: Record<DocumentType, string> = {
   "sale-receipt": "Reçu de vente",
   "sale-invoice": "Facture de vente",
   internal: "Fiche interne",
-  summary: "Document",
+  summary: "Résumé dossier",
 };
+
+const PREVIEW_DOCUMENT_WIDTH = 794;
 
 const STATUS_FILTERS = [
   "Tous",
@@ -66,6 +70,7 @@ function getPrintableTarget(document: BeharDocument): PrintableDocumentTarget | 
   if (document.type === "invoice" && document.invoiceId) return { type: "invoice", id: document.invoiceId };
   if (document.type === "payment" && document.paymentId) return { type: "payment", id: document.paymentId };
   if (document.type === "internal" && document.repairId) return { type: "internal", id: document.repairId };
+  if (document.type === "summary" && document.repairId) return { type: "internal", id: document.repairId };
   if ((document.type === "sale-receipt" || document.type === "sale-invoice") && document.saleId) return { type: "sale-receipt", id: document.saleId };
   return null;
 }
@@ -320,82 +325,154 @@ export function DocumentPreview() {
 
         {selected && selectedRow && (
           <section className="min-w-0" data-testid="document-preview-panel">
-            <div className="no-print mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#E7E4DC] bg-white p-4">
-              <div>
-                <p className="font-semibold text-[#1A1916]">{selectedRow.titleLabel}</p>
-                <p className="text-[#6B6B6B] text-sm">
-                  {TYPE_LABEL[selected.type]} · {selectedRow.customerLabel}
-                  {selectedRow.deviceLabel ? ` · ${selectedRow.deviceLabel}` : ""}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <StatusBadge status={selectedRow.statusLabel} />
-                {sourceHref(selected) && (
-                  <Link
-                    className="inline-flex h-9 items-center gap-1 rounded-full border border-[#E7E4DC] bg-white px-3 text-[#1A1916] text-xs hover:border-[#2A9D8F]/50"
-                    href={sourceHref(selected) as string}
+            <div className="no-print mb-4 rounded-2xl border border-[#E8E8E5] bg-white p-4 shadow-[0_10px_28px_rgba(26,25,22,0.035)]">
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+                <div className="min-w-0">
+                  <p className="break-words font-semibold text-[#1A1916]">{selectedRow.titleLabel}</p>
+                  <p className="mt-1 break-words text-[#6B6B6B] text-sm">
+                    {TYPE_LABEL[selected.type]} · {selectedRow.customerLabel}
+                    {selectedRow.deviceLabel ? ` · ${selectedRow.deviceLabel}` : ""}
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:flex lg:flex-wrap lg:justify-end">
+                  <div className="col-span-2 flex min-h-11 items-center sm:col-span-1">
+                    <StatusBadge status={selectedRow.statusLabel} />
+                  </div>
+                  {sourceHref(selected) && (
+                    <Link
+                      className="inline-flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-[14px] border border-[#E8E8E5] bg-white px-3 text-center text-[#1A1916] text-xs leading-tight hover:border-[#2A9D8F]/50"
+                      href={sourceHref(selected) as string}
+                      onClick={() => {
+                        if (selected.repairId) store.setSelected("repair", selected.repairId);
+                        else if (selected.quoteId) store.setSelected("quote", selected.quoteId);
+                        else if (selected.invoiceId) store.setSelected("invoice", selected.invoiceId);
+                        else if (selected.paymentId) store.setSelected("payment", selected.paymentId);
+                        else if (selected.saleId) store.setSelected("sale", selected.saleId);
+                      }}
+                    >
+                      <ExternalLink className="size-3.5 shrink-0" />
+                      <span>Dossier</span>
+                    </Link>
+                  )}
+                  <SecondaryButton className="min-w-0 justify-center gap-2 px-3 text-xs" onClick={() => toast.info("Ouvert ci-dessous (aperçu)")}>
+                    <Eye className="size-4 shrink-0" />
+                    Voir
+                  </SecondaryButton>
+                  <SecondaryButton
+                    className="min-w-0 justify-center gap-2 whitespace-normal px-3 text-center text-xs leading-tight"
                     onClick={() => {
-                      if (selected.repairId) store.setSelected("repair", selected.repairId);
-                      else if (selected.quoteId) store.setSelected("quote", selected.quoteId);
-                      else if (selected.invoiceId) store.setSelected("invoice", selected.invoiceId);
-                      else if (selected.paymentId) store.setSelected("payment", selected.paymentId);
-                      else if (selected.saleId) store.setSelected("sale", selected.saleId);
+                      const target = getPrintableTarget(selected);
+                      if (!target) {
+                        toast.error("Document lié introuvable");
+                        return;
+                      }
+                      download(target.type, target.id);
                     }}
                   >
-                    <ExternalLink className="size-3.5" />
-                    Ouvrir dossier lié
-                  </Link>
-                )}
-                <SecondaryButton onClick={() => toast.info("Ouvert ci-dessous (aperçu)")}>
-                  <Eye className="size-4" />
-                  Voir
-                </SecondaryButton>
-                <SecondaryButton
-                  onClick={() => {
-                    const target = getPrintableTarget(selected);
-                    if (!target) {
-                      toast.error("Document lié introuvable");
-                      return;
-                    }
-                    download(target.type, target.id);
-                  }}
-                >
-                  <Download className="size-4" />
-                  Télécharger PDF
-                </SecondaryButton>
-                <SecondaryButton
-                  onClick={() => {
-                    const target = getPrintableTarget(selected);
-                    if (!target) {
-                      toast.error("Document lié introuvable");
-                      return;
-                    }
-                    print(target.type, target.id);
-                  }}
-                >
-                  <Printer className="size-4" />
-                  Imprimer
-                </SecondaryButton>
-                <PrimaryButton onClick={() => toast.success("Email simulé, aucun envoi réel")}>
-                  <Mail className="size-4" />
-                  Envoyer
-                </PrimaryButton>
-                <SecondaryButton
-                  className="text-[#B42318]"
-                  onClick={() => {
-                    if (window.confirm("Supprimer ce document ?")) {
-                      store.deleteDocument(selected.id);
-                      toast.success("Document supprimé");
-                    }
-                  }}
-                >
-                  <Trash2 className="size-4" />
-                </SecondaryButton>
+                    <Download className="size-4 shrink-0" />
+                    Télécharger PDF
+                  </SecondaryButton>
+                  <SecondaryButton
+                    className="min-w-0 justify-center gap-2 px-3 text-xs"
+                    onClick={() => {
+                      const target = getPrintableTarget(selected);
+                      if (!target) {
+                        toast.error("Document lié introuvable");
+                        return;
+                      }
+                      print(target.type, target.id);
+                    }}
+                  >
+                    <Printer className="size-4 shrink-0" />
+                    Imprimer
+                  </SecondaryButton>
+                  <PrimaryButton className="min-w-0 justify-center gap-2 px-3 text-xs" onClick={() => toast.success("Email simulé, aucun envoi réel")}>
+                    <Mail className="size-4 shrink-0" />
+                    Envoyer
+                  </PrimaryButton>
+                  <SecondaryButton
+                    className="min-w-0 justify-center gap-2 px-3 text-xs text-[#B42318]"
+                    onClick={() => {
+                      if (window.confirm("Supprimer ce document ?")) {
+                        store.deleteDocument(selected.id);
+                        toast.success("Document supprimé");
+                      }
+                    }}
+                  >
+                    <Trash2 className="size-4 shrink-0" />
+                    Supprimer
+                  </SecondaryButton>
+                </div>
               </div>
             </div>
-            <DynamicDocument document={selected} />
+            <ResponsivePreviewFrame>
+              <DynamicDocument document={selected} />
+            </ResponsivePreviewFrame>
           </section>
         )}
+      </div>
+    </div>
+  );
+}
+
+function ResponsivePreviewFrame({ children }: Readonly<{ children: ReactNode }>) {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const documentRef = useRef<HTMLDivElement>(null);
+  const [metrics, setMetrics] = useState({ height: 0, scale: 1 });
+
+  useEffect(() => {
+    const updateMetrics = () => {
+      const viewport = viewportRef.current;
+      const document = documentRef.current;
+      if (!viewport || !document) return;
+
+      const availableWidth = viewport.clientWidth;
+      const nextScale = Math.min(1, availableWidth / PREVIEW_DOCUMENT_WIDTH);
+      const nextHeight = Math.ceil(document.offsetHeight * nextScale);
+
+      setMetrics((current) => {
+        if (Math.abs(current.scale - nextScale) < 0.001 && Math.abs(current.height - nextHeight) <= 1) {
+          return current;
+        }
+        return { height: nextHeight, scale: nextScale };
+      });
+    };
+
+    updateMetrics();
+
+    const resizeObserver = new ResizeObserver(updateMetrics);
+    if (viewportRef.current) resizeObserver.observe(viewportRef.current);
+    if (documentRef.current) resizeObserver.observe(documentRef.current);
+    window.addEventListener("resize", updateMetrics);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updateMetrics);
+    };
+  }, []);
+
+  return (
+    <div className="rounded-2xl border border-[#E8E8E5] bg-white p-3 shadow-[0_12px_34px_rgba(26,25,22,0.045)] sm:p-4">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="text-[#6B6B6B] text-sm">Aperçu du document</p>
+        <ExternalLink className="size-4 shrink-0 text-[#6B6B6B]" aria-hidden />
+      </div>
+      <div
+        className="relative w-full overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8]"
+        ref={viewportRef}
+        style={{ height: metrics.height || undefined, minHeight: metrics.height ? undefined : 420 }}
+      >
+        <div
+          className="absolute top-0 left-1/2"
+          ref={documentRef}
+          style={{
+            transform: `translateX(-50%) scale(${metrics.scale})`,
+            transformOrigin: "top center",
+            width: PREVIEW_DOCUMENT_WIDTH,
+          }}
+        >
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -442,13 +519,15 @@ function DynamicDocument({ document }: Readonly<{ document: BeharDocument }>) {
         />
       );
     case "internal":
+    case "summary":
       if (!repair) return <p className="p-12 text-center text-[#6B6B6B]">Réparation introuvable</p>;
       return <InternalRepairDocument customer={customer} repair={repair} workshop={store.workshopInfo} />;
     case "sale-receipt":
-    case "sale-invoice":
+    case "sale-invoice": {
       const sale = store.sales.find((entry) => entry.id === document.saleId);
       if (!sale) return <p className="p-12 text-center text-[#6B6B6B]">Vente introuvable</p>;
       return <SaleReceiptDocument customer={customer} sale={sale} workshop={store.workshopInfo} />;
+    }
     default:
       return <p className="p-12 text-center text-[#6B6B6B]">Type de document inconnu</p>;
   }

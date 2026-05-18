@@ -699,7 +699,7 @@ export function RepairModal({
 
     const repairId = addRepair({
       ...basePayload,
-      droppedAt: getNowIso(),
+      droppedAt: prefill?.appointmentId && prefill.droppedAt ? prefill.droppedAt : getNowIso(),
       history: histCreate,
     });
     if (!repairId) {

@@ -16,7 +16,7 @@ import {
 import { DashboardPremium } from "@/components/behar/dashboard-premium";
 import { PageShell } from "@/components/behar/page-shell";
 import { StatusBadge } from "@/components/behar/primitives";
-import { formatEuro, useBeharStore } from "@/lib/behar-store";
+import { formatEuro, normalizeAppointmentStatus, useBeharStore } from "@/lib/behar-store";
 
 export default function Page() {
   return (
@@ -69,7 +69,7 @@ function MobileDashboard() {
     : "";
 
   const todaysAppointments = store.appointments
-    .filter((a) => a.status !== "annulé")
+    .filter((a) => normalizeAppointmentStatus(a.status) !== "Annulé")
     .filter((a) => {
       const iso = appointmentToIso(a.date);
       return iso === todayIso || a.date === todayKey || a.date === "Aujourd'hui";
@@ -141,7 +141,7 @@ function MobileDashboard() {
         />
       </div>
 
-      {/* Agenda du jour */}
+      {/* Entrées prévues aujourd'hui */}
       <SectionCard>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -149,7 +149,7 @@ function MobileDashboard() {
               <CalendarDays className="size-[16px]" strokeWidth={2.2} />
             </span>
             <div>
-              <p className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Agenda du jour</p>
+              <p className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Entrées prévues aujourd'hui</p>
               <p className="mt-0.5 text-[#8A8984] text-[11.5px]">
                 {todayLabel ? `${todayLabel.charAt(0).toUpperCase()}${todayLabel.slice(1)}` : "—"}
               </p>
@@ -174,7 +174,7 @@ function MobileDashboard() {
               <CalendarDays className="size-[15px]" strokeWidth={1.8} />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-[#1A1916] text-[13px]">Aucun rendez-vous</p>
+              <p className="font-medium text-[#1A1916] text-[13px]">Aucune entrée prévue</p>
               <p className="mt-0.5 text-[#8A8984] text-[11.5px]">Touchez pour planifier la journée.</p>
             </div>
             <ChevronRight className="size-4 shrink-0 text-[#CDCBC5]" strokeWidth={2} />
@@ -183,16 +183,17 @@ function MobileDashboard() {
           <ul className="mt-3 divide-y divide-[#F1F1EF]">
             {todaysAppointments.slice(0, 4).map((appt) => {
               const customer = store.customers.find((c) => c.id === appt.customerId);
-              const pillTone = appt.status === "venu" || appt.status === "arrivé"
+              const linkedRepair =
+                store.repairs.find((repair) => repair.id === appt.repairId) ??
+                store.repairs.find((repair) => repair.appointmentId === appt.id);
+              const status = normalizeAppointmentStatus(appt.status, appt.confirmed, Boolean(linkedRepair));
+              const pillTone = status === "Arrivé" || status === "Réparation créée"
                 ? "bg-[#E7F8F0] text-[#0B7A56]"
-                : appt.confirmed
+                : status === "Confirmé"
                   ? "bg-[#EAF6F2] text-[#167B70]"
-                  : "bg-[#FCF1DF] text-[#C2841C]";
-              const pillLabel = appt.status === "venu" || appt.status === "arrivé"
-                ? "Arrivé"
-                : appt.confirmed
-                  ? "Confirmé"
-                  : "En attente";
+                  : status === "Annulé" || status === "Non venu"
+                    ? "bg-[#FDECEC] text-[#B42318]"
+                    : "bg-[#FAFAF8] text-[#6B6B6B]";
               return (
                 <li key={appt.id} className="flex items-center gap-3 py-2.5">
                   <span className="flex w-12 shrink-0 flex-col items-center">
@@ -203,16 +204,16 @@ function MobileDashboard() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold text-[#1A1916] text-[13px]">
-                      {appt.device || appt.type}
+                      {customer?.name || "Client comptoir"}
                     </p>
                     <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">
-                      {customer?.name || "Client comptoir"}
+                      {appt.device}{appt.issue ? ` · ${appt.issue}` : ""}
                     </p>
                   </div>
                   <span
                     className={`shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-semibold tracking-tight ${pillTone}`}
                   >
-                    {pillLabel}
+                    {status}
                   </span>
                 </li>
               );
