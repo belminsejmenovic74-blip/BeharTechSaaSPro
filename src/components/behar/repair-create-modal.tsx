@@ -83,7 +83,44 @@ function isValidPhoneNumber(value: unknown): boolean {
   return true;
 }
 
+function withoutDuplicateBrand(brand: string, model: string) {
+  const cleanBrand = brand.trim();
+  const cleanModel = model.trim();
+  if (!cleanBrand || !cleanModel) return cleanModel;
+  return cleanModel.toLowerCase().startsWith(`${cleanBrand.toLowerCase()} `)
+    ? cleanModel.slice(cleanBrand.length).trim()
+    : cleanModel;
+}
 
+function inferRepairDeviceParts(source?: Partial<Repair>) {
+  const explicitBrand = source?.brandName?.trim() || "";
+  const explicitModel = String(source?.deviceModel || source?.model || "").trim();
+  if (explicitBrand) {
+    return {
+      brand: explicitBrand,
+      model: withoutDuplicateBrand(explicitBrand, explicitModel || String(source?.device || "").trim()),
+    };
+  }
+
+  const device = String(source?.device || explicitModel || "").trim();
+  const knownBrands = Array.from(
+    new Set([
+      ...deviceBrands.map((entry) => entry.name),
+      ...deviceCatalog.map((entry) => entry.brand),
+    ]),
+  ).sort((a, b) => b.length - a.length);
+  const brand = knownBrands.find((entry) => device.toLowerCase().startsWith(`${entry.toLowerCase()} `)) ?? "";
+  if (brand) return { brand, model: withoutDuplicateBrand(brand, device) };
+
+  const normalizedDevice = device.toLowerCase();
+  const modelMatch = [...deviceModels]
+    .sort((a, b) => b.name.length - a.name.length)
+    .find((entry) => normalizedDevice.includes(entry.name.toLowerCase()));
+  const inferredBrand = modelMatch
+    ? deviceBrands.find((entry) => entry.id === modelMatch.brandId)?.name ?? ""
+    : "";
+  return { brand: inferredBrand, model: modelMatch?.name ?? device };
+}
 
 function uiTypeToPriceBook(t: string): import("@/lib/price-book").PriceBookDeviceType {
   const m: Record<string, import("@/lib/price-book").PriceBookDeviceType> = {
@@ -122,9 +159,10 @@ function buildQuoteLines(snapshot: PriceSnapshot, modelFull: string, issueLabel:
 
 export function RepairModal({
   initial,
+  prefill,
   initialStatus,
   onClose,
-}: Readonly<{ initial?: Repair; initialStatus: RepairStatus; onClose: () => void }>) {
+}: Readonly<{ initial?: Repair; prefill?: Partial<Repair>; initialStatus: RepairStatus; onClose: () => void }>) {
   const {
     customers,
     priceBookItems,
@@ -149,6 +187,8 @@ export function RepairModal({
     })),
   );
   const router = useRouter();
+  const source = initial ?? prefill;
+  const sourceDeviceParts = inferRepairDeviceParts(source);
 
   useEffect(() => {
     useBeharStore.getState().loadPreloadedCatalog();
@@ -156,7 +196,7 @@ export function RepairModal({
 
   const [clientType, setClientType] = useState<"existant" | "nouveau" | "anonyme">("existant");
   const [customerSearch, setCustomerSearch] = useState("");
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(initial?.customerId || "");
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(source?.customerId || "");
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [newEmail, setNewEmail] = useState("");
@@ -165,11 +205,11 @@ export function RepairModal({
   const [newCity, setNewCity] = useState("");
   const [newCountry, setNewCountry] = useState<(typeof countryOptions)[number]>("France");
 
-  const [deviceType, setDeviceType] = useState<DeviceType>(initial?.deviceType ?? "Smartphone");
-  const [marque, setMarque] = useState(initial?.brandName ?? "");
-  const [modele, setModele] = useState(initial?.deviceModel ?? initial?.model ?? "");
+  const [deviceType, setDeviceType] = useState<DeviceType>(source?.deviceType ?? "Smartphone");
+  const [marque, setMarque] = useState(sourceDeviceParts.brand);
+  const [modele, setModele] = useState(sourceDeviceParts.model);
 
-  const [intervention, setIntervention] = useState(initial?.issue ?? "");
+  const [intervention, setIntervention] = useState(source?.issue ?? "");
   const [interventionSearch, setInterventionSearch] = useState("");
   const [prixPiece, setPrixPiece] = useState("");
   const [mainOeuvre, setMainOeuvre] = useState("");
@@ -182,7 +222,7 @@ export function RepairModal({
   const [customInterventionSave, setCustomInterventionSave] = useState(true);
   // Anti-litige optionnel pendant la création
   const [view, setView] = useState<"form" | "intake">("form");
-  const [intakeDraft, setIntakeDraft] = useState<RepairIntakeCondition | undefined>(initial?.intakeCondition);
+  const [intakeDraft, setIntakeDraft] = useState<RepairIntakeCondition | undefined>(source?.intakeCondition);
 
   const [selectedCatalogId, setSelectedCatalogId] = useState<string | null>(null);
   const [selectedQuality, setSelectedQuality] = useState<string>("");
@@ -193,7 +233,7 @@ export function RepairModal({
   const [skuAdv, setSkuAdv] = useState("");
   const [stockAdv, setStockAdv] = useState("");
   const [garantieAdv, setGarantieAdv] = useState("");
-  const [notesInternes, setNotesInternes] = useState("");
+  const [notesInternes, setNotesInternes] = useState(source?.notes ?? "");
   const [saveToCatalog, setSaveToCatalog] = useState(false);
 
   const [rdvOui, setRdvOui] = useState(false);
@@ -203,28 +243,30 @@ export function RepairModal({
   const [rdvMotif, setRdvMotif] = useState("");
 
   useEffect(() => {
-    if (!initial) return;
+    if (!source) return;
+    const parts = inferRepairDeviceParts(source);
     setClientType("existant");
-    setSelectedCustomerId(initial.customerId);
-    setDeviceType(initial.deviceType ?? "Smartphone");
-    setMarque(initial.brandName ?? "");
-    setModele(initial.deviceModel ?? initial.model ?? "");
-    setIntervention(initial.issue ?? "");
-    const snap = initial.selectedPriceSnapshot;
+    setSelectedCustomerId(source.customerId ?? "");
+    setDeviceType(source.deviceType ?? "Smartphone");
+    setMarque(parts.brand);
+    setModele(parts.model);
+    setIntervention(source.issue ?? "");
+    const snap = source.selectedPriceSnapshot;
     if (snap) {
       setPrixPiece(String(snap.prixVentePiece ?? ""));
       setMainOeuvre(String(snap.mainOeuvre ?? ""));
       setSelectedCatalogId(snap.priceBookItemId ?? null);
       setSelectedQuality(snap.qualite ?? "");
     }
-    setNotesInternes(initial.notes ?? "");
-    if ((initial as any).amount && !snap) {
-      setMainOeuvre(String((initial as any).amount));
+    setNotesInternes(source.notes ?? "");
+    setIntakeDraft(source.intakeCondition);
+    if ((source as any).amount && !snap) {
+      setMainOeuvre(String((source as any).amount));
     }
-    if (initial.brandName && (initial.deviceModel || initial.model)) {
-      setSelectedSeries(getDeviceSeries(initial.brandName, initial.deviceModel ?? initial.model ?? ""));
+    if (parts.brand && parts.model) {
+      setSelectedSeries(getDeviceSeries(parts.brand, parts.model));
     }
-  }, [initial?.id ?? null, (initial as any)?.quoteId ?? null]);
+  }, [source?.id ?? null, (source as any)?.quoteId ?? null, source?.appointmentId ?? null]);
 
   const filteredCustomers = useMemo(() => {
     const q = customerSearch.trim().toLowerCase();
@@ -326,12 +368,14 @@ export function RepairModal({
   }, [modelsBySeries, selectedSeries, allModelsForBrand]);
 
   const interventionForMatch = useMemo(() => normalizeInterventionHint(intervention), [intervention]);
+  const cleanModele = withoutDuplicateBrand(marque, modele);
+  const modelFull = cleanModele ? `${marque} ${cleanModele}`.replace(/\s+/g, " ").trim() : (marque || "");
 
   const catalogPool = useMemo(() => {
     return findCatalogMatches(priceBookItems, {
       typeAppareil: uiTypeToPriceBook(deviceType),
       marque,
-      modele,
+      modele: cleanModele,
       interventionHint: interventionForMatch || intervention,
     });
   }, [priceBookItems, deviceType, marque, modele, intervention, interventionForMatch]);
@@ -431,7 +475,6 @@ export function RepairModal({
     return "Tarif manuel";
   }, [intervention, totalClient, selectedCatalogId, selectedCatalogItem]);
 
-  const modelFull = modele ? `${marque} ${modele}`.replace(/\s+/g, " ").trim() : (marque || "");
   const summaryQuality = useMemo(() => {
     if (selectedCatalogItem) return extractPartQuality(selectedCatalogItem);
     return selectedQuality || "";
@@ -495,7 +538,7 @@ export function RepairModal({
       return;
     }
 
-    const finalIssue = canonicalizeIntervention(intervention.trim());
+    const finalIssue = prefill?.appointmentId ? intervention.trim() : canonicalizeIntervention(intervention.trim());
     let savedPbId: string | undefined;
 
     // Sauvegarde automatique au catalogue dès qu'on saisit un tarif manuel
@@ -511,7 +554,7 @@ export function RepairModal({
         source: "manual",
         typeAppareil: uiTypeToPriceBook(deviceType),
         marque,
-        modele,
+        modele: cleanModele,
         reparation: finalIssue,
         piece: finalIssue,
         qualite: "Personnalisé",
@@ -535,7 +578,7 @@ export function RepairModal({
         priceBookItemId: selectedCatalogItem.id,
         typeAppareil: deviceType,
         marque,
-        modele,
+        modele: cleanModele,
         piece: selectedCatalogItem.piece,
         reparation: selectedCatalogItem.reparation,
         qualite: selectedCatalogItem.qualite,
@@ -557,7 +600,7 @@ export function RepairModal({
         priceBookItemId: savedPbId,
         typeAppareil: deviceType,
         marque,
-        modele,
+        modele: cleanModele,
         piece: finalIssue,
         reparation: finalIssue,
         qualite: "Personnalisé",
@@ -578,7 +621,7 @@ export function RepairModal({
       };
     }
 
-    let appointmentId: string | undefined;
+    let appointmentId: string | undefined = prefill?.appointmentId;
     if (rdvOui) {
       if (!rdvDate || !rdvTime || !rdvMotif.trim()) {
         toast.error("Remplissez date, heure et motif du rendez-vous.");
@@ -605,18 +648,18 @@ export function RepairModal({
     if (fromCatalog) histCreate.push("Tarif issu du catalogue atelier");
     else histCreate.push("Tarif saisi manuellement");
     if (saveToCatalog) histCreate.push("Tarif enregistré dans le catalogue");
-    if (appointmentId) histCreate.push("Rendez-vous créé");
+    if (appointmentId) histCreate.push(prefill?.appointmentId ? "Créée depuis un rendez-vous" : "Rendez-vous créé");
 
     const basePayload = {
       customerId,
       deviceType,
       brandId: marque,
       brandName: marque,
-      modelId: modele,
-      deviceModel: modele,
+      modelId: cleanModele,
+      deviceModel: cleanModele,
       issueType: "Diagnostic",
       device: deviceLabel,
-      model: modele || marque,
+      model: cleanModele || marque,
       issue: finalIssue,
       status: (initial?.status ?? initialStatus) as RepairStatus,
       amount: totalClient,

@@ -9,6 +9,7 @@ import { AlertTriangle, Filter, Package, Plus, Search, Trash2, X } from "lucide-
 import { toast } from "sonner";
 
 import { type DeviceType, formatEuro, type StockItem, useBeharStore } from "@/lib/behar-store";
+import type { PriceBookItem } from "@/lib/price-book";
 import { cn } from "@/lib/utils";
 import { stockKpis } from "@/mock/stock";
 
@@ -27,6 +28,26 @@ import {
   tableHeadClassName,
 } from "./primitives";
 import { StockImportModal } from "./stock-import-modal";
+
+function findLinkedTariff(item: StockItem, priceBookItems: PriceBookItem[]) {
+  return priceBookItems.find((entry) => entry.id === item.priceBookItemId || entry.stockItemId === item.id)
+    ?? priceBookItems.find((entry) => Boolean(item.sku) && entry.sku === item.sku);
+}
+
+function tariffPriceLabel(item: StockItem, priceBookItems: PriceBookItem[]) {
+  const tariff = findLinkedTariff(item, priceBookItems);
+  if (!tariff) return "Non défini dans les tarifs";
+  return formatEuro(tariff.prixVentePiece || tariff.prixClientTotal);
+}
+
+function tariffHelperLabel(item: StockItem, priceBookItems: PriceBookItem[]) {
+  const tariff = findLinkedTariff(item, priceBookItems);
+  if (!tariff) return "À définir dans Tarifs / Prestations";
+  if (tariff.prixClientTotal > 0 && tariff.prixClientTotal !== tariff.prixVentePiece) {
+    return `Prestation ${formatEuro(tariff.prixClientTotal)}`;
+  }
+  return "Lecture seule depuis Tarifs";
+}
 
 /** Model selector: type freely or pick from suggestions, adds as chips */
 function ModelSelector({
@@ -126,18 +147,11 @@ export function StockWorkspace() {
   const canManageStock = store.hasPermission("canManageStock");
   const canUseStockItem = store.hasPermission("canUseStockItem");
   const canViewPurchasePrice = store.hasPermission("canViewPurchasePrice");
-  const canViewMargin = store.hasPermission("canViewMargin");
   const canViewSupplier = store.hasPermission("canViewSupplier");
   const stockValue = store.stockItems.reduce((total, item) => total + item.purchasePrice * item.quantity, 0);
   const lowStockCount = store.stockItems.filter((item) => item.quantity > 0 && item.quantity <= item.threshold).length;
   const outCount = store.stockItems.filter((item) => item.quantity === 0).length;
-  const averageMargin =
-    store.stockItems.length > 0
-      ? store.stockItems.reduce((total, item) => {
-          const margin = item.salePrice - item.purchasePrice;
-          return total + (item.salePrice > 0 ? (margin / item.salePrice) * 100 : 0);
-        }, 0) / store.stockItems.length
-      : 0;
+  const linkedTariffCount = store.stockItems.filter((item) => findLinkedTariff(item, store.priceBookItems)).length;
   const dynamicKpis = stockKpis.map((kpi) => {
     // On neutralise les tendances factices "vs mois dernier" — pas de comparaison réelle disponible.
     const base = { ...kpi, trend: "" };
@@ -148,7 +162,7 @@ export function StockWorkspace() {
     if (kpi.label === "Ruptures")
       return { ...base, value: String(outCount), helper: `${lowStockCount} stock faible`, negative: outCount > 0 };
     if (kpi.label === "Marge moyenne")
-      return { ...base, value: canViewMargin ? `${averageMargin.toFixed(0)} %` : "Masqué", helper: "sur prix de vente" };
+      return { ...base, label: "Tarifs liés", value: String(linkedTariffCount), helper: "prix client dans Tarifs" };
     return base;
   });
 
@@ -230,8 +244,7 @@ export function StockWorkspace() {
                   <th className="px-4 py-3">Modèles</th>
                   <th className="px-4 py-3">Catégorie</th>
                   {canViewPurchasePrice && <th className="px-4 py-3">Prix d'achat</th>}
-                  <th className="px-4 py-3">Prix de vente</th>
-                  {canViewMargin && <th className="px-4 py-3">Marge</th>}
+                  <th className="px-4 py-3">Prix client indicatif</th>
                   <th className="px-4 py-3">Stock</th>
                   <th className="px-4 py-3">Seuil</th>
                   {canViewSupplier && <th className="px-4 py-3">Fournisseur</th>}
@@ -239,8 +252,7 @@ export function StockWorkspace() {
               </thead>
               <tbody>
                 {filteredItems.map((item) => {
-                  const margin = item.salePrice - item.purchasePrice;
-                  const rate = item.salePrice > 0 ? (margin / item.salePrice) * 100 : 0;
+                  const tariff = findLinkedTariff(item, store.priceBookItems);
                   return (
                     <tr
                       className={`cursor-pointer transition hover:bg-[#FAFAF8] ${item.id === selected?.id ? "bg-[#EAF6F2]" : ""}`}
@@ -263,12 +275,16 @@ export function StockWorkspace() {
                       </td>
                       <td className={`${tableCellClassName} py-2.5`}>{item.categoryName}</td>
                       {canViewPurchasePrice && <td className={`${tableCellClassName} py-2.5`}>{formatEuro(item.purchasePrice)}</td>}
-                      <td className={`${tableCellClassName} py-2.5`}>{formatEuro(item.salePrice)}</td>
-                      {canViewMargin && <td className={`${tableCellClassName} py-2.5`}>
-                        <span className="font-semibold">{formatEuro(margin)}</span>
-                        <br />
-                        <span className="text-[#2A9D8F] text-xs">{rate.toFixed(1).replace(".", ",")} %</span>
-                      </td>}
+                      <td className={`${tableCellClassName} py-2.5`}>
+                        <div className="flex flex-col">
+                          <span className={cn("font-semibold", tariff ? "text-[#1A1916]" : "text-[#8A8984]")}>
+                            {tariffPriceLabel(item, store.priceBookItems)}
+                          </span>
+                          <span className="mt-1 text-[10px] font-medium text-[#167B70]">
+                            {tariffHelperLabel(item, store.priceBookItems)}
+                          </span>
+                        </div>
+                      </td>
                       <td className={`${tableCellClassName} py-2.5`}>
                         <span className="font-semibold">{item.quantity}</span>
                         {item.quantity === 0 && <StatusBadge className="ml-2 h-6 px-2 text-[11px]" status="Rupture" />}
@@ -300,8 +316,7 @@ export function StockWorkspace() {
                   Aucune pièce.
                 </p>
               ) : filteredItems.map((item) => {
-                const margin = item.salePrice - item.purchasePrice;
-                const rate = item.salePrice > 0 ? (margin / item.salePrice) * 100 : 0;
+                const tariff = findLinkedTariff(item, store.priceBookItems);
                 const isOut = item.quantity === 0;
                 const isLow = item.quantity > 0 && item.quantity <= item.threshold;
                 return (
@@ -357,18 +372,16 @@ export function StockWorkspace() {
                               </p>
                             </div>
                           )}
-                          <div>
-                            <p className="text-[#8A8984] text-[10px] font-medium uppercase tracking-wider">Vente</p>
-                            <p className="mt-0.5 font-semibold text-[#1A1916] text-[14px] tabular-nums">
-                              {formatEuro(item.salePrice)}
+                          <div className="min-w-0">
+                            <p className="text-[#8A8984] text-[10px] font-medium uppercase tracking-wider">Tarif</p>
+                            <p className={cn("mt-0.5 truncate font-semibold text-[13px] tabular-nums", tariff ? "text-[#1A1916]" : "text-[#8A8984]")}>
+                              {tariff ? tariffPriceLabel(item, store.priceBookItems) : "Non défini"}
                             </p>
                           </div>
                         </div>
-                        {canViewMargin && rate > 0 && (
-                          <p className="mt-2 text-[#2A9D8F] text-[11px] font-medium">
-                            Marge {rate.toFixed(0)} %
-                          </p>
-                        )}
+                        <p className="mt-2 text-[#2A9D8F] text-[11px] font-medium">
+                          {tariffHelperLabel(item, store.priceBookItems)}
+                        </p>
                       </div>
                     </div>
                   </button>
@@ -437,10 +450,8 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
   const canManageStock = store.hasPermission("canManageStock");
   const canUseStockItem = store.hasPermission("canUseStockItem");
   const canViewPurchasePrice = store.hasPermission("canViewPurchasePrice");
-  const canViewMargin = store.hasPermission("canViewMargin");
   const canViewSupplier = store.hasPermission("canViewSupplier");
-  const margin = item.salePrice - item.purchasePrice;
-  const rate = item.salePrice > 0 ? (margin / item.salePrice) * 100 : 0;
+  const tariff = findLinkedTariff(item, store.priceBookItems);
   const categoryMapping: Record<string, DeviceCategory> = {
     Smartphone: "smartphone",
     Tablette: "tablet",
@@ -520,16 +531,14 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
           </div>
         )}
         <div className={rowClass}>
-          <span className={labelClass}>Prix de vente</span>
-          <input className={inputClass} type="number" min={0} step="0.01" value={item.salePrice} readOnly={!canManageStock}
-            onChange={(e) => store.updateStockItem(item.id, { salePrice: Math.max(0, Number(e.target.value)) })} />
-        </div>
-        {canViewMargin && (
-          <div className={rowClass}>
-            <span className={labelClass}>Marge brute</span>
-            <span className="pt-2 text-[15px] font-semibold text-[#1A1916]">{formatEuro(margin)} <span className="text-[#2A9D8F] font-medium text-[13px]">({rate.toFixed(1).replace(".", ",")} %)</span></span>
+          <span className={labelClass}>Prix client</span>
+          <div className="flex-1 rounded-[12px] border border-[#E7E4DC] bg-white px-3 py-2 text-right">
+            <p className={cn("text-[15px] font-semibold", tariff ? "text-[#1A1916]" : "text-[#8A8984]")}>
+              {tariffPriceLabel(item, store.priceBookItems)}
+            </p>
+            <p className="mt-0.5 text-[11px] font-medium text-[#167B70]">{tariffHelperLabel(item, store.priceBookItems)}</p>
           </div>
-        )}
+        </div>
         <div className={rowClass}>
           <span className={labelClass}>Stock actuel</span>
           <input className={inputClass} type="number" min={0} value={item.quantity} readOnly={!canManageStock}
@@ -611,10 +620,8 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
   const canManageStock = store.hasPermission("canManageStock");
   const canUseStockItem = store.hasPermission("canUseStockItem");
   const canViewPurchasePrice = store.hasPermission("canViewPurchasePrice");
-  const canViewMargin = store.hasPermission("canViewMargin");
   const canViewSupplier = store.hasPermission("canViewSupplier");
-  const margin = item.salePrice - item.purchasePrice;
-  const rate = item.salePrice > 0 ? (margin / item.salePrice) * 100 : 0;
+  const tariff = findLinkedTariff(item, store.priceBookItems);
   const categoryMapping: Record<string, DeviceCategory> = {
     Smartphone: "smartphone",
     Tablette: "tablet",
@@ -768,28 +775,16 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
         )}
         <DetailRow
           className="py-2"
-          label="Prix de vente"
+          label="Prix client"
           value={
-            <input
-              className={inputClass}
-              min={0}
-              onChange={(event) =>
-                store.updateStockItem(item.id, { salePrice: Math.max(0, Number(event.target.value)) })
-              }
-              readOnly={!canManageStock}
-              step="0.01"
-              type="number"
-              value={item.salePrice}
-            />
+            <div className="rounded-[10px] border border-[#E7E4DC] bg-white px-3 py-2 text-right">
+              <p className={cn("text-sm font-semibold", tariff ? "text-[#1A1916]" : "text-[#8A8984]")}>
+                {tariffPriceLabel(item, store.priceBookItems)}
+              </p>
+              <p className="mt-0.5 text-[11px] font-medium text-[#167B70]">{tariffHelperLabel(item, store.priceBookItems)}</p>
+            </div>
           }
         />
-        {canViewMargin && (
-          <DetailRow
-            className="py-2"
-            label="Marge brute"
-            value={`${formatEuro(margin)} / ${rate.toFixed(1).replace(".", ",")} %`}
-          />
-        )}
         <DetailRow
           className="py-2"
           label="Stock actuel"
@@ -1010,7 +1005,6 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
               return;
             }
             const purchasePrice = Math.max(0, Number(data.get("purchasePrice") || 0));
-            const salePrice = Math.max(0, Number(data.get("salePrice") || 0));
             const quantity = Math.max(0, Number(data.get("stock") || 0));
             const threshold = Math.max(0, Number(data.get("threshold") || 0));
             const category = store.partCategories.find((entry) => entry.id === categoryId);
@@ -1027,7 +1021,6 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
               categoryName: category?.name,
               supplier: String(data.get("supplier") || "Non renseigné"),
               purchasePrice,
-              salePrice,
               quantity,
               threshold,
             });
@@ -1109,12 +1102,9 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
             placeholder="Prix achat"
             type="number"
           />
-          <input
-            className="h-11 rounded-xl border border-black/[0.08] px-3"
-            name="salePrice"
-            placeholder="Prix vente"
-            type="number"
-          />
+          <div className="rounded-xl border border-[#E7E4DC] bg-[#FAFAF8] px-3 py-2 text-sm text-[#6B6B6B]">
+            Prix client : à définir dans Tarifs / Prestations.
+          </div>
           <input
             className="h-11 rounded-xl border border-black/[0.08] px-3"
             name="stock"

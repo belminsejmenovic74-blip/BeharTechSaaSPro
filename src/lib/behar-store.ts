@@ -799,7 +799,7 @@ type AppointmentInput = Pick<Appointment, "customerId" | "device" | "issue" | "d
       | "color"
     >
   >;
-type StockInput = Pick<StockItem, "purchasePrice" | "salePrice" | "threshold" | "supplier"> &
+type StockInput = Pick<StockItem, "purchasePrice" | "threshold" | "supplier"> &
   Partial<
     Pick<
       StockItem,
@@ -818,6 +818,7 @@ type StockInput = Pick<StockItem, "purchasePrice" | "salePrice" | "threshold" | 
       | "categoryName"
       | "quantity"
       | "leadTime"
+      | "salePrice"
     >
   > & {
     skipModelInference?: boolean;
@@ -2379,6 +2380,13 @@ const syncStockToPriceBookItems = (stockItems: StockItem[], pbItems: PriceBookIt
   });
   return nextPB;
 };
+
+const findPriceBookForStockItem = (item: StockItem, pbItems: PriceBookItem[]): PriceBookItem | undefined =>
+  pbItems.find((entry) => entry.id === item.priceBookItemId || entry.stockItemId === item.id)
+  ?? pbItems.find((entry) => Boolean(item.sku) && entry.sku === item.sku);
+
+const getStockClientPrice = (item: StockItem, pbItems: PriceBookItem[]): number =>
+  clampMoney(findPriceBookForStockItem(item, pbItems)?.prixVentePiece ?? 0);
 const normalizePersistedState = (state: unknown) => {
   try {
     const persisted = state && typeof state === "object" ? (state as Partial<StoreState>) : {};
@@ -3713,6 +3721,7 @@ export const useBeharStore = create<StoreState>()(
           const currentItem = current.stockItems.find((stockItem) => stockItem.id === stockItemId);
           const currentRepair = current.repairs.find((entry) => entry.id === repairId);
           if (!currentRepair || !currentItem) return current;
+          const clientSalePrice = getStockClientPrice(currentItem, current.priceBookItems);
           
           const repairs = current.repairs.map((repair) => {
             if (repair.id !== repairId) return repair;
@@ -3730,7 +3739,7 @@ export const useBeharStore = create<StoreState>()(
                   sku: currentItem.sku,
                   categoryName: currentItem.categoryName,
                   purchasePrice: currentItem.purchasePrice,
-                  salePrice: currentItem.salePrice,
+                  salePrice: clientSalePrice,
                   quantity: wanted,
                   confirmed: false, // Explicitly not confirmed yet
                 },
@@ -4872,10 +4881,8 @@ export const useBeharStore = create<StoreState>()(
         });
         set((state) => {
           const stockItems = [item, ...state.stockItems];
-          const priceBookItems = syncStockToPriceBookItems(stockItems, state.priceBookItems);
           return {
             stockItems,
-            priceBookItems,
             selectedStockItemId: id
           };
         });
@@ -4907,13 +4914,12 @@ export const useBeharStore = create<StoreState>()(
                 stock: patch.quantity ?? patch.stock ?? item.quantity,
                 purchasePrice:
                   patch.purchasePrice === undefined ? item.purchasePrice : clampMoney(patch.purchasePrice),
-                salePrice: patch.salePrice === undefined ? item.salePrice : clampMoney(patch.salePrice),
+                salePrice: item.salePrice,
                 threshold: patch.threshold === undefined ? item.threshold : clampQuantity(patch.threshold),
                 ...updateActorFields(actor),
               })
               : item,
           );
-          const priceBookItems = syncStockToPriceBookItems(stockItems, state.priceBookItems);
           const target = stockItems.find((item) => item.id === id);
           const lowStockNotification =
             target && target.stock <= target.threshold
@@ -4930,53 +4936,8 @@ export const useBeharStore = create<StoreState>()(
                 createdAt: nowLabel(),
               }
               : undefined;
-          const newSalePrice = patch.salePrice === undefined ? undefined : clampMoney(patch.salePrice);
-          const sales = newSalePrice === undefined
-            ? state.sales
-            : state.sales.map((sale) => {
-                if (sale.status !== "Brouillon") return sale;
-                if (!sale.lines.some((l) => l.stockItemId === id)) return sale;
-                const lines = sale.lines.map((l) =>
-                  l.stockItemId === id ? { ...l, unitPrice: newSalePrice, total: l.quantity * newSalePrice } : l,
-                );
-                const subtotal = lines.reduce((s, l) => s + l.total, 0);
-                return { ...sale, lines, subtotal, total: subtotal + (sale.taxAmount ?? 0) };
-              });
-          const repairs = newSalePrice === undefined
-            ? state.repairs
-            : state.repairs.map((repair) => {
-                const draftSaleLines = repair.repairSaleLines ?? [];
-                const partsTouched = repair.parts.some((p) => p.stockItemId === id);
-                const saleLinesTouched = draftSaleLines.some(
-                  (l) => l.stockItemId === id && l.status === "draft",
-                );
-                if (!partsTouched && !saleLinesTouched) return repair;
-                const isLocked = state.invoices.some((inv) => inv.repairId === repair.id && inv.status === "Payée")
-                  || repair.status === "Restitué"
-                  || repair.status === "Annulé";
-                if (isLocked) return repair;
-                const parts = partsTouched
-                  ? repair.parts.map((p) =>
-                      p.stockItemId === id ? { ...p, salePrice: newSalePrice } : p,
-                    )
-                  : repair.parts;
-                const nextSaleLines = saleLinesTouched
-                  ? draftSaleLines.map((l) =>
-                      l.stockItemId === id && l.status === "draft"
-                        ? { ...l, unitPrice: newSalePrice, total: l.quantity * newSalePrice }
-                        : l,
-                    )
-                  : draftSaleLines;
-                const accessoriesTotal = nextSaleLines.reduce((sum, l) => sum + l.total, 0);
-                const base = clampMoney(repair.laborPrice ?? 0);
-                const amount = clampMoney(base + repairPartsTotal(parts) + accessoriesTotal);
-                return { ...repair, parts, repairSaleLines: nextSaleLines, amount, total: amount };
-              });
           return {
             stockItems,
-            priceBookItems,
-            sales,
-            repairs,
             notifications: lowStockNotification
               ? [lowStockNotification, ...state.notifications].slice(0, 100)
               : state.notifications,
@@ -5039,10 +5000,7 @@ export const useBeharStore = create<StoreState>()(
                 }
                 : item,
             );
-            return {
-              stockItems,
-              priceBookItems: syncStockToPriceBookItems(stockItems, state.priceBookItems),
-            };
+            return { stockItems };
           });
           const item = get().stockItems.find((entry) => entry.id === id);
           get().addAuditLog({
@@ -5072,7 +5030,7 @@ export const useBeharStore = create<StoreState>()(
               );
             }
           }
-          return { stockItems, priceBookItems: syncStockToPriceBookItems(stockItems, state.priceBookItems) };
+          return { stockItems };
         }),
       sendMessage: (input) => {
         const log: MessageLog = {

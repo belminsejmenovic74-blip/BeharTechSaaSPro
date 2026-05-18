@@ -30,6 +30,7 @@ import {
   type Appointment,
   formatIsoToDisplay,
   getNowIso,
+  type Repair,
   type StoreState,
   toLocalIso,
   useBeharStore,
@@ -37,6 +38,7 @@ import {
 import { cn } from "@/lib/utils";
 
 import { DeviceSelector } from "../DeviceSelector";
+import { RepairModal } from "./repair-create-modal";
 import {
   DetailRow,
   Panel,
@@ -51,12 +53,22 @@ const hours = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "1
 const demoWeekStart = getMonday(new Date());
 
 const eventStyles: Record<string, string> = {
-  mint: "border-[#C7E9DF] bg-[#EAF7F3]",
-  blue: "border-[#D5E3F6] bg-[#EFF6FF]",
-  purple: "border-[#E7D9F4] bg-[#F7F0FF]",
-  sand: "border-[#F0E0C4] bg-[#FFF6E8]",
-  selected: "border-[#2A9D8F] bg-[#E4F7F0] shadow-[0_12px_26px_rgba(42,157,143,0.16)]",
+  mint: "border-[#E8E8E5] bg-white",
+  blue: "border-[#E8E8E5] bg-white",
+  purple: "border-[#E8E8E5] bg-white",
+  sand: "border-[#E8E8E5] bg-white",
+  selected: "border-[#2A9D8F] bg-white shadow-[0_12px_26px_rgba(42,157,143,0.16)]",
 };
+
+function cleanDeviceLabel(value: string) {
+  return value.replace(/^(\S+)\s+\1\s+/i, "$1 ").replace(/\s+/g, " ").trim();
+}
+
+function findLinkedRepair(appointment: Appointment | undefined, repairs: Repair[]) {
+  if (!appointment) return undefined;
+  return repairs.find((repair) => repair.id === appointment.repairId)
+    ?? repairs.find((repair) => repair.appointmentId === appointment.id);
+}
 
 export function AppointmentsWorkspace() {
   const store = useBeharStore();
@@ -84,6 +96,7 @@ export function AppointmentsWorkspace() {
   const [filterConfirmed, setFilterConfirmed] = useState(false);
   const [filterTechnician, setFilterTechnician] = useState("Tous les techniciens");
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const [repairPrefillAppointmentId, setRepairPrefillAppointmentId] = useState<string | null>(null);
 
   const weekDays = buildWeekDays(weekOffset);
 
@@ -100,16 +113,18 @@ export function AppointmentsWorkspace() {
   const selected =
     visibleAppointments.find((appointment) => appointment.id === store.selectedAppointmentId) ?? visibleAppointments[0];
   const customer = selected ? store.customers.find((entry) => entry.id === selected.customerId) : undefined;
-  const selectedRepair = selected
-    ? (store.repairs.find((repair) => repair.id === selected.repairId) ??
-      store.repairs.find((repair) => repair.appointmentId === selected.id) ??
-      store.repairs.find(
-        (repair) =>
-          repair.customerId === selected.customerId &&
-          repair.device === selected.device &&
-          repair.issue === selected.issue,
-      ))
+  const selectedRepair = findLinkedRepair(selected, store.repairs);
+  const repairPrefillAppointment = repairPrefillAppointmentId
+    ? store.appointments.find((appointment) => appointment.id === repairPrefillAppointmentId)
     : undefined;
+  const openRepairFlow = (appointment: Appointment, linkedRepair?: Repair) => {
+    if (linkedRepair) {
+      store.setSelected("repair", linkedRepair.id);
+      router.push("/dashboard/reparations");
+      return;
+    }
+    setRepairPrefillAppointmentId(appointment.id);
+  };
 
   // Mobile : regroupement par tranche (Aujourd'hui / Demain / Cette semaine)
   const mobileGroups = groupAppointmentsForMobile(store.appointments);
@@ -153,6 +168,7 @@ export function AppointmentsWorkspace() {
                 <ul className="space-y-2">
                   {list.map((appointment) => {
                     const apptCustomer = store.customers.find((c) => c.id === appointment.customerId);
+                    const linkedRepair = findLinkedRepair(appointment, store.repairs);
                     return (
                       <li key={appointment.id}>
                         <button
@@ -161,24 +177,31 @@ export function AppointmentsWorkspace() {
                             store.setSelected("appointment", appointment.id);
                             setMobileDetailOpen(true);
                           }}
-                          className="flex w-full items-start gap-3 rounded-[16px] bg-white p-3.5 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
+                          className="flex w-full items-start gap-3 rounded-[22px] border border-[#E8E8E5] bg-white p-4 text-left shadow-[0_12px_30px_rgba(26,25,22,0.06)] transition hover:-translate-y-0.5 hover:border-[#DCD9D2] active:scale-[0.99]"
                         >
-                          <div className="flex w-14 shrink-0 flex-col items-center justify-center rounded-[12px] bg-[#F1F1EF] px-2 py-2.5">
-                            <span className="font-semibold text-[#1A1916] text-[15px] leading-none tabular-nums">
+                          <div className="flex w-16 shrink-0 flex-col items-center justify-center rounded-[16px] border border-[#E8E8E5] bg-[#FAFAF8] px-2 py-3">
+                            <span className="font-semibold text-[#1A1916] text-[16px] leading-none tabular-nums">
                               {appointment.time}
                             </span>
-                            <span className="mt-1 text-[#8A8984] text-[10px]">{appointment.duration}</span>
+                            <span className="mt-1.5 text-[#6B6B6B] text-[10px] font-medium">{appointment.duration}</span>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate font-semibold text-[#1A1916] text-[14px]">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="truncate font-semibold text-[#1A1916] text-[15px]">
                               {apptCustomer?.name || "Client comptoir"}
-                            </p>
-                            <p className="mt-0.5 truncate text-[#1A1916] text-[13px]">{appointment.device}</p>
-                            <p className="mt-0.5 truncate text-[#8A8984] text-[12px]">{appointment.issue}</p>
-                            <div className="mt-1.5 flex items-center gap-2">
+                              </p>
+                              {linkedRepair ? (
+                                <span className="shrink-0 rounded-full bg-[#EAF6F2] px-2 py-0.5 text-[10px] font-semibold text-[#167B70]">
+                                  Réparation liée
+                                </span>
+                              ) : null}
+                            </div>
+                            <p className="mt-1 truncate text-[#1A1916] text-[13px]">{cleanDeviceLabel(appointment.device)}</p>
+                            <p className="mt-1 truncate text-[#6B6B6B] text-[12px]">{appointment.issue}</p>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
                               <StatusBadge status={appointment.status} />
                               {appointment.channel ? (
-                                <span className="rounded-full bg-[#F1F1EF] px-2 py-0.5 text-[10px] text-[#6B6B6B]">
+                                <span className="rounded-full bg-[#F1F1EF] px-2 py-0.5 text-[10px] font-medium text-[#6B6B6B]">
                                   {appointment.channel}
                                 </span>
                               ) : null}
@@ -243,11 +266,12 @@ export function AppointmentsWorkspace() {
         {selected && customer && (
           <Panel className={cn(
             mobileDetailOpen
-              ? "fixed inset-0 z-40 overflow-y-auto bg-white p-5 flex flex-col"
+              ? "fixed inset-x-0 bottom-0 z-40 max-h-[94svh] overflow-y-auto rounded-t-[28px] border border-[#E8E8E5] bg-white p-5 shadow-[0_-24px_70px_rgba(26,25,22,0.18)] flex flex-col"
               : "hidden",
-            "md:relative md:inset-auto md:z-auto md:block md:bg-white md:p-5 md:overflow-visible",
+            "md:relative md:inset-auto md:z-auto md:block md:rounded-[22px] md:border-[#E8E8E5] md:bg-white md:p-5 md:shadow-[0_18px_45px_rgba(26,25,22,0.07)] md:overflow-visible",
           )}>
             <div className="md:hidden -mx-5 -mt-5 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#F1F1EF] bg-white/95 backdrop-blur-xl px-4 py-3">
+              <span className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-[#D1CFCA]" aria-hidden />
               <button
                 type="button"
                 onClick={() => setMobileDetailOpen(false)}
@@ -258,10 +282,30 @@ export function AppointmentsWorkspace() {
               </button>
               <span className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Détail rendez-vous</span>
             </div>
+            <div className="mb-5 rounded-[20px] border border-[#E8E8E5] bg-[#FAFAF8] p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-[#6B6B6B]">
+                    {selected.date} · {selected.time}
+                  </p>
+                  <h2 className="mt-2 font-semibold text-2xl text-[#1A1916] tracking-tight">{customer.name}</h2>
+                  <p className="mt-1 text-sm font-medium text-[#6B6B6B]">
+                    {cleanDeviceLabel(selected.device)} · {selected.issue}
+                  </p>
+                </div>
+                <StatusBadge status={selected.status} />
+              </div>
+              {selectedRepair ? (
+                <div className="mt-4 inline-flex rounded-full bg-[#EAF6F2] px-3 py-1 text-[12px] font-semibold text-[#167B70]">
+                  Réparation liée · {selectedRepair.number}
+                </div>
+              ) : null}
+            </div>
+
             <div className="mb-6 flex items-start justify-between gap-4">
               <div>
-                <h2 className="font-semibold text-2xl text-[#1A1916]">{customer.name}</h2>
-                <div className="mt-5 space-y-3 text-[#6B6B6B] text-sm">
+                <h3 className="font-semibold text-[15px] text-[#1A1916]">Infos client</h3>
+                <div className="mt-3 space-y-3 text-[#6B6B6B] text-sm">
                   <p className="flex items-center gap-3">
                     <Phone className="size-4" />
                     {customer.phone}
@@ -283,8 +327,8 @@ export function AppointmentsWorkspace() {
               </button>
             </div>
             <dl className="border-[#E7E4DC] border-t pt-5">
-              <DetailRow label="Appareil" value={selected.device} />
-              <DetailRow label="Problème" value={selected.issue} />
+              <DetailRow label="Appareil" value={cleanDeviceLabel(selected.device)} />
+              <DetailRow label="Intervention" value={selected.issue} />
               <DetailRow label="Date" value={selected.date} />
               <DetailRow label="Heure" value={selected.time} />
               <DetailRow label="Durée" value={selected.duration} />
@@ -355,20 +399,16 @@ export function AppointmentsWorkspace() {
               </SecondaryButton>
               <SecondaryButton
                 className="h-12 w-full text-base"
-                disabled={Boolean(selectedRepair)}
                 onClick={() => {
-                  const repairId = selectedRepair?.id ?? store.createRepairFromAppointment(selected.id);
-                  if (!repairId) {
+                  if (!selected.customerId) {
                     toast.error("Impossible de créer une réparation sans client lié");
                     return;
                   }
-                  store.setSelected("repair", repairId);
-                  toast.success(selectedRepair ? "Réparation ouverte" : "Fiche réparation créée");
-                  router.push("/dashboard/reparations");
+                  openRepairFlow(selected, selectedRepair);
                 }}
               >
                 <CalendarPlus className="size-4" />
-                {selectedRepair ? "Réparation déjà créée" : "Créer la fiche réparation"}
+                {selectedRepair ? "Voir la réparation liée" : "Créer la fiche réparation"}
               </SecondaryButton>
               <SecondaryButton
                 className="h-12 w-full text-[#B42318] text-base"
@@ -403,7 +443,7 @@ export function AppointmentsWorkspace() {
                 type: "counter",
                 phone: "Non renseigné",
                 email: "Non renseigné",
-                device: form.device,
+                device: cleanDeviceLabel(form.device),
                 lastRepair: form.issue,
                 source: "Rendez-vous comptoir",
               });
@@ -416,7 +456,7 @@ export function AppointmentsWorkspace() {
                 name: form.newCustomerName.trim(),
                 phone: form.newCustomerPhone.trim() || "Non renseigné",
                 email: form.newCustomerEmail.trim() || "Non renseigné",
-                device: form.device,
+                device: cleanDeviceLabel(form.device),
                 lastRepair: form.issue,
                 source: "Rendez-vous",
               });
@@ -441,7 +481,7 @@ export function AppointmentsWorkspace() {
             const date = inputToDisplayDate(form.date);
             const id = store.addAppointment({
               customerId,
-              device: form.device,
+              device: cleanDeviceLabel(form.device),
               issue: form.issue,
               date,
               time: form.time,
@@ -498,6 +538,7 @@ export function AppointmentsWorkspace() {
               date,
               time: form.time,
               duration: form.duration,
+              device: cleanDeviceLabel(form.device),
               issue: form.issue,
               status: form.status,
               notes: form.notes,
@@ -527,7 +568,7 @@ export function AppointmentsWorkspace() {
             </div>
             <dl className="mt-6 border-[#E7E4DC] border-t pt-4">
               <DetailRow label="Client" value={customer.name} />
-              <DetailRow label="Appareil" value={selectedRepair?.device ?? selected.device} />
+              <DetailRow label="Appareil" value={cleanDeviceLabel(selectedRepair?.device ?? selected.device)} />
               <DetailRow label="Problème" value={selectedRepair?.issue ?? selected.issue} />
               <DetailRow label="Technicien" value={selectedRepair?.technician ?? selected.technician} />
               <DetailRow
@@ -540,20 +581,38 @@ export function AppointmentsWorkspace() {
               <SecondaryButton onClick={() => setPreviewOpen(false)}>Fermer</SecondaryButton>
               <PrimaryButton
                 onClick={() => {
-                  const repairId = selectedRepair?.id ?? store.createRepairFromAppointment(selected.id);
-                  if (!repairId) {
+                  if (!selected.customerId) {
                     toast.error("Impossible de créer une réparation sans client lié");
                     return;
                   }
-                  store.setSelected("repair", repairId);
-                  router.push("/dashboard/reparations");
+                  setPreviewOpen(false);
+                  openRepairFlow(selected, selectedRepair);
                 }}
               >
-                Ouvrir la réparation
+                {selectedRepair ? "Voir la réparation liée" : "Créer la fiche réparation"}
               </PrimaryButton>
             </div>
           </Panel>
         </div>
+      )}
+
+      {repairPrefillAppointment && (
+        <RepairModal
+          initialStatus="Reçu"
+          onClose={() => setRepairPrefillAppointmentId(null)}
+          prefill={{
+            appointmentId: repairPrefillAppointment.id,
+            customerId: repairPrefillAppointment.customerId,
+            device: cleanDeviceLabel(repairPrefillAppointment.device),
+            issue: repairPrefillAppointment.issue,
+            notes: [
+              repairPrefillAppointment.notes,
+              `Rendez-vous du ${repairPrefillAppointment.date} à ${repairPrefillAppointment.time}`,
+            ].filter(Boolean).join("\n"),
+            droppedAt: `${repairPrefillAppointment.date}, ${repairPrefillAppointment.time}`,
+            technician: repairPrefillAppointment.technician,
+          }}
+        />
       )}
 
       <section className="grid gap-5 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
@@ -895,10 +954,11 @@ function CalendarGrid({
                   )
                   .map((appointment) => {
                     const customer = store.customers.find((entry) => entry.id === appointment.customerId);
+                    const linkedRepair = findLinkedRepair(appointment, store.repairs);
                     return (
                       <button
                         className={cn(
-                          "absolute inset-x-2 top-2 z-10 rounded-[10px] border p-2 text-left text-[#1A1916] text-xs transition hover:border-[#2A9D8F]/50",
+                          "absolute inset-x-2 top-2 z-10 rounded-[14px] border border-[#E8E8E5] bg-white p-2.5 text-left text-[#1A1916] text-xs shadow-[0_10px_24px_rgba(26,25,22,0.07)] transition hover:-translate-y-0.5 hover:border-[#2A9D8F]/45",
                           eventStyles[appointment.id === selectedId ? "selected" : appointment.color],
                         )}
                         key={appointment.id}
@@ -909,8 +969,11 @@ function CalendarGrid({
                         <p className="mt-1 truncate font-semibold leading-tight">
                           {customer?.name ?? "Client à renseigner"}
                         </p>
-                        <p className="truncate text-[#1A1916]/80 leading-tight">{appointment.device}</p>
+                        <p className="truncate text-[#1A1916]/80 leading-tight">{cleanDeviceLabel(appointment.device)}</p>
                         <p className="truncate text-[#6B6B6B] leading-tight">{appointment.issue}</p>
+                        {linkedRepair ? (
+                          <p className="mt-1 text-[10px] font-semibold text-[#167B70]">Réparation liée</p>
+                        ) : null}
                       </button>
                     );
                   })}

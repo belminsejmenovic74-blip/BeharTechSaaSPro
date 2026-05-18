@@ -49,6 +49,9 @@ export function DeviceSelector({ deviceType, brand, model, customModel, onChange
 
   const calculateLabel = (b: string, m: string, c: string) => {
     const finalModel = m === "Autre" ? c : m;
+    if (b && finalModel.trim().toLowerCase().startsWith(`${b.toLowerCase()} `)) {
+      return finalModel.trim();
+    }
     return `${b} ${finalModel}`.trim();
   };
 
