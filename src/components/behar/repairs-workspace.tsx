@@ -351,16 +351,30 @@ export function RepairsWorkspace() {
   };
 
   const deleteRepairAction = () => {
-    if (!selectedRepair) return;
-    const readyCopy = selectedRepair.status === "Prêt" ? " prête" : "";
-    if (
-      window.confirm(
-        `Supprimer la réparation${readyCopy} ${selectedRepair.number} ?\n\nLes factures, devis et reçus déjà créés restent conservés.`,
-      )
-    ) {
-      deleteRepair(selectedRepair.id);
-      toast.success("Réparation supprimée.");
+    if (!selectedRepair) {
+      toast.error("Aucune réparation sélectionnée.");
+      return;
     }
+    const repairId = selectedRepair.id;
+    const repairNumber = selectedRepair.number;
+    const readyCopy = selectedRepair.status === "Prêt" ? " prête" : "";
+    const confirmed = window.confirm(
+      `Supprimer la réparation${readyCopy} ${repairNumber} ?\n\nLes factures, devis et reçus déjà créés restent conservés.`,
+    );
+    if (!confirmed) return;
+    // On déclenche la suppression dans le store.
+    deleteRepair(repairId);
+    // Vérification post-suppression : si la réparation est toujours là,
+    // c'est qu'une permission a bloqué (canDeleteRepair non accordé) ou
+    // un autre garde-fou. On informe explicitement l'utilisateur.
+    const stillExists = useBeharStore.getState().repairs.some((r) => r.id === repairId);
+    if (stillExists) {
+      toast.error(
+        "Impossible de supprimer cette réparation. Vérifiez vos permissions ou réessayez.",
+      );
+      return;
+    }
+    toast.success(`Réparation ${repairNumber} supprimée.`);
   };
 
   useEffect(() => {

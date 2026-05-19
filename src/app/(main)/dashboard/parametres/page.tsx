@@ -518,8 +518,10 @@ export default function SettingsPage() {
 
         {/* Licence */}
         <LicenseCard />
+      </div>
 
-        {/* Mises à jour de l'application desktop */}
+      {/* Mises à jour application desktop — ligne dédiée plein largeur */}
+      <div className="mt-5">
         <UpdateChecker />
       </div>
 
