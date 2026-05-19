@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { PageShell } from "@/components/behar/page-shell";
 import { Panel, PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
 import { LicenseCard } from "@/components/behar/license-card";
+import { UpdateChecker } from "@/components/behar/update-checker";
 import { useBeharStore, type WorkshopSettings } from "@/lib/behar-store";
 import {
   hydrateStoreFromCloud,
@@ -517,6 +518,9 @@ export default function SettingsPage() {
 
         {/* Licence */}
         <LicenseCard />
+
+        {/* Mises à jour de l'application desktop */}
+        <UpdateChecker />
       </div>
 
       {/* Row 3 */}
