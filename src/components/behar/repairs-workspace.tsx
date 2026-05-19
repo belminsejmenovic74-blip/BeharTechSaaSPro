@@ -28,8 +28,18 @@ import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
 
 import { KanbanBoard } from "@/components/behar/kanban";
-import { RepairIntakeScreen, RepairIntakeSummaryCard } from "@/components/behar/repair-intake-condition";
 import { RepairModal } from "@/components/behar/repair-create-modal";
+import { RepairIntakeScreen, RepairIntakeSummaryCard } from "@/components/behar/repair-intake-condition";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -170,6 +180,11 @@ export function RepairsWorkspace() {
   const [prefillFromQuote, setPrefillFromQuote] = useState<any>(null);
   const [detailMode, setDetailMode] = useState<"repair" | "intake">("repair");
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const [repairPendingDelete, setRepairPendingDelete] = useState<{
+    id: string;
+    number: string;
+    status: RepairStatus;
+  } | null>(null);
 
   const selectedRepair = repairs.find((repair) => repair.id === selectedRepairId);
 
@@ -355,14 +370,18 @@ export function RepairsWorkspace() {
       toast.error("Aucune réparation sélectionnée.");
       return;
     }
-    const repairId = selectedRepair.id;
-    const repairNumber = selectedRepair.number;
-    const readyCopy = selectedRepair.status === "Prêt" ? " prête" : "";
-    const confirmed = window.confirm(
-      `Supprimer la réparation${readyCopy} ${repairNumber} ?\n\nLes factures, devis et reçus déjà créés restent conservés.`,
-    );
-    if (!confirmed) return;
-    // On déclenche la suppression dans le store.
+    setRepairPendingDelete({
+      id: selectedRepair.id,
+      number: selectedRepair.number,
+      status: selectedRepair.status,
+    });
+  };
+
+  const confirmDeleteRepair = () => {
+    if (!repairPendingDelete) return;
+    const repairId = repairPendingDelete.id;
+    const repairNumber = repairPendingDelete.number;
+    setRepairPendingDelete(null);
     deleteRepair(repairId);
     // Vérification post-suppression : si la réparation est toujours là,
     // c'est qu'une permission a bloqué (canDeleteRepair non accordé) ou
@@ -1517,6 +1536,35 @@ export function RepairsWorkspace() {
           }}
         />
       )}
+
+      <AlertDialog
+        open={Boolean(repairPendingDelete)}
+        onOpenChange={(open) => !open && setRepairPendingDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer la réparation ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {repairPendingDelete ? (
+                <>
+                  La réparation{repairPendingDelete.status === "Prêt" ? " prête" : ""}{" "}
+                  {repairPendingDelete.number} sera retirée du tableau. Les factures, devis et
+                  reçus déjà créés restent conservés.
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-[#B42318] text-white hover:bg-[#991B1B]"
+              onClick={confirmDeleteRepair}
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
