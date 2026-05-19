@@ -326,18 +326,20 @@ export function DocumentPreview() {
         {selected && selectedRow && (
           <section className="min-w-0" data-testid="document-preview-panel">
             <div className="no-print mb-4 rounded-2xl border border-[#E8E8E5] bg-white p-4 shadow-[0_10px_28px_rgba(26,25,22,0.035)]">
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
-                <div className="min-w-0">
-                  <p className="break-words font-semibold text-[#1A1916]">{selectedRow.titleLabel}</p>
-                  <p className="mt-1 break-words text-[#6B6B6B] text-sm">
-                    {TYPE_LABEL[selected.type]} · {selectedRow.customerLabel}
-                    {selectedRow.deviceLabel ? ` · ${selectedRow.deviceLabel}` : ""}
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:flex lg:flex-wrap lg:justify-end">
-                  <div className="col-span-2 flex min-h-11 items-center sm:col-span-1">
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="break-words font-semibold text-[#1A1916]">{selectedRow.titleLabel}</p>
+                    <p className="mt-1 break-words text-[#6B6B6B] text-sm">
+                      {TYPE_LABEL[selected.type]} · {selectedRow.customerLabel}
+                      {selectedRow.deviceLabel ? ` · ${selectedRow.deviceLabel}` : ""}
+                    </p>
+                  </div>
+                  <div className="shrink-0">
                     <StatusBadge status={selectedRow.statusLabel} />
                   </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 2xl:grid-cols-6">
                   {sourceHref(selected) && (
                     <Link
                       className="inline-flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-[14px] border border-[#E8E8E5] bg-white px-3 text-center text-[#1A1916] text-xs leading-tight hover:border-[#2A9D8F]/50"
