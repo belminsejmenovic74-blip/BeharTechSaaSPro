@@ -6,7 +6,6 @@ import { RepairsWorkspace } from "@/components/behar/repairs-workspace";
 export default function RepairsPage() {
   return (
     <PageShell
-      fitScreen
       searchPlaceholder="Rechercher une réparation, client, appareil..."
       title="Réparations"
       subtitle="Priorisez les dossiers à faire avancer."
