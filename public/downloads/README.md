@@ -3,8 +3,8 @@
 Ce dossier contient les binaires desktop servis depuis la page
 `/telecharger` :
 
-- `BeharTechPro-1.0.0-windows.exe` — installateur Windows NSIS
-- `BeharTechPro-1.0.0-mac.dmg`     — image disque macOS universelle
+- `BeharTechPro-1.0.1-windows.exe` — installateur Windows NSIS
+- `BeharTechPro-1.0.1-mac.dmg`     — image disque macOS universelle
 
 ## Comment mettre à jour les binaires
 
