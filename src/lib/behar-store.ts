@@ -3619,9 +3619,16 @@ export const useBeharStore = create<StoreState>()(
           const sales = state.sales
             .filter((sale) => sale.repairId !== id || sale.status !== "Rattachée")
             .map((sale) => (sale.repairId === id ? { ...sale, repairId: undefined } : sale));
+          const documents = state.documents.filter(
+            (document) =>
+              document.repairId !== id || !["intake", "internal", "summary"].includes(document.type),
+          );
           const selectedSaleId = sales.some((sale) => sale.id === state.selectedSaleId)
             ? state.selectedSaleId
             : sales[0]?.id ?? "";
+          const selectedDocumentId = documents.some((document) => document.id === state.selectedDocumentId)
+            ? state.selectedDocumentId
+            : documents[0]?.id ?? "";
           return {
             appointments: state.appointments
               .filter((a) => a.repairId !== id || a.type !== "repair_pickup")
@@ -3631,7 +3638,9 @@ export const useBeharStore = create<StoreState>()(
                   : appointment,
               ),
             customers: deriveCustomers(state.customers, repairs, state.payments),
+            documents,
             repairs,
+            selectedDocumentId,
             sales,
             selectedRepairId: repairs[0]?.id ?? "",
             selectedSaleId,

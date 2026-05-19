@@ -46,6 +46,17 @@ const TYPE_LABEL: Record<DocumentType, string> = {
   summary: "Résumé dossier",
 };
 
+const TYPE_SHORT_LABEL: Record<DocumentType, string> = {
+  intake: "Bon",
+  quote: "Devis",
+  invoice: "Facture",
+  payment: "Reçu",
+  "sale-receipt": "Vente",
+  "sale-invoice": "Facture vente",
+  internal: "Interne",
+  summary: "Résumé",
+};
+
 const PREVIEW_DOCUMENT_WIDTH = 794;
 
 const STATUS_FILTERS = [
@@ -84,6 +95,12 @@ const sourceHref = (document: BeharDocument): string | null => {
   return null;
 };
 
+const documentSortValue = (createdAt: string, index: number) => {
+  const parsed = Date.parse(createdAt);
+  if (Number.isFinite(parsed)) return parsed;
+  return index;
+};
+
 export function DocumentPreview() {
   const store = useBeharStore();
   const { print, download } = useDocument();
@@ -92,7 +109,7 @@ export function DocumentPreview() {
   const [search, setSearch] = useState("");
 
   const enriched = useMemo(() => {
-    return store.documents.map((document) => {
+    return store.documents.map((document, index) => {
       const customer = store.customers.find((entry) => entry.id === document.customerId);
       const repair = document.repairId ? store.repairs.find((entry) => entry.id === document.repairId) : undefined;
       const quote = document.quoteId ? store.quotes.find((entry) => entry.id === document.quoteId) : undefined;
@@ -131,6 +148,15 @@ export function DocumentPreview() {
         document.type === "intake" && repair
           ? `Bon de prise en charge / ${repair.number} / ${customerLabel} / ${deviceLabel || repair.device}`
           : document.title;
+      const listTitle =
+        document.type === "intake" && repair
+          ? `Bon ${repair.number}`
+          : document.type === "internal" && repair
+            ? `Fiche interne ${repair.number}`
+            : document.type === "summary" && repair
+              ? `Résumé ${repair.number}`
+              : `${TYPE_SHORT_LABEL[document.type]} ${numberLabel}`;
+      const contextLabel = [customerLabel, deviceLabel || repair?.device, interventionLabel].filter(Boolean).join(" · ");
 
       let statusLabel = "—";
       if (document.type === "invoice" && invoice) {
@@ -186,7 +212,10 @@ export function DocumentPreview() {
         numberLabel,
         amount,
         titleLabel,
+        listTitle,
+        contextLabel,
         statusLabel,
+        sortValue: documentSortValue(document.createdAt, index),
         haystack,
       };
     });
@@ -201,19 +230,23 @@ export function DocumentPreview() {
       .toLowerCase()
       .split(/\s+/)
       .filter(Boolean);
-    return enriched.filter((row) => {
-      if (filterType !== "all" && row.document.type !== filterType) return false;
-      if (filterStatus !== "Tous") {
-        if (filterStatus === "Non payé") {
-          if (!(row.document.type === "invoice" && row.statusLabel === "Non payé")) return false;
-        } else if (row.statusLabel.toLowerCase() !== filterStatus.toLowerCase()) {
-          return false;
+    return enriched
+      .filter((row) => {
+        if (filterType !== "all" && row.document.type !== filterType) return false;
+        if (filterStatus !== "Tous") {
+          if (filterStatus === "Non payé") {
+            if (!(row.document.type === "invoice" && row.statusLabel === "Non payé")) return false;
+          } else if (row.statusLabel.toLowerCase() !== filterStatus.toLowerCase()) {
+            return false;
+          }
         }
-      }
-      if (tokens.length && !tokens.every((token) => row.haystack.includes(token))) return false;
-      return true;
-    });
+        if (tokens.length && !tokens.every((token) => row.haystack.includes(token))) return false;
+        return true;
+      })
+      .sort((a, b) => b.sortValue - a.sortValue);
   }, [enriched, filterType, filterStatus, search]);
+
+  const filtersActive = filterType !== "all" || filterStatus !== "Tous" || search.trim().length > 0;
 
   const selectedRow =
     filtered.find((row) => row.document.id === store.selectedDocumentId) ?? filtered[0];
@@ -222,59 +255,59 @@ export function DocumentPreview() {
   return (
     <div className="space-y-5">
       <div className="rounded-2xl border border-[#E7E4DC] bg-white p-4 shadow-[0_8px_22px_rgba(26,25,22,0.03)]">
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          {TYPE_FILTERS.map((entry) => {
-            const active = filterType === entry.key;
-            return (
-              <button
-                className={`rounded-full border px-3 py-1.5 text-xs transition ${
-                  active
-                    ? "border-[#2A9D8F] bg-[#E8F7F3] text-[#1A1916]"
-                    : "border-[#E7E4DC] bg-[#FAFAF8] text-[#6B6B6B] hover:border-[#2A9D8F]/40"
-                }`}
-                key={entry.key}
-                onClick={() => setFilterType(entry.key)}
-                type="button"
-              >
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_160px]">
+          <div className="relative">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#6B6B6B]" />
+            <input
+              className="h-11 w-full rounded-[12px] border border-[#E7E4DC] bg-[#FAFAF8] pl-10 pr-3 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+              data-testid="documents-search"
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Rechercher : client, numéro, appareil, réparation…"
+              type="search"
+              value={search}
+            />
+          </div>
+          <select
+            className="h-11 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-[#1A1916] text-sm outline-none focus:border-[#2A9D8F]"
+            onChange={(e) => setFilterType(e.target.value as FilterType)}
+            value={filterType}
+          >
+            {TYPE_FILTERS.map((entry) => (
+              <option key={entry.key} value={entry.key}>
                 {entry.label}
-              </button>
-            );
-          })}
-        </div>
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span className="text-[#6B6B6B] text-xs">Statut :</span>
-          {STATUS_FILTERS.map((entry) => {
-            const active = filterStatus === entry;
-            return (
-              <button
-                className={`rounded-full border px-3 py-1 text-xs transition ${
-                  active
-                    ? "border-[#167B70] bg-[#E8F7F3] text-[#167B70]"
-                    : "border-[#E7E4DC] bg-white text-[#6B6B6B] hover:border-[#167B70]/40"
-                }`}
-                key={entry}
-                onClick={() => setFilterStatus(entry)}
-                type="button"
-              >
+              </option>
+            ))}
+          </select>
+          <select
+            className="h-11 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-[#1A1916] text-sm outline-none focus:border-[#2A9D8F]"
+            onChange={(e) => setFilterStatus(e.target.value as StatusFilter)}
+            value={filterStatus}
+          >
+            {STATUS_FILTERS.map((entry) => (
+              <option key={entry} value={entry}>
                 {entry}
-              </button>
-            );
-          })}
+              </option>
+            ))}
+          </select>
         </div>
-        <div className="relative">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#6B6B6B]" />
-          <input
-            className="h-10 w-full rounded-[12px] border border-[#E7E4DC] bg-[#FAFAF8] pl-10 pr-3 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
-            data-testid="documents-search"
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Numéro, client, comptoir, appareil, modèle, intervention, réparation, facture…"
-            type="search"
-            value={search}
-          />
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[#6B6B6B] text-xs">
+            {filtered.length} document{filtered.length > 1 ? "s" : ""} sur {enriched.length} · plus récents en haut
+          </p>
+          {filtersActive ? (
+            <button
+              className="rounded-full border border-[#E7E4DC] bg-white px-3 py-1 text-[#6B6B6B] text-xs hover:border-[#2A9D8F]/45 hover:text-[#167B70]"
+              onClick={() => {
+                setFilterType("all");
+                setFilterStatus("Tous");
+                setSearch("");
+              }}
+              type="button"
+            >
+              Réinitialiser
+            </button>
+          ) : null}
         </div>
-        <p className="mt-2 text-[#6B6B6B] text-xs">
-          {filtered.length} document{filtered.length > 1 ? "s" : ""} sur {enriched.length}
-        </p>
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[420px_minmax(0,1fr)]">
@@ -301,19 +334,17 @@ export function DocumentPreview() {
                 onClick={() => store.setSelected("document", row.document.id)}
                 type="button"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="rounded-full bg-[#FAFAF8] px-2 py-0.5 text-[#6B6B6B] text-[10px] uppercase tracking-wide">
-                    {TYPE_LABEL[row.document.type]}
-                  </span>
-                  <span className="font-mono text-[#6B6B6B] text-[11px]">{row.numberLabel}</span>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="rounded-full bg-[#FAFAF8] px-2 py-0.5 text-[#6B6B6B] text-[10px] uppercase tracking-wide">
+                      {TYPE_SHORT_LABEL[row.document.type]}
+                    </span>
+                    <div className="mt-1 truncate font-semibold text-[#1A1916] text-sm">{row.listTitle}</div>
+                  </div>
+                  <span className="shrink-0 font-mono text-[#6B6B6B] text-[11px]">{row.numberLabel}</span>
                 </div>
-                <div className="mt-1 font-semibold text-[#1A1916] text-sm">{row.titleLabel}</div>
-                <div className="mt-1 text-[#6B6B6B] text-xs">
-                  {row.customerLabel} · {row.document.createdAt}
-                </div>
-                {row.deviceLabel ? (
-                  <div className="text-[#6B6B6B] text-xs">{row.deviceLabel}</div>
-                ) : null}
+                <div className="mt-2 line-clamp-2 text-[#6B6B6B] text-xs">{row.contextLabel}</div>
+                <div className="mt-1 text-[#8A8984] text-[11px]">{row.document.createdAt}</div>
                 <div className="mt-2 flex items-center justify-between text-xs">
                   <span className="font-semibold text-[#1A1916]">{formatEuro(row.amount)}</span>
                   <span className="rounded-full bg-[#FAFAF8] px-2 py-0.5 text-[#6B6B6B]">{row.statusLabel}</span>

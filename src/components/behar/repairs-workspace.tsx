@@ -350,6 +350,19 @@ export function RepairsWorkspace() {
     router.push("/dashboard/documents");
   };
 
+  const deleteRepairAction = () => {
+    if (!selectedRepair) return;
+    const readyCopy = selectedRepair.status === "Prêt" ? " prête" : "";
+    if (
+      window.confirm(
+        `Supprimer la réparation${readyCopy} ${selectedRepair.number} ?\n\nLes factures, devis et reçus déjà créés restent conservés.`,
+      )
+    ) {
+      deleteRepair(selectedRepair.id);
+      toast.success("Réparation supprimée.");
+    }
+  };
+
   useEffect(() => {
     setDetailMode("repair");
   }, [selectedRepairId]);
@@ -935,7 +948,17 @@ export function RepairsWorkspace() {
                       ) : null}
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-1">
+                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+                    {selectedRepair.status === "Prêt" ? (
+                      <button
+                        className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#F3C7C3] bg-[#FFF7F6] px-3.5 font-semibold text-[#B42318] text-sm hover:bg-[#FDECEC]"
+                        onClick={deleteRepairAction}
+                        type="button"
+                      >
+                        <Trash2 className="size-4" />
+                        Supprimer
+                      </button>
+                    ) : null}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
@@ -1039,12 +1062,7 @@ export function RepairsWorkspace() {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           className="cursor-pointer text-[#B42318]"
-                          onClick={() => {
-                            if (window.confirm("Supprimer cette réparation ?")) {
-                              deleteRepair(selectedRepair.id);
-                              toast.success("Réparation supprimée.");
-                            }
-                          }}
+                          onClick={deleteRepairAction}
                           onSelect={(e) => e.preventDefault()}
                         >
                           <Trash2 className="mr-2 size-4" /> Supprimer
