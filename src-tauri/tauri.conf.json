@@ -47,7 +47,6 @@
   },
   "bundle": {
     "active": true,
-    "createUpdaterArtifacts": true,
     "targets": "all",
     "publisher": "Behar Tech",
     "category": "Productivity",
