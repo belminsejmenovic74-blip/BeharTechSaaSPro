@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Behar Tech Pro</string>
+    <string name="title_activity_main">Behar Tech Pro</string>
+    <string name="package_name">fr.behartech.pro</string>
+    <string name="custom_url_scheme">fr.behartech.pro</string>
+</resources>
