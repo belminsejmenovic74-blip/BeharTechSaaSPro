@@ -1,0 +1,86 @@
+name: Build Android APK
+
+# Build de l'APK Behar Tech Pro (Capacitor + Next.js export).
+# - Push sur main : build debug + upload artefact (téléchargeable dans Actions).
+# - Tag `android-v*` : crée aussi une GitHub Release avec l'APK joint.
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "android-v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build Next.js (out/)
+        run: npm run build
+
+      - name: Sync Capacitor → Android
+        run: npx cap sync android
+
+      - name: Build APK debug
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Rename APK
+        run: |
+          mkdir -p artifacts
+          cp android/app/build/outputs/apk/debug/app-debug.apk \
+             artifacts/behar-tech-pro-debug.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: behar-tech-pro-debug-apk
+          path: artifacts/behar-tech-pro-debug.apk
+          retention-days: 30
+
+      - name: Create GitHub Release (sur tag android-v*)
+        if: startsWith(github.ref, 'refs/tags/android-v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Behar Tech Pro Android ${{ github.ref_name }}"
+          body: |
+            ## Behar Tech Pro Android — ${{ github.ref_name }}
+
+            APK debug, installable directement.
+
+            ### Installation
+            1. Télécharger `behar-tech-pro-debug.apk`
+            2. Sur le téléphone : Paramètres → Sécurité → autoriser les sources inconnues pour le navigateur
+            3. Ouvrir le fichier, "Installer"
+
+            ### Mode
+            Fonctionne hors ligne. Données stockées localement sur le téléphone.
+            Sync cloud avec un autre appareil possible via un code de récupération (optionnel).
+          files: artifacts/behar-tech-pro-debug.apk
+          draft: false
+          prerelease: false
