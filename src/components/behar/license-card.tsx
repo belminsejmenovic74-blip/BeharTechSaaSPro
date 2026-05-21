@@ -9,22 +9,44 @@ export function LicenseCard() {
   const store = useBeharStore();
   const { licenseKey, licensePlan, licenseActivatedAt, deactivateLicense } = store;
 
+  // On utilise un toast sonner avec action plutôt que `confirm()` natif :
+  // `window.confirm` est souvent bloqué dans les WebView Capacitor / Tauri
+  // (renvoie false silencieusement). Cette approche marche partout.
   const handleDeactivate = () => {
-    if (confirm("Voulez-vous vraiment désactiver la licence ? Vous serez redirigé vers l'écran d'activation.")) {
-      deactivateLicense();
-      toast.info("Licence désactivée.");
-    }
+    toast("Désactiver la licence ?", {
+      description: "Vous serez redirigé vers l'écran d'activation.",
+      duration: 10_000,
+      action: {
+        label: "Désactiver",
+        onClick: () => {
+          deactivateLicense();
+          toast.info("Licence désactivée.");
+        },
+      },
+      cancel: {
+        label: "Annuler",
+        onClick: () => {},
+      },
+    });
   };
 
   const handleChangeKey = () => {
-    if (
-      confirm(
-        "Changer de clé de licence ? Vous serez redirigé vers l'écran d'activation pour saisir la nouvelle clé. Vos données restent stockées en cloud sous la clé actuelle.",
-      )
-    ) {
-      deactivateLicense();
-      toast.info("Saisissez la nouvelle clé de licence.");
-    }
+    toast("Changer de clé de licence ?", {
+      description:
+        "Vous serez redirigé vers l'écran d'activation. Vos données actuelles restent dans le cloud sous la clé en cours.",
+      duration: 10_000,
+      action: {
+        label: "Changer",
+        onClick: () => {
+          deactivateLicense();
+          toast.info("Saisissez la nouvelle clé de licence.");
+        },
+      },
+      cancel: {
+        label: "Annuler",
+        onClick: () => {},
+      },
+    });
   };
 
   const maskedKey = licenseKey 
