@@ -3209,11 +3209,15 @@ export const useBeharStore = create<StoreState>()(
         return false;
       },
       deactivateLicense: () => {
+        // On efface aussi le workshopId du cloudSync local — sinon, à la
+        // réactivation d'une AUTRE clé, on essaierait de pousser un workshop_id
+        // qui n'appartient pas à la nouvelle licence (pollution + 23505).
         set({
           licenseActivated: false,
           licenseKey: undefined,
           licensePlan: undefined,
           licenseActivatedAt: undefined,
+          cloudSync: undefined,
         });
       },
 

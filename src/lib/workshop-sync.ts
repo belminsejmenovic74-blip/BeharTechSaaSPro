@@ -92,15 +92,16 @@ function createWorkshopId(): string {
   });
 }
 
-function createRecoveryCode(): string {
-  const bytes = new Uint8Array(8);
-  if (typeof crypto !== "undefined" && "getRandomValues" in crypto) {
-    crypto.getRandomValues(bytes);
-  } else {
-    for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
-  }
-  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("").toUpperCase();
-  return `${hex.slice(0, 4)}-${hex.slice(4, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}`;
+/**
+ * Recovery code dérivé du workshop_id (UUID).
+ * Même workshop_id → même recovery_code à vie. Comme ça l'UPSERT peut
+ * toujours envoyer la valeur sans risquer d'écraser celle de la BDD,
+ * et la colonne NOT NULL est toujours satisfaite à l'INSERT.
+ */
+function recoveryCodeFromWorkshopId(workshopId: string): string {
+  const hex = workshopId.replace(/-/g, "").toUpperCase();
+  const padded = (hex + "0".repeat(16)).slice(0, 16);
+  return `${padded.slice(0, 4)}-${padded.slice(4, 8)}-${padded.slice(8, 12)}-${padded.slice(12, 16)}`;
 }
 
 function withLicenseState(
@@ -193,7 +194,6 @@ async function upsertSnapshot(
   normalizedKey: string,
   state: Partial<StoreState> & Record<string, unknown>,
   workshopId: string,
-  recoveryCode: string | undefined,
 ): Promise<WorkshopSnapshot> {
   const supabase = getSupabase();
   if (!supabase) throw new Error("Client Supabase indisponible.");
@@ -216,6 +216,8 @@ async function upsertSnapshot(
 
   const payload: Record<string, unknown> = {
     workshop_id: workshopId,
+    // Toujours fourni — dérivé du workshop_id donc déterministe (pas d'écrasement).
+    recovery_code: recoveryCodeFromWorkshopId(workshopId),
     license_key: normalizedKey,
     workshop_name: mergedState.workshopSettings?.name || mergedState.workshopInfo?.name || null,
     device_label: detectDeviceLabel(),
@@ -223,7 +225,6 @@ async function upsertSnapshot(
     state_size_bytes: sizeBytes,
     schema_version: WORKSHOP_SCHEMA_VERSION,
   };
-  if (recoveryCode) payload.recovery_code = recoveryCode;
 
   const { data, error } = await supabase
     .from("workshop_snapshots")
@@ -232,11 +233,12 @@ async function upsertSnapshot(
     .single();
 
   if (error) {
+    const pgError = error as { code?: string; message?: string; details?: string; hint?: string };
     devLog("upsert ✗ erreur Supabase", {
-      code: (error as any).code,
-      message: error.message,
-      details: (error as any).details,
-      hint: (error as any).hint,
+      code: pgError.code,
+      message: pgError.message,
+      details: pgError.details,
+      hint: pgError.hint,
     });
     throw error;
   }
@@ -267,7 +269,7 @@ export async function createSnapshotForLicenseKey(
 
   markSyncStatus("saving");
   try {
-    const snapshot = await upsertSnapshot(normalizedKey, initialState, workshopId, createRecoveryCode());
+    const snapshot = await upsertSnapshot(normalizedKey, initialState, workshopId);
     markSyncStatus("synced", { lastSyncedAt: snapshot.updatedAt, lastError: undefined });
     return snapshot;
   } catch (error: any) {
@@ -313,7 +315,7 @@ export async function saveSnapshotState(
 
   markSyncStatus("saving");
   try {
-    const snapshot = await upsertSnapshot(normalizedKey, state, workshopId, undefined);
+    const snapshot = await upsertSnapshot(normalizedKey, state, workshopId);
     markSyncStatus("synced", { lastSyncedAt: snapshot.updatedAt, lastError: undefined });
     return snapshot;
   } catch (error: any) {
@@ -323,7 +325,7 @@ export async function saveSnapshotState(
       const raced = await loadSnapshotByLicenseKey(normalizedKey).catch(() => null);
       if (raced && raced.workshopId !== workshopId) {
         try {
-          const retried = await upsertSnapshot(normalizedKey, state, raced.workshopId, undefined);
+          const retried = await upsertSnapshot(normalizedKey, state, raced.workshopId);
           markSyncStatus("synced", { lastSyncedAt: retried.updatedAt, lastError: undefined });
           return retried;
         } catch (retryError: any) {

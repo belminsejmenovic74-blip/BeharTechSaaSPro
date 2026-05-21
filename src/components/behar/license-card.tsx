@@ -2,7 +2,7 @@
 
 import { Key, CheckCircle2, ShieldOff, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { Panel, PrimaryButton, SecondaryButton } from "./primitives";
+import { Panel, SecondaryButton } from "./primitives";
 import { useBeharStore } from "@/lib/behar-store";
 
 export function LicenseCard() {
@@ -13,6 +13,17 @@ export function LicenseCard() {
     if (confirm("Voulez-vous vraiment désactiver la licence ? Vous serez redirigé vers l'écran d'activation.")) {
       deactivateLicense();
       toast.info("Licence désactivée.");
+    }
+  };
+
+  const handleChangeKey = () => {
+    if (
+      confirm(
+        "Changer de clé de licence ? Vous serez redirigé vers l'écran d'activation pour saisir la nouvelle clé. Vos données restent stockées en cloud sous la clé actuelle.",
+      )
+    ) {
+      deactivateLicense();
+      toast.info("Saisissez la nouvelle clé de licence.");
     }
   };
 
@@ -49,7 +60,7 @@ export function LicenseCard() {
           <div className="mt-6 flex flex-wrap gap-2">
             <SecondaryButton 
               className="h-9 px-3 text-xs gap-1.5"
-              onClick={() => toast.info("Contactez le support pour changer de clé.")}
+              onClick={handleChangeKey}
             >
               <RefreshCw className="size-3" />
               Changer de clé
