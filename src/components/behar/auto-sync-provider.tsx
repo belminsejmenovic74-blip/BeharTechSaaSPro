@@ -138,7 +138,7 @@ export function AutoSyncProvider() {
             label: "Actualiser",
             onClick: () => {
               try { window.sessionStorage.setItem(DISMISSED_KEY, remote.updatedAt); } catch {}
-              hydrateStoreFromCloud(remote);
+              hydrateStoreFromCloud(remote, { force: true });
               toast.success("Données cloud actualisées.");
             },
           },
