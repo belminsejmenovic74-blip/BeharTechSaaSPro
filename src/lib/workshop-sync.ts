@@ -24,6 +24,21 @@ export type WorkshopSyncState = {
   lastError?: string;
 };
 
+type WorkshopSnapshotRow = {
+  id?: unknown;
+  workshop_id?: unknown;
+  license_key?: unknown;
+  workshop_name?: unknown;
+  state?: unknown;
+  state_size_bytes?: unknown;
+  updated_at?: unknown;
+};
+
+type SupabaseLikeError = {
+  code?: string;
+  message?: string;
+};
+
 let syncState: WorkshopSyncState = { status: "idle" };
 const listeners = new Set<(state: WorkshopSyncState) => void>();
 
@@ -39,7 +54,9 @@ export function getStateSizeBytes(state: unknown): number {
 
 export function markSyncStatus(status: WorkshopSyncStatus, patch: Omit<Partial<WorkshopSyncState>, "status"> = {}) {
   syncState = { ...syncState, ...patch, status };
-  listeners.forEach((listener) => listener(syncState));
+  listeners.forEach((listener) => {
+    listener(syncState);
+  });
 }
 
 export function getWorkshopSyncState(): WorkshopSyncState {
@@ -106,38 +123,88 @@ function recoveryCodeFromWorkshopId(workshopId: string): string {
   return `${padded.slice(0, 4)}-${padded.slice(4, 8)}-${padded.slice(8, 12)}-${padded.slice(12, 16)}`;
 }
 
+export function getWorkshopStateVersion(
+  state: (Partial<StoreState> & Record<string, unknown>) | null | undefined,
+): number {
+  const raw = (state?.cloudSync as StoreState["cloudSync"] | undefined)?.stateVersion;
+  return typeof raw === "number" && Number.isFinite(raw) ? raw : 0;
+}
+
+function getSharedRecordCount(state: (Partial<StoreState> & Record<string, unknown>) | null | undefined): number {
+  if (!state || typeof state !== "object") return 0;
+  return [
+    "sales",
+    "customers",
+    "repairs",
+    "quotes",
+    "invoices",
+    "payments",
+    "appointments",
+    "stockItems",
+    "documents",
+    "messageLogs",
+    "teamMembers",
+    "users",
+  ].reduce((total, key) => {
+    const value = state[key];
+    return total + (Array.isArray(value) ? value.length : 0);
+  }, 0);
+}
+
 function withLicenseState(
   key: string,
   state: Partial<StoreState> & Record<string, unknown>,
-  patch: { workshopId?: string; lastSyncedAt?: string } = {},
+  patch: { workshopId?: string; lastSyncedAt?: string; stateVersion?: number; lastDeviceId?: string } = {},
 ) {
   const normalizedKey = normalizeLicenseKey(key);
+  const currentCloudSync = state.cloudSync as StoreState["cloudSync"] | undefined;
+  const stateVersion =
+    typeof patch.stateVersion === "number" && Number.isFinite(patch.stateVersion)
+      ? patch.stateVersion
+      : getWorkshopStateVersion(state);
   return {
     ...state,
     _hasHydrated: true,
     licenseActivated: true,
     licenseKey: normalizedKey,
-    licensePlan: state.licensePlan || "Pilote",
-    licenseActivatedAt: state.licenseActivatedAt || new Date().toISOString(),
+    licensePlan: state.licensePlan ?? "Pilote",
+    licenseActivatedAt: state.licenseActivatedAt ?? new Date().toISOString(),
     cloudSync: {
       ...((state.cloudSync as Record<string, unknown> | undefined) ?? {}),
-      workshopId: patch.workshopId || (state.cloudSync as StoreState["cloudSync"] | undefined)?.workshopId,
-      lastSyncedAt: patch.lastSyncedAt || (state.cloudSync as StoreState["cloudSync"] | undefined)?.lastSyncedAt,
-      localUpdatedAt: patch.lastSyncedAt || new Date().toISOString(),
+      workshopId: patch.workshopId ?? currentCloudSync?.workshopId,
+      lastSyncedAt: patch.lastSyncedAt ?? currentCloudSync?.lastSyncedAt,
+      localUpdatedAt: patch.lastSyncedAt ?? currentCloudSync?.localUpdatedAt ?? new Date().toISOString(),
+      stateVersion,
+      lastSyncedStateVersion: patch.lastSyncedAt
+        ? stateVersion
+        : (currentCloudSync?.lastSyncedStateVersion ?? stateVersion),
+      lastDeviceId: patch.lastDeviceId ?? currentCloudSync?.lastDeviceId,
     },
   };
 }
 
-function rowToSnapshot(row: any, fallbackLicense: string): WorkshopSnapshot {
+function rowToSnapshot(row: WorkshopSnapshotRow, fallbackLicense: string): WorkshopSnapshot {
+  const state =
+    row.state && typeof row.state === "object" ? (row.state as Partial<StoreState> & Record<string, unknown>) : {};
   return {
-    id: row.id,
-    workshopId: row.workshop_id,
-    licenseKey: normalizeLicenseKey(row.license_key || fallbackLicense),
-    workshopName: row.workshop_name || undefined,
-    state: row.state ?? {},
-    stateSizeBytes: row.state_size_bytes ?? getStateSizeBytes(row.state ?? {}),
-    updatedAt: row.updated_at ?? new Date().toISOString(),
+    id: String(row.id ?? ""),
+    workshopId: String(row.workshop_id ?? ""),
+    licenseKey: normalizeLicenseKey(String(row.license_key ?? fallbackLicense)),
+    workshopName: typeof row.workshop_name === "string" ? row.workshop_name : undefined,
+    state,
+    stateSizeBytes: typeof row.state_size_bytes === "number" ? row.state_size_bytes : getStateSizeBytes(state),
+    updatedAt: typeof row.updated_at === "string" ? row.updated_at : new Date().toISOString(),
   };
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error && typeof error === "object" && "message" in error && typeof error.message === "string"
+    ? error.message
+    : fallback;
+}
+
+function isSupabaseLikeError(error: unknown): error is SupabaseLikeError {
+  return Boolean(error && typeof error === "object");
 }
 
 export async function loadSnapshotByLicenseKey(key: string): Promise<WorkshopSnapshot | null> {
@@ -166,9 +233,10 @@ export async function loadSnapshotByLicenseKey(key: string): Promise<WorkshopSna
       throw error;
     }
     return data ? rowToSnapshot(data, normalizedKey) : null;
-  } catch (error: any) {
-    markSyncStatus(isNetworkError(error?.message) ? "offline" : "error", {
-      lastError: error?.message || "Lecture Supabase impossible.",
+  } catch (error: unknown) {
+    const message = getErrorMessage(error, "Lecture Supabase impossible.");
+    markSyncStatus(isNetworkError(message) ? "offline" : "error", {
+      lastError: message,
     });
     throw error;
   }
@@ -196,18 +264,23 @@ async function upsertSnapshot(
   normalizedKey: string,
   state: Partial<StoreState> & Record<string, unknown>,
   workshopId: string,
+  options: { stateVersion: number; lastDeviceId?: string },
 ): Promise<WorkshopSnapshot> {
   const supabase = getSupabase();
   if (!supabase) throw new Error("Client Supabase indisponible.");
 
-  const mergedState = withLicenseState(normalizedKey, state, { workshopId });
+  const mergedState = withLicenseState(normalizedKey, state, {
+    workshopId,
+    stateVersion: options.stateVersion,
+    lastDeviceId: options.lastDeviceId,
+  });
   const sizeBytes = getStateSizeBytes(mergedState);
   if (sizeBytes <= 0 || sizeBytes > 10 * 1024 * 1024) {
     throw new Error("Snapshot trop volumineux (>10 Mo).");
   }
 
-  const repairsCount = Array.isArray((mergedState as any).repairs) ? (mergedState as any).repairs.length : 0;
-  const clientsCount = Array.isArray((mergedState as any).clients) ? (mergedState as any).clients.length : 0;
+  const repairsCount = Array.isArray(mergedState.repairs) ? mergedState.repairs.length : 0;
+  const clientsCount = Array.isArray(mergedState.clients) ? mergedState.clients.length : 0;
   devLog("upsert →", {
     workshopId,
     licenseKey: normalizedKey,
@@ -246,6 +319,12 @@ async function upsertSnapshot(
   }
 
   const snapshot = rowToSnapshot(data, normalizedKey);
+  snapshot.state = withLicenseState(normalizedKey, snapshot.state, {
+    workshopId: snapshot.workshopId,
+    lastSyncedAt: snapshot.updatedAt,
+    stateVersion: options.stateVersion,
+    lastDeviceId: options.lastDeviceId,
+  });
   devLog("upsert ✓", { id: snapshot.id, updatedAt: snapshot.updatedAt });
   return snapshot;
 }
@@ -270,21 +349,24 @@ export async function createSnapshotForLicenseKey(
 
   markSyncStatus("saving");
   try {
-    const snapshot = await upsertSnapshot(normalizedKey, initialState, workshopId);
+    const snapshot = await upsertSnapshot(normalizedKey, initialState, workshopId, {
+      stateVersion: Math.max(1, getWorkshopStateVersion(initialState)),
+    });
     markSyncStatus("synced", { lastSyncedAt: snapshot.updatedAt, lastError: undefined });
     return snapshot;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = getErrorMessage(error, "Création Supabase impossible.");
     // Si conflit duplicate key (race entre deux devices), on relit la ligne
     // existante et on la renvoie : c'est la bonne, on ne perd rien.
-    if (isDuplicateError(error)) {
+    if (isSupabaseLikeError(error) && isDuplicateError(error)) {
       const raced = await loadSnapshotByLicenseKey(normalizedKey).catch(() => null);
       if (raced) {
         markSyncStatus("synced", { lastSyncedAt: raced.updatedAt, lastError: undefined });
         return raced;
       }
     }
-    markSyncStatus(isNetworkError(error?.message) ? "offline" : "error", {
-      lastError: error?.message || "Création Supabase impossible.",
+    markSyncStatus(isNetworkError(message) ? "offline" : "error", {
+      lastError: message,
     });
     throw error;
   }
@@ -293,6 +375,7 @@ export async function createSnapshotForLicenseKey(
 export async function saveSnapshotState(
   key: string,
   state: Partial<StoreState> & Record<string, unknown>,
+  options: { deviceId?: string; baseStateVersion?: number } = {},
 ): Promise<WorkshopSnapshot> {
   const normalizedKey = normalizeLicenseKey(key);
   if (!normalizedKey) throw new Error("Licence requise.");
@@ -301,42 +384,77 @@ export async function saveSnapshotState(
     throw new Error("Supabase non configuré sur ce déploiement.");
   }
 
-  // workshop_id : on prend, dans l'ordre :
-  //   1. celui du state local (cloudSync.workshopId)
-  //   2. celui d'une ligne cloud existante pour cette licence
-  //   3. un nouvel UUID (création initiale)
-  // Avec UPSERT(onConflict: workshop_id), si la ligne existe déjà → UPDATE,
-  // sinon → INSERT. Plus jamais d'erreur duplicate key.
-  let workshopId = (state.cloudSync as StoreState["cloudSync"] | undefined)?.workshopId;
+  const existing = await loadSnapshotByLicenseKey(normalizedKey).catch(() => null);
+  const localVersion = getWorkshopStateVersion(state);
+  const remoteVersion = getWorkshopStateVersion(existing?.state);
+  const baseVersion =
+    typeof options.baseStateVersion === "number" && Number.isFinite(options.baseStateVersion)
+      ? options.baseStateVersion
+      : ((state.cloudSync as StoreState["cloudSync"] | undefined)?.lastSyncedStateVersion ?? localVersion);
 
-  if (!workshopId) {
-    const existing = await loadSnapshotByLicenseKey(normalizedKey).catch(() => null);
-    workshopId = existing?.workshopId || createWorkshopId();
+  if (existing) {
+    const localRecords = getSharedRecordCount(state);
+    const remoteRecords = getSharedRecordCount(existing.state);
+    const remoteTs = new Date(existing.updatedAt || 0).getTime();
+    const baseSyncedTs = new Date(
+      (state.cloudSync as StoreState["cloudSync"] | undefined)?.lastSyncedAt || 0,
+    ).getTime();
+
+    if (remoteRecords > 0 && localRecords === 0) {
+      devLog("save ✗ local vide, backend conservé", { remoteRecords });
+      markSyncStatus("synced", { lastSyncedAt: existing.updatedAt, lastError: undefined });
+      return existing;
+    }
+
+    if (remoteVersion === 0 && localVersion === 0 && remoteTs > baseSyncedTs + 1000) {
+      devLog("save ✗ snapshot cloud legacy plus récent, backend conservé", { baseSyncedTs, remoteTs });
+      markSyncStatus("synced", { lastSyncedAt: existing.updatedAt, lastError: undefined });
+      return existing;
+    }
+
+    if (remoteVersion > baseVersion && localVersion <= remoteVersion) {
+      devLog("save ✗ snapshot local obsolète, backend conservé", { baseVersion, localVersion, remoteVersion });
+      markSyncStatus("synced", { lastSyncedAt: existing.updatedAt, lastError: undefined });
+      return existing;
+    }
   }
+
+  // workshop_id : on réutilise toujours la ligne cloud si elle existe. La
+  // licence est l'identité fonctionnelle de l'atelier multi-appareils.
+  const workshopId =
+    (state.cloudSync as StoreState["cloudSync"] | undefined)?.workshopId || existing?.workshopId || createWorkshopId();
+  const nextStateVersion = Math.max(localVersion, remoteVersion + 1, 1);
 
   markSyncStatus("saving");
   try {
-    const snapshot = await upsertSnapshot(normalizedKey, state, workshopId);
+    const snapshot = await upsertSnapshot(normalizedKey, state, workshopId, {
+      stateVersion: nextStateVersion,
+      lastDeviceId: options.deviceId,
+    });
     markSyncStatus("synced", { lastSyncedAt: snapshot.updatedAt, lastError: undefined });
     return snapshot;
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = getErrorMessage(error, "Sauvegarde Supabase impossible.");
     // Si on perd la course (autre device a créé la même licence avec un autre
     // workshop_id), on relit et on retente avec le workshop_id cloud.
-    if (isDuplicateError(error)) {
+    if (isSupabaseLikeError(error) && isDuplicateError(error)) {
       const raced = await loadSnapshotByLicenseKey(normalizedKey).catch(() => null);
       if (raced && raced.workshopId !== workshopId) {
         try {
-          const retried = await upsertSnapshot(normalizedKey, state, raced.workshopId);
+          const retried = await upsertSnapshot(normalizedKey, state, raced.workshopId, {
+            stateVersion: Math.max(nextStateVersion, getWorkshopStateVersion(raced.state) + 1),
+            lastDeviceId: options.deviceId,
+          });
           markSyncStatus("synced", { lastSyncedAt: retried.updatedAt, lastError: undefined });
           return retried;
-        } catch (retryError: any) {
-          markSyncStatus("error", { lastError: retryError?.message || "Sauvegarde Supabase impossible." });
+        } catch (retryError: unknown) {
+          markSyncStatus("error", { lastError: getErrorMessage(retryError, "Sauvegarde Supabase impossible.") });
           throw retryError;
         }
       }
     }
-    markSyncStatus(isNetworkError(error?.message) ? "offline" : "error", {
-      lastError: error?.message || "Sauvegarde Supabase impossible.",
+    markSyncStatus(isNetworkError(message) ? "offline" : "error", {
+      lastError: message,
     });
     throw error;
   }
@@ -351,18 +469,16 @@ export function hydrateStoreFromCloud(
   const state = snapshot ? snapshot.state : (snapshotOrState as Partial<StoreState> & Record<string, unknown>);
   const licenseKey = normalizeLicenseKey(snapshot?.licenseKey || (state.licenseKey as string | undefined));
 
-  // Garde-fou : si une version locale plus récente existe (modifs faites hors
-  // ligne ou non encore poussées), on n'écrase pas. Sauf `force = true` (action
-  // explicite de l'utilisateur via le toast "Actualiser").
+  // Garde-fou : le backend est la vérité partagée, mais on n'applique jamais
+  // un snapshot distant plus ancien que la version déjà présente localement.
   if (!options.force && snapshot?.updatedAt) {
     const current = useBeharStore.getState();
-    const localTs = Math.max(
-      new Date(current.cloudSync?.localUpdatedAt || 0).getTime(),
-      new Date(current.cloudSync?.lastSyncedAt || 0).getTime(),
-    );
+    const localVersion = getWorkshopStateVersion(current);
+    const cloudVersion = getWorkshopStateVersion(snapshot.state);
     const cloudTs = new Date(snapshot.updatedAt).getTime();
-    if (localTs && localTs > cloudTs + 1000) {
-      devLog("hydrate ✗ local plus récent → on garde le local", { localTs, cloudTs });
+    const localSyncedTs = new Date(current.cloudSync?.lastSyncedAt || 0).getTime();
+    if (localVersion > cloudVersion || (localVersion === cloudVersion && localSyncedTs >= cloudTs)) {
+      devLog("hydrate ✗ snapshot distant pas plus récent", { localVersion, cloudVersion, localSyncedTs, cloudTs });
       markSyncStatus("synced", { lastSyncedAt: snapshot.updatedAt, lastError: undefined });
       return;
     }
@@ -371,6 +487,7 @@ export function hydrateStoreFromCloud(
   const hydrated = withLicenseState(licenseKey, state, {
     workshopId: snapshot?.workshopId,
     lastSyncedAt: snapshot?.updatedAt,
+    stateVersion: snapshot ? getWorkshopStateVersion(snapshot.state) : getWorkshopStateVersion(state),
   });
 
   useBeharStore.setState(hydrated as Partial<StoreState>, false);
@@ -413,9 +530,9 @@ export async function ensureCloudStateForLicense(key: string): Promise<"loaded" 
 }
 
 function isNetworkError(message?: string) {
-  return /fetch|network|réseau|timeout|failed to fetch/i.test(message || "");
+  return /fetch|network|réseau|timeout|failed to fetch/i.test(message ?? "");
 }
 
 function isDuplicateError(error: { code?: string; message?: string }) {
-  return error.code === "23505" || /duplicate key|unique constraint/i.test(error.message || "");
+  return error.code === "23505" || /duplicate key|unique constraint/i.test(error.message ?? "");
 }

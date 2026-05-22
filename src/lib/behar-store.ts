@@ -613,6 +613,9 @@ export type StoreState = {
     workshopId?: string;
     lastSyncedAt?: string;
     localUpdatedAt?: string;
+    stateVersion?: number;
+    lastSyncedStateVersion?: number;
+    lastDeviceId?: string;
   };
   workshopInfo: WorkshopInfo;
   workshopSettings: WorkshopSettings;

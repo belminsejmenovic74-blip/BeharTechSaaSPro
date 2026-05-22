@@ -2,23 +2,58 @@
 
 import { useEffect } from "react";
 
-import { toast } from "sonner";
-
-import { useBeharStore } from "@/lib/behar-store";
-import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { type StoreState, useBeharStore } from "@/lib/behar-store";
+import { getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
 import {
+  getWorkshopStateVersion,
   hydrateStoreFromCloud,
   loadSnapshotByLicenseKey,
+  markSyncStatus,
   normalizeLicenseKey,
   saveSnapshotState,
+  type WorkshopSnapshot,
 } from "@/lib/workshop-sync";
 
-const DISMISSED_KEY = "behar-cloud-fresher-dismissed-at";
+type RealtimeSnapshotRow = {
+  id?: unknown;
+  workshop_id?: unknown;
+  license_key?: unknown;
+  workshop_name?: unknown;
+  state?: unknown;
+  state_size_bytes?: unknown;
+  updated_at?: unknown;
+};
+
 const DEVICE_KEY = "behar-device-id";
-const SAVE_DEBOUNCE_MS = 900;
-// Marge d'auto-update locale : si une sauvegarde locale a eu lieu dans les
-// 90 dernières secondes, on suppose que la version distante = la nôtre.
-const LOCAL_SAVE_GRACE_MS = 90_000;
+const SAVE_DEBOUNCE_MS = 800;
+const POLLING_FALLBACK_MS = 4000;
+
+const SHARED_STATE_KEYS = [
+  "workshopInfo",
+  "workshopSettings",
+  "onboardingCompleted",
+  "configuredAt",
+  "updatedAt",
+  "sales",
+  "deviceBrands",
+  "deviceModels",
+  "partCategories",
+  "customers",
+  "repairs",
+  "quotes",
+  "invoices",
+  "payments",
+  "appointments",
+  "stockItems",
+  "documents",
+  "messageLogs",
+  "priceBookItems",
+  "teamMembers",
+  "users",
+  "auditLogs",
+  "notifications",
+  "roleGreetings",
+] as const;
 
 function getOrCreateDeviceId(): string {
   if (typeof window === "undefined") return "";
@@ -37,135 +72,227 @@ function getOrCreateDeviceId(): string {
   }
 }
 
+function hasSharedStateChanged(state: StoreState, previous: StoreState): boolean {
+  return SHARED_STATE_KEYS.some((key) => state[key] !== previous[key]);
+}
+
+function remoteDeviceId(snapshot: WorkshopSnapshot): string | undefined {
+  return (snapshot.state.cloudSync as StoreState["cloudSync"] | undefined)?.lastDeviceId;
+}
+
 /**
- * Démarre l'auto-sync Supabase au montage + check si le cloud a des données
- * plus récentes (cas où un autre poste a modifié pendant que celui-ci était hors-ligne).
+ * Synchronisation atelier backend-first.
  *
- * Garde-fous :
- *  - Pas de toast si Supabase n'est pas configuré (mode local/démo).
- *  - Pas de toast si la version distante a été écrite par ce même device.
- *  - Pas de toast si une sauvegarde locale vient juste d'avoir lieu.
- *  - Anti-boucle : on mémorise le timestamp cloud déjà notifié.
+ * - Au chargement/licence : on hydrate depuis Supabase avant de considérer le
+ *   cache local comme utilisable.
+ * - En sortie : chaque vraie mutation métier est sauvegardée avec une version
+ *   monotone et une base connue, pour éviter qu'un vieux localStorage écrase le
+ *   backend.
+ * - En entrée : Supabase Realtime pousse les updates des autres appareils.
+ *   Si Realtime n'est pas reçu, un polling discret compare la version distante.
  */
 export function AutoSyncProvider() {
   useEffect(() => {
-    // Si pas de backend cloud configuré, on n'enregistre rien et on n'affiche
-    // jamais le toast "données plus récentes" — l'utilisateur est en local pur.
-    if (!isSupabaseConfigured()) {
-      return;
-    }
+    if (!isSupabaseConfigured()) return;
 
     const deviceId = getOrCreateDeviceId();
-    let cancelled = false;
-    let saveTimer: ReturnType<typeof setTimeout> | null = null;
-    let lastLocalSaveAt = 0;
+    const supabase = getSupabase();
 
-    const scheduleSave = (state = useBeharStore.getState()) => {
+    let disposed = false;
+    let applyingRemote = false;
+    let activeLicense = "";
+    let saveTimer: ReturnType<typeof setTimeout> | null = null;
+    let pollTimer: number | null = null;
+    let channel: ReturnType<NonNullable<typeof supabase>["channel"]> | null = null;
+    let lastKnownVersion = getWorkshopStateVersion(useBeharStore.getState());
+
+    const stopRealtime = () => {
+      if (pollTimer) {
+        window.clearInterval(pollTimer);
+        pollTimer = null;
+      }
+      if (channel && supabase) {
+        void supabase.removeChannel(channel);
+        channel = null;
+      }
+    };
+
+    const applyRemoteSnapshot = (snapshot: WorkshopSnapshot, force = false) => {
+      if (disposed) return;
+      const current = useBeharStore.getState();
+      const localVersion = getWorkshopStateVersion(current);
+      const incomingVersion = getWorkshopStateVersion(snapshot.state);
+      const sameDevice = remoteDeviceId(snapshot) === deviceId;
+
+      if (!force && sameDevice && incomingVersion <= localVersion) {
+        markSyncStatus("synced", { lastSyncedAt: snapshot.updatedAt, lastError: undefined });
+        return;
+      }
+
+      if (!force && incomingVersion < localVersion) {
+        return;
+      }
+
+      if (!force && incomingVersion === localVersion) {
+        const localSyncedAt = new Date(current.cloudSync?.lastSyncedAt || 0).getTime();
+        const remoteUpdatedAt = new Date(snapshot.updatedAt || 0).getTime();
+        if (localSyncedAt >= remoteUpdatedAt) return;
+      }
+
+      applyingRemote = true;
+      hydrateStoreFromCloud(snapshot, { force: true });
+      lastKnownVersion = Math.max(lastKnownVersion, incomingVersion);
+      window.setTimeout(() => {
+        applyingRemote = false;
+      }, 0);
+    };
+
+    const fetchAndApplyRemote = async (license: string, force = false) => {
+      const snapshot = await loadSnapshotByLicenseKey(license).catch(() => null);
+      if (!snapshot || disposed) return;
+      applyRemoteSnapshot(snapshot, force);
+    };
+
+    const startRealtime = (license: string) => {
+      stopRealtime();
+      if (!supabase) return;
+
+      channel = supabase
+        .channel(`workshop-sync:${license}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "workshop_snapshots",
+            filter: `license_key=eq.${license}`,
+          },
+          (payload) => {
+            const row = payload.new as RealtimeSnapshotRow;
+            if (!row.state || typeof row.state !== "object") return;
+            applyRemoteSnapshot({
+              id: String(row.id ?? ""),
+              workshopId: String(row.workshop_id ?? ""),
+              licenseKey: normalizeLicenseKey(String(row.license_key ?? license)),
+              workshopName: typeof row.workshop_name === "string" ? row.workshop_name : undefined,
+              state: row.state as Partial<StoreState> & Record<string, unknown>,
+              stateSizeBytes: typeof row.state_size_bytes === "number" ? row.state_size_bytes : 0,
+              updatedAt: typeof row.updated_at === "string" ? row.updated_at : new Date().toISOString(),
+            });
+          },
+        )
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            markSyncStatus("synced", {
+              lastSyncedAt: useBeharStore.getState().cloudSync?.lastSyncedAt,
+              lastError: undefined,
+            });
+          }
+        });
+
+      pollTimer = window.setInterval(() => {
+        void fetchAndApplyRemote(license);
+      }, POLLING_FALLBACK_MS);
+    };
+
+    const bootstrapLicense = async (license: string) => {
+      if (!license || license === activeLicense) return;
+      activeLicense = license;
+      markSyncStatus("loading");
+      await fetchAndApplyRemote(license, true);
+      if (disposed || activeLicense !== license) return;
+      lastKnownVersion = getWorkshopStateVersion(useBeharStore.getState());
+      startRealtime(license);
+    };
+
+    const scheduleSave = (state: StoreState) => {
       const license = normalizeLicenseKey(state.licenseKey);
-      if (!state.licenseActivated || !license) return;
+      if (!state.licenseActivated || !license || license !== activeLicense) return;
       if (saveTimer) clearTimeout(saveTimer);
+
+      const baseStateVersion = getWorkshopStateVersion(state);
+      const nextStateVersion = Math.max(baseStateVersion, lastKnownVersion) + 1;
+
       saveTimer = setTimeout(() => {
-        lastLocalSaveAt = Date.now();
-        void saveSnapshotState(license, {
-          ...(useBeharStore.getState() as any),
+        const current = useBeharStore.getState();
+        const saveState = {
+          ...current,
           cloudSync: {
-            ...((useBeharStore.getState() as any).cloudSync ?? {}),
+            ...(current.cloudSync ?? {}),
             lastDeviceId: deviceId,
             localUpdatedAt: new Date().toISOString(),
+            stateVersion: nextStateVersion,
           },
-        } as any).catch(() => {
-          // Le statut global est déjà mis à jour par workshop-sync.
-        });
+        } as Partial<StoreState> & Record<string, unknown>;
+
+        void saveSnapshotState(license, saveState, { deviceId, baseStateVersion })
+          .then((snapshot) => {
+            if (disposed) return;
+            const snapshotVersion = getWorkshopStateVersion(snapshot.state);
+            const snapshotDeviceId = remoteDeviceId(snapshot);
+
+            if (snapshotDeviceId && snapshotDeviceId !== deviceId && snapshotVersion >= nextStateVersion) {
+              applyRemoteSnapshot(snapshot, true);
+              return;
+            }
+
+            lastKnownVersion = Math.max(lastKnownVersion, snapshotVersion);
+            applyingRemote = true;
+            useBeharStore.setState(
+              {
+                cloudSync: {
+                  ...(useBeharStore.getState().cloudSync ?? {}),
+                  workshopId: snapshot.workshopId,
+                  lastSyncedAt: snapshot.updatedAt,
+                  localUpdatedAt: (saveState.cloudSync as StoreState["cloudSync"] | undefined)?.localUpdatedAt,
+                  stateVersion: snapshotVersion,
+                  lastSyncedStateVersion: snapshotVersion,
+                  lastDeviceId: deviceId,
+                },
+              },
+              false,
+            );
+            window.setTimeout(() => {
+              applyingRemote = false;
+            }, 0);
+          })
+          .catch(() => {
+            // Le statut détaillé est déjà maintenu par workshop-sync.
+          });
       }, SAVE_DEBOUNCE_MS);
     };
 
     const unsubscribe = useBeharStore.subscribe((state, previous) => {
       if (!state._hasHydrated) return;
-      if (!state.licenseActivated || !state.licenseKey) return;
-      if (state === previous) return;
+      const license = normalizeLicenseKey(state.licenseKey);
+
+      if (state.licenseActivated && license && license !== activeLicense) {
+        void bootstrapLicense(license);
+      }
+
+      if (applyingRemote) return;
+      if (!hasSharedStateChanged(state, previous)) return;
+
       scheduleSave(state);
     });
 
-    const runCheck = async () => {
-      const state = useBeharStore.getState();
-      const license = normalizeLicenseKey(state.licenseKey);
-      if (!license) return;
-      const remote = await loadSnapshotByLicenseKey(license).catch(() => null);
-      if (cancelled || !remote) return;
+    const initialState = useBeharStore.getState();
+    const initialLicense = normalizeLicenseKey(initialState.licenseKey);
+    if (initialState._hasHydrated && initialState.licenseActivated && initialLicense) {
+      void bootstrapLicense(initialLicense);
+    }
 
-      // Si on vient de pousser une sauvegarde locale, la version cloud est
-      // probablement la nôtre — on s'épargne le toast.
-      if (Date.now() - lastLocalSaveAt < LOCAL_SAVE_GRACE_MS) return;
-
-      const localRefTs = Math.max(
-        new Date(state.cloudSync?.lastSyncedAt || 0).getTime(),
-        new Date(state.cloudSync?.localUpdatedAt || 0).getTime(),
-      );
-      const cloudTs = new Date(remote.updatedAt || 0).getTime();
-      if (!cloudTs || cloudTs - localRefTs <= 10_000) return;
-
-      // Si la version distante a été écrite par ce même device, on ne
-      // notifie pas (cas typique : multi-onglets, retour réseau, etc.).
-      const remoteState = (remote.state ?? {}) as { cloudSync?: { lastDeviceId?: string } };
-      const remoteDeviceId = remoteState?.cloudSync?.lastDeviceId;
-      if (remoteDeviceId && deviceId && remoteDeviceId === deviceId) return;
-
-      // Anti-boucle : si on a déjà notifié ce timestamp, on ne réaffiche pas.
-      let dismissedAt: string | null = null;
-      try {
-        dismissedAt = window.sessionStorage.getItem(DISMISSED_KEY);
-      } catch {
-        dismissedAt = null;
-      }
-      if (dismissedAt === remote.updatedAt) return;
-
-      const dateStr = new Date(remote.updatedAt).toLocaleString("fr-FR", {
-        dateStyle: "short",
-        timeStyle: "short",
-      });
-      toast("Données plus récentes disponibles", {
-        id: "cloud-newer-available",
-        description: `Un autre poste a modifié les données (${dateStr}). Actualiser ?`,
-        duration: 12_000,
-        onDismiss: () => {
-          try {
-            window.sessionStorage.setItem(DISMISSED_KEY, remote.updatedAt);
-          } catch {}
-        },
-        onAutoClose: () => {
-          try {
-            window.sessionStorage.setItem(DISMISSED_KEY, remote.updatedAt);
-          } catch {}
-        },
-        action: {
-          label: "Actualiser",
-          onClick: () => {
-            try {
-              window.sessionStorage.setItem(DISMISSED_KEY, remote.updatedAt);
-            } catch {}
-            hydrateStoreFromCloud(remote, { force: true });
-            toast.success("Données cloud actualisées.");
-          },
-        },
-      });
-    };
-
-    // 1er check après 2 sec (laisse l'app se charger).
-    const initial = setTimeout(runCheck, 2000);
-    // Polling périodique pour détecter les modifs faites depuis un autre device.
-    const interval = window.setInterval(runCheck, 60_000);
-    // Re-check immédiat au retour du réseau.
     const onOnline = () => {
-      void runCheck();
+      const license = normalizeLicenseKey(useBeharStore.getState().licenseKey);
+      if (license) void fetchAndApplyRemote(license);
     };
     window.addEventListener("online", onOnline);
 
     return () => {
-      cancelled = true;
+      disposed = true;
       unsubscribe();
       if (saveTimer) clearTimeout(saveTimer);
-      clearTimeout(initial);
-      window.clearInterval(interval);
+      stopRealtime();
       window.removeEventListener("online", onOnline);
     };
   }, []);
