@@ -280,12 +280,12 @@ async function upsertSnapshot(
   }
 
   const repairsCount = Array.isArray(mergedState.repairs) ? mergedState.repairs.length : 0;
-  const clientsCount = Array.isArray(mergedState.clients) ? mergedState.clients.length : 0;
+  const customersCount = Array.isArray(mergedState.customers) ? mergedState.customers.length : 0;
   devLog("upsert →", {
     workshopId,
     licenseKey: normalizedKey,
     repairs: repairsCount,
-    clients: clientsCount,
+    customers: customersCount,
     sizeBytes,
   });
 
