@@ -12,11 +12,11 @@
  * avec priorité bug (P0 / P1 / P2 / P3) et score sur 100.
  */
 
-import { test, expect, type Page, type Locator, type Download } from "@playwright/test";
+import { type Download, expect, type Locator, type Page, test } from "@playwright/test";
+import { type ChildProcess, spawn } from "child_process";
 import { promises as fs } from "fs";
-import path from "path";
-import { spawn, type ChildProcess } from "child_process";
 import net from "net";
+import path from "path";
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -123,7 +123,12 @@ function buildSeedState(): Record<string, unknown> {
     shopId: "shop_seed",
     name: c.name,
     type: c.name === "Garage Central" ? "pro" : "named",
-    initials: c.name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase(),
+    initials: c.name
+      .split(" ")
+      .map((p) => p[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase(),
     phone: c.phone,
     email: c.email,
     address: `${10 + i} rue Demo`,
@@ -162,9 +167,7 @@ function buildSeedState(): Record<string, unknown> {
     shopId: "shop_seed",
     number: `REP-${String(i + 1).padStart(4, "0")}`,
     customerId:
-      r.client === "comptoir"
-        ? customers[0].id
-        : (customers.find((c) => c.name === r.client) ?? customers[0]).id,
+      r.client === "comptoir" ? customers[0].id : (customers.find((c) => c.name === r.client) ?? customers[0]).id,
     deviceType: "Smartphone",
     brandName: r.brand,
     device: `${r.brand} ${r.model}`,
@@ -191,7 +194,15 @@ function buildSeedState(): Record<string, unknown> {
     status: i < 8 ? "Facturé" : "Accepté",
     date: todayStr(),
     expiryDate: "2026-12-31",
-    lines: [{ id: `seed_quote_line_${i + 1}`, description: repairsSeed[i].issue, quantity: 1, unitPrice: repairsSeed[i].amount, total: repairsSeed[i].amount }],
+    lines: [
+      {
+        id: `seed_quote_line_${i + 1}`,
+        description: repairsSeed[i].issue,
+        quantity: 1,
+        unitPrice: repairsSeed[i].amount,
+        total: repairsSeed[i].amount,
+      },
+    ],
     totalAmount: repairsSeed[i].amount,
     sourceType: "repair",
     createdAt: nowIso(),
@@ -207,7 +218,15 @@ function buildSeedState(): Record<string, unknown> {
     quoteId: quotes[i].id,
     status: i < 8 ? "Payée" : "Envoyée",
     date: todayStr(),
-    lines: [{ id: `seed_inv_line_${i + 1}`, description: repairsSeed[i].issue, quantity: 1, unitPrice: repairsSeed[i].amount, total: repairsSeed[i].amount }],
+    lines: [
+      {
+        id: `seed_inv_line_${i + 1}`,
+        description: repairsSeed[i].issue,
+        quantity: 1,
+        unitPrice: repairsSeed[i].amount,
+        total: repairsSeed[i].amount,
+      },
+    ],
     sourceType: "quote",
     sourceNumber: quotes[i].number,
     paymentMethod: i < 8 ? "Carte" : "Non réglée",
@@ -234,10 +253,43 @@ function buildSeedState(): Record<string, unknown> {
   }));
 
   const documents = [
-    ...repairsSeed.map((r) => ({ id: `doc_intake_${r.id}`, type: "intake", title: `Bon de prise en charge - ${r.number}`, customerId: r.customerId, repairId: r.id, createdAt: todayStr() })),
-    ...quotes.map((q) => ({ id: `doc_${q.id}`, type: "quote", title: `Devis #${q.number}`, customerId: q.customerId, repairId: q.repairId, quoteId: q.id, createdAt: todayStr() })),
-    ...invoices.map((iv) => ({ id: `doc_${iv.id}`, type: "invoice", title: `Facture #${iv.number}`, customerId: iv.customerId, repairId: iv.repairId, quoteId: iv.quoteId, invoiceId: iv.id, createdAt: todayStr() })),
-    ...payments.map((p) => ({ id: `doc_${p.id}`, type: "payment", title: `Reçu - ${p.reference}`, customerId: p.customerId, repairId: p.repairId, invoiceId: p.invoiceId, paymentId: p.id, createdAt: todayStr() })),
+    ...repairsSeed.map((r) => ({
+      id: `doc_intake_${r.id}`,
+      type: "intake",
+      title: `Bon de prise en charge - ${r.number}`,
+      customerId: r.customerId,
+      repairId: r.id,
+      createdAt: todayStr(),
+    })),
+    ...quotes.map((q) => ({
+      id: `doc_${q.id}`,
+      type: "quote",
+      title: `Devis #${q.number}`,
+      customerId: q.customerId,
+      repairId: q.repairId,
+      quoteId: q.id,
+      createdAt: todayStr(),
+    })),
+    ...invoices.map((iv) => ({
+      id: `doc_${iv.id}`,
+      type: "invoice",
+      title: `Facture #${iv.number}`,
+      customerId: iv.customerId,
+      repairId: iv.repairId,
+      quoteId: iv.quoteId,
+      invoiceId: iv.id,
+      createdAt: todayStr(),
+    })),
+    ...payments.map((p) => ({
+      id: `doc_${p.id}`,
+      type: "payment",
+      title: `Reçu - ${p.reference}`,
+      customerId: p.customerId,
+      repairId: p.repairId,
+      invoiceId: p.invoiceId,
+      paymentId: p.id,
+      createdAt: todayStr(),
+    })),
   ];
 
   const ws = {
@@ -283,12 +335,41 @@ function buildSeedState(): Record<string, unknown> {
     updatedAt: nowIso(),
     workshopSettings: ws,
     workshopInfo: ws,
-    currentUser: { id: "user_admin", name: "Belmin", role: "admin", active: true, permissionOverrides: {}, createdAt: nowIso(), updatedAt: nowIso() },
+    currentUser: {
+      id: "user_admin",
+      name: "Belmin",
+      role: "admin",
+      active: true,
+      permissionOverrides: {},
+      createdAt: nowIso(),
+      updatedAt: nowIso(),
+    },
     users: [
-      { id: "user_admin", name: "Belmin", role: "admin", active: true, permissionOverrides: {}, createdAt: nowIso(), updatedAt: nowIso() },
-      ...WORKSHOP.team.map((t, i) => ({ id: `user_team_${i + 1}`, name: t, role: "technician", active: true, permissionOverrides: {}, createdAt: nowIso(), updatedAt: nowIso() })),
+      {
+        id: "user_admin",
+        name: "Belmin",
+        role: "admin",
+        active: true,
+        permissionOverrides: {},
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      },
+      ...WORKSHOP.team.map((t, i) => ({
+        id: `user_team_${i + 1}`,
+        name: t,
+        role: "technician",
+        active: true,
+        permissionOverrides: {},
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      })),
     ],
-    teamMembers: WORKSHOP.team.map((t, i) => ({ id: `tm_${i + 1}`, firstName: t.split(" ")[0], lastName: t.split(" ")[1] ?? "", role: "Technicien" })),
+    teamMembers: WORKSHOP.team.map((t, i) => ({
+      id: `tm_${i + 1}`,
+      firstName: t.split(" ")[0],
+      lastName: t.split(" ")[1] ?? "",
+      role: "Technicien",
+    })),
     customers,
     stockItems: stockSeed,
     repairs: repairsSeed,
@@ -308,8 +389,7 @@ async function seedStateViaLocalStorage(page: Page): Promise<void> {
   await page.goto(STATIC_URL, { waitUntil: "domcontentloaded", timeout: 15000 });
   const state = buildSeedState();
   await page.evaluate(
-    ({ key, value }) =>
-      window.localStorage.setItem(key, JSON.stringify({ state: value, version: 1 })),
+    ({ key, value }) => window.localStorage.setItem(key, JSON.stringify({ state: value, version: 1 })),
     { key: LS_KEY_PRIMARY, value: state },
   );
 }
@@ -363,13 +443,7 @@ const stats = {
   pdfTested: 0,
 };
 
-function recordCheck(
-  module: string,
-  testLabel: string,
-  result: Result,
-  severity: Severity = "-",
-  comment = "",
-): void {
+function recordCheck(module: string, testLabel: string, result: Result, severity: Severity = "-", comment = ""): void {
   counter += 1;
   checks.push({ id: counter, module, test: testLabel, result, severity, comment });
 }
@@ -450,16 +524,86 @@ interface StockItem {
 }
 
 const STOCK_REQUIRED: StockItem[] = [
-  { name: "Écran iPhone 13", sku: "NOVA-SCR-IP13", brand: "Apple", model: "iPhone 13", buy: 65, sell: 119, stock: 5, supplier: "Utopya" },
-  { name: "Batterie iPhone 12", sku: "NOVA-BAT-IP12", brand: "Apple", model: "iPhone 12", buy: 28, sell: 79, stock: 8, supplier: "MobileParts" },
-  { name: "Connecteur Samsung A52", sku: "NOVA-CON-A52", brand: "Samsung", model: "Galaxy A52", buy: 18, sell: 89, stock: 4, supplier: "GSM Pro" },
-  { name: "Écran Xiaomi Redmi Note 11", sku: "NOVA-SCR-RN11", brand: "Xiaomi", model: "Redmi Note 11", buy: 42, sell: 99, stock: 3, supplier: "LCD France" },
-  { name: "Port HDMI PS5", sku: "NOVA-HDMI-PS5", brand: "Sony PlayStation", model: "PlayStation 5", buy: 12, sell: 149, stock: 6, supplier: "ConsoleFix" },
-  { name: "Joystick Switch", sku: "NOVA-JOY-SW", brand: "Nintendo", model: "Switch", buy: 9, sell: 69, stock: 10, supplier: "GameParts" },
+  {
+    name: "Écran iPhone 13",
+    sku: "NOVA-SCR-IP13",
+    brand: "Apple",
+    model: "iPhone 13",
+    buy: 65,
+    sell: 119,
+    stock: 5,
+    supplier: "Utopya",
+  },
+  {
+    name: "Batterie iPhone 12",
+    sku: "NOVA-BAT-IP12",
+    brand: "Apple",
+    model: "iPhone 12",
+    buy: 28,
+    sell: 79,
+    stock: 8,
+    supplier: "MobileParts",
+  },
+  {
+    name: "Connecteur Samsung A52",
+    sku: "NOVA-CON-A52",
+    brand: "Samsung",
+    model: "Galaxy A52",
+    buy: 18,
+    sell: 89,
+    stock: 4,
+    supplier: "GSM Pro",
+  },
+  {
+    name: "Écran Xiaomi Redmi Note 11",
+    sku: "NOVA-SCR-RN11",
+    brand: "Xiaomi",
+    model: "Redmi Note 11",
+    buy: 42,
+    sell: 99,
+    stock: 3,
+    supplier: "LCD France",
+  },
+  {
+    name: "Port HDMI PS5",
+    sku: "NOVA-HDMI-PS5",
+    brand: "Sony PlayStation",
+    model: "PlayStation 5",
+    buy: 12,
+    sell: 149,
+    stock: 6,
+    supplier: "ConsoleFix",
+  },
+  {
+    name: "Joystick Switch",
+    sku: "NOVA-JOY-SW",
+    brand: "Nintendo",
+    model: "Switch",
+    buy: 9,
+    sell: 69,
+    stock: 10,
+    supplier: "GameParts",
+  },
   { name: "Batterie iPhone 14", sku: "NOVA-BAT-IP14", brand: "Apple", model: "iPhone 14", buy: 35, sell: 89, stock: 4 },
   { name: "Vitre iPad 9", sku: "NOVA-GLS-IPAD9", brand: "Apple iPad", model: "iPad", buy: 55, sell: 129, stock: 2 },
-  { name: "Pâte thermique premium", sku: "NOVA-THM-PREM", brand: "PC Portable", model: "Lenovo ThinkPad", buy: 4, sell: 19, stock: 20 },
-  { name: "Protection écran iPhone 13", sku: "NOVA-ACC-IP13", brand: "Apple", model: "iPhone 13", buy: 3, sell: 15, stock: 30 },
+  {
+    name: "Pâte thermique premium",
+    sku: "NOVA-THM-PREM",
+    brand: "PC Portable",
+    model: "Lenovo ThinkPad",
+    buy: 4,
+    sell: 19,
+    stock: 20,
+  },
+  {
+    name: "Protection écran iPhone 13",
+    sku: "NOVA-ACC-IP13",
+    brand: "Apple",
+    model: "iPhone 13",
+    buy: 3,
+    sell: 15,
+    stock: 30,
+  },
 ];
 
 function buildExtraStock(): StockItem[] {
@@ -515,7 +659,13 @@ const REPAIRS: Array<{
   { client: "Nadia Leroy", brand: "Nintendo", model: "Switch", problem: "joystick", price: 69 },
   { client: "Hugo Perrin", brand: "Apple", model: "MacBook Air", problem: "diagnostic carte mère" },
   { client: "comptoir", brand: "Apple", model: "iPhone 11", problem: "protection écran + nettoyage", price: 29 },
-  { client: "Garage Central", brand: "PC Portable", model: "Lenovo ThinkPad", problem: "nettoyage + pâte thermique", price: 79 },
+  {
+    client: "Garage Central",
+    brand: "PC Portable",
+    model: "Lenovo ThinkPad",
+    problem: "nettoyage + pâte thermique",
+    price: 79,
+  },
   { client: "Karim Haddad", brand: "Apple", model: "iPhone 14", problem: "batterie", price: 89 },
   { client: "Oceane Dupuis", brand: "Apple", model: "iPhone XR", problem: "caméra arrière", price: 79 },
   { client: "Rachid Bouhlal", brand: "Apple", model: "iPhone SE", problem: "batterie", price: 65 },
@@ -628,7 +778,10 @@ async function selectOptionFallback(
             await option.click();
             return true;
           }
-          const textOpt = page.locator(`[role="option"], li, div`).filter({ hasText: new RegExp(opt, "i") }).first();
+          const textOpt = page
+            .locator(`[role="option"], li, div`)
+            .filter({ hasText: new RegExp(opt, "i") })
+            .first();
           if (await textOpt.isVisible({ timeout: 600 }).catch(() => false)) {
             await textOpt.click();
             return true;
@@ -678,16 +831,24 @@ async function resetBrowserState(page: Page): Promise<void> {
 
 async function waitForLicenseOrApp(page: Page): Promise<void> {
   await Promise.race([
-    page.getByText(/Activer Behar Tech Pro|Activer la licence|Activation/i).first()
+    page
+      .getByText(/Activer Behar Tech Pro|Activer la licence|Activation/i)
+      .first()
       .waitFor({ state: "visible", timeout: 30_000 })
       .catch(() => undefined),
-    page.getByRole("link", { name: /Tableau de bord/i }).first()
+    page
+      .getByRole("link", { name: /Tableau de bord/i })
+      .first()
       .waitFor({ state: "visible", timeout: 30_000 })
       .catch(() => undefined),
-    page.getByText(/Configurez votre atelier|Nom de l['’]atelier/i).first()
+    page
+      .getByText(/Configurez votre atelier|Nom de l['’]atelier/i)
+      .first()
       .waitFor({ state: "visible", timeout: 30_000 })
       .catch(() => undefined),
-    page.getByText(/^Chargement…?$|^Loading…?$/i).first()
+    page
+      .getByText(/^Chargement…?$|^Loading…?$/i)
+      .first()
       .waitFor({ state: "hidden", timeout: 30_000 })
       .catch(() => undefined),
   ]);
@@ -700,9 +861,22 @@ async function waitForLicenseOrApp(page: Page): Promise<void> {
 
 async function isAppOrOnboardingReady(page: Page): Promise<boolean> {
   const checks = await Promise.all([
-    page.getByRole("link", { name: /Tableau de bord/i }).first().isVisible({ timeout: 1500 }).catch(() => false),
-    page.getByText(/Configurez votre atelier/i).first().isVisible({ timeout: 1500 }).catch(() => false),
-    page.locator("label").filter({ hasText: /Nom de l['’]atelier/i }).first().isVisible({ timeout: 1500 }).catch(() => false),
+    page
+      .getByRole("link", { name: /Tableau de bord/i })
+      .first()
+      .isVisible({ timeout: 1500 })
+      .catch(() => false),
+    page
+      .getByText(/Configurez votre atelier/i)
+      .first()
+      .isVisible({ timeout: 1500 })
+      .catch(() => false),
+    page
+      .locator("label")
+      .filter({ hasText: /Nom de l['’]atelier/i })
+      .first()
+      .isVisible({ timeout: 1500 })
+      .catch(() => false),
   ]);
   return checks.some(Boolean);
 }
@@ -739,7 +913,10 @@ async function activateLicenseIfNeeded(page: Page): Promise<void> {
 
   // Click sur le bouton "Activer" (rôle button avec icône Lock + texte "Activer")
   const activateBtn = page.getByRole("button", { name: /^\s*Activer\s*$/i }).first();
-  const altActivateBtn = page.locator("button").filter({ hasText: /Activer/i }).first();
+  const altActivateBtn = page
+    .locator("button")
+    .filter({ hasText: /Activer/i })
+    .first();
   let btn = activateBtn;
   if (!(await activateBtn.isVisible({ timeout: 1500 }).catch(() => false))) {
     btn = altActivateBtn;
@@ -763,21 +940,9 @@ async function fillByFieldLabel(page: Page, labelRegex: RegExp, value: string): 
   // Structure du composant <Field> : <div><label>Texte *</label><input ... /></div>
   // On cible l'input frère du label par xpath.
   const candidates: Locator[] = [
-    page
-      .locator("label")
-      .filter({ hasText: labelRegex })
-      .first()
-      .locator("xpath=following::input[1]"),
-    page
-      .locator("label")
-      .filter({ hasText: labelRegex })
-      .first()
-      .locator("xpath=../input"),
-    page
-      .locator("label")
-      .filter({ hasText: labelRegex })
-      .first()
-      .locator("xpath=ancestor::div[1]//input[1]"),
+    page.locator("label").filter({ hasText: labelRegex }).first().locator("xpath=following::input[1]"),
+    page.locator("label").filter({ hasText: labelRegex }).first().locator("xpath=../input"),
+    page.locator("label").filter({ hasText: labelRegex }).first().locator("xpath=ancestor::div[1]//input[1]"),
   ];
   for (const loc of candidates) {
     try {
@@ -796,16 +961,8 @@ async function fillByFieldLabel(page: Page, labelRegex: RegExp, value: string): 
 
 async function selectByFieldLabel(page: Page, labelRegex: RegExp, value: string): Promise<boolean> {
   const candidates: Locator[] = [
-    page
-      .locator("label")
-      .filter({ hasText: labelRegex })
-      .first()
-      .locator("xpath=following::select[1]"),
-    page
-      .locator("label")
-      .filter({ hasText: labelRegex })
-      .first()
-      .locator("xpath=../select"),
+    page.locator("label").filter({ hasText: labelRegex }).first().locator("xpath=following::select[1]"),
+    page.locator("label").filter({ hasText: labelRegex }).first().locator("xpath=../select"),
   ];
   for (const loc of candidates) {
     try {
@@ -846,8 +1003,16 @@ async function configureWorkshopIfNeeded(page: Page): Promise<void> {
   await fillByFieldLabel(page, /^Nom commercial/i, WORKSHOP.commercial);
   // Téléphone : aria-label="Numéro local"
   const localPhone = WORKSHOP.phone.replace(/\s+/g, "").replace(/^0/, "");
-  await page.getByLabel(/Numéro local/i).first().fill("").catch(() => {});
-  await page.getByLabel(/Numéro local/i).first().fill(localPhone).catch(() => {});
+  await page
+    .getByLabel(/Numéro local/i)
+    .first()
+    .fill("")
+    .catch(() => {});
+  await page
+    .getByLabel(/Numéro local/i)
+    .first()
+    .fill(localPhone)
+    .catch(() => {});
   await fillByFieldLabel(page, /^Email/i, WORKSHOP.email);
   await fillByFieldLabel(page, /^Adresse complète/i, WORKSHOP.address);
   await fillByFieldLabel(page, /^Code postal/i, WORKSHOP.zip);
@@ -940,7 +1105,10 @@ async function gotoSection(page: Page, slug: string): Promise<boolean> {
 }
 
 async function pageHasError(page: Page): Promise<string | null> {
-  const body = await page.locator("body").innerText().catch(() => "");
+  const body = await page
+    .locator("body")
+    .innerText()
+    .catch(() => "");
   const lowered = body.toLowerCase();
   if (/typeerror|referenceerror|undefined is not|cannot read prop/i.test(lowered)) {
     return body.slice(0, 200);
@@ -957,8 +1125,16 @@ async function createClient(page: Page, c: { name: string; phone: string; email:
   const opened = await clickButtonFallback(page, ["Nouveau client", "Ajouter un client", "Ajouter client", "Nouveau"]);
   if (!opened) return false;
   await page.waitForTimeout(300);
-  await page.locator('input[name="name"]').first().fill(c.name).catch(() => {});
-  await page.locator('input[name="email"]').first().fill(c.email).catch(() => {});
+  await page
+    .locator('input[name="name"]')
+    .first()
+    .fill(c.name)
+    .catch(() => {});
+  await page
+    .locator('input[name="email"]')
+    .first()
+    .fill(c.email)
+    .catch(() => {});
   // Téléphone : tronquer le préfixe "0" pour le local +33
   const localPhone = c.phone.replace(/\s+/g, "").replace(/^0/, "");
   const phoneInput = page.getByLabel(/Numéro local/i).first();
@@ -972,16 +1148,50 @@ async function createClient(page: Page, c: { name: string; phone: string; email:
 
 async function createStockItem(page: Page, item: StockItem): Promise<boolean> {
   await gotoSection(page, "stock");
-  const opened = await clickButtonFallback(page, ["Nouvelle pièce", "Ajouter pièce", "Ajouter une pièce", "Nouveau", "Ajouter"]);
+  const opened = await clickButtonFallback(page, [
+    "Nouvelle pièce",
+    "Ajouter pièce",
+    "Ajouter une pièce",
+    "Nouveau",
+    "Ajouter",
+  ]);
   if (!opened) return false;
   await page.waitForTimeout(300);
-  await page.locator('input[name="sku"]').first().fill(item.sku).catch(() => {});
-  await page.locator('input[name="name"]').first().fill(item.name).catch(() => {});
-  await page.locator('input[name="supplier"]').first().fill(item.supplier ?? "Fournisseur Demo").catch(() => {});
-  await page.locator('input[name="purchasePrice"]').first().fill(String(item.buy)).catch(() => {});
-  await page.locator('input[name="salePrice"]').first().fill(String(item.sell)).catch(() => {});
-  await page.locator('input[name="stock"]').first().fill(String(item.stock)).catch(() => {});
-  await page.locator('input[name="threshold"]').first().fill("2").catch(() => {});
+  await page
+    .locator('input[name="sku"]')
+    .first()
+    .fill(item.sku)
+    .catch(() => {});
+  await page
+    .locator('input[name="name"]')
+    .first()
+    .fill(item.name)
+    .catch(() => {});
+  await page
+    .locator('input[name="supplier"]')
+    .first()
+    .fill(item.supplier ?? "Fournisseur Demo")
+    .catch(() => {});
+  await page
+    .locator('input[name="purchasePrice"]')
+    .first()
+    .fill(String(item.buy))
+    .catch(() => {});
+  await page
+    .locator('input[name="salePrice"]')
+    .first()
+    .fill(String(item.sell))
+    .catch(() => {});
+  await page
+    .locator('input[name="stock"]')
+    .first()
+    .fill(String(item.stock))
+    .catch(() => {});
+  await page
+    .locator('input[name="threshold"]')
+    .first()
+    .fill("2")
+    .catch(() => {});
   const ok = await clickButtonFallback(page, ["Ajouter", "Enregistrer", "Créer", "Valider"]);
   await page.waitForTimeout(200);
   return ok;
@@ -998,10 +1208,7 @@ async function openRepairModal(page: Page): Promise<boolean> {
   ]);
 }
 
-async function createRepair(
-  page: Page,
-  r: (typeof REPAIRS)[number],
-): Promise<boolean> {
+async function createRepair(page: Page, r: (typeof REPAIRS)[number]): Promise<boolean> {
   const opened = await openRepairModal(page);
   if (!opened) return false;
   await page.waitForTimeout(500);
@@ -1010,7 +1217,9 @@ async function createRepair(
 
   if (r.client === "comptoir") {
     // Sélectionne le radio Client comptoir
-    const counterRadio = page.locator('input[name="clientType"][value="counter"], input[name="clientType"][value="comptoir"]').first();
+    const counterRadio = page
+      .locator('input[name="clientType"][value="counter"], input[name="clientType"][value="comptoir"]')
+      .first();
     if (await counterRadio.isVisible({ timeout: 800 }).catch(() => false)) {
       await counterRadio.check({ force: true }).catch(() => {});
     } else {
@@ -1028,10 +1237,18 @@ async function createRepair(
       } else {
         // bascule en "nouveau client" et remplit Nom *
         await clickButtonFallback(page, ["Nouveau client", "Nouveau"]);
-        await page.getByPlaceholder("Nom *").first().fill(r.client).catch(() => {});
+        await page
+          .getByPlaceholder("Nom *")
+          .first()
+          .fill(r.client)
+          .catch(() => {});
       }
     } else {
-      await page.getByPlaceholder("Nom *").first().fill(r.client).catch(() => {});
+      await page
+        .getByPlaceholder("Nom *")
+        .first()
+        .fill(r.client)
+        .catch(() => {});
     }
   }
 
@@ -1060,10 +1277,22 @@ async function createRepair(
   if (await addInterv.isVisible({ timeout: 800 }).catch(() => false)) {
     await addInterv.click().catch(() => {});
     await page.waitForTimeout(300);
-    await page.getByPlaceholder("Nom intervention (ex: Lecteur carte SIM)").first().fill(r.problem).catch(() => {});
+    await page
+      .getByPlaceholder("Nom intervention (ex: Lecteur carte SIM)")
+      .first()
+      .fill(r.problem)
+      .catch(() => {});
     if (r.price !== undefined) {
-      await page.getByPlaceholder("Prix vente conseillé").first().fill(String(r.price)).catch(() => {});
-      await page.getByPlaceholder("Prix client final (€)").first().fill(String(r.price)).catch(() => {});
+      await page
+        .getByPlaceholder("Prix vente conseillé")
+        .first()
+        .fill(String(r.price))
+        .catch(() => {});
+      await page
+        .getByPlaceholder("Prix client final (€)")
+        .first()
+        .fill(String(r.price))
+        .catch(() => {});
     }
     await clickButtonFallback(page, ["Utiliser cette intervention", "Ajouter intervention", "Utiliser"]);
   }
@@ -1085,7 +1314,12 @@ async function createAntiLitigeForRepair(page: Page): Promise<boolean> {
   if (!(await firstRow.isVisible({ timeout: 1500 }).catch(() => false))) return false;
   await firstRow.click({ timeout: 2000 }).catch(() => {});
   await page.waitForTimeout(300);
-  const opened = await clickButtonFallback(page, ["Anti-litige", "Anti litige", "Fiche anti-litige", "Bon de prise en charge"]);
+  const opened = await clickButtonFallback(page, [
+    "Anti-litige",
+    "Anti litige",
+    "Fiche anti-litige",
+    "Bon de prise en charge",
+  ]);
   if (!opened) return false;
   // Coche état général abîmé
   await clickButtonFallback(page, ["Abîmé", "Abime"]);
@@ -1100,17 +1334,26 @@ async function createAntiLitigeForRepair(page: Page): Promise<boolean> {
   await clickButtonFallback(page, ["Carte SIM"]);
   await fillFieldFallback(
     page,
-    [{ kind: "label", value: "défauts|defauts" }, { kind: "placeholder", value: "défauts|defauts" }],
+    [
+      { kind: "label", value: "défauts|defauts" },
+      { kind: "placeholder", value: "défauts|defauts" },
+    ],
     "rayur coté droit ecran fissuré",
   );
   await fillFieldFallback(
     page,
-    [{ kind: "label", value: "déclaration|declaration" }, { kind: "placeholder", value: "client dit|déclaration" }],
+    [
+      { kind: "label", value: "déclaration|declaration" },
+      { kind: "placeholder", value: "client dit|déclaration" },
+    ],
     "le client dit sa charge plus",
   );
   await fillFieldFallback(
     page,
-    [{ kind: "label", value: "notes internes|interne" }, { kind: "placeholder", value: "interne" }],
+    [
+      { kind: "label", value: "notes internes|interne" },
+      { kind: "placeholder", value: "interne" },
+    ],
     "ne pas afficher côté client",
   );
   await fillFieldFallback(page, [{ kind: "label", value: "signataire|signature" }], "Karim Haddad");
@@ -1181,13 +1424,7 @@ async function tryDownloadPdfFromClick(page: Page, names: string[], expectedName
     if (verdict.ok) {
       recordCheck("PDF sécurité client", `${expectedNamePart} — intégrité`, "OK");
     } else {
-      recordCheck(
-        "PDF sécurité client",
-        `${expectedNamePart} — intégrité`,
-        "BUG",
-        "P1",
-        verdict.reasons.join(" | "),
-      );
+      recordCheck("PDF sécurité client", `${expectedNamePart} — intégrité`, "BUG", "P1", verdict.reasons.join(" | "));
       recordBug("P1", `PDF ${expectedNamePart} non conforme`, verdict.reasons.join(" | "));
     }
   } catch (e) {
@@ -1205,7 +1442,12 @@ async function tryDownloadPdfFromClick(page: Page, names: string[], expectedName
 // Vérifications de masse (checklist 500)
 // ---------------------------------------------------------------------------
 
-function recordModuleChecklist(module: string, items: string[], baseResult: Result = "NON TESTABLE", severity: Severity = "P3"): void {
+function recordModuleChecklist(
+  module: string,
+  items: string[],
+  baseResult: Result = "NON TESTABLE",
+  severity: Severity = "P3",
+): void {
   for (const item of items) {
     recordCheck(module, item, baseResult, baseResult === "OK" ? "-" : severity, "Vérification automatisée");
   }
@@ -1232,9 +1474,7 @@ function computeScore(): number {
   else if (okRatio < 0.7) score -= 10;
   else if (okRatio < 0.85) score -= 5;
   // Plafonds
-  const pdfClientUnsafe = checks.some(
-    (c) => c.module === "PDF sécurité client" && c.result === "BUG",
-  );
+  const pdfClientUnsafe = checks.some((c) => c.module === "PDF sécurité client" && c.result === "BUG");
   if (pdfClientUnsafe && score > 85) score = 85;
   const appBlocked = checks.some(
     (c) => c.module === "Chargement / navigation" && c.result === "BUG" && c.severity === "P0",
@@ -1243,7 +1483,8 @@ function computeScore(): number {
   const persistenceLost = checks.some((c) => c.module === "Persistance" && c.result === "BUG");
   if (persistenceLost && score > 60) score = 60;
   const billingBroken = checks.some(
-    (c) => /Devis|Factures|Paiements/i.test(c.module) && c.result === "BUG" && (c.severity === "P0" || c.severity === "P1"),
+    (c) =>
+      /Devis|Factures|Paiements/i.test(c.module) && c.result === "BUG" && (c.severity === "P0" || c.severity === "P1"),
   );
   if (billingBroken && score > 75) score = 75;
   if (score < 0) score = 0;
@@ -1318,9 +1559,7 @@ async function writeReport(): Promise<void> {
   lines.push("|---|--------|------|----------|---------|-------------|");
   for (const c of checks) {
     const safe = (s: string): string => s.replace(/\|/g, "\\|").replace(/\n+/g, " ").slice(0, 200);
-    lines.push(
-      `| ${c.id} | ${safe(c.module)} | ${safe(c.test)} | ${c.result} | ${c.severity} | ${safe(c.comment)} |`,
-    );
+    lines.push(`| ${c.id} | ${safe(c.module)} | ${safe(c.test)} | ${c.result} | ${c.severity} | ${safe(c.comment)} |`);
   }
   lines.push("");
 
@@ -1334,7 +1573,9 @@ async function writeReport(): Promise<void> {
   lines.push("## 7. Tests OK importants");
   const importantOk = checks
     .filter((c) => c.result === "OK")
-    .filter((c) => /licence|atelier|client|stock|réparation|reparation|anti-litige|facture|paiement|pdf|persistance/i.test(c.module))
+    .filter((c) =>
+      /licence|atelier|client|stock|réparation|reparation|anti-litige|facture|paiement|pdf|persistance/i.test(c.module),
+    )
     .slice(0, 30);
   for (const c of importantOk) lines.push(`- ${c.module} → ${c.test}`);
   lines.push("");
@@ -1438,7 +1679,10 @@ test("Behar Tech Pro — audit complet 500 points", async ({ page }) => {
       try {
         await fs.mkdir(path.dirname(REPORT_PATH), { recursive: true });
         await page.screenshot({ path: path.join(path.dirname(REPORT_PATH), "license-failure.png"), fullPage: true });
-        const bodyText = await page.locator("body").innerText().catch(() => "");
+        const bodyText = await page
+          .locator("body")
+          .innerText()
+          .catch(() => "");
         // eslint-disable-next-line no-console
         console.error("[diag] license-failure body excerpt:", bodyText.slice(0, 500));
       } catch {
@@ -1517,7 +1761,12 @@ test("Behar Tech Pro — audit complet 500 points", async ({ page }) => {
         if (!created) throw new Error("Bouton enregistrer introuvable");
       });
       if (ok !== undefined) stats.clientsCreated += 1;
-      recordCheck("Clients", `Téléphone ${c.name} format français`, /^0[1-9]/.test(c.phone.replace(/\s/g, "")) ? "OK" : "BUG", "P3");
+      recordCheck(
+        "Clients",
+        `Téléphone ${c.name} format français`,
+        /^0[1-9]/.test(c.phone.replace(/\s/g, "")) ? "OK" : "BUG",
+        "P3",
+      );
       recordCheck("Clients", `Email ${c.name} valide`, /@/.test(c.email) ? "OK" : "BUG", "P3");
     }
 
@@ -1596,7 +1845,12 @@ test("Behar Tech Pro — audit complet 500 points", async ({ page }) => {
     });
     for (let i = 0; i < 5; i += 1) {
       await safeStep("Rendez-vous", `Création RDV ${i + 1}`, "P3", async () => {
-        const opened = await clickButtonFallback(page, ["Nouveau rendez-vous", "Nouveau RDV", "Ajouter rendez-vous", "Nouveau"]);
+        const opened = await clickButtonFallback(page, [
+          "Nouveau rendez-vous",
+          "Nouveau RDV",
+          "Ajouter rendez-vous",
+          "Nouveau",
+        ]);
         if (!opened) throw new Error("Bouton nouveau RDV introuvable");
         await fillFieldFallback(page, [{ kind: "label", value: "client" }], CLIENTS[i].name);
         await fillFieldFallback(page, [{ kind: "label", value: "motif|objet" }], "Réparation");
@@ -1620,7 +1874,14 @@ test("Behar Tech Pro — audit complet 500 points", async ({ page }) => {
       });
       if (ok !== undefined) stats.quotesCreated += 1;
     }
-    for (const c of ["Acceptation devis", "Refus devis", "Conversion en facture", "Anti-doublon", "PDF devis", "Document visible"]) {
+    for (const c of [
+      "Acceptation devis",
+      "Refus devis",
+      "Conversion en facture",
+      "Anti-doublon",
+      "PDF devis",
+      "Document visible",
+    ]) {
       recordCheck("Devis", c, "NON TESTABLE", "P3", "Action UI dépendante du parcours");
     }
 
@@ -1630,7 +1891,12 @@ test("Behar Tech Pro — audit complet 500 points", async ({ page }) => {
     for (let i = 0; i < 10; i += 1) {
       const ok = await safeStep("Factures", `Création facture #${i + 1}`, "P1", async () => {
         await gotoSection(page, "factures");
-        const opened = await clickButtonFallback(page, ["Nouvelle facture", "Créer facture", "Ajouter facture", "Nouveau"]);
+        const opened = await clickButtonFallback(page, [
+          "Nouvelle facture",
+          "Créer facture",
+          "Ajouter facture",
+          "Nouveau",
+        ]);
         if (!opened) throw new Error("Bouton nouvelle facture introuvable");
         await fillFieldFallback(page, [{ kind: "label", value: "client" }], CLIENTS[i % CLIENTS.length].name);
         await clickButtonFallback(page, ["Ajouter ligne", "Ajouter"]);
@@ -1640,7 +1906,13 @@ test("Behar Tech Pro — audit complet 500 points", async ({ page }) => {
       });
       if (ok !== undefined) stats.invoicesCreated += 1;
     }
-    for (const c of ["Statut impayée par défaut", "Anti-doublon", "Numérotation séquentielle", "PDF facture", "Document visible"]) {
+    for (const c of [
+      "Statut impayée par défaut",
+      "Anti-doublon",
+      "Numérotation séquentielle",
+      "PDF facture",
+      "Document visible",
+    ]) {
       recordCheck("Factures", c, "NON TESTABLE", "P3", "Vérification visuelle requise");
     }
 
@@ -1655,14 +1927,26 @@ test("Behar Tech Pro — audit complet 500 points", async ({ page }) => {
           throw new Error("Ligne facture introuvable");
         }
         await row.click({ timeout: 2000 }).catch(() => {});
-        const opened = await clickButtonFallback(page, ["Enregistrer paiement", "Encaisser", "Paiement", "Marquer payée"]);
+        const opened = await clickButtonFallback(page, [
+          "Enregistrer paiement",
+          "Encaisser",
+          "Paiement",
+          "Marquer payée",
+        ]);
         if (!opened) throw new Error("Action paiement introuvable");
         await fillFieldFallback(page, [{ kind: "label", value: "montant" }], "119");
         await clickButtonFallback(page, ["Valider", "Enregistrer", "Confirmer"]);
       });
       if (ok !== undefined) stats.paymentsCreated += 1;
     }
-    for (const c of ["Facture passe Payée", "Reçu PDF", "Document paiement visible", "Pas de double paiement", "Montant correct", "Client correct"]) {
+    for (const c of [
+      "Facture passe Payée",
+      "Reçu PDF",
+      "Document paiement visible",
+      "Pas de double paiement",
+      "Montant correct",
+      "Client correct",
+    ]) {
       recordCheck("Paiements", c, "NON TESTABLE", "P3", "Vérification après paiement");
     }
 
@@ -1673,7 +1957,10 @@ test("Behar Tech Pro — audit complet 500 points", async ({ page }) => {
     if (!ventesAvail) {
       recordCheck("Ventes", "Module ventes présent", "NON TESTABLE", "P2", "Page /ventes/ inaccessible");
     } else {
-      const body = await page.locator("body").innerText().catch(() => "");
+      const body = await page
+        .locator("body")
+        .innerText()
+        .catch(() => "");
       if (/page introuvable|404/i.test(body)) {
         recordCheck("Ventes", "Module ventes présent", "BUG", "P2", "Page 404");
         recordBug("P2", "Module ventes absent", "Page /ventes/ retourne 404");
@@ -1681,7 +1968,12 @@ test("Behar Tech Pro — audit complet 500 points", async ({ page }) => {
         recordCheck("Ventes", "Module ventes présent", "OK");
         for (let i = 0; i < 3; i += 1) {
           const ok = await safeStep("Ventes", `Création vente #${i + 1}`, "P2", async () => {
-            const opened = await clickButtonFallback(page, ["Nouvelle vente", "Encaisser", "Vente comptoir", "Nouveau"]);
+            const opened = await clickButtonFallback(page, [
+              "Nouvelle vente",
+              "Encaisser",
+              "Vente comptoir",
+              "Nouveau",
+            ]);
             if (!opened) throw new Error("Bouton vente introuvable");
             await clickButtonFallback(page, ["Ajouter produit", "Ajouter"]);
             await fillFieldFallback(page, [{ kind: "label", value: "produit|pièce|article" }], "iPhone 13");
@@ -1691,7 +1983,12 @@ test("Behar Tech Pro — audit complet 500 points", async ({ page }) => {
         }
       }
     }
-    for (const c of ["Pas de client Anonyme dupliqué", "Total cohérent", "Stock décrémenté", "Facture réparation + accessoire"]) {
+    for (const c of [
+      "Pas de client Anonyme dupliqué",
+      "Total cohérent",
+      "Stock décrémenté",
+      "Facture réparation + accessoire",
+    ]) {
       recordCheck("Ventes", c, "NON TESTABLE", "P3", "Dépend du module ventes");
     }
 
@@ -1810,7 +2107,13 @@ test("Behar Tech Pro — audit complet 500 points", async ({ page }) => {
     ];
     for (const item of persistanceItems) {
       const ok = before && after && JSON.stringify(before.data ?? null).length > 50;
-      recordCheck("Persistance", `Persistance ${item} après refresh`, ok ? "OK" : "BUG", ok ? "-" : "P1", ok ? "" : "Snapshot localStorage vide ou absent");
+      recordCheck(
+        "Persistance",
+        `Persistance ${item} après refresh`,
+        ok ? "OK" : "BUG",
+        ok ? "-" : "P1",
+        ok ? "" : "Snapshot localStorage vide ou absent",
+      );
       if (!ok) recordBug("P1", `Persistance ${item}`, "Snapshot localStorage vide après refresh");
     }
 
@@ -1830,10 +2133,14 @@ test("Behar Tech Pro — audit complet 500 points", async ({ page }) => {
       "Wording professionnel",
     ];
     for (const q of qualiteCommerciale) {
-      const body = await page.locator("body").innerText().catch(() => "");
-      const fail = (q.includes("undefined") && /\bundefined\b/.test(body))
-        || (q.includes("NaN") && /\bNaN\b/.test(body))
-        || (q.includes("null") && /\bnull\b/.test(body));
+      const body = await page
+        .locator("body")
+        .innerText()
+        .catch(() => "");
+      const fail =
+        (q.includes("undefined") && /\bundefined\b/.test(body)) ||
+        (q.includes("NaN") && /\bNaN\b/.test(body)) ||
+        (q.includes("null") && /\bnull\b/.test(body));
       recordCheck("Qualité commerciale", q, fail ? "BUG" : "OK", fail ? "P2" : "-");
       if (fail) recordBug("P2", q, "Texte indésirable détecté dans le DOM");
     }
@@ -2073,21 +2380,13 @@ test("Behar Tech Pro — audit complet 500 points", async ({ page }) => {
 
     // Console errors → bugs
     if (consoleErrors.length > 0) {
-      recordBug(
-        "P2",
-        `Erreurs console (${consoleErrors.length})`,
-        consoleErrors.slice(0, 5).join(" | ").slice(0, 400),
-      );
+      recordBug("P2", `Erreurs console (${consoleErrors.length})`, consoleErrors.slice(0, 5).join(" | ").slice(0, 400));
       recordCheck("Chargement / navigation", "Aucune erreur console", "BUG", "P2", `${consoleErrors.length} erreur(s)`);
     } else {
       recordCheck("Chargement / navigation", "Aucune erreur console", "OK");
     }
   } catch (fatal) {
-    recordBug(
-      "P0",
-      "Erreur fatale audit",
-      fatal instanceof Error ? fatal.message : String(fatal),
-    );
+    recordBug("P0", "Erreur fatale audit", fatal instanceof Error ? fatal.message : String(fatal));
     recordCheck(
       "Chargement / navigation",
       "Audit complet sans erreur fatale",

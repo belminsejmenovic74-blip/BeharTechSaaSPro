@@ -2,18 +2,24 @@
 
 import { useMemo, useState } from "react";
 
-import { Check, ChevronRight, KeyRound, MessageCircle, Pencil, Plus, RotateCcw, ShieldCheck, Trash2, UserCog, X } from "lucide-react";
+import {
+  Check,
+  ChevronRight,
+  KeyRound,
+  MessageCircle,
+  Pencil,
+  Plus,
+  RotateCcw,
+  ShieldCheck,
+  Trash2,
+  UserCog,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { PageShell } from "@/components/behar/page-shell";
 import { PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
-import {
-  type CurrentUser,
-  type PermissionKey,
-  permissionKeys,
-  type UserRole,
-  useBeharStore,
-} from "@/lib/behar-store";
+import { type CurrentUser, type PermissionKey, permissionKeys, type UserRole, useBeharStore } from "@/lib/behar-store";
 import { cn } from "@/lib/utils";
 
 type Mode = "list" | "create" | "edit" | "permissions" | "audit" | "greetings";
@@ -92,13 +98,7 @@ const permissionGroups: Array<{ title: string; keys: PermissionKey[] }> = [
   },
   {
     title: "Données sensibles & Audit",
-    keys: [
-      "canExportData",
-      "canImportData",
-      "canBackupData",
-      "canViewAuditLog",
-      "canViewNotifications",
-    ],
+    keys: ["canExportData", "canImportData", "canBackupData", "canViewAuditLog", "canViewNotifications"],
   },
 ];
 
@@ -156,8 +156,7 @@ const PERMISSION_LABELS: Partial<Record<PermissionKey, string>> = {
   canViewNotifications: "Voir les notifications",
 };
 
-const roleLabel = (role: UserRole) =>
-  role === "admin" ? "Gérant" : role === "technician" ? "Technicien" : "Accueil";
+const roleLabel = (role: UserRole) => (role === "admin" ? "Gérant" : role === "technician" ? "Technicien" : "Accueil");
 
 export default function TeamPage() {
   const currentUser = useBeharStore((s) => s.currentUser);
@@ -180,22 +179,15 @@ export default function TeamPage() {
   const [mode, setMode] = useState<Mode>("list");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
-  const selectedUser = useMemo(
-    () => users.find((u) => u.id === selectedUserId) ?? null,
-    [users, selectedUserId],
-  );
+  const selectedUser = useMemo(() => users.find((u) => u.id === selectedUserId) ?? null, [users, selectedUserId]);
 
   if (!canManage) {
     return (
       <PageShell title="Équipe" subtitle="Accès restreint.">
         <div className="mx-auto max-w-[480px] rounded-[20px] border border-[#E7E4DC] bg-white p-10 text-center shadow-[0_2px_8px_rgba(26,25,22,0.04)]">
           <ShieldCheck className="mx-auto size-10 text-[#CDCBC5]" />
-          <p className="mt-4 font-semibold text-[#1A1916] text-[18px] tracking-tight">
-            Permission requise
-          </p>
-          <p className="mt-1.5 text-[#6B6B6B] text-[14px]">
-            Seul le gérant peut accéder à la gestion de l'équipe.
-          </p>
+          <p className="mt-4 font-semibold text-[#1A1916] text-[18px] tracking-tight">Permission requise</p>
+          <p className="mt-1.5 text-[#6B6B6B] text-[14px]">Seul le gérant peut accéder à la gestion de l'équipe.</p>
         </div>
       </PageShell>
     );
@@ -305,13 +297,9 @@ export default function TeamPage() {
         />
       )}
 
-      {mode === "audit" && (
-        <AuditLogView logs={auditLogs} onClose={() => setMode("list")} />
-      )}
+      {mode === "audit" && <AuditLogView logs={auditLogs} onClose={() => setMode("list")} />}
 
-      {mode === "greetings" && (
-        <GreetingsEditor onClose={() => setMode("list")} />
-      )}
+      {mode === "greetings" && <GreetingsEditor onClose={() => setMode("list")} />}
     </PageShell>
   );
 }
@@ -499,9 +487,7 @@ function MemberForm({
 
         {mode === "create" && (
           <div>
-            <label className="mb-1.5 block text-[#1A1916] text-[13px] font-medium">
-              Code PIN * (4 à 6 chiffres)
-            </label>
+            <label className="mb-1.5 block text-[#1A1916] text-[13px] font-medium">Code PIN * (4 à 6 chiffres)</label>
             <input
               value={pin}
               onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
@@ -595,9 +581,7 @@ function PermissionsEditor({
                       canEdit ? "hover:bg-[#FAFAF8]" : "cursor-default",
                     )}
                   >
-                    <span className="text-[#1A1916] text-[13.5px]">
-                      {PERMISSION_LABELS[key] ?? key}
-                    </span>
+                    <span className="text-[#1A1916] text-[13.5px]">{PERMISSION_LABELS[key] ?? key}</span>
                     <input
                       type="checkbox"
                       checked={value}
@@ -685,7 +669,10 @@ function GreetingsEditor({ onClose }: Readonly<{ onClose: () => void }>) {
   });
 
   const handleSave = () => {
-    const messages = draft[activeRole].split("\n").map((m) => m.trim()).filter(Boolean);
+    const messages = draft[activeRole]
+      .split("\n")
+      .map((m) => m.trim())
+      .filter(Boolean);
     updateRoleGreetings(activeRole, messages);
     toast.success(`Messages ${roleName(activeRole)} sauvegardés (${messages.length})`);
   };
@@ -707,7 +694,10 @@ function GreetingsEditor({ onClose }: Readonly<{ onClose: () => void }>) {
     { role: "frontdesk", label: "Accueil" },
   ];
 
-  const count = draft[activeRole].split("\n").map((m) => m.trim()).filter(Boolean).length;
+  const count = draft[activeRole]
+    .split("\n")
+    .map((m) => m.trim())
+    .filter(Boolean).length;
 
   return (
     <div className="mx-auto max-w-[720px]">
@@ -717,9 +707,7 @@ function GreetingsEditor({ onClose }: Readonly<{ onClose: () => void }>) {
           <div>
             <div className="flex items-center gap-2">
               <MessageCircle className="size-5 text-[#2A9D8F]" />
-              <h2 className="font-semibold text-[#1A1916] text-[19px] tracking-tight">
-                Messages d'accueil
-              </h2>
+              <h2 className="font-semibold text-[#1A1916] text-[19px] tracking-tight">Messages d'accueil</h2>
             </div>
             <p className="mt-1 text-[#6B6B6B] text-[13px]">
               Personnalisez les messages affichés sur l'écran de connexion, par rôle. Un message par ligne.
@@ -771,7 +759,9 @@ function GreetingsEditor({ onClose }: Readonly<{ onClose: () => void }>) {
               <RotateCcw className="size-4" /> Restaurer les messages d'origine
             </SecondaryButton>
             <div className="flex gap-2">
-              <SecondaryButton className="h-10" onClick={onClose}>Annuler</SecondaryButton>
+              <SecondaryButton className="h-10" onClick={onClose}>
+                Annuler
+              </SecondaryButton>
               <PrimaryButton className="h-10" onClick={handleSave}>
                 <Check className="size-4" /> Enregistrer
               </PrimaryButton>

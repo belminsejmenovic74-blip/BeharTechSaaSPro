@@ -125,7 +125,7 @@ export function PaymentsWorkspace() {
     const q = search.trim().toLowerCase();
     return store.payments.filter((p) => {
       if (methodFilter !== "all" && p.method !== methodFilter) return false;
-      
+
       if (filterOverdue) {
         const invoice = store.invoices.find((inv) => inv.id === p.invoiceId);
         // On masque les paiements dont la facture est déjà marquée comme "Payée"
@@ -290,7 +290,9 @@ export function PaymentsWorkspace() {
                         >
                           <td className="px-4 py-3 font-mono text-[#2A9D8F] text-[12.5px]">{payment.paymentNumber}</td>
                           <td className="px-4 py-3 text-[#1A1916]">{displayCustomerName(entryCustomer)}</td>
-                          <td className="px-4 py-3 text-[#6B6B6B]">{entryInvoice?.number ?? entrySale?.number ?? "—"}</td>
+                          <td className="px-4 py-3 text-[#6B6B6B]">
+                            {entryInvoice?.number ?? entrySale?.number ?? "—"}
+                          </td>
                           <td className="max-w-[200px] truncate px-4 py-3 text-[#6B6B6B]">
                             {entryRepair ? `${entryRepair.number} · ${entryRepair.device}` : "—"}
                           </td>
@@ -350,9 +352,7 @@ export function PaymentsWorkspace() {
                               {formatEuro(payment.amount)}
                             </p>
                           </div>
-                          <p className="mt-0.5 font-mono text-[#2A9D8F] text-[11px]">
-                            {payment.paymentNumber}
-                          </p>
+                          <p className="mt-0.5 font-mono text-[#2A9D8F] text-[11px]">{payment.paymentNumber}</p>
                           <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">
                             {entryInvoice?.number ?? entrySale?.number ?? "—"} · {payment.date}
                           </p>
@@ -747,25 +747,21 @@ function CreatePaymentModal({
   );
 }
 
-
 function MobileKpi({
   label,
   value,
   helper,
   tone,
 }: Readonly<{ label: string; value: string; helper?: string; tone: "teal" | "amber" }>) {
-  const t = tone === "teal"
-    ? { bg: "bg-[#EAF6F2]", text: "text-[#2A9D8F]" }
-    : { bg: "bg-[#FCF1DF]", text: "text-[#C2841C]" };
+  const t =
+    tone === "teal" ? { bg: "bg-[#EAF6F2]", text: "text-[#2A9D8F]" } : { bg: "bg-[#FCF1DF]", text: "text-[#C2841C]" };
   return (
     <div className="w-full shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)] min-[360px]:w-[44%]">
       <span className={cn("grid size-9 place-items-center rounded-[10px]", t.bg, t.text)}>
         <Wallet className="size-[18px]" strokeWidth={2} />
       </span>
       <p className="mt-3 text-[#8A8984] text-[11px] font-medium leading-tight tracking-tight">{label}</p>
-      <p className={cn("mt-1.5 font-bold text-[20px] leading-none tracking-tight tabular-nums", t.text)}>
-        {value}
-      </p>
+      <p className={cn("mt-1.5 font-bold text-[20px] leading-none tracking-tight tabular-nums", t.text)}>{value}</p>
       {helper && <p className="mt-1.5 truncate text-[#8A8984] text-[10px] font-medium">{helper}</p>}
     </div>
   );
@@ -773,10 +769,8 @@ function MobileKpi({
 
 function PaymentMethodTile({ method }: Readonly<{ method: PaymentMethod }>) {
   const config = (() => {
-    if (method === "Carte")
-      return { Icon: CreditCard, bg: "bg-[#EAF6F2]", color: "text-[#2A9D8F]", label: "Carte" };
-    if (method === "Espèces")
-      return { Icon: Banknote, bg: "bg-[#FCF1DF]", color: "text-[#C2841C]", label: "Espèces" };
+    if (method === "Carte") return { Icon: CreditCard, bg: "bg-[#EAF6F2]", color: "text-[#2A9D8F]", label: "Carte" };
+    if (method === "Espèces") return { Icon: Banknote, bg: "bg-[#FCF1DF]", color: "text-[#C2841C]", label: "Espèces" };
     if (method === "Virement")
       return { Icon: Landmark, bg: "bg-[#E6EFFB]", color: "text-[#2F6FD0]", label: "Virement" };
     return { Icon: Link2, bg: "bg-[#EFEAF8]", color: "text-[#7B5BC2]", label: "En ligne" };

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export function usePostalCities(postalCode: string, country: string) {
   const [cities, setCities] = useState<string[]>([]);
@@ -40,7 +40,9 @@ export function usePostalCities(postalCode: string, country: string) {
 export async function fetchPostalCodeByCity(city: string, country: string): Promise<string | null> {
   if (!city || country !== "France") return null;
   try {
-    const res = await fetch(`https://geo.api.gouv.fr/communes?nom=${encodeURIComponent(city)}&boost=population&limit=1`);
+    const res = await fetch(
+      `https://geo.api.gouv.fr/communes?nom=${encodeURIComponent(city)}&boost=population&limit=1`,
+    );
     if (!res.ok) return null;
     const data = await res.json();
     if (data && data.length > 0 && data[0].codesPostaux && data[0].codesPostaux.length > 0) {

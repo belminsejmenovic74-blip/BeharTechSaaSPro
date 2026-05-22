@@ -31,8 +31,8 @@ import { toast } from "sonner";
 
 import {
   type Appointment,
-  appointmentStatuses,
   type AppointmentStatus,
+  appointmentStatuses,
   formatIsoToDisplay,
   getNowIso,
   normalizeAppointmentStatus,
@@ -44,15 +44,8 @@ import {
 import { cn } from "@/lib/utils";
 
 import { DeviceSelector } from "../DeviceSelector";
+import { DetailRow, Panel, PrimaryButton, SecondaryButton, StatusBadge, ToolbarSelect } from "./primitives";
 import { RepairModal } from "./repair-create-modal";
-import {
-  DetailRow,
-  Panel,
-  PrimaryButton,
-  SecondaryButton,
-  StatusBadge,
-  ToolbarSelect,
-} from "./primitives";
 
 const dayLabels = ["Lun.", "Mar.", "Mer.", "Jeu.", "Ven.", "Sam.", "Dim."];
 const hours = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
@@ -67,13 +60,18 @@ const eventStyles: Record<string, string> = {
 };
 
 function cleanDeviceLabel(value: string) {
-  return value.replace(/^(\S+)\s+\1\s+/i, "$1 ").replace(/\s+/g, " ").trim();
+  return value
+    .replace(/^(\S+)\s+\1\s+/i, "$1 ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function findLinkedRepair(appointment: Appointment | undefined, repairs: Repair[]) {
   if (!appointment) return undefined;
-  return repairs.find((repair) => repair.id === appointment.repairId)
-    ?? repairs.find((repair) => repair.appointmentId === appointment.id);
+  return (
+    repairs.find((repair) => repair.id === appointment.repairId) ??
+    repairs.find((repair) => repair.appointmentId === appointment.id)
+  );
 }
 
 export function AppointmentsWorkspace() {
@@ -139,27 +137,27 @@ export function AppointmentsWorkspace() {
   const mobileWeekStart = addDays(getMonday(new Date()), mobileWeekOffset * 7);
   const mobileWeekDays = Array.from({ length: 7 }).map((_, i) => addDays(mobileWeekStart, i));
   const monthLabel = capitalize(
-    new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" })
-      .format(mobileWeekDays[3] ?? new Date()),
+    new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(mobileWeekDays[3] ?? new Date()),
   );
 
-  const appointmentMatchesIso = (appt: Appointment, iso: string) =>
-    toAppointmentInput(appt) === iso;
+  const appointmentMatchesIso = (appt: Appointment, iso: string) => toAppointmentInput(appt) === iso;
 
   const appointmentsForSelectedDay = store.appointments
-    .filter((appt) => appointmentMatchesIso(appt, mobileSelectedDay) && normalizeAppointmentStatus(appt.status) !== "Annulé")
+    .filter(
+      (appt) => appointmentMatchesIso(appt, mobileSelectedDay) && normalizeAppointmentStatus(appt.status) !== "Annulé",
+    )
     .sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
 
   const dayBucket = (iso: string) =>
-    store.appointments.filter((appt) => appointmentMatchesIso(appt, iso) && normalizeAppointmentStatus(appt.status) !== "Annulé");
+    store.appointments.filter(
+      (appt) => appointmentMatchesIso(appt, iso) && normalizeAppointmentStatus(appt.status) !== "Annulé",
+    );
 
   const mobileKpis = (() => {
     const list = appointmentsForSelectedDay;
     const arrived = list.filter((a) => normalizeAppointmentStatus(a.status) === "Arrivé").length;
     const confirmed = list.filter((a) => normalizeAppointmentStatus(a.status, a.confirmed) === "Confirmé").length;
-    const pending = list.filter(
-      (a) => normalizeAppointmentStatus(a.status, a.confirmed) === "En attente",
-    ).length;
+    const pending = list.filter((a) => normalizeAppointmentStatus(a.status, a.confirmed) === "En attente").length;
     return { confirmed, pending, arrived };
   })();
 
@@ -242,43 +240,20 @@ export function AppointmentsWorkspace() {
 
         {/* 3 KPI jour : Confirmés / En attente / Arrivés */}
         <div className="grid grid-cols-3 gap-2.5">
-          <MobileKpiTile
-            icon={CheckCircle2}
-            label="Confirmés"
-            value={mobileKpis.confirmed}
-            tone="teal"
-          />
-          <MobileKpiTile
-            icon={Clock}
-            label="En attente"
-            value={mobileKpis.pending}
-            tone="amber"
-          />
-          <MobileKpiTile
-            icon={CheckCheck}
-            label="Arrivés"
-            value={mobileKpis.arrived}
-            tone="success"
-          />
+          <MobileKpiTile icon={CheckCircle2} label="Confirmés" value={mobileKpis.confirmed} tone="teal" />
+          <MobileKpiTile icon={Clock} label="En attente" value={mobileKpis.pending} tone="amber" />
+          <MobileKpiTile icon={CheckCheck} label="Arrivés" value={mobileKpis.arrived} tone="success" />
         </div>
 
         {/* Agenda du jour */}
         <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
           <div className="mb-3 flex items-baseline justify-between">
             <div>
-              <h3 className="font-semibold text-[#1A1916] text-[15px] tracking-tight">
-                Agenda du jour
-              </h3>
-              <p className="mt-0.5 text-[#8A8984] text-[11.5px]">
-                {capitalize(formatLongDate(mobileSelectedDay))}
-              </p>
+              <h3 className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Agenda du jour</h3>
+              <p className="mt-0.5 text-[#8A8984] text-[11.5px]">{capitalize(formatLongDate(mobileSelectedDay))}</p>
             </div>
             {mobileSelectedDay !== todayIso && (
-              <button
-                type="button"
-                onClick={goToToday}
-                className="text-[#2A9D8F] text-[12px] font-semibold"
-              >
+              <button type="button" onClick={goToToday} className="text-[#2A9D8F] text-[12px] font-semibold">
                 Aujourd'hui
               </button>
             )}
@@ -342,7 +317,8 @@ export function AppointmentsWorkspace() {
                       </span>
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-semibold text-[#1A1916] text-[13.5px]">
-                          {cleanDeviceLabel(appt.device)}{appt.issue ? ` · ${appt.issue}` : ""}
+                          {cleanDeviceLabel(appt.device)}
+                          {appt.issue ? ` · ${appt.issue}` : ""}
                         </p>
                         <p className="mt-0.5 truncate text-[#6B6B6B] text-[12px]">
                           {apptCustomer?.name || "Client comptoir"}
@@ -426,14 +402,19 @@ export function AppointmentsWorkspace() {
         </Panel>
 
         {selected && customer && (
-          <Panel className={cn(
-            mobileDetailOpen
-              ? "fixed inset-x-0 bottom-0 z-40 max-h-[94svh] overflow-y-auto rounded-t-[28px] border border-[#E8E8E5] bg-white p-5 shadow-[0_-24px_70px_rgba(26,25,22,0.18)] flex flex-col"
-              : "hidden",
-            "md:relative md:inset-auto md:z-auto md:block md:rounded-[22px] md:border-[#E8E8E5] md:bg-white md:p-5 md:shadow-[0_18px_45px_rgba(26,25,22,0.07)] md:overflow-visible",
-          )}>
+          <Panel
+            className={cn(
+              mobileDetailOpen
+                ? "fixed inset-x-0 bottom-0 z-40 max-h-[94svh] overflow-y-auto rounded-t-[28px] border border-[#E8E8E5] bg-white p-5 shadow-[0_-24px_70px_rgba(26,25,22,0.18)] flex flex-col"
+                : "hidden",
+              "md:relative md:inset-auto md:z-auto md:block md:rounded-[22px] md:border-[#E8E8E5] md:bg-white md:p-5 md:shadow-[0_18px_45px_rgba(26,25,22,0.07)] md:overflow-visible",
+            )}
+          >
             <div className="md:hidden -mx-5 -mt-5 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#F1F1EF] bg-white/95 backdrop-blur-xl px-4 py-3">
-              <span className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-[#D1CFCA]" aria-hidden />
+              <span
+                className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-[#D1CFCA]"
+                aria-hidden
+              />
               <button
                 type="button"
                 onClick={() => setMobileDetailOpen(false)}
@@ -791,7 +772,9 @@ export function AppointmentsWorkspace() {
             notes: [
               repairPrefillAppointment.notes,
               `Rendez-vous du ${repairPrefillAppointment.date} à ${repairPrefillAppointment.time}`,
-            ].filter(Boolean).join("\n"),
+            ]
+              .filter(Boolean)
+              .join("\n"),
             droppedAt: `${repairPrefillAppointment.date}, ${repairPrefillAppointment.time}`,
             technician: repairPrefillAppointment.technician,
           }}
@@ -1150,7 +1133,9 @@ function CalendarGrid({
                         <p className="mt-1 truncate font-semibold leading-tight">
                           {customer?.name ?? "Client à renseigner"}
                         </p>
-                        <p className="truncate text-[#1A1916]/80 leading-tight">{cleanDeviceLabel(appointment.device)}</p>
+                        <p className="truncate text-[#1A1916]/80 leading-tight">
+                          {cleanDeviceLabel(appointment.device)}
+                        </p>
                         <p className="truncate text-[#6B6B6B] leading-tight">{appointment.issue}</p>
                         {linkedRepair ? (
                           <p className="mt-1 text-[10px] font-semibold text-[#167B70]">Réparation liée</p>
@@ -1428,17 +1413,12 @@ function MobileKpiTile({
         <Icon className="size-[15px]" strokeWidth={2.2} />
       </span>
       <p className="mt-2.5 text-[#8A8984] text-[10.5px] font-medium leading-tight tracking-tight">{label}</p>
-      <p className={cn("mt-1 font-bold text-[20px] leading-none tabular-nums", palette.text)}>
-        {value}
-      </p>
+      <p className={cn("mt-1 font-bold text-[20px] leading-none tabular-nums", palette.text)}>{value}</p>
     </div>
   );
 }
 
-function AppointmentStatusPill({
-  status,
-  confirmed,
-}: Readonly<{ status: string; confirmed?: boolean }>) {
+function AppointmentStatusPill({ status, confirmed }: Readonly<{ status: string; confirmed?: boolean }>) {
   const label = normalizeAppointmentStatus(status, confirmed);
   const tone = (() => {
     if (label === "Arrivé" || label === "Réparation créée") return "bg-[#E7F8F0] text-[#0B7A56]";
@@ -1447,7 +1427,9 @@ function AppointmentStatusPill({
     return "bg-[#FCF1DF] text-[#C2841C]";
   })();
   return (
-    <span className={cn("inline-flex shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-semibold tracking-tight", tone)}>
+    <span
+      className={cn("inline-flex shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-semibold tracking-tight", tone)}
+    >
       {label}
     </span>
   );

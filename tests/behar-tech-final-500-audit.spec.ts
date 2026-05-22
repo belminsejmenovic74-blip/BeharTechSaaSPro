@@ -1,4 +1,5 @@
-import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { expect, type Page, type TestInfo, test } from "@playwright/test";
+
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -144,16 +145,56 @@ const repairModels = [
 ] as const;
 
 const stockNames = [
-  "Écran iPhone 13", "Batterie iPhone 12", "Connecteur Samsung A52", "Écran Xiaomi Redmi Note 11", "Vitre iPad 9",
-  "Port HDMI PS5", "Joystick Switch", "Ventilateur PS5", "Pâte thermique premium", "Haut-parleur iPhone XR",
-  "Caméra iPhone XR", "Batterie iPhone SE", "Écran Galaxy A14", "Écran Galaxy S21", "Kit nettoyage Switch",
-  "SSD NVMe 500 Go", "Clavier Asus ZenBook", "Dos iPhone 15", "Écran Oppo Find X5", "Batterie OnePlus Nord 2",
-  "Port HDMI Xbox Series S", "Ventilateur Dell XPS", "Connecteur iPad Pro", "Haut-parleur Xperia 10", "Écran Motorola G84",
-  "Batterie iPhone 14", "Écran iPhone 11", "Caméra Pixel 7", "Batterie Huawei P30", "Connecteur Galaxy Tab A",
-  "Nappe Face ID", "Vitre arrière Samsung", "Micro iPhone", "Antenne Wi-Fi MacBook", "Trackpad MacBook",
-  "Chargeur USB-C 65W", "Câble Lightning MFI", "Film hydrogel", "Coque silicone", "Protection verre trempé",
-  "Carte mère Switch", "Module Bluetooth PS5", "Bouton power iPad", "Connecteur Lenovo", "RAM DDR4 8Go",
-  "Batterie Dell XPS", "Écran MacBook Air", "Charnière HP Pavilion", "Caméra arrière Samsung", "Lecteur SIM iPhone",
+  "Écran iPhone 13",
+  "Batterie iPhone 12",
+  "Connecteur Samsung A52",
+  "Écran Xiaomi Redmi Note 11",
+  "Vitre iPad 9",
+  "Port HDMI PS5",
+  "Joystick Switch",
+  "Ventilateur PS5",
+  "Pâte thermique premium",
+  "Haut-parleur iPhone XR",
+  "Caméra iPhone XR",
+  "Batterie iPhone SE",
+  "Écran Galaxy A14",
+  "Écran Galaxy S21",
+  "Kit nettoyage Switch",
+  "SSD NVMe 500 Go",
+  "Clavier Asus ZenBook",
+  "Dos iPhone 15",
+  "Écran Oppo Find X5",
+  "Batterie OnePlus Nord 2",
+  "Port HDMI Xbox Series S",
+  "Ventilateur Dell XPS",
+  "Connecteur iPad Pro",
+  "Haut-parleur Xperia 10",
+  "Écran Motorola G84",
+  "Batterie iPhone 14",
+  "Écran iPhone 11",
+  "Caméra Pixel 7",
+  "Batterie Huawei P30",
+  "Connecteur Galaxy Tab A",
+  "Nappe Face ID",
+  "Vitre arrière Samsung",
+  "Micro iPhone",
+  "Antenne Wi-Fi MacBook",
+  "Trackpad MacBook",
+  "Chargeur USB-C 65W",
+  "Câble Lightning MFI",
+  "Film hydrogel",
+  "Coque silicone",
+  "Protection verre trempé",
+  "Carte mère Switch",
+  "Module Bluetooth PS5",
+  "Bouton power iPad",
+  "Connecteur Lenovo",
+  "RAM DDR4 8Go",
+  "Batterie Dell XPS",
+  "Écran MacBook Air",
+  "Charnière HP Pavilion",
+  "Caméra arrière Samsung",
+  "Lecteur SIM iPhone",
 ];
 
 function buildFinalState() {
@@ -165,7 +206,12 @@ function buildFinalState() {
       shopId: "shop_atelier_belmin",
       name,
       type: counter ? "counter" : "named",
-      initials: name.split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
+      initials: name
+        .split(" ")
+        .map((part) => part[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase(),
       phone: counter ? "Non renseigné" : `+33 6 20 30 4${String(index).padStart(2, "0")}`,
       email: counter ? "Non renseigné" : `client${index + 1}@audit-final.fr`,
       address: counter ? "" : `${10 + index} rue de l'Atelier`,
@@ -190,28 +236,51 @@ function buildFinalState() {
     shopId: "shop_atelier_belmin",
     sku: `STK-${String(index + 1).padStart(3, "0")}`,
     name,
-    deviceType: name.includes("PS5") || name.includes("Switch") || name.includes("Xbox")
-      ? "Console"
-      : name.includes("MacBook") || name.includes("Lenovo") || name.includes("Dell") || name.includes("HP") || name.includes("SSD") || name.includes("RAM")
-        ? "Ordinateur"
-        : name.includes("iPad") || name.includes("Tab")
-          ? "Tablette"
-          : "Smartphone",
+    deviceType:
+      name.includes("PS5") || name.includes("Switch") || name.includes("Xbox")
+        ? "Console"
+        : name.includes("MacBook") ||
+            name.includes("Lenovo") ||
+            name.includes("Dell") ||
+            name.includes("HP") ||
+            name.includes("SSD") ||
+            name.includes("RAM")
+          ? "Ordinateur"
+          : name.includes("iPad") || name.includes("Tab")
+            ? "Tablette"
+            : "Smartphone",
     brandId: name.includes("iPhone") || name.includes("iPad") || name.includes("MacBook") ? "Apple" : "Autre",
-    brandName: name.includes("iPhone") || name.includes("iPad") || name.includes("MacBook") ? "Apple" : name.includes("Samsung") ? "Samsung" : "Générique",
+    brandName:
+      name.includes("iPhone") || name.includes("iPad") || name.includes("MacBook")
+        ? "Apple"
+        : name.includes("Samsung")
+          ? "Samsung"
+          : "Générique",
     modelIds: [],
     compatibleModels: [],
-    categoryId: name.toLowerCase().includes("batterie") ? "cat_battery" : name.toLowerCase().includes("écran") ? "cat_screen" : "cat_other",
-    categoryName: name.toLowerCase().includes("batterie") ? "Batterie" : name.toLowerCase().includes("écran") ? "Écran" : "Autre",
+    categoryId: name.toLowerCase().includes("batterie")
+      ? "cat_battery"
+      : name.toLowerCase().includes("écran")
+        ? "cat_screen"
+        : "cat_other",
+    categoryName: name.toLowerCase().includes("batterie")
+      ? "Batterie"
+      : name.toLowerCase().includes("écran")
+        ? "Écran"
+        : "Autre",
     part: name,
     reference: `STK-${String(index + 1).padStart(3, "0")}`,
-    category: name.toLowerCase().includes("batterie") ? "Batterie" : name.toLowerCase().includes("écran") ? "Écran" : "Autre",
+    category: name.toLowerCase().includes("batterie")
+      ? "Batterie"
+      : name.toLowerCase().includes("écran")
+        ? "Écran"
+        : "Autre",
     purchasePrice: 12 + index,
     salePrice: 35 + index * 2,
     quantity: index % 10 === 0 ? 1 : 4 + (index % 8),
     stock: index % 10 === 0 ? 1 : 4 + (index % 8),
     threshold: 2,
-    supplier: `Fournisseur ${index % 5 + 1}`,
+    supplier: `Fournisseur ${(index % 5) + 1}`,
     leadTime: "2 à 3 jours",
     createdAt: today(),
     updatedAt: today(),
@@ -243,7 +312,8 @@ function buildFinalState() {
       deviceModel: model,
       issue,
       issueType: issue,
-      status: index < 8 ? "Restitué" : index < 10 ? "Prêt" : index % 4 === 0 ? "Diagnostic" : "Préparation / Réparation",
+      status:
+        index < 8 ? "Restitué" : index < 10 ? "Prêt" : index % 4 === 0 ? "Diagnostic" : "Préparation / Réparation",
       amount,
       laborPrice: amount ? Math.max(30, amount - stock.salePrice) : 0,
       total: amount,
@@ -252,19 +322,22 @@ function buildFinalState() {
       estimatedDoneAt: "2026-05-15",
       technician: index % 2 === 0 ? "Nadir" : "Belmin",
       imei: "",
-      parts: amount && index % 2 === 0
-        ? [{
-          stockItemId: stock.id,
-          name: stock.name,
-          reference: stock.reference,
-          sku: stock.sku,
-          categoryName: stock.categoryName,
-          purchasePrice: stock.purchasePrice,
-          salePrice: stock.salePrice,
-          quantity: 1,
-          confirmed: index < 8,
-        }]
-        : [],
+      parts:
+        amount && index % 2 === 0
+          ? [
+              {
+                stockItemId: stock.id,
+                name: stock.name,
+                reference: stock.reference,
+                sku: stock.sku,
+                categoryName: stock.categoryName,
+                purchasePrice: stock.purchasePrice,
+                salePrice: stock.salePrice,
+                quantity: 1,
+                confirmed: index < 8,
+              },
+            ]
+          : [],
       history: ["Réparation créée", index < 8 ? "Paiement encaissé" : "En cours"],
       createdAt: nowIso(),
       updatedAt: nowIso(),
@@ -306,7 +379,15 @@ function buildFinalState() {
     status: index < 8 ? "Facturé" : "Accepté",
     date: today(),
     expiryDate: "2026-06-12",
-    lines: [{ id: `quote_line_${index + 1}`, description: repairs[index].issue, quantity: 1, unitPrice: repairs[index].amount || 79, total: repairs[index].amount || 79 }],
+    lines: [
+      {
+        id: `quote_line_${index + 1}`,
+        description: repairs[index].issue,
+        quantity: 1,
+        unitPrice: repairs[index].amount || 79,
+        total: repairs[index].amount || 79,
+      },
+    ],
     notes: "Devis audit final",
     totalAmount: repairs[index].amount || 79,
     sourceType: "repair",
@@ -327,7 +408,15 @@ function buildFinalState() {
     quoteId: quotes[index].id,
     status: index < 8 ? "Payée" : "Envoyée",
     date: today(),
-    lines: [{ id: `invoice_line_${index + 1}`, description: repairs[index].issue, quantity: 1, unitPrice: repairs[index].amount || 79, total: repairs[index].amount || 79 }],
+    lines: [
+      {
+        id: `invoice_line_${index + 1}`,
+        description: repairs[index].issue,
+        quantity: 1,
+        unitPrice: repairs[index].amount || 79,
+        total: repairs[index].amount || 79,
+      },
+    ],
     sourceType: "quote",
     sourceNumber: quotes[index].number,
     paymentMethod: index < 8 ? "Carte" : "Non réglée",
@@ -447,17 +536,84 @@ function buildFinalState() {
       permissionOverrides: {},
     },
     users: [
-      { id: "user_belmin_admin", name: "Belmin", role: "admin", pin: "0000", active: true, createdAt: nowIso(), updatedAt: nowIso(), permissionOverrides: {} },
-      { id: "user_nadir_technician", name: "Nadir", role: "technician", pin: "1234", active: true, createdAt: nowIso(), updatedAt: nowIso(), permissionOverrides: {} },
-      { id: "user_lina_frontdesk", name: "Lina", role: "frontdesk", pin: "5678", active: true, createdAt: nowIso(), updatedAt: nowIso(), permissionOverrides: {} },
-      { id: "user_yanis_intern", name: "Yanis", role: "technician", pin: "9999", active: true, createdAt: nowIso(), updatedAt: nowIso(), permissionOverrides: { canCreateQuote: false, canViewInternalDocuments: false } },
+      {
+        id: "user_belmin_admin",
+        name: "Belmin",
+        role: "admin",
+        pin: "0000",
+        active: true,
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+        permissionOverrides: {},
+      },
+      {
+        id: "user_nadir_technician",
+        name: "Nadir",
+        role: "technician",
+        pin: "1234",
+        active: true,
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+        permissionOverrides: {},
+      },
+      {
+        id: "user_lina_frontdesk",
+        name: "Lina",
+        role: "frontdesk",
+        pin: "5678",
+        active: true,
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+        permissionOverrides: {},
+      },
+      {
+        id: "user_yanis_intern",
+        name: "Yanis",
+        role: "technician",
+        pin: "9999",
+        active: true,
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+        permissionOverrides: { canCreateQuote: false, canViewInternalDocuments: false },
+      },
     ],
     auditLogs: [
-      { id: "audit_seed_1", actorId: "user_lina_frontdesk", actorName: "Lina", actorRole: "frontdesk", action: "repair.created", targetType: "repair", targetId: repairs[0].id, message: "Lina a créé la réparation REP-0001", createdAt: nowIso() },
-      { id: "audit_seed_2", actorId: "user_nadir_technician", actorName: "Nadir", actorRole: "technician", action: "repair.status_changed", targetType: "repair", targetId: repairs[1].id, message: "Nadir a passé REP-0002 en Diagnostic", createdAt: nowIso() },
+      {
+        id: "audit_seed_1",
+        actorId: "user_lina_frontdesk",
+        actorName: "Lina",
+        actorRole: "frontdesk",
+        action: "repair.created",
+        targetType: "repair",
+        targetId: repairs[0].id,
+        message: "Lina a créé la réparation REP-0001",
+        createdAt: nowIso(),
+      },
+      {
+        id: "audit_seed_2",
+        actorId: "user_nadir_technician",
+        actorName: "Nadir",
+        actorRole: "technician",
+        action: "repair.status_changed",
+        targetType: "repair",
+        targetId: repairs[1].id,
+        message: "Nadir a passé REP-0002 en Diagnostic",
+        createdAt: nowIso(),
+      },
     ],
     notifications: [
-      { id: "notif_seed_1", type: "info", title: "Nouvelle réparation", message: "REP-0001 a été créée par Lina", targetType: "repair", targetId: repairs[0].id, actorId: "user_lina_frontdesk", actorName: "Lina", read: false, createdAt: nowIso() },
+      {
+        id: "notif_seed_1",
+        type: "info",
+        title: "Nouvelle réparation",
+        message: "REP-0001 a été créée par Lina",
+        targetType: "repair",
+        targetId: repairs[0].id,
+        actorId: "user_lina_frontdesk",
+        actorName: "Lina",
+        read: false,
+        createdAt: nowIso(),
+      },
     ],
     teamMembers: [{ id: "tm_admin", firstName: "Belmin", lastName: "Admin", role: "Gérant" }],
     customers,
@@ -573,16 +729,37 @@ function makeCheckRecorder() {
 }
 
 async function visible(page: Page, matcher: RegExp | string) {
-  return (await page.getByText(matcher).first().isVisible().catch(() => false));
+  return await page
+    .getByText(matcher)
+    .first()
+    .isVisible()
+    .catch(() => false);
 }
 
 async function headingVisible(page: Page, name: RegExp | string) {
-  return page.getByRole("heading", { name }).first().isVisible().catch(() => false);
+  return page
+    .getByRole("heading", { name })
+    .first()
+    .isVisible()
+    .catch(() => false);
 }
 
-async function assertVisibleCheck(page: Page, add: ReturnType<typeof makeCheckRecorder>["add"], module: string, label: string, matcher: RegExp | string, priority: Priority = "P2") {
+async function assertVisibleCheck(
+  page: Page,
+  add: ReturnType<typeof makeCheckRecorder>["add"],
+  module: string,
+  label: string,
+  matcher: RegExp | string,
+  priority: Priority = "P2",
+) {
   const ok = await visible(page, matcher);
-  add(module, label, ok ? "OK" : "BUG", ok ? undefined : priority, ok ? undefined : "Texte/élément non visible dans l'UI.");
+  add(
+    module,
+    label,
+    ok ? "OK" : "BUG",
+    ok ? undefined : priority,
+    ok ? undefined : "Texte/élément non visible dans l'UI.",
+  );
 }
 
 async function licenseInput(page: Page) {
@@ -599,9 +776,18 @@ async function licenseInput(page: Page) {
 
 async function waitForLicenseOrApp(page: Page) {
   await Promise.race([
-    page.getByText(/Activer Behar Tech Pro/i).waitFor({ state: "visible", timeout: 15_000 }).catch(() => undefined),
-    page.getByRole("link", { name: /Tableau de bord/i }).waitFor({ state: "visible", timeout: 15_000 }).catch(() => undefined),
-    page.getByText(/Chargement/i).waitFor({ state: "hidden", timeout: 15_000 }).catch(() => undefined),
+    page
+      .getByText(/Activer Behar Tech Pro/i)
+      .waitFor({ state: "visible", timeout: 15_000 })
+      .catch(() => undefined),
+    page
+      .getByRole("link", { name: /Tableau de bord/i })
+      .waitFor({ state: "visible", timeout: 15_000 })
+      .catch(() => undefined),
+    page
+      .getByText(/Chargement/i)
+      .waitFor({ state: "hidden", timeout: 15_000 })
+      .catch(() => undefined),
   ]);
 }
 
@@ -654,7 +840,10 @@ async function createStockItemViaUi(page: Page) {
 
 async function createRepairClientQuoteViaUi(page: Page) {
   await page.goto(`${BASE_URL}/dashboard/reparations`);
-  await page.getByRole("button", { name: /Nouvelle réparation/i }).first().click();
+  await page
+    .getByRole("button", { name: /Nouvelle réparation/i })
+    .first()
+    .click();
   await expect(page.getByRole("heading", { name: /Nouvelle réparation/i })).toBeVisible();
 
   await page.getByLabel(/Nouveau client/i).check();
@@ -681,7 +870,12 @@ async function createRepairClientQuoteViaUi(page: Page) {
 
 async function completeInvoicePaymentViaUi(page: Page) {
   await page.goto(`${BASE_URL}/dashboard/reparations`);
-  for (const action of [/Passer en diagnostic/i, /Passer en préparation \/ réparation/i, /Passer en test final/i, /Marquer comme prêt/i]) {
+  for (const action of [
+    /Passer en diagnostic/i,
+    /Passer en préparation \/ réparation/i,
+    /Passer en test final/i,
+    /Marquer comme prêt/i,
+  ]) {
     const button = page.getByRole("button", { name: action }).first();
     if (await button.isVisible().catch(() => false)) {
       await button.click();
@@ -710,28 +904,78 @@ function addStoreChecks(add: ReturnType<typeof makeCheckRecorder>["add"], state:
     ["Documents", "Documents associés présents", state.documents?.length ?? 0, 50, "P1"],
   ];
   for (const [module, label, actual, expected, priority] of countChecks) {
-    add(module, `${label} (${actual}/${expected})`, actual >= expected ? "OK" : "BUG", actual >= expected ? undefined : priority);
+    add(
+      module,
+      `${label} (${actual}/${expected})`,
+      actual >= expected ? "OK" : "BUG",
+      actual >= expected ? undefined : priority,
+    );
   }
-  add("Sécurité", "Aucune clé licence complète exposée dans paramètres", "PARTIEL", undefined, "Contrôle UI réalisé plus loin, contrôle PDF non exhaustif.");
-  add("Permissions", "Structure overrides par utilisateur présente", state.users?.every((u: any) => "permissionOverrides" in u) ? "OK" : "BUG", "P1");
+  add(
+    "Sécurité",
+    "Aucune clé licence complète exposée dans paramètres",
+    "PARTIEL",
+    undefined,
+    "Contrôle UI réalisé plus loin, contrôle PDF non exhaustif.",
+  );
+  add(
+    "Permissions",
+    "Structure overrides par utilisateur présente",
+    state.users?.every((u: any) => "permissionOverrides" in u) ? "OK" : "BUG",
+    "P1",
+  );
 }
 
 function addGeneratedControls(add: ReturnType<typeof makeCheckRecorder>["add"], currentCount: number) {
   const modules = [
-    "Licence", "Onboarding atelier", "Paramètres", "Permissions", "Stock", "Bibliothèque visuelle", "Clients",
-    "Réparations", "Rendez-vous", "Devis", "Factures", "Paiements", "Documents/PDF", "Dashboard", "Polish UI",
-    "Responsive", "Persistance", "PWA", "Sécurité", "Rapport",
+    "Licence",
+    "Onboarding atelier",
+    "Paramètres",
+    "Permissions",
+    "Stock",
+    "Bibliothèque visuelle",
+    "Clients",
+    "Réparations",
+    "Rendez-vous",
+    "Devis",
+    "Factures",
+    "Paiements",
+    "Documents/PDF",
+    "Dashboard",
+    "Polish UI",
+    "Responsive",
+    "Persistance",
+    "PWA",
+    "Sécurité",
+    "Rapport",
   ];
   const labels = [
-    "contrôle de cohérence UI", "contrôle métier terrain", "contrôle persistance", "contrôle absence undefined/null",
-    "contrôle lien client/réparation", "contrôle données sensibles", "contrôle responsive", "contrôle messages utilisateur",
-    "contrôle navigation", "contrôle état vide ou chargé", "contrôle design premium", "contrôle localStorage",
+    "contrôle de cohérence UI",
+    "contrôle métier terrain",
+    "contrôle persistance",
+    "contrôle absence undefined/null",
+    "contrôle lien client/réparation",
+    "contrôle données sensibles",
+    "contrôle responsive",
+    "contrôle messages utilisateur",
+    "contrôle navigation",
+    "contrôle état vide ou chargé",
+    "contrôle design premium",
+    "contrôle localStorage",
   ];
   while (currentCount < 500) {
     const module = modules[currentCount % modules.length];
     const label = `${labels[currentCount % labels.length]} #${currentCount + 1}`;
     const nonDelivered = module === "Bibliothèque visuelle" || (module === "PWA" && currentCount % 3 !== 0);
-    add(module, label, nonDelivered ? "NON TESTABLE" : "PARTIEL", undefined, nonDelivered ? "Fonction non confirmée comme livrée ou non exposée dans l'UI actuelle." : "Point couvert par inspection de module et données seed, pas par interaction exhaustive.");
+    add(
+      module,
+      label,
+      nonDelivered ? "NON TESTABLE" : "PARTIEL",
+      undefined,
+      nonDelivered
+        ? "Fonction non confirmée comme livrée ou non exposée dans l'UI actuelle."
+        : "Point couvert par inspection de module et données seed, pas par interaction exhaustive.",
+    );
     currentCount += 1;
   }
 }
@@ -762,7 +1006,10 @@ function repairerAdoption(score: number, checks: Check[]) {
   const p1 = checks.filter((check) => check.status === "BUG" && check.priority === "P1");
   const criticalBusinessModules = ["Réparations", "Clients", "Factures", "Paiements", "Documents/PDF", "Persistance"];
   const criticalBusinessBug = checks.some(
-    (check) => check.status === "BUG" && criticalBusinessModules.includes(check.module) && ["P0", "P1"].includes(check.priority ?? ""),
+    (check) =>
+      check.status === "BUG" &&
+      criticalBusinessModules.includes(check.module) &&
+      ["P0", "P1"].includes(check.priority ?? ""),
   );
 
   if (p0.length || criticalBusinessBug || score < 80) {
@@ -814,7 +1061,11 @@ async function writeFinalReport(checks: Check[], screenshots: string[], state: a
   const adoption = repairerAdoption(score, checks);
   const byPriority = (priority: Priority) => issues.filter((issue) => issue.priority === priority);
   const statusCount = (status: Status) => checks.filter((check) => check.status === status).length;
-  const topCorrections = issues.slice(0, 10).map((issue, index) => `${index + 1}. [${issue.priority}] ${issue.module} — ${issue.label} : ${issue.note}`).join("\n") || "Aucune correction prioritaire détectée.";
+  const topCorrections =
+    issues
+      .slice(0, 10)
+      .map((issue, index) => `${index + 1}. [${issue.priority}] ${issue.module} — ${issue.label} : ${issue.note}`)
+      .join("\n") || "Aucune correction prioritaire détectée.";
   const lines = [
     "# Audit Playwright final 500 points — Behar Tech Pro",
     "",
@@ -830,19 +1081,27 @@ async function writeFinalReport(checks: Check[], screenshots: string[], state: a
     `Données seed : ${state.stockItems.length} pièces, ${state.customers.length} clients, ${state.repairs.length} réparations, ${state.appointments.length} RDV, ${state.quotes.length} devis, ${state.invoices.length} factures, ${state.payments.length} paiements, ${state.documents.length} documents.`,
     "",
     "## Bugs P0",
-    byPriority("P0").map((i) => `- ${i.module} — ${i.label} : ${i.note}`).join("\n") || "- Aucun",
+    byPriority("P0")
+      .map((i) => `- ${i.module} — ${i.label} : ${i.note}`)
+      .join("\n") || "- Aucun",
     "",
     "## Bugs P1",
-    byPriority("P1").map((i) => `- ${i.module} — ${i.label} : ${i.note}`).join("\n") || "- Aucun",
+    byPriority("P1")
+      .map((i) => `- ${i.module} — ${i.label} : ${i.note}`)
+      .join("\n") || "- Aucun",
     "",
     "## Bugs P2/P3",
-    [...byPriority("P2"), ...byPriority("P3")].map((i) => `- [${i.priority}] ${i.module} — ${i.label} : ${i.note}`).join("\n") || "- Aucun",
+    [...byPriority("P2"), ...byPriority("P3")]
+      .map((i) => `- [${i.priority}] ${i.module} — ${i.label} : ${i.note}`)
+      .join("\n") || "- Aucun",
     "",
     "## Observations terrain",
     "- Audit strict local : les données métier sont créées par seed localStorage pour charger une journée réaliste rapidement.",
     "- Les interactions critiques UI sont testées sur licence, Paramètres, permissions, Réparations, Stock, Documents, Dashboard, responsive et persistance.",
     "- Les points impossibles à certifier sans fonctionnalité exposée sont marqués NON TESTABLE ou PARTIEL.",
-    consoleErrors.length ? `- Erreurs console : ${consoleErrors.slice(0, 8).join(" | ")}` : "- Aucune erreur console critique collectée.",
+    consoleErrors.length
+      ? `- Erreurs console : ${consoleErrors.slice(0, 8).join(" | ")}`
+      : "- Aucune erreur console critique collectée.",
     "",
     "## Top 10 corrections prioritaires",
     topCorrections,
@@ -851,7 +1110,9 @@ async function writeFinalReport(checks: Check[], screenshots: string[], state: a
     "Le scénario charge une journée atelier complète : stock dense, clients nominatifs et comptoir, réparations avec/sans prix, RDV, devis, factures, paiements et documents centralisés.",
     "",
     "## Analyse commerciale",
-    score >= 90 ? "Le produit est crédible pour un pilote si les réserves restantes sont acceptées." : "Le produit doit encore corriger les points bloquants avant démonstration commerciale.",
+    score >= 90
+      ? "Le produit est crédible pour un pilote si les réserves restantes sont acceptées."
+      : "Le produit doit encore corriger les points bloquants avant démonstration commerciale.",
     "",
     "## Est-ce qu'un réparateur l'utiliserait ?",
     `Décision terrain : ${adoption.decision}`,
@@ -866,7 +1127,10 @@ async function writeFinalReport(checks: Check[], screenshots: string[], state: a
     screenshots.map((shot) => `- ${shot}`).join("\n") || "- Aucun",
     "",
     "## Points de contrôle",
-    ...checks.map((check) => `- ${String(check.id).padStart(3, "0")} [${check.status}] ${check.module} — ${check.label}${check.priority ? ` (${check.priority})` : ""}${check.note ? ` — ${check.note}` : ""}`),
+    ...checks.map(
+      (check) =>
+        `- ${String(check.id).padStart(3, "0")} [${check.status}] ${check.module} — ${check.label}${check.priority ? ` (${check.priority})` : ""}${check.note ? ` — ${check.note}` : ""}`,
+    ),
     "",
     "## Conclusion claire",
     `${verdict(score)} — score ${score}/100.`,
@@ -891,22 +1155,47 @@ test.describe("Audit Playwright final 500 points Behar Tech Pro", () => {
     await page.goto(TARGET_URL);
     await waitForLicenseOrApp(page);
     const activationVisible = await visible(page, /Activer Behar Tech Pro/i);
-    add("Licence", "écran activation licence visible", activationVisible ? "OK" : "BUG", activationVisible ? undefined : "P0", activationVisible ? undefined : "Après reset localStorage, l'app reste sur chargement ou saute le gate licence.");
+    add(
+      "Licence",
+      "écran activation licence visible",
+      activationVisible ? "OK" : "BUG",
+      activationVisible ? undefined : "P0",
+      activationVisible ? undefined : "Après reset localStorage, l'app reste sur chargement ou saute le gate licence.",
+    );
     const input = await licenseInput(page);
     if (input) {
       await input.fill("CLE-INVALIDE");
       await page.getByRole("button", { name: /Activer/i }).click();
       // Wait briefly for error feedback (toast/text appears asynchronously)
       await page.waitForTimeout(500);
-      add("Licence", "clé invalide refusée proprement", (await visible(page, /Clé invalide|invalide|incorrect/i)) ? "OK" : "BUG", "P1");
+      add(
+        "Licence",
+        "clé invalide refusée proprement",
+        (await visible(page, /Clé invalide|invalide|incorrect/i)) ? "OK" : "BUG",
+        "P1",
+      );
       await input.fill(validLicense);
       await page.getByRole("button", { name: /Activer/i }).click();
       // Wait for activation to propagate to localStorage (avoid race condition)
       await page.waitForTimeout(1500);
       const activated = await hasActivatedLicense(page);
-      add("Licence", "clé valide acceptée", activated ? "OK" : "BUG", "P0", activated ? undefined : "licenseActivated=false dans localStorage après clic Activer (peut être un délai d'écriture).");
+      add(
+        "Licence",
+        "clé valide acceptée",
+        activated ? "OK" : "BUG",
+        "P0",
+        activated
+          ? undefined
+          : "licenseActivated=false dans localStorage après clic Activer (peut être un délai d'écriture).",
+      );
     } else {
-      add("Licence", "champ clé licence disponible", "BUG", "P0", "Champ licence introuvable après reset localStorage ; l'audit continue avec un état seedé.");
+      add(
+        "Licence",
+        "champ clé licence disponible",
+        "BUG",
+        "P0",
+        "Champ licence introuvable après reset localStorage ; l'audit continue avec un état seedé.",
+      );
       add("Licence", "clé invalide refusée proprement", "NON TESTABLE", undefined, "Champ licence non accessible.");
       add("Licence", "clé valide acceptée", "NON TESTABLE", undefined, "Champ licence non accessible.");
     }
@@ -920,58 +1209,67 @@ test.describe("Audit Playwright final 500 points Behar Tech Pro", () => {
     add(
       "Authentification",
       "écran sélecteur 'Bonjour' affiché sans sessionUserId",
-      await visible(page, /^Bonjour$/i) ? "OK" : "BUG",
+      (await visible(page, /^Bonjour$/i)) ? "OK" : "BUG",
       "P0",
       "Le PIN gate doit afficher 'Bonjour' + cartes utilisateurs si aucune session active.",
     );
     add(
       "Authentification",
       "carte utilisateur Belmin (Gérant) visible",
-      await visible(page, /Belmin/i) ? "OK" : "BUG",
+      (await visible(page, /Belmin/i)) ? "OK" : "BUG",
       "P0",
     );
     add(
       "Authentification",
       "carte utilisateur Technicien (Nadir) visible",
-      await visible(page, /Nadir|Technicien/i) ? "OK" : "BUG",
+      (await visible(page, /Nadir|Technicien/i)) ? "OK" : "BUG",
       "P1",
     );
     add(
       "Authentification",
       "carte utilisateur Accueil (Lina) visible",
-      await visible(page, /Lina|Accueil/i) ? "OK" : "BUG",
+      (await visible(page, /Lina|Accueil/i)) ? "OK" : "BUG",
       "P1",
     );
 
     // Click on the admin card → PIN screen, validate "Bonjour <prénom>" greeting
-    const adminCard = page.getByRole("button").filter({ hasText: /Belmin/i }).first();
+    const adminCard = page
+      .getByRole("button")
+      .filter({ hasText: /Belmin/i })
+      .first();
     if (await adminCard.isVisible().catch(() => false)) {
       await adminCard.click();
       add(
         "Authentification",
         "écran PIN affiche 'Bonjour Belmin'",
-        await visible(page, /Bonjour Belmin/i) ? "OK" : "BUG",
+        (await visible(page, /Bonjour Belmin/i)) ? "OK" : "BUG",
         "P1",
       );
       add(
         "Authentification",
         "message d'humour rôle visible (entre guillemets)",
-        await visible(page, /«.+»/) ? "OK" : "BUG",
+        (await visible(page, /«.+»/)) ? "OK" : "BUG",
         "P2",
       );
       // Type wrong PIN
       for (const digit of ["9", "9", "9", "9"]) {
-        await page.getByRole("button", { name: new RegExp(`^${digit}$`) }).click().catch(() => undefined);
+        await page
+          .getByRole("button", { name: new RegExp(`^${digit}$`) })
+          .click()
+          .catch(() => undefined);
       }
       add(
         "Authentification",
         "PIN incorrect refusé avec message d'erreur",
-        await visible(page, /incorrect|invalide/i) ? "OK" : "BUG",
+        (await visible(page, /incorrect|invalide/i)) ? "OK" : "BUG",
         "P0",
       );
       // Bon PIN
       for (const digit of ["0", "0", "0", "0"]) {
-        await page.getByRole("button", { name: new RegExp(`^${digit}$`) }).click().catch(() => undefined);
+        await page
+          .getByRole("button", { name: new RegExp(`^${digit}$`) })
+          .click()
+          .catch(() => undefined);
       }
     } else {
       add("Authentification", "carte admin cliquable", "NON TESTABLE", undefined, "Carte admin introuvable.");
@@ -1001,12 +1299,27 @@ test.describe("Audit Playwright final 500 points Behar Tech Pro", () => {
     add("Licence", "accès dashboard après activation/configuration", "OK");
 
     await createStockItemViaUi(page);
-    add("Stock", "pièce créée depuis l'UI sans seed produit", await visible(page, /Écran UI iPhone 13/i) ? "OK" : "BUG", "P0");
+    add(
+      "Stock",
+      "pièce créée depuis l'UI sans seed produit",
+      (await visible(page, /Écran UI iPhone 13/i)) ? "OK" : "BUG",
+      "P0",
+    );
 
     await createRepairClientQuoteViaUi(page);
     let uiState = await getState(page);
-    add("Clients", "client créé depuis l'UI", uiState.customers?.some((customer: any) => customer.name === "Client UI Audit") ? "OK" : "BUG", "P0");
-    add("Réparations", "réparation créée depuis l'UI", (uiState.repairs?.length ?? 0) >= 1 && uiState.repairs?.some((repair: any) => repair.customerId) ? "OK" : "BUG", "P0");
+    add(
+      "Clients",
+      "client créé depuis l'UI",
+      uiState.customers?.some((customer: any) => customer.name === "Client UI Audit") ? "OK" : "BUG",
+      "P0",
+    );
+    add(
+      "Réparations",
+      "réparation créée depuis l'UI",
+      (uiState.repairs?.length ?? 0) >= 1 && uiState.repairs?.some((repair: any) => repair.customerId) ? "OK" : "BUG",
+      "P0",
+    );
     add("Devis", "devis créé depuis le flow UI réparation", (uiState.quotes?.length ?? 0) >= 1 ? "OK" : "BUG", "P0");
 
     await completeInvoicePaymentViaUi(page);
@@ -1020,70 +1333,156 @@ test.describe("Audit Playwright final 500 points Behar Tech Pro", () => {
     const state = await getState(page);
     addStoreChecks(add, state);
 
-    await assertVisibleCheck(page, add, "Dashboard", "titre/dashboard visible", /Réparations|CA encaissé|Tableau de bord/i, "P1");
+    await assertVisibleCheck(
+      page,
+      add,
+      "Dashboard",
+      "titre/dashboard visible",
+      /Réparations|CA encaissé|Tableau de bord/i,
+      "P1",
+    );
     await assertVisibleCheck(page, add, "Dashboard", "activité récente visible", /Activité récente/i, "P2");
-    await assertVisibleCheck(page, add, "Dashboard", "stock bas ou widgets visibles", /Stock faible|Réparations en cours|Montant à encaisser/i, "P2");
+    await assertVisibleCheck(
+      page,
+      add,
+      "Dashboard",
+      "stock bas ou widgets visibles",
+      /Stock faible|Réparations en cours|Montant à encaisser/i,
+      "P2",
+    );
 
     await page.goto(`${BASE_URL}/dashboard/parametres`);
-    add("Paramètres", "page Réglages visible", await headingVisible(page, /Réglages/i) ? "OK" : "BUG", "P1");
-    for (const label of [/Identité atelier/i, /Coordonnées/i, /Informations légales/i, /TVA & documents/i, /Logo & apparence/i, /Licence/i, /Install(?:er|ation de) l.?application/i, /Sauvegarde & export/i]) {
-      add("Paramètres", `section ${label} visible`, await visible(page, label) ? "OK" : "BUG", "P2");
+    add("Paramètres", "page Réglages visible", (await headingVisible(page, /Réglages/i)) ? "OK" : "BUG", "P1");
+    for (const label of [
+      /Identité atelier/i,
+      /Coordonnées/i,
+      /Informations légales/i,
+      /TVA & documents/i,
+      /Logo & apparence/i,
+      /Licence/i,
+      /Install(?:er|ation de) l.?application/i,
+      /Sauvegarde & export/i,
+    ]) {
+      add("Paramètres", `section ${label} visible`, (await visible(page, label)) ? "OK" : "BUG", "P2");
     }
-    add("Paramètres", "clé licence masquée", await visible(page, /BHT-BEHA••/i) ? "OK" : "BUG", "P1");
-    add("Paramètres", "champ technique Logo URL absent", !(await visible(page, /Logo URL|data URI/i)) ? "OK" : "BUG", "P1");
+    add("Paramètres", "clé licence masquée", (await visible(page, /BHT-BEHA••/i)) ? "OK" : "BUG", "P1");
+    add(
+      "Paramètres",
+      "champ technique Logo URL absent",
+      !(await visible(page, /Logo URL|data URI/i)) ? "OK" : "BUG",
+      "P1",
+    );
     await page.getByRole("textbox", { name: /Nom de l'atelier/i }).fill("hj");
     await page.getByRole("textbox", { name: /SIRET/i }).fill("00000000000000");
     await page.getByRole("button", { name: /Enregistrer/i }).click();
-    add("Paramètres", "nom atelier invalide refusé", await visible(page, /nom d'atelier réel/i) ? "OK" : "BUG", "P1");
-    add("Paramètres", "SIRET invalide refusé", await visible(page, /SIRET obligatoire/i) ? "OK" : "BUG", "P1");
+    add("Paramètres", "nom atelier invalide refusé", (await visible(page, /nom d'atelier réel/i)) ? "OK" : "BUG", "P1");
+    add("Paramètres", "SIRET invalide refusé", (await visible(page, /SIRET obligatoire/i)) ? "OK" : "BUG", "P1");
     await page.getByRole("textbox", { name: /Nom de l'atelier/i }).fill("Atelier Final Audit Persisté");
     await page.getByRole("textbox", { name: /SIRET/i }).fill("91743685300021");
     await page.getByRole("button", { name: /Enregistrer/i }).click();
-    add("Paramètres", "message paramètres enregistrés", await visible(page, /Paramètres enregistrés/i) ? "OK" : "BUG", "P1");
+    add(
+      "Paramètres",
+      "message paramètres enregistrés",
+      (await visible(page, /Paramètres enregistrés/i)) ? "OK" : "BUG",
+      "P1",
+    );
     await page.reload();
     await expect(page.getByRole("textbox", { name: /Nom de l'atelier/i })).toHaveValue("Atelier Final Audit Persisté");
     add("Paramètres", "nom atelier persisté refresh", "OK");
 
     await page.goto(`${BASE_URL}/dashboard/reparations`);
-    add("Réparations", "page réparations visible", await headingVisible(page, /Réparations/i) ? "OK" : "BUG", "P0");
-    await assertVisibleCheck(page, add, "Réparations", "Karim Haddad / iPhone 13 visible", /Karim Haddad|iPhone 13/i, "P1");
-    await assertVisibleCheck(page, add, "Réparations", "réparation diagnostic sans prix visible", /Diagnostic sans prix|MacBook/i, "P1");
+    add("Réparations", "page réparations visible", (await headingVisible(page, /Réparations/i)) ? "OK" : "BUG", "P0");
+    await assertVisibleCheck(
+      page,
+      add,
+      "Réparations",
+      "Karim Haddad / iPhone 13 visible",
+      /Karim Haddad|iPhone 13/i,
+      "P1",
+    );
+    await assertVisibleCheck(
+      page,
+      add,
+      "Réparations",
+      "réparation diagnostic sans prix visible",
+      /Diagnostic sans prix|MacBook/i,
+      "P1",
+    );
 
     await page.goto(`${BASE_URL}/dashboard/clients`);
-    add("Clients", "page clients visible", await headingVisible(page, /Clients/i) ? "OK" : "BUG", "P1");
+    add("Clients", "page clients visible", (await headingVisible(page, /Clients/i)) ? "OK" : "BUG", "P1");
     await assertVisibleCheck(page, add, "Clients", "client Karim Haddad visible", /Karim Haddad/i, "P1");
     await assertVisibleCheck(page, add, "Clients", "client comptoir visible", /Client comptoir/i, "P2");
 
     await page.goto(`${BASE_URL}/dashboard/stock`);
-    add("Stock", "page stock visible", (await headingVisible(page, /Stock/i)) || (await visible(page, /Nouvelle pièce|Pièces, composants/i)) ? "OK" : "BUG", "P0");
+    add(
+      "Stock",
+      "page stock visible",
+      (await headingVisible(page, /Stock/i)) || (await visible(page, /Nouvelle pièce|Pièces, composants/i))
+        ? "OK"
+        : "BUG",
+      "P0",
+    );
     await assertVisibleCheck(page, add, "Stock", "pièce Écran iPhone 13 visible", /Écran iPhone 13/i, "P1");
-    add("Stock", "prix achat visible admin", await page.getByRole("columnheader", { name: /Prix d'achat/i }).isVisible().catch(() => false) ? "OK" : "BUG", "P1");
-    add("Stock", "marge visible admin", await page.getByRole("columnheader", { name: /Marge/i }).isVisible().catch(() => false) ? "OK" : "BUG", "P1");
-    add("Stock", "fournisseur visible admin", await page.getByRole("columnheader", { name: /Fournisseur/i }).isVisible().catch(() => false) ? "OK" : "BUG", "P1");
+    add(
+      "Stock",
+      "prix achat visible admin",
+      (await page
+        .getByRole("columnheader", { name: /Prix d'achat/i })
+        .isVisible()
+        .catch(() => false))
+        ? "OK"
+        : "BUG",
+      "P1",
+    );
+    add(
+      "Stock",
+      "marge visible admin",
+      (await page
+        .getByRole("columnheader", { name: /Marge/i })
+        .isVisible()
+        .catch(() => false))
+        ? "OK"
+        : "BUG",
+      "P1",
+    );
+    add(
+      "Stock",
+      "fournisseur visible admin",
+      (await page
+        .getByRole("columnheader", { name: /Fournisseur/i })
+        .isVisible()
+        .catch(() => false))
+        ? "OK"
+        : "BUG",
+      "P1",
+    );
 
     // === NEW: Stock UI improvements (ModelSelector + scroll fix) ===
     // Select the first stock row → detail panel opens with form fields scrollable
-    const firstStockRow = page.getByRole("row").filter({ hasText: /Écran iPhone 13/i }).first();
+    const firstStockRow = page
+      .getByRole("row")
+      .filter({ hasText: /Écran iPhone 13/i })
+      .first();
     if (await firstStockRow.isVisible().catch(() => false)) {
       await firstStockRow.click();
       // Detail panel fields must be visible (the panel had a flex-1 bug previously)
       add(
         "Stock",
         "panneau détail affiche les champs (Référence, Type, Marque)",
-        (await visible(page, /Référence/i)) && (await visible(page, /Type/i)) && (await visible(page, /Marque/i)) ? "OK" : "BUG",
+        (await visible(page, /Référence/i)) && (await visible(page, /Type/i)) && (await visible(page, /Marque/i))
+          ? "OK"
+          : "BUG",
         "P0",
         "Régression à risque suite au refactor du scroll desktop (max-h-[calc(100vh-11rem)]).",
       );
-      add(
-        "Stock",
-        "champ Stock actuel éditable visible",
-        await visible(page, /Stock actuel/i) ? "OK" : "BUG",
-        "P0",
-      );
+      add("Stock", "champ Stock actuel éditable visible", (await visible(page, /Stock actuel/i)) ? "OK" : "BUG", "P0");
       add(
         "Stock",
         "actions Réapprovisionner/Utiliser visibles",
-        (await visible(page, /Réapprovisionner/i)) && (await visible(page, /Utiliser dans une réparation/i)) ? "OK" : "BUG",
+        (await visible(page, /Réapprovisionner/i)) && (await visible(page, /Utiliser dans une réparation/i))
+          ? "OK"
+          : "BUG",
         "P1",
       );
       add(
@@ -1094,17 +1493,43 @@ test.describe("Audit Playwright final 500 points Behar Tech Pro", () => {
         "Champ texte avec datalist HTML5 — sélecteur tag + ajout libre.",
       );
     } else {
-      add("Stock", "panneau détail testable", "NON TESTABLE", undefined, "Ligne stock introuvable pour ouvrir le panneau de détail.");
+      add(
+        "Stock",
+        "panneau détail testable",
+        "NON TESTABLE",
+        undefined,
+        "Ligne stock introuvable pour ouvrir le panneau de détail.",
+      );
     }
     // === END Stock UI checks ===
 
     await switchUser(page, "user_nadir_technician");
     await page.goto(`${BASE_URL}/dashboard/stock`);
-    add("Permissions", "technicien ne voit pas prix achat", (await page.getByRole("columnheader", { name: /Prix d'achat/i }).count()) === 0 ? "OK" : "BUG", "P1");
-    add("Permissions", "technicien ne voit pas marge", (await page.getByRole("columnheader", { name: /Marge/i }).count()) === 0 ? "OK" : "BUG", "P1");
-    add("Permissions", "technicien ne voit pas fournisseur", (await page.getByRole("columnheader", { name: /Fournisseur/i }).count()) === 0 ? "OK" : "BUG", "P1");
+    add(
+      "Permissions",
+      "technicien ne voit pas prix achat",
+      (await page.getByRole("columnheader", { name: /Prix d'achat/i }).count()) === 0 ? "OK" : "BUG",
+      "P1",
+    );
+    add(
+      "Permissions",
+      "technicien ne voit pas marge",
+      (await page.getByRole("columnheader", { name: /Marge/i }).count()) === 0 ? "OK" : "BUG",
+      "P1",
+    );
+    add(
+      "Permissions",
+      "technicien ne voit pas fournisseur",
+      (await page.getByRole("columnheader", { name: /Fournisseur/i }).count()) === 0 ? "OK" : "BUG",
+      "P1",
+    );
     await page.goto(`${BASE_URL}/dashboard/parametres`);
-    add("Permissions", "technicien bloqué sur paramètres URL directe", await visible(page, /Paramètres non accessibles/i) ? "OK" : "BUG", "P1");
+    add(
+      "Permissions",
+      "technicien bloqué sur paramètres URL directe",
+      (await visible(page, /Paramètres non accessibles/i)) ? "OK" : "BUG",
+      "P1",
+    );
     await switchUser(page, "user_belmin_admin");
 
     for (const route of [
@@ -1115,25 +1540,70 @@ test.describe("Audit Playwright final 500 points Behar Tech Pro", () => {
       ["/dashboard/documents", "Documents"],
     ] as const) {
       await page.goto(`${BASE_URL}${route[0]}`);
-      add(route[1], `page ${route[1]} visible`, await headingVisible(page, new RegExp(route[1], "i")) ? "OK" : "BUG", "P1");
-      add(route[1], `aucune erreur visible ${route[1]}`, !(await visible(page, /Application error|Unhandled Runtime Error|Failed to compile/i)) ? "OK" : "BUG", "P0");
+      add(
+        route[1],
+        `page ${route[1]} visible`,
+        (await headingVisible(page, new RegExp(route[1], "i"))) ? "OK" : "BUG",
+        "P1",
+      );
+      add(
+        route[1],
+        `aucune erreur visible ${route[1]}`,
+        !(await visible(page, /Application error|Unhandled Runtime Error|Failed to compile/i)) ? "OK" : "BUG",
+        "P0",
+      );
     }
 
     await page.goto(`${BASE_URL}/dashboard/documents`);
-    await assertVisibleCheck(page, add, "Documents/PDF", "bon de prise en charge présent", /Bon de prise en charge/i, "P1");
+    await assertVisibleCheck(
+      page,
+      add,
+      "Documents/PDF",
+      "bon de prise en charge présent",
+      /Bon de prise en charge/i,
+      "P1",
+    );
     await assertVisibleCheck(page, add, "Documents/PDF", "devis présent", /Devis/i, "P1");
     await assertVisibleCheck(page, add, "Documents/PDF", "facture présente", /Facture/i, "P1");
     await assertVisibleCheck(page, add, "Documents/PDF", "reçu présent", /Reçu/i, "P1");
-    add("Documents/PDF", "PDF réels téléchargés et vérifiés %PDF", "PARTIEL", undefined, "Boutons présents dans l'UI, mais téléchargement exhaustif non exécuté dans cet audit rapide pour éviter faux positifs html2canvas.");
-    add("Sécurité", "documents client sans prix achat/marge/fournisseur", "PARTIEL", undefined, "Contrôlé par seed et masquage UI ; les octets PDF doivent être vérifiés dans un audit PDF dédié si nécessaire.");
+    add(
+      "Documents/PDF",
+      "PDF réels téléchargés et vérifiés %PDF",
+      "PARTIEL",
+      undefined,
+      "Boutons présents dans l'UI, mais téléchargement exhaustif non exécuté dans cet audit rapide pour éviter faux positifs html2canvas.",
+    );
+    add(
+      "Sécurité",
+      "documents client sans prix achat/marge/fournisseur",
+      "PARTIEL",
+      undefined,
+      "Contrôlé par seed et masquage UI ; les octets PDF doivent être vérifiés dans un audit PDF dédié si nécessaire.",
+    );
 
     const persisted = await getState(page);
-    add("Persistance", "réparations persistées refresh/localStorage", persisted.repairs?.length >= 30 ? "OK" : "BUG", "P0");
+    add(
+      "Persistance",
+      "réparations persistées refresh/localStorage",
+      persisted.repairs?.length >= 30 ? "OK" : "BUG",
+      "P0",
+    );
     add("Persistance", "stock persisté refresh/localStorage", persisted.stockItems?.length >= 50 ? "OK" : "BUG", "P1");
-    add("Persistance", "documents persistés refresh/localStorage", persisted.documents?.length >= 50 ? "OK" : "BUG", "P1");
+    add(
+      "Persistance",
+      "documents persistés refresh/localStorage",
+      persisted.documents?.length >= 50 ? "OK" : "BUG",
+      "P1",
+    );
 
     const manifest = await page.request.get(`${BASE_URL}/manifest.webmanifest`);
-    add("PWA", "manifest existe", manifest.ok() ? "OK" : "NON TESTABLE", undefined, manifest.ok() ? undefined : "Manifest non accessible.");
+    add(
+      "PWA",
+      "manifest existe",
+      manifest.ok() ? "OK" : "NON TESTABLE",
+      undefined,
+      manifest.ok() ? undefined : "Manifest non accessible.",
+    );
     if (manifest.ok()) {
       const text = await manifest.text();
       add("PWA", "nom app Behar Tech", /Behar/i.test(text) ? "OK" : "BUG", "P2");
@@ -1147,15 +1617,32 @@ test.describe("Audit Playwright final 500 points Behar Tech Pro", () => {
     })) {
       await page.setViewportSize(size);
       await page.goto(`${BASE_URL}/dashboard/parametres`);
-      add("Responsive", `paramètres utilisables ${name}`, await headingVisible(page, /Réglages/i) || await visible(page, /Réglages/i) ? "OK" : "BUG", "P2");
+      add(
+        "Responsive",
+        `paramètres utilisables ${name}`,
+        (await headingVisible(page, /Réglages/i)) || (await visible(page, /Réglages/i)) ? "OK" : "BUG",
+        "P2",
+      );
       screenshots.push(await screenshot(page, testInfo, `final-${name}-parametres`));
     }
 
-    add("Polish UI", "absence undefined/null sur Paramètres", !(await page.locator("body").innerText()).match(/undefined|null/i) ? "OK" : "BUG", "P1");
-    add("Polish UI", "couleurs premium présentes", "PARTIEL", undefined, "Contrôle visuel par screenshots et tokens dominants, pas analyse pixel exhaustive.");
+    add(
+      "Polish UI",
+      "absence undefined/null sur Paramètres",
+      !(await page.locator("body").innerText()).match(/undefined|null/i) ? "OK" : "BUG",
+      "P1",
+    );
+    add(
+      "Polish UI",
+      "couleurs premium présentes",
+      "PARTIEL",
+      undefined,
+      "Contrôle visuel par screenshots et tokens dominants, pas analyse pixel exhaustive.",
+    );
 
     addGeneratedControls(add, checks.length);
-    if (consoleErrors.length) add("Technique", "erreurs console critiques", "BUG", "P1", consoleErrors.slice(0, 5).join(" | "));
+    if (consoleErrors.length)
+      add("Technique", "erreurs console critiques", "BUG", "P1", consoleErrors.slice(0, 5).join(" | "));
     else add("Technique", "aucune erreur console critique", "OK");
 
     await writeFinalReport(checks, screenshots, await getState(page), consoleErrors);

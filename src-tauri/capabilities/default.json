@@ -3,11 +3,5 @@
   "identifier": "default",
   "description": "Default capabilities for the main window of Behar Tech Pro.",
   "windows": ["main"],
-  "permissions": [
-    "core:default",
-    "shell:allow-open",
-    "updater:default",
-    "process:default",
-    "process:allow-restart"
-  ]
+  "permissions": ["core:default", "shell:allow-open", "updater:default", "process:default", "process:allow-restart"]
 }

@@ -68,7 +68,10 @@ const toNumber = (value: unknown): number => {
 
 const round2 = (value: number) => Math.round(value * 100) / 100;
 
-const cleanSpaces = (s: string) => String(s ?? "").replace(/\s+/g, " ").trim();
+const cleanSpaces = (s: string) =>
+  String(s ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
 
 const stripDiacritics = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "");
 
@@ -182,9 +185,37 @@ export const normalizePriceBookStructure = (raw: PriceBookItem): PriceBookNormal
 
   // 1. Détection et extraction des couleurs
   const colorTokens = [
-    "Blanc", "Noir", "Bleu", "Rouge", "Vert", "Jaune", "Mauve", "Violet", "Or", "Argent", "Gris", "Sideral",
-    "Midnight", "Starlight", "Alpine", "Graphite", "Pacific", "Deep Purple", "Sierra", "Space Grey", "Silver",
-    "Gold", "Rose", "Pink", "Blue", "Black", "White", "Green", "Red", "Yellow", "Purple"
+    "Blanc",
+    "Noir",
+    "Bleu",
+    "Rouge",
+    "Vert",
+    "Jaune",
+    "Mauve",
+    "Violet",
+    "Or",
+    "Argent",
+    "Gris",
+    "Sideral",
+    "Midnight",
+    "Starlight",
+    "Alpine",
+    "Graphite",
+    "Pacific",
+    "Deep Purple",
+    "Sierra",
+    "Space Grey",
+    "Silver",
+    "Gold",
+    "Rose",
+    "Pink",
+    "Blue",
+    "Black",
+    "White",
+    "Green",
+    "Red",
+    "Yellow",
+    "Purple",
   ];
   for (const color of colorTokens) {
     const re = new RegExp(`\\b${color}\\b`, "i");
@@ -229,7 +260,8 @@ export const normalizePriceBookStructure = (raw: PriceBookItem): PriceBookNormal
   }
 
   // Variantes fréquentes
-  if (/\bversion\s*us\b/i.test(workingModel) && !extractedQualities.includes("Version US")) extractedQualities.push("Version US");
+  if (/\bversion\s*us\b/i.test(workingModel) && !extractedQualities.includes("Version US"))
+    extractedQualities.push("Version US");
   const pulledGrade = workingModel.match(/\bPulled\s*([ABC])\b/i)?.[1];
   if (pulledGrade && !extractedQualities.some((q) => q.toLowerCase() === `pulled ${pulledGrade}`.toLowerCase())) {
     extractedQualities.push(`Pulled ${pulledGrade}`);
@@ -251,14 +283,14 @@ export const normalizePriceBookStructure = (raw: PriceBookItem): PriceBookNormal
   for (const t of INTERVENTION_TOKENS) workingModel = workingModel.replace(t.re, " ");
   workingModel = workingModel.replace(/[()【】[\]{}]/g, " ");
   workingModel = workingModel.replace(/[-/|_]+/g, " ");
-  
+
   let normalizedModel = cleanSpaces(workingModel);
 
   // 3. Match avec le catalogue officiel (Source de vérité)
-  const officialBrand = deviceCatalog.find(b => b.brand.toLowerCase() === raw.marque.toLowerCase());
+  const officialBrand = deviceCatalog.find((b) => b.brand.toLowerCase() === raw.marque.toLowerCase());
   if (officialBrand) {
     // Essai de match exact ou partiel
-    const match = officialBrand.models.find(m => {
+    const match = officialBrand.models.find((m) => {
       const cleanM = cleanSpaces(m).toLowerCase();
       const cleanTarget = normalizedModel.toLowerCase();
       return cleanM === cleanTarget || cleanTarget === cleanM;
@@ -268,7 +300,7 @@ export const normalizePriceBookStructure = (raw: PriceBookItem): PriceBookNormal
     } else {
       // Recherche du modèle le plus long contenu dans normalizedModel (ex: "iPhone 11 Pro Max" matché dans "iPhone 11 Pro Max (A)")
       const partialMatch = officialBrand.models
-        .filter(m => normalizedModel.toLowerCase().includes(m.toLowerCase()))
+        .filter((m) => normalizedModel.toLowerCase().includes(m.toLowerCase()))
         .sort((a, b) => b.length - a.length)[0];
       if (partialMatch) {
         normalizedModel = partialMatch;
@@ -293,7 +325,7 @@ export const normalizePriceBookStructure = (raw: PriceBookItem): PriceBookNormal
     ...raw,
     modele: needsReview ? originalModel : normalizedModel || originalModel,
     modeleOriginal: hasSuspicious ? originalModel : raw.modeleOriginal,
-    modeleNormalise: (needsReview ? originalModel : (normalizedModel || originalModel)).trim().toLowerCase(),
+    modeleNormalise: (needsReview ? originalModel : normalizedModel || originalModel).trim().toLowerCase(),
     qualite: mergedQuality || "Standard",
     reparation: originalRepair || extractedIntervention || raw.reparation,
     isActive: needsReview ? false : raw.isActive,
@@ -454,9 +486,16 @@ export const normalizeDeviceModel = (rawModel: string): string => {
     /LCD/gi,
     /Incell/gi,
     /Service Pack/gi,
-    /\bBlanc\b/gi, /\bNoir\b/gi, /\bBleu\b/gi, /\bRouge\b/gi, /\bVert\b/gi, /\bJaune\b/gi,
-    /\bLarge Hole\b/gi, /\bSmall Hole\b/gi,
-    /\bPulled\b/gi, /\bPulled\s*[ABC]\b/gi,
+    /\bBlanc\b/gi,
+    /\bNoir\b/gi,
+    /\bBleu\b/gi,
+    /\bRouge\b/gi,
+    /\bVert\b/gi,
+    /\bJaune\b/gi,
+    /\bLarge Hole\b/gi,
+    /\bSmall Hole\b/gi,
+    /\bPulled\b/gi,
+    /\bPulled\s*[ABC]\b/gi,
   ];
   for (const regex of suffixes) {
     clean = clean.replace(regex, "");
@@ -482,14 +521,12 @@ export const extractPartQuality = (item: PriceBookItem): string => {
   if (/\bLCD\b/i.test(rawModel) && !qualities.some((q) => /LCD/i.test(q))) qualities.push("LCD");
   if (/\bIncell\b/i.test(rawModel) && !qualities.some((q) => /Incell/i.test(q))) qualities.push("Incell");
   if (/Service Pack/i.test(rawModel) && !qualities.some((q) => /Service Pack/i.test(q))) qualities.push("Service Pack");
-  
+
   // Couleurs et variantes physiques
-  const extraTokens = [
-    "Blanc", "Noir", "Bleu", "Rouge", "Vert", "Jaune", "Large Hole", "Small Hole", "Pulled"
-  ];
+  const extraTokens = ["Blanc", "Noir", "Bleu", "Rouge", "Vert", "Jaune", "Large Hole", "Small Hole", "Pulled"];
   for (const token of extraTokens) {
     const re = new RegExp(`\\b${token}\\b`, "i");
-    if (re.test(rawModel) && !qualities.some(q => q.toLowerCase().includes(token.toLowerCase()))) {
+    if (re.test(rawModel) && !qualities.some((q) => q.toLowerCase().includes(token.toLowerCase()))) {
       qualities.push(token);
     }
   }

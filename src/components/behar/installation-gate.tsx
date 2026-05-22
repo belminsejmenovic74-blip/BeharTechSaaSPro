@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { OnboardingWizard } from "@/components/behar/onboarding-wizard";
+
 import { LicenseActivation } from "@/components/behar/license-activation";
+import { OnboardingWizard } from "@/components/behar/onboarding-wizard";
 import { useBeharStore } from "@/lib/behar-store";
 import { ensureCloudStateForLicense, normalizeLicenseKey } from "@/lib/workshop-sync";
 

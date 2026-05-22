@@ -113,9 +113,7 @@ export function MobileTopbar() {
                   {currentUser.name.charAt(0).toUpperCase()}
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate font-semibold text-[#1A1916] text-[14px] leading-tight">
-                    {currentUser.name}
-                  </p>
+                  <p className="truncate font-semibold text-[#1A1916] text-[14px] leading-tight">{currentUser.name}</p>
                   <p className="mt-0.5 text-[#8A8984] text-[11.5px]">{roleLabel}</p>
                 </div>
               </div>
@@ -135,9 +133,7 @@ export function MobileTopbar() {
             <nav className="mt-4 flex-1 overflow-y-auto px-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
               {allModules.map((item) => {
                 const Icon = item.icon;
-                const active = item.href === "/dashboard"
-                  ? pathname === item.href
-                  : pathname.startsWith(item.href);
+                const active = item.href === "/dashboard" ? pathname === item.href : pathname.startsWith(item.href);
                 return (
                   <Link
                     key={item.href}

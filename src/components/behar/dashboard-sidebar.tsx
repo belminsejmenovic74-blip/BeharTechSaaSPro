@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -11,15 +13,14 @@ import {
   FileText,
   Home,
   LogOut,
+  Monitor,
   Package,
   Receipt,
   Settings,
   ShoppingBag,
   Users,
   Wrench,
-  Monitor,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { useBeharStore } from "@/lib/behar-store";
@@ -69,26 +70,28 @@ export function DashboardSidebar() {
       </Link>
 
       <nav className="mt-6 flex flex-1 flex-col gap-0.5">
-        {navItems.filter((item) => item.href !== "/dashboard/parametres" || canViewSettings).map((item) => {
-          const Icon = item.icon;
-          const active = item.href === "/dashboard" ? pathname === item.href : pathname.startsWith(item.href);
+        {navItems
+          .filter((item) => item.href !== "/dashboard/parametres" || canViewSettings)
+          .map((item) => {
+            const Icon = item.icon;
+            const active = item.href === "/dashboard" ? pathname === item.href : pathname.startsWith(item.href);
 
-          return (
-            <Link
-              className={cn(
-                "flex h-[42px] items-center gap-3 rounded-[12px] px-3 font-medium text-[#6B6B6B] text-[13.5px] transition",
-                "hover:bg-[#F6F7F4] hover:text-[#1A1916]",
-                active && "bg-[#E7F5F1] font-semibold text-[#167B70]",
-              )}
-              href={item.href}
-              key={item.href}
-              prefetch={false}
-            >
-              <Icon className={cn("size-[18px]", active && "text-[#2A9D8F]")} />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
+            return (
+              <Link
+                className={cn(
+                  "flex h-[42px] items-center gap-3 rounded-[12px] px-3 font-medium text-[#6B6B6B] text-[13.5px] transition",
+                  "hover:bg-[#F6F7F4] hover:text-[#1A1916]",
+                  active && "bg-[#E7F5F1] font-semibold text-[#167B70]",
+                )}
+                href={item.href}
+                key={item.href}
+                prefetch={false}
+              >
+                <Icon className={cn("size-[18px]", active && "text-[#2A9D8F]")} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
       </nav>
 
       <div className="space-y-2">
@@ -188,7 +191,7 @@ function SidebarInstallButton() {
       onClick={handleInstall}
       className={cn(
         "flex h-[42px] items-center gap-3 rounded-[12px] px-3 font-medium text-[#2A9D8F] text-[13.5px] transition mt-2",
-        "bg-[#E7F5F1] hover:bg-[#D8EDEA]"
+        "bg-[#E7F5F1] hover:bg-[#D8EDEA]",
       )}
     >
       <Monitor className="size-[18px]" />

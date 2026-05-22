@@ -1,6 +1,6 @@
 "use client";
 
-import { useBeharStore, type StoreState } from "@/lib/behar-store";
+import { type StoreState, useBeharStore } from "@/lib/behar-store";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
 
 export const WORKSHOP_STORAGE_KEY = "behar-tech-local-demo-v3";
@@ -28,7 +28,9 @@ let syncState: WorkshopSyncState = { status: "idle" };
 const listeners = new Set<(state: WorkshopSyncState) => void>();
 
 export function normalizeLicenseKey(key: string | null | undefined): string {
-  return String(key ?? "").trim().toUpperCase();
+  return String(key ?? "")
+    .trim()
+    .toUpperCase();
 }
 
 export function getStateSizeBytes(state: unknown): number {
@@ -264,8 +266,7 @@ export async function createSnapshotForLicenseKey(
   const existing = await loadSnapshotByLicenseKey(normalizedKey).catch(() => null);
   if (existing) return existing;
 
-  const workshopId =
-    (initialState.cloudSync as StoreState["cloudSync"] | undefined)?.workshopId || createWorkshopId();
+  const workshopId = (initialState.cloudSync as StoreState["cloudSync"] | undefined)?.workshopId || createWorkshopId();
 
   markSyncStatus("saving");
   try {
@@ -345,9 +346,10 @@ export function hydrateStoreFromCloud(
   snapshotOrState: WorkshopSnapshot | (Partial<StoreState> & Record<string, unknown>),
   options: { force?: boolean } = {},
 ) {
-  const snapshot = "state" in snapshotOrState && "updatedAt" in snapshotOrState ? snapshotOrState as WorkshopSnapshot : null;
-  const state = snapshot ? snapshot.state : snapshotOrState as Partial<StoreState> & Record<string, unknown>;
-  const licenseKey = normalizeLicenseKey(snapshot?.licenseKey || state.licenseKey as string | undefined);
+  const snapshot =
+    "state" in snapshotOrState && "updatedAt" in snapshotOrState ? (snapshotOrState as WorkshopSnapshot) : null;
+  const state = snapshot ? snapshot.state : (snapshotOrState as Partial<StoreState> & Record<string, unknown>);
+  const licenseKey = normalizeLicenseKey(snapshot?.licenseKey || (state.licenseKey as string | undefined));
 
   // Garde-fou : si une version locale plus récente existe (modifs faites hors
   // ligne ou non encore poussées), on n'écrase pas. Sauf `force = true` (action

@@ -7,15 +7,15 @@ import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { type DeviceBrand, type DeviceModel, type DeviceType, useBeharStore } from "@/lib/behar-store";
+import { getDeviceSeries } from "@/lib/device-series";
 import {
-  PRICE_BOOK_DEVICE_LABELS,
   extractPartQuality,
+  PRICE_BOOK_DEVICE_LABELS,
   type PriceBookDeviceType,
   type PriceBookItem,
 } from "@/lib/price-book";
-import { getDeviceSeries } from "@/lib/device-series";
 import { getDefaultInterventionsByDeviceType, type InterventionDeviceType } from "@/lib/repair-intervention";
-import { type DeviceBrand, type DeviceModel, type DeviceType, useBeharStore } from "@/lib/behar-store";
 import { liveStockForPriceBook } from "@/lib/stock-catalog-link";
 
 const STORE_TYPE_TO_PRICEBOOK: Record<DeviceType, PriceBookDeviceType> = {
@@ -88,7 +88,6 @@ export function PriceTreeView({
     return map;
   }, [items, deviceModels, deviceBrands]);
 
-
   return (
     <div className="space-y-3">
       {[...tree.entries()].map(([type, brands]) => {
@@ -96,10 +95,19 @@ export function PriceTreeView({
         const typeOpen = openTypes[typeKey] ?? true;
         const brandCount = brands.size;
         const itemCount = [...brands.values()].reduce(
-          (s, seriesMap) => s + [...seriesMap.values()].reduce(
-            (sm, models) => sm + [...models.values()].reduce(
-              (m, interventions) => m + [...interventions.values()].reduce(
-                (i, list) => i + list.length, 0), 0), 0), 0);
+          (s, seriesMap) =>
+            s +
+            [...seriesMap.values()].reduce(
+              (sm, models) =>
+                sm +
+                [...models.values()].reduce(
+                  (m, interventions) => m + [...interventions.values()].reduce((i, list) => i + list.length, 0),
+                  0,
+                ),
+              0,
+            ),
+          0,
+        );
         return (
           <div className="rounded-[18px] border border-[#E7E4DC] bg-white shadow-sm overflow-hidden" key={typeKey}>
             <button
@@ -108,12 +116,12 @@ export function PriceTreeView({
               type="button"
             >
               <span className="flex items-center gap-3">
-                <div className={`flex size-8 items-center justify-center rounded-lg transition ${typeOpen ? "bg-[#E8F7F3] text-[#167B70]" : "bg-[#F1EFE8] text-[#6B6B6B]"}`}>
+                <div
+                  className={`flex size-8 items-center justify-center rounded-lg transition ${typeOpen ? "bg-[#E8F7F3] text-[#167B70]" : "bg-[#F1EFE8] text-[#6B6B6B]"}`}
+                >
                   {typeOpen ? <ChevronDown className="size-5" /> : <ChevronRight className="size-5" />}
                 </div>
-                <span className="font-bold text-[#1A1916] text-base">
-                  {PRICE_BOOK_DEVICE_LABELS[type]}
-                </span>
+                <span className="font-bold text-[#1A1916] text-base">{PRICE_BOOK_DEVICE_LABELS[type]}</span>
               </span>
               <span className="bg-[#F1EFE8] px-2.5 py-1 rounded-full text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">
                 {brandCount} marques · {itemCount} prix
@@ -127,10 +135,7 @@ export function PriceTreeView({
                     const brandKey = `${typeKey}::${brand}`;
                     const brandOpen = openBrands[brandKey] ?? false;
                     return (
-                      <div
-                        className="rounded-[14px] border border-[#EFEDE6] bg-[#FAFAF8]/50"
-                        key={brandKey}
-                      >
+                      <div className="rounded-[14px] border border-[#EFEDE6] bg-[#FAFAF8]/50" key={brandKey}>
                         <button
                           className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-[#FAFAF8]"
                           onClick={() => setOpenBrands((prev) => ({ ...prev, [brandKey]: !brandOpen }))}
@@ -144,9 +149,7 @@ export function PriceTreeView({
                             )}
                             <span className="font-semibold text-[#1A1916] text-sm">{brand}</span>
                           </span>
-                          <span className="text-[#6B6B6B] text-xs font-medium">
-                            {seriesMap.size} séries
-                          </span>
+                          <span className="text-[#6B6B6B] text-xs font-medium">{seriesMap.size} séries</span>
                         </button>
                         {brandOpen && (
                           <div className="space-y-3 px-3 pb-3">
@@ -156,19 +159,28 @@ export function PriceTreeView({
                                 const seriesKey = `${brandKey}::${series}`;
                                 const seriesOpen = openSeries[seriesKey] ?? false;
                                 return (
-                                  <div key={seriesKey} className="rounded-xl border border-[#EFEDE6] bg-white shadow-sm overflow-hidden">
+                                  <div
+                                    key={seriesKey}
+                                    className="rounded-xl border border-[#EFEDE6] bg-white shadow-sm overflow-hidden"
+                                  >
                                     <button
                                       className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left bg-[#F1EFE8]/20 hover:bg-[#F1EFE8]/40 transition"
-                                      onClick={() => setOpenSeries(p => ({ ...p, [seriesKey]: !seriesOpen }))}
+                                      onClick={() => setOpenSeries((p) => ({ ...p, [seriesKey]: !seriesOpen }))}
                                       type="button"
                                     >
                                       <span className="flex items-center gap-2">
-                                        {seriesOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
-                                        <span className="font-bold text-[#1A1916] text-xs uppercase tracking-tight">{series}</span>
+                                        {seriesOpen ? (
+                                          <ChevronDown className="size-3.5" />
+                                        ) : (
+                                          <ChevronRight className="size-3.5" />
+                                        )}
+                                        <span className="font-bold text-[#1A1916] text-xs uppercase tracking-tight">
+                                          {series}
+                                        </span>
                                       </span>
                                       <span className="text-[#6B6B6B] text-[10px]">{models.size} modèles</span>
                                     </button>
-                                    
+
                                     {seriesOpen && (
                                       <div className="p-2 space-y-2">
                                         {[...models.entries()]
@@ -176,7 +188,7 @@ export function PriceTreeView({
                                           .map(([model, interventions]) => {
                                             const modelKey = `${seriesKey}::${model}`;
                                             const modelOpen = openModels[modelKey] ?? true;
-                                            
+
                                             // Ajout des interventions standards manquantes
                                             const uiType = PRICE_BOOK_DEVICE_LABELS[type] as InterventionDeviceType;
                                             const standardList = getDefaultInterventionsByDeviceType(uiType);
@@ -194,11 +206,17 @@ export function PriceTreeView({
                                               >
                                                 <button
                                                   className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition hover:bg-[#FAFAF8]"
-                                                  onClick={() => setOpenModels((p) => ({ ...p, [modelKey]: !modelOpen }))}
+                                                  onClick={() =>
+                                                    setOpenModels((p) => ({ ...p, [modelKey]: !modelOpen }))
+                                                  }
                                                   type="button"
                                                 >
                                                   <span className="flex items-center gap-2">
-                                                    {modelOpen ? <ChevronDown className="size-4 text-[#167B70]" /> : <ChevronRight className="size-4 text-[#6B6B6B]" />}
+                                                    {modelOpen ? (
+                                                      <ChevronDown className="size-4 text-[#167B70]" />
+                                                    ) : (
+                                                      <ChevronRight className="size-4 text-[#6B6B6B]" />
+                                                    )}
                                                     <span className="font-bold text-[#1A1916] text-sm">{model}</span>
                                                   </span>
                                                   <span className="text-[#6B6B6B] text-[11px] bg-[#F8F7F2] px-2 py-0.5 rounded-md">
@@ -219,33 +237,54 @@ export function PriceTreeView({
                                                       })
                                                       .map(([reparation, list]) => {
                                                         const interventionKey = `${modelKey}::${reparation}`;
-                                                        const interventionOpen = openInterventions[interventionKey] ?? false;
-                                                        
+                                                        const interventionOpen =
+                                                          openInterventions[interventionKey] ?? false;
+
                                                         const hasPrice = list.length > 0;
-                                                        const prices = list.map(i => i.prixClientTotal);
+                                                        const prices = list.map((i) => i.prixClientTotal);
                                                         const minPrice = hasPrice ? Math.min(...prices) : 0;
                                                         const maxPrice = hasPrice ? Math.max(...prices) : 0;
-                                                        const priceRange = !hasPrice 
+                                                        const priceRange = !hasPrice
                                                           ? "À définir"
-                                                          : minPrice === maxPrice 
-                                                            ? new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(minPrice)
+                                                          : minPrice === maxPrice
+                                                            ? new Intl.NumberFormat("fr-FR", {
+                                                                style: "currency",
+                                                                currency: "EUR",
+                                                              }).format(minPrice)
                                                             : `${new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(minPrice)} - ${new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(maxPrice)}`;
 
                                                         return (
                                                           <div key={interventionKey} className="group">
                                                             <button
                                                               className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition hover:bg-[#FAFAF8] ${!hasPrice ? "opacity-60" : ""}`}
-                                                              onClick={() => setOpenInterventions(prev => ({ ...prev, [interventionKey]: !interventionOpen }))}
+                                                              onClick={() =>
+                                                                setOpenInterventions((prev) => ({
+                                                                  ...prev,
+                                                                  [interventionKey]: !interventionOpen,
+                                                                }))
+                                                              }
                                                               type="button"
                                                             >
                                                               <div className="flex items-center gap-2">
-                                                                <div className={`flex size-5 items-center justify-center rounded-md transition ${interventionOpen ? "bg-[#E8F7F3] text-[#167B70]" : "text-[#6B6B6B]"}`}>
-                                                                  {interventionOpen ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+                                                                <div
+                                                                  className={`flex size-5 items-center justify-center rounded-md transition ${interventionOpen ? "bg-[#E8F7F3] text-[#167B70]" : "text-[#6B6B6B]"}`}
+                                                                >
+                                                                  {interventionOpen ? (
+                                                                    <ChevronDown className="size-3.5" />
+                                                                  ) : (
+                                                                    <ChevronRight className="size-3.5" />
+                                                                  )}
                                                                 </div>
-                                                                <span className="font-medium text-[#1A1916] text-sm">{reparation}</span>
+                                                                <span className="font-medium text-[#1A1916] text-sm">
+                                                                  {reparation}
+                                                                </span>
                                                               </div>
                                                               <div className="flex items-center gap-4">
-                                                                <span className={`${hasPrice ? "text-[#167B70] font-semibold" : "text-[#6B6B6B] italic font-normal"} text-sm`}>{priceRange}</span>
+                                                                <span
+                                                                  className={`${hasPrice ? "text-[#167B70] font-semibold" : "text-[#6B6B6B] italic font-normal"} text-sm`}
+                                                                >
+                                                                  {priceRange}
+                                                                </span>
                                                                 {hasPrice && (
                                                                   <span className="text-[#6B6B6B] text-[11px] opacity-0 group-hover:opacity-100 transition">
                                                                     {list.length} variante{list.length > 1 ? "s" : ""}
@@ -253,22 +292,32 @@ export function PriceTreeView({
                                                                 )}
                                                               </div>
                                                             </button>
-                                                            
+
                                                             {interventionOpen && (
                                                               <div className="bg-[#FAFAF8]/40 overflow-x-auto">
                                                                 {hasPrice ? (
                                                                   <table className="w-full min-w-[820px] text-sm">
                                                                     <thead className="bg-[#FAFAF8]/80 text-[#6B6B6B] text-[10px] uppercase tracking-wider font-bold">
                                                                       <tr>
-                                                                        <th className="px-5 py-2 text-left">Variante / Pièce</th>
+                                                                        <th className="px-5 py-2 text-left">
+                                                                          Variante / Pièce
+                                                                        </th>
                                                                         <th className="px-3 py-2 text-left">Qualité</th>
                                                                         <th className="px-3 py-2 text-right">Achat</th>
-                                                                        <th className="px-3 py-2 text-right">Vente pièce</th>
+                                                                        <th className="px-3 py-2 text-right">
+                                                                          Vente pièce
+                                                                        </th>
                                                                         <th className="px-3 py-2 text-right">M.O.</th>
-                                                                        <th className="px-3 py-2 text-right text-[#167B70]">Prix client</th>
+                                                                        <th className="px-3 py-2 text-right text-[#167B70]">
+                                                                          Prix client
+                                                                        </th>
                                                                         <th className="px-3 py-2 text-center">Stock</th>
-                                                                        <th className="px-3 py-2 text-left">Fournisseur / SKU</th>
-                                                                        <th className="px-5 py-2 text-right">Actions</th>
+                                                                        <th className="px-3 py-2 text-left">
+                                                                          Fournisseur / SKU
+                                                                        </th>
+                                                                        <th className="px-5 py-2 text-right">
+                                                                          Actions
+                                                                        </th>
                                                                       </tr>
                                                                     </thead>
                                                                     <tbody className="divide-y divide-[#EFEDE6]">
@@ -286,15 +335,17 @@ export function PriceTreeView({
                                                                   </table>
                                                                 ) : (
                                                                   <div className="px-12 py-4 flex flex-col items-center justify-center text-center">
-                                                                    <p className="text-[#6B6B6B] text-xs mb-2 italic">Aucun tarif défini pour cette intervention.</p>
-                                                                    <button 
+                                                                    <p className="text-[#6B6B6B] text-xs mb-2 italic">
+                                                                      Aucun tarif défini pour cette intervention.
+                                                                    </p>
+                                                                    <button
                                                                       onClick={() => {
-                                                                        onEdit({ 
-                                                                          id: "", 
-                                                                          typeAppareil: type, 
-                                                                          marque: brand, 
-                                                                          modele: model, 
-                                                                          reparation, 
+                                                                        onEdit({
+                                                                          id: "",
+                                                                          typeAppareil: type,
+                                                                          marque: brand,
+                                                                          modele: model,
+                                                                          reparation,
                                                                           piece: reparation,
                                                                           qualite: "Standard",
                                                                           prixAchat: 0,
@@ -305,7 +356,7 @@ export function PriceTreeView({
                                                                           isActive: true,
                                                                           source: "manual",
                                                                           createdAt: new Date().toISOString(),
-                                                                          updatedAt: new Date().toISOString()
+                                                                          updatedAt: new Date().toISOString(),
                                                                         });
                                                                       }}
                                                                       className="text-[#167B70] text-[11px] font-bold hover:underline"
@@ -399,12 +450,12 @@ function PriceTreeRow({
     <tr className="border-[#EFEDE6] border-t hover:bg-[#FAFAF8]/60">
       <td className="px-3 py-2">
         <div className="font-medium text-[#1A1916]">{item.reparation}</div>
-        <div className="text-[#6B6B6B] text-xs">
-          {item.piece}
-        </div>
+        <div className="text-[#6B6B6B] text-xs">{item.piece}</div>
       </td>
       <td className="px-3 py-2 text-[#1A1916] text-sm">
-        <span className="rounded-full bg-[#FAFAF8] px-2 py-0.5 text-[#6B6B6B] text-xs">{qualityLabel || "Standard"}</span>
+        <span className="rounded-full bg-[#FAFAF8] px-2 py-0.5 text-[#6B6B6B] text-xs">
+          {qualityLabel || "Standard"}
+        </span>
       </td>
       <td className="px-3 py-2 text-right">
         <input className={numClass} inputMode="decimal" onChange={(e) => setAchat(e.target.value)} value={achat} />

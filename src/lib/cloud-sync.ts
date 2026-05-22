@@ -22,11 +22,11 @@ const FRESHER_MARGIN_MS = 10_000;
 // ────────────────────────────────────────────────────────────────────────────
 
 export type SyncStatus =
-  | "idle"        // app vient de démarrer, aucun sync tenté
-  | "syncing"     // upload en cours
-  | "synced"      // dernier upload OK
-  | "offline"     // pas de réseau ou Supabase injoignable
-  | "error";      // erreur côté serveur
+  | "idle" // app vient de démarrer, aucun sync tenté
+  | "syncing" // upload en cours
+  | "synced" // dernier upload OK
+  | "offline" // pas de réseau ou Supabase injoignable
+  | "error"; // erreur côté serveur
 
 export type SyncState = {
   status: SyncStatus;
@@ -38,9 +38,7 @@ export type DownloadResult =
   | { ok: true; state: any; updatedAt: string; sizeBytes: number; workshopName?: string }
   | { ok: false; error: "not_found" | "network" | "no_license"; details?: string };
 
-export type UploadResult =
-  | { ok: true; updatedAt: string; sizeBytes: number }
-  | { ok: false; error: string };
+export type UploadResult = { ok: true; updatedAt: string; sizeBytes: number } | { ok: false; error: string };
 
 // ────────────────────────────────────────────────────────────────────────────
 //  Helpers
@@ -106,7 +104,9 @@ export function getSyncState(): SyncState {
 export function subscribeSyncState(cb: (s: SyncState) => void): () => void {
   listeners.add(cb);
   cb(syncState);
-  return () => { listeners.delete(cb); };
+  return () => {
+    listeners.delete(cb);
+  };
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -131,13 +131,14 @@ export async function uploadSnapshot(opts?: { silent?: boolean }): Promise<Uploa
   // workshop_id stable (généré une fois par licence)
   let workshopId: string = state.cloudSync?.workshopId;
   if (!workshopId) {
-    workshopId = typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID()
-      : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-          const r = (Math.random() * 16) | 0;
-          const v = c === "x" ? r : (r & 0x3) | 0x8;
-          return v.toString(16);
-        });
+    workshopId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            const v = c === "x" ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+          });
     state.cloudSync = { ...(state.cloudSync || {}), workshopId };
     writeLocalState(state);
   }
@@ -195,17 +196,12 @@ export async function uploadSnapshot(opts?: { silent?: boolean }): Promise<Uploa
         workshopId = existing.workshop_id;
       }
     } else {
-      const { error, data } = await supabase
-        .from("workshop_snapshots")
-        .insert(rowBase)
-        .select("updated_at")
-        .single();
+      const { error, data } = await supabase.from("workshop_snapshots").insert(rowBase).select("updated_at").single();
       if (error) {
         // Course : un autre poste a inséré la ligne entre notre SELECT et notre INSERT.
         // Code 23505 = unique_violation (si la contrainte UNIQUE existe).
         const isDuplicate =
-          (error as any).code === "23505" ||
-          /duplicate key|unique constraint/i.test(error.message || "");
+          (error as any).code === "23505" || /duplicate key|unique constraint/i.test(error.message || "");
         if (isDuplicate) {
           const retry = await supabase
             .from("workshop_snapshots")
@@ -357,11 +353,10 @@ async function uploadWithRetry(maxRetries = 3): Promise<UploadResult> {
     // Pas de retry si la cause n'est pas réseau/temporaire (ex: licence manquante)
     const msg = lastResult.error || "";
     const isTransient =
-      /fetch|Network|timeout|503|502|504|temporar|réseau/i.test(msg) ||
-      syncState.status === "offline";
+      /fetch|Network|timeout|503|502|504|temporar|réseau/i.test(msg) || syncState.status === "offline";
     if (!isTransient) return lastResult;
     if (attempt < maxRetries - 1) {
-      const delay = 2000 * Math.pow(2, attempt);
+      const delay = 2000 * 2 ** attempt;
       await new Promise((r) => setTimeout(r, delay));
     }
   }
@@ -467,8 +462,12 @@ export function setupAutoSync() {
 }
 
 /** Désactive temporairement l'auto-sync (utile pendant un restore). */
-export function pauseAutoSync() { autoSyncEnabled = false; }
-export function resumeAutoSync() { autoSyncEnabled = true; }
+export function pauseAutoSync() {
+  autoSyncEnabled = false;
+}
+export function resumeAutoSync() {
+  autoSyncEnabled = true;
+}
 
 /**
  * Au démarrage : si le cloud a un snapshot plus récent que la dernière modif
@@ -503,17 +502,12 @@ export async function checkCloudFresher(): Promise<{
     const localSyncedAt = state.cloudSync?.lastSyncedAt;
     const localUpdatedAt = getLocalUpdatedAt(state);
     const cloudTs = new Date(data.updated_at || 0).getTime();
-    const localRefTs = Math.max(
-      new Date(localSyncedAt || 0).getTime(),
-      new Date(localUpdatedAt || 0).getTime(),
-    );
+    const localRefTs = Math.max(new Date(localSyncedAt || 0).getTime(), new Date(localUpdatedAt || 0).getTime());
 
     if (!localRefTs) {
       // Aucun repère local fiable → on ne propose une restauration que si le local est vide.
       const hasAnyLocalData =
-        (state?.repairs?.length ?? 0) > 0 ||
-        (state?.invoices?.length ?? 0) > 0 ||
-        (state?.customers?.length ?? 0) > 0;
+        (state?.repairs?.length ?? 0) > 0 || (state?.invoices?.length ?? 0) > 0 || (state?.customers?.length ?? 0) > 0;
       if (hasAnyLocalData) return null;
       return { cloudUpdatedAt: data.updated_at, workshopName: data.workshop_name || undefined };
     }

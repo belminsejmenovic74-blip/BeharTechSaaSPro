@@ -36,10 +36,10 @@ import {
   LICENSE_ISOLATION,
   LICENSE_MAIN,
   REPAIR_STATUSES,
+  runId,
   SEED_APPOINTMENTS,
   SEED_CUSTOMERS,
   SEED_STOCK,
-  runId,
 } from "./helpers/behar-data";
 import { Report } from "./helpers/behar-report";
 
@@ -60,10 +60,14 @@ test.afterAll(async () => {
 // ════════════════════════════════════════════════════════════════════════════
 test("QA-01 Bootstrap : licence + dashboard accessible", async ({ browser }) => {
   const { page } = await openPoste(browser, { name: "BOOT" });
-  await check(page, { id: "QA-01.1", module: "Bootstrap", title: `Licence ${LICENSE_MAIN} activée via localStorage` }, async () => {
-    const state = await readStoreState(page);
-    expect(state?.licenseKey?.toUpperCase()).toBe(LICENSE_MAIN);
-  });
+  await check(
+    page,
+    { id: "QA-01.1", module: "Bootstrap", title: `Licence ${LICENSE_MAIN} activée via localStorage` },
+    async () => {
+      const state = await readStoreState(page);
+      expect(state?.licenseKey?.toUpperCase()).toBe(LICENSE_MAIN);
+    },
+  );
   await check(page, { id: "QA-01.2", module: "Bootstrap", title: "Dashboard chargé sans crash" }, async () => {
     await expect(page).toHaveURL(/\/dashboard/);
     // L'app rend au moins quelque chose au-dessus du loader
@@ -172,7 +176,9 @@ test("QA-02 Seed : clients / stock / rendez-vous", async ({ browser }) => {
     status: i < 30 ? "Accepté" : i < 40 ? "Envoyé" : "Brouillon",
     date: r.droppedAt,
     expiryDate: new Date(now.getTime() + 30 * 86400_000).toISOString(),
-    lines: [{ id: `ql_${i}`, description: `${r.device} — ${r.issue}`, quantity: 1, unitPrice: r.total, total: r.total }],
+    lines: [
+      { id: `ql_${i}`, description: `${r.device} — ${r.issue}`, quantity: 1, unitPrice: r.total, total: r.total },
+    ],
     createdAt: r.droppedAt,
     updatedAt: r.droppedAt,
   }));
@@ -187,7 +193,9 @@ test("QA-02 Seed : clients / stock / rendez-vous", async ({ browser }) => {
     quoteId: quotes[i].id,
     status: i < 30 ? "Payée" : "Envoyée",
     date: r.droppedAt,
-    lines: [{ id: `il_${i}`, description: `${r.device} — ${r.issue}`, quantity: 1, unitPrice: r.total, total: r.total }],
+    lines: [
+      { id: `il_${i}`, description: `${r.device} — ${r.issue}`, quantity: 1, unitPrice: r.total, total: r.total },
+    ],
     sourceType: "repair",
     sourceNumber: r.number,
     paymentMethod: i < 30 ? "Carte" : "Non réglée",
@@ -294,7 +302,11 @@ test("QA-03 P0 financier : réparation 119 € → devis → facture → paiemen
     '[data-testid="new-repair"]',
   ]);
   if (newBtn) {
-    await page.locator(newBtn).first().click().catch(() => {});
+    await page
+      .locator(newBtn)
+      .first()
+      .click()
+      .catch(() => {});
     await page.waitForTimeout(500);
     // Tente de remplir le prix pièce 90 et main d'œuvre 29 — sélecteurs typiques.
     const pricePart = await findFirstVisible(page, [
@@ -307,8 +319,18 @@ test("QA-03 P0 financier : réparation 119 € → devis → facture → paiemen
       'input[placeholder*="main" i]',
       'input[aria-label*="main" i]',
     ]);
-    if (pricePart) await page.locator(pricePart).first().fill("90").catch(() => {});
-    if (laborPrice) await page.locator(laborPrice).first().fill("29").catch(() => {});
+    if (pricePart)
+      await page
+        .locator(pricePart)
+        .first()
+        .fill("90")
+        .catch(() => {});
+    if (laborPrice)
+      await page
+        .locator(laborPrice)
+        .first()
+        .fill("29")
+        .catch(() => {});
   }
 
   // Plan B : seed direct dans le store pour avancer le test même si l'UI bouge.
@@ -369,12 +391,16 @@ test("QA-03 P0 financier : réparation 119 € → devis → facture → paiemen
   }
 
   // Assertion P0 : total réparation = 119
-  await check(page, { id: "QA-03.2", module: "Réparations", title: "Total réparation = 119 €", severity: "P0" }, async () => {
-    const state = await readStoreState(page);
-    const r = state.repairs.find((x: any) => x.id === createdId);
-    expect(r).toBeTruthy();
-    expect(r.total).toBe(119);
-  });
+  await check(
+    page,
+    { id: "QA-03.2", module: "Réparations", title: "Total réparation = 119 €", severity: "P0" },
+    async () => {
+      const state = await readStoreState(page);
+      const r = state.repairs.find((x: any) => x.id === createdId);
+      expect(r).toBeTruthy();
+      expect(r.total).toBe(119);
+    },
+  );
 
   // Création facture depuis réparation via API store directement
   let invoiceId: string | null = null;
@@ -390,7 +416,8 @@ test("QA-03 P0 financier : réparation 119 € → devis → facture → paiemen
     const state = parsed.state ?? parsed;
     // Simulation : on appelle pas la fonction du store ici (pas exposée).
     // On laisse l'UI tester ça dans un autre checkpoint.
-    void repairId; void state;
+    void repairId;
+    void state;
     return null;
   }, createdId);
 
@@ -406,7 +433,11 @@ test("QA-03 P0 financier : réparation 119 € → devis → facture → paiemen
     3000,
   );
   if (invoiceBtn) {
-    await page.locator(invoiceBtn).first().click().catch(() => {});
+    await page
+      .locator(invoiceBtn)
+      .first()
+      .click()
+      .catch(() => {});
     await page.waitForTimeout(800);
   }
 
@@ -424,7 +455,9 @@ test("QA-03 P0 financier : réparation 119 € → devis → facture → paiemen
       const state = await readStoreState(page);
       const inv = state.invoices?.find((i: any) => i.repairId === createdId);
       if (!inv) {
-        throw new Error("Aucune facture trouvée pour cette réparation — bouton UI non accessible (à vérifier manuellement)");
+        throw new Error(
+          "Aucune facture trouvée pour cette réparation — bouton UI non accessible (à vérifier manuellement)",
+        );
       }
       const total = (inv.lines ?? []).reduce((s: number, l: any) => s + (l.total ?? l.quantity * l.unitPrice), 0);
       expect(total).toBe(119);
@@ -438,10 +471,7 @@ test("QA-03 P0 financier : réparation 119 € → devis → facture → paiemen
 test("QA-04 Anti-litige : bouton 'Compléter l'état d'entrée' ne bloque pas", async ({ browser }) => {
   const { page } = await openPoste(browser, { name: "ANTI-LITIGE" });
   await gotoSection(page, "reparations");
-  const newBtn = await findFirstVisible(page, [
-    'button:has-text("Nouvelle réparation")',
-    '[data-testid="new-repair"]',
-  ]);
+  const newBtn = await findFirstVisible(page, ['button:has-text("Nouvelle réparation")', '[data-testid="new-repair"]']);
   if (!newBtn) {
     blocked({
       id: "QA-04.1",
@@ -454,9 +484,9 @@ test("QA-04 Anti-litige : bouton 'Compléter l'état d'entrée' ne bloque pas", 
   await page.waitForTimeout(800);
 
   const intakeBtn = await findFirstVisible(page, [
-    'button:has-text("Compléter l\'état d\'entrée")',
+    "button:has-text(\"Compléter l'état d'entrée\")",
     'button:has-text("Compléter l’état d’entrée")',
-    'button:has-text("Modifier l\'état d\'entrée")',
+    "button:has-text(\"Modifier l'état d'entrée\")",
   ]);
   if (!intakeBtn) {
     blocked({ id: "QA-04.2", module: "Anti-litige", title: "Bouton anti-litige introuvable dans le modal" });
@@ -465,14 +495,23 @@ test("QA-04 Anti-litige : bouton 'Compléter l'état d'entrée' ne bloque pas", 
   await page.locator(intakeBtn).first().click();
   await page.waitForTimeout(600);
 
-  await check(page, { id: "QA-04.3", module: "Anti-litige", title: "Toast d'info affiché, aucune modale anti-litige ouverte", severity: "P0" }, async () => {
-    // Aucun overlay plein écran qui couvre le formulaire
-    const overlay = page.locator('[role="dialog"]:has-text("État d\'entrée")');
-    expect(await overlay.count()).toBe(0);
-    // Toast contient le texte attendu
-    const toast = page.locator('text=Créez d\'abord la réparation');
-    await expect(toast.first()).toBeVisible({ timeout: 3000 });
-  });
+  await check(
+    page,
+    {
+      id: "QA-04.3",
+      module: "Anti-litige",
+      title: "Toast d'info affiché, aucune modale anti-litige ouverte",
+      severity: "P0",
+    },
+    async () => {
+      // Aucun overlay plein écran qui couvre le formulaire
+      const overlay = page.locator('[role="dialog"]:has-text("État d\'entrée")');
+      expect(await overlay.count()).toBe(0);
+      // Toast contient le texte attendu
+      const toast = page.locator("text=Créez d'abord la réparation");
+      await expect(toast.first()).toBeVisible({ timeout: 3000 });
+    },
+  );
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -483,29 +522,48 @@ test("QA-05 /telecharger : aucun bouton déclenche .exe.html / .dmg.html", async
   const page = await context.newPage();
   await page.goto("/telecharger", { waitUntil: "domcontentloaded" });
 
-  await check(page, { id: "QA-05.1", module: "Téléchargement", title: "CTA navigateur vers /dashboard présent", severity: "P1" }, async () => {
-    const link = page.locator('a:has-text("Ouvrir Behar Tech Pro dans le navigateur")');
-    await expect(link).toBeVisible();
-    await expect(link).toHaveAttribute("href", "/dashboard");
-  });
+  await check(
+    page,
+    { id: "QA-05.1", module: "Téléchargement", title: "CTA navigateur vers /dashboard présent", severity: "P1" },
+    async () => {
+      const link = page.locator('a:has-text("Ouvrir Behar Tech Pro dans le navigateur")');
+      await expect(link).toBeVisible();
+      await expect(link).toHaveAttribute("href", "/dashboard");
+    },
+  );
 
-  await check(page, { id: "QA-05.2", module: "Téléchargement", title: "Boutons OS désactivés (Windows / Mac / Linux)", severity: "P1" }, async () => {
-    for (const label of ["Windows", "Mac", "Linux"]) {
-      const btn = page.locator(`button:has-text("${label}")`).first();
-      await expect(btn).toBeVisible();
-      await expect(btn).toBeDisabled();
-    }
-  });
+  await check(
+    page,
+    { id: "QA-05.2", module: "Téléchargement", title: "Boutons OS désactivés (Windows / Mac / Linux)", severity: "P1" },
+    async () => {
+      for (const label of ["Windows", "Mac", "Linux"]) {
+        const btn = page.locator(`button:has-text("${label}")`).first();
+        await expect(btn).toBeVisible();
+        await expect(btn).toBeDisabled();
+      }
+    },
+  );
 
   // Vérifie qu'aucun téléchargement n'est déclenché en cliquant les "boutons"
   let triggered = false;
-  page.on("download", () => { triggered = true; });
+  page.on("download", () => {
+    triggered = true;
+  });
   for (const label of ["Windows", "Mac", "Linux"]) {
-    await page.locator(`button:has-text("${label}")`).first().click({ force: true, trial: false }).catch(() => {});
+    await page
+      .locator(`button:has-text("${label}")`)
+      .first()
+      .click({ force: true, trial: false })
+      .catch(() => {});
   }
   await page.waitForTimeout(800);
   if (triggered) {
-    fail({ id: "QA-05.3", module: "Téléchargement", title: "Un téléchargement a été déclenché alors qu'aucun installateur réel n'existe", severity: "P1" });
+    fail({
+      id: "QA-05.3",
+      module: "Téléchargement",
+      title: "Un téléchargement a été déclenché alors qu'aucun installateur réel n'existe",
+      severity: "P1",
+    });
   } else {
     ok({ id: "QA-05.3", module: "Téléchargement", title: "Aucun téléchargement déclenché (boutons disabled OK)" });
   }
@@ -521,35 +579,38 @@ test("QA-06 Sync multi-postes même licence", async ({ browser }) => {
 
   // Poste A : crée une réparation dans son store local
   const repId = `rep_qa06_${uid()}`;
-  await a.page.evaluate(({ key, id }) => {
-    const raw = window.localStorage.getItem(key);
-    const parsed = raw ? JSON.parse(raw) : { state: {}, version: 1 };
-    const state = parsed.state ?? parsed;
-    const cust = state.customers?.[0] ?? { id: "cust_demo", name: "Client démo" };
-    if (!state.customers) state.customers = [cust];
-    state.repairs = [
-      {
-        id,
-        shopId: "shop",
-        number: `R-QA-A-${id.slice(-4)}`,
-        customerId: cust.id,
-        device: "Apple iPhone 12",
-        deviceModel: "iPhone 12",
-        model: "iPhone 12",
-        brandName: "Apple",
-        issue: "Sync test A→B",
-        status: "Reçu",
-        amount: 99,
-        laborPrice: 29,
-        total: 99,
-        history: ["Créé par Poste A"],
-        droppedAt: new Date().toISOString(),
-        estimatedDoneAt: new Date().toISOString(),
-      },
-      ...(state.repairs ?? []),
-    ];
-    window.localStorage.setItem(key, JSON.stringify(parsed.state ? parsed : { state, version: 1 }));
-  }, { key: "behar-tech-local-demo-v3", id: repId });
+  await a.page.evaluate(
+    ({ key, id }) => {
+      const raw = window.localStorage.getItem(key);
+      const parsed = raw ? JSON.parse(raw) : { state: {}, version: 1 };
+      const state = parsed.state ?? parsed;
+      const cust = state.customers?.[0] ?? { id: "cust_demo", name: "Client démo" };
+      if (!state.customers) state.customers = [cust];
+      state.repairs = [
+        {
+          id,
+          shopId: "shop",
+          number: `R-QA-A-${id.slice(-4)}`,
+          customerId: cust.id,
+          device: "Apple iPhone 12",
+          deviceModel: "iPhone 12",
+          model: "iPhone 12",
+          brandName: "Apple",
+          issue: "Sync test A→B",
+          status: "Reçu",
+          amount: 99,
+          laborPrice: 29,
+          total: 99,
+          history: ["Créé par Poste A"],
+          droppedAt: new Date().toISOString(),
+          estimatedDoneAt: new Date().toISOString(),
+        },
+        ...(state.repairs ?? []),
+      ];
+      window.localStorage.setItem(key, JSON.stringify(parsed.state ? parsed : { state, version: 1 }));
+    },
+    { key: "behar-tech-local-demo-v3", id: repId },
+  );
 
   // Note : sans serveur Supabase configuré pour le projet, B ne verra rien.
   // On marque BLOCKED si Supabase n'est pas configuré, sinon on assert.
@@ -570,11 +631,20 @@ test("QA-06 Sync multi-postes même licence", async ({ browser }) => {
   } else {
     await b.page.reload({ waitUntil: "domcontentloaded" });
     await b.page.waitForTimeout(3000);
-    await check(b.page, { id: "QA-06.2", module: "Sync cloud", title: "Réparation créée par A visible par B après refresh", severity: "P0" }, async () => {
-      const state = await readStoreState(b.page);
-      const found = state.repairs?.some((r: any) => r.id === repId);
-      expect(found).toBeTruthy();
-    });
+    await check(
+      b.page,
+      {
+        id: "QA-06.2",
+        module: "Sync cloud",
+        title: "Réparation créée par A visible par B après refresh",
+        severity: "P0",
+      },
+      async () => {
+        const state = await readStoreState(b.page);
+        const found = state.repairs?.some((r: any) => r.id === repId);
+        expect(found).toBeTruthy();
+      },
+    );
   }
 
   await a.context.close();
@@ -657,13 +727,26 @@ test("QA-10 Documents : page Documents ouvrable, aucun placeholder cassé", asyn
   await gotoSection(page, "documents");
   await page.waitForTimeout(1000);
 
-  await check(page, { id: "QA-10.1", module: "Documents", title: "Page /documents ne contient pas 'VOTRE LOGO ICI'", severity: "P1" }, async () => {
-    const body = await page.locator("body").innerText();
-    expect(body).not.toMatch(/VOTRE LOGO ICI/i);
-  });
+  await check(
+    page,
+    { id: "QA-10.1", module: "Documents", title: "Page /documents ne contient pas 'VOTRE LOGO ICI'", severity: "P1" },
+    async () => {
+      const body = await page.locator("body").innerText();
+      expect(body).not.toMatch(/VOTRE LOGO ICI/i);
+    },
+  );
 
-  await check(page, { id: "QA-10.2", module: "Documents", title: "Page /documents n'affiche pas 'undefined' / 'null' littéraux", severity: "P1" }, async () => {
-    const body = await page.locator("body").innerText();
-    expect(body).not.toMatch(/\bundefined\b|\bnull\b(?!able)/);
-  });
+  await check(
+    page,
+    {
+      id: "QA-10.2",
+      module: "Documents",
+      title: "Page /documents n'affiche pas 'undefined' / 'null' littéraux",
+      severity: "P1",
+    },
+    async () => {
+      const body = await page.locator("body").innerText();
+      expect(body).not.toMatch(/\bundefined\b|\bnull\b(?!able)/);
+    },
+  );
 });

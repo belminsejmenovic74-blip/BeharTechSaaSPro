@@ -16,7 +16,10 @@ export function formatDeviceLabel(
   fallback = "Appareil",
 ): string {
   if (!source) return fallback;
-  const clean = (value: unknown) => String(value ?? "").replace(/\s+/g, " ").trim();
+  const clean = (value: unknown) =>
+    String(value ?? "")
+      .replace(/\s+/g, " ")
+      .trim();
   const brand = clean(source.brandName);
   const model = clean(source.deviceModel || source.model);
   if (!brand && !model) return clean(source.device) || fallback;

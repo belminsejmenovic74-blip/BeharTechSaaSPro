@@ -59,15 +59,7 @@ const TYPE_SHORT_LABEL: Record<DocumentType, string> = {
 
 const PREVIEW_DOCUMENT_WIDTH = 794;
 
-const STATUS_FILTERS = [
-  "Tous",
-  "Brouillon",
-  "Envoyé",
-  "Accepté",
-  "Non payé",
-  "Payé",
-  "Annulé",
-] as const;
+const STATUS_FILTERS = ["Tous", "Brouillon", "Envoyé", "Accepté", "Non payé", "Payé", "Annulé"] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];
 
 type PrintableDocumentTarget = {
@@ -82,7 +74,8 @@ function getPrintableTarget(document: BeharDocument): PrintableDocumentTarget | 
   if (document.type === "payment" && document.paymentId) return { type: "payment", id: document.paymentId };
   if (document.type === "internal" && document.repairId) return { type: "internal", id: document.repairId };
   if (document.type === "summary" && document.repairId) return { type: "internal", id: document.repairId };
-  if ((document.type === "sale-receipt" || document.type === "sale-invoice") && document.saleId) return { type: "sale-receipt", id: document.saleId };
+  if ((document.type === "sale-receipt" || document.type === "sale-invoice") && document.saleId)
+    return { type: "sale-receipt", id: document.saleId };
   return null;
 }
 
@@ -113,12 +106,8 @@ export function DocumentPreview() {
       const customer = store.customers.find((entry) => entry.id === document.customerId);
       const repair = document.repairId ? store.repairs.find((entry) => entry.id === document.repairId) : undefined;
       const quote = document.quoteId ? store.quotes.find((entry) => entry.id === document.quoteId) : undefined;
-      const invoice = document.invoiceId
-        ? store.invoices.find((entry) => entry.id === document.invoiceId)
-        : undefined;
-      const payment = document.paymentId
-        ? store.payments.find((entry) => entry.id === document.paymentId)
-        : undefined;
+      const invoice = document.invoiceId ? store.invoices.find((entry) => entry.id === document.invoiceId) : undefined;
+      const payment = document.paymentId ? store.payments.find((entry) => entry.id === document.paymentId) : undefined;
       const sale = document.saleId ? store.sales.find((entry) => entry.id === document.saleId) : undefined;
 
       const isCounter = customer?.type === "counter";
@@ -156,7 +145,9 @@ export function DocumentPreview() {
             : document.type === "summary" && repair
               ? `Résumé ${repair.number}`
               : `${TYPE_SHORT_LABEL[document.type]} ${numberLabel}`;
-      const contextLabel = [customerLabel, deviceLabel || repair?.device, interventionLabel].filter(Boolean).join(" · ");
+      const contextLabel = [customerLabel, deviceLabel || repair?.device, interventionLabel]
+        .filter(Boolean)
+        .join(" · ");
 
       let statusLabel = "—";
       if (document.type === "invoice" && invoice) {
@@ -225,11 +216,7 @@ export function DocumentPreview() {
     // Recherche multi-mots, AND, insensible à l'ordre et aux mots intermédiaires.
     // Permet de taper "Karim iPhone 13" et de retrouver les docs même si "Apple"
     // se glisse entre le nom et le modèle dans le libellé interne.
-    const tokens = search
-      .trim()
-      .toLowerCase()
-      .split(/\s+/)
-      .filter(Boolean);
+    const tokens = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
     return enriched
       .filter((row) => {
         if (filterType !== "all" && row.document.type !== filterType) return false;
@@ -248,8 +235,7 @@ export function DocumentPreview() {
 
   const filtersActive = filterType !== "all" || filterStatus !== "Tous" || search.trim().length > 0;
 
-  const selectedRow =
-    filtered.find((row) => row.document.id === store.selectedDocumentId) ?? filtered[0];
+  const selectedRow = filtered.find((row) => row.document.id === store.selectedDocumentId) ?? filtered[0];
   const selected = selectedRow?.document;
 
   return (
@@ -387,7 +373,10 @@ export function DocumentPreview() {
                       <span>Dossier</span>
                     </Link>
                   )}
-                  <SecondaryButton className="min-w-0 justify-center gap-2 px-3 text-xs" onClick={() => toast.info("Ouvert ci-dessous (aperçu)")}>
+                  <SecondaryButton
+                    className="min-w-0 justify-center gap-2 px-3 text-xs"
+                    onClick={() => toast.info("Ouvert ci-dessous (aperçu)")}
+                  >
                     <Eye className="size-4 shrink-0" />
                     Voir
                   </SecondaryButton>
@@ -419,7 +408,10 @@ export function DocumentPreview() {
                     <Printer className="size-4 shrink-0" />
                     Imprimer
                   </SecondaryButton>
-                  <PrimaryButton className="min-w-0 justify-center gap-2 px-3 text-xs" onClick={() => toast.success("Email simulé, aucun envoi réel")}>
+                  <PrimaryButton
+                    className="min-w-0 justify-center gap-2 px-3 text-xs"
+                    onClick={() => toast.success("Email simulé, aucun envoi réel")}
+                  >
                     <Mail className="size-4 shrink-0" />
                     Envoyer
                   </PrimaryButton>

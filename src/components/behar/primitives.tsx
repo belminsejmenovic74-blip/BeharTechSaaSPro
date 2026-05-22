@@ -200,7 +200,12 @@ export function DetailRow({
   className?: string;
 }>) {
   return (
-    <div className={cn("flex items-start justify-between gap-6 py-3 text-sm border-b border-[#F1F1EF] last:border-0", className)}>
+    <div
+      className={cn(
+        "flex items-start justify-between gap-6 py-3 text-sm border-b border-[#F1F1EF] last:border-0",
+        className,
+      )}
+    >
       <dt className="text-[#8A8984]">{label}</dt>
       <dd className={cn("text-right text-[#1A1916]", emphasize && "font-semibold")}>{value}</dd>
     </div>
@@ -245,16 +250,12 @@ export function Timeline({ items }: Readonly<{ items: readonly (string | Timelin
               <span
                 className={cn(
                   "z-10 grid size-5 shrink-0 place-items-center rounded-full border bg-white",
-                  index === 0
-                    ? "border-[#2A9D8F] text-[#2A9D8F]"
-                    : "border-[#DADAD5] text-[#6B6B6B]",
+                  index === 0 ? "border-[#2A9D8F] text-[#2A9D8F]" : "border-[#DADAD5] text-[#6B6B6B]",
                 )}
               >
                 {Icon ? <Icon className="size-3" /> : <span className="size-1.5 rounded-full bg-current" />}
               </span>
-              {index < items.length - 1 && (
-                <div className="absolute top-5 h-full w-[1px] bg-[#E7E4DC]" />
-              )}
+              {index < items.length - 1 && <div className="absolute top-5 h-full w-[1px] bg-[#E7E4DC]" />}
             </div>
             <div className="flex-1 pb-2">
               <p className="font-semibold text-[#1A1916]">{text}</p>
@@ -411,7 +412,6 @@ export function Select({ children, className, ...props }: Readonly<React.SelectH
   );
 }
 
-
 export function Textarea({ className, ...props }: Readonly<React.TextareaHTMLAttributes<HTMLTextAreaElement>>) {
   return (
     <textarea
@@ -442,10 +442,20 @@ export function Modal({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-stretch justify-stretch p-0 md:items-center md:justify-center md:p-4">
       <div className="fixed inset-0 bg-[#1A1916]/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
-      <Panel className={cn("relative z-10 w-full flex flex-col min-h-svh rounded-none md:min-h-0 md:max-h-[90vh] md:rounded-[20px]", maxWidth)}>
+      <Panel
+        className={cn(
+          "relative z-10 w-full flex flex-col min-h-svh rounded-none md:min-h-0 md:max-h-[90vh] md:rounded-[20px]",
+          maxWidth,
+        )}
+      >
         <div className="flex items-center justify-between border-b border-[#F1F1EF] px-5 py-4 md:px-7 md:py-5">
           <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">{title}</h2>
-          <button className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#6B6B6B] transition hover:bg-[#E7E4DC] hover:text-[#1A1916] md:size-8 md:bg-transparent" onClick={onClose} type="button" aria-label="Fermer">
+          <button
+            className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#6B6B6B] transition hover:bg-[#E7E4DC] hover:text-[#1A1916] md:size-8 md:bg-transparent"
+            onClick={onClose}
+            type="button"
+            aria-label="Fermer"
+          >
             <XCircle className="size-5" />
           </button>
         </div>

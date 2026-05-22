@@ -112,27 +112,15 @@ export function getDeviceSeries(brand: string, model: string): string {
  * Recherche libre d'un modèle à travers TOUT le catalogue d'une marque.
  * Permet à un réparateur de taper "iPhone XR" ou "Switch OLED" sans deviner la gamme.
  */
-export function findModelAcrossSeries(
-  models: string[],
-  query: string,
-): { model: string; score: number } | null {
-  const q = (query || "")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .replace(/\s+/g, " ")
-    .trim();
+export function findModelAcrossSeries(models: string[], query: string): { model: string; score: number } | null {
+  const q = (query || "").toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").replace(/\s+/g, " ").trim();
   if (!q) return null;
   const tokens = q.split(" ").filter(Boolean);
   if (!tokens.length) return null;
 
   let best: { model: string; score: number } | null = null;
   for (const model of models) {
-    const norm = model
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/\p{M}/gu, "")
-      .replace(/\s+/g, " ");
+    const norm = model.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").replace(/\s+/g, " ");
     if (norm === q) return { model, score: 100 };
     const score = tokens.reduce((acc, t) => (norm.includes(t) ? acc + t.length : acc), 0);
     if (score > 0 && (!best || score > best.score)) best = { model, score };

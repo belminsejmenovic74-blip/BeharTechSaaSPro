@@ -1,6 +1,6 @@
 {
   "name": "behar-tech-mvp",
-  "version": "1.0.12",
+  "version": "1.0.14",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -33,9 +33,7 @@
     "tauri:icon": "tauri icon"
   },
   "lint-staged": {
-    "*.{js,ts,jsx,tsx}": [
-      "biome check --write --no-errors-on-unmatched"
-    ]
+    "*.{js,ts,jsx,tsx}": ["biome check --write --no-errors-on-unmatched"]
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

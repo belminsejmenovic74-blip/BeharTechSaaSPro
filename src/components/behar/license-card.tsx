@@ -1,25 +1,35 @@
 "use client";
 
-import { Key, CheckCircle2, Trash2 } from "lucide-react";
-import { Panel, SecondaryButton } from "./primitives";
+import { CheckCircle2, Key, RefreshCw, ShieldOff } from "lucide-react";
+
 import { useBeharStore } from "@/lib/behar-store";
+
+import { Panel, SecondaryButton } from "./primitives";
 
 export function LicenseCard() {
   const store = useBeharStore();
-  const { licenseKey, licensePlan, licenseActivatedAt } = store;
+  const { licenseKey, licensePlan, licenseActivatedAt, deactivateLicense } = store;
 
   /**
-   * Bouton nucléaire : on efface TOUT (licence + données locales) et on
-   * recharge l'app. Garantit un retour propre à l'écran d'activation,
-   * peu importe l'état React ou les effets en cours.
-   *
-   * Les données restent dans Supabase sous la clé actuelle — si tu
-   * réactives la même clé après reset, tu récupères tout depuis le cloud.
+   * Désactiver la licence : désactive simplement la licence (licenseActivated = false),
+   * mais conserve les données locales sur l'appareil.
    */
-  const handleResetAll = () => {
+  const handleDeactivate = () => {
     // eslint-disable-next-line no-console
-    console.log("[license-card] reset complet demandé");
+    console.log("[license-card] désactivation de la licence demandée");
+    deactivateLicense();
+    if (typeof window !== "undefined") {
+      setTimeout(() => window.location.reload(), 50);
+    }
+  };
 
+  /**
+   * Changer de clé : effectue un reset complet local (supprime localStorage behar-tech-local-demo-v3, etc.)
+   * et recharge pour éviter toute pollution lors de l'activation d'une autre clé de licence.
+   */
+  const handleChangeKey = () => {
+    // eslint-disable-next-line no-console
+    console.log("[license-card] changement de clé demandé (reset local complet)");
     if (typeof window !== "undefined") {
       try {
         // Toutes les clés liées au workshop / aux préférences locales.
@@ -31,8 +41,6 @@ export function LicenseCard() {
         // eslint-disable-next-line no-console
         console.error("[license-card] localStorage clear failed", error);
       }
-      // Reload complet — au prochain mount, plus aucune licence → écran
-      // d'activation forcé par InstallationGate.
       window.location.reload();
     }
   };
@@ -67,22 +75,32 @@ export function LicenseCard() {
             <InfoRow label="Activée le" value={formattedDate} />
           </div>
 
-          {/* Zone de remise à zéro — un seul bouton, action directe, reload garanti. */}
-          <div className="mt-6 rounded-xl border border-[#F3D1CC] bg-[#FFF7F6] p-4">
-            <h3 className="text-sm font-semibold text-[#1A1916]">Réinitialiser l'application</h3>
-            <p className="mt-1 text-xs text-[#6B6B6B] leading-relaxed">
-              Efface toutes les données locales (licence, réparations, clients, paramètres) et
-              revient à l'écran d'activation. Tes données restent stockées en cloud sous la clé
-              actuelle — réactive la même clé pour tout récupérer, ou entre une autre clé pour
-              repartir de zéro.
+          {/* Options de gestion de licence */}
+          <div className="mt-6 pt-5 border-t border-[#F1F1EF] space-y-4">
+            <div className="flex flex-wrap gap-2.5">
+              <SecondaryButton
+                className="h-10 px-4 text-xs font-semibold gap-2 border-[#E7E4DC] hover:border-[#2A9D8F] hover:text-[#2A9D8F] active:scale-[0.98] transition-all duration-200"
+                onClick={handleChangeKey}
+              >
+                <RefreshCw className="size-3.5" />
+                Changer de clé
+              </SecondaryButton>
+              <SecondaryButton
+                className="h-10 px-4 text-xs font-semibold gap-2 text-[#E63946] border-[#F3D1CC] hover:bg-[#FFF7F6] active:scale-[0.98] transition-all duration-200"
+                onClick={handleDeactivate}
+              >
+                <ShieldOff className="size-3.5" />
+                Désactiver la licence
+              </SecondaryButton>
+            </div>
+
+            <p className="text-[11px] text-[#8A8984] leading-relaxed">
+              <strong>Changer de clé :</strong> Efface complètement les données locales de cet appareil pour pouvoir
+              connecter un autre atelier sans risque de mélange.
+              <br />
+              <strong>Désactiver la licence :</strong> Déconnecte temporairement l'appareil. Vos données locales restent
+              en mémoire sur cet appareil si vous souhaitez réactiver la même clé plus tard.
             </p>
-            <SecondaryButton
-              className="mt-3 h-9 px-3 text-xs gap-1.5 text-[#E63946] border-[#F3D1CC] hover:bg-white"
-              onClick={handleResetAll}
-            >
-              <Trash2 className="size-3" />
-              Tout réinitialiser
-            </SecondaryButton>
           </div>
         </div>
       </div>

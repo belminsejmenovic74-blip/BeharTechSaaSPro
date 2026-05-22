@@ -46,8 +46,7 @@ export function InstallButton({ className }: Readonly<{ className?: string }>) {
     if (globalPrompt) setInstallPrompt(globalPrompt);
 
     const onPromptAvailable = () => {
-      const p = (window as unknown as { deferredInstallPrompt?: BeforeInstallPromptEvent })
-        .deferredInstallPrompt;
+      const p = (window as unknown as { deferredInstallPrompt?: BeforeInstallPromptEvent }).deferredInstallPrompt;
       if (p) setInstallPrompt(p);
     };
     const onBeforeInstallPrompt = (e: Event) => {
@@ -173,8 +172,7 @@ export function InstallButton({ className }: Readonly<{ className?: string }>) {
                   3
                 </span>
                 <div className="text-[#1A1916] text-[14px] leading-snug">
-                  Faites défiler puis touchez{" "}
-                  <strong>« Sur l'écran d'accueil »</strong>.
+                  Faites défiler puis touchez <strong>« Sur l'écran d'accueil »</strong>.
                 </div>
               </li>
               <li className="flex items-start gap-3 rounded-[16px] bg-[#FAFAF8] p-4">
@@ -182,8 +180,8 @@ export function InstallButton({ className }: Readonly<{ className?: string }>) {
                   4
                 </span>
                 <div className="text-[#1A1916] text-[14px] leading-snug">
-                  Validez. L'icône <strong>Behar Tech</strong> apparaît sur votre écran d'accueil
-                  comme une vraie application.
+                  Validez. L'icône <strong>Behar Tech</strong> apparaît sur votre écran d'accueil comme une vraie
+                  application.
                 </div>
               </li>
               <li className="flex items-start gap-3 rounded-[16px] border border-[#EAF6F2] bg-[#F7FCFA] p-4">

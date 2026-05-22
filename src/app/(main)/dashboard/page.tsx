@@ -3,15 +3,8 @@
 import { useEffect, useState } from "react";
 
 import Link from "next/link";
-import {
-  AlertTriangle,
-  CalendarDays,
-  ChevronRight,
-  Clock,
-  Package,
-  TrendingUp,
-  Wrench,
-} from "lucide-react";
+
+import { AlertTriangle, CalendarDays, ChevronRight, Clock, Package, TrendingUp, Wrench } from "lucide-react";
 
 import { DashboardPremium } from "@/components/behar/dashboard-premium";
 import { PageShell } from "@/components/behar/page-shell";
@@ -58,15 +51,11 @@ function MobileDashboard() {
   const repairsInProgress = store.repairs.filter(
     (r) => r.status !== "Prêt" && r.status !== "Restitué" && r.status !== "Annulé",
   );
-  const monthRevenue = store.payments
-    .filter((p) => p.status === "Payé")
-    .reduce((sum, p) => sum + p.amount, 0);
+  const monthRevenue = store.payments.filter((p) => p.status === "Payé").reduce((sum, p) => sum + p.amount, 0);
 
   const todayKey = today ? today.toLocaleDateString("fr-FR") : "";
   const todayIso = today ? toIsoDate(today) : "";
-  const todayLabel = today
-    ? today.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })
-    : "";
+  const todayLabel = today ? today.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }) : "";
 
   const todaysAppointments = store.appointments
     .filter((a) => normalizeAppointmentStatus(a.status) !== "Annulé")
@@ -95,9 +84,7 @@ function MobileDashboard() {
   const pipelineMax = Math.max(1, ...pipeline.map((p) => p.value));
   const pipelineTotal = pipeline.reduce((sum, p) => sum + p.value, 0);
 
-  const recentActivity = [...store.auditLogs]
-    .sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1))
-    .slice(0, 4);
+  const recentActivity = [...store.auditLogs].sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1)).slice(0, 4);
 
   return (
     <div className="space-y-6">
@@ -187,13 +174,14 @@ function MobileDashboard() {
                 store.repairs.find((repair) => repair.id === appt.repairId) ??
                 store.repairs.find((repair) => repair.appointmentId === appt.id);
               const status = normalizeAppointmentStatus(appt.status, appt.confirmed, Boolean(linkedRepair));
-              const pillTone = status === "Arrivé" || status === "Réparation créée"
-                ? "bg-[#E7F8F0] text-[#0B7A56]"
-                : status === "Confirmé"
-                  ? "bg-[#EAF6F2] text-[#167B70]"
-                  : status === "Annulé" || status === "Non venu"
-                    ? "bg-[#FDECEC] text-[#B42318]"
-                    : "bg-[#FAFAF8] text-[#6B6B6B]";
+              const pillTone =
+                status === "Arrivé" || status === "Réparation créée"
+                  ? "bg-[#E7F8F0] text-[#0B7A56]"
+                  : status === "Confirmé"
+                    ? "bg-[#EAF6F2] text-[#167B70]"
+                    : status === "Annulé" || status === "Non venu"
+                      ? "bg-[#FDECEC] text-[#B42318]"
+                      : "bg-[#FAFAF8] text-[#6B6B6B]";
               return (
                 <li key={appt.id} className="flex items-center gap-3 py-2.5">
                   <span className="flex w-12 shrink-0 flex-col items-center">
@@ -207,7 +195,8 @@ function MobileDashboard() {
                       {customer?.name || "Client comptoir"}
                     </p>
                     <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">
-                      {appt.device}{appt.issue ? ` · ${appt.issue}` : ""}
+                      {appt.device}
+                      {appt.issue ? ` · ${appt.issue}` : ""}
                     </p>
                   </div>
                   <span
@@ -253,9 +242,7 @@ function MobileDashboard() {
                   <Wrench className="size-[15px]" strokeWidth={2.2} />
                 </span>
                 <span className="font-bold text-[#1A1916] text-[18px] tabular-nums leading-none">{step.value}</span>
-                <span className="text-center text-[#6B6B6B] text-[10.5px] font-medium leading-tight">
-                  {step.label}
-                </span>
+                <span className="text-center text-[#6B6B6B] text-[10.5px] font-medium leading-tight">{step.label}</span>
                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#E7E4DC]">
                   <div
                     className="h-full rounded-full bg-[#2A9D8F] transition-all"
@@ -284,17 +271,12 @@ function MobileDashboard() {
         ) : (
           <ul className="mt-3 -mx-1">
             {recentActivity.map((log) => (
-              <li
-                key={log.id}
-                className="flex items-center gap-3 rounded-[12px] px-2 py-2.5"
-              >
+              <li key={log.id} className="flex items-center gap-3 rounded-[12px] px-2 py-2.5">
                 <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#FAFAF8] text-[#2A9D8F]">
                   <ActivityIcon action={log.action} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-[#1A1916] text-[13px] leading-tight">
-                    {log.message}
-                  </p>
+                  <p className="truncate font-medium text-[#1A1916] text-[13px] leading-tight">{log.message}</p>
                   <p className="mt-0.5 text-[#8A8984] text-[11px]">{formatRelative(log.createdAt)}</p>
                 </div>
                 <ChevronRight className="size-4 shrink-0 text-[#CDCBC5]" strokeWidth={2} />
@@ -305,9 +287,7 @@ function MobileDashboard() {
       </SectionCard>
 
       {/* Réparation en focus */}
-      {repairsInProgress[0] && (
-        <FocusRepair repair={repairsInProgress[0]} />
-      )}
+      {repairsInProgress[0] && <FocusRepair repair={repairsInProgress[0]} />}
     </div>
   );
 }
@@ -335,28 +315,16 @@ function KpiCard({
       prefetch={false}
       className="block rounded-[20px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.98]"
     >
-      <span className={`grid size-9 place-items-center rounded-[10px] ${iconBg} ${iconColor}`}>
-        {icon}
-      </span>
-      <p className="mt-3 text-[#8A8984] text-[11.5px] font-medium leading-tight tracking-tight">
-        {label}
-      </p>
-      <p className="mt-1.5 font-bold text-[#1A1916] text-[24px] leading-none tracking-tight tabular-nums">
-        {value}
-      </p>
-      <p className="mt-1.5 truncate text-[#8A8984] text-[10.5px] font-medium leading-tight">
-        {subline}
-      </p>
+      <span className={`grid size-9 place-items-center rounded-[10px] ${iconBg} ${iconColor}`}>{icon}</span>
+      <p className="mt-3 text-[#8A8984] text-[11.5px] font-medium leading-tight tracking-tight">{label}</p>
+      <p className="mt-1.5 font-bold text-[#1A1916] text-[24px] leading-none tracking-tight tabular-nums">{value}</p>
+      <p className="mt-1.5 truncate text-[#8A8984] text-[10.5px] font-medium leading-tight">{subline}</p>
     </Link>
   );
 }
 
 function SectionCard({ children }: Readonly<{ children: React.ReactNode }>) {
-  return (
-    <section className="rounded-[20px] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-      {children}
-    </section>
-  );
+  return <section className="rounded-[20px] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">{children}</section>;
 }
 
 function FocusRepair({ repair }: Readonly<{ repair: any }>) {
@@ -393,12 +361,10 @@ function FocusRepair({ repair }: Readonly<{ repair: any }>) {
 function ActivityIcon({ action }: Readonly<{ action: string }>) {
   if (action.startsWith("payment") || action.includes("paid"))
     return <TrendingUp className="size-[16px]" strokeWidth={2} />;
-  if (action.startsWith("repair"))
-    return <Wrench className="size-[16px]" strokeWidth={2} />;
+  if (action.startsWith("repair")) return <Wrench className="size-[16px]" strokeWidth={2} />;
   if (action.startsWith("appointment") || action.startsWith("rendez"))
     return <CalendarDays className="size-[16px]" strokeWidth={2} />;
-  if (action.startsWith("stock"))
-    return <Package className="size-[16px]" strokeWidth={2} />;
+  if (action.startsWith("stock")) return <Package className="size-[16px]" strokeWidth={2} />;
   if (action.startsWith("alert") || action.includes("low"))
     return <AlertTriangle className="size-[16px]" strokeWidth={2} />;
   return <Clock className="size-[16px]" strokeWidth={2} />;
@@ -409,8 +375,18 @@ function toIsoDate(date: Date): string {
 }
 
 const MONTH_NAMES_FR = [
-  "janvier", "février", "mars", "avril", "mai", "juin",
-  "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+  "janvier",
+  "février",
+  "mars",
+  "avril",
+  "mai",
+  "juin",
+  "juillet",
+  "août",
+  "septembre",
+  "octobre",
+  "novembre",
+  "décembre",
 ] as const;
 
 function appointmentToIso(raw: string | undefined): string {

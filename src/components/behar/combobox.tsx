@@ -154,9 +154,7 @@ export function Combobox({
           id={listId}
           role="listbox"
         >
-          {filtered.length === 0 && !showCreate && (
-            <li className="px-3 py-2 text-[#6B6B6B] text-xs">{emptyLabel}</li>
-          )}
+          {filtered.length === 0 && !showCreate && <li className="px-3 py-2 text-[#6B6B6B] text-xs">{emptyLabel}</li>}
           {filtered.map((entry, index) => {
             const selected = entry === value;
             const active = index === highlight;

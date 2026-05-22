@@ -3,13 +3,14 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+import { type DeviceCategory, deviceCatalog } from "@/data/deviceCatalog";
 import {
   createPriceBookItem,
   normalizePriceBookItem,
-  priceBookDuplicateKey,
   type PriceBookDeviceType,
   type PriceBookInput,
   type PriceBookItem,
+  priceBookDuplicateKey,
   seedPriceBookExamples,
   updatePriceBookItem,
 } from "@/lib/price-book";
@@ -20,7 +21,6 @@ import { transactions as paymentMocks } from "@/mock/payments";
 import { quote as quoteMock } from "@/mock/quotes";
 import { repairKanbanColumns } from "@/mock/repairs";
 import { stockItems as stockMocks } from "@/mock/stock";
-import { deviceCatalog, type DeviceCategory } from "@/data/deviceCatalog";
 
 export type RepairStatus =
   | "Reçu"
@@ -35,7 +35,15 @@ export type QuoteStatus = "Brouillon" | "Envoyé" | "Accepté" | "Refusé" | "Fa
 export type PaymentStatus = "Payé" | "Annulé" | "Remboursé";
 export type PaymentMethod = "Espèces" | "Carte" | "Virement" | "Paiement en ligne simulé";
 export type AppointmentStatus = "En attente" | "Confirmé" | "Arrivé" | "Réparation créée" | "Annulé" | "Non venu";
-export type DocumentType = "intake" | "quote" | "invoice" | "payment" | "internal" | "summary" | "sale-receipt" | "sale-invoice";
+export type DocumentType =
+  | "intake"
+  | "quote"
+  | "invoice"
+  | "payment"
+  | "internal"
+  | "summary"
+  | "sale-receipt"
+  | "sale-invoice";
 export type DeviceType = "Smartphone" | "Tablette" | "Ordinateur" | "Console" | "Autre";
 export type UserRole = "admin" | "technician" | "frontdesk";
 export type PermissionKey =
@@ -245,7 +253,14 @@ export type RepairIntakeCondition = {
   biometricState?: "OK" | "Ne fonctionne pas" | "Non testable" | "Non concerné" | "Non renseigné";
   networkState?: "OK" | "Non testé" | "SIM absente" | "Défaut signalé" | "Non renseigné";
   passcodeState?: "Code fourni" | "Code non fourni" | "Sans code" | "Déverrouillage impossible" | "Non renseigné";
-  accessMethod?: "Aucun" | "Code PIN" | "Mot de passe" | "Schéma" | "Empreinte / biométrie" | "Non communiqué" | "Non renseigné";
+  accessMethod?:
+    | "Aucun"
+    | "Code PIN"
+    | "Mot de passe"
+    | "Schéma"
+    | "Empreinte / biométrie"
+    | "Non communiqué"
+    | "Non renseigné";
   accessCode?: string;
   accessNote?: string;
   patternData?: {
@@ -588,6 +603,7 @@ export type LicenseInfo = {
   licenseKey?: string;
   licensePlan?: string;
   licenseActivatedAt?: string;
+  lastLicenseKey?: string;
 };
 
 export type StoreState = {
@@ -641,11 +657,19 @@ export type StoreState = {
   sessionUserId?: string;
   setCurrentUser: (id: string) => void;
   loginWithPin: (pin: string) => { ok: boolean; reason?: "invalid" | "disabled"; user?: CurrentUser };
-  loginWithUserPin: (userId: string, pin: string) => { ok: boolean; reason?: "invalid" | "disabled"; user?: CurrentUser };
+  loginWithUserPin: (
+    userId: string,
+    pin: string,
+  ) => { ok: boolean; reason?: "invalid" | "disabled"; user?: CurrentUser };
   logout: () => void;
   hasPermission: (permission: PermissionKey) => boolean;
   requirePermission: (permission: PermissionKey, actionName?: string) => boolean;
-  addUser: (input: { name: string; role: UserRole; pin: string; permissionOverrides?: Partial<Record<PermissionKey, boolean>> }) => string;
+  addUser: (input: {
+    name: string;
+    role: UserRole;
+    pin: string;
+    permissionOverrides?: Partial<Record<PermissionKey, boolean>>;
+  }) => string;
   updateUser: (id: string, patch: Partial<Omit<CurrentUser, "id" | "permissions">>) => void;
   deactivateUser: (id: string) => void;
   reactivateUser: (id: string) => void;
@@ -675,6 +699,7 @@ export type StoreState = {
   licenseKey?: string;
   licensePlan?: string;
   licenseActivatedAt?: string;
+  lastLicenseKey?: string;
   activateLicense: (key: string) => boolean;
   deactivateLicense: () => void;
 
@@ -685,7 +710,10 @@ export type StoreState = {
   addDeviceBrand: (input: { name: string; deviceType: DeviceType }) => string;
   updateDeviceBrand: (id: string, patch: Partial<Pick<DeviceBrand, "name" | "deviceTypes">>) => void;
   addDeviceModel: (input: { brandId: string; name: string; deviceType: DeviceType; aliases?: string[] }) => string;
-  updateDeviceModel: (id: string, patch: Partial<Pick<DeviceModel, "name" | "aliases" | "deviceType" | "brandId">>) => void;
+  updateDeviceModel: (
+    id: string,
+    patch: Partial<Pick<DeviceModel, "name" | "aliases" | "deviceType" | "brandId">>,
+  ) => void;
   toggleDeviceModel: (id: string, isActive: boolean) => void;
   setSelected: (entity: SelectableEntity, id: string) => void;
   loadPreloadedCatalog: () => Promise<void>;
@@ -745,7 +773,13 @@ export type StoreState = {
   setOnboardingCompleted: (done: boolean) => void;
   addDocument: (input: Omit<BeharDocument, "id" | "shopId" | "createdAt">) => string;
   deleteDocument: (id: string) => void;
-  addSale: (input: { customerId: string; customerName: string; lines: Omit<SaleLine, "id">[]; repairId?: string; status?: SaleStatus }) => string;
+  addSale: (input: {
+    customerId: string;
+    customerName: string;
+    lines: Omit<SaleLine, "id">[];
+    repairId?: string;
+    status?: SaleStatus;
+  }) => string;
   paySale: (saleId: string, method: PaymentMethod) => string;
   cancelSale: (saleId: string) => void;
   deleteSale: (saleId: string) => void;
@@ -1066,11 +1100,16 @@ const catalogTimestamp = "2026-04-29";
 
 const categoryToType = (cat: DeviceCategory): DeviceType => {
   switch (cat) {
-    case "smartphone": return "Smartphone";
-    case "tablet": return "Tablette";
-    case "computer": return "Ordinateur";
-    case "console": return "Console";
-    default: return "Autre";
+    case "smartphone":
+      return "Smartphone";
+    case "tablet":
+      return "Tablette";
+    case "computer":
+      return "Ordinateur";
+    case "console":
+      return "Console";
+    default:
+      return "Autre";
   }
 };
 
@@ -1146,10 +1185,10 @@ export const partCategories: PartCategory[] = [
 const defaultWorkshopInfo: WorkshopInfo = {
   brand: "BEHAR • TECH",
   name: "Behar Tech",
-  address: "2 rue de la Zone",
-  postalCode: "74100",
-  city: "Annemasse",
-  postalCity: "74100 Annemasse",
+  address: "",
+  postalCode: "",
+  city: "",
+  postalCity: "",
   country: "France",
   siret: "000 000 000 00000",
   email: "contact@behartechpro.fr",
@@ -1265,7 +1304,8 @@ const normalizeCounter = (value: unknown, fallback = 1) => {
 const padDocNumber = (n: number) => String(normalizeCounter(n)).padStart(4, "0");
 const docNumber = (prefix: string | undefined, n: number, fallbackPrefix: string) =>
   `${normalizeText(prefix, fallbackPrefix).toUpperCase()}-${padDocNumber(n)}`;
-const clampMoney = (value: number | string | undefined) => Math.max(0, typeof value === "string" ? euro(value) : Number.isFinite(value ?? 0) ? (value ?? 0) : 0);
+const clampMoney = (value: number | string | undefined) =>
+  Math.max(0, typeof value === "string" ? euro(value) : Number.isFinite(value ?? 0) ? (value ?? 0) : 0);
 const clampQuantity = (value: number | undefined) =>
   Math.max(0, Math.floor(Number.isFinite(value ?? 0) ? (value ?? 0) : 0));
 const repairStatuses: RepairStatus[] = [
@@ -1323,10 +1363,7 @@ export const normalizeAppointmentStatus = (
 
   if (normalized === "annule" || normalized === "annulee") return "Annulé";
   if (["absent", "no-show", "no show", "non venu", "non-venu"].includes(normalized)) return "Non venu";
-  if (
-    hasLinkedRepair ||
-    ["termine", "terminee", "converti en reparation", "reparation creee"].includes(normalized)
-  ) {
+  if (hasLinkedRepair || ["termine", "terminee", "converti en reparation", "reparation creee"].includes(normalized)) {
     return "Réparation créée";
   }
   if (["venu", "arrive", "arrivee"].includes(normalized)) return "Arrivé";
@@ -1528,10 +1565,7 @@ export function buildInvoiceLinesFromRepair(
   const modelLabel = normalizeText(repair.deviceModel ?? repair.model);
   const brandLabel = normalizeText(repair.brandName);
   const interventionLabel =
-    normalizeText(snap?.reparation) ||
-    normalizeText(repair.issue) ||
-    normalizeText(snap?.piece) ||
-    "Réparation";
+    normalizeText(snap?.reparation) || normalizeText(repair.issue) || normalizeText(snap?.piece) || "Réparation";
 
   const accessoryLines = (repair.repairSaleLines ?? []).map((line) => ({
     id: uid("line"),
@@ -1572,7 +1606,9 @@ export function buildInvoiceLinesFromRepair(
   return {
     ok: true,
     lines: [
-      ...(laborLineTotal > 0 ? [{ id: uid("line"), description, quantity: 1, unitPrice: laborLineTotal, total: laborLineTotal }] : []),
+      ...(laborLineTotal > 0
+        ? [{ id: uid("line"), description, quantity: 1, unitPrice: laborLineTotal, total: laborLineTotal }]
+        : []),
       ...accessoryLines,
     ],
   };
@@ -1629,7 +1665,15 @@ const intakeSelectFallbacks = {
   biometricState: ["OK", "Ne fonctionne pas", "Non testable", "Non concerné", "Non renseigné"],
   networkState: ["OK", "Non testé", "SIM absente", "Défaut signalé", "Non renseigné"],
   passcodeState: ["Code fourni", "Code non fourni", "Sans code", "Déverrouillage impossible", "Non renseigné"],
-  accessMethod: ["Aucun", "Code PIN", "Mot de passe", "Schéma", "Empreinte / biométrie", "Non communiqué", "Non renseigné"],
+  accessMethod: [
+    "Aucun",
+    "Code PIN",
+    "Mot de passe",
+    "Schéma",
+    "Empreinte / biométrie",
+    "Non communiqué",
+    "Non renseigné",
+  ],
 } as const;
 
 const normalizeIntakeSelect = <K extends keyof typeof intakeSelectFallbacks>(
@@ -1685,7 +1729,7 @@ const normalizeIntakeCondition = (condition: unknown): RepairIntakeCondition | u
     accessNote: normalizeIntakeText(input.accessNote),
     patternData: normalizePatternData(input.patternData),
     accessories: Array.isArray(input.accessories)
-      ? input.accessories.map((entry) => normalizeIntakeText(entry)).filter(Boolean) as string[]
+      ? (input.accessories.map((entry) => normalizeIntakeText(entry)).filter(Boolean) as string[])
       : [],
     accessoriesOther: normalizeIntakeText(input.accessoriesOther),
     visibleDefects: normalizeIntakeText(input.visibleDefects),
@@ -1780,16 +1824,16 @@ const normalizeRepair = (
     : normalizeText(repair.customerId || linkedCustomerId);
   const parts = Array.isArray(repair.parts)
     ? repair.parts.map((part) => ({
-      stockItemId: normalizeText(part.stockItemId),
-      name: normalizeText(part.name, "Pièce"),
-      reference: normalizeText(part.reference),
-      sku: normalizeText(part.sku, normalizeText(part.reference)),
-      categoryName: normalizeText(part.categoryName),
-      purchasePrice: clampMoney(part.purchasePrice),
-      salePrice: clampMoney(part.salePrice),
-      quantity: clampQuantity(part.quantity),
-      confirmed: Boolean(part.confirmed),
-    }))
+        stockItemId: normalizeText(part.stockItemId),
+        name: normalizeText(part.name, "Pièce"),
+        reference: normalizeText(part.reference),
+        sku: normalizeText(part.sku, normalizeText(part.reference)),
+        categoryName: normalizeText(part.categoryName),
+        purchasePrice: clampMoney(part.purchasePrice),
+        salePrice: clampMoney(part.salePrice),
+        quantity: clampQuantity(part.quantity),
+        confirmed: Boolean(part.confirmed),
+      }))
     : [];
   const repairSaleLines: RepairSaleLine[] = Array.isArray(repair.repairSaleLines)
     ? repair.repairSaleLines
@@ -1807,7 +1851,9 @@ const normalizeRepair = (
             total: clampMoney(line.total ?? quantity * unitPrice),
             purchasePriceInternal: clampMoney(line.purchasePriceInternal),
             supplierInternal: normalizeText(line.supplierInternal) || undefined,
-            status: (["draft", "confirmed", "invoiced", "paid"].includes(String(line.status)) ? line.status : "draft") as RepairSaleLineStatus,
+            status: (["draft", "confirmed", "invoiced", "paid"].includes(String(line.status))
+              ? line.status
+              : "draft") as RepairSaleLineStatus,
             stockDecremented: Boolean(line.stockDecremented),
             addedAt: normalizeText(line.addedAt, nowLabel()),
           };
@@ -1930,12 +1976,12 @@ const normalizeInvoice = (invoice: Partial<Invoice>, customers: Customer[], repa
   const fromItems =
     Array.isArray(inv.items) && inv.items.length
       ? inv.items.map((item: any, idx: number) => ({
-        id: item.id ?? `line_${id}_${idx}`,
-        description: item.description ?? item.label ?? "",
-        quantity: item.quantity ?? 1,
-        unitPrice: item.unitPrice ?? item.price ?? item.unit_price ?? 0,
-        total: (item.quantity ?? 1) * (item.unitPrice ?? item.price ?? item.unit_price ?? 0),
-      }))
+          id: item.id ?? `line_${id}_${idx}`,
+          description: item.description ?? item.label ?? "",
+          quantity: item.quantity ?? 1,
+          unitPrice: item.unitPrice ?? item.price ?? item.unit_price ?? 0,
+          total: (item.quantity ?? 1) * (item.unitPrice ?? item.price ?? item.unit_price ?? 0),
+        }))
       : undefined;
   const lineSource = Array.isArray(invoice.lines) && invoice.lines.length ? invoice.lines : fromItems;
   return {
@@ -2049,7 +2095,9 @@ const normalizeSale = (sale: Partial<Sale>, customers: Customer[], repairs: Repa
     customerId,
     customerName: customerId === counterCustomerId ? "Client comptoir" : normalizeText(sale.customerName, "Client"),
     repairId,
-    status: (["Brouillon", "Payée", "Rattachée", "Annulée"].includes(String(sale.status)) ? sale.status : "Brouillon") as SaleStatus,
+    status: (["Brouillon", "Payée", "Rattachée", "Annulée"].includes(String(sale.status))
+      ? sale.status
+      : "Brouillon") as SaleStatus,
     lines,
     subtotal,
     taxAmount: clampMoney(sale.taxAmount),
@@ -2096,7 +2144,9 @@ const normalizeAppointment = (
 };
 const normalizeStockItem = (item: Partial<StockItem> & { skipModelInference?: boolean }): StockItem => {
   const id = normalizeText(item.id, uid("stock"));
-  const fallbackMock = stockMocks.find((mock: any) => mock.id === id || mock.reference === item.reference || mock.reference === item.sku);
+  const fallbackMock = stockMocks.find(
+    (mock: any) => mock.id === id || mock.reference === item.reference || mock.reference === item.sku,
+  );
   const name = normalizeText(item.name, normalizeText(item.part, "Pièce"));
   const sku = normalizeText(item.sku, normalizeText(item.reference, `REF-${Date.now()}`));
   const category = item.categoryId
@@ -2126,10 +2176,7 @@ const normalizeStockItem = (item: Partial<StockItem> & { skipModelInference?: bo
   // Inférence du modèle désactivée si skipModelInference=true OU si compatibleModels
   // est fourni explicitement (même vide) par l'appelant — on respecte le choix
   // utilisateur pour éviter de coller un modèle par défaut comme "iPhone SE 1re génération".
-  const inferenceAllowed =
-    !item.skipModelInference &&
-    !modelIds.length &&
-    !Array.isArray(item.compatibleModels);
+  const inferenceAllowed = !item.skipModelInference && !modelIds.length && !Array.isArray(item.compatibleModels);
   const inferredModelName = inferenceAllowed ? modelFromName : undefined;
   const inferredModel = inferredModelName ? findModelByName(inferredModelName, brand?.id) : undefined;
   const finalModelIds = uniqueIds([...modelIds, inferredModel?.id]);
@@ -2171,69 +2218,69 @@ const normalizeStockItem = (item: Partial<StockItem> & { skipModelInference?: bo
 };
 
 const CATEGORY_TO_INTERVENTION: Record<string, string> = {
-  "Écran": "Écran",
-  "Batterie": "Batterie",
+  Écran: "Écran",
+  Batterie: "Batterie",
   "Connecteur de charge": "Connecteur de charge",
-  "Connecteur": "Connecteur de charge",
+  Connecteur: "Connecteur de charge",
   "Caméra arrière": "Caméra arrière",
-  "Caméra": "Caméra arrière",
+  Caméra: "Caméra arrière",
   "Dos arrière": "Dos arrière",
-  "Dos": "Dos arrière",
+  Dos: "Dos arrière",
   "Vitre arrière": "Vitre arrière",
-  "Micro": "Micro",
+  Micro: "Micro",
   "Haut-parleur": "Haut-parleur",
   "Nappe / capteur": "Nappe / capteur",
-  "Nappe": "Nappe / capteur",
+  Nappe: "Nappe / capteur",
 };
 
 const INTERVENTION_TO_CATEGORY: Record<string, string> = {
   "Écran cassé": "Écran",
-  "Écran": "Écran",
-  "Batterie": "Batterie",
+  Écran: "Écran",
+  Batterie: "Batterie",
   "Connecteur de charge": "Connecteur",
   "Caméra arrière": "Caméra",
   "Dos arrière": "Dos",
   "Vitre arrière": "Vitre arrière",
-  "Micro": "Micro",
+  Micro: "Micro",
   "Haut-parleur": "Haut-parleur",
   "Nappe / capteur": "Nappe",
 };
 
 const INTERVENTION_ALIASES: Record<string, string[]> = {
   "Écran cassé": ["Écran", "écran"],
-  "Écran": ["Écran cassé", "écran cassé"],
+  Écran: ["Écran cassé", "écran cassé"],
   "Caméra arrière": ["Caméra", "caméra"],
   "Dos arrière": ["Dos", "Vitre arrière", "dos"],
   "Vitre arrière": ["Dos arrière", "Dos"],
   "Connecteur de charge": ["Connecteur", "connecteur"],
 };
 
-const getInterventionFromCategory = (category?: string) => 
-  category ? (CATEGORY_TO_INTERVENTION[category] || "Autre intervention") : "Autre intervention";
+const getInterventionFromCategory = (category?: string) =>
+  category ? CATEGORY_TO_INTERVENTION[category] || "Autre intervention" : "Autre intervention";
 
-const getCategoryFromIntervention = (intervention?: string) => 
-  intervention ? (INTERVENTION_TO_CATEGORY[intervention] || "Autre") : "Autre";
+const getCategoryFromIntervention = (intervention?: string) =>
+  intervention ? INTERVENTION_TO_CATEGORY[intervention] || "Autre" : "Autre";
 
 const syncPriceBookToStockItems = (pbItems: PriceBookItem[], stockItems: StockItem[]): StockItem[] => {
-  let nextStock = [...stockItems];
+  const nextStock = [...stockItems];
   pbItems.forEach((pb) => {
     // Only sync items that are for pieces (not just labor)
     if (!pb.piece || pb.piece.toLowerCase() === "main d'oeuvre" || pb.piece.toLowerCase() === "main d'œuvre") return;
-    
+
     // 1. Find by ID link
-    let sIndex = nextStock.findIndex(s => s.id === pb.stockItemId || s.priceBookItemId === pb.id);
-    
+    let sIndex = nextStock.findIndex((s) => s.id === pb.stockItemId || s.priceBookItemId === pb.id);
+
     // 2. Find by SKU
     if (sIndex === -1 && pb.sku) {
-      sIndex = nextStock.findIndex(s => s.sku === pb.sku || s.reference === pb.sku);
+      sIndex = nextStock.findIndex((s) => s.sku === pb.sku || s.reference === pb.sku);
     }
-    
+
     // 3. Find by Name + Brand + Model + Category
     if (sIndex === -1) {
       const category = getCategoryFromIntervention(pb.reparation);
       const pbReparationLower = pb.reparation.toLowerCase();
-      const reparationAliases = (INTERVENTION_ALIASES[pb.reparation] ?? []).map(a => a.toLowerCase());
-      sIndex = nextStock.findIndex(s => {
+      const reparationAliases = (INTERVENTION_ALIASES[pb.reparation] ?? []).map((a) => a.toLowerCase());
+      sIndex = nextStock.findIndex((s) => {
         const sCatLower = (s.categoryName || s.category || "").toLowerCase();
         const catMatch =
           s.categoryName === category ||
@@ -2241,7 +2288,7 @@ const syncPriceBookToStockItems = (pbItems: PriceBookItem[], stockItems: StockIt
           sCatLower === pbReparationLower ||
           reparationAliases.includes(sCatLower);
         const modelMatch =
-          s.compatibleModels.some(m => m.toLowerCase() === pb.modele.toLowerCase()) ||
+          s.compatibleModels.some((m) => m.toLowerCase() === pb.modele.toLowerCase()) ||
           s.name.toLowerCase().includes(pb.modele.toLowerCase());
         return (
           s.brandName?.toLowerCase() === pb.marque.toLowerCase() &&
@@ -2260,8 +2307,8 @@ const syncPriceBookToStockItems = (pbItems: PriceBookItem[], stockItems: StockIt
         purchasePrice: pb.prixAchat || nextStock[sIndex].purchasePrice,
         salePrice: pb.prixVentePiece || nextStock[sIndex].salePrice,
         // Only update quantity if it was explicitly provided in PriceBook
-        quantity: pb.stockDisponible !== undefined ? pb.stockDisponible : nextStock[sIndex].quantity,
-        stock: pb.stockDisponible !== undefined ? pb.stockDisponible : nextStock[sIndex].stock,
+        quantity: pb.stockDisponible ?? nextStock[sIndex].quantity,
+        stock: pb.stockDisponible ?? nextStock[sIndex].stock,
         supplier: pb.fournisseur || nextStock[sIndex].supplier,
         updatedAt: pb.updatedAt || nextStock[sIndex].updatedAt,
       };
@@ -2293,19 +2340,11 @@ const inferModelFromPartName = (partName: string, brandName?: string): string | 
   const cleanName = String(partName || "").trim();
   if (!cleanName) return undefined;
   const brand = brandName ? findBrandByName(brandName) : undefined;
-  const normalizedName = cleanName
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .replace(/\s+/g, " ");
+  const normalizedName = cleanName.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").replace(/\s+/g, " ");
   return deviceModels
     .filter((model) => !brand?.id || model.brandId === brand.id)
     .filter((model) => {
-      const normalizedModel = model.name
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/\p{M}/gu, "")
-        .replace(/\s+/g, " ");
+      const normalizedModel = model.name.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").replace(/\s+/g, " ");
       return normalizedName.includes(normalizedModel);
     })
     .sort((a, b) => b.name.length - a.name.length)[0]?.name;
@@ -2332,7 +2371,7 @@ const stockDeviceTypeToPriceBook = (deviceType: DeviceType | undefined): PriceBo
 };
 
 const syncStockToPriceBookItems = (stockItems: StockItem[], pbItems: PriceBookItem[]): PriceBookItem[] => {
-  let nextPB = [...pbItems];
+  const nextPB = [...pbItems];
   stockItems.forEach((s) => {
     if (s.salePrice <= 0 && s.purchasePrice <= 0) return;
     // Détermine le modèle effectif : sélection utilisateur → sinon déduction
@@ -2341,19 +2380,19 @@ const syncStockToPriceBookItems = (stockItems: StockItem[], pbItems: PriceBookIt
     const effectiveModel = inferredModel || "Générique";
 
     // 1. Find by ID link
-    let pbIndex = nextPB.findIndex(pb => pb.id === s.priceBookItemId || pb.stockItemId === s.id);
+    let pbIndex = nextPB.findIndex((pb) => pb.id === s.priceBookItemId || pb.stockItemId === s.id);
 
     // 2. Find by SKU
     if (pbIndex === -1 && s.sku) {
-      pbIndex = nextPB.findIndex(pb => pb.sku === s.sku || pb.sku === s.reference);
+      pbIndex = nextPB.findIndex((pb) => pb.sku === s.sku || pb.sku === s.reference);
     }
 
     // 3. Find by Type + Brand + Model + Intervention
     if (pbIndex === -1) {
       const intervention = getInterventionFromCategory(s.categoryName || s.category);
       const categoryRaw = (s.categoryName || s.category || "").toLowerCase();
-      const interventionAliases = (INTERVENTION_ALIASES[intervention] ?? []).map(a => a.toLowerCase());
-      pbIndex = nextPB.findIndex(pb => {
+      const interventionAliases = (INTERVENTION_ALIASES[intervention] ?? []).map((a) => a.toLowerCase());
+      pbIndex = nextPB.findIndex((pb) => {
         const pbReparationLower = pb.reparation.toLowerCase();
         const reparationMatches =
           pbReparationLower === intervention.toLowerCase() ||
@@ -2421,257 +2460,270 @@ const syncStockToPriceBookItems = (stockItems: StockItem[], pbItems: PriceBookIt
 };
 
 const findPriceBookForStockItem = (item: StockItem, pbItems: PriceBookItem[]): PriceBookItem | undefined =>
-  pbItems.find((entry) => entry.id === item.priceBookItemId || entry.stockItemId === item.id)
-  ?? pbItems.find((entry) => Boolean(item.sku) && entry.sku === item.sku);
+  pbItems.find((entry) => entry.id === item.priceBookItemId || entry.stockItemId === item.id) ??
+  pbItems.find((entry) => Boolean(item.sku) && entry.sku === item.sku);
 
 const getStockClientPrice = (item: StockItem, pbItems: PriceBookItem[]): number =>
   clampMoney(findPriceBookForStockItem(item, pbItems)?.prixVentePiece ?? 0);
 const normalizePersistedState = (state: unknown) => {
   try {
     const persisted = state && typeof state === "object" ? (state as Partial<StoreState>) : {};
-  const now = nowLabel();
-  const DEVICE_TYPES: DeviceType[] = ["Smartphone", "Tablette", "Ordinateur", "Console", "Autre"];
-  const asDeviceType = (v: unknown): DeviceType | null =>
-    typeof v === "string" && DEVICE_TYPES.includes(v as DeviceType) ? (v as DeviceType) : null;
-  const persistedBrands: DeviceBrand[] = Array.isArray(persisted.deviceBrands)
-    ? [
-      ...persisted.deviceBrands
-        .map((b) => {
-          const id = String((b as any).id || uid("brand"));
-          const seedBrand = seed.deviceBrands?.find(
-            (sb: DeviceBrand) => sb.id === id || sb.name.toLowerCase() === String((b as any).name || "").toLowerCase(),
-          );
-          const types = new Set([
-            ...(Array.isArray((b as any).deviceTypes) ? (b as any).deviceTypes : []),
-            ...(seedBrand?.deviceTypes || []),
-          ]);
-          return {
-            id,
-            name: String((b as any).name || seedBrand?.name || "Autre"),
-            deviceTypes: (Array.from(types).filter(Boolean) as DeviceType[]).length
-              ? (Array.from(types).filter(Boolean) as DeviceType[])
-              : (["Autre"] as DeviceType[]),
-          };
-        })
-        .filter((b) => b.name.trim().length > 0),
-      ...seed.deviceBrands.filter(
-        (seedBrand: DeviceBrand) =>
-          !persisted.deviceBrands?.some(
-            (b: any) => b.id === seedBrand.id || b.name.toLowerCase() === seedBrand.name.toLowerCase(),
-          ),
-      ),
-    ]
-    : seed.deviceBrands;
-
-  const persistedModels: DeviceModel[] = Array.isArray(persisted.deviceModels)
-    ? [
-      ...persisted.deviceModels
-        .map((m) => ({
-          id: String((m as any).id || uid("model")),
-          brandId: String((m as any).brandId || "brand_other"),
-          name: String((m as any).name || "").trim(),
-          deviceType: asDeviceType((m as any).deviceType) ?? "Autre",
-          aliases: Array.isArray((m as any).aliases) ? ((m as any).aliases as string[]) : undefined,
-          isActive: (m as any).isActive !== false,
-          createdAt: typeof (m as any).createdAt === "string" ? (m as any).createdAt : now,
-          updatedAt: typeof (m as any).updatedAt === "string" ? (m as any).updatedAt : now,
-        }))
-        .filter((m) => m.name.length > 0),
-      ...seed.deviceModels.filter(
-        (seedModel: DeviceModel) =>
-          !persisted.deviceModels?.some(
-            (m: any) => m.id === seedModel.id || m.name.toLowerCase() === seedModel.name.toLowerCase(),
-          ),
-      ),
-    ]
-    : seed.deviceModels;
-
-  const baseCustomers = ensureCounterCustomer(Array.isArray(persisted.customers) ? persisted.customers : seed.customers);
-  const rawAppointments = Array.isArray(persisted.appointments) ? persisted.appointments : seed.appointments;
-  const initialRepairs = Array.isArray(persisted.repairs)
-    ? persisted.repairs.map((repair) => normalizeRepair(repair, baseCustomers, rawAppointments))
-    : seed.repairs;
-  const initialAppointments = rawAppointments.map((appointment) =>
-    normalizeAppointment(appointment, baseCustomers, initialRepairs),
-  );
-  const repairs = initialRepairs.map((repair) => normalizeRepair(repair, baseCustomers, initialAppointments));
-  const appointments = initialAppointments.map((appointment) =>
-    normalizeAppointment(appointment, baseCustomers, repairs),
-  );
-  const rawQuotes = (Array.isArray(persisted.quotes) ? persisted.quotes : seed.quotes)
-    .map((quote) => normalizeQuote(quote, baseCustomers, repairs))
-    .filter((quote) => quote.customerId);
-  const rawInvoices = (Array.isArray(persisted.invoices) ? persisted.invoices : seed.invoices)
-    .map((invoice) => normalizeInvoice(invoice, baseCustomers, repairs, rawQuotes))
-    .filter((invoice) => invoice.customerId);
-  const sales = (Array.isArray((persisted as any).sales) ? ((persisted as any).sales as Sale[]) : [])
-    .map((sale) => normalizeSale(sale, baseCustomers, repairs))
-    .filter((sale) => sale.lines.length > 0);
-  const rawPayments = (Array.isArray(persisted.payments) ? persisted.payments : seed.payments)
-    .map((payment) => normalizePayment(payment, baseCustomers, rawInvoices, sales))
-    .filter(Boolean) as Payment[];
-  const invoices = syncInvoicePayments(rawInvoices, rawPayments);
-  const quotes = syncQuoteInvoiceIds(rawQuotes, invoices);
-  const repairsWithLinks = syncRepairPaymentIds(
-    syncRepairInvoiceIds(syncRepairQuoteIds(repairs, quotes), invoices),
-    rawPayments,
-  );
-  const payments = rawPayments;
-  const customers = deriveCustomers(baseCustomers, repairsWithLinks, payments);
-  const stockItems = (
-    Array.isArray(persisted.stockItems)
+    const now = nowLabel();
+    const DEVICE_TYPES: DeviceType[] = ["Smartphone", "Tablette", "Ordinateur", "Console", "Autre"];
+    const asDeviceType = (v: unknown): DeviceType | null =>
+      typeof v === "string" && DEVICE_TYPES.includes(v as DeviceType) ? (v as DeviceType) : null;
+    const persistedBrands: DeviceBrand[] = Array.isArray(persisted.deviceBrands)
       ? [
-        ...persisted.stockItems.map(normalizeStockItem),
-        ...seed.stockItems
-          .filter((seedItem) => !persisted.stockItems?.some((item) => item.id === seedItem.id))
-          .map(normalizeStockItem),
-      ]
-      : seed.stockItems
-  ).filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i);
-  const workshopSettings: WorkshopSettings = {
-    ...defaultWorkshopSettings,
-    ...(persisted.workshopSettings ?? persisted.workshopInfo ?? seed.workshopInfo),
-    configuredAt:
-      typeof (persisted.workshopSettings ?? persisted)?.configuredAt === "string"
-        ? (persisted.workshopSettings ?? persisted).configuredAt
-        : undefined,
-    updatedAt:
-      typeof (persisted.workshopSettings ?? persisted)?.updatedAt === "string"
-        ? (persisted.workshopSettings ?? persisted).updatedAt
-        : undefined,
-  };
-  workshopSettings.nextRepairNumber = normalizeCounter(
-    workshopSettings.nextRepairNumber,
-    Math.max(1, repairsWithLinks.length + 1),
-  );
-  workshopSettings.nextQuoteNumber = normalizeCounter(workshopSettings.nextQuoteNumber, Math.max(1, quotes.length + 1));
-  workshopSettings.nextInvoiceNumber = normalizeCounter(
-    workshopSettings.nextInvoiceNumber,
-    Math.max(1, invoices.length + 1),
-  );
-  workshopSettings.nextReceiptNumber = normalizeCounter(
-    workshopSettings.nextReceiptNumber,
-    Math.max(1, payments.length + 1),
-  );
-  const users = Array.isArray((persisted as any).users)
-    ? [
-      ...((persisted as any).users as CurrentUser[])
-        .map((user) => {
-          const id = String((user as any).id || uid("user"));
-          const seed = defaultUsers.find((d) => d.id === id);
-          // Fallback : si le persisté n'a pas de PIN, on prend celui du seed
-          // (utile pour les anciennes installs avant introduction du PIN).
-          const persistedPin = typeof (user as any).pin === "string" ? (user as any).pin : undefined;
-          const pin = persistedPin && persistedPin.length > 0 ? persistedPin : seed?.pin;
-          return withRolePermissions({
-            id,
-            name: String((user as any).name || seed?.name || "Utilisateur"),
-            role: ["admin", "technician", "frontdesk"].includes((user as any).role)
-              ? ((user as any).role as UserRole)
-              : "frontdesk",
-            pin,
-            permissionOverrides:
-              typeof (user as any).permissionOverrides === "object" && (user as any).permissionOverrides
-                ? ((user as any).permissionOverrides as Partial<Record<PermissionKey, boolean>>)
-                : typeof (user as any).permissions === "object"
-                  ? ((user as any).permissions as Partial<Record<PermissionKey, boolean>>)
-                  : undefined,
-            active: (user as any).active !== false,
-            createdAt: typeof (user as any).createdAt === "string" ? (user as any).createdAt : now,
-            updatedAt: typeof (user as any).updatedAt === "string" ? (user as any).updatedAt : now,
-          });
-        })
-        .filter((user) => user.active),
-      ...defaultUsers.filter(
-        (seedUser) => !((persisted as any).users as CurrentUser[]).some((user) => user.id === seedUser.id),
-      ),
-    ]
-    : defaultUsers;
-  const persistedSessionId =
-    typeof (persisted as any).sessionUserId === "string" ? (persisted as any).sessionUserId : undefined;
-  const persistedCurrentId =
-    typeof (persisted as any).currentUser?.id === "string" ? (persisted as any).currentUser.id : defaultCurrentUser.id;
-  // Priorité au sessionUserId si présent et actif ; sinon currentUser persisté ; sinon admin par défaut.
-  const currentUser =
-    (persistedSessionId && users.find((u) => u.id === persistedSessionId && u.active)) ||
-    users.find((user) => user.id === persistedCurrentId) ||
-    defaultCurrentUser;
+          ...persisted.deviceBrands
+            .map((b) => {
+              const id = String((b as any).id || uid("brand"));
+              const seedBrand = seed.deviceBrands?.find(
+                (sb: DeviceBrand) =>
+                  sb.id === id || sb.name.toLowerCase() === String((b as any).name || "").toLowerCase(),
+              );
+              const types = new Set([
+                ...(Array.isArray((b as any).deviceTypes) ? (b as any).deviceTypes : []),
+                ...(seedBrand?.deviceTypes || []),
+              ]);
+              return {
+                id,
+                name: String((b as any).name || seedBrand?.name || "Autre"),
+                deviceTypes: (Array.from(types).filter(Boolean) as DeviceType[]).length
+                  ? (Array.from(types).filter(Boolean) as DeviceType[])
+                  : (["Autre"] as DeviceType[]),
+              };
+            })
+            .filter((b) => b.name.trim().length > 0),
+          ...seed.deviceBrands.filter(
+            (seedBrand: DeviceBrand) =>
+              !persisted.deviceBrands?.some(
+                (b: any) => b.id === seedBrand.id || b.name.toLowerCase() === seedBrand.name.toLowerCase(),
+              ),
+          ),
+        ]
+      : seed.deviceBrands;
 
-  return {
-    workshopInfo: asWorkshopInfo(workshopSettings),
-    workshopSettings,
-    onboardingCompleted: Boolean((persisted as any).onboardingCompleted ?? workshopSettings.configuredAt),
-    configuredAt: workshopSettings.configuredAt,
-    updatedAt: workshopSettings.updatedAt,
-    selectedCustomerId: persisted.selectedCustomerId ?? seed.selectedCustomerId,
-    selectedRepairId: repairs.some((repair) => repair.id === persisted.selectedRepairId)
-      ? (persisted.selectedRepairId ?? "")
-      : (repairs[0]?.id ?? ""),
-    selectedQuoteId: quotes.some((quote) => quote.id === persisted.selectedQuoteId)
-      ? (persisted.selectedQuoteId ?? "")
-      : (quotes[0]?.id ?? ""),
-    selectedInvoiceId: persisted.selectedInvoiceId ?? seed.selectedInvoiceId,
-    selectedPaymentId: persisted.selectedPaymentId ?? seed.selectedPaymentId,
-    selectedAppointmentId: persisted.selectedAppointmentId ?? seed.selectedAppointmentId,
-    selectedStockItemId: persisted.selectedStockItemId ?? seed.selectedStockItemId,
-    selectedDocumentId: persisted.selectedDocumentId ?? seed.selectedDocumentId,
-    deviceBrands: persistedBrands,
-    deviceModels: persistedModels,
-    partCategories,
-    customers,
-    repairs: repairsWithLinks,
-    quotes,
-    invoices,
-    payments,
-    appointments,
-    stockItems,
-    documents: Array.isArray(persisted.documents) ? persisted.documents : seed.documents,
-    sales,
-    selectedSaleId: typeof (persisted as any).selectedSaleId === "string" ? (persisted as any).selectedSaleId : "",
-    messageLogs: Array.isArray(persisted.messageLogs) ? persisted.messageLogs : seed.messageLogs,
-    priceBookItems: (() => {
-      if (!Array.isArray(persisted.priceBookItems)) return syncStockToPriceBookItems(stockItems, seed.priceBookItems);
-      const normalized = persisted.priceBookItems
-        .map((item) => normalizePriceBookItem(item))
-        .filter((item): item is PriceBookItem => Boolean(item));
-      const hasExamples = normalized.some((item) => item.source === "behar_example");
-      if (hasExamples) return syncStockToPriceBookItems(stockItems, normalized);
-      const existingIds = new Set(normalized.map((item) => item.id));
-      const examples = seed.priceBookItems.filter((item) => !existingIds.has(item.id));
-      return syncStockToPriceBookItems(stockItems, [...normalized, ...examples]);
-    })(),
-    // Licence — must be restored from persisted state, never reset by merge
-    licenseActivated: Boolean((persisted as any).licenseActivated),
-    licenseKey: typeof (persisted as any).licenseKey === "string" ? (persisted as any).licenseKey : undefined,
-    licensePlan: typeof (persisted as any).licensePlan === "string" ? (persisted as any).licensePlan : "Pilote",
-    licenseActivatedAt:
-      typeof (persisted as any).licenseActivatedAt === "string"
-        ? (persisted as any).licenseActivatedAt
-        : undefined,
-    teamMembers: Array.isArray((persisted as any).teamMembers) ? (persisted as any).teamMembers : [],
-    currentUser,
-    users,
-    sessionUserId:
-      typeof (persisted as any).sessionUserId === "string" &&
-      users.some((u) => u.id === (persisted as any).sessionUserId && u.active)
-        ? (persisted as any).sessionUserId
-        : undefined,
-    auditLogs: Array.isArray((persisted as any).auditLogs) ? ((persisted as any).auditLogs as AuditLogEntry[]) : [],
-    notifications: Array.isArray((persisted as any).notifications)
-      ? ((persisted as any).notifications as AppNotification[])
-      : [],
-    roleGreetings: {
-      admin: Array.isArray((persisted as any).roleGreetings?.admin) && (persisted as any).roleGreetings.admin.length > 0
-        ? (persisted as any).roleGreetings.admin
-        : [...DEFAULT_ROLE_GREETINGS.admin],
-      technician: Array.isArray((persisted as any).roleGreetings?.technician) && (persisted as any).roleGreetings.technician.length > 0
-        ? (persisted as any).roleGreetings.technician
-        : [...DEFAULT_ROLE_GREETINGS.technician],
-      frontdesk: Array.isArray((persisted as any).roleGreetings?.frontdesk) && (persisted as any).roleGreetings.frontdesk.length > 0
-        ? (persisted as any).roleGreetings.frontdesk
-        : [...DEFAULT_ROLE_GREETINGS.frontdesk],
-    },
-  };
+    const persistedModels: DeviceModel[] = Array.isArray(persisted.deviceModels)
+      ? [
+          ...persisted.deviceModels
+            .map((m) => ({
+              id: String((m as any).id || uid("model")),
+              brandId: String((m as any).brandId || "brand_other"),
+              name: String((m as any).name || "").trim(),
+              deviceType: asDeviceType((m as any).deviceType) ?? "Autre",
+              aliases: Array.isArray((m as any).aliases) ? ((m as any).aliases as string[]) : undefined,
+              isActive: (m as any).isActive !== false,
+              createdAt: typeof (m as any).createdAt === "string" ? (m as any).createdAt : now,
+              updatedAt: typeof (m as any).updatedAt === "string" ? (m as any).updatedAt : now,
+            }))
+            .filter((m) => m.name.length > 0),
+          ...seed.deviceModels.filter(
+            (seedModel: DeviceModel) =>
+              !persisted.deviceModels?.some(
+                (m: any) => m.id === seedModel.id || m.name.toLowerCase() === seedModel.name.toLowerCase(),
+              ),
+          ),
+        ]
+      : seed.deviceModels;
+
+    const baseCustomers = ensureCounterCustomer(
+      Array.isArray(persisted.customers) ? persisted.customers : seed.customers,
+    );
+    const rawAppointments = Array.isArray(persisted.appointments) ? persisted.appointments : seed.appointments;
+    const initialRepairs = Array.isArray(persisted.repairs)
+      ? persisted.repairs.map((repair) => normalizeRepair(repair, baseCustomers, rawAppointments))
+      : seed.repairs;
+    const initialAppointments = rawAppointments.map((appointment) =>
+      normalizeAppointment(appointment, baseCustomers, initialRepairs),
+    );
+    const repairs = initialRepairs.map((repair) => normalizeRepair(repair, baseCustomers, initialAppointments));
+    const appointments = initialAppointments.map((appointment) =>
+      normalizeAppointment(appointment, baseCustomers, repairs),
+    );
+    const rawQuotes = (Array.isArray(persisted.quotes) ? persisted.quotes : seed.quotes)
+      .map((quote) => normalizeQuote(quote, baseCustomers, repairs))
+      .filter((quote) => quote.customerId);
+    const rawInvoices = (Array.isArray(persisted.invoices) ? persisted.invoices : seed.invoices)
+      .map((invoice) => normalizeInvoice(invoice, baseCustomers, repairs, rawQuotes))
+      .filter((invoice) => invoice.customerId);
+    const sales = (Array.isArray((persisted as any).sales) ? ((persisted as any).sales as Sale[]) : [])
+      .map((sale) => normalizeSale(sale, baseCustomers, repairs))
+      .filter((sale) => sale.lines.length > 0);
+    const rawPayments = (Array.isArray(persisted.payments) ? persisted.payments : seed.payments)
+      .map((payment) => normalizePayment(payment, baseCustomers, rawInvoices, sales))
+      .filter(Boolean) as Payment[];
+    const invoices = syncInvoicePayments(rawInvoices, rawPayments);
+    const quotes = syncQuoteInvoiceIds(rawQuotes, invoices);
+    const repairsWithLinks = syncRepairPaymentIds(
+      syncRepairInvoiceIds(syncRepairQuoteIds(repairs, quotes), invoices),
+      rawPayments,
+    );
+    const payments = rawPayments;
+    const customers = deriveCustomers(baseCustomers, repairsWithLinks, payments);
+    const stockItems = (
+      Array.isArray(persisted.stockItems)
+        ? [
+            ...persisted.stockItems.map(normalizeStockItem),
+            ...seed.stockItems
+              .filter((seedItem) => !persisted.stockItems?.some((item) => item.id === seedItem.id))
+              .map(normalizeStockItem),
+          ]
+        : seed.stockItems
+    ).filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i);
+    const workshopSettings: WorkshopSettings = {
+      ...defaultWorkshopSettings,
+      ...(persisted.workshopSettings ?? persisted.workshopInfo ?? seed.workshopInfo),
+      configuredAt:
+        typeof (persisted.workshopSettings ?? persisted)?.configuredAt === "string"
+          ? (persisted.workshopSettings ?? persisted).configuredAt
+          : undefined,
+      updatedAt:
+        typeof (persisted.workshopSettings ?? persisted)?.updatedAt === "string"
+          ? (persisted.workshopSettings ?? persisted).updatedAt
+          : undefined,
+    };
+    workshopSettings.nextRepairNumber = normalizeCounter(
+      workshopSettings.nextRepairNumber,
+      Math.max(1, repairsWithLinks.length + 1),
+    );
+    workshopSettings.nextQuoteNumber = normalizeCounter(
+      workshopSettings.nextQuoteNumber,
+      Math.max(1, quotes.length + 1),
+    );
+    workshopSettings.nextInvoiceNumber = normalizeCounter(
+      workshopSettings.nextInvoiceNumber,
+      Math.max(1, invoices.length + 1),
+    );
+    workshopSettings.nextReceiptNumber = normalizeCounter(
+      workshopSettings.nextReceiptNumber,
+      Math.max(1, payments.length + 1),
+    );
+    const users = Array.isArray((persisted as any).users)
+      ? [
+          ...((persisted as any).users as CurrentUser[])
+            .map((user) => {
+              const id = String((user as any).id || uid("user"));
+              const seed = defaultUsers.find((d) => d.id === id);
+              // Fallback : si le persisté n'a pas de PIN, on prend celui du seed
+              // (utile pour les anciennes installs avant introduction du PIN).
+              const persistedPin = typeof (user as any).pin === "string" ? (user as any).pin : undefined;
+              const pin = persistedPin && persistedPin.length > 0 ? persistedPin : seed?.pin;
+              return withRolePermissions({
+                id,
+                name: String((user as any).name || seed?.name || "Utilisateur"),
+                role: ["admin", "technician", "frontdesk"].includes((user as any).role)
+                  ? ((user as any).role as UserRole)
+                  : "frontdesk",
+                pin,
+                permissionOverrides:
+                  typeof (user as any).permissionOverrides === "object" && (user as any).permissionOverrides
+                    ? ((user as any).permissionOverrides as Partial<Record<PermissionKey, boolean>>)
+                    : typeof (user as any).permissions === "object"
+                      ? ((user as any).permissions as Partial<Record<PermissionKey, boolean>>)
+                      : undefined,
+                active: (user as any).active !== false,
+                createdAt: typeof (user as any).createdAt === "string" ? (user as any).createdAt : now,
+                updatedAt: typeof (user as any).updatedAt === "string" ? (user as any).updatedAt : now,
+              });
+            })
+            .filter((user) => user.active),
+          ...defaultUsers.filter(
+            (seedUser) => !((persisted as any).users as CurrentUser[]).some((user) => user.id === seedUser.id),
+          ),
+        ]
+      : defaultUsers;
+    const persistedSessionId =
+      typeof (persisted as any).sessionUserId === "string" ? (persisted as any).sessionUserId : undefined;
+    const persistedCurrentId =
+      typeof (persisted as any).currentUser?.id === "string"
+        ? (persisted as any).currentUser.id
+        : defaultCurrentUser.id;
+    // Priorité au sessionUserId si présent et actif ; sinon currentUser persisté ; sinon admin par défaut.
+    const currentUser =
+      (persistedSessionId && users.find((u) => u.id === persistedSessionId && u.active)) ||
+      users.find((user) => user.id === persistedCurrentId) ||
+      defaultCurrentUser;
+
+    return {
+      workshopInfo: asWorkshopInfo(workshopSettings),
+      workshopSettings,
+      onboardingCompleted: Boolean((persisted as any).onboardingCompleted ?? workshopSettings.configuredAt),
+      configuredAt: workshopSettings.configuredAt,
+      updatedAt: workshopSettings.updatedAt,
+      selectedCustomerId: persisted.selectedCustomerId ?? seed.selectedCustomerId,
+      selectedRepairId: repairs.some((repair) => repair.id === persisted.selectedRepairId)
+        ? (persisted.selectedRepairId ?? "")
+        : (repairs[0]?.id ?? ""),
+      selectedQuoteId: quotes.some((quote) => quote.id === persisted.selectedQuoteId)
+        ? (persisted.selectedQuoteId ?? "")
+        : (quotes[0]?.id ?? ""),
+      selectedInvoiceId: persisted.selectedInvoiceId ?? seed.selectedInvoiceId,
+      selectedPaymentId: persisted.selectedPaymentId ?? seed.selectedPaymentId,
+      selectedAppointmentId: persisted.selectedAppointmentId ?? seed.selectedAppointmentId,
+      selectedStockItemId: persisted.selectedStockItemId ?? seed.selectedStockItemId,
+      selectedDocumentId: persisted.selectedDocumentId ?? seed.selectedDocumentId,
+      deviceBrands: persistedBrands,
+      deviceModels: persistedModels,
+      partCategories,
+      customers,
+      repairs: repairsWithLinks,
+      quotes,
+      invoices,
+      payments,
+      appointments,
+      stockItems,
+      documents: Array.isArray(persisted.documents) ? persisted.documents : seed.documents,
+      sales,
+      selectedSaleId: typeof (persisted as any).selectedSaleId === "string" ? (persisted as any).selectedSaleId : "",
+      messageLogs: Array.isArray(persisted.messageLogs) ? persisted.messageLogs : seed.messageLogs,
+      priceBookItems: (() => {
+        if (!Array.isArray(persisted.priceBookItems)) return syncStockToPriceBookItems(stockItems, seed.priceBookItems);
+        const normalized = persisted.priceBookItems
+          .map((item) => normalizePriceBookItem(item))
+          .filter((item): item is PriceBookItem => Boolean(item));
+        const hasExamples = normalized.some((item) => item.source === "behar_example");
+        if (hasExamples) return syncStockToPriceBookItems(stockItems, normalized);
+        const existingIds = new Set(normalized.map((item) => item.id));
+        const examples = seed.priceBookItems.filter((item) => !existingIds.has(item.id));
+        return syncStockToPriceBookItems(stockItems, [...normalized, ...examples]);
+      })(),
+      // Licence — must be restored from persisted state, never reset by merge
+      licenseActivated: Boolean((persisted as any).licenseActivated),
+      licenseKey: typeof (persisted as any).licenseKey === "string" ? (persisted as any).licenseKey : undefined,
+      licensePlan: typeof (persisted as any).licensePlan === "string" ? (persisted as any).licensePlan : "Pilote",
+      licenseActivatedAt:
+        typeof (persisted as any).licenseActivatedAt === "string" ? (persisted as any).licenseActivatedAt : undefined,
+      lastLicenseKey:
+        typeof (persisted as any).lastLicenseKey === "string" ? (persisted as any).lastLicenseKey : undefined,
+      teamMembers: Array.isArray((persisted as any).teamMembers) ? (persisted as any).teamMembers : [],
+      currentUser,
+      users,
+      sessionUserId:
+        typeof (persisted as any).sessionUserId === "string" &&
+        users.some((u) => u.id === (persisted as any).sessionUserId && u.active)
+          ? (persisted as any).sessionUserId
+          : undefined,
+      auditLogs: Array.isArray((persisted as any).auditLogs) ? ((persisted as any).auditLogs as AuditLogEntry[]) : [],
+      notifications: Array.isArray((persisted as any).notifications)
+        ? ((persisted as any).notifications as AppNotification[])
+        : [],
+      roleGreetings: {
+        admin:
+          Array.isArray((persisted as any).roleGreetings?.admin) && (persisted as any).roleGreetings.admin.length > 0
+            ? (persisted as any).roleGreetings.admin
+            : [...DEFAULT_ROLE_GREETINGS.admin],
+        technician:
+          Array.isArray((persisted as any).roleGreetings?.technician) &&
+          (persisted as any).roleGreetings.technician.length > 0
+            ? (persisted as any).roleGreetings.technician
+            : [...DEFAULT_ROLE_GREETINGS.technician],
+        frontdesk:
+          Array.isArray((persisted as any).roleGreetings?.frontdesk) &&
+          (persisted as any).roleGreetings.frontdesk.length > 0
+            ? (persisted as any).roleGreetings.frontdesk
+            : [...DEFAULT_ROLE_GREETINGS.frontdesk],
+      },
+    };
   } catch (error) {
     console.error("[behar-store] Error normalizing state, returning safe default:", error);
     return {
@@ -2713,7 +2765,7 @@ const brandMocks = deviceCatalog.map((item, index) => ({
   deviceTypes: [categoryMap[item.category] || "Autre"],
 }));
 
-const modelMocks = deviceCatalog.flatMap((item, bIndex) => 
+const modelMocks = deviceCatalog.flatMap((item, bIndex) =>
   item.models.map((model, mIndex) => ({
     id: `model_${bIndex}_${mIndex}`,
     brandId: `brand_${bIndex}`,
@@ -2722,7 +2774,7 @@ const modelMocks = deviceCatalog.flatMap((item, bIndex) =>
     isActive: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-  }))
+  })),
 );
 
 const partCategoryMocks: PartCategory[] = [
@@ -2778,6 +2830,7 @@ function createSeed() {
     licenseKey: undefined,
     licensePlan: undefined,
     licenseActivatedAt: undefined,
+    lastLicenseKey: undefined,
     teamMembers: [] as TeamMember[],
     currentUser: defaultCurrentUser,
     users: defaultUsers,
@@ -2947,7 +3000,9 @@ export const useBeharStore = create<StoreState>()(
             targetId: role,
             message: `Messages d'accueil ${role} modifiés (${cleaned.length} entrées)`,
           });
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       },
       resetRoleGreetings: (role) => {
         if (!get().hasPermission("canManageUsers")) return;
@@ -3036,7 +3091,9 @@ export const useBeharStore = create<StoreState>()(
       deactivateUser: (id) => {
         if (!get().hasPermission("canManageUsers")) return;
         set((state) => ({
-          users: state.users.map((u) => (u.id === id ? { ...u, active: false, updatedAt: new Date().toISOString() } : u)),
+          users: state.users.map((u) =>
+            u.id === id ? { ...u, active: false, updatedAt: new Date().toISOString() } : u,
+          ),
         }));
         get().addAuditLog({
           action: "user.deactivate",
@@ -3048,7 +3105,9 @@ export const useBeharStore = create<StoreState>()(
       reactivateUser: (id) => {
         if (!get().hasPermission("canManageUsers")) return;
         set((state) => ({
-          users: state.users.map((u) => (u.id === id ? { ...u, active: true, updatedAt: new Date().toISOString() } : u)),
+          users: state.users.map((u) =>
+            u.id === id ? { ...u, active: true, updatedAt: new Date().toISOString() } : u,
+          ),
         }));
         get().addAuditLog({
           action: "user.reactivate",
@@ -3077,7 +3136,9 @@ export const useBeharStore = create<StoreState>()(
         const trimmed = (newPin || "").trim();
         if (!trimmed) return;
         set((state) => ({
-          users: state.users.map((u) => (u.id === id ? { ...u, pin: trimmed, updatedAt: new Date().toISOString() } : u)),
+          users: state.users.map((u) =>
+            u.id === id ? { ...u, pin: trimmed, updatedAt: new Date().toISOString() } : u,
+          ),
         }));
         get().addAuditLog({
           action: "user.resetPin",
@@ -3196,29 +3257,68 @@ export const useBeharStore = create<StoreState>()(
           "BHT-2026-Q6R8-T1V3",
           "BHT-2026-J5L7-W9Z2",
           "BHT-2026-A3B6-C8E1",
+          // 20 nouvelles clés pilote générées
+          "BHT-2026-X8Y2-K9W4",
+          "BHT-2026-P3M7-Z5N1",
+          "BHT-2026-R6T2-H9S4",
+          "BHT-2026-F5G8-D2J1",
+          "BHT-2026-L4K7-B9V3",
+          "BHT-2026-Q1W8-E3R9",
+          "BHT-2026-T5Y2-U6I8",
+          "BHT-2026-O9P3-A4S5",
+          "BHT-2026-D6F7-G8H1",
+          "BHT-2026-J2K3-L4Z5",
+          "BHT-2026-X9C8-V7B6",
+          "BHT-2026-N5M4-Q3W2",
+          "BHT-2026-E8R7-T6Y5",
+          "BHT-2026-U4I3-O2P1",
+          "BHT-2026-A9S8-D7F6",
+          "BHT-2026-G5H4-J3K2",
+          "BHT-2026-L9Z8-X7C6",
+          "BHT-2026-V5B4-N3M2",
+          "BHT-2026-Q9W8-E7R6",
+          "BHT-2026-T5Y4-U3I2",
         ];
-        if (validKeys.includes(key.toUpperCase().trim())) {
-          set({
-            licenseActivated: true,
-            licenseKey: key.toUpperCase().trim(),
-            licensePlan: "Pilote",
-            licenseActivatedAt: new Date().toISOString(),
-          });
+        const normalizedKey = key.toUpperCase().trim();
+        if (validKeys.includes(normalizedKey)) {
+          const current = get();
+          const prevKey = current.lastLicenseKey || current.licenseKey;
+
+          if (prevKey && prevKey !== normalizedKey) {
+            // Changement de clé détecté -> reset complet local pour éviter de polluer le nouvel atelier
+            const cleanSeed = createSeed();
+            set({
+              ...cleanSeed,
+              licenseActivated: true,
+              licenseKey: normalizedKey,
+              lastLicenseKey: normalizedKey,
+              licensePlan: "Pilote",
+              licenseActivatedAt: new Date().toISOString(),
+              _hasHydrated: true,
+            });
+          } else {
+            set({
+              licenseActivated: true,
+              licenseKey: normalizedKey,
+              lastLicenseKey: normalizedKey,
+              licensePlan: "Pilote",
+              licenseActivatedAt: new Date().toISOString(),
+            });
+          }
           return true;
         }
         return false;
       },
       deactivateLicense: () => {
-        // On efface aussi le workshopId du cloudSync local — sinon, à la
-        // réactivation d'une AUTRE clé, on essaierait de pousser un workshop_id
-        // qui n'appartient pas à la nouvelle licence (pollution + 23505).
-        set({
+        // On conserve lastLicenseKey pour pouvoir détecter un changement de licence à la prochaine activation
+        set((state) => ({
           licenseActivated: false,
           licenseKey: undefined,
           licensePlan: undefined,
           licenseActivatedAt: undefined,
           cloudSync: undefined,
-        });
+          lastLicenseKey: state.licenseKey || state.lastLicenseKey,
+        }));
       },
 
       addTeamMember: (member) => {
@@ -3245,7 +3345,9 @@ export const useBeharStore = create<StoreState>()(
           if (existing) {
             const nextTypes = Array.from(new Set([...(existing.deviceTypes ?? []), deviceType]));
             return {
-              deviceBrands: state.deviceBrands.map((b) => (b.id === existing.id ? { ...b, deviceTypes: nextTypes } : b)),
+              deviceBrands: state.deviceBrands.map((b) =>
+                b.id === existing.id ? { ...b, deviceTypes: nextTypes } : b,
+              ),
             };
           }
           const brand: DeviceBrand = { id, name: clean, deviceTypes: [deviceType] };
@@ -3258,13 +3360,16 @@ export const useBeharStore = create<StoreState>()(
           deviceBrands: state.deviceBrands.map((b) => (b.id === id ? { ...b, ...patch } : b)),
         })),
       addDeviceModel: ({ brandId, name, deviceType, aliases }) => {
-        const cleanName = String(name || "").replace(/\s+/g, " ").trim();
+        const cleanName = String(name || "")
+          .replace(/\s+/g, " ")
+          .trim();
         if (!cleanName) return "";
         const id = `model_${brandId}_${cleanName.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`;
         const now = nowLabel();
         set((state) => {
           const exists = state.deviceModels.some(
-            (m) => m.brandId === brandId && m.deviceType === deviceType && m.name.toLowerCase() === cleanName.toLowerCase(),
+            (m) =>
+              m.brandId === brandId && m.deviceType === deviceType && m.name.toLowerCase() === cleanName.toLowerCase(),
           );
           if (exists) return state;
           const model: DeviceModel = {
@@ -3297,7 +3402,10 @@ export const useBeharStore = create<StoreState>()(
         const cleanPhone = normalizePhone(input.phone);
         if (cleanName !== "Client comptoir" && cleanPhone) {
           const existing = get().customers.find(
-            (customer) => customer.type !== "counter" && customer.name.toLowerCase() === cleanName.toLowerCase() && normalizePhone(customer.phone) === cleanPhone,
+            (customer) =>
+              customer.type !== "counter" &&
+              customer.name.toLowerCase() === cleanName.toLowerCase() &&
+              normalizePhone(customer.phone) === cleanPhone,
           );
           if (existing) return existing.id;
         }
@@ -3318,7 +3426,10 @@ export const useBeharStore = create<StoreState>()(
             status: input.status || "Client comptoir",
             ...actorFields(actor),
           };
-          set((state) => ({ customers: [customer, ...ensureCounterCustomer(state.customers)], selectedCustomerId: id }));
+          set((state) => ({
+            customers: [customer, ...ensureCounterCustomer(state.customers)],
+            selectedCustomerId: id,
+          }));
           get().addAuditLog({
             action: "client.counter_created",
             targetType: "client",
@@ -3357,29 +3468,33 @@ export const useBeharStore = create<StoreState>()(
         });
         return id;
       },
-      updateCustomer: (id, patch) =>
-        {
-          if (!get().requirePermission("canEditClient", "Modifier un client")) return;
-          const actor = get().currentUser ?? defaultCurrentUser;
-          set((state) => ({
-            customers: deriveCustomers(
-              state.customers.map((customer) =>
-                customer.id === id
-                  ? { ...customer, ...patch, initials: patch.name ? initials(patch.name) : customer.initials, ...updateActorFields(actor) }
-                  : customer,
-              ),
-              state.repairs,
-              state.payments,
+      updateCustomer: (id, patch) => {
+        if (!get().requirePermission("canEditClient", "Modifier un client")) return;
+        const actor = get().currentUser ?? defaultCurrentUser;
+        set((state) => ({
+          customers: deriveCustomers(
+            state.customers.map((customer) =>
+              customer.id === id
+                ? {
+                    ...customer,
+                    ...patch,
+                    initials: patch.name ? initials(patch.name) : customer.initials,
+                    ...updateActorFields(actor),
+                  }
+                : customer,
             ),
-          }));
-          const customer = get().customers.find((entry) => entry.id === id);
-          get().addAuditLog({
-            action: "client.updated",
-            targetType: "client",
-            targetId: id,
-            message: `${actor.name} a modifié le client ${customer?.name ?? id}`,
-          });
-        },
+            state.repairs,
+            state.payments,
+          ),
+        }));
+        const customer = get().customers.find((entry) => entry.id === id);
+        get().addAuditLog({
+          action: "client.updated",
+          targetType: "client",
+          targetId: id,
+          message: `${actor.name} a modifié le client ${customer?.name ?? id}`,
+        });
+      },
       deleteCustomer: (id) => {
         if (!get().requirePermission("canDeleteClient", "Supprimer un client")) return;
         const actor = get().currentUser ?? defaultCurrentUser;
@@ -3387,9 +3502,7 @@ export const useBeharStore = create<StoreState>()(
         set((state) => {
           const hasLinkedAppointments = state.appointments.some((appointment) => appointment.customerId === id);
           const hasLinkedRepairs = state.repairs.some((repair) => repair.customerId === id);
-          const hasPaidSales = state.sales.some(
-            (sale) => sale.customerId === id && sale.status === "Payée",
-          );
+          const hasPaidSales = state.sales.some((sale) => sale.customerId === id && sale.status === "Payée");
           if (hasLinkedAppointments || hasLinkedRepairs || hasPaidSales) return state;
           const customers = state.customers.filter((customer) => customer.id !== id);
           const sales = state.sales.filter((sale) => sale.customerId !== id);
@@ -3403,7 +3516,7 @@ export const useBeharStore = create<StoreState>()(
             sales,
             selectedSaleId: sales.some((sale) => sale.id === state.selectedSaleId)
               ? state.selectedSaleId
-              : sales[0]?.id ?? "",
+              : (sales[0]?.id ?? ""),
             repairs: state.repairs,
             selectedCustomerId: customers[0]?.id ?? "",
           };
@@ -3463,11 +3576,11 @@ export const useBeharStore = create<StoreState>()(
             appointments: nextAppointments.map((entry) =>
               entry.id === repair.appointmentId
                 ? {
-                  ...entry,
-                  repairId: id,
-                  status: "Réparation créée" as AppointmentStatus,
-                  confirmed: true,
-                }
+                    ...entry,
+                    repairId: id,
+                    status: "Réparation créée" as AppointmentStatus,
+                    confirmed: true,
+                  }
                 : entry,
             ),
             customers: deriveCustomers(state.customers, repairs, state.payments),
@@ -3511,16 +3624,13 @@ export const useBeharStore = create<StoreState>()(
         });
         return id;
       },
-      updateRepair: (id, patch) =>
-        {
-          if (!get().requirePermission("canEditRepair", "Modifier une réparation")) return;
-          const actor = get().currentUser ?? defaultCurrentUser;
-          set((state) => {
+      updateRepair: (id, patch) => {
+        if (!get().requirePermission("canEditRepair", "Modifier une réparation")) return;
+        const actor = get().currentUser ?? defaultCurrentUser;
+        set((state) => {
           // Détecter explicitement si le patch fournit un customerId valide
           const patchProvidesCustomer =
-            patch.customerId !== undefined &&
-            patch.customerId !== null &&
-            normalizeText(patch.customerId) !== "";
+            patch.customerId !== undefined && patch.customerId !== null && normalizeText(patch.customerId) !== "";
           const repairs = state.repairs.map((repair) => {
             if (repair.id !== id) return repair;
             const appointmentId = patch.appointmentId ?? repair.appointmentId;
@@ -3595,14 +3705,14 @@ export const useBeharStore = create<StoreState>()(
           }
           return { appointments, customers: deriveCustomers(state.customers, repairs, state.payments), repairs };
         });
-          const repair = get().repairs.find((entry) => entry.id === id);
-          get().addAuditLog({
-            action: "repair.updated",
-            targetType: "repair",
-            targetId: id,
-            message: `${actor.name} a modifié la réparation ${repair?.number ?? id}`,
-          });
-        },
+        const repair = get().repairs.find((entry) => entry.id === id);
+        get().addAuditLog({
+          action: "repair.updated",
+          targetType: "repair",
+          targetId: id,
+          message: `${actor.name} a modifié la réparation ${repair?.number ?? id}`,
+        });
+      },
       deleteRepair: (id) => {
         if (!get().requirePermission("canDeleteRepair", "Supprimer une réparation")) return;
         const actor = get().currentUser ?? defaultCurrentUser;
@@ -3614,25 +3724,24 @@ export const useBeharStore = create<StoreState>()(
             const usedPart = deletedRepair?.parts.find((part) => part.stockItemId === stockItem.id);
             return usedPart
               ? {
-                ...stockItem,
-                quantity: stockItem.quantity + usedPart.quantity,
-                stock: stockItem.stock + usedPart.quantity,
-              }
+                  ...stockItem,
+                  quantity: stockItem.quantity + usedPart.quantity,
+                  stock: stockItem.stock + usedPart.quantity,
+                }
               : stockItem;
           });
           const sales = state.sales
             .filter((sale) => sale.repairId !== id || sale.status !== "Rattachée")
             .map((sale) => (sale.repairId === id ? { ...sale, repairId: undefined } : sale));
           const documents = state.documents.filter(
-            (document) =>
-              document.repairId !== id || !["intake", "internal", "summary"].includes(document.type),
+            (document) => document.repairId !== id || !["intake", "internal", "summary"].includes(document.type),
           );
           const selectedSaleId = sales.some((sale) => sale.id === state.selectedSaleId)
             ? state.selectedSaleId
-            : sales[0]?.id ?? "";
+            : (sales[0]?.id ?? "");
           const selectedDocumentId = documents.some((document) => document.id === state.selectedDocumentId)
             ? state.selectedDocumentId
-            : documents[0]?.id ?? "";
+            : (documents[0]?.id ?? "");
           return {
             appointments: state.appointments
               .filter((a) => a.repairId !== id || a.type !== "repair_pickup")
@@ -3689,7 +3798,9 @@ export const useBeharStore = create<StoreState>()(
 
         set((current) => ({
           repairs: current.repairs.map((repair) =>
-            repair.id === id ? { ...repair, status, history: [...repair.history, statusEvent], ...updateActorFields(actor) } : repair,
+            repair.id === id
+              ? { ...repair, status, history: [...repair.history, statusEvent], ...updateActorFields(actor) }
+              : repair,
           ),
         }));
         get().addAuditLog({
@@ -3782,41 +3893,38 @@ export const useBeharStore = create<StoreState>()(
           const currentRepair = current.repairs.find((entry) => entry.id === repairId);
           if (!currentRepair || !currentItem) return current;
           const clientSalePrice = getStockClientPrice(currentItem, current.priceBookItems);
-          
+
           const repairs = current.repairs.map((repair) => {
             if (repair.id !== repairId) return repair;
             const existing = repair.parts.find((part) => part.stockItemId === stockItemId);
             const parts = existing
               ? repair.parts.map((part) =>
-                part.stockItemId === stockItemId ? { ...part, quantity: part.quantity + wanted } : part,
-              )
+                  part.stockItemId === stockItemId ? { ...part, quantity: part.quantity + wanted } : part,
+                )
               : [
-                ...repair.parts,
-                {
-                  stockItemId: currentItem.id,
-                  name: currentItem.name,
-                  reference: currentItem.sku,
-                  sku: currentItem.sku,
-                  categoryName: currentItem.categoryName,
-                  purchasePrice: currentItem.purchasePrice,
-                  salePrice: clientSalePrice,
-                  quantity: wanted,
-                  confirmed: false, // Explicitly not confirmed yet
-                },
-              ];
+                  ...repair.parts,
+                  {
+                    stockItemId: currentItem.id,
+                    name: currentItem.name,
+                    reference: currentItem.sku,
+                    sku: currentItem.sku,
+                    categoryName: currentItem.categoryName,
+                    purchasePrice: currentItem.purchasePrice,
+                    salePrice: clientSalePrice,
+                    quantity: wanted,
+                    confirmed: false, // Explicitly not confirmed yet
+                  },
+                ];
             const amount = clampMoney((repair.laborPrice ?? 0) + repairPartsTotal(parts));
             return {
               ...repair,
               amount,
               total: amount,
               parts,
-              history: [
-                ...repair.history,
-                `Pièce ajoutée (en attente) : ${currentItem.name} x${wanted}`,
-              ],
+              history: [...repair.history, `Pièce ajoutée (en attente) : ${currentItem.name} x${wanted}`],
             };
           });
-          
+
           // DO NOT decrement stockItems here anymore as per USER_REQUEST
           return { repairs };
         });
@@ -3826,27 +3934,27 @@ export const useBeharStore = create<StoreState>()(
         if (!get().requirePermission("canUseStockItem", "Confirmer une pièce")) return false;
         const actor = get().currentUser ?? defaultCurrentUser;
         set((current) => {
-          const repair = current.repairs.find(r => r.id === repairId);
-          const part = repair?.parts.find(p => p.stockItemId === stockItemId);
+          const repair = current.repairs.find((r) => r.id === repairId);
+          const part = repair?.parts.find((p) => p.stockItemId === stockItemId);
           if (!repair || !part || part.confirmed) return current;
 
-          const stockItem = current.stockItems.find(s => s.id === stockItemId);
+          const stockItem = current.stockItems.find((s) => s.id === stockItemId);
           if (!stockItem || stockItem.stock < part.quantity) return current;
 
-          const nextRepairs = current.repairs.map(r => 
-            r.id === repairId 
-              ? { 
-                  ...r, 
-                  parts: r.parts.map(p => p.stockItemId === stockItemId ? { ...p, confirmed: true } : p),
-                  history: [...r.history, `Utilisation confirmée : ${part.name} x${part.quantity}`]
-                } 
-              : r
+          const nextRepairs = current.repairs.map((r) =>
+            r.id === repairId
+              ? {
+                  ...r,
+                  parts: r.parts.map((p) => (p.stockItemId === stockItemId ? { ...p, confirmed: true } : p)),
+                  history: [...r.history, `Utilisation confirmée : ${part.name} x${part.quantity}`],
+                }
+              : r,
           );
 
-          const nextStock = current.stockItems.map(s => 
-            s.id === stockItemId 
-              ? { ...s, quantity: Math.max(0, s.quantity - part.quantity), stock: Math.max(0, s.stock - part.quantity) } 
-              : s
+          const nextStock = current.stockItems.map((s) =>
+            s.id === stockItemId
+              ? { ...s, quantity: Math.max(0, s.quantity - part.quantity), stock: Math.max(0, s.stock - part.quantity) }
+              : s,
           );
 
           const audit = {
@@ -3856,16 +3964,17 @@ export const useBeharStore = create<StoreState>()(
             message: `${actor.name} a utilisé ${part.name} dans ${repair.number}`,
             metadata: { repairId, quantity: part.quantity },
           };
-          const lowStockNotification =
-            nextStock.find((entry) => entry.id === stockItemId && entry.stock <= entry.threshold)
-              ? {
+          const lowStockNotification = nextStock.find(
+            (entry) => entry.id === stockItemId && entry.stock <= entry.threshold,
+          )
+            ? {
                 type: "warning" as const,
                 title: "Stock bas",
                 message: `${stockItem.name} est sous le seuil d'alerte`,
                 targetType: "stock",
                 targetId: stockItemId,
               }
-              : undefined;
+            : undefined;
           return {
             repairs: nextRepairs,
             stockItems: nextStock,
@@ -3882,16 +3991,16 @@ export const useBeharStore = create<StoreState>()(
             ].slice(0, 250),
             notifications: lowStockNotification
               ? [
-                {
-                  id: uid("notification"),
-                  actorId: actor.id,
-                  actorName: actor.name,
-                  read: false,
-                  createdAt: nowLabel(),
-                  ...lowStockNotification,
-                },
-                ...current.notifications,
-              ].slice(0, 100)
+                  {
+                    id: uid("notification"),
+                    actorId: actor.id,
+                    actorName: actor.name,
+                    read: false,
+                    createdAt: nowLabel(),
+                    ...lowStockNotification,
+                  },
+                  ...current.notifications,
+                ].slice(0, 100)
               : current.notifications,
           };
         });
@@ -3916,7 +4025,9 @@ export const useBeharStore = create<StoreState>()(
         const repair = state.repairs.find((entry) => entry.id === repairId);
         if (!repair) return false;
         const alreadyInvoiced = state.invoices.some((invoice) => invoice.repairId === repairId);
-        const alreadyPaid = state.payments.some((payment) => payment.repairId === repairId && payment.status === "Payé");
+        const alreadyPaid = state.payments.some(
+          (payment) => payment.repairId === repairId && payment.status === "Payé",
+        );
         if (alreadyInvoiced || alreadyPaid) return false;
         for (const line of cleanedLines) {
           const stockItem = state.stockItems.find((item) => item.id === line.stockItemId);
@@ -3964,7 +4075,9 @@ export const useBeharStore = create<StoreState>()(
         const repair = state.repairs.find((entry) => entry.id === repairId);
         const line = repair?.repairSaleLines?.find((entry) => entry.id === lineId);
         if (!repair || !line || line.stockDecremented) return false;
-        const alreadyPaid = state.payments.some((payment) => payment.repairId === repairId && payment.status === "Payé");
+        const alreadyPaid = state.payments.some(
+          (payment) => payment.repairId === repairId && payment.status === "Payé",
+        );
         if (alreadyPaid) return false;
         const stockItem = state.stockItems.find((item) => item.id === line.stockItemId);
         if (!stockItem || stockItem.stock < line.quantity) return false;
@@ -3984,7 +4097,11 @@ export const useBeharStore = create<StoreState>()(
           ),
           stockItems: current.stockItems.map((item) =>
             item.id === line.stockItemId
-              ? { ...item, quantity: Math.max(0, item.quantity - line.quantity), stock: Math.max(0, item.stock - line.quantity) }
+              ? {
+                  ...item,
+                  quantity: Math.max(0, item.quantity - line.quantity),
+                  stock: Math.max(0, item.stock - line.quantity),
+                }
               : item,
           ),
         }));
@@ -3999,12 +4116,16 @@ export const useBeharStore = create<StoreState>()(
           const currentRepair = current.repairs.find((entry) => entry.id === repairId);
           const currentPart = currentRepair?.parts.find((entry) => entry.stockItemId === stockItemId);
           if (!(currentRepair && currentPart)) return current;
-          
+
           // Increment stock ONLY if it was confirmed
-          const nextStock = currentPart.confirmed 
+          const nextStock = currentPart.confirmed
             ? current.stockItems.map((item) =>
                 item.id === stockItemId
-                  ? { ...item, quantity: item.quantity + currentPart.quantity, stock: item.stock + currentPart.quantity }
+                  ? {
+                      ...item,
+                      quantity: item.quantity + currentPart.quantity,
+                      stock: item.stock + currentPart.quantity,
+                    }
                   : item,
               )
             : current.stockItems;
@@ -4014,18 +4135,18 @@ export const useBeharStore = create<StoreState>()(
             repairs: current.repairs.map((entry) =>
               entry.id === repairId
                 ? {
-                  ...entry,
-                  amount: clampMoney(
-                    (entry.laborPrice ?? 0) +
-                    repairPartsTotal(entry.parts.filter((repairPart) => repairPart.stockItemId !== stockItemId)),
-                  ),
-                  total: clampMoney(
-                    (entry.laborPrice ?? 0) +
-                    repairPartsTotal(entry.parts.filter((repairPart) => repairPart.stockItemId !== stockItemId)),
-                  ),
-                  parts: entry.parts.filter((repairPart) => repairPart.stockItemId !== stockItemId),
-                  history: [...entry.history, `Pièce retirée : ${currentPart.name} x${currentPart.quantity}`],
-                }
+                    ...entry,
+                    amount: clampMoney(
+                      (entry.laborPrice ?? 0) +
+                        repairPartsTotal(entry.parts.filter((repairPart) => repairPart.stockItemId !== stockItemId)),
+                    ),
+                    total: clampMoney(
+                      (entry.laborPrice ?? 0) +
+                        repairPartsTotal(entry.parts.filter((repairPart) => repairPart.stockItemId !== stockItemId)),
+                    ),
+                    parts: entry.parts.filter((repairPart) => repairPart.stockItemId !== stockItemId),
+                    history: [...entry.history, `Pièce retirée : ${currentPart.name} x${currentPart.quantity}`],
+                  }
                 : entry,
             ),
           };
@@ -4088,11 +4209,11 @@ export const useBeharStore = create<StoreState>()(
           repairs: state.repairs.map((repair) =>
             repair.id === quote.repairId
               ? {
-                ...repair,
-                quoteId: repair.quoteId ?? id,
-                quoteIds: uniqueIds([...(repair.quoteIds ?? []), repair.quoteId, id]),
-                history: [...repair.history, `Devis lié : ${quote.number}`],
-              }
+                  ...repair,
+                  quoteId: repair.quoteId ?? id,
+                  quoteIds: uniqueIds([...(repair.quoteIds ?? []), repair.quoteId, id]),
+                  history: [...repair.history, `Devis lié : ${quote.number}`],
+                }
               : repair,
           ),
           selectedQuoteId: id,
@@ -4118,14 +4239,13 @@ export const useBeharStore = create<StoreState>()(
         });
         return id;
       },
-      updateQuote: (id, patch) =>
-        {
-          const nextStatus = patch.status ? normalizeQuoteStatus(patch.status) : undefined;
-          const required = nextStatus === "Accepté" ? "canAcceptQuote" : "canEditQuote";
-          if (!get().requirePermission(required, "Modifier un devis")) return;
-          const actor = get().currentUser ?? defaultCurrentUser;
-          const previousStatus = get().quotes.find((q) => q.id === id)?.status;
-          set((state) => {
+      updateQuote: (id, patch) => {
+        const nextStatus = patch.status ? normalizeQuoteStatus(patch.status) : undefined;
+        const required = nextStatus === "Accepté" ? "canAcceptQuote" : "canEditQuote";
+        if (!get().requirePermission(required, "Modifier un devis")) return;
+        const actor = get().currentUser ?? defaultCurrentUser;
+        const previousStatus = get().quotes.find((q) => q.id === id)?.status;
+        set((state) => {
           const previous = state.quotes.find((quote) => quote.id === id);
           const quotes = state.quotes.map((quote) => {
             if (quote.id !== id) return quote;
@@ -4146,50 +4266,50 @@ export const useBeharStore = create<StoreState>()(
           const repairs =
             updated && previous?.status !== "Accepté" && updated.status === "Accepté" && updated.repairId
               ? state.repairs.map((repair) =>
-                repair.id === updated.repairId
-                  ? {
-                    ...repair,
-                    quoteIds: uniqueIds([...(repair.quoteIds ?? []), repair.quoteId, updated.id]),
-                    history: [...repair.history, `Devis accepté : ${updated.number}`],
-                  }
-                  : repair,
-              )
+                  repair.id === updated.repairId
+                    ? {
+                        ...repair,
+                        quoteIds: uniqueIds([...(repair.quoteIds ?? []), repair.quoteId, updated.id]),
+                        history: [...repair.history, `Devis accepté : ${updated.number}`],
+                      }
+                    : repair,
+                )
               : state.repairs;
           return { quotes, repairs: syncRepairQuoteIds(repairs, quotes) };
         });
-          const quote = get().quotes.find((entry) => entry.id === id);
-          get().addAuditLog({
-            action: quote?.status === "Accepté" ? "quote.accepted" : "quote.updated",
+        const quote = get().quotes.find((entry) => entry.id === id);
+        get().addAuditLog({
+          action: quote?.status === "Accepté" ? "quote.accepted" : "quote.updated",
+          targetType: "quote",
+          targetId: id,
+          message:
+            quote?.status === "Accepté"
+              ? `${actor.name} a accepté le devis ${quote.number}`
+              : `${actor.name} a modifié le devis ${quote?.number ?? id}`,
+        });
+        if (quote?.status === "Accepté") {
+          get().addNotification({
+            type: "success",
+            title: "Devis accepté",
+            message: `${quote.number} a été accepté`,
             targetType: "quote",
             targetId: id,
-            message:
-              quote?.status === "Accepté"
-                ? `${actor.name} a accepté le devis ${quote.number}`
-                : `${actor.name} a modifié le devis ${quote?.number ?? id}`,
           });
-          if (quote?.status === "Accepté") {
-            get().addNotification({
-              type: "success",
-              title: "Devis accepté",
-              message: `${quote.number} a été accepté`,
-              targetType: "quote",
-              targetId: id,
-            });
-            if (previousStatus !== "Accepté" && !quote.invoiceId) {
-              const invoiceId = get().convertQuoteToInvoice(id);
-              if (invoiceId) {
-                const invoice = get().invoices.find((inv) => inv.id === invoiceId);
-                get().addNotification({
-                  type: "info",
-                  title: "Facture créée",
-                  message: `Facture ${invoice?.number ?? ""} générée depuis le devis ${quote.number}.`,
-                  targetType: "invoice",
-                  targetId: invoiceId,
-                });
-              }
+          if (previousStatus !== "Accepté" && !quote.invoiceId) {
+            const invoiceId = get().convertQuoteToInvoice(id);
+            if (invoiceId) {
+              const invoice = get().invoices.find((inv) => inv.id === invoiceId);
+              get().addNotification({
+                type: "info",
+                title: "Facture créée",
+                message: `Facture ${invoice?.number ?? ""} générée depuis le devis ${quote.number}.`,
+                targetType: "invoice",
+                targetId: invoiceId,
+              });
             }
           }
-        },
+        }
+      },
       deleteQuote: (id) =>
         set((state) => {
           const quotes = state.quotes.filter((quote) => quote.id !== id);
@@ -4212,12 +4332,12 @@ export const useBeharStore = create<StoreState>()(
           quotes: state.quotes.map((quote) =>
             quote.id === quoteId
               ? {
-                ...quote,
-                lines: [
-                  ...quote.lines,
-                  { id: uid("line"), description: "Ligne à compléter", quantity: 1, unitPrice: 0, total: 0 },
-                ],
-              }
+                  ...quote,
+                  lines: [
+                    ...quote.lines,
+                    { id: uid("line"), description: "Ligne à compléter", quantity: 1, unitPrice: 0, total: 0 },
+                  ],
+                }
               : quote,
           ),
         })),
@@ -4226,19 +4346,19 @@ export const useBeharStore = create<StoreState>()(
           quotes: state.quotes.map((quote) =>
             quote.id === quoteId
               ? {
-                ...quote,
-                lines: quote.lines.map((line) =>
-                  line.id === lineId
-                    ? {
-                      ...line,
-                      ...patch,
-                      quantity: patch.quantity === undefined ? line.quantity : clampQuantity(patch.quantity),
-                      unitPrice: patch.unitPrice === undefined ? line.unitPrice : clampMoney(patch.unitPrice),
-                      total: (patch.quantity ?? line.quantity) * (patch.unitPrice ?? line.unitPrice),
-                    }
-                    : line,
-                ),
-              }
+                  ...quote,
+                  lines: quote.lines.map((line) =>
+                    line.id === lineId
+                      ? {
+                          ...line,
+                          ...patch,
+                          quantity: patch.quantity === undefined ? line.quantity : clampQuantity(patch.quantity),
+                          unitPrice: patch.unitPrice === undefined ? line.unitPrice : clampMoney(patch.unitPrice),
+                          total: (patch.quantity ?? line.quantity) * (patch.unitPrice ?? line.unitPrice),
+                        }
+                      : line,
+                  ),
+                }
               : quote,
           ),
         })),
@@ -4369,15 +4489,15 @@ export const useBeharStore = create<StoreState>()(
           repairs: state.repairs.map((repair) =>
             repair.id === invoice.repairId
               ? {
-                ...repair,
-                invoiceId: repair.invoiceId ?? id,
-                invoiceIds: uniqueIds([...(repair.invoiceIds ?? []), repair.invoiceId, id]),
-                repairSaleLines: (repair.repairSaleLines ?? []).map((line) => ({
-                  ...line,
-                  status: line.status === "paid" ? line.status : ("invoiced" as RepairSaleLineStatus),
-                })),
-                history: [...repair.history, `Facture liée : ${invoice.number}`],
-              }
+                  ...repair,
+                  invoiceId: repair.invoiceId ?? id,
+                  invoiceIds: uniqueIds([...(repair.invoiceIds ?? []), repair.invoiceId, id]),
+                  repairSaleLines: (repair.repairSaleLines ?? []).map((line) => ({
+                    ...line,
+                    status: line.status === "paid" ? line.status : ("invoiced" as RepairSaleLineStatus),
+                  })),
+                  history: [...repair.history, `Facture liée : ${invoice.number}`],
+                }
               : repair,
           ),
           quotes: state.quotes.map((quote) =>
@@ -4414,11 +4534,10 @@ export const useBeharStore = create<StoreState>()(
         });
         return id;
       },
-      updateInvoice: (id, patch) =>
-        {
-          if (!get().requirePermission("canEditInvoice", "Modifier une facture")) return;
-          const actor = get().currentUser ?? defaultCurrentUser;
-          set((state) => ({
+      updateInvoice: (id, patch) => {
+        if (!get().requirePermission("canEditInvoice", "Modifier une facture")) return;
+        const actor = get().currentUser ?? defaultCurrentUser;
+        set((state) => ({
           invoices: state.invoices.map((invoice) => {
             if (invoice.id !== id || invoice.status === "Payée") return invoice;
             const quote = patch.quoteId ? state.quotes.find((entry) => entry.id === patch.quoteId) : undefined;
@@ -4440,14 +4559,14 @@ export const useBeharStore = create<StoreState>()(
             };
           }),
         }));
-          const invoice = get().invoices.find((entry) => entry.id === id);
-          get().addAuditLog({
-            action: "invoice.updated",
-            targetType: "invoice",
-            targetId: id,
-            message: `${actor.name} a modifié la facture ${invoice?.number ?? id}`,
-          });
-        },
+        const invoice = get().invoices.find((entry) => entry.id === id);
+        get().addAuditLog({
+          action: "invoice.updated",
+          targetType: "invoice",
+          targetId: id,
+          message: `${actor.name} a modifié la facture ${invoice?.number ?? id}`,
+        });
+      },
       deleteInvoice: (id) => {
         if (!get().requirePermission("canEditInvoice", "Supprimer une facture")) return;
         const actor = get().currentUser ?? defaultCurrentUser;
@@ -4490,7 +4609,9 @@ export const useBeharStore = create<StoreState>()(
         const existing = existingPayments.find((payment) => payment.status === "Payé" && payment.amount >= total);
         if (invoice.status === "Payée" && existing) return existing.id;
         if (total <= 0 || activePaidAmount >= total) return existing?.id ?? "";
-        const repairForStock = invoice.repairId ? get().repairs.find((repair) => repair.id === invoice.repairId) : undefined;
+        const repairForStock = invoice.repairId
+          ? get().repairs.find((repair) => repair.id === invoice.repairId)
+          : undefined;
         const linesToDecrement = (repairForStock?.repairSaleLines ?? []).filter((line) => !line.stockDecremented);
         for (const line of linesToDecrement) {
           const stockItem = get().stockItems.find((item) => item.id === line.stockItemId);
@@ -4526,13 +4647,13 @@ export const useBeharStore = create<StoreState>()(
           const invoices = state.invoices.map((entry) =>
             entry.id === invoiceId
               ? {
-                ...entry,
-                status: "Payée" as InvoiceStatus,
-                paymentMethod: method,
-                paymentIds: nextPaymentIds,
-                paidAmount: total,
-                paidAt: timestamp,
-              }
+                  ...entry,
+                  status: "Payée" as InvoiceStatus,
+                  paymentMethod: method,
+                  paymentIds: nextPaymentIds,
+                  paidAmount: total,
+                  paidAt: timestamp,
+                }
               : entry,
           );
           const payments = [payment, ...state.payments];
@@ -4558,7 +4679,11 @@ export const useBeharStore = create<StoreState>()(
               .filter((line) => line.stockItemId === item.id)
               .reduce((sum, line) => sum + line.quantity, 0);
             return quantityToRemove > 0
-              ? { ...item, quantity: Math.max(0, item.quantity - quantityToRemove), stock: Math.max(0, item.stock - quantityToRemove) }
+              ? {
+                  ...item,
+                  quantity: Math.max(0, item.quantity - quantityToRemove),
+                  stock: Math.max(0, item.stock - quantityToRemove),
+                }
               : item;
           });
           const sales = invoice.repairId
@@ -4721,11 +4846,10 @@ export const useBeharStore = create<StoreState>()(
 
         return state.markInvoicePaid(invoiceId, method, note);
       },
-      updatePaymentStatus: (id, status) =>
-        {
-          if (status === "Annulé" && !get().requirePermission("canCancelPayment", "Annuler un paiement")) return;
-          const actor = get().currentUser ?? defaultCurrentUser;
-          set((state) => {
+      updatePaymentStatus: (id, status) => {
+        if (status === "Annulé" && !get().requirePermission("canCancelPayment", "Annuler un paiement")) return;
+        const actor = get().currentUser ?? defaultCurrentUser;
+        set((state) => {
           const timestamp = nowLabel();
           const payments = state.payments.map((payment) =>
             payment.id === id ? { ...payment, status, ...updateActorFields(actor) } : payment,
@@ -4764,14 +4888,14 @@ export const useBeharStore = create<StoreState>()(
           });
           return { customers: deriveCustomers(state.customers, repairs, payments), invoices, payments, repairs };
         });
-          const payment = get().payments.find((entry) => entry.id === id);
-          get().addAuditLog({
-            action: status === "Annulé" ? "payment.cancelled" : "payment.updated",
-            targetType: "payment",
-            targetId: id,
-            message: `${actor.name} a passé le paiement ${payment?.paymentNumber ?? id} en ${status}`,
-          });
-        },
+        const payment = get().payments.find((entry) => entry.id === id);
+        get().addAuditLog({
+          action: status === "Annulé" ? "payment.cancelled" : "payment.updated",
+          targetType: "payment",
+          targetId: id,
+          message: `${actor.name} a passé le paiement ${payment?.paymentNumber ?? id} en ${status}`,
+        });
+      },
       addAppointment: (input) => {
         const customerId = getValidCustomerId(input.customerId, get().customers);
         if (!customerId) return "";
@@ -4818,9 +4942,7 @@ export const useBeharStore = create<StoreState>()(
       updateAppointment: (id, patch) =>
         set((state) => {
           const patchProvidesCustomer =
-            patch.customerId !== undefined &&
-            patch.customerId !== null &&
-            normalizeText(patch.customerId) !== "";
+            patch.customerId !== undefined && patch.customerId !== null && normalizeText(patch.customerId) !== "";
           const appointments = state.appointments.map((appointment) => {
             if (appointment.id !== id) return appointment;
             const linkedRepair = state.repairs.find((repair) => repair.id === (patch.repairId ?? appointment.repairId));
@@ -4838,14 +4960,14 @@ export const useBeharStore = create<StoreState>()(
             const appointment = appointments.find((entry) => entry.id === repair.appointmentId);
             return appointment && repair.customerId !== appointment.customerId
               ? normalizeRepair(
-                {
-                  ...repair,
-                  customerId: appointment.customerId,
-                  history: [...repair.history, "Client synchronisé depuis le rendez-vous"],
-                },
-                state.customers,
-                appointments,
-              )
+                  {
+                    ...repair,
+                    customerId: appointment.customerId,
+                    history: [...repair.history, "Client synchronisé depuis le rendez-vous"],
+                  },
+                  state.customers,
+                  appointments,
+                )
               : repair;
           });
           return { appointments, customers: deriveCustomers(state.customers, repairs, state.payments), repairs };
@@ -4861,14 +4983,14 @@ export const useBeharStore = create<StoreState>()(
           const repairs = deleteLinkedRepair
             ? state.repairs.filter((repair) => repair.appointmentId !== id && repair.id !== linkedRepair?.id)
             : state.repairs.map((repair) =>
-              repair.appointmentId === id || repair.id === linkedRepair?.id
-                ? {
-                  ...repair,
-                  appointmentId: undefined,
-                  history: [...repair.history, "Rendez-vous lié supprimé"],
-                }
-                : repair,
-            );
+                repair.appointmentId === id || repair.id === linkedRepair?.id
+                  ? {
+                      ...repair,
+                      appointmentId: undefined,
+                      history: [...repair.history, "Rendez-vous lié supprimé"],
+                    }
+                  : repair,
+              );
           return {
             appointments,
             customers: deriveCustomers(state.customers, repairs, state.payments),
@@ -4952,7 +5074,7 @@ export const useBeharStore = create<StoreState>()(
           const stockItems = [item, ...state.stockItems];
           return {
             stockItems,
-            selectedStockItemId: id
+            selectedStockItemId: id,
           };
         });
         get().addAuditLog({
@@ -4963,47 +5085,46 @@ export const useBeharStore = create<StoreState>()(
         });
         return id;
       },
-      updateStockItem: (id, patch) =>
-        {
-          if (!get().requirePermission("canManageStock", "Modifier le stock")) return;
-          const actor = get().currentUser ?? defaultCurrentUser;
-          set((state) => {
+      updateStockItem: (id, patch) => {
+        if (!get().requirePermission("canManageStock", "Modifier le stock")) return;
+        const actor = get().currentUser ?? defaultCurrentUser;
+        set((state) => {
           const stockItems = state.stockItems.map((item) =>
             item.id === id
               ? normalizeStockItem({
-                ...item,
-                ...patch,
-                name: patch.name ?? patch.part ?? item.name,
-                part: patch.name ?? patch.part ?? item.name,
-                sku: patch.sku ?? patch.reference ?? item.sku,
-                reference: patch.sku ?? patch.reference ?? item.sku,
-                categoryName: patch.categoryName ?? patch.category ?? item.categoryName,
-                category: patch.categoryName ?? patch.category ?? item.categoryName,
-                quantity: patch.quantity ?? patch.stock ?? item.quantity,
-                stock: patch.quantity ?? patch.stock ?? item.quantity,
-                purchasePrice:
-                  patch.purchasePrice === undefined ? item.purchasePrice : clampMoney(patch.purchasePrice),
-                salePrice: item.salePrice,
-                threshold: patch.threshold === undefined ? item.threshold : clampQuantity(patch.threshold),
-                ...updateActorFields(actor),
-              })
+                  ...item,
+                  ...patch,
+                  name: patch.name ?? patch.part ?? item.name,
+                  part: patch.name ?? patch.part ?? item.name,
+                  sku: patch.sku ?? patch.reference ?? item.sku,
+                  reference: patch.sku ?? patch.reference ?? item.sku,
+                  categoryName: patch.categoryName ?? patch.category ?? item.categoryName,
+                  category: patch.categoryName ?? patch.category ?? item.categoryName,
+                  quantity: patch.quantity ?? patch.stock ?? item.quantity,
+                  stock: patch.quantity ?? patch.stock ?? item.quantity,
+                  purchasePrice:
+                    patch.purchasePrice === undefined ? item.purchasePrice : clampMoney(patch.purchasePrice),
+                  salePrice: item.salePrice,
+                  threshold: patch.threshold === undefined ? item.threshold : clampQuantity(patch.threshold),
+                  ...updateActorFields(actor),
+                })
               : item,
           );
           const target = stockItems.find((item) => item.id === id);
           const lowStockNotification =
             target && target.stock <= target.threshold
               ? {
-                id: uid("notification"),
-                type: "warning" as const,
-                title: "Stock bas",
-                message: `${target.name} est sous le seuil d'alerte`,
-                targetType: "stock",
-                targetId: id,
-                actorId: actor.id,
-                actorName: actor.name,
-                read: false,
-                createdAt: nowLabel(),
-              }
+                  id: uid("notification"),
+                  type: "warning" as const,
+                  title: "Stock bas",
+                  message: `${target.name} est sous le seuil d'alerte`,
+                  targetType: "stock",
+                  targetId: id,
+                  actorId: actor.id,
+                  actorName: actor.name,
+                  read: false,
+                  createdAt: nowLabel(),
+                }
               : undefined;
           return {
             stockItems,
@@ -5012,15 +5133,15 @@ export const useBeharStore = create<StoreState>()(
               : state.notifications,
           };
         });
-          const item = get().stockItems.find((entry) => entry.id === id);
-          get().addAuditLog({
-            action:
-              patch.stock !== undefined || patch.quantity !== undefined ? "stock.quantity_changed" : "stock.item_updated",
-            targetType: "stock",
-            targetId: id,
-            message: `${actor.name} a modifié la pièce ${item?.name ?? id}`,
-          });
-        },
+        const item = get().stockItems.find((entry) => entry.id === id);
+        get().addAuditLog({
+          action:
+            patch.stock !== undefined || patch.quantity !== undefined ? "stock.quantity_changed" : "stock.item_updated",
+          targetType: "stock",
+          targetId: id,
+          message: `${actor.name} a modifié la pièce ${item?.name ?? id}`,
+        });
+      },
       deleteStockItem: (id) => {
         if (!get().requirePermission("canManageStock", "Supprimer une pièce")) return;
         const state = get();
@@ -5030,14 +5151,12 @@ export const useBeharStore = create<StoreState>()(
         );
         const referencedByOpenRepair = state.repairs.some((repair) => {
           if (repair.status === "Restitué" || repair.status === "Annulé") return false;
-          const invoiced = state.invoices.some(
-            (inv) => inv.repairId === repair.id && inv.status === "Payée",
-          );
+          const invoiced = state.invoices.some((inv) => inv.repairId === repair.id && inv.status === "Payée");
           if (invoiced) return false;
-          return repair.parts.some((p) => p.stockItemId === id)
-            || (repair.repairSaleLines ?? []).some(
-              (l) => l.stockItemId === id && l.status !== "paid",
-            );
+          return (
+            repair.parts.some((p) => p.stockItemId === id) ||
+            (repair.repairSaleLines ?? []).some((l) => l.stockItemId === id && l.status !== "paid")
+          );
         });
         if (referencedByDraftSale || referencedByOpenRepair) {
           get().addNotification({
@@ -5054,32 +5173,31 @@ export const useBeharStore = create<StoreState>()(
           return { stockItems, selectedStockItemId: stockItems[0]?.id ?? "" };
         });
       },
-      restockItem: (id, quantity = 5) =>
-        {
-          if (!get().requirePermission("canManageStock", "Réapprovisionner")) return;
-          const actor = get().currentUser ?? defaultCurrentUser;
-          set((state) => {
-            const stockItems = state.stockItems.map((item) =>
-              item.id === id
-                ? {
+      restockItem: (id, quantity = 5) => {
+        if (!get().requirePermission("canManageStock", "Réapprovisionner")) return;
+        const actor = get().currentUser ?? defaultCurrentUser;
+        set((state) => {
+          const stockItems = state.stockItems.map((item) =>
+            item.id === id
+              ? {
                   ...item,
                   quantity: item.quantity + clampQuantity(quantity),
                   stock: item.stock + clampQuantity(quantity),
                   ...updateActorFields(actor),
                 }
-                : item,
-            );
-            return { stockItems };
-          });
-          const item = get().stockItems.find((entry) => entry.id === id);
-          get().addAuditLog({
-            action: "stock.quantity_changed",
-            targetType: "stock",
-            targetId: id,
-            message: `${actor.name} a réapprovisionné ${item?.name ?? id}`,
-            metadata: { quantity },
-          });
-        },
+              : item,
+          );
+          return { stockItems };
+        });
+        const item = get().stockItems.find((entry) => entry.id === id);
+        get().addAuditLog({
+          action: "stock.quantity_changed",
+          targetType: "stock",
+          targetId: id,
+          message: `${actor.name} a réapprovisionné ${item?.name ?? id}`,
+          metadata: { quantity },
+        });
+      },
       importStockItems: (items) =>
         set((state) => {
           const byReference = new Map(state.stockItems.map((item) => [item.reference, item]));
@@ -5114,11 +5232,10 @@ export const useBeharStore = create<StoreState>()(
         };
         set((state) => ({ messageLogs: [log, ...state.messageLogs] }));
       },
-      updateWorkshopInfo: (patch) =>
-        {
-          if (!get().requirePermission("canEditSettings", "Modifier les paramètres")) return;
-          const actor = get().currentUser ?? defaultCurrentUser;
-          set((state) => {
+      updateWorkshopInfo: (patch) => {
+        if (!get().requirePermission("canEditSettings", "Modifier les paramètres")) return;
+        const actor = get().currentUser ?? defaultCurrentUser;
+        set((state) => {
           const nextSettings: WorkshopSettings = {
             ...(state.workshopSettings ?? defaultWorkshopSettings),
             ...patch,
@@ -5130,18 +5247,17 @@ export const useBeharStore = create<StoreState>()(
             updatedAt: nextSettings.updatedAt,
           };
         });
-          get().addAuditLog({
-            action: "settings.updated",
-            targetType: "settings",
-            targetId: shopId,
-            message: `${actor.name} a modifié les paramètres de l'atelier`,
-          });
-        },
-      saveWorkshopSettings: (settings) =>
-        {
-          if (!get().requirePermission("canEditSettings", "Enregistrer les paramètres")) return;
-          const actor = get().currentUser ?? defaultCurrentUser;
-          set((state) => {
+        get().addAuditLog({
+          action: "settings.updated",
+          targetType: "settings",
+          targetId: shopId,
+          message: `${actor.name} a modifié les paramètres de l'atelier`,
+        });
+      },
+      saveWorkshopSettings: (settings) => {
+        if (!get().requirePermission("canEditSettings", "Enregistrer les paramètres")) return;
+        const actor = get().currentUser ?? defaultCurrentUser;
+        set((state) => {
           const now = nowLabel();
           const nextSettings: WorkshopSettings = {
             ...(state.workshopSettings ?? defaultWorkshopSettings),
@@ -5157,26 +5273,25 @@ export const useBeharStore = create<StoreState>()(
             updatedAt: nextSettings.updatedAt,
           };
         });
-          const settingsKeys = Object.keys(settings);
-          const onlyLogoChanged =
-            settingsKeys.length > 0 && settingsKeys.every((key) => key === "logoUrl" || key === "showLogo");
-          get().addAuditLog({
-            action: onlyLogoChanged ? "logo.updated" : "settings.updated",
-            targetType: "settings",
-            targetId: shopId,
-            message:
-              onlyLogoChanged
-                ? `${actor.name} a modifié le logo de l'atelier`
-                : `${actor.name} a modifié les informations de l'atelier`,
-          });
-          get().addNotification({
-            type: "info",
-            title: "Paramètres modifiés",
-            message: `${actor.name} a mis à jour les réglages atelier`,
-            targetType: "settings",
-            targetId: shopId,
-          });
-        },
+        const settingsKeys = Object.keys(settings);
+        const onlyLogoChanged =
+          settingsKeys.length > 0 && settingsKeys.every((key) => key === "logoUrl" || key === "showLogo");
+        get().addAuditLog({
+          action: onlyLogoChanged ? "logo.updated" : "settings.updated",
+          targetType: "settings",
+          targetId: shopId,
+          message: onlyLogoChanged
+            ? `${actor.name} a modifié le logo de l'atelier`
+            : `${actor.name} a modifié les informations de l'atelier`,
+        });
+        get().addNotification({
+          type: "info",
+          title: "Paramètres modifiés",
+          message: `${actor.name} a mis à jour les réglages atelier`,
+          targetType: "settings",
+          targetId: shopId,
+        });
+      },
       setOnboardingCompleted: (done) =>
         set((state) => ({
           onboardingCompleted: done,
@@ -5272,7 +5387,10 @@ export const useBeharStore = create<StoreState>()(
         const subtotal = lines.reduce((s, l) => s + l.total, 0);
         if (!lines.length || subtotal <= 0) return "";
         const customerId = input.customerId === "counter" ? counterCustomerId : input.customerId;
-        const customerName = input.customerId === "counter" || input.customerName === "Client comptoir" ? "Client comptoir" : input.customerName;
+        const customerName =
+          input.customerId === "counter" || input.customerName === "Client comptoir"
+            ? "Client comptoir"
+            : input.customerName;
         const taxAmount = 0;
         const sale: Sale = {
           id,
@@ -5344,7 +5462,11 @@ export const useBeharStore = create<StoreState>()(
         const updatedStock = state.stockItems.map((si) => {
           const line = sale.lines.find((l) => l.stockItemId === si.id);
           if (!line) return si;
-          return { ...si, quantity: Math.max(0, si.quantity - line.quantity), stock: Math.max(0, si.stock - line.quantity) };
+          return {
+            ...si,
+            quantity: Math.max(0, si.quantity - line.quantity),
+            stock: Math.max(0, si.stock - line.quantity),
+          };
         });
 
         // Create payment
@@ -5448,9 +5570,7 @@ export const useBeharStore = create<StoreState>()(
         }
 
         set((s) => ({
-          sales: s.sales.map((x) =>
-            x.id === saleId ? { ...x, status: "Annulée" as SaleStatus } : x,
-          ),
+          sales: s.sales.map((x) => (x.id === saleId ? { ...x, status: "Annulée" as SaleStatus } : x)),
           stockItems: updatedStock,
         }));
 
@@ -5505,11 +5625,11 @@ export const getInvoiceTotal = invoiceTotal;
  * Calcule le résumé TVA d'un document (Devis ou Facture)
  */
 export function getVatSummary(lines: QuoteLine[], settings: WorkshopInfo): VatSummary {
-  const ttc = lines.reduce((sum, line) => sum + (line.quantity * line.unitPrice), 0);
+  const ttc = lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0);
   if (!settings.vatApplicable) {
     return { ht: ttc, tva: 0, ttc, rate: 0 };
   }
-  const rate = 0.20; // Taux par défaut 20%
+  const rate = 0.2; // Taux par défaut 20%
   const ht = ttc / (1 + rate);
   const tva = ttc - ht;
   return { ht, tva, ttc, rate };

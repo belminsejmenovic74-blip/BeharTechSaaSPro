@@ -105,15 +105,22 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
         });
       }
     }
-    const persisted = appNotifications.map((notification): NotificationItem => ({
-      id: notification.id,
-      title: notification.title,
-      hint: `${notification.message} · ${notification.actorName}`,
-      href: notificationHref(notification),
-      tone: notification.type === "warning" || notification.type === "danger" ? "warn" : notification.type === "success" ? "ok" : "info",
-      read: notification.read,
-      appNotificationId: notification.id,
-    }));
+    const persisted = appNotifications.map(
+      (notification): NotificationItem => ({
+        id: notification.id,
+        title: notification.title,
+        hint: `${notification.message} · ${notification.actorName}`,
+        href: notificationHref(notification),
+        tone:
+          notification.type === "warning" || notification.type === "danger"
+            ? "warn"
+            : notification.type === "success"
+              ? "ok"
+              : "info",
+        read: notification.read,
+        appNotificationId: notification.id,
+      }),
+    );
     return [...persisted, ...out].slice(0, 12);
   }, [invoices, repairs, quotes, appointments, customers, appNotifications]);
 
@@ -124,7 +131,11 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
 
     // Repairs
     for (const r of repairs) {
-      if (r.number.toLowerCase().includes(q) || r.device.toLowerCase().includes(q) || r.issue.toLowerCase().includes(q)) {
+      if (
+        r.number.toLowerCase().includes(q) ||
+        r.device.toLowerCase().includes(q) ||
+        r.issue.toLowerCase().includes(q)
+      ) {
         out.push({
           id: r.id,
           title: `Réparation ${r.number}`,
@@ -210,16 +221,10 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
 
         {searchOpen && searchQuery.length >= 2 && (
           <>
-            <button
-              className="fixed inset-0 z-10 cursor-default"
-              onClick={() => setSearchOpen(false)}
-              type="button"
-            />
+            <button className="fixed inset-0 z-10 cursor-default" onClick={() => setSearchOpen(false)} type="button" />
             <div className="absolute top-12 left-0 z-20 w-full overflow-hidden rounded-[14px] border border-[#E7E4DC] bg-white shadow-[0_20px_44px_rgba(26,25,22,0.12)]">
               {searchResults.length === 0 ? (
-                <p className="px-4 py-6 text-center text-[#6B6B6B] text-sm">
-                  Aucun résultat pour "{searchQuery}"
-                </p>
+                <p className="px-4 py-6 text-center text-[#6B6B6B] text-sm">Aucun résultat pour "{searchQuery}"</p>
               ) : (
                 <div className="max-h-[400px] overflow-y-auto">
                   {searchResults.map((res) => (
@@ -361,9 +366,7 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
                 </div>
                 <div className="max-h-[360px] overflow-y-auto">
                   {notifications.length === 0 ? (
-                    <p className="px-4 py-8 text-center text-[#6B6B6B] text-sm">
-                      Aucune notification pour le moment.
-                    </p>
+                    <p className="px-4 py-8 text-center text-[#6B6B6B] text-sm">Aucune notification pour le moment.</p>
                   ) : (
                     notifications.map((notif) => (
                       <Link

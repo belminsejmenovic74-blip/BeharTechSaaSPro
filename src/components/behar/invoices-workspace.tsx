@@ -84,7 +84,7 @@ export function InvoicesWorkspace() {
   const router = useRouter();
   const store = useBeharStore();
   const { print, download } = useDocument();
-  
+
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("Carte");
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -118,13 +118,14 @@ export function InvoicesWorkspace() {
   const selected = store.invoices.find((invoice) => invoice.id === store.selectedInvoiceId) ?? visibleInvoices[0];
   const customer = selected ? store.customers.find((entry) => entry.id === selected.customerId) : undefined;
   const repair = selected ? store.repairs.find((entry) => entry.id === selected.repairId) : undefined;
-  
+
   const invoicePayments = selected ? store.payments.filter((payment) => payment.invoiceId === selected.id) : [];
   const activePayments = invoicePayments.filter((payment) => payment.status === "Payé");
   const invoiceGrandTotal = selected ? getInvoiceTotal(selected) : 0;
-  const paidAmount = selected && selected.status === "Payée" 
-    ? invoiceGrandTotal 
-    : activePayments.reduce((total, p) => total + p.amount, 0);
+  const paidAmount =
+    selected && selected.status === "Payée"
+      ? invoiceGrandTotal
+      : activePayments.reduce((total, p) => total + p.amount, 0);
   const remainingAmount = Math.max(0, invoiceGrandTotal - paidAmount);
 
   const paidLocked = selected?.status === "Payée";
@@ -152,7 +153,7 @@ export function InvoicesWorkspace() {
             />
           </label>
           <div className="flex items-center gap-2 w-full md:w-auto">
-             <select
+            <select
               className="hidden md:block h-11 cursor-pointer rounded-[14px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none transition focus:border-[#2A9D8F]"
               onChange={(e) => setInvoiceFilterTab(e.target.value as typeof invoiceFilterTab)}
               value={invoiceFilterTab}
@@ -177,24 +178,36 @@ export function InvoicesWorkspace() {
           {(() => {
             const allInvoices = store.invoices;
             const paid = allInvoices.filter((i) => i.status === "Payée").reduce((s, i) => s + getInvoiceTotal(i), 0);
-            const pending = allInvoices.filter((i) => i.status !== "Payée" && i.status !== "Annulée").reduce((s, i) => s + getInvoiceTotal(i), 0);
+            const pending = allInvoices
+              .filter((i) => i.status !== "Payée" && i.status !== "Annulée")
+              .reduce((s, i) => s + getInvoiceTotal(i), 0);
             const count = allInvoices.length;
             return (
               <section className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 scrollbar-none">
                 <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-                  <span className="grid size-9 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F]"><Receipt className="size-[18px]" /></span>
+                  <span className="grid size-9 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F]">
+                    <Receipt className="size-[18px]" />
+                  </span>
                   <p className="mt-3 text-[#8A8984] text-[11px] font-medium">Total factures</p>
                   <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">{count}</p>
                 </div>
                 <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-                  <span className="grid size-9 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F]"><Receipt className="size-[18px]" /></span>
+                  <span className="grid size-9 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F]">
+                    <Receipt className="size-[18px]" />
+                  </span>
                   <p className="mt-3 text-[#8A8984] text-[11px] font-medium">Encaissé</p>
-                  <p className="mt-1.5 font-bold text-[#2A9D8F] text-[20px] leading-none tabular-nums">{formatEuro(paid)}</p>
+                  <p className="mt-1.5 font-bold text-[#2A9D8F] text-[20px] leading-none tabular-nums">
+                    {formatEuro(paid)}
+                  </p>
                 </div>
                 <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-                  <span className="grid size-9 place-items-center rounded-[10px] bg-[#FCF1DF] text-[#C2841C]"><Receipt className="size-[18px]" /></span>
+                  <span className="grid size-9 place-items-center rounded-[10px] bg-[#FCF1DF] text-[#C2841C]">
+                    <Receipt className="size-[18px]" />
+                  </span>
                   <p className="mt-3 text-[#8A8984] text-[11px] font-medium">En attente</p>
-                  <p className="mt-1.5 font-bold text-[#C2841C] text-[20px] leading-none tabular-nums">{formatEuro(pending)}</p>
+                  <p className="mt-1.5 font-bold text-[#C2841C] text-[20px] leading-none tabular-nums">
+                    {formatEuro(pending)}
+                  </p>
                 </div>
               </section>
             );
@@ -213,7 +226,12 @@ export function InvoicesWorkspace() {
 
           <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1 scrollbar-none">
             {(["all", "unpaid", "paid", "month"] as const).map((tab) => {
-              const labels: Record<string, string> = { all: "Toutes", unpaid: "Non payées", paid: "Payées", month: "Ce mois" };
+              const labels: Record<string, string> = {
+                all: "Toutes",
+                unpaid: "Non payées",
+                paid: "Payées",
+                month: "Ce mois",
+              };
               const active = invoiceFilterTab === tab;
               return (
                 <button
@@ -232,41 +250,48 @@ export function InvoicesWorkspace() {
 
           <ul className="space-y-2.5">
             {visibleInvoices.length === 0 ? (
-              <li className="rounded-[18px] bg-white p-10 text-center text-[#8A8984] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">Aucune facture.</li>
-            ) : visibleInvoices.map((invoice) => {
-              const entryCustomer = store.customers.find((entry) => entry.id === invoice.customerId);
-              return (
-                <li key={invoice.id}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      store.setSelected("invoice", invoice.id);
-                      setMobileDetailOpen(true);
-                    }}
-                    className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
-                  >
-                    <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FAFAF8] text-[#1A1916]">
-                      <Receipt className="size-[18px]" strokeWidth={1.8} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
-                          {displayCustomerName(entryCustomer)}
+              <li className="rounded-[18px] bg-white p-10 text-center text-[#8A8984] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+                Aucune facture.
+              </li>
+            ) : (
+              visibleInvoices.map((invoice) => {
+                const entryCustomer = store.customers.find((entry) => entry.id === invoice.customerId);
+                return (
+                  <li key={invoice.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        store.setSelected("invoice", invoice.id);
+                        setMobileDetailOpen(true);
+                      }}
+                      className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
+                    >
+                      <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FAFAF8] text-[#1A1916]">
+                        <Receipt className="size-[18px]" strokeWidth={1.8} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
+                            {displayCustomerName(entryCustomer)}
+                          </p>
+                          <p className="shrink-0 font-bold text-[#1A1916] text-[15px] tabular-nums">
+                            {formatEuro(getInvoiceTotal(invoice))}
+                          </p>
+                        </div>
+                        <p className="mt-0.5 font-mono text-[#2A9D8F] text-[11px]">{invoice.number}</p>
+                        <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">
+                          {formatIsoToDisplay(invoice.date)} ·{" "}
+                          {invoice.sourceNumber ? `Dossier ${invoice.sourceNumber}` : "Vente directe"}
                         </p>
-                        <p className="shrink-0 font-bold text-[#1A1916] text-[15px] tabular-nums">
-                          {formatEuro(getInvoiceTotal(invoice))}
-                        </p>
+                        <div className="mt-2">
+                          <StatusBadge status={invoice.status} />
+                        </div>
                       </div>
-                      <p className="mt-0.5 font-mono text-[#2A9D8F] text-[11px]">{invoice.number}</p>
-                      <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">
-                        {formatIsoToDisplay(invoice.date)} · {invoice.sourceNumber ? `Dossier ${invoice.sourceNumber}` : "Vente directe"}
-                      </p>
-                      <div className="mt-2"><StatusBadge status={invoice.status} /></div>
-                    </div>
-                  </button>
-                </li>
-              );
-            })}
+                    </button>
+                  </li>
+                );
+              })
+            )}
           </ul>
         </div>
 
@@ -298,7 +323,9 @@ export function InvoicesWorkspace() {
                     <td className="border-[#E7E4DC] border-b px-5 py-4">
                       <div className="flex flex-col">
                         <span className="font-bold text-[#1A1916]">{displayCustomerName(entryCustomer)}</span>
-                        <span className="text-[10px] text-[#6B6B6B] uppercase tracking-wider">{invoice.sourceNumber ? `Dossier ${invoice.sourceNumber}` : "Vente directe"}</span>
+                        <span className="text-[10px] text-[#6B6B6B] uppercase tracking-wider">
+                          {invoice.sourceNumber ? `Dossier ${invoice.sourceNumber}` : "Vente directe"}
+                        </span>
                       </div>
                     </td>
                     <td className="border-[#E7E4DC] border-b px-5 py-4">{formatIsoToDisplay(invoice.date)}</td>
@@ -320,12 +347,12 @@ export function InvoicesWorkspace() {
       </div>
 
       {selected && (
-        <Panel className={cn(
-          mobileDetailOpen
-            ? "fixed inset-0 z-40 overflow-y-auto bg-white p-5 flex flex-col"
-            : "hidden",
-          "md:relative md:inset-auto md:z-auto md:flex md:h-full md:min-h-0 md:flex-col md:overflow-hidden md:rounded-[20px] md:border md:border-[#E5E3DC] md:bg-white md:p-5 md:shadow-[0_12px_40px_rgba(26,25,22,0.045)]",
-        )}>
+        <Panel
+          className={cn(
+            mobileDetailOpen ? "fixed inset-0 z-40 overflow-y-auto bg-white p-5 flex flex-col" : "hidden",
+            "md:relative md:inset-auto md:z-auto md:flex md:h-full md:min-h-0 md:flex-col md:overflow-hidden md:rounded-[20px] md:border md:border-[#E5E3DC] md:bg-white md:p-5 md:shadow-[0_12px_40px_rgba(26,25,22,0.045)]",
+          )}
+        >
           {/* Mobile back button */}
           <div className="md:hidden -mx-5 -mt-5 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#F1F1EF] bg-white/95 backdrop-blur-xl px-4 py-3">
             <button
@@ -345,7 +372,10 @@ export function InvoicesWorkspace() {
                 {formatIsoToDisplay(selected.date)}
               </p>
             </div>
-            <StatusBadge className="h-6 px-2.5 text-[10px] font-bold uppercase tracking-wider" status={selected.status} />
+            <StatusBadge
+              className="h-6 px-2.5 text-[10px] font-bold uppercase tracking-wider"
+              status={selected.status}
+            />
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto pr-1 custom-scrollbar space-y-6">
@@ -362,7 +392,7 @@ export function InvoicesWorkspace() {
               <div className="flex items-center justify-between border-b border-[#F1F1EF] pb-2">
                 <p className="text-[10px] font-bold text-[#B0AEA8] uppercase tracking-wider">Détails de facturation</p>
                 {!paidLocked && (
-                  <button 
+                  <button
                     onClick={() => setLinesEditing(!linesEditing)}
                     className="text-[10px] font-bold text-[#2A9D8F] uppercase tracking-wider hover:underline"
                   >
@@ -373,7 +403,10 @@ export function InvoicesWorkspace() {
 
               <div className="space-y-2">
                 {selected.lines.map((line) => (
-                  <div key={line.id} className="flex flex-col gap-2 rounded-xl border border-[#F1F1EF] bg-white p-3 transition-shadow hover:shadow-sm">
+                  <div
+                    key={line.id}
+                    className="flex flex-col gap-2 rounded-xl border border-[#F1F1EF] bg-white p-3 transition-shadow hover:shadow-sm"
+                  >
                     <div className="flex justify-between gap-3">
                       {linesEditing ? (
                         <textarea
@@ -385,23 +418,21 @@ export function InvoicesWorkspace() {
                       ) : (
                         <p className="flex-1 font-medium text-[#1A1916] text-sm">{line.description}</p>
                       )}
-                      <p className="font-bold text-[#1A1916] text-sm">
-                        {formatEuro(line.quantity * line.unitPrice)}
-                      </p>
+                      <p className="font-bold text-[#1A1916] text-sm">{formatEuro(line.quantity * line.unitPrice)}</p>
                     </div>
 
                     <div className="flex items-center gap-3">
                       {linesEditing ? (
                         <div className="flex items-center gap-2">
-                          <input 
-                            type="number" 
+                          <input
+                            type="number"
                             className="w-10 h-7 rounded-lg border border-[#E7E4DC] text-center text-xs outline-none focus:border-[#2A9D8F]"
                             value={line.quantity}
                             onChange={(e) => updateInvoiceLine(line.id, { quantity: Number(e.target.value) })}
                           />
                           <span className="text-[10px] text-[#B0AEA8]">x</span>
-                          <input 
-                            type="number" 
+                          <input
+                            type="number"
                             className="w-20 h-7 rounded-lg border border-[#E7E4DC] text-center text-xs outline-none focus:border-[#2A9D8F]"
                             value={line.unitPrice}
                             onChange={(e) => updateInvoiceLine(line.id, { unitPrice: Number(e.target.value) })}
@@ -412,10 +443,12 @@ export function InvoicesWorkspace() {
                           {line.quantity} x {formatEuro(line.unitPrice)}
                         </p>
                       )}
-                      
+
                       {linesEditing && selected.lines.length > 1 && (
-                        <button 
-                          onClick={() => store.updateInvoice(selected.id, { lines: selected.lines.filter(l => l.id !== line.id) })}
+                        <button
+                          onClick={() =>
+                            store.updateInvoice(selected.id, { lines: selected.lines.filter((l) => l.id !== line.id) })
+                          }
                           className="ml-auto text-[#B42318] p-1 rounded-md hover:bg-red-50"
                         >
                           <Trash2 className="size-3.5" />
@@ -427,9 +460,14 @@ export function InvoicesWorkspace() {
 
                 {linesEditing && (
                   <button
-                    onClick={() => store.updateInvoice(selected.id, { 
-                      lines: [...selected.lines, { id: `L-${Date.now()}`, description: "", quantity: 1, unitPrice: 0, total: 0 }] 
-                    })}
+                    onClick={() =>
+                      store.updateInvoice(selected.id, {
+                        lines: [
+                          ...selected.lines,
+                          { id: `L-${Date.now()}`, description: "", quantity: 1, unitPrice: 0, total: 0 },
+                        ],
+                      })
+                    }
                     className="w-full py-2.5 rounded-xl border border-dashed border-[#E7E4DC] text-[#B0AEA8] text-[11px] font-bold hover:border-[#1A1916] hover:text-[#1A1916] transition-all"
                   >
                     + Ajouter une ligne
@@ -445,11 +483,15 @@ export function InvoicesWorkspace() {
                   <>
                     <div className="flex justify-between text-xs text-[#6B6B6B]">
                       <span>Sous-total HT</span>
-                      <span className="font-medium">{formatEuro(getVatSummary(selected.lines, store.workshopInfo).ht)}</span>
+                      <span className="font-medium">
+                        {formatEuro(getVatSummary(selected.lines, store.workshopInfo).ht)}
+                      </span>
                     </div>
                     <div className="flex justify-between text-xs text-[#6B6B6B]">
                       <span>TVA (20%)</span>
-                      <span className="font-medium">{formatEuro(getVatSummary(selected.lines, store.workshopInfo).tva)}</span>
+                      <span className="font-medium">
+                        {formatEuro(getVatSummary(selected.lines, store.workshopInfo).tva)}
+                      </span>
                     </div>
                   </>
                 ) : (
@@ -475,12 +517,16 @@ export function InvoicesWorkspace() {
                   {store.workshopInfo.vatApplicable ? "Total TTC" : "Total Net"}
                 </span>
                 <span className="font-bold text-[#1A1916] text-2xl tracking-tight">
-                  {formatEuro(store.workshopInfo.vatApplicable ? getVatSummary(selected.lines, store.workshopInfo).ttc : invoiceGrandTotal)}
+                  {formatEuro(
+                    store.workshopInfo.vatApplicable
+                      ? getVatSummary(selected.lines, store.workshopInfo).ttc
+                      : invoiceGrandTotal,
+                  )}
                 </span>
               </div>
-              
+
               <p className="text-center text-[9px] text-[#B0AEA8] uppercase tracking-widest pt-4">
-                {store.workshopInfo.vatApplicable 
+                {store.workshopInfo.vatApplicable
                   ? "TVA incluse au taux légal"
                   : "TVA non applicable — article 293 B du CGI"}
               </p>
@@ -490,8 +536,11 @@ export function InvoicesWorkspace() {
               <div className="space-y-3 pt-4">
                 <p className="text-[10px] font-bold text-[#B0AEA8] uppercase tracking-wider">Paiements enregistrés</p>
                 <div className="space-y-2">
-                  {invoicePayments.map(p => (
-                    <div key={p.id} className="flex items-center justify-between p-3 rounded-xl border border-[#F1F1EF] text-sm">
+                  {invoicePayments.map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between p-3 rounded-xl border border-[#F1F1EF] text-sm"
+                    >
                       <div>
                         <p className="font-semibold text-[#1A1916]">{p.method}</p>
                         <p className="text-[10px] text-[#B0AEA8] font-bold">{formatIsoToDisplay(p.date)}</p>
@@ -556,12 +605,14 @@ export function InvoicesWorkspace() {
         <div className="fixed inset-0 z-50 flex items-stretch justify-stretch bg-black/40 backdrop-blur-sm p-0 md:items-center md:justify-center md:p-4">
           <Panel className="w-full min-h-svh max-w-none rounded-none p-5 animate-in zoom-in-95 duration-200 md:max-w-sm md:min-h-0 md:rounded-[20px] md:p-6">
             <h3 className="text-lg font-bold text-[#1A1916] mb-6">Nouveau paiement</h3>
-            
+
             <div className="space-y-5">
               <div>
-                <label className="text-[10px] font-bold text-[#B0AEA8] uppercase tracking-wider block mb-2">Montant du règlement</label>
+                <label className="text-[10px] font-bold text-[#B0AEA8] uppercase tracking-wider block mb-2">
+                  Montant du règlement
+                </label>
                 <div className="relative">
-                   <input
+                  <input
                     className="h-12 w-full rounded-xl border border-[#E7E4DC] bg-white px-4 text-xl font-bold text-[#1A1916] outline-none focus:border-[#1A1916] transition-all"
                     type="number"
                     defaultValue={remainingAmount}
@@ -572,14 +623,18 @@ export function InvoicesWorkspace() {
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-[#B0AEA8] uppercase tracking-wider block mb-2">Mode de règlement</label>
+                <label className="text-[10px] font-bold text-[#B0AEA8] uppercase tracking-wider block mb-2">
+                  Mode de règlement
+                </label>
                 <div className="grid grid-cols-2 gap-2">
-                  {paymentMethods.map(m => (
+                  {paymentMethods.map((m) => (
                     <button
                       key={m}
                       onClick={() => setPaymentMethod(m)}
                       className={`h-10 rounded-xl border font-bold text-xs transition-all ${
-                        paymentMethod === m ? "border-[#1A1916] bg-[#F1F1EF] text-[#1A1916]" : "border-[#E7E4DC] text-[#6B6B6B] hover:border-[#B0AEA8]"
+                        paymentMethod === m
+                          ? "border-[#1A1916] bg-[#F1F1EF] text-[#1A1916]"
+                          : "border-[#E7E4DC] text-[#6B6B6B] hover:border-[#B0AEA8]"
                       }`}
                     >
                       {m}
@@ -590,14 +645,16 @@ export function InvoicesWorkspace() {
             </div>
 
             <div className="mt-8 flex gap-3">
-              <SecondaryButton className="flex-1 h-11" onClick={() => setPaymentOpen(false)}>Annuler</SecondaryButton>
-              <PrimaryButton 
-                className="flex-1 h-11 bg-[#1A1916]" 
+              <SecondaryButton className="flex-1 h-11" onClick={() => setPaymentOpen(false)}>
+                Annuler
+              </SecondaryButton>
+              <PrimaryButton
+                className="flex-1 h-11 bg-[#1A1916]"
                 onClick={() => {
                   const amtInput = document.getElementById("payment-amount") as HTMLInputElement;
                   const amt = Number(amtInput.value);
                   if (amt <= 0) return toast.error("Montant invalide");
-                  
+
                   store.addPayment({
                     invoiceId: selected.id,
                     customerId: selected.customerId,
@@ -605,13 +662,13 @@ export function InvoicesWorkspace() {
                     method: paymentMethod,
                     status: "Payé",
                     date: new Date().toISOString().split("T")[0],
-                    reference: `PAY-${Date.now()}`
+                    reference: `PAY-${Date.now()}`,
                   });
-                  
+
                   if (amt >= remainingAmount) {
                     store.updateInvoice(selected.id, { status: "Payée" });
                   }
-                  
+
                   setPaymentOpen(false);
                   toast.success("Paiement enregistré");
                 }}
@@ -787,7 +844,11 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
             <h2 className="text-[18px] font-bold text-[#1A1916] md:text-[22px]">Nouvelle facture</h2>
             <p className="mt-0.5 text-[12.5px] text-[#6B6B6B] md:mt-1 md:text-sm">Facturation rapide</p>
           </div>
-          <button onClick={onClose} className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#1A1916] transition hover:bg-[#E7E4DC] md:size-auto md:bg-transparent md:p-0" aria-label="Fermer">
+          <button
+            onClick={onClose}
+            className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#1A1916] transition hover:bg-[#E7E4DC] md:size-auto md:bg-transparent md:p-0"
+            aria-label="Fermer"
+          >
             <X className="size-5 md:size-6" />
           </button>
         </div>
@@ -1071,7 +1132,9 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                     <div className="grid grid-cols-2 gap-8 text-[11px]">
                       <div className="space-y-4">
                         <div>
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#B0AEA8] mb-1">FACTURER À</p>
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#B0AEA8] mb-1">
+                            FACTURER À
+                          </p>
                           <p className="font-bold text-[#1A1916]">{customerInfo.name}</p>
                           <p className="text-[#6B6B6B]">{customerInfo.phone}</p>
                         </div>

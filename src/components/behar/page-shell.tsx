@@ -41,18 +41,18 @@ export function PageShell({
             <h1 className="font-bold text-[#1A1916] text-[34px] leading-[1.05] tracking-[-0.025em] md:text-[34px] md:font-semibold md:tracking-tight">
               {title}
             </h1>
-            {subtitle && <p className="mt-1.5 text-[#8A8984] text-[14px] tracking-tight md:text-[14px] md:text-[#6B6B6B]">{subtitle}</p>}
+            {subtitle && (
+              <p className="mt-1.5 text-[#8A8984] text-[14px] tracking-tight md:text-[14px] md:text-[#6B6B6B]">
+                {subtitle}
+              </p>
+            )}
           </div>
           {actions && <div className="hidden items-center gap-2 md:flex">{actions}</div>}
         </div>
 
         {hasMobileControls && (
           <div className="mt-5 flex flex-col gap-3 md:hidden">
-            <SearchBox
-              placeholder={searchPlaceholder}
-              value={searchValue}
-              onChange={onSearchChange}
-            />
+            <SearchBox placeholder={searchPlaceholder} value={searchValue} onChange={onSearchChange} />
             {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
             {toolbar && <div className="flex flex-wrap gap-2">{toolbar}</div>}
           </div>

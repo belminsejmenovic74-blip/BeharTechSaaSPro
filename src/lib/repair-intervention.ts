@@ -69,7 +69,7 @@ const BASE_INTERVENTIONS: Record<InterventionDeviceType, string[]> = {
 };
 
 export const INTERVENTION_ALIASES: Record<string, string[]> = {
-  "Écran": [
+  Écran: [
     "vitre",
     "vitre tactile",
     "remplacement vitre",

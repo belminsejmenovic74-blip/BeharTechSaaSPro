@@ -23,7 +23,9 @@ import { toast } from "sonner";
  */
 export function UpdateChecker() {
   const [isDesktop, setIsDesktop] = useState(false);
-  const [status, setStatus] = useState<"idle" | "checking" | "downloading" | "up-to-date" | "available" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "checking" | "downloading" | "up-to-date" | "available" | "error">(
+    "idle",
+  );
   const [progress, setProgress] = useState(0);
   const [latestVersion, setLatestVersion] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -110,8 +112,8 @@ export function UpdateChecker() {
           <div className="min-w-0 flex-1">
             <p className="font-semibold text-[#1A1916] text-[14px]">Version web à jour</p>
             <p className="mt-0.5 text-[#6B6B6B] text-[12.5px] leading-5">
-              La version web (navigateur) se met à jour automatiquement à chaque ouverture. Aucune
-              action manuelle requise.
+              La version web (navigateur) se met à jour automatiquement à chaque ouverture. Aucune action manuelle
+              requise.
             </p>
           </div>
         </div>
@@ -129,17 +131,14 @@ export function UpdateChecker() {
         <div className="min-w-0 flex-1">
           <p className="font-semibold text-[#1A1916] text-[14px]">Mises à jour de l'application</p>
           <p className="mt-0.5 text-[#6B6B6B] text-[12.5px] leading-5">
-            Vérifie si une nouvelle version de Behar Tech Pro est disponible. La mise à jour est
-            téléchargée, signée et vérifiée avant d'être appliquée.
+            Vérifie si une nouvelle version de Behar Tech Pro est disponible. La mise à jour est téléchargée, signée et
+            vérifiée avant d'être appliquée.
           </p>
 
           {status === "downloading" && (
             <div className="mt-3">
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#F1F1EF]">
-                <div
-                  className="h-full rounded-full bg-[#2A9D8F] transition-all"
-                  style={{ width: `${progress}%` }}
-                />
+                <div className="h-full rounded-full bg-[#2A9D8F] transition-all" style={{ width: `${progress}%` }} />
               </div>
               <p className="mt-1.5 text-[#6B6B6B] text-[11.5px]">Téléchargement {progress}%…</p>
             </div>
@@ -155,9 +154,7 @@ export function UpdateChecker() {
             <p className="mt-2 text-[#6B6B6B] text-[12.5px]">Vous êtes sur la dernière version.</p>
           )}
 
-          {status === "error" && errorMsg && (
-            <p className="mt-2 text-[#B42318] text-[11.5px]">Erreur : {errorMsg}</p>
-          )}
+          {status === "error" && errorMsg && <p className="mt-2 text-[#B42318] text-[11.5px]">Erreur : {errorMsg}</p>}
 
           <div className="mt-3 flex flex-wrap gap-2">
             <button

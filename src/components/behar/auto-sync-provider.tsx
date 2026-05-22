@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+
 import { toast } from "sonner";
 
 import { useBeharStore } from "@/lib/behar-store";
@@ -122,28 +123,31 @@ export function AutoSyncProvider() {
         dateStyle: "short",
         timeStyle: "short",
       });
-      toast(
-        "Données plus récentes disponibles",
-        {
-          id: "cloud-newer-available",
-          description: `Un autre poste a modifié les données (${dateStr}). Actualiser ?`,
-          duration: 12_000,
-          onDismiss: () => {
-            try { window.sessionStorage.setItem(DISMISSED_KEY, remote.updatedAt); } catch {}
-          },
-          onAutoClose: () => {
-            try { window.sessionStorage.setItem(DISMISSED_KEY, remote.updatedAt); } catch {}
-          },
-          action: {
-            label: "Actualiser",
-            onClick: () => {
-              try { window.sessionStorage.setItem(DISMISSED_KEY, remote.updatedAt); } catch {}
-              hydrateStoreFromCloud(remote, { force: true });
-              toast.success("Données cloud actualisées.");
-            },
+      toast("Données plus récentes disponibles", {
+        id: "cloud-newer-available",
+        description: `Un autre poste a modifié les données (${dateStr}). Actualiser ?`,
+        duration: 12_000,
+        onDismiss: () => {
+          try {
+            window.sessionStorage.setItem(DISMISSED_KEY, remote.updatedAt);
+          } catch {}
+        },
+        onAutoClose: () => {
+          try {
+            window.sessionStorage.setItem(DISMISSED_KEY, remote.updatedAt);
+          } catch {}
+        },
+        action: {
+          label: "Actualiser",
+          onClick: () => {
+            try {
+              window.sessionStorage.setItem(DISMISSED_KEY, remote.updatedAt);
+            } catch {}
+            hydrateStoreFromCloud(remote, { force: true });
+            toast.success("Données cloud actualisées.");
           },
         },
-      );
+      });
     };
 
     // 1er check après 2 sec (laisse l'app se charger).
@@ -151,7 +155,9 @@ export function AutoSyncProvider() {
     // Polling périodique pour détecter les modifs faites depuis un autre device.
     const interval = window.setInterval(runCheck, 60_000);
     // Re-check immédiat au retour du réseau.
-    const onOnline = () => { void runCheck(); };
+    const onOnline = () => {
+      void runCheck();
+    };
     window.addEventListener("online", onOnline);
 
     return () => {

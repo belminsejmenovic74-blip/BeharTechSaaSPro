@@ -208,8 +208,13 @@ export function DashboardWorkspace() {
               const linkedRepair =
                 store.repairs.find((repair) => repair.id === appointment.repairId) ??
                 store.repairs.find((repair) => repair.appointmentId === appointment.id);
-              const status = normalizeAppointmentStatus(appointment.status, appointment.confirmed, Boolean(linkedRepair));
-              const canMarkArrived = !linkedRepair && status !== "Arrivé" && status !== "Annulé" && status !== "Non venu";
+              const status = normalizeAppointmentStatus(
+                appointment.status,
+                appointment.confirmed,
+                Boolean(linkedRepair),
+              );
+              const canMarkArrived =
+                !linkedRepair && status !== "Arrivé" && status !== "Annulé" && status !== "Non venu";
               const canCreateRepair = !linkedRepair && status === "Arrivé";
               return (
                 <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FAFAF8] p-4" key={appointment.id}>
@@ -279,7 +284,10 @@ export function DashboardWorkspace() {
         <Panel className="min-w-0 p-4">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Flux des réparations</h2>
-            <Link className="inline-flex items-center gap-1.5 text-[#8A8984] text-[13px] hover:text-[#6B6B6B] transition-colors" href="/dashboard/reparations">
+            <Link
+              className="inline-flex items-center gap-1.5 text-[#8A8984] text-[13px] hover:text-[#6B6B6B] transition-colors"
+              href="/dashboard/reparations"
+            >
               Voir toutes les réparations
               <ArrowRight className="size-4" />
             </Link>
@@ -334,7 +342,7 @@ export function DashboardWorkspace() {
               disabled={selectedPaid}
               onClick={() => {
                 if (selectedPaid) return;
-                const total = typeof selected.total === "number" ? selected.total : selected.amount ?? 0;
+                const total = typeof selected.total === "number" ? selected.total : (selected.amount ?? 0);
                 if (total <= 0) {
                   toast.error("Ajoutez un tarif à la réparation avant d'encaisser.");
                   return;
@@ -494,11 +502,7 @@ function AppointmentBadge({ status }: Readonly<{ status: string }>) {
         : status === "Confirmé"
           ? "bg-[#EAF6F2] text-[#167B70]"
           : "bg-[#FAFAF8] text-[#6B6B6B]";
-  return (
-    <span className={`shrink-0 rounded-full px-2.5 py-1 font-semibold text-[11px] ${tone}`}>
-      {status}
-    </span>
-  );
+  return <span className={`shrink-0 rounded-full px-2.5 py-1 font-semibold text-[11px] ${tone}`}>{status}</span>;
 }
 
 function DashboardMetricCard({
@@ -567,7 +571,11 @@ function DashboardStatCard({
     );
   }
 
-  return <Panel className="h-[116px] p-5" data-testid={testId}>{content}</Panel>;
+  return (
+    <Panel className="h-[116px] p-5" data-testid={testId}>
+      {content}
+    </Panel>
+  );
 }
 
 function DashboardKanban({
@@ -582,10 +590,15 @@ function DashboardKanban({
   return (
     <div className="grid h-[360px] grid-cols-[repeat(4,minmax(150px,1fr))] gap-2.5 overflow-hidden">
       {columns.map((column) => (
-        <div className="flex min-h-0 flex-col rounded-[14px] border border-[#E7E4DC] bg-[#FAFAF8]/60 p-3" key={column.title}>
+        <div
+          className="flex min-h-0 flex-col rounded-[14px] border border-[#E7E4DC] bg-[#FAFAF8]/60 p-3"
+          key={column.title}
+        >
           <div className="mb-3 flex shrink-0 items-center gap-2">
             <h3 className="font-medium text-[#1A1916] text-[13px]">{column.title}</h3>
-            <span className="rounded-full bg-[#F1F1EF] px-2 py-0.5 text-[#8A8984] text-[11px] font-medium">{column.count}</span>
+            <span className="rounded-full bg-[#F1F1EF] px-2 py-0.5 text-[#8A8984] text-[11px] font-medium">
+              {column.count}
+            </span>
           </div>
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-1">
             {column.cards.map((card) => (

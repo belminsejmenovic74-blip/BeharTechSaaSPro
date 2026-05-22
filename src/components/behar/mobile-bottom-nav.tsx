@@ -70,13 +70,18 @@ export function MobileBottomNav() {
                 key={item.href}
                 prefetch={false}
               >
-                <span className={cn("relative flex size-7 items-center justify-center transition-transform group-active:scale-90")}>
-                  <Icon className={cn("size-[22px]", active ? "stroke-[2.2]" : "stroke-[1.7]")} strokeWidth={active ? 2.2 : 1.7} />
+                <span
+                  className={cn(
+                    "relative flex size-7 items-center justify-center transition-transform group-active:scale-90",
+                  )}
+                >
+                  <Icon
+                    className={cn("size-[22px]", active ? "stroke-[2.2]" : "stroke-[1.7]")}
+                    strokeWidth={active ? 2.2 : 1.7}
+                  />
                 </span>
                 <span className="max-w-full truncate">{item.label}</span>
-                {active && (
-                  <span className="absolute -bottom-1 h-1 w-1 rounded-full bg-[#2A9D8F]" aria-hidden />
-                )}
+                {active && <span className="absolute -bottom-1 h-1 w-1 rounded-full bg-[#2A9D8F]" aria-hidden />}
               </Link>
             );
           })}
@@ -174,7 +179,9 @@ export function MobileBottomNav() {
                     >
                       <Icon className="size-5" strokeWidth={2} />
                     </span>
-                    <span className="font-semibold text-[#1A1916] text-[14px] leading-tight tracking-tight">{item.label}</span>
+                    <span className="font-semibold text-[#1A1916] text-[14px] leading-tight tracking-tight">
+                      {item.label}
+                    </span>
                   </Link>
                 );
               })}

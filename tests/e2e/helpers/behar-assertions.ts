@@ -1,7 +1,7 @@
 import type { Page } from "@playwright/test";
 
 import { snap } from "./behar-actions";
-import { Report, type Checkpoint, type Severity, type Status } from "./behar-report";
+import { type Checkpoint, Report, type Severity, type Status } from "./behar-report";
 
 /**
  * Exécute une assertion sans interrompre la suite : capture toute exception,

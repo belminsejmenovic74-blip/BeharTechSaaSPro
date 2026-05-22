@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, AlertCircle, Lock, Shield, Zap, Layers, ArrowRight } from "lucide-react";
+
+import { AlertCircle, ArrowRight, CheckCircle2, Layers, Lock, Shield, Zap } from "lucide-react";
 import { toast } from "sonner";
+
 import { useBeharStore } from "@/lib/behar-store";
-import { ensureCloudStateForLicense, normalizeLicenseKey } from "@/lib/workshop-sync";
 import { cn } from "@/lib/utils";
+import { ensureCloudStateForLicense, normalizeLicenseKey } from "@/lib/workshop-sync";
 
 export function LicenseActivation() {
   const activateLicense = useBeharStore((s) => s.activateLicense);
@@ -41,7 +43,9 @@ export function LicenseActivation() {
       } else if (result === "created") {
         toast.success("Licence activée. Atelier cloud créé.");
       } else {
-        toast.warning("Licence activée localement. Configurez Supabase sur Vercel pour activer la synchronisation cloud.");
+        toast.warning(
+          "Licence activée localement. Configurez Supabase sur Vercel pour activer la synchronisation cloud.",
+        );
       }
     } catch (error: any) {
       setError(error?.message || "Impossible de charger l'atelier cloud.");
@@ -57,7 +61,6 @@ export function LicenseActivation() {
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#F3F2EE] p-4 md:p-8">
       <div className="flex w-full max-w-[1060px] overflow-hidden rounded-[28px] bg-white shadow-[0_1px_3px_rgba(26,25,22,0.04),0_20px_60px_rgba(26,25,22,0.08)] animate-in fade-in zoom-in-95 duration-700">
-        
         {/* Left Panel — Marketing / Welcome */}
         <div className="hidden md:flex md:w-[480px] flex-col justify-between bg-[#FAFAF8] p-10 lg:p-12 border-r border-[#F1F1EF]">
           <div>
@@ -69,14 +72,12 @@ export function LicenseActivation() {
             </div>
 
             <h1 className="text-[32px] font-semibold text-[#1A1916] leading-[1.15] tracking-tight">
-              Bienvenue sur{" "}
-              <br />
+              Bienvenue sur <br />
               Behar Tech <span className="text-[#2A9D8F]">Pro</span>
             </h1>
             <p className="mt-4 text-[#8A8984] text-[15px] leading-relaxed max-w-[340px]">
-              Le logiciel tout-en-un pour réparateurs.
-              Réparations, devis, factures, stock, rendez-vous
-              et bien plus encore.
+              Le logiciel tout-en-un pour réparateurs. Réparations, devis, factures, stock, rendez-vous et bien plus
+              encore.
             </p>
           </div>
 
@@ -172,14 +173,17 @@ export function LicenseActivation() {
                     "h-[50px] w-full rounded-[14px] border bg-white px-4 pr-12 text-[#1A1916] text-[15px] outline-none transition-all duration-200",
                     "placeholder:text-[#CDCBC5]",
                     "focus:ring-4 focus:ring-[#2A9D8F]/8",
-                    error 
-                      ? "border-[#DC3545]/40 focus:border-[#DC3545]" 
-                      : success 
-                        ? "border-[#2A9D8F]/40 bg-[#F8FCFA]" 
-                        : "border-[#E7E4DC] hover:border-[#D1CFCA] focus:border-[#2A9D8F]"
+                    error
+                      ? "border-[#DC3545]/40 focus:border-[#DC3545]"
+                      : success
+                        ? "border-[#2A9D8F]/40 bg-[#F8FCFA]"
+                        : "border-[#E7E4DC] hover:border-[#D1CFCA] focus:border-[#2A9D8F]",
                   )}
                   value={key}
-                  onChange={(e) => { setKey(e.target.value); setError(""); }}
+                  onChange={(e) => {
+                    setKey(e.target.value);
+                    setError("");
+                  }}
                   onKeyDown={(e) => e.key === "Enter" && handleActivate()}
                   disabled={isLoading || success}
                 />
@@ -209,10 +213,10 @@ export function LicenseActivation() {
               className={cn(
                 "w-full h-[50px] rounded-[14px] text-[15px] font-semibold transition-all duration-300 outline-none flex items-center justify-center gap-2.5",
                 "focus-visible:ring-4 focus-visible:ring-[#2A9D8F]/15",
-                success 
-                  ? "bg-[#2A9D8F] text-white cursor-default" 
+                success
+                  ? "bg-[#2A9D8F] text-white cursor-default"
                   : "bg-[#2A9D8F] text-white hover:bg-[#238579] active:scale-[0.99] shadow-[0_1px_2px_rgba(42,157,143,0.15),0_6px_16px_rgba(42,157,143,0.18)]",
-                (isLoading || success) && "pointer-events-none"
+                (isLoading || success) && "pointer-events-none",
               )}
               onClick={handleActivate}
               disabled={isLoading || success}
@@ -255,12 +259,8 @@ export function LicenseActivation() {
 
           {/* Footer */}
           <div className="mt-10 text-center">
-            <p className="text-[#CDCBC5] text-[11px]">
-              Behar Tech Pro – Tous droits réservés.
-            </p>
-            <p className="text-[#CDCBC5] text-[11px]">
-              Version pilote
-            </p>
+            <p className="text-[#CDCBC5] text-[11px]">Behar Tech Pro – Tous droits réservés.</p>
+            <p className="text-[#CDCBC5] text-[11px]">Version pilote</p>
           </div>
         </div>
       </div>

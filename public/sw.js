@@ -29,9 +29,7 @@ self.addEventListener("activate", (event) => {
     (async () => {
       const keys = await caches.keys();
       await Promise.all(
-        keys
-          .filter((key) => key !== STATIC_CACHE && key !== RUNTIME_CACHE)
-          .map((key) => caches.delete(key)),
+        keys.filter((key) => key !== STATIC_CACHE && key !== RUNTIME_CACHE).map((key) => caches.delete(key)),
       );
       await self.clients.claim();
     })(),
@@ -78,11 +76,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Assets statiques applicatifs : cache-first
-  if (
-    request.destination === "image" ||
-    request.destination === "font" ||
-    url.pathname.startsWith("/assets/")
-  ) {
+  if (request.destination === "image" || request.destination === "font" || url.pathname.startsWith("/assets/")) {
     event.respondWith(
       (async () => {
         const cached = await caches.match(request);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export interface AddressFeature {
   label: string;
@@ -18,7 +18,9 @@ export function useAddressAutocomplete(query: string, country: string) {
 
     const fetchAddresses = async () => {
       try {
-        const res = await fetch(`https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(query)}&autocomplete=1&limit=5`);
+        const res = await fetch(
+          `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(query)}&autocomplete=1&limit=5`,
+        );
         if (!res.ok) throw new Error("API error");
         const data = await res.json();
         if (data && data.features) {
@@ -28,7 +30,7 @@ export function useAddressAutocomplete(query: string, country: string) {
               name: f.properties.name,
               postcode: f.properties.postcode,
               city: f.properties.city,
-            }))
+            })),
           );
         } else {
           setSuggestions([]);

@@ -192,11 +192,11 @@ export const COUNTRIES = [
   { name: "Viêt Nam", code: "+84" },
   { name: "Yémen", code: "+967" },
   { name: "Zambie", code: "+260" },
-  { name: "Zimbabwe", code: "+263" }
+  { name: "Zimbabwe", code: "+263" },
 ] as const;
 
-export const COUNTRY_NAMES = COUNTRIES.map(c => c.name).sort((a, b) => a.localeCompare(b, "fr"));
-export const CALLING_CODES = Array.from(new Set(COUNTRIES.map(c => c.code))).sort((a, b) => {
+export const COUNTRY_NAMES = COUNTRIES.map((c) => c.name).sort((a, b) => a.localeCompare(b, "fr"));
+export const CALLING_CODES = Array.from(new Set(COUNTRIES.map((c) => c.code))).sort((a, b) => {
   const codeA = parseInt(a.replace(/\D/g, ""));
   const codeB = parseInt(b.replace(/\D/g, ""));
   return codeA - codeB;

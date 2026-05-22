@@ -12,8 +12,8 @@ import { useShallow } from "zustand/react/shallow";
 import { PageShell } from "@/components/behar/page-shell";
 import { Combobox, Panel, PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
 import { type DeviceModel, type DeviceType, useBeharStore } from "@/lib/behar-store";
-import { normalizeDeviceModel, type PriceBookDeviceType } from "@/lib/price-book";
 import { getDeviceSeries } from "@/lib/device-series";
+import { normalizeDeviceModel, type PriceBookDeviceType } from "@/lib/price-book";
 
 const UI_TYPES: Array<{ ui: DeviceType; pb: PriceBookDeviceType }> = [
   { ui: "Smartphone", pb: "smartphone" },
@@ -27,8 +27,16 @@ const suspiciousRe = /(LTPS|OLED|120\s*Hz|120Hz|\bTI\b|Pulled|Batterie|Écran|Ec
 
 export default function CatalogueAppareilsPage() {
   const router = useRouter();
-  const { deviceBrands, deviceModels, priceBookItems, addDeviceBrand, addDeviceModel, updateDeviceModel, toggleDeviceModel } =
-    useBeharStore(useShallow((s) => ({
+  const {
+    deviceBrands,
+    deviceModels,
+    priceBookItems,
+    addDeviceBrand,
+    addDeviceModel,
+    updateDeviceModel,
+    toggleDeviceModel,
+  } = useBeharStore(
+    useShallow((s) => ({
       deviceBrands: s.deviceBrands,
       deviceModels: s.deviceModels,
       priceBookItems: s.priceBookItems,
@@ -36,7 +44,8 @@ export default function CatalogueAppareilsPage() {
       addDeviceModel: s.addDeviceModel,
       updateDeviceModel: s.updateDeviceModel,
       toggleDeviceModel: s.toggleDeviceModel,
-    })));
+    })),
+  );
 
   useEffect(() => {
     useBeharStore.getState().loadPreloadedCatalog();
@@ -62,7 +71,7 @@ export default function CatalogueAppareilsPage() {
       const byBrand = map.get(m.deviceType)!;
       if (!byBrand.has(m.brandId)) byBrand.set(m.brandId, new Map());
       const bySeries = byBrand.get(m.brandId)!;
-      
+
       const series = getDeviceSeries(brand?.name ?? "", m.name);
       if (!bySeries.has(series)) bySeries.set(series, []);
       bySeries.get(series)!.push(m);
@@ -111,7 +120,9 @@ export default function CatalogueAppareilsPage() {
     if (!name) return;
     const cleaned = normalizeDeviceModel(name);
     if (!cleaned || suspiciousRe.test(cleaned)) {
-      toast.error("Le nom du modèle semble contenir une pièce ou une qualité. Veuillez saisir uniquement le nom de l'appareil.");
+      toast.error(
+        "Le nom du modèle semble contenir une pièce ou une qualité. Veuillez saisir uniquement le nom de l'appareil.",
+      );
       return;
     }
     addDeviceModel({ brandId, name: cleaned, deviceType: type });
@@ -123,7 +134,9 @@ export default function CatalogueAppareilsPage() {
     if (!next) return;
     const cleaned = normalizeDeviceModel(next);
     if (!cleaned || suspiciousRe.test(cleaned)) {
-      toast.error("Le nom du modèle semble contenir une pièce ou une qualité. Veuillez saisir uniquement le nom de l'appareil.");
+      toast.error(
+        "Le nom du modèle semble contenir une pièce ou une qualité. Veuillez saisir uniquement le nom de l'appareil.",
+      );
       return;
     }
     updateDeviceModel(modelId, { name: cleaned });
@@ -173,7 +186,7 @@ export default function CatalogueAppareilsPage() {
             const byBrand: Map<string, Map<string, DeviceModel[]>> = modelsByTypeBrand.get(type) ?? new Map();
             const modelCount = [...byBrand.values()].reduce(
               (s, bySeries) => s + [...bySeries.values()].reduce((ss, list) => ss + list.length, 0),
-              0
+              0,
             );
             return (
               <div className="rounded-[14px] border border-[#E7E4DC] bg-white" key={typeKey}>
@@ -190,7 +203,9 @@ export default function CatalogueAppareilsPage() {
                     )}
                     <span className="font-semibold text-[#1A1916] text-sm">{type}</span>
                   </span>
-                  <span className="text-[#6B6B6B] text-xs">{modelCount} modèle{modelCount > 1 ? "s" : ""}</span>
+                  <span className="text-[#6B6B6B] text-xs">
+                    {modelCount} modèle{modelCount > 1 ? "s" : ""}
+                  </span>
                 </button>
 
                 {typeOpen && (
@@ -206,7 +221,9 @@ export default function CatalogueAppareilsPage() {
                     </div>
 
                     {[...byBrand.entries()]
-                      .sort((a, b) => (brandById.get(a[0])?.name ?? "").localeCompare(brandById.get(b[0])?.name ?? "", "fr"))
+                      .sort((a, b) =>
+                        (brandById.get(a[0])?.name ?? "").localeCompare(brandById.get(b[0])?.name ?? "", "fr"),
+                      )
                       .map(([brandId, bySeries]) => {
                         const brand = brandById.get(brandId);
                         if (!brand) return null;
@@ -215,13 +232,20 @@ export default function CatalogueAppareilsPage() {
                         const count = [...bySeries.values()].reduce((acc, list) => acc + list.length, 0);
 
                         return (
-                          <div key={brandId} className="rounded-xl border border-[#EFEDE6] bg-white overflow-hidden shadow-sm mb-2">
+                          <div
+                            key={brandId}
+                            className="rounded-xl border border-[#EFEDE6] bg-white overflow-hidden shadow-sm mb-2"
+                          >
                             <div
                               className="flex w-full items-center justify-between px-4 py-3 hover:bg-[#FAFAF8] transition cursor-pointer"
                               onClick={() => setOpenBrands((p) => ({ ...p, [brandKey]: !isOpen }))}
                             >
                               <div className="flex items-center gap-3">
-                                {isOpen ? <ChevronDown className="size-4 text-[#167B70]" /> : <ChevronRight className="size-4 text-[#6B6B6B]" />}
+                                {isOpen ? (
+                                  <ChevronDown className="size-4 text-[#167B70]" />
+                                ) : (
+                                  <ChevronRight className="size-4 text-[#6B6B6B]" />
+                                )}
                                 <span className="font-bold text-[#1A1916] text-sm">{brand.name}</span>
                               </div>
                               <div className="flex items-center gap-3">
@@ -230,7 +254,10 @@ export default function CatalogueAppareilsPage() {
                                 </span>
                                 <button
                                   className="p-1 hover:bg-[#F1EFE8] rounded-md transition"
-                                  onClick={(e) => { e.stopPropagation(); createModelForBrand(type, brandId); }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    createModelForBrand(type, brandId);
+                                  }}
                                   type="button"
                                 >
                                   <Plus className="size-4 text-[#167B70]" />
@@ -304,4 +331,3 @@ export default function CatalogueAppareilsPage() {
     </PageShell>
   );
 }
-

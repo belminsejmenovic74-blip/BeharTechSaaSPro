@@ -39,8 +39,10 @@ import {
 import { StockImportModal } from "./stock-import-modal";
 
 function findLinkedTariff(item: StockItem, priceBookItems: PriceBookItem[]) {
-  return priceBookItems.find((entry) => entry.id === item.priceBookItemId || entry.stockItemId === item.id)
-    ?? priceBookItems.find((entry) => Boolean(item.sku) && entry.sku === item.sku);
+  return (
+    priceBookItems.find((entry) => entry.id === item.priceBookItemId || entry.stockItemId === item.id) ??
+    priceBookItems.find((entry) => Boolean(item.sku) && entry.sku === item.sku)
+  );
 }
 
 function tariffPriceLabel(item: StockItem, priceBookItems: PriceBookItem[]) {
@@ -75,7 +77,10 @@ function ModelSelector({
 
   const add = (value: string) => {
     const trimmed = value.trim();
-    if (!trimmed || selected.includes(trimmed)) { setInput(""); return; }
+    if (!trimmed || selected.includes(trimmed)) {
+      setInput("");
+      return;
+    }
     onChange([...selected, trimmed]);
     setInput("");
   };
@@ -88,12 +93,18 @@ function ModelSelector({
       {selected.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {selected.map((model) => (
-            <span key={model} className="inline-flex items-center gap-1 rounded-full bg-[#EAF6F2] px-2.5 py-1 text-[12px] font-medium text-[#147065]">
+            <span
+              key={model}
+              className="inline-flex items-center gap-1 rounded-full bg-[#EAF6F2] px-2.5 py-1 text-[12px] font-medium text-[#147065]"
+            >
               {model}
               {!disabled && (
-                <button type="button" onClick={() => remove(model)}
+                <button
+                  type="button"
+                  onClick={() => remove(model)}
                   className="ml-0.5 grid size-3.5 place-items-center rounded-full hover:bg-[#2A9D8F] hover:text-white transition"
-                  aria-label={`Retirer ${model}`}>
+                  aria-label={`Retirer ${model}`}
+                >
                   <X className="size-2.5" strokeWidth={2.5} />
                 </button>
               )}
@@ -106,16 +117,23 @@ function ModelSelector({
       {!disabled && (
         <>
           <datalist id={listId}>
-            {availableModels.filter((m) => !selected.includes(m)).map((m) => (
-              <option key={m} value={m} />
-            ))}
+            {availableModels
+              .filter((m) => !selected.includes(m))
+              .map((m) => (
+                <option key={m} value={m} />
+              ))}
           </datalist>
           <div className="flex gap-1.5">
             <input
               list={listId}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(input); } }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  add(input);
+                }
+              }}
               placeholder={availableModels.length > 0 ? "Sélectionner ou saisir…" : "Saisir un modèle…"}
               className="h-9 flex-1 rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-[13px] text-[#1A1916] outline-none transition placeholder:text-[#8A8984] focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
             />
@@ -147,7 +165,7 @@ export function StockWorkspace() {
       item.name.toLowerCase().includes(q) ||
       item.sku.toLowerCase().includes(q) ||
       item.supplier.toLowerCase().includes(q);
-    
+
     if (filterLowStock && item.quantity > item.threshold) return false;
     return matchesSearch;
   });
@@ -189,21 +207,19 @@ export function StockWorkspace() {
               key={kpi.label}
               className="w-[42%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]"
             >
-              <span className={cn(
-                "grid size-9 place-items-center rounded-[10px]",
-                kpi.negative ? "bg-[#FDECEC] text-[#B42318]" : "bg-[#EAF6F2] text-[#2A9D8F]",
-              )}>
+              <span
+                className={cn(
+                  "grid size-9 place-items-center rounded-[10px]",
+                  kpi.negative ? "bg-[#FDECEC] text-[#B42318]" : "bg-[#EAF6F2] text-[#2A9D8F]",
+                )}
+              >
                 <Package className="size-[18px]" strokeWidth={2} />
               </span>
-              <p className="mt-3 text-[#8A8984] text-[11px] font-medium leading-tight tracking-tight">
-                {kpi.label}
-              </p>
+              <p className="mt-3 text-[#8A8984] text-[11px] font-medium leading-tight tracking-tight">{kpi.label}</p>
               <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tracking-tight tabular-nums">
                 {kpi.value}
               </p>
-              {kpi.helper && (
-                <p className="mt-1.5 truncate text-[#8A8984] text-[10px] font-medium">{kpi.helper}</p>
-              )}
+              {kpi.helper && <p className="mt-1.5 truncate text-[#8A8984] text-[10px] font-medium">{kpi.helper}</p>}
             </div>
           ))}
         </section>
@@ -283,7 +299,9 @@ export function StockWorkspace() {
                         {item.compatibleModels.length ? item.compatibleModels.join(", ") : "Non défini"}
                       </td>
                       <td className={`${tableCellClassName} py-2.5`}>{item.categoryName}</td>
-                      {canViewPurchasePrice && <td className={`${tableCellClassName} py-2.5`}>{formatEuro(item.purchasePrice)}</td>}
+                      {canViewPurchasePrice && (
+                        <td className={`${tableCellClassName} py-2.5`}>{formatEuro(item.purchasePrice)}</td>
+                      )}
                       <td className={`${tableCellClassName} py-2.5`}>
                         <div className="flex flex-col">
                           <span className={cn("font-semibold", tariff ? "text-[#1A1916]" : "text-[#8A8984]")}>
@@ -302,17 +320,19 @@ export function StockWorkspace() {
                         )}
                       </td>
                       <td className={`${tableCellClassName} py-2.5`}>{item.threshold}</td>
-                      {canViewSupplier && <td className={`${tableCellClassName} py-2.5`}>
-                        <div className="flex flex-col">
-                          <span>{item.supplier}</span>
-                          {item.priceBookItemId && (
-                            <span className="text-[10px] text-[#167B70] font-medium flex items-center gap-1 mt-1">
-                              <span className="size-1.5 rounded-full bg-[#167B70]" />
-                              Catalogue Prix lié
-                            </span>
-                          )}
-                        </div>
-                      </td>}
+                      {canViewSupplier && (
+                        <td className={`${tableCellClassName} py-2.5`}>
+                          <div className="flex flex-col">
+                            <span>{item.supplier}</span>
+                            {item.priceBookItemId && (
+                              <span className="text-[10px] text-[#167B70] font-medium flex items-center gap-1 mt-1">
+                                <span className="size-1.5 rounded-full bg-[#167B70]" />
+                                Catalogue Prix lié
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -324,78 +344,91 @@ export function StockWorkspace() {
                 <p className="rounded-[16px] bg-white px-4 py-10 text-center text-[#6B6B6B] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
                   Aucune pièce.
                 </p>
-              ) : filteredItems.map((item) => {
-                const tariff = findLinkedTariff(item, store.priceBookItems);
-                const isOut = item.quantity === 0;
-                const isLow = item.quantity > 0 && item.quantity <= item.threshold;
-                return (
-                  <button
-                    key={item.id}
-                    className="block w-full rounded-[18px] bg-white p-3.5 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
-                    onClick={() => {
-                      store.setSelected("stockItem", item.id);
-                      setMobileDetailOpen(true);
-                    }}
-                    type="button"
-                  >
-                    <div className="flex items-start gap-3">
-                      <span className={cn(
-                        "grid size-12 shrink-0 place-items-center rounded-[14px]",
-                        isOut ? "bg-[#FDECEC] text-[#B42318]" : "bg-[#FAFAF8] text-[#1A1916]",
-                      )}>
-                        <Package className="size-[20px]" strokeWidth={1.8} />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-baseline justify-between gap-2">
-                          <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
-                            {item.name}
-                          </p>
-                          {(isOut || isLow) && (
-                            <span className={cn(
-                              "shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
-                              isOut ? "bg-[#FDECEC] text-[#B42318]" : "bg-[#FFF4E5] text-[#9A6A17]",
-                            )}>
-                              {isOut ? <AlertTriangle className="size-3" /> : null}
-                              {isOut ? "Rupture" : "Stock bas"}
-                            </span>
+              ) : (
+                filteredItems.map((item) => {
+                  const tariff = findLinkedTariff(item, store.priceBookItems);
+                  const isOut = item.quantity === 0;
+                  const isLow = item.quantity > 0 && item.quantity <= item.threshold;
+                  return (
+                    <button
+                      key={item.id}
+                      className="block w-full rounded-[18px] bg-white p-3.5 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
+                      onClick={() => {
+                        store.setSelected("stockItem", item.id);
+                        setMobileDetailOpen(true);
+                      }}
+                      type="button"
+                    >
+                      <div className="flex items-start gap-3">
+                        <span
+                          className={cn(
+                            "grid size-12 shrink-0 place-items-center rounded-[14px]",
+                            isOut ? "bg-[#FDECEC] text-[#B42318]" : "bg-[#FAFAF8] text-[#1A1916]",
                           )}
-                        </div>
-                        <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">
-                          SKU {item.sku} · {item.categoryName}
-                        </p>
-                        <div className="mt-2.5 grid grid-cols-3 gap-2">
-                          <div>
-                            <p className="text-[#8A8984] text-[10px] font-medium uppercase tracking-wider">Stock</p>
-                            <p className={cn(
-                              "mt-0.5 font-semibold text-[14px] tabular-nums",
-                              isOut ? "text-[#B42318]" : isLow ? "text-[#9A6A17]" : "text-[#2A9D8F]",
-                            )}>
-                              {item.quantity}
+                        >
+                          <Package className="size-[20px]" strokeWidth={1.8} />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
+                              {item.name}
                             </p>
+                            {(isOut || isLow) && (
+                              <span
+                                className={cn(
+                                  "shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                                  isOut ? "bg-[#FDECEC] text-[#B42318]" : "bg-[#FFF4E5] text-[#9A6A17]",
+                                )}
+                              >
+                                {isOut ? <AlertTriangle className="size-3" /> : null}
+                                {isOut ? "Rupture" : "Stock bas"}
+                              </span>
+                            )}
                           </div>
-                          {canViewPurchasePrice && (
+                          <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">
+                            SKU {item.sku} · {item.categoryName}
+                          </p>
+                          <div className="mt-2.5 grid grid-cols-3 gap-2">
                             <div>
-                              <p className="text-[#8A8984] text-[10px] font-medium uppercase tracking-wider">Achat</p>
-                              <p className="mt-0.5 font-semibold text-[#1A1916] text-[14px] tabular-nums">
-                                {formatEuro(item.purchasePrice)}
+                              <p className="text-[#8A8984] text-[10px] font-medium uppercase tracking-wider">Stock</p>
+                              <p
+                                className={cn(
+                                  "mt-0.5 font-semibold text-[14px] tabular-nums",
+                                  isOut ? "text-[#B42318]" : isLow ? "text-[#9A6A17]" : "text-[#2A9D8F]",
+                                )}
+                              >
+                                {item.quantity}
                               </p>
                             </div>
-                          )}
-                          <div className="min-w-0">
-                            <p className="text-[#8A8984] text-[10px] font-medium uppercase tracking-wider">Tarif</p>
-                            <p className={cn("mt-0.5 truncate font-semibold text-[13px] tabular-nums", tariff ? "text-[#1A1916]" : "text-[#8A8984]")}>
-                              {tariff ? tariffPriceLabel(item, store.priceBookItems) : "Non défini"}
-                            </p>
+                            {canViewPurchasePrice && (
+                              <div>
+                                <p className="text-[#8A8984] text-[10px] font-medium uppercase tracking-wider">Achat</p>
+                                <p className="mt-0.5 font-semibold text-[#1A1916] text-[14px] tabular-nums">
+                                  {formatEuro(item.purchasePrice)}
+                                </p>
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="text-[#8A8984] text-[10px] font-medium uppercase tracking-wider">Tarif</p>
+                              <p
+                                className={cn(
+                                  "mt-0.5 truncate font-semibold text-[13px] tabular-nums",
+                                  tariff ? "text-[#1A1916]" : "text-[#8A8984]",
+                                )}
+                              >
+                                {tariff ? tariffPriceLabel(item, store.priceBookItems) : "Non défini"}
+                              </p>
+                            </div>
                           </div>
+                          <p className="mt-2 text-[#2A9D8F] text-[11px] font-medium">
+                            {tariffHelperLabel(item, store.priceBookItems)}
+                          </p>
                         </div>
-                        <p className="mt-2 text-[#2A9D8F] text-[11px] font-medium">
-                          {tariffHelperLabel(item, store.priceBookItems)}
-                        </p>
                       </div>
-                    </div>
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })
+              )}
             </div>
           </TableShell>
 
@@ -472,8 +505,10 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
   const availableModels = getModelsByBrand(item.brandName || "", category);
   const availableCategories = store.partCategories.filter((cat) => cat.deviceTypes.includes(item.deviceType));
 
-  const inputClass = "h-10 w-full rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-right text-[15px] text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
-  const textInputClass = "h-10 w-full rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-[15px] text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+  const inputClass =
+    "h-10 w-full rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-right text-[15px] text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+  const textInputClass =
+    "h-10 w-full rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-[15px] text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
   const rowClass = "flex items-start justify-between gap-3 py-3 border-b border-[#F1F1EF] last:border-0";
   const labelClass = "shrink-0 w-[110px] text-[#6B6B6B] text-[13px] pt-2.5 font-medium";
 
@@ -495,22 +530,55 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
       <div className="rounded-[16px] border border-[#F1F1EF] bg-[#FAFAF8] px-4 divide-y divide-[#F1F1EF] mb-4">
         <div className={rowClass}>
           <span className={labelClass}>Référence</span>
-          <input className={textInputClass} value={item.sku} readOnly={!canManageStock}
-            onChange={(e) => store.updateStockItem(item.id, { sku: e.target.value })} />
+          <input
+            className={textInputClass}
+            value={item.sku}
+            readOnly={!canManageStock}
+            onChange={(e) => store.updateStockItem(item.id, { sku: e.target.value })}
+          />
         </div>
         <div className={rowClass}>
           <span className={labelClass}>Type</span>
-          <select className={textInputClass} value={item.deviceType} disabled={!canManageStock}
-            onChange={(e) => store.updateStockItem(item.id, { deviceType: e.target.value as StockItem["deviceType"], brandId: undefined, brandName: undefined, modelIds: [], compatibleModels: [] })}>
-            {["Smartphone", "Tablette", "Ordinateur", "Console"].map((t) => <option key={t}>{t}</option>)}
+          <select
+            className={textInputClass}
+            value={item.deviceType}
+            disabled={!canManageStock}
+            onChange={(e) =>
+              store.updateStockItem(item.id, {
+                deviceType: e.target.value as StockItem["deviceType"],
+                brandId: undefined,
+                brandName: undefined,
+                modelIds: [],
+                compatibleModels: [],
+              })
+            }
+          >
+            {["Smartphone", "Tablette", "Ordinateur", "Console"].map((t) => (
+              <option key={t}>{t}</option>
+            ))}
           </select>
         </div>
         <div className={rowClass}>
           <span className={labelClass}>Marque</span>
-          <select className={textInputClass} value={item.brandName ?? ""} disabled={!canManageStock}
-            onChange={(e) => store.updateStockItem(item.id, { brandId: e.target.value, brandName: e.target.value, modelIds: [], compatibleModels: [] })}>
+          <select
+            className={textInputClass}
+            value={item.brandName ?? ""}
+            disabled={!canManageStock}
+            onChange={(e) =>
+              store.updateStockItem(item.id, {
+                brandId: e.target.value,
+                brandName: e.target.value,
+                modelIds: [],
+                compatibleModels: [],
+              })
+            }
+          >
             <option value="">Générique</option>
-            {availableBrands.map((b) => <option key={b.brand} value={b.brand}>{b.brand}</option>)}
+            {availableBrands.map((b) => (
+              <option key={b.brand} value={b.brand}>
+                {b.brand}
+              </option>
+            ))}
             <option value="Autre">Autre</option>
           </select>
         </div>
@@ -527,16 +595,34 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
         </div>
         <div className={rowClass}>
           <span className={labelClass}>Catégorie</span>
-          <select className={textInputClass} value={item.categoryId} disabled={!canManageStock}
-            onChange={(e) => { const cat = store.partCategories.find((c) => c.id === e.target.value); store.updateStockItem(item.id, { categoryId: cat?.id, categoryName: cat?.name }); }}>
-            {availableCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          <select
+            className={textInputClass}
+            value={item.categoryId}
+            disabled={!canManageStock}
+            onChange={(e) => {
+              const cat = store.partCategories.find((c) => c.id === e.target.value);
+              store.updateStockItem(item.id, { categoryId: cat?.id, categoryName: cat?.name });
+            }}
+          >
+            {availableCategories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
           </select>
         </div>
         {canViewPurchasePrice && (
           <div className={rowClass}>
             <span className={labelClass}>Prix d'achat</span>
-            <input className={inputClass} type="number" min={0} step="0.01" value={item.purchasePrice} readOnly={!canManageStock}
-              onChange={(e) => store.updateStockItem(item.id, { purchasePrice: Math.max(0, Number(e.target.value)) })} />
+            <input
+              className={inputClass}
+              type="number"
+              min={0}
+              step="0.01"
+              value={item.purchasePrice}
+              readOnly={!canManageStock}
+              onChange={(e) => store.updateStockItem(item.id, { purchasePrice: Math.max(0, Number(e.target.value)) })}
+            />
           </div>
         )}
         <div className={rowClass}>
@@ -545,75 +631,123 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
             <p className={cn("text-[15px] font-semibold", tariff ? "text-[#1A1916]" : "text-[#8A8984]")}>
               {tariffPriceLabel(item, store.priceBookItems)}
             </p>
-            <p className="mt-0.5 text-[11px] font-medium text-[#167B70]">{tariffHelperLabel(item, store.priceBookItems)}</p>
+            <p className="mt-0.5 text-[11px] font-medium text-[#167B70]">
+              {tariffHelperLabel(item, store.priceBookItems)}
+            </p>
           </div>
         </div>
         <div className={rowClass}>
           <span className={labelClass}>Stock actuel</span>
-          <input className={inputClass} type="number" min={0} value={item.quantity} readOnly={!canManageStock}
-            onChange={(e) => store.updateStockItem(item.id, { quantity: Math.max(0, Number(e.target.value)) })} />
+          <input
+            className={inputClass}
+            type="number"
+            min={0}
+            value={item.quantity}
+            readOnly={!canManageStock}
+            onChange={(e) => store.updateStockItem(item.id, { quantity: Math.max(0, Number(e.target.value)) })}
+          />
         </div>
         <div className={rowClass}>
           <span className={labelClass}>Seuil d'alerte</span>
-          <input className={inputClass} type="number" min={0} value={item.threshold} readOnly={!canManageStock}
-            onChange={(e) => store.updateStockItem(item.id, { threshold: Math.max(0, Number(e.target.value)) })} />
+          <input
+            className={inputClass}
+            type="number"
+            min={0}
+            value={item.threshold}
+            readOnly={!canManageStock}
+            onChange={(e) => store.updateStockItem(item.id, { threshold: Math.max(0, Number(e.target.value)) })}
+          />
         </div>
         {canViewSupplier && (
           <div className={rowClass}>
             <span className={labelClass}>Fournisseur</span>
-            <input className={textInputClass} value={item.supplier} readOnly={!canManageStock}
-              onChange={(e) => store.updateStockItem(item.id, { supplier: e.target.value })} />
+            <input
+              className={textInputClass}
+              value={item.supplier}
+              readOnly={!canManageStock}
+              onChange={(e) => store.updateStockItem(item.id, { supplier: e.target.value })}
+            />
           </div>
         )}
         <div className={rowClass}>
           <span className={labelClass}>Délai moyen</span>
-          <input className={textInputClass} value={item.leadTime} readOnly={!canManageStock}
-            onChange={(e) => store.updateStockItem(item.id, { leadTime: e.target.value })} />
+          <input
+            className={textInputClass}
+            value={item.leadTime}
+            readOnly={!canManageStock}
+            onChange={(e) => store.updateStockItem(item.id, { leadTime: e.target.value })}
+          />
         </div>
       </div>
 
       {/* Actions */}
       <div className="grid gap-2">
-        <PrimaryButton className="h-12 w-full text-[15px]" disabled={!canManageStock}
+        <PrimaryButton
+          className="h-12 w-full text-[15px]"
+          disabled={!canManageStock}
           onClick={() => {
             const qty = Number(window.prompt("Quantité à ajouter au stock", "5") || 0);
-            if (!Number.isFinite(qty) || qty <= 0) { toast.error("Quantité invalide"); return; }
+            if (!Number.isFinite(qty) || qty <= 0) {
+              toast.error("Quantité invalide");
+              return;
+            }
             store.restockItem(item.id, qty);
             toast.success("Stock mis à jour");
-          }}>
+          }}
+        >
           Réapprovisionner
         </PrimaryButton>
         <select
           className="h-11 w-full rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-[15px] text-[#1A1916] outline-none"
           disabled={store.repairs.length === 0}
           value={targetRepairId}
-          onChange={(e) => setTargetRepairId(e.target.value)}>
+          onChange={(e) => setTargetRepairId(e.target.value)}
+        >
           <option value="">Sélectionnez une réparation</option>
-          {store.repairs.map((r) => <option key={r.id} value={r.id}>{r.number} - {r.device} ({r.status})</option>)}
+          {store.repairs.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.number} - {r.device} ({r.status})
+            </option>
+          ))}
         </select>
-        <SecondaryButton className="h-11 w-full" disabled={store.repairs.length === 0 || !canUseStockItem}
+        <SecondaryButton
+          className="h-11 w-full"
+          disabled={store.repairs.length === 0 || !canUseStockItem}
           onClick={() => {
             const repair = store.repairs.find((r) => r.id === targetRepairId);
-            if (!repair) { toast.error("Sélectionnez une réparation."); return; }
+            if (!repair) {
+              toast.error("Sélectionnez une réparation.");
+              return;
+            }
             if (!window.confirm(`Utiliser 1 x ${item.name} sur ${repair.number} ?`)) return;
             const ok = store.addPartToRepair(repair.id, item.id, 1);
             toast[ok ? "success" : "error"](ok ? `Pièce ajoutée à ${repair.device}` : `Stock insuffisant`);
-          }}>
+          }}
+        >
           Utiliser dans une réparation
         </SecondaryButton>
         {item.priceBookItemId && (
-          <SecondaryButton className="h-11 w-full" onClick={() => { router.push("/dashboard/parametres/catalogue"); onClose(); }}>
+          <SecondaryButton
+            className="h-11 w-full"
+            onClick={() => {
+              router.push("/dashboard/parametres/catalogue");
+              onClose();
+            }}
+          >
             Voir dans Catalogue Prix
           </SecondaryButton>
         )}
-        <SecondaryButton className="h-11 w-full text-[#B42318]" disabled={!canManageStock}
+        <SecondaryButton
+          className="h-11 w-full text-[#B42318]"
+          disabled={!canManageStock}
           onClick={() => {
             if (window.confirm("Supprimer cette pièce ?")) {
               store.deleteStockItem(item.id);
               toast.success("Pièce supprimée");
               onClose();
             }
-          }}>
+          }}
+        >
           <Trash2 className="size-4" />
           Supprimer la pièce
         </SecondaryButton>
@@ -790,7 +924,9 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
               <p className={cn("text-sm font-semibold", tariff ? "text-[#1A1916]" : "text-[#8A8984]")}>
                 {tariffPriceLabel(item, store.priceBookItems)}
               </p>
-              <p className="mt-0.5 text-[11px] font-medium text-[#167B70]">{tariffHelperLabel(item, store.priceBookItems)}</p>
+              <p className="mt-0.5 text-[11px] font-medium text-[#167B70]">
+                {tariffHelperLabel(item, store.priceBookItems)}
+              </p>
             </div>
           }
         />
@@ -1006,9 +1142,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
   const category = categoryMapping[deviceType] || "smartphone";
   const availableBrands = getDeviceBrands(category);
   const availableModels = getModelsByBrand(brandName, category);
-  const availableCategories = store.partCategories.filter((cat) =>
-    cat.deviceTypes.includes(deviceType as DeviceType),
-  );
+  const availableCategories = store.partCategories.filter((cat) => cat.deviceTypes.includes(deviceType as DeviceType));
   const selectedCategory = store.partCategories.find((cat) => cat.id === categoryId);
   const categoryName = selectedCategory?.name ?? "";
 
@@ -1019,11 +1153,13 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
 
   // Auto-suggérés (s'appliquent tant que l'utilisateur n'a pas overridé).
   const suggestedName = useMemo(
-    () => suggestStockName({ brand: brandName, model: selectedModel, category: categoryName, quality: effectiveQuality }),
+    () =>
+      suggestStockName({ brand: brandName, model: selectedModel, category: categoryName, quality: effectiveQuality }),
     [brandName, selectedModel, categoryName, effectiveQuality],
   );
   const suggestedSku = useMemo(
-    () => suggestStockSku({ brand: brandName, model: selectedModel, category: categoryName, quality: effectiveQuality }),
+    () =>
+      suggestStockSku({ brand: brandName, model: selectedModel, category: categoryName, quality: effectiveQuality }),
     [brandName, selectedModel, categoryName, effectiveQuality],
   );
   const effectiveName = nameOverride.trim() || suggestedName;
@@ -1118,9 +1254,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="font-semibold text-2xl text-[#1A1916]">Nouvelle pièce</h2>
-            <p className="mt-1 text-[#6B6B6B] text-[13px]">
-              Sélection guidée : marque → modèle → catégorie → gamme.
-            </p>
+            <p className="mt-1 text-[#6B6B6B] text-[13px]">Sélection guidée : marque → modèle → catégorie → gamme.</p>
           </div>
           <button
             type="button"
@@ -1272,9 +1406,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
 
           {/* Aperçu auto-rempli (nom / SKU) avec override possible */}
           <div className="rounded-xl border border-[#E7E4DC] bg-[#FAFAF8] p-3 md:col-span-2">
-            <p className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">
-              Auto-rempli
-            </p>
+            <p className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Auto-rempli</p>
             <div className="mt-2 grid gap-2 md:grid-cols-2">
               <label className="block">
                 <span className="text-[#6B6B6B] text-[11px]">Nom (modifiable)</span>
@@ -1301,8 +1433,8 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
 
           {!linkedPriceBook && selectedModel && (
             <div className="rounded-xl border border-[#E7E4DC] bg-white p-3 text-[12px] text-[#6B6B6B] md:col-span-2">
-              Aucun tarif client lié pour cette sélection. Vous pourrez en créer un dans
-              Paramètres → Tarifs / Prestations.
+              Aucun tarif client lié pour cette sélection. Vous pourrez en créer un dans Paramètres → Tarifs /
+              Prestations.
             </div>
           )}
 
@@ -1318,7 +1450,9 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
             />
           </label>
           <label className="block">
-            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Prix d'achat atelier</span>
+            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">
+              Prix d'achat atelier
+            </span>
             <input
               type="number"
               step="0.01"
@@ -1351,15 +1485,13 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
           </label>
 
           <div className="rounded-xl border border-[#E7E4DC] bg-[#FAFAF8] px-3 py-2.5 text-[12.5px] text-[#6B6B6B] md:col-span-2">
-            Le prix client est défini dans <strong>Paramètres → Tarifs / Prestations</strong>.
-            Stock = inventaire interne, Catalogue = tarifs client.
+            Le prix client est défini dans <strong>Paramètres → Tarifs / Prestations</strong>. Stock = inventaire
+            interne, Catalogue = tarifs client.
           </div>
 
           <div className="flex justify-end gap-2 md:col-span-2">
             <SecondaryButton onClick={onClose}>Annuler</SecondaryButton>
-            <PrimaryButton type="submit">
-              {existingStock ? "Mettre à jour le stock" : "Ajouter la pièce"}
-            </PrimaryButton>
+            <PrimaryButton type="submit">{existingStock ? "Mettre à jour le stock" : "Ajouter la pièce"}</PrimaryButton>
           </div>
         </form>
       </Panel>

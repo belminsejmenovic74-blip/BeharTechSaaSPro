@@ -68,7 +68,19 @@ export type QualityPreset = (typeof QUALITY_PRESETS)[number];
  */
 const QUALITIES_BY_CATEGORY: Record<string, readonly string[]> = {
   // Écran
-  ecran: ["Incell", "LCD", "TFT", "OLED", "Hard OLED", "Soft OLED", "Original", "Original reconditionné", "OEM", "Premium", "Autre"],
+  ecran: [
+    "Incell",
+    "LCD",
+    "TFT",
+    "OLED",
+    "Hard OLED",
+    "Soft OLED",
+    "Original",
+    "Original reconditionné",
+    "OEM",
+    "Premium",
+    "Autre",
+  ],
 
   // Batterie
   batterie: ["Normale", "Compatible", "Premium", "Originale", "OEM", "Haute capacité", "Reconditionnée", "Autre"],
@@ -111,14 +123,7 @@ const QUALITIES_BY_CATEGORY: Record<string, readonly string[]> = {
   ventilateur: ["Normale", "Compatible", "Originale", "OEM", "Reconditionné", "Premium", "Autre"],
 };
 
-const FALLBACK_QUALITIES: readonly string[] = [
-  "Normale",
-  "Compatible",
-  "Originale",
-  "OEM",
-  "Premium",
-  "Autre",
-];
+const FALLBACK_QUALITIES: readonly string[] = ["Normale", "Compatible", "Originale", "OEM", "Premium", "Autre"];
 
 /**
  * Renvoie la liste des qualités valides pour une catégorie donnée.
@@ -221,10 +226,7 @@ export function suggestStockSku(input: {
   const shortModel = abbreviateModel(input.model ?? "");
   const shortCategory = abbreviateCategory(input.category ?? "");
   const shortQuality = abbreviateQuality(input.quality ?? "");
-  return [shortBrand, shortModel, shortCategory, shortQuality]
-    .filter(Boolean)
-    .join("-")
-    .toUpperCase();
+  return [shortBrand, shortModel, shortCategory, shortQuality].filter(Boolean).join("-").toUpperCase();
 }
 
 function abbreviateBrand(brand: string): string {
@@ -243,12 +245,20 @@ function abbreviateBrand(brand: string): string {
   };
   const key = normalizeKey(brand);
   if (map[key]) return map[key];
-  return key.replace(/[^a-z0-9]/gi, "").slice(0, 3).toUpperCase();
+  return key
+    .replace(/[^a-z0-9]/gi, "")
+    .slice(0, 3)
+    .toUpperCase();
 }
 
 function abbreviateModel(model: string): string {
-  const norm = normalizeKey(model).replace(/^iphone\s*/, "iph").replace(/^galaxy\s*/, "g");
-  return norm.replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, 12);
+  const norm = normalizeKey(model)
+    .replace(/^iphone\s*/, "iph")
+    .replace(/^galaxy\s*/, "g");
+  return norm
+    .replace(/[^a-z0-9]/gi, "")
+    .toUpperCase()
+    .slice(0, 12);
 }
 
 function abbreviateCategory(category: string): string {
@@ -277,7 +287,14 @@ function abbreviateCategory(category: string): string {
     "pate thermique": "PATE",
     autre: "AUTRE",
   };
-  return map[norm] ?? norm.replace(/\s+/g, "-").replace(/[^a-z0-9-]/gi, "").toUpperCase().slice(0, 16);
+  return (
+    map[norm] ??
+    norm
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/gi, "")
+      .toUpperCase()
+      .slice(0, 16)
+  );
 }
 
 function abbreviateQuality(quality: string): string {
@@ -306,7 +323,11 @@ function abbreviateQuality(quality: string): string {
     "non precisee": "",
   };
   if (norm in map) return map[norm];
-  return norm.replace(/\s+/g, "-").replace(/[^a-z0-9-]/gi, "").toUpperCase().slice(0, 16);
+  return norm
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/gi, "")
+    .toUpperCase()
+    .slice(0, 16);
 }
 
 /**
@@ -320,9 +341,7 @@ export function findStockBySelection(
   // 1) match SKU exact (le plus fiable)
   const skuKey = normalizeKey(selection.sku);
   if (skuKey) {
-    const bySku = items.find(
-      (item) => normalizeKey(item.sku) === skuKey || normalizeKey(item.reference) === skuKey,
-    );
+    const bySku = items.find((item) => normalizeKey(item.sku) === skuKey || normalizeKey(item.reference) === skuKey);
     if (bySku) return bySku;
   }
 
@@ -339,9 +358,8 @@ export function findStockBySelection(
       if (itemCategory && itemCategory !== categoryKey) return false;
     }
     if (modelKey) {
-      const modelMatch = item.compatibleModels?.some(
-        (m) => normalizeKey(m) === modelKey,
-      ) || normalizeKey(item.name).includes(modelKey);
+      const modelMatch =
+        item.compatibleModels?.some((m) => normalizeKey(m) === modelKey) || normalizeKey(item.name).includes(modelKey);
       if (!modelMatch) return false;
     }
     if (qualityKey) {

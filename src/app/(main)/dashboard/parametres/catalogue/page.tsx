@@ -6,13 +6,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { ArrowLeft, Download, FileUp, Pencil, Plus, Search, Trash2 } from "lucide-react";
-
-import { PriceTreeView } from "./price-tree-view";
 import { toast } from "sonner";
 import * as xlsx from "xlsx";
 
 import { PageShell } from "@/components/behar/page-shell";
 import { Combobox, Panel, PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
+import { deviceCatalog } from "@/data/deviceCatalog";
 import { useBeharStore } from "@/lib/behar-store";
 import {
   computePriceBookTotals,
@@ -24,12 +23,13 @@ import {
   type PriceBookItem,
   type PriceBookSource,
 } from "@/lib/price-book";
-import { deviceCatalog } from "@/data/deviceCatalog";
 import {
   getDefaultQualityForCategory,
   getQualitiesForCategory,
   isQualityValidForCategory,
 } from "@/lib/stock-catalog-link";
+
+import { PriceTreeView } from "./price-tree-view";
 
 type ImportDuplicateAction = "update" | "ignore" | "create";
 
@@ -305,7 +305,9 @@ export default function CataloguePrixPage() {
             mainOeuvre,
             fournisseur: fournisseur || undefined,
             stockDisponible,
-            notes: [normalized.needsReview ? "[À vérifier import]" : "", notes || ""].filter(Boolean).join(" ").trim() || undefined,
+            notes:
+              [normalized.needsReview ? "[À vérifier import]" : "", notes || ""].filter(Boolean).join(" ").trim() ||
+              undefined,
             source: "workshop_import",
           });
         });
@@ -579,142 +581,148 @@ export default function CataloguePrixPage() {
         )}
 
         {view === "table" && (
-        <Panel className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1200px] border-collapse text-sm">
-              <thead className="bg-[#FAFAF8] text-[#6B6B6B] text-xs uppercase tracking-wide">
-                <tr>
-                  <Th>Marque</Th>
-                  <Th>Modèle</Th>
-                  <Th>Réparation</Th>
-                  <Th>Pièce</Th>
-                  <Th>Qualité</Th>
-                  <Th align="right">Achat</Th>
-                  <Th align="right">Vente pièce</Th>
-                  <Th align="right">M.O.</Th>
-                  <Th align="right">Total</Th>
-                  <Th align="right">Marge</Th>
-                  <Th>Fournisseur</Th>
-                  <Th align="right">Stock</Th>
-                  <Th>Source</Th>
-                  <Th>Statut</Th>
-                  <Th align="right">Actions</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {visible.length === 0 ? (
+          <Panel className="overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1200px] border-collapse text-sm">
+                <thead className="bg-[#FAFAF8] text-[#6B6B6B] text-xs uppercase tracking-wide">
                   <tr>
-                    <td colSpan={15} className="px-4 py-12 text-center text-[#6B6B6B]">
-                      Aucune ligne. Ajoutez un prix ou modifiez vos filtres.
-                    </td>
+                    <Th>Marque</Th>
+                    <Th>Modèle</Th>
+                    <Th>Réparation</Th>
+                    <Th>Pièce</Th>
+                    <Th>Qualité</Th>
+                    <Th align="right">Achat</Th>
+                    <Th align="right">Vente pièce</Th>
+                    <Th align="right">M.O.</Th>
+                    <Th align="right">Total</Th>
+                    <Th align="right">Marge</Th>
+                    <Th>Fournisseur</Th>
+                    <Th align="right">Stock</Th>
+                    <Th>Source</Th>
+                    <Th>Statut</Th>
+                    <Th align="right">Actions</Th>
                   </tr>
-                ) : (
-                  visible.map((item) => (
-                    <tr key={item.id} className="border-[#EFEDE6] border-t hover:bg-[#FAFAF8]/60">
-                      <Td>{item.marque}</Td>
-                      <Td>{item.modele}</Td>
-                      <Td>{item.reparation}</Td>
-                      <Td>{item.piece}</Td>
-                      <Td>{item.qualite}</Td>
-                      <Td align="right">{formatEuroPriceBook(item.prixAchat)}</Td>
-                      <Td align="right">{formatEuroPriceBook(item.prixVentePiece)}</Td>
-                      <Td align="right">{formatEuroPriceBook(item.mainOeuvre)}</Td>
-                      <Td align="right" className="font-semibold text-[#1A1916]">
-                        {formatEuroPriceBook(item.prixClientTotal)}
-                      </Td>
-                      <Td align="right">
-                        <span className={item.marge < 0 ? "text-red-600" : "text-[#2A9D8F]"}>
-                          {formatEuroPriceBook(item.marge)}
-                        </span>
-                      </Td>
-                      <Td>
-                        <div className="flex flex-col gap-0.5">
-                          <span>{item.fournisseur ?? "—"}</span>
-                          {item.stockItemId && (
-                            <span className="text-[10px] text-[#167B70] font-medium flex items-center gap-1">
-                              <span className="size-1.5 rounded-full bg-[#167B70]" />
-                              Stock lié
-                            </span>
-                          )}
-                        </div>
-                      </Td>
-                      <Td align="right">
-                        <div className="flex flex-col items-end gap-0.5">
-                          <span className={item.stockDisponible !== undefined && item.stockDisponible > 0 ? "font-semibold text-[#167B70]" : ""}>
-                            {item.stockDisponible !== undefined ? `${item.stockDisponible} dispo` : "—"}
+                </thead>
+                <tbody>
+                  {visible.length === 0 ? (
+                    <tr>
+                      <td colSpan={15} className="px-4 py-12 text-center text-[#6B6B6B]">
+                        Aucune ligne. Ajoutez un prix ou modifiez vos filtres.
+                      </td>
+                    </tr>
+                  ) : (
+                    visible.map((item) => (
+                      <tr key={item.id} className="border-[#EFEDE6] border-t hover:bg-[#FAFAF8]/60">
+                        <Td>{item.marque}</Td>
+                        <Td>{item.modele}</Td>
+                        <Td>{item.reparation}</Td>
+                        <Td>{item.piece}</Td>
+                        <Td>{item.qualite}</Td>
+                        <Td align="right">{formatEuroPriceBook(item.prixAchat)}</Td>
+                        <Td align="right">{formatEuroPriceBook(item.prixVentePiece)}</Td>
+                        <Td align="right">{formatEuroPriceBook(item.mainOeuvre)}</Td>
+                        <Td align="right" className="font-semibold text-[#1A1916]">
+                          {formatEuroPriceBook(item.prixClientTotal)}
+                        </Td>
+                        <Td align="right">
+                          <span className={item.marge < 0 ? "text-red-600" : "text-[#2A9D8F]"}>
+                            {formatEuroPriceBook(item.marge)}
                           </span>
-                          {item.stockItemId && (
+                        </Td>
+                        <Td>
+                          <div className="flex flex-col gap-0.5">
+                            <span>{item.fournisseur ?? "—"}</span>
+                            {item.stockItemId && (
+                              <span className="text-[10px] text-[#167B70] font-medium flex items-center gap-1">
+                                <span className="size-1.5 rounded-full bg-[#167B70]" />
+                                Stock lié
+                              </span>
+                            )}
+                          </div>
+                        </Td>
+                        <Td align="right">
+                          <div className="flex flex-col items-end gap-0.5">
+                            <span
+                              className={
+                                item.stockDisponible !== undefined && item.stockDisponible > 0
+                                  ? "font-semibold text-[#167B70]"
+                                  : ""
+                              }
+                            >
+                              {item.stockDisponible !== undefined ? `${item.stockDisponible} dispo` : "—"}
+                            </span>
+                            {item.stockItemId && (
+                              <button
+                                type="button"
+                                onClick={() => router.push("/dashboard/stock")}
+                                className="text-[10px] text-[#6B6B6B] hover:text-[#167B70] underline"
+                              >
+                                Voir dans Stock
+                              </button>
+                            )}
+                          </div>
+                        </Td>
+                        <Td>
+                          <span className="rounded-full bg-[#FAFAF8] px-2 py-0.5 text-[#6B6B6B] text-xs">
+                            {PRICE_BOOK_SOURCE_LABELS[item.source]}
+                          </span>
+                        </Td>
+                        <Td>
+                          <button
+                            type="button"
+                            onClick={() => toggleItem(item.id, !item.isActive)}
+                            className={`rounded-full px-2 py-0.5 text-xs ${
+                              item.isActive ? "bg-[#2A9D8F]/10 text-[#1d6f65]" : "bg-[#F1EFE8] text-[#8A8984]"
+                            }`}
+                          >
+                            {item.isActive ? "Actif" : "Inactif"}
+                          </button>
+                        </Td>
+                        <Td align="right">
+                          <div className="flex justify-end gap-1">
                             <button
                               type="button"
-                              onClick={() => router.push("/dashboard/stock")}
-                              className="text-[10px] text-[#6B6B6B] hover:text-[#167B70] underline"
+                              onClick={() => openEdit(item)}
+                              className="grid size-8 place-items-center rounded-lg text-[#6B6B6B] hover:bg-[#F1EFE8] hover:text-[#1A1916]"
+                              aria-label="Modifier"
                             >
-                              Voir dans Stock
+                              <Pencil className="size-4" />
                             </button>
-                          )}
-                        </div>
-                      </Td>
-                      <Td>
-                        <span className="rounded-full bg-[#FAFAF8] px-2 py-0.5 text-[#6B6B6B] text-xs">
-                          {PRICE_BOOK_SOURCE_LABELS[item.source]}
-                        </span>
-                      </Td>
-                      <Td>
-                        <button
-                          type="button"
-                          onClick={() => toggleItem(item.id, !item.isActive)}
-                          className={`rounded-full px-2 py-0.5 text-xs ${
-                            item.isActive ? "bg-[#2A9D8F]/10 text-[#1d6f65]" : "bg-[#F1EFE8] text-[#8A8984]"
-                          }`}
-                        >
-                          {item.isActive ? "Actif" : "Inactif"}
-                        </button>
-                      </Td>
-                      <Td align="right">
-                        <div className="flex justify-end gap-1">
-                          <button
-                            type="button"
-                            onClick={() => openEdit(item)}
-                            className="grid size-8 place-items-center rounded-lg text-[#6B6B6B] hover:bg-[#F1EFE8] hover:text-[#1A1916]"
-                            aria-label="Modifier"
-                          >
-                            <Pencil className="size-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(item)}
-                            className="grid size-8 place-items-center rounded-lg text-[#6B6B6B] hover:bg-red-50 hover:text-red-600"
-                            aria-label="Supprimer"
-                          >
-                            <Trash2 className="size-4" />
-                          </button>
-                        </div>
-                      </Td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between border-[#EFEDE6] border-t px-4 py-3 text-sm">
-              <span className="text-[#6B6B6B]">
-                Page {safePage} / {totalPages}
-              </span>
-              <div className="flex gap-2">
-                <SecondaryButton onClick={() => setPage(Math.max(1, safePage - 1))} disabled={safePage <= 1}>
-                  Précédent
-                </SecondaryButton>
-                <SecondaryButton
-                  onClick={() => setPage(Math.min(totalPages, safePage + 1))}
-                  disabled={safePage >= totalPages}
-                >
-                  Suivant
-                </SecondaryButton>
-              </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(item)}
+                              className="grid size-8 place-items-center rounded-lg text-[#6B6B6B] hover:bg-red-50 hover:text-red-600"
+                              aria-label="Supprimer"
+                            >
+                              <Trash2 className="size-4" />
+                            </button>
+                          </div>
+                        </Td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
-          )}
-        </Panel>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between border-[#EFEDE6] border-t px-4 py-3 text-sm">
+                <span className="text-[#6B6B6B]">
+                  Page {safePage} / {totalPages}
+                </span>
+                <div className="flex gap-2">
+                  <SecondaryButton onClick={() => setPage(Math.max(1, safePage - 1))} disabled={safePage <= 1}>
+                    Précédent
+                  </SecondaryButton>
+                  <SecondaryButton
+                    onClick={() => setPage(Math.min(totalPages, safePage + 1))}
+                    disabled={safePage >= totalPages}
+                  >
+                    Suivant
+                  </SecondaryButton>
+                </div>
+              </div>
+            )}
+          </Panel>
         )}
 
         {showForm && (
@@ -838,10 +846,12 @@ function FormDialog({
                 update("marque", next);
                 update("modele", "");
               }}
-              options={Array.from(new Set([
-                ...deviceCatalog.filter(b => b.category === form.typeAppareil).map(b => b.brand),
-                ...marques
-              ])).sort()}
+              options={Array.from(
+                new Set([
+                  ...deviceCatalog.filter((b) => b.category === form.typeAppareil).map((b) => b.brand),
+                  ...marques,
+                ]),
+              ).sort()}
               value={form.marque}
               placeholder="Apple, Samsung..."
             />
@@ -854,10 +864,16 @@ function FormDialog({
               createLabel="Ajouter ce modèle"
               disabled={!form.marque.trim()}
               onChange={(next) => update("modele", next)}
-              options={Array.from(new Set([
-                ...(deviceCatalog.find(b => b.brand.toLowerCase() === form.marque.toLowerCase() || b.aliases.some(a => a.toLowerCase() === form.marque.toLowerCase()))?.models || []),
-                ...items.filter(i => i.marque.toLowerCase() === form.marque.toLowerCase()).map(i => i.modele)
-              ])).sort()}
+              options={Array.from(
+                new Set([
+                  ...(deviceCatalog.find(
+                    (b) =>
+                      b.brand.toLowerCase() === form.marque.toLowerCase() ||
+                      b.aliases.some((a) => a.toLowerCase() === form.marque.toLowerCase()),
+                  )?.models || []),
+                  ...items.filter((i) => i.marque.toLowerCase() === form.marque.toLowerCase()).map((i) => i.modele),
+                ]),
+              ).sort()}
               placeholder={form.marque.trim() ? "iPhone 11, Galaxy A52..." : "Choisissez d'abord une marque"}
               value={form.modele}
             />

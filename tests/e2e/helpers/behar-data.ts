@@ -6,12 +6,7 @@
 
 export const LICENSES = {
   primary: "BHT-2026-PRO-002",
-  others: [
-    "BHT-2026-PRO-001",
-    "BHT-PILOT-ANNEMASSE",
-    "BHT-BEHAR-TECH-PRO",
-    "BHT-PILOT-EXCLUSIF",
-  ] as const,
+  others: ["BHT-2026-PRO-001", "BHT-PILOT-ANNEMASSE", "BHT-BEHAR-TECH-PRO", "BHT-PILOT-EXCLUSIF"] as const,
 } as const;
 
 export const LICENSE_MAIN = (process.env.BEHAR_QA_LICENSE || LICENSES.primary).toUpperCase().trim();
@@ -60,10 +55,24 @@ export const SEED_CUSTOMERS: { name: string; phone: string; email: string; addre
 ].map(([name, phone, email, address]) => ({ name, phone, email, address }));
 
 // ── Stock (100) ────────────────────────────────────────────────────────────
-const stockCategories: { prefix: string; name: string; supplier: string; purchase: number; sale: number; threshold: number }[] = [
+const stockCategories: {
+  prefix: string;
+  name: string;
+  supplier: string;
+  purchase: number;
+  sale: number;
+  threshold: number;
+}[] = [
   { prefix: "SCR-IP", name: "Écran iPhone", supplier: "Mobilax", purchase: 35, sale: 80, threshold: 3 },
   { prefix: "BAT-IP", name: "Batterie iPhone", supplier: "Mobilax", purchase: 12, sale: 35, threshold: 5 },
-  { prefix: "CHG-IP", name: "Connecteur charge iPhone", supplier: "Wholesale GSM", purchase: 8, sale: 25, threshold: 4 },
+  {
+    prefix: "CHG-IP",
+    name: "Connecteur charge iPhone",
+    supplier: "Wholesale GSM",
+    purchase: 8,
+    sale: 25,
+    threshold: 4,
+  },
   { prefix: "HDMI-PS5", name: "Port HDMI PS5", supplier: "Console Parts", purchase: 18, sale: 55, threshold: 2 },
   { prefix: "JOY-PS5", name: "Joystick PS5", supplier: "Console Parts", purchase: 9, sale: 30, threshold: 3 },
   { prefix: "BAT-MBK", name: "Batterie MacBook", supplier: "Apple Parts EU", purchase: 60, sale: 140, threshold: 2 },
@@ -89,10 +98,34 @@ export const SEED_STOCK = Array.from({ length: 100 }, (_, i) => {
 
 // ── Réparations critiques (financier) ──────────────────────────────────────
 export const CRITICAL_REPAIRS = [
-  { device: "Apple iPhone 11", brand: "Apple", model: "iPhone 11", issue: "Écran cassé", part: 90, labor: 29, total: 119 },
-  { device: "Samsung Galaxy S22", brand: "Samsung", model: "Galaxy S22", issue: "Connecteur charge", part: 80, labor: 29, total: 109 },
+  {
+    device: "Apple iPhone 11",
+    brand: "Apple",
+    model: "iPhone 11",
+    issue: "Écran cassé",
+    part: 90,
+    labor: 29,
+    total: 119,
+  },
+  {
+    device: "Samsung Galaxy S22",
+    brand: "Samsung",
+    model: "Galaxy S22",
+    issue: "Connecteur charge",
+    part: 80,
+    labor: 29,
+    total: 109,
+  },
   { device: "PlayStation 5", brand: "Sony", model: "PS5", issue: "Port HDMI", part: 120, labor: 49, total: 169 },
-  { device: "MacBook Pro 13", brand: "Apple", model: "MacBook Pro 13", issue: "Batterie HS", part: 140, labor: 59, total: 199 },
+  {
+    device: "MacBook Pro 13",
+    brand: "Apple",
+    model: "MacBook Pro 13",
+    issue: "Batterie HS",
+    part: 140,
+    labor: 59,
+    total: 199,
+  },
   { device: "iPad Air", brand: "Apple", model: "iPad Air", issue: "Diagnostic", part: 0, labor: 0, total: 0 }, // bloquant
 ] as const;
 

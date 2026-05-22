@@ -45,8 +45,8 @@ export default function DownloadPage() {
             Télécharger Behar Tech Pro
           </h1>
           <p className="mt-4 text-[14px] leading-6 text-[#6B6B6B]">
-            Logiciel d'atelier de réparation. Installation locale, fonctionne hors ligne,
-            synchronisation cloud automatique au retour du réseau.
+            Logiciel d'atelier de réparation. Installation locale, fonctionne hors ligne, synchronisation cloud
+            automatique au retour du réseau.
           </p>
         </div>
 

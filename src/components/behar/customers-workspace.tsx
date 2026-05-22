@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+
+import Link from "next/link";
 
 import {
   ArrowLeft,
@@ -18,7 +19,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { useAddressAutocomplete } from "@/hooks/use-address-autocomplete";
+import { fetchPostalCodeByCity, usePostalCities } from "@/hooks/use-postal-cities";
 import { type Customer, formatEuro, formatIsoToDisplay, getNowIso, toLocalIso, useBeharStore } from "@/lib/behar-store";
+import { CALLING_CODES, COUNTRY_NAMES } from "@/lib/countries";
 import { displayCustomerName } from "@/lib/customer-display";
 import { sendRealSms } from "@/lib/send-sms";
 import { cn } from "@/lib/utils";
@@ -37,12 +41,7 @@ import {
   tableHeadClassName,
 } from "./primitives";
 
-import { usePostalCities, fetchPostalCodeByCity } from "@/hooks/use-postal-cities";
-import { useAddressAutocomplete } from "@/hooks/use-address-autocomplete";
-import { COUNTRY_NAMES, CALLING_CODES } from "@/lib/countries";
-
 const countryOptions = COUNTRY_NAMES;
-
 
 function digitsOnly(value: unknown): string {
   return String(value ?? "").replace(/\D/g, "");
@@ -67,14 +66,11 @@ function formatPhoneLocal(prefix: string, value: unknown): string {
     const toFormat = digits.slice(0, maxLen);
     if (isZero) {
       return toFormat.replace(/(\d{2})(?=\d)/g, "$1 ").trim();
-    } else {
-      return toFormat.replace(/(\d)(?=(?:\d{2})+$)/g, "$1 ").trim();
     }
+    return toFormat.replace(/(\d)(?=(?:\d{2})+$)/g, "$1 ").trim();
   }
   return digits.replace(/(\d{3})(?=\d)/g, "$1 ").trim();
 }
-
-
 
 export function CustomersWorkspace() {
   const store = useBeharStore();
@@ -91,7 +87,7 @@ export function CustomersWorkspace() {
       customer.name.toLowerCase().includes(q) ||
       (customer.email ?? "").toLowerCase().includes(q) ||
       (customer.phone ?? "").toLowerCase().includes(q);
-    
+
     if (filterVip && customer.status !== "Client fidèle") return false;
     return matchesSearch;
   });
@@ -111,69 +107,70 @@ export function CustomersWorkspace() {
   const [tab, setTab] = useState<"resume" | "historique">("resume");
 
   const historyItems: HistoryItem[] = selectedCustomer
-    ? ([
-        ...store.repairs
-          .filter((repair) => repair.customerId === selectedCustomer.id)
-          .map((repair) => ({
-            detail: `${repair.device} — ${repair.issue}`,
-            icon: Wrench,
-            time: repair.droppedAt,
-            title: `Réparation ${repair.number}`,
-            type: "repair" as const,
-            id: repair.id,
-          })),
-        ...store.appointments
-          .filter((appointment) => appointment.customerId === selectedCustomer.id)
-          .map((appointment) => ({
-            detail: `${appointment.device} — ${appointment.issue}`,
-            icon: CalendarDays,
-            time: `${appointment.date}T${appointment.time}`,
-            title: appointment.confirmed ? "RDV honoré" : "RDV programmé",
-            type: undefined,
-            id: appointment.id,
-          })),
-        ...store.quotes
-          .filter((quote) => quote.customerId === selectedCustomer.id)
-          .map((quote) => ({
-            detail: `Devis ${quote.number} — ${formatEuro(quote.lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0))}`,
-            icon: ReceiptText,
-            time: quote.date,
-            title: `Devis ${quote.status}`,
-            type: "quote" as const,
-            id: quote.id,
-          })),
-        ...store.invoices
-          .filter((invoice) => invoice.customerId === selectedCustomer.id)
-          .map((invoice) => ({
-            detail: `Facture ${invoice.number} — ${invoice.status}`,
-            icon: ReceiptText,
-            time: invoice.date,
-            title: `Facture ${invoice.status}`,
-            type: "invoice" as const,
-            id: invoice.id,
-          })),
-        ...store.payments
-          .filter((payment) => payment.customerId === selectedCustomer.id)
-          .map((payment) => ({
-            detail: `${payment.method} — ${formatEuro(payment.amount)}`,
-            icon: ReceiptText,
-            time: payment.date,
-            title: `Paiement enregistré`,
-            type: "payment" as const,
-            id: payment.id,
-          })),
-        ...store.messageLogs
-          .filter((message) => message.customerId === selectedCustomer.id)
-          .map((message) => ({
-            detail: message.body.length > 60 ? message.body.slice(0, 60) + "..." : message.body,
-            icon: MessageCircle,
-            time: message.createdAt,
-            title: `Message ${message.channel}`,
-            type: undefined,
-            id: undefined,
-          })),
-      ] as HistoryItem[])
-        .sort((a, b) => b.time.localeCompare(a.time))
+    ? (
+        [
+          ...store.repairs
+            .filter((repair) => repair.customerId === selectedCustomer.id)
+            .map((repair) => ({
+              detail: `${repair.device} — ${repair.issue}`,
+              icon: Wrench,
+              time: repair.droppedAt,
+              title: `Réparation ${repair.number}`,
+              type: "repair" as const,
+              id: repair.id,
+            })),
+          ...store.appointments
+            .filter((appointment) => appointment.customerId === selectedCustomer.id)
+            .map((appointment) => ({
+              detail: `${appointment.device} — ${appointment.issue}`,
+              icon: CalendarDays,
+              time: `${appointment.date}T${appointment.time}`,
+              title: appointment.confirmed ? "RDV honoré" : "RDV programmé",
+              type: undefined,
+              id: appointment.id,
+            })),
+          ...store.quotes
+            .filter((quote) => quote.customerId === selectedCustomer.id)
+            .map((quote) => ({
+              detail: `Devis ${quote.number} — ${formatEuro(quote.lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0))}`,
+              icon: ReceiptText,
+              time: quote.date,
+              title: `Devis ${quote.status}`,
+              type: "quote" as const,
+              id: quote.id,
+            })),
+          ...store.invoices
+            .filter((invoice) => invoice.customerId === selectedCustomer.id)
+            .map((invoice) => ({
+              detail: `Facture ${invoice.number} — ${invoice.status}`,
+              icon: ReceiptText,
+              time: invoice.date,
+              title: `Facture ${invoice.status}`,
+              type: "invoice" as const,
+              id: invoice.id,
+            })),
+          ...store.payments
+            .filter((payment) => payment.customerId === selectedCustomer.id)
+            .map((payment) => ({
+              detail: `${payment.method} — ${formatEuro(payment.amount)}`,
+              icon: ReceiptText,
+              time: payment.date,
+              title: `Paiement enregistré`,
+              type: "payment" as const,
+              id: payment.id,
+            })),
+          ...store.messageLogs
+            .filter((message) => message.customerId === selectedCustomer.id)
+            .map((message) => ({
+              detail: message.body.length > 60 ? message.body.slice(0, 60) + "..." : message.body,
+              icon: MessageCircle,
+              time: message.createdAt,
+              title: `Message ${message.channel}`,
+              type: undefined,
+              id: undefined,
+            })),
+        ] as HistoryItem[]
+      ).sort((a, b) => b.time.localeCompare(a.time))
     : [];
 
   const actions = (
@@ -221,7 +218,9 @@ export function CustomersWorkspace() {
                   <span className="font-bold text-[14px]">{totalCustomers}</span>
                 </span>
                 <p className="mt-3 text-[#8A8984] text-[11px] font-medium">Clients</p>
-                <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">{totalCustomers}</p>
+                <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">
+                  {totalCustomers}
+                </p>
                 <p className="mt-1.5 text-[#8A8984] text-[10px] font-medium">enregistrés</p>
               </div>
               <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
@@ -235,7 +234,9 @@ export function CustomersWorkspace() {
               <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
                 <span className="grid size-9 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F]">€</span>
                 <p className="mt-3 text-[#8A8984] text-[11px] font-medium">CA cumulé</p>
-                <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">{formatEuro(totalSpent)}</p>
+                <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">
+                  {formatEuro(totalSpent)}
+                </p>
                 <p className="mt-1.5 text-[#8A8984] text-[10px] font-medium">historique</p>
               </div>
             </section>
@@ -247,39 +248,41 @@ export function CustomersWorkspace() {
             <li className="rounded-[18px] bg-white p-10 text-center text-[#8A8984] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
               Aucun client.
             </li>
-          ) : filteredCustomers.map((customer) => (
-            <li key={customer.id}>
-              <button
-                type="button"
-                onClick={() => {
-                  store.setSelected("customer", customer.id);
-                  setMobileDetailOpen(true);
-                }}
-                className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
-              >
-                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#EAF6F2] font-semibold text-[#2A9D8F] text-[12px] uppercase">
-                  {customer.initials}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
-                      {displayCustomerName(customer)}
+          ) : (
+            filteredCustomers.map((customer) => (
+              <li key={customer.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    store.setSelected("customer", customer.id);
+                    setMobileDetailOpen(true);
+                  }}
+                  className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
+                >
+                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#EAF6F2] font-semibold text-[#2A9D8F] text-[12px] uppercase">
+                    {customer.initials}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
+                        {displayCustomerName(customer)}
+                      </p>
+                      <p className="shrink-0 font-bold text-[#1A1916] text-[14px] tabular-nums">
+                        {formatEuro(customer.totalSpent)}
+                      </p>
+                    </div>
+                    <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">
+                      {customer.device || "—"} · {customer.phone || "—"}
                     </p>
-                    <p className="shrink-0 font-bold text-[#1A1916] text-[14px] tabular-nums">
-                      {formatEuro(customer.totalSpent)}
-                    </p>
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <StatusBadge className="h-6 px-2 text-[10px] font-medium" status={customer.status} />
+                      <span className="text-[#8A8984] text-[11px]">{formatIsoToDisplay(customer.lastVisit)}</span>
+                    </div>
                   </div>
-                  <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">
-                    {customer.device || "—"} · {customer.phone || "—"}
-                  </p>
-                  <div className="mt-2 flex items-center justify-between gap-2">
-                    <StatusBadge className="h-6 px-2 text-[10px] font-medium" status={customer.status} />
-                    <span className="text-[#8A8984] text-[11px]">{formatIsoToDisplay(customer.lastVisit)}</span>
-                  </div>
-                </div>
-              </button>
-            </li>
-          ))}
+                </button>
+              </li>
+            ))
+          )}
         </ul>
       </div>
 
@@ -331,12 +334,12 @@ export function CustomersWorkspace() {
         </TableShell>
 
         {selectedCustomer && (
-          <Panel className={cn(
-            mobileDetailOpen
-              ? "fixed inset-0 z-40 overflow-y-auto bg-white p-5 flex flex-col"
-              : "hidden",
-            "md:relative md:inset-auto md:z-auto md:flex md:min-h-0 md:flex-col md:overflow-hidden md:rounded-[20px] md:bg-white md:border md:border-[#E7E4DC] md:shadow-[0_1px_3px_rgba(26,25,22,0.04),0_8px_24px_rgba(26,25,22,0.025)] md:p-5 md:h-full",
-          )}>
+          <Panel
+            className={cn(
+              mobileDetailOpen ? "fixed inset-0 z-40 overflow-y-auto bg-white p-5 flex flex-col" : "hidden",
+              "md:relative md:inset-auto md:z-auto md:flex md:min-h-0 md:flex-col md:overflow-hidden md:rounded-[20px] md:bg-white md:border md:border-[#E7E4DC] md:shadow-[0_1px_3px_rgba(26,25,22,0.04),0_8px_24px_rgba(26,25,22,0.025)] md:p-5 md:h-full",
+            )}
+          >
             {/* Mobile back button */}
             <div className="md:hidden -mx-5 -mt-5 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#F1F1EF] bg-white/95 backdrop-blur-xl px-4 py-3">
               <button
@@ -402,16 +405,32 @@ export function CustomersWorkspace() {
               {tab === "resume" ? (
                 <div className="overflow-y-auto pr-2 custom-scrollbar flex-1">
                   <div className="space-y-0.5">
-                    <DetailRow className="py-2.5" label="Appareil principal" value={<span className="font-semibold">{selectedCustomer.device}</span>} />
+                    <DetailRow
+                      className="py-2.5"
+                      label="Appareil principal"
+                      value={<span className="font-semibold">{selectedCustomer.device}</span>}
+                    />
                     <DetailRow className="py-2.5" label="Dernière réparation" value={selectedCustomer.lastRepair} />
                     <DetailRow
                       className="py-2.5"
                       label="Total dépensé"
-                      value={<span className="text-lg font-semibold text-[#1A1916] tabular-nums">{formatEuro(selectedCustomer.totalSpent)}</span>}
+                      value={
+                        <span className="text-lg font-semibold text-[#1A1916] tabular-nums">
+                          {formatEuro(selectedCustomer.totalSpent)}
+                        </span>
+                      }
                     />
-                    <DetailRow className="py-2.5" label="Interventions" value={<span className="font-semibold">{selectedCustomer.interventions}</span>} />
+                    <DetailRow
+                      className="py-2.5"
+                      label="Interventions"
+                      value={<span className="font-semibold">{selectedCustomer.interventions}</span>}
+                    />
                     <DetailRow className="py-2.5" label="Provenance" value={selectedCustomer.source} />
-                    <DetailRow className="py-2.5" label="Adresse" value={selectedCustomer.address || "Non renseignée"} />
+                    <DetailRow
+                      className="py-2.5"
+                      label="Adresse"
+                      value={selectedCustomer.address || "Non renseignée"}
+                    />
                     <DetailRow
                       className="py-2.5"
                       label="Statut"
@@ -424,7 +443,9 @@ export function CustomersWorkspace() {
                     />
                   </div>
                   <div className="mt-4 rounded-[16px] bg-[#FAFAF8] p-4 border border-[#F1F1EF]">
-                    <h3 className="mb-2 font-medium text-[#8A8984] text-[12px] uppercase tracking-wider">Notes internes</h3>
+                    <h3 className="mb-2 font-medium text-[#8A8984] text-[12px] uppercase tracking-wider">
+                      Notes internes
+                    </h3>
                     <p className="text-[#6B6B6B] text-[13px] leading-relaxed italic">
                       {selectedCustomer.notes || "Aucune note particulière pour ce client."}
                     </p>
@@ -436,7 +457,11 @@ export function CustomersWorkspace() {
                     {historyItems.length > 0 ? (
                       historyItems.map(({ title, detail, time, icon: Icon, type, id }, idx) => (
                         <Link
-                          href={type ? `/dashboard/${type === "repair" ? "reparations" : type === "quote" ? "devis" : type === "invoice" ? "factures" : type === "payment" ? "paiements" : ""}` : "#"}
+                          href={
+                            type
+                              ? `/dashboard/${type === "repair" ? "reparations" : type === "quote" ? "devis" : type === "invoice" ? "factures" : type === "payment" ? "paiements" : ""}`
+                              : "#"
+                          }
                           onClick={() => {
                             if (type && id) store.setSelected(type, id);
                           }}
@@ -449,8 +474,12 @@ export function CustomersWorkspace() {
                           </span>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center justify-between gap-2">
-                              <p className="font-semibold text-[#1A1916] text-sm leading-tight tracking-tight">{title}</p>
-                              <span className="text-[#B0AEA8] text-[9px] font-medium uppercase whitespace-nowrap">{formatIsoToDisplay(time)}</span>
+                              <p className="font-semibold text-[#1A1916] text-sm leading-tight tracking-tight">
+                                {title}
+                              </p>
+                              <span className="text-[#B0AEA8] text-[9px] font-medium uppercase whitespace-nowrap">
+                                {formatIsoToDisplay(time)}
+                              </span>
                             </div>
                             <p className="mt-1 text-[#6B6B6B] text-[12px] leading-snug">{detail}</p>
                           </div>
@@ -460,7 +489,9 @@ export function CustomersWorkspace() {
                       <div className="flex flex-col items-center justify-center py-10 text-center">
                         <ReceiptText className="size-8 mb-3 text-[#CDCBC5]" />
                         <p className="text-[13px] font-medium text-[#8A8984]">Aucun historique disponible</p>
-                        <p className="mt-1 text-[12px] text-[#CDCBC5]">Les interventions, devis et paiements apparaîtront ici.</p>
+                        <p className="mt-1 text-[12px] text-[#CDCBC5]">
+                          Les interventions, devis et paiements apparaîtront ici.
+                        </p>
                       </div>
                     )}
                   </div>
@@ -505,7 +536,10 @@ export function CustomersWorkspace() {
                   <Wrench className="size-4" />
                   Réparation
                 </SecondaryButton>
-                <SecondaryButton className="h-11 w-full font-medium" onClick={() => setAppointmentCustomerId(selectedCustomer.id)}>
+                <SecondaryButton
+                  className="h-11 w-full font-medium"
+                  onClick={() => setAppointmentCustomerId(selectedCustomer.id)}
+                >
                   <CalendarDays className="size-4" />
                   Rendez-vous
                 </SecondaryButton>
@@ -548,7 +582,7 @@ function CustomerModal({ onClose, initial }: Readonly<{ onClose: () => void; ini
   const phoneInfo = phoneParts(phone);
   const phoneLocal = formatPhoneLocal(phoneInfo.prefix, phoneInfo.local);
   const { cities: postalCities } = usePostalCities(postalCode, country);
-  
+
   const setInternationalPhone = (prefixValue: string, localValue: string) => {
     const normalizedPrefix = `+${digitsOnly(prefixValue).slice(0, 4) || "33"}`;
     const local = formatPhoneLocal(normalizedPrefix, localValue);
@@ -581,7 +615,9 @@ function CustomerModal({ onClose, initial }: Readonly<{ onClose: () => void; ini
                 .toUpperCase(),
               phone: phone.trim() || "Non renseigné",
               email: String(data.get("email") || "Non renseigné"),
-              address: [address.trim(), [postalCode, city].filter(Boolean).join(" "), country].filter(Boolean).join(", "),
+              address: [address.trim(), [postalCode, city].filter(Boolean).join(" "), country]
+                .filter(Boolean)
+                .join(", "),
               device: deviceState.deviceLabel,
               notes: String(data.get("notes") || ""),
 
@@ -612,7 +648,9 @@ function CustomerModal({ onClose, initial }: Readonly<{ onClose: () => void; ini
               value={(CALLING_CODES as readonly string[]).includes(phoneInfo.prefix) ? phoneInfo.prefix : "+33"}
             >
               {CALLING_CODES.map((code) => (
-                <option key={code} value={code}>{code}</option>
+                <option key={code} value={code}>
+                  {code}
+                </option>
               ))}
             </select>
             <input
@@ -636,9 +674,19 @@ function CustomerModal({ onClose, initial }: Readonly<{ onClose: () => void; ini
               }}
               value={country}
             >
-              {countryOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+              {countryOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
             </select>
-            <input className={inputClass} inputMode="numeric" onChange={(e) => setPostal(e.target.value)} placeholder="Code postal" value={postalCode} />
+            <input
+              className={inputClass}
+              inputMode="numeric"
+              onChange={(e) => setPostal(e.target.value)}
+              placeholder="Code postal"
+              value={postalCode}
+            />
             <div className="relative">
               <input
                 className={inputClass}
@@ -656,7 +704,9 @@ function CustomerModal({ onClose, initial }: Readonly<{ onClose: () => void; ini
               />
               {postalCities.length > 0 && (
                 <datalist id="customer-city-suggestions">
-                  {postalCities.map((option) => <option key={option} value={option} />)}
+                  {postalCities.map((option) => (
+                    <option key={option} value={option} />
+                  ))}
                 </datalist>
               )}
             </div>
@@ -667,7 +717,7 @@ function CustomerModal({ onClose, initial }: Readonly<{ onClose: () => void; ini
             onChange={(e) => {
               const val = e.target.value;
               setAddress(val);
-              const match = addressSuggestions.find(s => s.label === val || s.name === val);
+              const match = addressSuggestions.find((s) => s.label === val || s.name === val);
               if (match) {
                 setAddress(match.name);
                 if (match.postcode) setPostalCode(match.postcode);

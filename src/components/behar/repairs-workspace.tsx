@@ -49,13 +49,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
+  type Appointment,
   buildInvoiceLinesFromRepair,
+  type Customer,
   formatEuro,
   formatIsoToDisplay,
-  normalizeAppointmentStatus,
-  type Appointment,
-  type Customer,
   type Invoice,
+  normalizeAppointmentStatus,
   type PaymentMethod,
   paymentMethods,
   type Quote,
@@ -190,9 +190,9 @@ export function RepairsWorkspace() {
 
   const fullRepairHistory = useMemo(() => {
     if (!selectedRepair) return [];
-    
+
     const items: any[] = (selectedRepair.history ?? []).map((h: string) => ({ text: h }));
-    
+
     // Add linked quotes
     quotes
       .filter((q) => q.repairId === selectedRepair.id)
@@ -203,28 +203,28 @@ export function RepairsWorkspace() {
           icon: ReceiptText,
           date: q.date,
           type: "quote",
-          id: q.id
+          id: q.id,
         });
       });
-      
+
     // Add linked invoices
     invoices
       .filter((i) => i.repairId === selectedRepair.id)
       .forEach((i) => {
         items.push({
           text: `Facture ${i.number}`,
-          detail: `${i.status} — ${formatEuro(i.paidAmount ?? 0)} / ${formatEuro(i.lines.reduce((acc, l) => acc + (l.quantity * l.unitPrice), 0))}`,
+          detail: `${i.status} — ${formatEuro(i.paidAmount ?? 0)} / ${formatEuro(i.lines.reduce((acc, l) => acc + l.quantity * l.unitPrice, 0))}`,
           icon: ReceiptText,
           date: i.date,
           type: "invoice",
-          id: i.id
+          id: i.id,
         });
       });
 
     return items.sort((a, b) => {
-       // Strings don't have date, so we treat them as oldest or keep order
-       if (a.date && b.date) return b.date.localeCompare(a.date);
-       return 0;
+      // Strings don't have date, so we treat them as oldest or keep order
+      if (a.date && b.date) return b.date.localeCompare(a.date);
+      return 0;
     });
   }, [selectedRepair, quotes, invoices]);
   const selectedStockItem = stockItems.find((item) => item.id === selectedStockItemId);
@@ -349,7 +349,9 @@ export function RepairsWorkspace() {
 
   const ensureIntakeDocument = () => {
     if (!selectedRepair) return "";
-    const existing = documents.find((document) => document.type === "intake" && document.repairId === selectedRepair.id);
+    const existing = documents.find(
+      (document) => document.type === "intake" && document.repairId === selectedRepair.id,
+    );
     if (existing) return existing.id;
     return addDocument({
       type: "intake",
@@ -388,9 +390,7 @@ export function RepairsWorkspace() {
     // un autre garde-fou. On informe explicitement l'utilisateur.
     const stillExists = useBeharStore.getState().repairs.some((r) => r.id === repairId);
     if (stillExists) {
-      toast.error(
-        "Impossible de supprimer cette réparation. Vérifiez vos permissions ou réessayez.",
-      );
+      toast.error("Impossible de supprimer cette réparation. Vérifiez vos permissions ou réessayez.");
       return;
     }
     toast.success(`Réparation ${repairNumber} supprimée.`);
@@ -701,9 +701,7 @@ export function RepairsWorkspace() {
                 onClick={() => setStatusFilter(s as RepairStatus | "all")}
                 className={cn(
                   "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-[12.5px] font-semibold tracking-tight transition active:scale-95",
-                  active
-                    ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
-                    : "border-[#E7E4DC] bg-white text-[#1A1916]",
+                  active ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : "border-[#E7E4DC] bg-white text-[#1A1916]",
                 )}
               >
                 {label}
@@ -842,16 +840,15 @@ export function RepairsWorkspace() {
                         <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
                           {displayCustomerName(customer)}
                         </p>
-                        <span className="shrink-0 font-mono text-[#8A8984] text-[10.5px]">
-                          {repair.number}
-                        </span>
+                        <span className="shrink-0 font-mono text-[#8A8984] text-[10.5px]">{repair.number}</span>
                       </div>
                       <p className="mt-0.5 truncate text-[#1A1916] text-[13px]">{formatDeviceLabel(repair)}</p>
                       <p className="mt-0.5 truncate text-[#8A8984] text-[12px]">{repair.issue}</p>
                       {linkedAppointment && (
                         <p className="mt-0.5 inline-flex items-center gap-1 text-[#2A9D8F] text-[11px] font-medium">
                           <CalendarDays className="size-3" />
-                          Depuis RDV · {linkedAppointment.date}{linkedAppointment.time ? ` · ${linkedAppointment.time}` : ""}
+                          Depuis RDV · {linkedAppointment.date}
+                          {linkedAppointment.time ? ` · ${linkedAppointment.time}` : ""}
                         </p>
                       )}
                       <div className="mt-2 flex items-center justify-between gap-2">
@@ -908,43 +905,49 @@ export function RepairsWorkspace() {
             <Panel className="w-full max-w-md p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-bold text-lg text-[#1A1916]">Choisir un devis</h3>
-                <button onClick={() => setImportOpen(false)}><X className="size-5" /></button>
+                <button onClick={() => setImportOpen(false)}>
+                  <X className="size-5" />
+                </button>
               </div>
               <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                {quotes.filter(q => q.status === "Accepté" || q.status === "Envoyé").map(q => {
-                  const c = customers.find(cust => cust.id === q.customerId);
-                  return (
-                    <button
-                      key={q.id}
-                      onClick={() => {
-                        const total = q.lines.reduce((acc, l) => acc + l.quantity * l.unitPrice, 0);
-                        const firstLine = q.lines[0]?.description || "";
-                        const [issue, device] = firstLine.includes(" — ") 
-                          ? firstLine.split(" — ") 
-                          : [firstLine, ""];
+                {quotes
+                  .filter((q) => q.status === "Accepté" || q.status === "Envoyé")
+                  .map((q) => {
+                    const c = customers.find((cust) => cust.id === q.customerId);
+                    return (
+                      <button
+                        key={q.id}
+                        onClick={() => {
+                          const total = q.lines.reduce((acc, l) => acc + l.quantity * l.unitPrice, 0);
+                          const firstLine = q.lines[0]?.description || "";
+                          const [issue, device] = firstLine.includes(" — ") ? firstLine.split(" — ") : [firstLine, ""];
 
-                        setPrefillFromQuote({
-                          customerId: q.customerId,
-                          device: device.trim() || "Appareil",
-                          model: device.trim() || "",
-                          issue: issue.trim() || "Réparation",
-                          amount: total,
-                          notes: q.notes || "",
-                          quoteId: q.id
-                        });
-                        setModal("create");
-                        setImportOpen(false);
-                      }}
-                      className="w-full flex items-center justify-between p-3 rounded-xl border border-[#E7E4DC] hover:border-[#2A9D8F] hover:bg-[#F1FAF8] transition-all text-left"
-                    >
-                      <div>
-                        <p className="font-bold text-sm text-[#1A1916]">{q.number} — {c?.name}</p>
-                        <p className="text-xs text-[#6B6B6B]">{q.lines[0]?.description || "Sans description"}</p>
-                      </div>
-                      <span className="text-xs font-bold text-[#2A9D8F]">{formatEuro(q.lines.reduce((acc, l) => acc + l.quantity * l.unitPrice, 0))}</span>
-                    </button>
-                  );
-                })}
+                          setPrefillFromQuote({
+                            customerId: q.customerId,
+                            device: device.trim() || "Appareil",
+                            model: device.trim() || "",
+                            issue: issue.trim() || "Réparation",
+                            amount: total,
+                            notes: q.notes || "",
+                            quoteId: q.id,
+                          });
+                          setModal("create");
+                          setImportOpen(false);
+                        }}
+                        className="w-full flex items-center justify-between p-3 rounded-xl border border-[#E7E4DC] hover:border-[#2A9D8F] hover:bg-[#F1FAF8] transition-all text-left"
+                      >
+                        <div>
+                          <p className="font-bold text-sm text-[#1A1916]">
+                            {q.number} — {c?.name}
+                          </p>
+                          <p className="text-xs text-[#6B6B6B]">{q.lines[0]?.description || "Sans description"}</p>
+                        </div>
+                        <span className="text-xs font-bold text-[#2A9D8F]">
+                          {formatEuro(q.lines.reduce((acc, l) => acc + l.quantity * l.unitPrice, 0))}
+                        </span>
+                      </button>
+                    );
+                  })}
               </div>
             </Panel>
           </div>
@@ -1131,386 +1134,402 @@ export function RepairsWorkspace() {
                   repair={selectedRepair}
                 />
               ) : (
-              <div className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1 pb-4">
-                <div className="rounded-[16px] border border-[#E7E4DC] bg-[#FAFAF8]/80 px-5 py-4">
-                  {primaryAction ? (
-                    <>
-                      {selectedRepair.status === "Prêt" && primaryInvoice?.status !== "Payée" && resteAPayer > 0 && (
-                        <div className="mt-4 space-y-2 rounded-[12px] border border-[#E7E4DC] bg-white p-3">
-                          <p className="text-[#6B6B6B] text-xs">Méthode d’encaissement simulée</p>
-                          <select
-                            className="h-10 w-full rounded-[10px] border border-[#E7E4DC] bg-white px-2 text-sm outline-none focus:border-[#2A9D8F]"
-                            onChange={(event) => setRepairPayMethod(event.target.value as PaymentMethod)}
-                            value={repairPayMethod}
-                          >
-                            {paymentMethods.map((m) => (
-                              <option key={m} value={m}>
-                                {m === "Carte" ? "Carte bancaire" : m}
-                              </option>
-                            ))}
-                          </select>
-                          <textarea
-                            className="min-h-[48px] w-full rounded-[10px] border border-[#E7E4DC] bg-white px-3 py-2 text-xs outline-none placeholder:text-[#8A8984] focus:border-[#2A9D8F]"
-                            onChange={(e) => setPaymentNote(e.target.value)}
-                            placeholder="Note facultative…"
-                            value={paymentNote}
-                          />
-                        </div>
-                      )}
-                      <PrimaryButton className="mt-4 h-11 w-full" onClick={primaryAction.onClick}>
-                        {primaryAction.label.startsWith("Marquer payée") ? (
-                          <CreditCard className="mr-2 size-4" />
-                        ) : primaryAction.label === "Voir reçu" ? (
-                          <Receipt className="mr-2 size-4" />
-                        ) : primaryAction.label === "Créer facture" ? (
-                          <FileText className="mr-2 size-4" />
-                        ) : primaryAction.label === "Ajouter un tarif" ? (
-                          <Edit3 className="mr-2 size-4" />
-                        ) : (
-                          <Wrench className="mr-2 size-4" />
+                <div className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1 pb-4">
+                  <div className="rounded-[16px] border border-[#E7E4DC] bg-[#FAFAF8]/80 px-5 py-4">
+                    {primaryAction ? (
+                      <>
+                        {selectedRepair.status === "Prêt" && primaryInvoice?.status !== "Payée" && resteAPayer > 0 && (
+                          <div className="mt-4 space-y-2 rounded-[12px] border border-[#E7E4DC] bg-white p-3">
+                            <p className="text-[#6B6B6B] text-xs">Méthode d’encaissement simulée</p>
+                            <select
+                              className="h-10 w-full rounded-[10px] border border-[#E7E4DC] bg-white px-2 text-sm outline-none focus:border-[#2A9D8F]"
+                              onChange={(event) => setRepairPayMethod(event.target.value as PaymentMethod)}
+                              value={repairPayMethod}
+                            >
+                              {paymentMethods.map((m) => (
+                                <option key={m} value={m}>
+                                  {m === "Carte" ? "Carte bancaire" : m}
+                                </option>
+                              ))}
+                            </select>
+                            <textarea
+                              className="min-h-[48px] w-full rounded-[10px] border border-[#E7E4DC] bg-white px-3 py-2 text-xs outline-none placeholder:text-[#8A8984] focus:border-[#2A9D8F]"
+                              onChange={(e) => setPaymentNote(e.target.value)}
+                              placeholder="Note facultative…"
+                              value={paymentNote}
+                            />
+                          </div>
                         )}
-                        {primaryAction.label}
-                      </PrimaryButton>
-                      {subtleHintCounter ? (
-                        <p className="mt-3 text-[#6B6B6B] text-[11px] leading-relaxed">{subtleHintCounter}</p>
-                      ) : null}
-                    </>
-                  ) : (
-                    <p className="mt-3 text-[#6B6B6B] text-sm">Aucune action disponible pour ce statut.</p>
-                  )}
-                </div>
+                        <PrimaryButton className="mt-4 h-11 w-full" onClick={primaryAction.onClick}>
+                          {primaryAction.label.startsWith("Marquer payée") ? (
+                            <CreditCard className="mr-2 size-4" />
+                          ) : primaryAction.label === "Voir reçu" ? (
+                            <Receipt className="mr-2 size-4" />
+                          ) : primaryAction.label === "Créer facture" ? (
+                            <FileText className="mr-2 size-4" />
+                          ) : primaryAction.label === "Ajouter un tarif" ? (
+                            <Edit3 className="mr-2 size-4" />
+                          ) : (
+                            <Wrench className="mr-2 size-4" />
+                          )}
+                          {primaryAction.label}
+                        </PrimaryButton>
+                        {subtleHintCounter ? (
+                          <p className="mt-3 text-[#6B6B6B] text-[11px] leading-relaxed">{subtleHintCounter}</p>
+                        ) : null}
+                      </>
+                    ) : (
+                      <p className="mt-3 text-[#6B6B6B] text-sm">Aucune action disponible pour ce statut.</p>
+                    )}
+                  </div>
 
-                <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-sm">
-                  <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Client</h3>
-                  <Link
-                    href={`/dashboard/clients?id=${selectedCustomer?.id}`}
-                    className="mt-3 block font-semibold text-[#1A1916] text-lg hover:text-[#2A9D8F] transition-colors"
-                  >
-                    {displayCustomerName(selectedCustomer)}
-                  </Link>
-                  {isCounterCustomer(selectedCustomer) ? (
-                    <button
-                      className="mt-2 cursor-pointer rounded-lg border border-transparent bg-transparent px-0 font-medium text-[#2A9D8F] text-sm hover:underline"
-                      onClick={() => setModal("edit")}
-                      type="button"
+                  <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-sm">
+                    <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Client</h3>
+                    <Link
+                      href={`/dashboard/clients?id=${selectedCustomer?.id}`}
+                      className="mt-3 block font-semibold text-[#1A1916] text-lg hover:text-[#2A9D8F] transition-colors"
                     >
-                      Compléter le client
-                    </button>
-                  ) : null}
-                  {!isCounterCustomer(selectedCustomer) && selectedCustomer ? (
-                    <div className="mt-2 space-y-1 text-[#6B6B6B] text-sm">
-                      {selectedCustomer.phone && selectedCustomer.phone !== "Non renseigné" ? (
-                        <p>{selectedCustomer.phone}</p>
-                      ) : (
-                        <p>Téléphone non renseigné</p>
-                      )}
-                      {selectedCustomer.email && selectedCustomer.email !== "Non renseigné" ? (
-                        <p>{selectedCustomer.email}</p>
-                      ) : (
-                        <p>E-mail non renseigné</p>
-                      )}
-                    </div>
-                  ) : null}
-                </section>
-
-                <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4">
-                  <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Appareil</h3>
-                  <dl className="mt-4 space-y-2 text-sm">
-                    <Detail label="Type" value={selectedRepair.deviceType ?? "—"} />
-                    <Detail label="Marque" value={selectedRepair.brandName ?? "—"} />
-                    <Detail label="Modèle" value={selectedRepair.deviceModel ?? selectedRepair.model} />
-                    <Detail label="IMEI / série" value={selectedRepair.imei?.trim() || "—"} />
-                    <Detail label="Accès appareil" value={selectedRepair.intakeCondition?.accessMethod ?? "Non communiqué"} />
-                    {selectedRepair.intakeCondition?.accessCode ? (
-                      <Detail label="Code / mot de passe" value={selectedRepair.intakeCondition.accessCode} />
-                    ) : null}
-                    {selectedRepair.intakeCondition?.patternData?.points?.length ? (
-                      <Detail label="Schéma" value={selectedRepair.intakeCondition.patternData.points.join(" → ")} />
-                    ) : null}
-                    {selectedRepair.intakeCondition?.accessNote ? (
-                      <Detail label="Note accès" value={selectedRepair.intakeCondition.accessNote} />
-                    ) : null}
-                  </dl>
-                </section>
-
-                {(() => {
-                  const linkedAppointment = selectedRepair.appointmentId
-                    ? appointments.find((a) => a.id === selectedRepair.appointmentId)
-                    : appointments.find((a) => a.repairId === selectedRepair.id);
-                  if (!linkedAppointment) return null;
-                  return (
-                    <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">
-                            RDV d'origine
-                          </h3>
-                          <p className="mt-2 inline-flex items-center gap-2 font-semibold text-[#1A1916] text-sm">
-                            <CalendarDays className="size-4 text-[#2A9D8F]" />
-                            {linkedAppointment.date}
-                            {linkedAppointment.time ? ` · ${linkedAppointment.time}` : ""}
-                          </p>
-                          <p className="mt-0.5 text-[#6B6B6B] text-[12px]">
-                            {normalizeAppointmentStatus(linkedAppointment.status, linkedAppointment.confirmed, true)}
-                            {linkedAppointment.duration ? ` · ${linkedAppointment.duration}` : ""}
-                          </p>
-                        </div>
-                        <Link
-                          href="/dashboard/rendez-vous"
-                          onClick={() => setSelected("appointment", linkedAppointment.id)}
-                          className="inline-flex h-8 items-center rounded-full border border-[#E7E4DC] bg-white px-3 font-medium text-[#1A1916] text-[12px] hover:border-[#2A9D8F]"
-                        >
-                          Voir
-                        </Link>
-                      </div>
-                    </section>
-                  );
-                })()}
-
-                <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4">
-                  <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Intervention</h3>
-                  <p className="mt-4 font-semibold text-[#1A1916] text-base">{selectedRepair.issue}</p>
-                  {selectedRepair.notes?.trim() ? (
-                    <p className="mt-2 rounded-[12px] bg-[#FAFAF8] p-3 text-[#6B6B6B] text-[13px] leading-relaxed">
-                      {selectedRepair.notes}
-                    </p>
-                  ) : (
-                    <p className="mt-2 text-[#6B6B6B] text-sm">Aucune note interne.</p>
-                  )}
-                  <div className="mt-4 flex flex-wrap items-center gap-2">
-                    <span className="text-[#6B6B6B] text-xs">Statut atelier</span>
-                    <StatusBadge className="h-7 px-2.5 text-[11px]" status={selectedRepair.status} />
-                  </div>
-                </section>
-
-                <RepairIntakeSummaryCard
-                  customer={selectedCustomer}
-                  onDownload={() => {
-                    ensureIntakeDocument();
-                    download("intake", selectedRepair.id);
-                  }}
-                  onOpen={() => setDetailMode("intake")}
-                  onOpenDocuments={openIntakeDocuments}
-                  repair={selectedRepair}
-                />
-
-                <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4">
-                  <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Tarification</h3>
-                  <div className="mt-4 grid gap-2 text-[13px]">
-                    <Line
-                      label="Prix pièce / prestation"
-                      value={snap?.prixVentePiece ? formatEuro(snap.prixVentePiece) : "—"}
-                    />
-                    <Line label="Main-d’œuvre" value={formatEuro(selectedRepair.laborPrice ?? 0)} />
-                  </div>
-                  {snap && (snap.prixAchat || snap.marge) ? (
-                    <p className="mt-4 text-[#8A897E] text-[11px]">
-                      Prix achat interne {snap.prixAchat != null ? formatEuro(snap.prixAchat) : "—"}
-                      {" · "}Marge {snap.marge != null ? formatEuro(snap.marge) : "—"}
-                    </p>
-                  ) : null}
-                  <div className="mt-5 rounded-[14px] bg-[#E7F5F1]/65 px-4 py-5">
-                    <p className="text-[#1A1916] text-xs uppercase tracking-[0.04em]">Total client</p>
-                    <p className="mt-2 font-semibold text-[#1A1916] text-[28px] leading-none tracking-tight tabular-nums">
-                      {formatEuro(totalClientAmount)}
-                      {workshopInfo.vatApplicable && <span className="ml-2 text-xs font-medium text-[#6B6B6B]">TTC</span>}
-                    </p>
-                    <div className="mt-5 grid gap-2 border-black/[0.06] border-t pt-5 text-[13px]">
-                      <div className="flex justify-between gap-4">
-                        <span className="text-[#6B6B6B]">Payé</span>
-                        <span className="font-medium tabular-nums text-[#1A1916]">{formatEuro(repairPaidAmount)}</span>
-                      </div>
-                      <div className="flex justify-between gap-4">
-                        <span className="font-medium text-[#1A1916]">Reste à payer</span>
-                        <span className="font-semibold tabular-nums text-[#2A9D8F]">{formatEuro(resteAPayer)}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                    <span className="rounded-full bg-[#F1F1EF] px-2.5 py-1 font-semibold text-[#6B6B6B]">
-                      {paymentLabel}
-                    </span>
-                  </div>
-                </section>
-
-                <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4">
-                  <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Facturation</h3>
-                  <dl className="mt-4 space-y-2 text-[13px]">
-                    <div className="flex justify-between gap-4">
-                      <dt className="text-[#6B6B6B]">Facture</dt>
-                      <dd className="font-medium text-[#1A1916]">
-                        {primaryInvoice ? (
-                          <Link
-                            href="/dashboard/factures"
-                            onClick={() => setSelected("invoice", primaryInvoice.id)}
-                            className="text-[#2A9D8F] hover:underline"
-                          >
-                            Facture {primaryInvoice.number}
-                          </Link>
-                        ) : (
-                          "À créer"
-                        )}
-                      </dd>
-                    </div>
-                    <div className="flex justify-between gap-4">
-                      <dt className="text-[#6B6B6B]">Devis</dt>
-                      <dd className="font-medium text-[#1A1916]">
-                        {acceptedQuote ? (
-                          <Link
-                            href="/dashboard/devis"
-                            onClick={() => setSelected("quote", acceptedQuote.id)}
-                            className="text-[#2A9D8F] hover:underline"
-                          >
-                            Devis {acceptedQuote.number}
-                          </Link>
-                        ) : relatedQuotes.length > 0 ? (
-                          <Link
-                            href="/dashboard/devis"
-                            onClick={() => setSelected("quote", relatedQuotes[0].id)}
-                            className="text-[#2A9D8F] hover:underline"
-                          >
-                            {relatedQuotes.length} devis lié(s)
-                          </Link>
-                        ) : (
-                          "Aucun"
-                        )}
-                      </dd>
-                    </div>
-                    <div className="flex justify-between gap-4">
-                      <dt className="text-[#6B6B6B]">Paiement</dt>
-                      <dd className="font-medium text-[#1A1916]">{paymentLabel}</dd>
-                    </div>
-                  </dl>
-                </section>
-
-                <section className="rounded-[16px] border border-[#E7E4DC] px-[14px] py-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="font-semibold text-[#1A1916] text-sm">Produits et accessoires</h3>
-                    {(selectedRepair.repairSaleLines?.length ?? 0) > 0 ? (
-                      <span className="rounded-full bg-[#E8F7F3] px-3 py-1 font-semibold text-[#147065] text-xs">
-                        {selectedRepair.repairSaleLines?.length ?? 0}
-                      </span>
-                    ) : null}
-                  </div>
-                  {primaryInvoice || repairPaidAmount > 0 ? (
-                    <p className="mt-3 rounded-[12px] border border-[#F2C8C3] bg-[#FFF7F6] p-3 text-[#7A271A] text-xs">
-                      Cette réparation est déjà facturée. Créez une vente séparée.
-                    </p>
-                  ) : (
-                    <div className="mt-3 grid grid-cols-[minmax(0,1fr)_80px_auto] gap-2">
-                      <select
-                        aria-label="Produit du stock"
-                        className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm"
-                        onChange={(event) => {
-                          setSelectedStockItemId(event.target.value);
-                          setPartQuantity(1);
-                        }}
-                        value={selectedStockItemId}
+                      {displayCustomerName(selectedCustomer)}
+                    </Link>
+                    {isCounterCustomer(selectedCustomer) ? (
+                      <button
+                        className="mt-2 cursor-pointer rounded-lg border border-transparent bg-transparent px-0 font-medium text-[#2A9D8F] text-sm hover:underline"
+                        onClick={() => setModal("edit")}
+                        type="button"
                       >
-                        <option value="">Ajouter produit / accessoire</option>
-                        {compatibleStockItems.length > 0 ? (
-                          <optgroup label="Compatibles">
-                            {compatibleStockItems.map((item) => (
+                        Compléter le client
+                      </button>
+                    ) : null}
+                    {!isCounterCustomer(selectedCustomer) && selectedCustomer ? (
+                      <div className="mt-2 space-y-1 text-[#6B6B6B] text-sm">
+                        {selectedCustomer.phone && selectedCustomer.phone !== "Non renseigné" ? (
+                          <p>{selectedCustomer.phone}</p>
+                        ) : (
+                          <p>Téléphone non renseigné</p>
+                        )}
+                        {selectedCustomer.email && selectedCustomer.email !== "Non renseigné" ? (
+                          <p>{selectedCustomer.email}</p>
+                        ) : (
+                          <p>E-mail non renseigné</p>
+                        )}
+                      </div>
+                    ) : null}
+                  </section>
+
+                  <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4">
+                    <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Appareil</h3>
+                    <dl className="mt-4 space-y-2 text-sm">
+                      <Detail label="Type" value={selectedRepair.deviceType ?? "—"} />
+                      <Detail label="Marque" value={selectedRepair.brandName ?? "—"} />
+                      <Detail label="Modèle" value={selectedRepair.deviceModel ?? selectedRepair.model} />
+                      <Detail label="IMEI / série" value={selectedRepair.imei?.trim() || "—"} />
+                      <Detail
+                        label="Accès appareil"
+                        value={selectedRepair.intakeCondition?.accessMethod ?? "Non communiqué"}
+                      />
+                      {selectedRepair.intakeCondition?.accessCode ? (
+                        <Detail label="Code / mot de passe" value={selectedRepair.intakeCondition.accessCode} />
+                      ) : null}
+                      {selectedRepair.intakeCondition?.patternData?.points?.length ? (
+                        <Detail label="Schéma" value={selectedRepair.intakeCondition.patternData.points.join(" → ")} />
+                      ) : null}
+                      {selectedRepair.intakeCondition?.accessNote ? (
+                        <Detail label="Note accès" value={selectedRepair.intakeCondition.accessNote} />
+                      ) : null}
+                    </dl>
+                  </section>
+
+                  {(() => {
+                    const linkedAppointment = selectedRepair.appointmentId
+                      ? appointments.find((a) => a.id === selectedRepair.appointmentId)
+                      : appointments.find((a) => a.repairId === selectedRepair.id);
+                    if (!linkedAppointment) return null;
+                    return (
+                      <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">
+                              RDV d'origine
+                            </h3>
+                            <p className="mt-2 inline-flex items-center gap-2 font-semibold text-[#1A1916] text-sm">
+                              <CalendarDays className="size-4 text-[#2A9D8F]" />
+                              {linkedAppointment.date}
+                              {linkedAppointment.time ? ` · ${linkedAppointment.time}` : ""}
+                            </p>
+                            <p className="mt-0.5 text-[#6B6B6B] text-[12px]">
+                              {normalizeAppointmentStatus(linkedAppointment.status, linkedAppointment.confirmed, true)}
+                              {linkedAppointment.duration ? ` · ${linkedAppointment.duration}` : ""}
+                            </p>
+                          </div>
+                          <Link
+                            href="/dashboard/rendez-vous"
+                            onClick={() => setSelected("appointment", linkedAppointment.id)}
+                            className="inline-flex h-8 items-center rounded-full border border-[#E7E4DC] bg-white px-3 font-medium text-[#1A1916] text-[12px] hover:border-[#2A9D8F]"
+                          >
+                            Voir
+                          </Link>
+                        </div>
+                      </section>
+                    );
+                  })()}
+
+                  <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4">
+                    <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Intervention</h3>
+                    <p className="mt-4 font-semibold text-[#1A1916] text-base">{selectedRepair.issue}</p>
+                    {selectedRepair.notes?.trim() ? (
+                      <p className="mt-2 rounded-[12px] bg-[#FAFAF8] p-3 text-[#6B6B6B] text-[13px] leading-relaxed">
+                        {selectedRepair.notes}
+                      </p>
+                    ) : (
+                      <p className="mt-2 text-[#6B6B6B] text-sm">Aucune note interne.</p>
+                    )}
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <span className="text-[#6B6B6B] text-xs">Statut atelier</span>
+                      <StatusBadge className="h-7 px-2.5 text-[11px]" status={selectedRepair.status} />
+                    </div>
+                  </section>
+
+                  <RepairIntakeSummaryCard
+                    customer={selectedCustomer}
+                    onDownload={() => {
+                      ensureIntakeDocument();
+                      download("intake", selectedRepair.id);
+                    }}
+                    onOpen={() => setDetailMode("intake")}
+                    onOpenDocuments={openIntakeDocuments}
+                    repair={selectedRepair}
+                  />
+
+                  <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4">
+                    <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Tarification</h3>
+                    <div className="mt-4 grid gap-2 text-[13px]">
+                      <Line
+                        label="Prix pièce / prestation"
+                        value={snap?.prixVentePiece ? formatEuro(snap.prixVentePiece) : "—"}
+                      />
+                      <Line label="Main-d’œuvre" value={formatEuro(selectedRepair.laborPrice ?? 0)} />
+                    </div>
+                    {snap && (snap.prixAchat || snap.marge) ? (
+                      <p className="mt-4 text-[#8A897E] text-[11px]">
+                        Prix achat interne {snap.prixAchat != null ? formatEuro(snap.prixAchat) : "—"}
+                        {" · "}Marge {snap.marge != null ? formatEuro(snap.marge) : "—"}
+                      </p>
+                    ) : null}
+                    <div className="mt-5 rounded-[14px] bg-[#E7F5F1]/65 px-4 py-5">
+                      <p className="text-[#1A1916] text-xs uppercase tracking-[0.04em]">Total client</p>
+                      <p className="mt-2 font-semibold text-[#1A1916] text-[28px] leading-none tracking-tight tabular-nums">
+                        {formatEuro(totalClientAmount)}
+                        {workshopInfo.vatApplicable && (
+                          <span className="ml-2 text-xs font-medium text-[#6B6B6B]">TTC</span>
+                        )}
+                      </p>
+                      <div className="mt-5 grid gap-2 border-black/[0.06] border-t pt-5 text-[13px]">
+                        <div className="flex justify-between gap-4">
+                          <span className="text-[#6B6B6B]">Payé</span>
+                          <span className="font-medium tabular-nums text-[#1A1916]">
+                            {formatEuro(repairPaidAmount)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                          <span className="font-medium text-[#1A1916]">Reste à payer</span>
+                          <span className="font-semibold tabular-nums text-[#2A9D8F]">{formatEuro(resteAPayer)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                      <span className="rounded-full bg-[#F1F1EF] px-2.5 py-1 font-semibold text-[#6B6B6B]">
+                        {paymentLabel}
+                      </span>
+                    </div>
+                  </section>
+
+                  <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4">
+                    <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Facturation</h3>
+                    <dl className="mt-4 space-y-2 text-[13px]">
+                      <div className="flex justify-between gap-4">
+                        <dt className="text-[#6B6B6B]">Facture</dt>
+                        <dd className="font-medium text-[#1A1916]">
+                          {primaryInvoice ? (
+                            <Link
+                              href="/dashboard/factures"
+                              onClick={() => setSelected("invoice", primaryInvoice.id)}
+                              className="text-[#2A9D8F] hover:underline"
+                            >
+                              Facture {primaryInvoice.number}
+                            </Link>
+                          ) : (
+                            "À créer"
+                          )}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <dt className="text-[#6B6B6B]">Devis</dt>
+                        <dd className="font-medium text-[#1A1916]">
+                          {acceptedQuote ? (
+                            <Link
+                              href="/dashboard/devis"
+                              onClick={() => setSelected("quote", acceptedQuote.id)}
+                              className="text-[#2A9D8F] hover:underline"
+                            >
+                              Devis {acceptedQuote.number}
+                            </Link>
+                          ) : relatedQuotes.length > 0 ? (
+                            <Link
+                              href="/dashboard/devis"
+                              onClick={() => setSelected("quote", relatedQuotes[0].id)}
+                              className="text-[#2A9D8F] hover:underline"
+                            >
+                              {relatedQuotes.length} devis lié(s)
+                            </Link>
+                          ) : (
+                            "Aucun"
+                          )}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <dt className="text-[#6B6B6B]">Paiement</dt>
+                        <dd className="font-medium text-[#1A1916]">{paymentLabel}</dd>
+                      </div>
+                    </dl>
+                  </section>
+
+                  <section className="rounded-[16px] border border-[#E7E4DC] px-[14px] py-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="font-semibold text-[#1A1916] text-sm">Produits et accessoires</h3>
+                      {(selectedRepair.repairSaleLines?.length ?? 0) > 0 ? (
+                        <span className="rounded-full bg-[#E8F7F3] px-3 py-1 font-semibold text-[#147065] text-xs">
+                          {selectedRepair.repairSaleLines?.length ?? 0}
+                        </span>
+                      ) : null}
+                    </div>
+                    {primaryInvoice || repairPaidAmount > 0 ? (
+                      <p className="mt-3 rounded-[12px] border border-[#F2C8C3] bg-[#FFF7F6] p-3 text-[#7A271A] text-xs">
+                        Cette réparation est déjà facturée. Créez une vente séparée.
+                      </p>
+                    ) : (
+                      <div className="mt-3 grid grid-cols-[minmax(0,1fr)_80px_auto] gap-2">
+                        <select
+                          aria-label="Produit du stock"
+                          className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm"
+                          onChange={(event) => {
+                            setSelectedStockItemId(event.target.value);
+                            setPartQuantity(1);
+                          }}
+                          value={selectedStockItemId}
+                        >
+                          <option value="">Ajouter produit / accessoire</option>
+                          {compatibleStockItems.length > 0 ? (
+                            <optgroup label="Compatibles">
+                              {compatibleStockItems.map((item) => (
+                                <option disabled={item.stock <= 0} key={item.id} value={item.id}>
+                                  {item.name} · {formatEuro(item.salePrice)} · ×{item.stock}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ) : null}
+                          <optgroup label="Stock général">
+                            {genericStockItems.map((item) => (
                               <option disabled={item.stock <= 0} key={item.id} value={item.id}>
                                 {item.name} · {formatEuro(item.salePrice)} · ×{item.stock}
                               </option>
                             ))}
                           </optgroup>
-                        ) : null}
-                        <optgroup label="Stock général">
-                          {genericStockItems.map((item) => (
-                            <option disabled={item.stock <= 0} key={item.id} value={item.id}>
-                              {item.name} · {formatEuro(item.salePrice)} · ×{item.stock}
-                            </option>
-                          ))}
-                        </optgroup>
-                      </select>
-                      <input
-                        aria-label="Quantité"
-                        className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-2 text-center text-sm"
-                        max={maxPartQuantity}
-                        min={1}
-                        onBlur={() => setPartQuantity(normalizePartQuantity(partQuantity))}
-                        onChange={(event) => setPartQuantity(normalizePartQuantity(Number(event.target.value)))}
-                        step={1}
-                        type="number"
-                        value={partQuantity}
-                      />
-                      <SecondaryButton
-                        aria-label="Ajouter au dossier"
-                        className="h-10 px-2"
-                        disabled={!(selectedStockItem && selectedStockItem.stock > 0)}
-                        onClick={addSelectedPart}
-                      >
-                        <Plus className="size-4" />
-                      </SecondaryButton>
-                    </div>
-                  )}
-                  <div className="mt-4 space-y-2">
-                    {(selectedRepair.repairSaleLines?.length ?? 0) === 0 ? (
-                      <p className="text-[#6B6B6B] text-xs">Aucun produit ajouté à cette réparation.</p>
-                    ) : (
-                      (selectedRepair.repairSaleLines ?? []).map((line) => (
-                        <div
-                          className="flex items-center justify-between gap-3 rounded-[12px] border border-[#EFECE5] px-3 py-2 text-sm"
-                          key={line.id}
+                        </select>
+                        <input
+                          aria-label="Quantité"
+                          className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-2 text-center text-sm"
+                          max={maxPartQuantity}
+                          min={1}
+                          onBlur={() => setPartQuantity(normalizePartQuantity(partQuantity))}
+                          onChange={(event) => setPartQuantity(normalizePartQuantity(Number(event.target.value)))}
+                          step={1}
+                          type="number"
+                          value={partQuantity}
+                        />
+                        <SecondaryButton
+                          aria-label="Ajouter au dossier"
+                          className="h-10 px-2"
+                          disabled={!(selectedStockItem && selectedStockItem.stock > 0)}
+                          onClick={addSelectedPart}
                         >
-                          <div className="min-w-0">
-                            <p className="font-medium text-[#1A1916]">{line.name}</p>
-                            <p className="text-[#6B6B6B] text-xs">
-                              {line.sku ? `SKU ${line.sku} · ` : ""}Qté {line.quantity} · {formatEuro(line.unitPrice)} / u · ligne {formatEuro(line.total)}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="rounded-full bg-[#FAFAF8] px-2 py-1 text-[10px] font-semibold text-[#6B6B6B]">
-                              {line.status === "draft"
-                                ? "À remettre"
-                                : line.status === "confirmed"
-                                  ? "Remis"
-                                  : line.status === "invoiced"
-                                    ? "Facturé"
-                                    : "Payé"}
-                            </span>
-                            {!line.stockDecremented && line.status === "draft" ? (
-                              <button
-                                className="h-8 rounded-lg bg-[#E8F7F3] px-2 text-[#167B70] text-[11px] font-bold hover:bg-[#D7F0E9] transition"
-                                onClick={() => {
-                                  if (window.confirm(`Marquer ${line.name} comme remis ? Le stock sera décrémenté.`)) {
-                                    const ok = markRepairSaleLineDelivered(selectedRepair.id, line.id);
-                                    toast[ok ? "success" : "error"](ok ? "Accessoire remis et stock décrémenté." : "Stock insuffisant ou ligne déjà traitée.");
-                                  }
-                                }}
-                              >
-                                Marquer remis
-                              </button>
-                            ) : null}
-                            {line.status === "draft" ? (
-                            <button
-                              aria-label={`Retirer`}
-                              className="grid size-8 place-items-center rounded-lg text-[#B42318] hover:bg-[#FFF5F5]"
-                              onClick={() => {
-                                updateRepair(selectedRepair.id, {
-                                  repairSaleLines: (selectedRepair.repairSaleLines ?? []).filter((entry) => entry.id !== line.id),
-                                });
-                                toast.success("Produit retiré.");
-                              }}
-                              type="button"
-                            >
-                              <X className="size-4" />
-                            </button>
-                            ) : null}
-                          </div>
-                        </div>
-                      ))
+                          <Plus className="size-4" />
+                        </SecondaryButton>
+                      </div>
                     )}
-                  </div>
-                </section>
+                    <div className="mt-4 space-y-2">
+                      {(selectedRepair.repairSaleLines?.length ?? 0) === 0 ? (
+                        <p className="text-[#6B6B6B] text-xs">Aucun produit ajouté à cette réparation.</p>
+                      ) : (
+                        (selectedRepair.repairSaleLines ?? []).map((line) => (
+                          <div
+                            className="flex items-center justify-between gap-3 rounded-[12px] border border-[#EFECE5] px-3 py-2 text-sm"
+                            key={line.id}
+                          >
+                            <div className="min-w-0">
+                              <p className="font-medium text-[#1A1916]">{line.name}</p>
+                              <p className="text-[#6B6B6B] text-xs">
+                                {line.sku ? `SKU ${line.sku} · ` : ""}Qté {line.quantity} · {formatEuro(line.unitPrice)}{" "}
+                                / u · ligne {formatEuro(line.total)}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="rounded-full bg-[#FAFAF8] px-2 py-1 text-[10px] font-semibold text-[#6B6B6B]">
+                                {line.status === "draft"
+                                  ? "À remettre"
+                                  : line.status === "confirmed"
+                                    ? "Remis"
+                                    : line.status === "invoiced"
+                                      ? "Facturé"
+                                      : "Payé"}
+                              </span>
+                              {!line.stockDecremented && line.status === "draft" ? (
+                                <button
+                                  className="h-8 rounded-lg bg-[#E8F7F3] px-2 text-[#167B70] text-[11px] font-bold hover:bg-[#D7F0E9] transition"
+                                  onClick={() => {
+                                    if (
+                                      window.confirm(`Marquer ${line.name} comme remis ? Le stock sera décrémenté.`)
+                                    ) {
+                                      const ok = markRepairSaleLineDelivered(selectedRepair.id, line.id);
+                                      toast[ok ? "success" : "error"](
+                                        ok
+                                          ? "Accessoire remis et stock décrémenté."
+                                          : "Stock insuffisant ou ligne déjà traitée.",
+                                      );
+                                    }
+                                  }}
+                                >
+                                  Marquer remis
+                                </button>
+                              ) : null}
+                              {line.status === "draft" ? (
+                                <button
+                                  aria-label={`Retirer`}
+                                  className="grid size-8 place-items-center rounded-lg text-[#B42318] hover:bg-[#FFF5F5]"
+                                  onClick={() => {
+                                    updateRepair(selectedRepair.id, {
+                                      repairSaleLines: (selectedRepair.repairSaleLines ?? []).filter(
+                                        (entry) => entry.id !== line.id,
+                                      ),
+                                    });
+                                    toast.success("Produit retiré.");
+                                  }}
+                                  type="button"
+                                >
+                                  <X className="size-4" />
+                                </button>
+                              ) : null}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </section>
 
-                <section>
-                  <h3 className="mb-3 font-semibold text-[#1A1916] text-sm">Historique & Documents</h3>
-                  <Timeline items={fullRepairHistory} />
-                </section>
-              </div>
+                  <section>
+                    <h3 className="mb-3 font-semibold text-[#1A1916] text-sm">Historique & Documents</h3>
+                    <Timeline items={fullRepairHistory} />
+                  </section>
+                </div>
               )}
             </div>
           ) : (
@@ -1537,29 +1556,22 @@ export function RepairsWorkspace() {
         />
       )}
 
-      <AlertDialog
-        open={Boolean(repairPendingDelete)}
-        onOpenChange={(open) => !open && setRepairPendingDelete(null)}
-      >
+      <AlertDialog open={Boolean(repairPendingDelete)} onOpenChange={(open) => !open && setRepairPendingDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Supprimer la réparation ?</AlertDialogTitle>
             <AlertDialogDescription>
               {repairPendingDelete ? (
                 <>
-                  La réparation{repairPendingDelete.status === "Prêt" ? " prête" : ""}{" "}
-                  {repairPendingDelete.number} sera retirée du tableau. Les factures, devis et
-                  reçus déjà créés restent conservés.
+                  La réparation{repairPendingDelete.status === "Prêt" ? " prête" : ""} {repairPendingDelete.number} sera
+                  retirée du tableau. Les factures, devis et reçus déjà créés restent conservés.
                 </>
               ) : null}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-[#B42318] text-white hover:bg-[#991B1B]"
-              onClick={confirmDeleteRepair}
-            >
+            <AlertDialogAction className="bg-[#B42318] text-white hover:bg-[#991B1B]" onClick={confirmDeleteRepair}>
               Supprimer
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -1651,8 +1663,10 @@ function PlannedEntriesPanel({
 }
 
 function findRepairForAppointment(appointment: Appointment, repairs: { id: string; appointmentId?: string }[]) {
-  return repairs.find((repair) => repair.id === appointment.repairId) ??
-    repairs.find((repair) => repair.appointmentId === appointment.id);
+  return (
+    repairs.find((repair) => repair.id === appointment.repairId) ??
+    repairs.find((repair) => repair.appointmentId === appointment.id)
+  );
 }
 
 function appointmentSortKey(appointment: Appointment) {

@@ -41,7 +41,9 @@ const SUSPICIOUS = [
 ];
 
 function clean(s) {
-  return String(s ?? "").replace(/\s+/g, " ").trim();
+  return String(s ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function hasSuspiciousModel(model) {
@@ -122,9 +124,7 @@ for (const item of raw) {
   const normalized = normalizeModelHeuristic(item.modele);
   if (normalized && normalized !== clean(item.modele)) {
     // Heuristique de "à vérifier" si le modèle devient trop vague
-    const tooVague =
-      ["iphone", "galaxy", "macbook"].includes(normalized.toLowerCase()) ||
-      normalized.length < 3;
+    const tooVague = ["iphone", "galaxy", "macbook"].includes(normalized.toLowerCase()) || normalized.length < 3;
     if (tooVague) wouldNeedReview++;
     else wouldAutoCorrect++;
   }
@@ -146,4 +146,3 @@ const report = {
 };
 
 console.log(JSON.stringify(report, null, 2));
-

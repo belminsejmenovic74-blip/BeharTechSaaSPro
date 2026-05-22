@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, CloudOff, Loader2, AlertCircle } from "lucide-react";
 
-import { subscribeWorkshopSyncState, type WorkshopSyncState } from "@/lib/workshop-sync";
+import { AlertCircle, Check, CloudOff, Loader2 } from "lucide-react";
+
 import { cn } from "@/lib/utils";
+import { subscribeWorkshopSyncState, type WorkshopSyncState } from "@/lib/workshop-sync";
 
 /**
  * Badge de statut sync, style Notion/Drive.
@@ -18,7 +19,10 @@ export function SyncStatusBadge({ className }: Readonly<{ className?: string }>)
     const unsubscribe = subscribeWorkshopSyncState(setState);
     // Tick chaque 30 sec pour rafraîchir "il y a X sec"
     const interval = setInterval(() => setNow(Date.now()), 30_000);
-    return () => { unsubscribe(); clearInterval(interval); };
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
   }, []);
 
   if (state.status === "idle") return null;

@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 import { ArrowLeft, ChevronRight, Lock, LogIn, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
-import { useBeharStore, type CurrentUser } from "@/lib/behar-store";
+import { type CurrentUser, useBeharStore } from "@/lib/behar-store";
 import { cn } from "@/lib/utils";
 
 /**
@@ -42,11 +42,7 @@ export function PinLoginGate({ children }: Readonly<{ children: ReactNode }>) {
   }, [sessionUserId, users]);
 
   if (!_hasHydrated && !hydrationTimedOut) {
-    return (
-      <div className="flex min-h-svh items-center justify-center bg-[#FAFAF8] text-[#6B6B6B]">
-        Chargement…
-      </div>
-    );
+    return <div className="flex min-h-svh items-center justify-center bg-[#FAFAF8] text-[#6B6B6B]">Chargement…</div>;
   }
 
   if (!validSession) {
@@ -66,12 +62,7 @@ export function PinLoginGate({ children }: Readonly<{ children: ReactNode }>) {
         }
         return u;
       });
-    return (
-      <LoginFlow
-        users={visibleUsers}
-        onLogin={(userId, pin) => loginWithUserPin(userId, pin)}
-      />
-    );
+    return <LoginFlow users={visibleUsers} onLogin={(userId, pin) => loginWithUserPin(userId, pin)} />;
   }
 
   return <>{children}</>;
@@ -91,12 +82,7 @@ function LoginFlow({
   const [selectedUser, setSelectedUser] = useState<CurrentUser | null>(null);
 
   if (!selectedUser) {
-    return (
-      <UserSelectorScreen
-        users={users}
-        onSelect={(user) => setSelectedUser(user)}
-      />
-    );
+    return <UserSelectorScreen users={users} onSelect={(user) => setSelectedUser(user)} />;
   }
 
   return (
@@ -152,9 +138,7 @@ function UserSelectorScreen({
       <div className="w-full max-w-[480px]">
         {/* Header */}
         <div className="mb-10 text-center">
-          <h1 className="font-bold text-[#1A1916] text-[44px] tracking-[-0.03em] leading-none">
-            Bonjour
-          </h1>
+          <h1 className="font-bold text-[#1A1916] text-[44px] tracking-[-0.03em] leading-none">Bonjour</h1>
           <p className="mt-3 text-[#8A8984] text-[15px]">Choisissez votre compte</p>
         </div>
 
@@ -171,22 +155,15 @@ function UserSelectorScreen({
               >
                 {/* Avatar */}
                 <span
-                  className={cn(
-                    "grid size-12 shrink-0 place-items-center rounded-full text-[18px] font-bold",
-                    avatar,
-                  )}
+                  className={cn("grid size-12 shrink-0 place-items-center rounded-full text-[18px] font-bold", avatar)}
                 >
                   {user.name.charAt(0).toUpperCase()}
                 </span>
 
                 {/* Info */}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold text-[#1A1916] text-[15px] leading-tight">
-                    {user.name}
-                  </p>
-                  <p className="mt-0.5 text-[#8A8984] text-[12px] font-medium">
-                    {roleSubtitle(user.role, user.name)}
-                  </p>
+                  <p className="truncate font-semibold text-[#1A1916] text-[15px] leading-tight">{user.name}</p>
+                  <p className="mt-0.5 text-[#8A8984] text-[12px] font-medium">{roleSubtitle(user.role, user.name)}</p>
                 </div>
 
                 {/* Arrow */}
@@ -229,14 +206,14 @@ function PinEntryScreen({
 
   // Keep a stable ref to onSubmit to avoid stale closures in the effect
   const onSubmitRef = useRef(onSubmit);
-  useEffect(() => { onSubmitRef.current = onSubmit; });
+  useEffect(() => {
+    onSubmitRef.current = onSubmit;
+  });
 
   const submit = (value: string) => {
     const result = onSubmitRef.current(value);
     if (!result.ok) {
-      setError(result.reason === "disabled"
-        ? "Ce compte est désactivé. Contactez le gérant."
-        : "Code PIN incorrect.");
+      setError(result.reason === "disabled" ? "Ce compte est désactivé. Contactez le gérant." : "Code PIN incorrect.");
       setPin("");
       return;
     }
@@ -296,13 +273,9 @@ function PinEntryScreen({
           <h1 className="font-bold text-[#1A1916] text-[28px] tracking-[-0.02em] leading-tight">
             Bonjour {user.name.split(" ")[0]}
           </h1>
-          <p className="mt-1.5 text-[#8A8984] text-[12px] font-medium">
-            {roleLabel(user.role)}
-          </p>
+          <p className="mt-1.5 text-[#8A8984] text-[12px] font-medium">{roleLabel(user.role)}</p>
           {greeting && (
-            <p className="mt-3 max-w-[300px] text-[#6B6B6B] text-[14px] leading-snug italic">
-              « {greeting} »
-            </p>
+            <p className="mt-3 max-w-[300px] text-[#6B6B6B] text-[14px] leading-snug italic">« {greeting} »</p>
           )}
         </div>
 
@@ -392,7 +365,10 @@ function PinEntryScreen({
             />
             <button
               type="button"
-              onClick={() => { setPin(""); setError(""); }}
+              onClick={() => {
+                setPin("");
+                setError("");
+              }}
               className="grid size-10 place-items-center rounded-[12px] text-[#6B6B6B] hover:bg-[#F6F7F4]"
               title="Effacer"
             >
@@ -401,9 +377,7 @@ function PinEntryScreen({
           </div>
         </div>
 
-        <p className="mt-5 text-center text-[#B0AEA8] text-[12px]">
-          Entrez votre code PIN à 4 chiffres.
-        </p>
+        <p className="mt-5 text-center text-[#B0AEA8] text-[12px]">Entrez votre code PIN à 4 chiffres.</p>
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
 import {
   ArrowLeft,
   CheckCircle2,
@@ -97,14 +98,29 @@ export function SalesWorkspace() {
       <section className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 md:hidden scrollbar-none">
         <MobileKpi label="Ventes du jour" value={String(todaySales.length)} helper="encaissées" icon={ShoppingBag} />
         <MobileKpi label="CA ventes" value={formatEuro(dailyRevenue)} helper="aujourd'hui" icon={CreditCard} />
-        <MobileKpi label="Panier moyen" value={formatEuro(averageCart)} helper={`${paidSales.length} ventes`} icon={Receipt} />
+        <MobileKpi
+          label="Panier moyen"
+          value={formatEuro(averageCart)}
+          helper={`${paidSales.length} ventes`}
+          icon={Receipt}
+        />
       </section>
 
       <section className="hidden md:grid shrink-0 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="Ventes du jour" value={String(todaySales.length)} helper="ventes encaissées" icon={ShoppingBag} />
+        <KpiCard
+          label="Ventes du jour"
+          value={String(todaySales.length)}
+          helper="ventes encaissées"
+          icon={ShoppingBag}
+        />
         <KpiCard label="CA ventes" value={formatEuro(dailyRevenue)} helper="aujourd'hui" icon={CreditCard} />
         <KpiCard label="Panier moyen" value={formatEuro(averageCart)} helper="ventes payées" icon={Receipt} />
-        <KpiCard label="Ventes rattachées" value={String(linkedSales)} helper="accessoires sur dossiers" icon={Wrench} />
+        <KpiCard
+          label="Ventes rattachées"
+          value={String(linkedSales)}
+          helper="accessoires sur dossiers"
+          icon={Wrench}
+        />
       </section>
 
       {/* Mobile : recherche + liste de cards */}
@@ -124,39 +140,41 @@ export function SalesWorkspace() {
             <li className="rounded-[18px] bg-white p-10 text-center text-[#8A8984] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
               Aucune vente trouvée.
             </li>
-          ) : filteredSales.map((sale) => (
-            <li key={sale.id}>
-              <button
-                type="button"
-                onClick={() => {
-                  store.setSelected("sale", sale.id);
-                  setMobileDetailOpen(true);
-                }}
-                className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
-              >
-                <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#EAF6F2] text-[#2A9D8F]">
-                  <ShoppingBag className="size-[18px]" strokeWidth={1.8} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
-                      {sale.customerName || "Client comptoir"}
+          ) : (
+            filteredSales.map((sale) => (
+              <li key={sale.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    store.setSelected("sale", sale.id);
+                    setMobileDetailOpen(true);
+                  }}
+                  className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
+                >
+                  <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#EAF6F2] text-[#2A9D8F]">
+                    <ShoppingBag className="size-[18px]" strokeWidth={1.8} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
+                        {sale.customerName || "Client comptoir"}
+                      </p>
+                      <p className="shrink-0 font-bold text-[#1A1916] text-[15px] tabular-nums">
+                        {formatEuro(sale.total)}
+                      </p>
+                    </div>
+                    <p className="mt-0.5 font-mono text-[#2A9D8F] text-[11px]">{sale.number}</p>
+                    <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">
+                      {sale.paidAt || sale.createdAt} · {formatPaymentMethodLabel(sale.paymentMethod) || "—"}
                     </p>
-                    <p className="shrink-0 font-bold text-[#1A1916] text-[15px] tabular-nums">
-                      {formatEuro(sale.total)}
-                    </p>
+                    <div className="mt-2">
+                      <StatusBadge status={sale.status} />
+                    </div>
                   </div>
-                  <p className="mt-0.5 font-mono text-[#2A9D8F] text-[11px]">{sale.number}</p>
-                  <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">
-                    {sale.paidAt || sale.createdAt} · {formatPaymentMethodLabel(sale.paymentMethod) || "—"}
-                  </p>
-                  <div className="mt-2">
-                    <StatusBadge status={sale.status} />
-                  </div>
-                </div>
-              </button>
-            </li>
-          ))}
+                </button>
+              </li>
+            ))
+          )}
         </ul>
       </div>
 
@@ -225,7 +243,10 @@ export function SalesWorkspace() {
                     </td>
                     <td className={tableCellClassName}>{formatPaymentMethodLabel(sale.paymentMethod)}</td>
                     <td className={tableCellClassName}>
-                      <button className="inline-flex h-8 items-center gap-1 rounded-full border border-[#E7E4DC] bg-white px-3 text-xs hover:border-[#2A9D8F]/60" type="button">
+                      <button
+                        className="inline-flex h-8 items-center gap-1 rounded-full border border-[#E7E4DC] bg-white px-3 text-xs hover:border-[#2A9D8F]/60"
+                        type="button"
+                      >
                         <Eye className="size-3.5" />
                         Détail
                       </button>
@@ -252,7 +273,12 @@ export function SalesWorkspace() {
   );
 }
 
-function KpiCard({ label, value, helper, icon: Icon }: Readonly<{ label: string; value: string; helper: string; icon: typeof ShoppingBag }>) {
+function KpiCard({
+  label,
+  value,
+  helper,
+  icon: Icon,
+}: Readonly<{ label: string; value: string; helper: string; icon: typeof ShoppingBag }>) {
   return (
     <Panel className="p-5">
       <div className="flex items-center justify-between gap-4">
@@ -274,7 +300,9 @@ function SaleDetail({ sale }: Readonly<{ sale: Sale }>) {
   const store = useBeharStore();
   const { download, print } = useDocument();
   const document = store.documents.find((entry) => entry.saleId === sale.id);
-  const payment = sale.paymentId ? store.payments.find((entry) => entry.id === sale.paymentId) : store.payments.find((entry) => entry.saleId === sale.id);
+  const payment = sale.paymentId
+    ? store.payments.find((entry) => entry.id === sale.paymentId)
+    : store.payments.find((entry) => entry.saleId === sale.id);
   const repair = sale.repairId ? store.repairs.find((entry) => entry.id === sale.repairId) : undefined;
   const customer = store.customers.find((entry) => entry.id === sale.customerId);
   const isCounter = customer?.type === "counter" || sale.customerName === "Client comptoir";
@@ -403,7 +431,9 @@ function NewSaleModal({ onClose }: Readonly<{ onClose: () => void }>) {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("Carte");
   const [cart, setCart] = useState<CartLine[]>([]);
 
-  const namedCustomers = store.customers.filter((customer) => customer.type !== "counter" && customer.name !== "Anonyme");
+  const namedCustomers = store.customers.filter(
+    (customer) => customer.type !== "counter" && customer.name !== "Anonyme",
+  );
   const customerMatches = namedCustomers.filter((customer) => {
     const q = customerSearch.trim().toLowerCase();
     if (!q) return true;
@@ -418,12 +448,24 @@ function NewSaleModal({ onClose }: Readonly<{ onClose: () => void }>) {
       const isSellable = item.stock > 0 && item.salePrice > 0;
       if (!isSellable) return false;
       if (!q) return true;
-      return `${item.name} ${item.sku} ${item.brandName ?? ""} ${item.compatibleModels?.join(" ") ?? ""} ${item.reference ?? ""}`.toLowerCase().includes(q);
+      return `${item.name} ${item.sku} ${item.brandName ?? ""} ${item.compatibleModels?.join(" ") ?? ""} ${item.reference ?? ""}`
+        .toLowerCase()
+        .includes(q);
     })
     .slice(0, 8);
   const selectedProduct = store.stockItems.find((item) => item.id === selectedProductId);
   const total = cart.reduce((sum, line) => sum + line.total, 0);
-  const validationMessage = getValidationMessage({ mode, clientType, selectedCustomerId, selectedRepair, newClientName, newClientPhone, cart, total, store });
+  const validationMessage = getValidationMessage({
+    mode,
+    clientType,
+    selectedCustomerId,
+    selectedRepair,
+    newClientName,
+    newClientPhone,
+    cart,
+    total,
+    store,
+  });
   const canSubmit = !validationMessage;
 
   const addStockItemToCart = (product?: StockItem) => {
@@ -660,8 +702,18 @@ function NewSaleModal({ onClose }: Readonly<{ onClose: () => void }>) {
           <section className="space-y-3">
             <h3 className="font-medium text-[#1A1916]">Mode</h3>
             <div className="grid gap-3 sm:grid-cols-2">
-              <ModeButton active={mode === "comptoir"} icon={ShoppingBag} label="Vente comptoir" onClick={() => setMode("comptoir")} />
-              <ModeButton active={mode === "repair"} icon={Wrench} label="Rattacher à une réparation" onClick={() => setMode("repair")} />
+              <ModeButton
+                active={mode === "comptoir"}
+                icon={ShoppingBag}
+                label="Vente comptoir"
+                onClick={() => setMode("comptoir")}
+              />
+              <ModeButton
+                active={mode === "repair"}
+                icon={Wrench}
+                label="Rattacher à une réparation"
+                onClick={() => setMode("repair")}
+              />
             </div>
           </section>
 
@@ -673,12 +725,18 @@ function NewSaleModal({ onClose }: Readonly<{ onClose: () => void }>) {
                   <button
                     key={type}
                     className={`rounded-full px-4 py-2 font-medium text-sm transition-colors ${
-                      clientType === type ? "bg-[#1A1916] text-white" : "bg-[#FAFAF8] text-[#6B6B6B] hover:text-[#1A1916]"
+                      clientType === type
+                        ? "bg-[#1A1916] text-white"
+                        : "bg-[#FAFAF8] text-[#6B6B6B] hover:text-[#1A1916]"
                     }`}
                     onClick={() => setClientType(type)}
                     type="button"
                   >
-                    {type === "comptoir" ? "Client comptoir" : type === "existing" ? "Client existant" : "Nouveau client"}
+                    {type === "comptoir"
+                      ? "Client comptoir"
+                      : type === "existing"
+                        ? "Client existant"
+                        : "Nouveau client"}
                   </button>
                 ))}
               </div>
@@ -714,9 +772,25 @@ function NewSaleModal({ onClose }: Readonly<{ onClose: () => void }>) {
 
               {clientType === "new" ? (
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <input className="h-11 rounded-[12px] border border-[#E7E4DC] px-3 text-sm outline-none focus:border-[#2A9D8F]" placeholder="Nom *" value={newClientName} onChange={(event) => setNewClientName(event.target.value)} />
-                  <input className="h-11 rounded-[12px] border border-[#E7E4DC] px-3 text-sm outline-none focus:border-[#2A9D8F]" placeholder="Téléphone *" value={newClientPhone} onChange={(event) => setNewClientPhone(event.target.value)} />
-                  <input className="h-11 rounded-[12px] border border-[#E7E4DC] px-3 text-sm outline-none focus:border-[#2A9D8F] sm:col-span-2" placeholder="Email optionnel" type="email" value={newClientEmail} onChange={(event) => setNewClientEmail(event.target.value)} />
+                  <input
+                    className="h-11 rounded-[12px] border border-[#E7E4DC] px-3 text-sm outline-none focus:border-[#2A9D8F]"
+                    placeholder="Nom *"
+                    value={newClientName}
+                    onChange={(event) => setNewClientName(event.target.value)}
+                  />
+                  <input
+                    className="h-11 rounded-[12px] border border-[#E7E4DC] px-3 text-sm outline-none focus:border-[#2A9D8F]"
+                    placeholder="Téléphone *"
+                    value={newClientPhone}
+                    onChange={(event) => setNewClientPhone(event.target.value)}
+                  />
+                  <input
+                    className="h-11 rounded-[12px] border border-[#E7E4DC] px-3 text-sm outline-none focus:border-[#2A9D8F] sm:col-span-2"
+                    placeholder="Email optionnel"
+                    type="email"
+                    value={newClientEmail}
+                    onChange={(event) => setNewClientEmail(event.target.value)}
+                  />
                 </div>
               ) : null}
             </section>
@@ -724,13 +798,18 @@ function NewSaleModal({ onClose }: Readonly<{ onClose: () => void }>) {
             <section className="space-y-3">
               <h3 className="font-medium text-[#1A1916]">Réparation liée</h3>
               {eligibleRepairs.length ? (
-                <select className="h-11 w-full rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]" value={selectedRepairId} onChange={(event) => setSelectedRepairId(event.target.value)}>
+                <select
+                  className="h-11 w-full rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]"
+                  value={selectedRepairId}
+                  onChange={(event) => setSelectedRepairId(event.target.value)}
+                >
                   <option value="">Sélectionner une réparation non facturée...</option>
                   {eligibleRepairs.map((repair) => {
                     const customer = store.customers.find((entry) => entry.id === repair.customerId);
                     return (
                       <option key={repair.id} value={repair.id}>
-                        {repair.number} — {customer?.name || "Client comptoir"} — {repair.deviceModel || repair.device} — {formatEuro(repair.total ?? repair.amount)}
+                        {repair.number} — {customer?.name || "Client comptoir"} — {repair.deviceModel || repair.device}{" "}
+                        — {formatEuro(repair.total ?? repair.amount)}
                       </option>
                     );
                   })}
@@ -812,7 +891,13 @@ function NewSaleModal({ onClose }: Readonly<{ onClose: () => void }>) {
                   }}
                 />
               </div>
-              <input className="h-11 rounded-[12px] border border-[#E7E4DC] px-3 text-center text-sm outline-none focus:border-[#2A9D8F]" min={1} type="number" value={quantity} onChange={(event) => setQuantity(Math.max(1, Number(event.target.value) || 1))} />
+              <input
+                className="h-11 rounded-[12px] border border-[#E7E4DC] px-3 text-center text-sm outline-none focus:border-[#2A9D8F]"
+                min={1}
+                type="number"
+                value={quantity}
+                onChange={(event) => setQuantity(Math.max(1, Number(event.target.value) || 1))}
+              />
               <PrimaryButton className="h-11" disabled={!selectedProduct} onClick={addProduct}>
                 <Plus className="size-4" /> Ajouter au panier
               </PrimaryButton>
@@ -950,16 +1035,36 @@ function NewSaleModal({ onClose }: Readonly<{ onClose: () => void }>) {
               <div className="rounded-[14px] border border-[#DDEFEA] bg-[#F7FCFA] p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <p className="font-semibold text-[#1A1916] text-sm">Créer une pièce en stock</p>
-                  <button className="text-[#6B6B6B] hover:text-[#1A1916]" onClick={() => setShowStockCreate(false)} type="button">
+                  <button
+                    className="text-[#6B6B6B] hover:text-[#1A1916]"
+                    onClick={() => setShowStockCreate(false)}
+                    type="button"
+                  >
                     <XCircle className="size-4" />
                   </button>
                 </div>
 
-                <p className="mb-2 mt-3 text-[11px] font-medium uppercase tracking-wider text-[#8A8984]">Informations produit</p>
+                <p className="mb-2 mt-3 text-[11px] font-medium uppercase tracking-wider text-[#8A8984]">
+                  Informations produit
+                </p>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <input className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]" placeholder="Nom produit *" value={stockDraft.name} onChange={(event) => setStockDraft((draft) => ({ ...draft, name: event.target.value }))} />
-                  <input className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]" placeholder="SKU / référence" value={stockDraft.sku} onChange={(event) => setStockDraft((draft) => ({ ...draft, sku: event.target.value }))} />
-                  <select className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]" value={stockDraft.categoryName} onChange={(event) => setStockDraft((draft) => ({ ...draft, categoryName: event.target.value }))}>
+                  <input
+                    className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]"
+                    placeholder="Nom produit *"
+                    value={stockDraft.name}
+                    onChange={(event) => setStockDraft((draft) => ({ ...draft, name: event.target.value }))}
+                  />
+                  <input
+                    className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]"
+                    placeholder="SKU / référence"
+                    value={stockDraft.sku}
+                    onChange={(event) => setStockDraft((draft) => ({ ...draft, sku: event.target.value }))}
+                  />
+                  <select
+                    className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]"
+                    value={stockDraft.categoryName}
+                    onChange={(event) => setStockDraft((draft) => ({ ...draft, categoryName: event.target.value }))}
+                  >
                     <option value="">Catégorie *</option>
                     <option value="Écran">Écran</option>
                     <option value="Batterie">Batterie</option>
@@ -978,9 +1083,15 @@ function NewSaleModal({ onClose }: Readonly<{ onClose: () => void }>) {
                   </select>
                 </div>
 
-                <p className="mb-2 mt-4 text-[11px] font-medium uppercase tracking-wider text-[#8A8984]">Compatibilité (facultatif)</p>
+                <p className="mb-2 mt-4 text-[11px] font-medium uppercase tracking-wider text-[#8A8984]">
+                  Compatibilité (facultatif)
+                </p>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <select className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]" value={stockDraft.deviceType} onChange={(event) => setStockDraft((draft) => ({ ...draft, deviceType: event.target.value }))}>
+                  <select
+                    className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]"
+                    value={stockDraft.deviceType}
+                    onChange={(event) => setStockDraft((draft) => ({ ...draft, deviceType: event.target.value }))}
+                  >
                     <option value="">Type appareil — non défini</option>
                     <option value="Smartphone">Smartphone</option>
                     <option value="Tablette">Tablette</option>
@@ -989,7 +1100,11 @@ function NewSaleModal({ onClose }: Readonly<{ onClose: () => void }>) {
                     <option value="Accessoire générique">Accessoire générique</option>
                     <option value="Autre">Autre</option>
                   </select>
-                  <select className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]" value={stockDraft.brandName} onChange={(event) => setStockDraft((draft) => ({ ...draft, brandName: event.target.value }))}>
+                  <select
+                    className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]"
+                    value={stockDraft.brandName}
+                    onChange={(event) => setStockDraft((draft) => ({ ...draft, brandName: event.target.value }))}
+                  >
                     <option value="">Marque — non définie</option>
                     <option value="Apple">Apple</option>
                     <option value="Samsung">Samsung</option>
@@ -1000,15 +1115,45 @@ function NewSaleModal({ onClose }: Readonly<{ onClose: () => void }>) {
                     <option value="Générique">Générique</option>
                     <option value="Autre">Autre</option>
                   </select>
-                  <input className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F] sm:col-span-2" placeholder="Modèle compatible (laisser vide = Non défini)" value={stockDraft.modelName} onChange={(event) => setStockDraft((draft) => ({ ...draft, modelName: event.target.value }))} />
+                  <input
+                    className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F] sm:col-span-2"
+                    placeholder="Modèle compatible (laisser vide = Non défini)"
+                    value={stockDraft.modelName}
+                    onChange={(event) => setStockDraft((draft) => ({ ...draft, modelName: event.target.value }))}
+                  />
                 </div>
 
-                <p className="mb-2 mt-4 text-[11px] font-medium uppercase tracking-wider text-[#8A8984]">Prix &amp; stock</p>
+                <p className="mb-2 mt-4 text-[11px] font-medium uppercase tracking-wider text-[#8A8984]">
+                  Prix &amp; stock
+                </p>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <input className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]" placeholder="Prix achat interne (facultatif)" inputMode="decimal" value={stockDraft.purchasePrice} onChange={(event) => setStockDraft((draft) => ({ ...draft, purchasePrice: event.target.value }))} />
-                  <input className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]" placeholder="Prix vente *" inputMode="decimal" value={stockDraft.salePrice} onChange={(event) => setStockDraft((draft) => ({ ...draft, salePrice: event.target.value }))} />
-                  <input className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]" placeholder="Quantité *" inputMode="numeric" value={stockDraft.stock} onChange={(event) => setStockDraft((draft) => ({ ...draft, stock: event.target.value }))} />
-                  <input className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]" placeholder="Fournisseur interne (facultatif)" value={stockDraft.supplier} onChange={(event) => setStockDraft((draft) => ({ ...draft, supplier: event.target.value }))} />
+                  <input
+                    className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]"
+                    placeholder="Prix achat interne (facultatif)"
+                    inputMode="decimal"
+                    value={stockDraft.purchasePrice}
+                    onChange={(event) => setStockDraft((draft) => ({ ...draft, purchasePrice: event.target.value }))}
+                  />
+                  <input
+                    className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]"
+                    placeholder="Prix vente *"
+                    inputMode="decimal"
+                    value={stockDraft.salePrice}
+                    onChange={(event) => setStockDraft((draft) => ({ ...draft, salePrice: event.target.value }))}
+                  />
+                  <input
+                    className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]"
+                    placeholder="Quantité *"
+                    inputMode="numeric"
+                    value={stockDraft.stock}
+                    onChange={(event) => setStockDraft((draft) => ({ ...draft, stock: event.target.value }))}
+                  />
+                  <input
+                    className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]"
+                    placeholder="Fournisseur interne (facultatif)"
+                    value={stockDraft.supplier}
+                    onChange={(event) => setStockDraft((draft) => ({ ...draft, supplier: event.target.value }))}
+                  />
                 </div>
 
                 <SecondaryButton className="mt-4 h-10" onClick={addCreatedStockToCart}>
@@ -1017,7 +1162,11 @@ function NewSaleModal({ onClose }: Readonly<{ onClose: () => void }>) {
                 </SecondaryButton>
               </div>
             ) : null}
-            {selectedProduct ? <p className="text-[#6B6B6B] text-xs">Stock disponible : {selectedProduct.stock} · Prix de vente : {formatEuro(selectedProduct.salePrice)}</p> : null}
+            {selectedProduct ? (
+              <p className="text-[#6B6B6B] text-xs">
+                Stock disponible : {selectedProduct.stock} · Prix de vente : {formatEuro(selectedProduct.salePrice)}
+              </p>
+            ) : null}
           </section>
 
           <section className="space-y-3 border-[#E7E4DC] border-t pt-5">
@@ -1029,7 +1178,10 @@ function NewSaleModal({ onClose }: Readonly<{ onClose: () => void }>) {
             ) : (
               <div className="space-y-2">
                 {cart.map((line) => (
-                  <div key={line.stockItemId} className="flex items-center justify-between gap-3 rounded-[14px] border border-[#E7E4DC] bg-[#FAFAF8] p-3">
+                  <div
+                    key={line.stockItemId}
+                    className="flex items-center justify-between gap-3 rounded-[14px] border border-[#E7E4DC] bg-[#FAFAF8] p-3"
+                  >
                     <div className="min-w-0">
                       <p className="font-medium text-[#1A1916] text-sm">{line.name}</p>
                       <p className="text-[#6B6B6B] text-xs">
@@ -1044,7 +1196,13 @@ function NewSaleModal({ onClose }: Readonly<{ onClose: () => void }>) {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="font-semibold text-[#1A1916]">{formatEuro(line.total)}</span>
-                      <button className="grid size-8 place-items-center rounded-lg text-[#B42318] hover:bg-white" onClick={() => setCart((current) => current.filter((entry) => entry.stockItemId !== line.stockItemId))} type="button">
+                      <button
+                        className="grid size-8 place-items-center rounded-lg text-[#B42318] hover:bg-white"
+                        onClick={() =>
+                          setCart((current) => current.filter((entry) => entry.stockItemId !== line.stockItemId))
+                        }
+                        type="button"
+                      >
                         <Trash2 className="size-4" />
                       </button>
                     </div>
@@ -1059,7 +1217,11 @@ function NewSaleModal({ onClose }: Readonly<{ onClose: () => void }>) {
           {mode === "comptoir" ? (
             <div className="mb-3 max-w-xs">
               <label className="mb-1 block text-[#6B6B6B] text-xs">Paiement simulé</label>
-              <select className="h-10 w-full rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}>
+              <select
+                className="h-10 w-full rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]"
+                value={paymentMethod}
+                onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}
+              >
                 {paymentMethods.map((method) => (
                   <option key={method} value={method}>
                     {formatPaymentMethodLabel(method)}
@@ -1093,11 +1255,18 @@ function NewSaleModal({ onClose }: Readonly<{ onClose: () => void }>) {
   );
 }
 
-function ModeButton({ active, icon: Icon, label, onClick }: Readonly<{ active: boolean; icon: typeof ShoppingBag; label: string; onClick: () => void }>) {
+function ModeButton({
+  active,
+  icon: Icon,
+  label,
+  onClick,
+}: Readonly<{ active: boolean; icon: typeof ShoppingBag; label: string; onClick: () => void }>) {
   return (
     <button
       className={`flex items-center justify-center gap-2 rounded-[14px] border p-4 font-medium text-sm transition ${
-        active ? "border-[#2A9D8F] bg-[#EAF6F2] text-[#147065]" : "border-[#E7E4DC] bg-white text-[#1A1916] hover:border-[#2A9D8F]/50"
+        active
+          ? "border-[#2A9D8F] bg-[#EAF6F2] text-[#147065]"
+          : "border-[#E7E4DC] bg-white text-[#1A1916] hover:border-[#2A9D8F]/50"
       }`}
       onClick={onClick}
       type="button"
@@ -1117,7 +1286,11 @@ function DetailMini({ label, value }: Readonly<{ label: string; value: string }>
   );
 }
 
-function isRepairLocked(repair: Repair, invoices: ReturnType<typeof useBeharStore.getState>["invoices"], payments: ReturnType<typeof useBeharStore.getState>["payments"]) {
+function isRepairLocked(
+  repair: Repair,
+  invoices: ReturnType<typeof useBeharStore.getState>["invoices"],
+  payments: ReturnType<typeof useBeharStore.getState>["payments"],
+) {
   const invoiced = invoices.some((invoice) => invoice.repairId === repair.id && invoice.status !== "Annulée");
   const paid = payments.some((payment) => payment.repairId === repair.id && payment.status === "Payé");
   return invoiced || paid;
@@ -1154,9 +1327,11 @@ function getValidationMessage({
   }
   if (mode === "repair") {
     if (!selectedRepair) return "Sélectionnez une réparation.";
-    if (isRepairLocked(selectedRepair, store.invoices, store.payments)) return "Cette réparation est déjà facturée. Créez une vente séparée.";
+    if (isRepairLocked(selectedRepair, store.invoices, store.payments))
+      return "Cette réparation est déjà facturée. Créez une vente séparée.";
   }
-  if (mode === "comptoir" && clientType === "existing" && !selectedCustomerId) return "Sélectionnez un client existant.";
+  if (mode === "comptoir" && clientType === "existing" && !selectedCustomerId)
+    return "Sélectionnez un client existant.";
   if (mode === "comptoir" && clientType === "new") {
     if (!newClientName.trim()) return "Le nom du client est obligatoire.";
     if (!newClientPhone.trim()) return "Le téléphone du client est obligatoire.";
@@ -1176,9 +1351,7 @@ function MobileKpi({
         <Icon className="size-[18px]" strokeWidth={2} />
       </span>
       <p className="mt-3 text-[#8A8984] text-[11px] font-medium leading-tight tracking-tight">{label}</p>
-      <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tracking-tight tabular-nums">
-        {value}
-      </p>
+      <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tracking-tight tabular-nums">{value}</p>
       {helper && <p className="mt-1.5 truncate text-[#8A8984] text-[10px] font-medium">{helper}</p>}
     </div>
   );

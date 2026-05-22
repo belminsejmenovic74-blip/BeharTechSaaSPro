@@ -1,6 +1,15 @@
 "use client";
 
-import { type ChangeEvent, type MouseEvent, type PointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ChangeEvent,
+  type MouseEvent,
+  type PointerEvent,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { ArrowLeft, Download, Eye, FileCheck2, ImagePlus, PenLine, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -14,22 +23,61 @@ import { PrimaryButton, SecondaryButton, StatusBadge } from "./primitives";
 const missing = "Non renseigné";
 
 const intakeFields = [
-  { key: "generalCondition", label: "État général", options: ["Excellent", "Bon", "Usé", "Abîmé", "Très abîmé", missing] },
+  {
+    key: "generalCondition",
+    label: "État général",
+    options: ["Excellent", "Bon", "Usé", "Abîmé", "Très abîmé", missing],
+  },
   { key: "powerState", label: "Appareil", options: ["Allumé", "Éteint", "Non testable", missing] },
-  { key: "chargingState", label: "Batterie / charge", options: ["Charge OK", "Ne charge pas", "Batterie vide", "Non testable", missing] },
-  { key: "screenState", label: "Écran", options: ["Intact", "Rayé", "Fissuré", "Cassé", "Tactile non testable", missing] },
-  { key: "frameState", label: "Châssis / dos", options: ["Bon état", "Rayures", "Chocs", "Tordu", "Dos cassé", missing] },
+  {
+    key: "chargingState",
+    label: "Batterie / charge",
+    options: ["Charge OK", "Ne charge pas", "Batterie vide", "Non testable", missing],
+  },
+  {
+    key: "screenState",
+    label: "Écran",
+    options: ["Intact", "Rayé", "Fissuré", "Cassé", "Tactile non testable", missing],
+  },
+  {
+    key: "frameState",
+    label: "Châssis / dos",
+    options: ["Bon état", "Rayures", "Chocs", "Tordu", "Dos cassé", missing],
+  },
   { key: "camerasState", label: "Caméras", options: ["OK", "Défaut visible", "Non testable", missing] },
   { key: "audioState", label: "Micro / haut-parleur", options: ["OK", "Défaut signalé", "Non testable", missing] },
   { key: "buttonsState", label: "Boutons", options: ["OK", "Défaut bouton", "Non testable", missing] },
-  { key: "chargingPortState", label: "Connecteur de charge", options: ["OK", "Défaut signalé", "Non testable", missing] },
-  { key: "biometricState", label: "Face ID / Touch ID", options: ["OK", "Ne fonctionne pas", "Non testable", "Non concerné", missing] },
-  { key: "networkState", label: "Réseau / SIM", options: ["OK", "Non testé", "SIM absente", "Défaut signalé", missing] },
-  { key: "passcodeState", label: "Code appareil", options: ["Code fourni", "Code non fourni", "Sans code", "Déverrouillage impossible", missing] },
+  {
+    key: "chargingPortState",
+    label: "Connecteur de charge",
+    options: ["OK", "Défaut signalé", "Non testable", missing],
+  },
+  {
+    key: "biometricState",
+    label: "Face ID / Touch ID",
+    options: ["OK", "Ne fonctionne pas", "Non testable", "Non concerné", missing],
+  },
+  {
+    key: "networkState",
+    label: "Réseau / SIM",
+    options: ["OK", "Non testé", "SIM absente", "Défaut signalé", missing],
+  },
+  {
+    key: "passcodeState",
+    label: "Code appareil",
+    options: ["Code fourni", "Code non fourni", "Sans code", "Déverrouillage impossible", missing],
+  },
 ] as const;
 
 const accessoryOptions = ["Aucun", "Carte SIM", "Coque", "Chargeur", "Câble", "Boîte", "Stylet", "Autre"];
-const accessMethodOptions = ["Aucun", "Code PIN", "Mot de passe", "Schéma", "Empreinte / biométrie", "Non communiqué"] as const;
+const accessMethodOptions = [
+  "Aucun",
+  "Code PIN",
+  "Mot de passe",
+  "Schéma",
+  "Empreinte / biométrie",
+  "Non communiqué",
+] as const;
 
 type IntakeFieldKey = (typeof intakeFields)[number]["key"];
 
@@ -121,10 +169,14 @@ export function RepairIntakeSummaryCard({
           {!hasIntake ? (
             <p className="mt-1 text-[#6B6B6B] text-sm">Aucun état d'entrée renseigné.</p>
           ) : (
-            <p className="mt-1 text-[#6B6B6B] text-sm">{clean(intake?.generalCondition)} · {clean(intake?.screenState)}</p>
+            <p className="mt-1 text-[#6B6B6B] text-sm">
+              {clean(intake?.generalCondition)} · {clean(intake?.screenState)}
+            </p>
           )}
         </div>
-        <span className={`rounded-full px-3 py-1 font-semibold text-[11px] ${validated ? "bg-[#E4F3DA] text-[#477A23]" : "bg-[#FAFAF8] text-[#6B6B6B]"}`}>
+        <span
+          className={`rounded-full px-3 py-1 font-semibold text-[11px] ${validated ? "bg-[#E4F3DA] text-[#477A23]" : "bg-[#FAFAF8] text-[#6B6B6B]"}`}
+        >
           {validated ? "État d'entrée validé" : "État d'entrée incomplet"}
         </span>
       </div>
@@ -136,11 +188,21 @@ export function RepairIntakeSummaryCard({
           <SummaryLine label="Écran" value={clean(intake?.screenState)} />
           <SummaryLine label="Châssis" value={clean(intake?.frameState)} />
           <SummaryLine label="Accès appareil" value={clean(intake?.accessMethod, "Non communiqué")} />
-          <SummaryLine label="Accessoires" value={accessories.length ? accessories.join(", ") : "Aucun accessoire fourni"} />
+          <SummaryLine
+            label="Accessoires"
+            value={accessories.length ? accessories.join(", ") : "Aucun accessoire fourni"}
+          />
           <SummaryLine label="Défauts visibles" value={clean(intake?.visibleDefects)} />
           <SummaryLine label="Validation client" value={validated ? "Oui" : "Non"} />
           <SummaryLine label="Signataire" value={clean(intake?.signerName, "À signer")} />
-          <SummaryLine label="Date signature" value={intake?.signatureSignedAt || intake?.signedAt ? dateTime(intake.signatureSignedAt ?? intake.signedAt) : "À signer"} />
+          <SummaryLine
+            label="Date signature"
+            value={
+              intake?.signatureSignedAt || intake?.signedAt
+                ? dateTime(intake.signatureSignedAt ?? intake.signedAt)
+                : "À signer"
+            }
+          />
         </dl>
       ) : null}
 
@@ -209,7 +271,11 @@ export function RepairIntakeScreen({
     setDraft((current) => {
       const existing = current.accessories ?? [];
       if (name === "Aucun") {
-        return { ...current, accessories: existing.includes("Aucun") ? [] : ["Aucun"], updatedAt: new Date().toISOString() };
+        return {
+          ...current,
+          accessories: existing.includes("Aucun") ? [] : ["Aucun"],
+          updatedAt: new Date().toISOString(),
+        };
       }
       const withoutNone = existing.filter((entry) => entry !== "Aucun");
       const next = withoutNone.includes(name) ? withoutNone.filter((entry) => entry !== name) : [...withoutNone, name];
@@ -233,7 +299,12 @@ export function RepairIntakeScreen({
           ...current,
           photos: [
             ...(current.photos ?? []),
-            { id: `photo_${Date.now()}_${Math.random().toString(16).slice(2)}`, name: file.name, dataUrl, createdAt: new Date().toISOString() },
+            {
+              id: `photo_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+              name: file.name,
+              dataUrl,
+              createdAt: new Date().toISOString(),
+            },
           ],
           updatedAt: new Date().toISOString(),
         }));
@@ -252,7 +323,10 @@ export function RepairIntakeScreen({
       ["Validation client", validated ? "Oui" : "Non"],
       ["Accès", clean(draft.accessMethod, "Non communiqué")],
       ["Signataire", clean(draft.signerName, "À signer")],
-      ["Date", draft.signatureSignedAt || draft.signedAt ? dateTime(draft.signatureSignedAt ?? draft.signedAt) : "À signer"],
+      [
+        "Date",
+        draft.signatureSignedAt || draft.signedAt ? dateTime(draft.signatureSignedAt ?? draft.signedAt) : "À signer",
+      ],
     ],
     [customer, draft.accessMethod, draft.signerName, draft.signatureSignedAt, draft.signedAt, repair, validated],
   );
@@ -267,12 +341,20 @@ export function RepairIntakeScreen({
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-none md:rounded-[20px] bg-[#FAFAF8]">
       <div className="grid min-h-0 flex-1 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="scrollbar-thin min-h-0 overflow-y-auto px-4 py-4 pb-[120px] md:px-5 md:py-5 md:pb-5">
-          <button className="mb-3 inline-flex items-center gap-2 text-[#167B70] text-[13px] font-medium hover:text-[#2A9D8F] md:mb-4 md:text-sm" onClick={onBack} type="button">
+          <button
+            className="mb-3 inline-flex items-center gap-2 text-[#167B70] text-[13px] font-medium hover:text-[#2A9D8F] md:mb-4 md:text-sm"
+            onClick={onBack}
+            type="button"
+          >
             <ArrowLeft className="size-4" />
             Retour
           </button>
-          <h2 className="font-semibold text-[#1A1916] text-[20px] tracking-tight md:text-[24px]">État d'entrée appareil</h2>
-          <p className="mt-1 text-[#6B6B6B] text-[12.5px] md:text-sm">Notez l'état visible de l'appareil au moment du dépôt.</p>
+          <h2 className="font-semibold text-[#1A1916] text-[20px] tracking-tight md:text-[24px]">
+            État d'entrée appareil
+          </h2>
+          <p className="mt-1 text-[#6B6B6B] text-[12.5px] md:text-sm">
+            Notez l'état visible de l'appareil au moment du dépôt.
+          </p>
 
           {/* Champs principaux : 2 colonnes même sur mobile */}
           <section className="mt-4 md:mt-7">
@@ -287,7 +369,9 @@ export function RepairIntakeScreen({
                     value={clean(draft[field.key], missing)}
                   >
                     {field.options.map((option) => (
-                      <option key={option} value={option}>{option}</option>
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
                     ))}
                   </select>
                 </label>
@@ -312,7 +396,9 @@ export function RepairIntakeScreen({
                     value={clean(draft[field.key], missing)}
                   >
                     {field.options.map((option) => (
-                      <option key={option} value={option}>{option}</option>
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
                     ))}
                   </select>
                 </label>
@@ -356,13 +442,22 @@ export function RepairIntakeScreen({
           <section className="mt-5 md:mt-7">
             <h3 className="mb-2 font-semibold text-[#1A1916] text-[13px] md:text-sm">Validation client</h3>
             <div className="grid gap-1.5 md:gap-2">
-              <CheckLine checked={Boolean(draft.customerConfirmed)} onChange={(checked) => setField("customerConfirmed", checked)}>
+              <CheckLine
+                checked={Boolean(draft.customerConfirmed)}
+                onChange={(checked) => setField("customerConfirmed", checked)}
+              >
                 Le client confirme l'état d'entrée déclaré.
               </CheckLine>
-              <CheckLine checked={Boolean(draft.diagnosticAuthorized)} onChange={(checked) => setField("diagnosticAuthorized", checked)}>
+              <CheckLine
+                checked={Boolean(draft.diagnosticAuthorized)}
+                onChange={(checked) => setField("diagnosticAuthorized", checked)}
+              >
                 Le client autorise l'ouverture / diagnostic.
               </CheckLine>
-              <CheckLine checked={Boolean(draft.nonTestableAccepted)} onChange={(checked) => setField("nonTestableAccepted", checked)}>
+              <CheckLine
+                checked={Boolean(draft.nonTestableAccepted)}
+                onChange={(checked) => setField("nonTestableAccepted", checked)}
+              >
                 Certains défauts peuvent être non testables avant ouverture.
               </CheckLine>
             </div>
@@ -427,12 +522,22 @@ export function RepairIntakeScreen({
                 </span>
               </label>
               {(draft.photos ?? []).map((photo) => (
-                <div className="relative overflow-hidden rounded-[12px] border border-[#E8E8E5] bg-white md:rounded-[14px]" key={photo.id}>
-                  {photo.dataUrl ? <img alt={photo.name} className="h-[96px] w-full object-cover md:h-[112px]" src={photo.dataUrl} /> : null}
+                <div
+                  className="relative overflow-hidden rounded-[12px] border border-[#E8E8E5] bg-white md:rounded-[14px]"
+                  key={photo.id}
+                >
+                  {photo.dataUrl ? (
+                    <img alt={photo.name} className="h-[96px] w-full object-cover md:h-[112px]" src={photo.dataUrl} />
+                  ) : null}
                   <button
                     aria-label="Supprimer photo"
                     className="absolute right-1.5 top-1.5 grid size-7 place-items-center rounded-full bg-white/90 text-[#6B6B6B] shadow-sm hover:text-[#B42318] md:size-8"
-                    onClick={() => setField("photos", (draft.photos ?? []).filter((entry) => entry.id !== photo.id))}
+                    onClick={() =>
+                      setField(
+                        "photos",
+                        (draft.photos ?? []).filter((entry) => entry.id !== photo.id),
+                      )
+                    }
                     type="button"
                   >
                     <Trash2 className="size-3.5 md:size-4" />
@@ -446,7 +551,9 @@ export function RepairIntakeScreen({
         <aside className="hidden xl:flex flex-col border-[#E8E8E5] border-t bg-white/80 p-5 xl:border-l xl:border-t-0">
           <h3 className="font-semibold text-[#1A1916] text-lg">Résumé</h3>
           <dl className="mt-5 space-y-3 text-sm">
-            {summaryRows.map(([label, value]) => <SummaryLine key={label} label={label} value={value} />)}
+            {summaryRows.map(([label, value]) => (
+              <SummaryLine key={label} label={label} value={value} />
+            ))}
           </dl>
           <div className="mt-6 rounded-[16px] border border-[#E8E8E5] bg-white p-4">
             <SummaryLine label="Écran" value={clean(draft.screenState)} />
@@ -482,8 +589,12 @@ export function RepairIntakeScreen({
       <div className="hidden md:flex shrink-0 flex-wrap items-center justify-between gap-3 border-[#E8E8E5] border-t bg-white px-5 py-4">
         <StatusBadge status={validated ? "État d'entrée validé" : "État d'entrée incomplet"} />
         <div className="flex gap-2">
-          <SecondaryButton className="h-10 min-w-[130px]" onClick={onBack}>Annuler</SecondaryButton>
-          <PrimaryButton className="h-10 min-w-[160px]" onClick={() => save(false)}>Enregistrer</PrimaryButton>
+          <SecondaryButton className="h-10 min-w-[130px]" onClick={onBack}>
+            Annuler
+          </SecondaryButton>
+          <PrimaryButton className="h-10 min-w-[160px]" onClick={() => save(false)}>
+            Enregistrer
+          </PrimaryButton>
         </div>
       </div>
     </div>
@@ -511,7 +622,10 @@ export function RepairIntakeQuickPanel({
       return;
     }
     const withoutNone = existing.filter((entry) => entry !== "Aucun");
-    setField("accessories", withoutNone.includes(name) ? withoutNone.filter((entry) => entry !== name) : [...withoutNone, name]);
+    setField(
+      "accessories",
+      withoutNone.includes(name) ? withoutNone.filter((entry) => entry !== name) : [...withoutNone, name],
+    );
   };
 
   return (
@@ -533,7 +647,18 @@ export function RepairIntakeQuickPanel({
 
       <div className="grid gap-3 sm:grid-cols-3">
         {intakeFields
-          .filter((field) => ["generalCondition", "chargingState", "screenState", "frameState", "audioState", "chargingPortState", "networkState", "biometricState"].includes(field.key))
+          .filter((field) =>
+            [
+              "generalCondition",
+              "chargingState",
+              "screenState",
+              "frameState",
+              "audioState",
+              "chargingPortState",
+              "networkState",
+              "biometricState",
+            ].includes(field.key),
+          )
           .map((field) => (
             <label className="text-[#1A1916] text-[11px] font-medium" key={field.key}>
               {field.label}
@@ -543,7 +668,9 @@ export function RepairIntakeQuickPanel({
                 value={clean(draft[field.key], missing)}
               >
                 {field.options.map((option) => (
-                  <option key={option} value={option}>{option}</option>
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
                 ))}
               </select>
             </label>
@@ -560,7 +687,12 @@ export function RepairIntakeQuickPanel({
                 className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[12px] font-medium transition ${checked ? "border-[#2A9D8F] bg-[#E8F7F3] text-[#167B70]" : "border-[#E8E8E5] bg-white text-[#6B6B6B]"}`}
                 key={name}
               >
-                <input checked={checked} className="size-3 accent-[#2A9D8F]" onChange={() => toggleAccessory(name)} type="checkbox" />
+                <input
+                  checked={checked}
+                  className="size-3 accent-[#2A9D8F]"
+                  onChange={() => toggleAccessory(name)}
+                  type="checkbox"
+                />
                 {name}
               </label>
             );
@@ -596,13 +728,22 @@ export function RepairIntakeQuickPanel({
       <div className="grid gap-3 md:grid-cols-[1fr_1.2fr]">
         <div className="space-y-2">
           <p className="font-medium text-[#1A1916] text-[12px]">Validation client</p>
-          <CheckLine checked={Boolean(draft.customerConfirmed)} onChange={(checked) => setField("customerConfirmed", checked)}>
+          <CheckLine
+            checked={Boolean(draft.customerConfirmed)}
+            onChange={(checked) => setField("customerConfirmed", checked)}
+          >
             État d'entrée confirmé.
           </CheckLine>
-          <CheckLine checked={Boolean(draft.diagnosticAuthorized)} onChange={(checked) => setField("diagnosticAuthorized", checked)}>
+          <CheckLine
+            checked={Boolean(draft.diagnosticAuthorized)}
+            onChange={(checked) => setField("diagnosticAuthorized", checked)}
+          >
             Diagnostic / ouverture autorisé.
           </CheckLine>
-          <CheckLine checked={Boolean(draft.nonTestableAccepted)} onChange={(checked) => setField("nonTestableAccepted", checked)}>
+          <CheckLine
+            checked={Boolean(draft.nonTestableAccepted)}
+            onChange={(checked) => setField("nonTestableAccepted", checked)}
+          >
             Défauts non testables acceptés.
           </CheckLine>
           <input
@@ -640,14 +781,23 @@ function AccessDevicePanel({
   onChange: (patch: Partial<RepairIntakeCondition>) => void;
   compact?: boolean;
 }>) {
-  const method = intake.accessMethod && intake.accessMethod !== "Non renseigné" ? intake.accessMethod : "Non communiqué";
+  const method =
+    intake.accessMethod && intake.accessMethod !== "Non renseigné" ? intake.accessMethod : "Non communiqué";
   const showCode = method === "Code PIN" || method === "Mot de passe";
   const showPattern = method === "Schéma";
   return (
-    <section className={compact ? "rounded-[14px] border border-[#E8E8E5] bg-white p-3" : "mt-5 rounded-[14px] border border-[#E8E8E5] bg-white p-4 md:mt-7"}>
+    <section
+      className={
+        compact
+          ? "rounded-[14px] border border-[#E8E8E5] bg-white p-3"
+          : "mt-5 rounded-[14px] border border-[#E8E8E5] bg-white p-4 md:mt-7"
+      }
+    >
       <div className="flex items-center justify-between gap-3">
         <h3 className="font-semibold text-[#1A1916] text-[13px] md:text-sm">6. Accès appareil</h3>
-        <span className="rounded-full bg-[#EAF6F2] px-2.5 py-1 font-semibold text-[#167B70] text-[10.5px]">Sécurisé</span>
+        <span className="rounded-full bg-[#EAF6F2] px-2.5 py-1 font-semibold text-[#167B70] text-[10.5px]">
+          Sécurisé
+        </span>
       </div>
       <div className="mt-3 grid gap-3 md:grid-cols-3">
         <label className="block text-[#1A1916] text-[11px] font-medium md:text-[12px]">
@@ -658,7 +808,8 @@ function AccessDevicePanel({
               const next = event.target.value as RepairIntakeCondition["accessMethod"];
               onChange({
                 accessMethod: next,
-                passcodeState: next === "Aucun" ? "Sans code" : next === "Non communiqué" ? "Code non fourni" : "Code fourni",
+                passcodeState:
+                  next === "Aucun" ? "Sans code" : next === "Non communiqué" ? "Code non fourni" : "Code fourni",
                 ...(next !== "Schéma" ? { patternData: undefined } : {}),
                 ...(next !== "Code PIN" && next !== "Mot de passe" ? { accessCode: undefined } : {}),
               });
@@ -666,7 +817,9 @@ function AccessDevicePanel({
             value={method}
           >
             {accessMethodOptions.map((option) => (
-              <option key={option} value={option}>{option}</option>
+              <option key={option} value={option}>
+                {option}
+              </option>
             ))}
           </select>
         </label>
@@ -681,7 +834,9 @@ function AccessDevicePanel({
             />
           </label>
         ) : null}
-        <label className={`block text-[#1A1916] text-[11px] font-medium md:text-[12px] ${showPattern ? "md:col-span-1" : showCode ? "" : "md:col-span-2"}`}>
+        <label
+          className={`block text-[#1A1916] text-[11px] font-medium md:text-[12px] ${showPattern ? "md:col-span-1" : showCode ? "" : "md:col-span-2"}`}
+        >
           Note accès
           <input
             className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[12.5px] outline-none focus:border-[#2A9D8F] md:h-11 md:rounded-[12px] md:text-sm"
@@ -695,7 +850,9 @@ function AccessDevicePanel({
         <div className="mt-3">
           <PatternPicker
             value={intake.patternData?.points ?? []}
-            onChange={(points) => onChange({ patternData: points.length ? { points, label: points.join("-") } : undefined })}
+            onChange={(points) =>
+              onChange({ patternData: points.length ? { points, label: points.join("-") } : undefined })
+            }
           />
         </div>
       ) : null}
@@ -842,7 +999,11 @@ function SignaturePad({
           <PenLine className="size-4 text-[#2A9D8F]" />
           7. Signature client
         </p>
-        {signedAt ? <span className="text-[#167B70] text-[11px]">{dateTime(signedAt)}</span> : <span className="text-[#6B6B6B] text-[11px]">À signer</span>}
+        {signedAt ? (
+          <span className="text-[#167B70] text-[11px]">{dateTime(signedAt)}</span>
+        ) : (
+          <span className="text-[#6B6B6B] text-[11px]">À signer</span>
+        )}
       </div>
       <canvas
         ref={canvasRef}
@@ -861,7 +1022,9 @@ function SignaturePad({
         width={520}
       />
       <div className="mt-2 flex items-center justify-between gap-3">
-        <span className="truncate text-[#6B6B6B] text-[11px]">{clean(signerName, "Nom du signataire à renseigner")}</span>
+        <span className="truncate text-[#6B6B6B] text-[11px]">
+          {clean(signerName, "Nom du signataire à renseigner")}
+        </span>
         <button
           className="inline-flex items-center gap-1.5 rounded-full border border-[#E8E8E5] bg-white px-2.5 py-1 text-[#6B6B6B] text-[11px] font-medium hover:border-[#2A9D8F] hover:text-[#167B70]"
           onClick={() => onChange(undefined)}
@@ -890,10 +1053,14 @@ function Accordion({
         <span className="flex items-center gap-2">
           {title}
           {typeof count === "number" && count > 0 && (
-            <span className="rounded-full bg-[#EAF6F2] px-2 py-0.5 text-[10.5px] font-bold text-[#2A9D8F]">{count}</span>
+            <span className="rounded-full bg-[#EAF6F2] px-2 py-0.5 text-[10.5px] font-bold text-[#2A9D8F]">
+              {count}
+            </span>
           )}
         </span>
-        <span className="grid size-6 place-items-center rounded-full bg-[#FAFAF8] text-[#6B6B6B] transition group-open:rotate-45 md:hidden">+</span>
+        <span className="grid size-6 place-items-center rounded-full bg-[#FAFAF8] text-[#6B6B6B] transition group-open:rotate-45 md:hidden">
+          +
+        </span>
       </summary>
       <div className="px-3.5 pb-4 md:px-0 md:pt-3">{children}</div>
     </details>

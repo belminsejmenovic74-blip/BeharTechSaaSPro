@@ -116,7 +116,8 @@ function serviceDescription(line: QuoteLine, repair?: Repair): string {
   const device = deviceName(repair);
   const issue = text(repair.issue, "");
   const normalizedBase = base.toLowerCase();
-  const alreadyDetailed = normalizedBase.includes(device.toLowerCase()) || (issue && normalizedBase.includes(issue.toLowerCase()));
+  const alreadyDetailed =
+    normalizedBase.includes(device.toLowerCase()) || (issue && normalizedBase.includes(issue.toLowerCase()));
   return alreadyDetailed ? base : `${device} — ${issue || base}`;
 }
 
@@ -161,7 +162,11 @@ function ClientCard({ customer }: Readonly<{ customer?: Customer | null }>) {
   );
 }
 
-function RepairCard({ repair, invoice, quote }: Readonly<{ repair?: Repair | null; invoice?: Invoice; quote?: Quote }>) {
+function RepairCard({
+  repair,
+  invoice,
+  quote,
+}: Readonly<{ repair?: Repair | null; invoice?: Invoice; quote?: Quote }>) {
   return (
     <PremiumCard title="Dossier / Appareil">
       <KeyValue label="Dossier" value={dash(repair?.number ?? invoice?.sourceNumber ?? quote?.number)} />
@@ -195,7 +200,8 @@ function DocumentHeader({
           <p className="font-semibold text-[#1A1916] text-[15px] tracking-tight">{atelierName}</p>
           <p>{text(workshop.address)}</p>
           <p>
-            {text(workshop.postalCity, `${dash(workshop.postalCode)} ${dash(workshop.city)}`)}, {text(workshop.country, "France")}
+            {text(workshop.postalCity, `${dash(workshop.postalCode)} ${dash(workshop.city)}`)},{" "}
+            {text(workshop.country, "France")}
           </p>
           <p>SIRET : {text(workshop.siret)}</p>
           <p>{text(workshop.email)}</p>
@@ -210,9 +216,15 @@ function DocumentHeader({
         >
           {theme.label}
         </span>
-        <p className="mt-4 break-words font-mono font-semibold text-[#1A1916] text-[20px] tracking-tight">{dash(number)}</p>
+        <p className="mt-4 break-words font-mono font-semibold text-[#1A1916] text-[20px] tracking-tight">
+          {dash(number)}
+        </p>
         <p className="mt-1 text-[#6B6B6B] text-[12px]">Émis le {date ? dateLabel(date) : "Non renseigné"}</p>
-        {badge ? <div className="mt-3"><Badge>{badge}</Badge></div> : null}
+        {badge ? (
+          <div className="mt-3">
+            <Badge>{badge}</Badge>
+          </div>
+        ) : null}
       </div>
     </header>
   );
@@ -263,11 +275,7 @@ function DocumentLayout({
       style={{ color: COLORS.ink }}
     >
       {/* Bande de couleur en haut du doc, code visuel par type */}
-      <span
-        aria-hidden
-        className="absolute inset-x-0 top-0 h-1.5"
-        style={{ backgroundColor: theme.accent }}
-      />
+      <span aria-hidden className="absolute inset-x-0 top-0 h-1.5" style={{ backgroundColor: theme.accent }} />
       <DocumentHeader badge={badge} date={date} number={number} type={type} workshop={ws} />
       <main className="flex-1 space-y-5 py-6">{children}</main>
       <DocumentFooter workshop={ws} page={page} pageCount={pageCount} />
@@ -290,7 +298,9 @@ function DocumentIntro({
 }
 
 function PremiumTable({ rows, repair }: Readonly<{ rows: QuoteLine[]; repair?: Repair }>) {
-  const safeRows = rows.length ? rows : [{ id: "empty", description: "Prestation atelier", quantity: 1, unitPrice: 0, total: 0 }];
+  const safeRows = rows.length
+    ? rows
+    : [{ id: "empty", description: "Prestation atelier", quantity: 1, unitPrice: 0, total: 0 }];
   return (
     <section className="print-avoid-break overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-white print:rounded-none">
       <div className="grid grid-cols-[1fr_70px_112px_112px] bg-[#FAFAF8] px-4 py-3 font-semibold text-[#6B6B6B] text-[11px] uppercase tracking-wide">
@@ -305,7 +315,9 @@ function PremiumTable({ rows, repair }: Readonly<{ rows: QuoteLine[]; repair?: R
             <span className="font-medium text-[#1A1916]">{serviceDescription(line, repair)}</span>
             <span className="text-center text-[#6B6B6B]">{text(line.quantity, "1")}</span>
             <span className="text-right text-[#6B6B6B]">{money(line.unitPrice)}</span>
-            <span className="text-right font-semibold">{money(line.total ?? (line.quantity ?? 0) * (line.unitPrice ?? 0))}</span>
+            <span className="text-right font-semibold">
+              {money(line.total ?? (line.quantity ?? 0) * (line.unitPrice ?? 0))}
+            </span>
           </div>
         ))}
       </div>
@@ -349,7 +361,9 @@ function TotalsCard({
 
 function TotalLine({ label, value, emphasize }: Readonly<{ label: string; value: string; emphasize?: boolean }>) {
   return (
-    <div className={`flex justify-between gap-5 border-b border-[#E8E8E5] py-2 last:border-b-0 ${emphasize ? "font-semibold text-[#1A1916]" : "text-[#6B6B6B]"}`}>
+    <div
+      className={`flex justify-between gap-5 border-b border-[#E8E8E5] py-2 last:border-b-0 ${emphasize ? "font-semibold text-[#1A1916]" : "text-[#6B6B6B]"}`}
+    >
       <span>{label}</span>
       <span className={emphasize ? "text-[#1A1916] text-[18px] font-semibold" : "text-[#1A1916]"}>{value}</span>
     </div>
@@ -483,7 +497,10 @@ function IntakeSignatureBlock({ repair }: Readonly<{ repair: Repair }>) {
         )}
       </div>
       <div className="mt-2 grid gap-1">
-        <IntakeKeyValue label="Signataire" value={hasSignature ? text(intake?.signedBy ?? intake?.signerName, "Client") : "Client"} />
+        <IntakeKeyValue
+          label="Signataire"
+          value={hasSignature ? text(intake?.signedBy ?? intake?.signerName, "Client") : "Client"}
+        />
         <IntakeKeyValue label="Date" value={hasSignature && signedAt ? dateTimeLabel(signedAt) : "À signer"} />
       </div>
     </IntakeBox>
@@ -521,7 +538,10 @@ export function RepairIntakeDocument({
   );
 
   return (
-    <div className="print-document mx-auto flex w-full max-w-[794px] flex-col gap-6 text-[#1A1916]" data-pdf-paginate="true">
+    <div
+      className="print-document mx-auto flex w-full max-w-[794px] flex-col gap-6 text-[#1A1916]"
+      data-pdf-paginate="true"
+    >
       <DocumentLayout
         type="bon-prise-en-charge"
         number={repair.number}
@@ -544,7 +564,9 @@ export function RepairIntakeDocument({
             <IntakeKeyValue label="Modèle" value={text(repair.deviceModel ?? repair.model)} />
             <IntakeKeyValue label="IMEI / série" value={text(repair.imei)} />
             <IntakeKeyValue label="Accès appareil" value={accessSummary(repair)} />
-            {repair.intakeCondition?.accessMethod === "Schéma" ? <PatternMini points={repair.intakeCondition.patternData?.points} /> : null}
+            {repair.intakeCondition?.accessMethod === "Schéma" ? (
+              <PatternMini points={repair.intakeCondition.patternData?.points} />
+            ) : null}
           </IntakeBox>
         </div>
 
@@ -564,7 +586,10 @@ export function RepairIntakeDocument({
           </h3>
           <div className="grid grid-cols-2">
             {intakeRows.map(([label, key]) => (
-              <div className="grid grid-cols-[130px_1fr] gap-2 border-[#E8E8E5] border-b px-3 py-1.5 text-[11.5px]" key={key}>
+              <div
+                className="grid grid-cols-[130px_1fr] gap-2 border-[#E8E8E5] border-b px-3 py-1.5 text-[11.5px]"
+                key={key}
+              >
                 <span className="text-[#6B6B6B]">{label}</span>
                 <span className="font-medium">{intakeValue(repair, key)}</span>
               </div>
@@ -630,10 +655,11 @@ export function RepairIntakeDocument({
           page={2}
           pageCount={2}
         >
-          <h2 className="font-bold text-[#167B70] text-[14px] uppercase tracking-wide">Photos de l'appareil (facultatives)</h2>
+          <h2 className="font-bold text-[#167B70] text-[14px] uppercase tracking-wide">
+            Photos de l'appareil (facultatives)
+          </h2>
           <p className="mt-2 text-[#6B6B6B] text-[12px] leading-relaxed">
-            Photos prises au moment du dépôt. Elles servent uniquement à compléter l'état visuel
-            documenté en page 1.
+            Photos prises au moment du dépôt. Elles servent uniquement à compléter l'état visuel documenté en page 1.
           </p>
           <div className="mt-4 grid grid-cols-2 gap-4">
             {photos.slice(0, 6).map((photo) => (
@@ -667,22 +693,20 @@ function IntakeLegalMentions({ workshop }: Readonly<{ workshop: WorkshopInfo }>)
       </h3>
       <ul className="space-y-1.5 text-[10.5px] text-[#1A1916] leading-relaxed">
         <li>
-          <strong>Sauvegarde des données.</strong> Le client est responsable de la sauvegarde préalable des
-          données présentes sur l'appareil. L'atelier ne pourra être tenu responsable d'une éventuelle perte
-          de données pendant ou après l'intervention.
+          <strong>Sauvegarde des données.</strong> Le client est responsable de la sauvegarde préalable des données
+          présentes sur l'appareil. L'atelier ne pourra être tenu responsable d'une éventuelle perte de données pendant
+          ou après l'intervention.
         </li>
         {customTerms ? <li className="whitespace-pre-line">{customTerms}</li> : null}
         <li>
-          <strong>Appareils non récupérés.</strong> Passé un délai de 3 mois après notification de fin de
-          réparation, l'appareil pourra être considéré comme abandonné conformément à l'article 1947 du
-          Code civil.
+          <strong>Appareils non récupérés.</strong> Passé un délai de 3 mois après notification de fin de réparation,
+          l'appareil pourra être considéré comme abandonné conformément à l'article 1947 du Code civil.
         </li>
         <li>
-          <strong>RGPD (art. 13 du règlement UE 2016/679).</strong> Les données collectées (identité,
-          coordonnées, informations appareil) sont utilisées uniquement pour la gestion de la prise en
-          charge, conservées pendant la durée légale de garantie puis 5 ans à titre comptable. Le client
-          dispose d'un droit d'accès, de rectification, d'effacement et d'opposition exerçable auprès de
-          l'atelier.
+          <strong>RGPD (art. 13 du règlement UE 2016/679).</strong> Les données collectées (identité, coordonnées,
+          informations appareil) sont utilisées uniquement pour la gestion de la prise en charge, conservées pendant la
+          durée légale de garantie puis 5 ans à titre comptable. Le client dispose d'un droit d'accès, de rectification,
+          d'effacement et d'opposition exerçable auprès de l'atelier.
         </li>
       </ul>
     </section>
@@ -766,7 +790,9 @@ function InvoiceLegalMentions({
   return (
     <section className="grid gap-4 md:grid-cols-2">
       <div className="rounded-[14px] border border-[#E8E8E5] bg-white p-5 print:rounded-none">
-        <h3 className="mb-3 font-semibold text-[#1A1916] text-[13px] uppercase tracking-wide">Conditions de règlement</h3>
+        <h3 className="mb-3 font-semibold text-[#1A1916] text-[13px] uppercase tracking-wide">
+          Conditions de règlement
+        </h3>
         <dl className="grid gap-1 text-[12px] text-[#1A1916]">
           <KeyValue label="Date d'émission" value={issuedAt} />
           <KeyValue label="Date de prestation" value={serviceDate} />
@@ -775,9 +801,10 @@ function InvoiceLegalMentions({
           {invoice.paidAt ? <KeyValue label="Date de paiement" value={dateLabel(invoice.paidAt)} /> : null}
         </dl>
         <p className="mt-3 text-[10px] leading-relaxed text-[#6B6B6B]">
-          Pas d'escompte pour règlement anticipé. En cas de retard de paiement, application de pénalités au taux de trois
-          fois le taux d'intérêt légal en vigueur (art. L441-10 Code de commerce), exigibles sans rappel préalable, ainsi
-          qu'une indemnité forfaitaire pour frais de recouvrement de 40 € (art. D441-5 Code de commerce).
+          Pas d'escompte pour règlement anticipé. En cas de retard de paiement, application de pénalités au taux de
+          trois fois le taux d'intérêt légal en vigueur (art. L441-10 Code de commerce), exigibles sans rappel
+          préalable, ainsi qu'une indemnité forfaitaire pour frais de recouvrement de 40 € (art. D441-5 Code de
+          commerce).
         </p>
       </div>
 
@@ -814,8 +841,8 @@ function InvoiceLegalMentions({
         <p className="text-[#6B6B6B] text-[11px] leading-relaxed">
           Conformément à l'article L612-1 du Code de la consommation, en cas de litige et après avoir contacté notre
           service client, le consommateur peut recourir gratuitement à un médiateur de la consommation en vue d'une
-          résolution amiable du litige. Les coordonnées du médiateur compétent sont disponibles sur demande auprès
-          de l'atelier.
+          résolution amiable du litige. Les coordonnées du médiateur compétent sont disponibles sur demande auprès de
+          l'atelier.
         </p>
       </div>
 
@@ -885,11 +912,16 @@ function InternalPartsTable({ parts }: Readonly<{ parts: RepairPart[] }>) {
             const purchase = Number.isFinite(part.purchasePrice) ? part.purchasePrice : 0;
             const sale = Number.isFinite(part.salePrice) ? part.salePrice : 0;
             return (
-              <div className="grid grid-cols-[1fr_90px_90px_90px] px-5 py-4 text-[12px]" key={`${part.stockItemId}-${index}`}>
+              <div
+                className="grid grid-cols-[1fr_90px_90px_90px] px-5 py-4 text-[12px]"
+                key={`${part.stockItemId}-${index}`}
+              >
                 <span>
                   <strong>{text(part.name, "Pièce")}</strong>
                   <br />
-                  <span className="text-[#6B6B6B]">{dash(part.reference)} · Qté {text(part.quantity, "1")}</span>
+                  <span className="text-[#6B6B6B]">
+                    {dash(part.reference)} · Qté {text(part.quantity, "1")}
+                  </span>
                 </span>
                 <span className="text-right">{money(purchase)}</span>
                 <span className="text-right">{money(sale)}</span>
@@ -925,7 +957,10 @@ export function InternalRepairDocument({
         <KeyValue label="Prix client" value={money(repair.total ?? repair.amount)} />
         <KeyValue label="Fournisseur" value={dash(repair.selectedPriceSnapshot?.fournisseur)} />
         <KeyValue label="Stock utilisé" value={dash(repair.selectedPriceSnapshot?.stockDisponible)} />
-        <KeyValue label="Snapshot tarif" value={dash(repair.selectedPriceSnapshot?.sku ?? repair.selectedPriceSnapshot?.qualite)} />
+        <KeyValue
+          label="Snapshot tarif"
+          value={dash(repair.selectedPriceSnapshot?.sku ?? repair.selectedPriceSnapshot?.qualite)}
+        />
       </PremiumCard>
       <InternalPartsTable parts={repair.parts ?? []} />
       <NoticeCard title="Checklist technique">
@@ -952,7 +987,7 @@ export function SaleReceiptDocument({
       <DocumentIntro customer={customer} />
       <div className="mt-8">
         <PremiumTable
-          rows={sale.lines.map(l => ({
+          rows={sale.lines.map((l) => ({
             id: l.id,
             description: [
               l.name,
@@ -960,22 +995,24 @@ export function SaleReceiptDocument({
               l.conditionLabel ? `État : ${l.conditionLabel}` : "",
               l.serialNumber ? `IMEI / série : ${l.serialNumber}` : "",
               `Garantie : ${l.warrantyMonths ? `${l.warrantyMonths} mois` : "Non renseignée"}`,
-            ].filter(Boolean).join(" · "),
+            ]
+              .filter(Boolean)
+              .join(" · "),
             quantity: l.quantity,
             unitPrice: l.unitPrice,
-            total: l.total
+            total: l.total,
           }))}
         />
       </div>
       <div className="mt-8 flex justify-end">
         <div className="w-64">
           <TotalsCard
-            lines={sale.lines.map(l => ({
+            lines={sale.lines.map((l) => ({
               id: l.id,
               description: l.name,
               quantity: l.quantity,
               unitPrice: l.unitPrice,
-              total: l.total
+              total: l.total,
             }))}
             total={sale.total}
           />
@@ -996,7 +1033,6 @@ export function SaleReceiptDocument({
 }
 
 export function DocumentById({ id }: Readonly<{ id: string }>) {
-
   void id;
   return <p>Sélectionnez un document spécifique.</p>;
 }

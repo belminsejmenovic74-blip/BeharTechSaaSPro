@@ -1,17 +1,30 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
 import {
-  AlertTriangle, Building2, Check, CloudDownload, CloudUpload,
-  Download, FileText, HelpCircle, Loader2, Phone, Shield, Upload, ExternalLink
+  AlertTriangle,
+  Building2,
+  Check,
+  CloudDownload,
+  CloudUpload,
+  Download,
+  ExternalLink,
+  FileText,
+  HelpCircle,
+  Loader2,
+  Phone,
+  Shield,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { LicenseCard } from "@/components/behar/license-card";
 import { PageShell } from "@/components/behar/page-shell";
 import { Panel, PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
-import { LicenseCard } from "@/components/behar/license-card";
 import { UpdateChecker } from "@/components/behar/update-checker";
 import { useBeharStore, type WorkshopSettings } from "@/lib/behar-store";
 import {
@@ -41,7 +54,9 @@ const selectCls =
 const blockedValues = new Set(["hj", "test", "undefined", "null", "nan", "none", "aucun", "n/a"]);
 
 function normalizeSpaces(value: unknown): string {
-  return String(value ?? "").replace(/\s+/g, " ").trim();
+  return String(value ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function digitsOnly(value: unknown): string {
@@ -144,17 +159,32 @@ function phoneParts(value: unknown): { prefix: string; local: string } {
 
 function formatPhoneLocal(prefix: string, value: unknown): string {
   const digits = digitsOnly(value).slice(0, 12);
-  if (prefix === "+33") return digits.slice(0, 9).replace(/(\d)(?=(?:\d{2})+$)/g, "$1 ").trim();
+  if (prefix === "+33")
+    return digits
+      .slice(0, 9)
+      .replace(/(\d)(?=(?:\d{2})+$)/g, "$1 ")
+      .trim();
   return digits.replace(/(\d{3})(?=\d)/g, "$1 ").trim();
 }
 
-function Field({ label, hint, error, children, required }: {
-  label: string; hint?: string; error?: string; children: React.ReactNode; required?: boolean;
+function Field({
+  label,
+  hint,
+  error,
+  children,
+  required,
+}: {
+  label: string;
+  hint?: string;
+  error?: string;
+  children: React.ReactNode;
+  required?: boolean;
 }) {
   return (
     <label className="block space-y-1.5">
       <span className="text-[13px] font-medium text-[#1A1916]">
-        {label}{required && <span className="text-[#2A9D8F] ml-0.5">*</span>}
+        {label}
+        {required && <span className="text-[#2A9D8F] ml-0.5">*</span>}
       </span>
       {children}
       {error && <p className="text-[12px] text-[#DC3545] font-medium">{error}</p>}
@@ -163,8 +193,18 @@ function Field({ label, hint, error, children, required }: {
   );
 }
 
-function Section({ icon: Icon, title, description, children, className }: {
-  icon: any; title: string; description?: string; children: React.ReactNode; className?: string;
+function Section({
+  icon: Icon,
+  title,
+  description,
+  children,
+  className,
+}: {
+  icon: any;
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+  className?: string;
 }) {
   return (
     <Panel className={`p-6 ${className || ""}`}>
@@ -212,7 +252,8 @@ export default function SettingsPage() {
     const siret = digitsOnly(draft.siret);
 
     if (isWeakText(name)) e.name = "Renseignez un nom d'atelier réel.";
-    if (commercialName && isWeakText(commercialName)) e.commercialName = "Renseignez un nom commercial réel ou laissez vide.";
+    if (commercialName && isWeakText(commercialName))
+      e.commercialName = "Renseignez un nom commercial réel ou laissez vide.";
     if (!isValidPhoneNumber(draft.phone)) e.phone = "Numéro international requis : indicatif puis 7 à 15 chiffres.";
     if (!isValidEmail(draft.email)) e.email = "Renseignez un email valide.";
     if (isWeakText(address, 6)) e.address = "Adresse complète obligatoire.";
@@ -231,7 +272,10 @@ export default function SettingsPage() {
       toast.error("Action réservée au gérant/admin.");
       return;
     }
-    if (!validate()) { toast.error("Corrigez les erreurs avant d'enregistrer."); return; }
+    if (!validate()) {
+      toast.error("Corrigez les erreurs avant d'enregistrer.");
+      return;
+    }
     const city = normalizeSpaces(draft.city);
     const postalCode = normalizeSpaces(draft.postalCode);
     const siret = digitsOnly(draft.siret);
@@ -254,25 +298,42 @@ export default function SettingsPage() {
     toast.success("Paramètres enregistrés.");
   };
 
-  const dataSnapshot = useMemo(() => ({
-    workshopSettings: store.workshopSettings, workshopInfo: store.workshopInfo,
-    onboardingCompleted: store.onboardingCompleted, configuredAt: store.configuredAt,
-    updatedAt: store.updatedAt, customers: store.customers, repairs: store.repairs,
-    quotes: store.quotes, invoices: store.invoices, payments: store.payments,
-    appointments: store.appointments, stockItems: store.stockItems,
-    documents: store.documents, messageLogs: store.messageLogs,
-    selectedCustomerId: store.selectedCustomerId, selectedRepairId: store.selectedRepairId,
-    selectedQuoteId: store.selectedQuoteId, selectedInvoiceId: store.selectedInvoiceId,
-    selectedPaymentId: store.selectedPaymentId, selectedAppointmentId: store.selectedAppointmentId,
-    selectedStockItemId: store.selectedStockItemId, selectedDocumentId: store.selectedDocumentId,
-  }), [store]);
+  const dataSnapshot = useMemo(
+    () => ({
+      workshopSettings: store.workshopSettings,
+      workshopInfo: store.workshopInfo,
+      onboardingCompleted: store.onboardingCompleted,
+      configuredAt: store.configuredAt,
+      updatedAt: store.updatedAt,
+      customers: store.customers,
+      repairs: store.repairs,
+      quotes: store.quotes,
+      invoices: store.invoices,
+      payments: store.payments,
+      appointments: store.appointments,
+      stockItems: store.stockItems,
+      documents: store.documents,
+      messageLogs: store.messageLogs,
+      selectedCustomerId: store.selectedCustomerId,
+      selectedRepairId: store.selectedRepairId,
+      selectedQuoteId: store.selectedQuoteId,
+      selectedInvoiceId: store.selectedInvoiceId,
+      selectedPaymentId: store.selectedPaymentId,
+      selectedAppointmentId: store.selectedAppointmentId,
+      selectedStockItemId: store.selectedStockItemId,
+      selectedDocumentId: store.selectedDocumentId,
+    }),
+    [store],
+  );
 
   const exportJson = () => {
     if (!store.requirePermission("canExportData", "Exporter les données")) {
       toast.error("Export réservé au gérant/admin.");
       return;
     }
-    const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), state: dataSnapshot }, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), state: dataSnapshot }, null, 2)], {
+      type: "application/json",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -293,10 +354,14 @@ export default function SettingsPage() {
       localStorage.setItem("behar-tech-local-demo-v3", JSON.stringify({ state: importedState, version: 1 }));
       toast.success("Import terminé. Rechargement...");
       window.location.reload();
-    } catch { toast.error("Import impossible."); }
+    } catch {
+      toast.error("Import impossible.");
+    }
   };
 
-  const siren = digitsOnly(draft.siret).slice(0, 9).replace(/(\d{3})(?=\d)/g, "$1 ");
+  const siren = digitsOnly(draft.siret)
+    .slice(0, 9)
+    .replace(/(\d{3})(?=\d)/g, "$1 ");
   const postalCities = cityByPostalCode[normalizeSpaces(draft.postalCode)] ?? [];
   const phone = phoneParts(draft.phone);
   const phoneLocal = formatPhoneLocal(phone.prefix, phone.local);
@@ -342,17 +407,24 @@ export default function SettingsPage() {
       <div className="mb-6 flex min-w-0 flex-wrap items-start justify-between gap-4">
         <nav className="flex w-full min-w-0 max-w-full gap-1 overflow-x-auto border-b border-[#F1F1EF] lg:w-auto">
           {TABS.map((t) => {
-            const isActive = t.key === "atelier"
-              ? pathname === "/dashboard/parametres"
-              : pathname?.includes((t.href as string).split("?")[0]) && (t.href as string) !== "/dashboard/parametres";
+            const isActive =
+              t.key === "atelier"
+                ? pathname === "/dashboard/parametres"
+                : pathname?.includes((t.href as string).split("?")[0]) &&
+                  (t.href as string) !== "/dashboard/parametres";
             return (
-              <Link key={t.key} href={t.href} prefetch={false}
+              <Link
+                key={t.key}
+                href={t.href}
+                prefetch={false}
                 className={`shrink-0 px-4 py-2.5 text-[13px] font-medium transition-colors border-b-2 -mb-px ${
                   isActive || (t.key === "atelier" && pathname === "/dashboard/parametres")
                     ? "border-[#2A9D8F] text-[#1A1916]"
                     : "border-transparent text-[#8A8984] hover:text-[#1A1916]"
                 }`}
-              >{t.label}</Link>
+              >
+                {t.label}
+              </Link>
             );
           })}
         </nav>
@@ -369,20 +441,40 @@ export default function SettingsPage() {
       {/* Grid */}
       <div className="grid gap-5 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
         {/* Col 1 — Identité */}
-        <Section icon={Building2} title="Identité atelier" description="Le nom de l'atelier apparaîtra sur vos documents.">
+        <Section
+          icon={Building2}
+          title="Identité atelier"
+          description="Le nom de l'atelier apparaîtra sur vos documents."
+        >
           <div className="grid gap-4">
             <Field label="Nom de l'atelier" required error={errors.name}>
               <input className={inputCls} value={draft.name || ""} onChange={(e) => setField("name", e.target.value)} />
             </Field>
             <Field label="Nom commercial" hint="Optionnel" error={errors.commercialName}>
-              <input className={inputCls} value={draft.commercialName || ""} onChange={(e) => setField("commercialName", e.target.value)} />
+              <input
+                className={inputCls}
+                value={draft.commercialName || ""}
+                onChange={(e) => setField("commercialName", e.target.value)}
+              />
             </Field>
             <Field label="Site web" hint="Optionnel">
-              <input className={inputCls} value={draft.website || ""} onChange={(e) => setField("website", e.target.value)} placeholder="https://behartechpro.fr" />
+              <input
+                className={inputCls}
+                value={draft.website || ""}
+                onChange={(e) => setField("website", e.target.value)}
+                placeholder="https://behartechpro.fr"
+              />
             </Field>
             <Field label="Pays">
-              <select className={selectCls} value={draft.country || "France"} onChange={(e) => setField("country", e.target.value)}>
-                <option>France</option><option>Belgique</option><option>Suisse</option><option>Luxembourg</option>
+              <select
+                className={selectCls}
+                value={draft.country || "France"}
+                onChange={(e) => setField("country", e.target.value)}
+              >
+                <option>France</option>
+                <option>Belgique</option>
+                <option>Suisse</option>
+                <option>Luxembourg</option>
               </select>
             </Field>
           </div>
@@ -400,7 +492,9 @@ export default function SettingsPage() {
                   aria-label="Indicatif téléphonique"
                 >
                   {callingCodeOptions.map((option) => (
-                    <option key={option.code} value={option.code}>{option.code} · {option.label}</option>
+                    <option key={option.code} value={option.code}>
+                      {option.code} · {option.label}
+                    </option>
                   ))}
                 </select>
                 <input
@@ -414,42 +508,81 @@ export default function SettingsPage() {
               </div>
             </Field>
             <Field label="Email" required error={errors.email}>
-              <input className={inputCls} type="email" value={draft.email || ""} onChange={(e) => setField("email", e.target.value)} />
+              <input
+                className={inputCls}
+                type="email"
+                value={draft.email || ""}
+                onChange={(e) => setField("email", e.target.value)}
+              />
             </Field>
             <Field label="Adresse" required error={errors.address}>
-              <input className={inputCls} value={draft.address || ""} onChange={(e) => setField("address", e.target.value)} />
+              <input
+                className={inputCls}
+                value={draft.address || ""}
+                onChange={(e) => setField("address", e.target.value)}
+              />
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Code postal" required error={errors.postalCode}>
-                <input className={inputCls} inputMode="numeric" value={draft.postalCode || ""} onChange={(e) => setPostalCode(e.target.value)} />
+                <input
+                  className={inputCls}
+                  inputMode="numeric"
+                  value={draft.postalCode || ""}
+                  onChange={(e) => setPostalCode(e.target.value)}
+                />
               </Field>
               <Field label="Ville" required error={errors.city}>
                 {postalCities.length > 0 ? (
-                  <select className={selectCls} value={draft.city || postalCities[0]} onChange={(e) => setField("city", e.target.value)}>
-                    {postalCities.map((city) => <option key={city} value={city}>{city}</option>)}
+                  <select
+                    className={selectCls}
+                    value={draft.city || postalCities[0]}
+                    onChange={(e) => setField("city", e.target.value)}
+                  >
+                    {postalCities.map((city) => (
+                      <option key={city} value={city}>
+                        {city}
+                      </option>
+                    ))}
                   </select>
                 ) : (
-                  <input className={inputCls} value={draft.city || ""} onChange={(e) => setField("city", e.target.value)} />
+                  <input
+                    className={inputCls}
+                    value={draft.city || ""}
+                    onChange={(e) => setField("city", e.target.value)}
+                  />
                 )}
               </Field>
             </div>
           </div>
         </Section>
-
       </div>
 
       {/* Row 2 */}
       <div className="grid gap-5 xl:grid-cols-3 mt-5">
         {/* Informations légales */}
-        <Section icon={Shield} title="Informations légales" description="Ces informations apparaîtront sur vos documents.">
+        <Section
+          icon={Shield}
+          title="Informations légales"
+          description="Ces informations apparaîtront sur vos documents."
+        >
           <div className="grid gap-4">
             <div className="grid grid-cols-2 gap-3">
               <Field label="SIREN" hint="9 chiffres">
-                <input className={`${inputCls} bg-[#FAFAF8] text-[#6B6B6B]`} value={siren} readOnly aria-readonly="true" />
+                <input
+                  className={`${inputCls} bg-[#FAFAF8] text-[#6B6B6B]`}
+                  value={siren}
+                  readOnly
+                  aria-readonly="true"
+                />
               </Field>
               <Field label="SIRET" required error={errors.siret} hint="14 chiffres">
                 <div className="relative">
-                  <input className={inputCls} inputMode="numeric" value={draft.siret || ""} onChange={(e) => setField("siret", digitsOnly(e.target.value).slice(0, 14))} />
+                  <input
+                    className={inputCls}
+                    inputMode="numeric"
+                    value={draft.siret || ""}
+                    onChange={(e) => setField("siret", digitsOnly(e.target.value).slice(0, 14))}
+                  />
                   {draft.siret && /^\d{14}$/.test(digitsOnly(draft.siret)) && !errors.siret && (
                     <Check className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-[#2A9D8F]" />
                   )}
@@ -457,10 +590,18 @@ export default function SettingsPage() {
               </Field>
             </div>
             <Field label="TVA Intracommunautaire" hint="Optionnel" error={errors.tvaNumber}>
-              <input className={inputCls} value={draft.tvaNumber || ""} onChange={(e) => setField("tvaNumber", e.target.value)} />
+              <input
+                className={inputCls}
+                value={draft.tvaNumber || ""}
+                onChange={(e) => setField("tvaNumber", e.target.value)}
+              />
             </Field>
             <Field label="Mention TVA" error={errors.tvaMention}>
-              <input className={inputCls} value={draft.tvaMention || ""} onChange={(e) => setField("tvaMention", e.target.value)} />
+              <input
+                className={inputCls}
+                value={draft.tvaMention || ""}
+                onChange={(e) => setField("tvaMention", e.target.value)}
+              />
             </Field>
           </div>
         </Section>
@@ -469,15 +610,20 @@ export default function SettingsPage() {
         <Section icon={FileText} title="TVA & documents" description="Choisissez le régime de TVA pour vos documents.">
           <div className="space-y-4">
             {/* Radio cards */}
-            <button type="button" onClick={() => {
-              setField("vatApplicable", true);
-              // En TVA applicable, la mention 293 B n'a pas de sens.
-              setField("tvaMention", "");
-              setSaved(false);
-            }}
-              className={`w-full text-left rounded-[14px] border p-4 transition-all ${draft.vatApplicable ? "border-[#2A9D8F] bg-[#F8FCFA] shadow-[0_0_0_1px_#2A9D8F]" : "border-[#E7E4DC] hover:border-[#D1CFCA]"}`}>
+            <button
+              type="button"
+              onClick={() => {
+                setField("vatApplicable", true);
+                // En TVA applicable, la mention 293 B n'a pas de sens.
+                setField("tvaMention", "");
+                setSaved(false);
+              }}
+              className={`w-full text-left rounded-[14px] border p-4 transition-all ${draft.vatApplicable ? "border-[#2A9D8F] bg-[#F8FCFA] shadow-[0_0_0_1px_#2A9D8F]" : "border-[#E7E4DC] hover:border-[#D1CFCA]"}`}
+            >
               <div className="flex items-center gap-3">
-                <div className={`size-4 rounded-full border-2 flex items-center justify-center ${draft.vatApplicable ? "border-[#2A9D8F]" : "border-[#CDCBC5]"}`}>
+                <div
+                  className={`size-4 rounded-full border-2 flex items-center justify-center ${draft.vatApplicable ? "border-[#2A9D8F]" : "border-[#CDCBC5]"}`}
+                >
                   {draft.vatApplicable && <div className="size-2 rounded-full bg-[#2A9D8F]" />}
                 </div>
                 <div>
@@ -486,30 +632,47 @@ export default function SettingsPage() {
                 </div>
               </div>
             </button>
-            <button type="button" onClick={() => {
-              setField("vatApplicable", false);
-              // Pré-remplit la mention légale standard si vide pour éviter
-              // qu'un document parte sans mention obligatoire.
-              if (!draft.tvaMention || !draft.tvaMention.trim()) {
-                setField("tvaMention", "TVA non applicable, art. 293 B du CGI");
-              }
-              setSaved(false);
-            }}
-              className={`w-full text-left rounded-[14px] border p-4 transition-all ${!draft.vatApplicable ? "border-[#2A9D8F] bg-[#F8FCFA] shadow-[0_0_0_1px_#2A9D8F]" : "border-[#E7E4DC] hover:border-[#D1CFCA]"}`}>
+            <button
+              type="button"
+              onClick={() => {
+                setField("vatApplicable", false);
+                // Pré-remplit la mention légale standard si vide pour éviter
+                // qu'un document parte sans mention obligatoire.
+                if (!draft.tvaMention || !draft.tvaMention.trim()) {
+                  setField("tvaMention", "TVA non applicable, art. 293 B du CGI");
+                }
+                setSaved(false);
+              }}
+              className={`w-full text-left rounded-[14px] border p-4 transition-all ${!draft.vatApplicable ? "border-[#2A9D8F] bg-[#F8FCFA] shadow-[0_0_0_1px_#2A9D8F]" : "border-[#E7E4DC] hover:border-[#D1CFCA]"}`}
+            >
               <div className="flex items-center gap-3">
-                <div className={`size-4 rounded-full border-2 flex items-center justify-center ${!draft.vatApplicable ? "border-[#2A9D8F]" : "border-[#CDCBC5]"}`}>
+                <div
+                  className={`size-4 rounded-full border-2 flex items-center justify-center ${!draft.vatApplicable ? "border-[#2A9D8F]" : "border-[#CDCBC5]"}`}
+                >
                   {!draft.vatApplicable && <div className="size-2 rounded-full bg-[#2A9D8F]" />}
                 </div>
                 <div>
                   <p className="text-[13px] font-semibold text-[#1A1916]">TVA non applicable</p>
-                  <p className="text-[11px] text-[#8A8984] mt-0.5">Aucune TVA sur les documents · mention art. 293 B du CGI ajoutée.</p>
+                  <p className="text-[11px] text-[#8A8984] mt-0.5">
+                    Aucune TVA sur les documents · mention art. 293 B du CGI ajoutée.
+                  </p>
                 </div>
               </div>
             </button>
             {errors.vatApplicable && <p className="text-[12px] text-[#DC3545] font-medium">{errors.vatApplicable}</p>}
             {!draft.vatApplicable && (
-              <Field label="Mention affichée sur les documents" hint="Cette mention apparaîtra sur vos devis et factures." error={errors.tvaMention}>
-                <textarea className={areaCls} value={draft.tvaMention || ""} onChange={(e) => setField("tvaMention", e.target.value)} maxLength={120} rows={2} />
+              <Field
+                label="Mention affichée sur les documents"
+                hint="Cette mention apparaîtra sur vos devis et factures."
+                error={errors.tvaMention}
+              >
+                <textarea
+                  className={areaCls}
+                  value={draft.tvaMention || ""}
+                  onChange={(e) => setField("tvaMention", e.target.value)}
+                  maxLength={120}
+                  rows={2}
+                />
                 <p className="text-right text-[10px] text-[#CDCBC5]">{(draft.tvaMention || "").length}/120</p>
               </Field>
             )}
@@ -528,20 +691,38 @@ export default function SettingsPage() {
       {/* Row 3 */}
       <div className="grid gap-5 xl:grid-cols-3 mt-5">
         {/* Sauvegarde */}
-        <Section icon={Download} title="Sauvegarde & export" description="Sauvegardez vos données ou exportez vos paramètres.">
+        <Section
+          icon={Download}
+          title="Sauvegarde & export"
+          description="Sauvegardez vos données ou exportez vos paramètres."
+        >
           <div className="grid gap-3">
             <SecondaryButton className="h-10 w-full" onClick={exportJson} disabled={!canExportData}>
               <Download className="size-4" /> Exporter les paramètres
             </SecondaryButton>
-            <input ref={importRef} type="file" accept=".json,application/json" className="hidden"
-              onChange={(e) => { const file = e.target.files?.[0]; if (file) void handleImport(file); }} />
-            <SecondaryButton className="h-10 w-full" onClick={() => importRef.current?.click()} disabled={!canImportData}>
+            <input
+              ref={importRef}
+              type="file"
+              accept=".json,application/json"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void handleImport(file);
+              }}
+            />
+            <SecondaryButton
+              className="h-10 w-full"
+              onClick={() => importRef.current?.click()}
+              disabled={!canImportData}
+            >
               <Upload className="size-4" /> Voir les sauvegardes
             </SecondaryButton>
           </div>
           <CloudSyncBlock />
           <InstallAppLink />
-          <button type="button" className="mt-3 flex items-center gap-1.5 text-[12px] text-[#DC3545]/60 hover:text-[#DC3545] transition-colors"
+          <button
+            type="button"
+            className="mt-3 flex items-center gap-1.5 text-[12px] text-[#DC3545]/60 hover:text-[#DC3545] transition-colors"
             disabled={!canBackupData}
             onClick={() => {
               if (!store.requirePermission("canBackupData", "Réinitialiser les données")) {
@@ -553,7 +734,8 @@ export default function SettingsPage() {
                 store.setOnboardingCompleted(false);
                 toast.success("Données réinitialisées.");
               }
-            }}>
+            }}
+          >
             <AlertTriangle className="size-3" /> Réinitialiser les données locales
           </button>
         </Section>
@@ -561,22 +743,107 @@ export default function SettingsPage() {
         {/* Documents — préfixes & conditions */}
         <Section icon={FileText} title="Numérotation & conditions" description="Préfixes et numéros de vos documents.">
           <div className="grid gap-3 grid-cols-2">
-            <Field label="Préfixe réparation"><input className={inputCls} value={draft.repairPrefix || "REP"} onChange={(e) => setField("repairPrefix", e.target.value)} /></Field>
-            <Field label="N° suivant"><input className={inputCls} type="number" min={1} value={String(draft.nextRepairNumber || 1)} onChange={(e) => setField("nextRepairNumber", Number(e.target.value) || 1)} /></Field>
-            <Field label="Préfixe devis"><input className={inputCls} value={draft.quotePrefix || "DEV"} onChange={(e) => setField("quotePrefix", e.target.value)} /></Field>
-            <Field label="N° suivant"><input className={inputCls} type="number" min={1} value={String(draft.nextQuoteNumber || 1)} onChange={(e) => setField("nextQuoteNumber", Number(e.target.value) || 1)} /></Field>
-            <Field label="Préfixe facture"><input className={inputCls} value={draft.invoicePrefix || "FAC"} onChange={(e) => setField("invoicePrefix", e.target.value)} /></Field>
-            <Field label="N° suivant"><input className={inputCls} type="number" min={1} value={String(draft.nextInvoiceNumber || 1)} onChange={(e) => setField("nextInvoiceNumber", Number(e.target.value) || 1)} /></Field>
-            <Field label="Préfixe reçu"><input className={inputCls} value={draft.receiptPrefix || "REC"} onChange={(e) => setField("receiptPrefix", e.target.value)} /></Field>
-            <Field label="N° suivant"><input className={inputCls} type="number" min={1} value={String(draft.nextReceiptNumber || 1)} onChange={(e) => setField("nextReceiptNumber", Number(e.target.value) || 1)} /></Field>
+            <Field label="Préfixe réparation">
+              <input
+                className={inputCls}
+                value={draft.repairPrefix || "REP"}
+                onChange={(e) => setField("repairPrefix", e.target.value)}
+              />
+            </Field>
+            <Field label="N° suivant">
+              <input
+                className={inputCls}
+                type="number"
+                min={1}
+                value={String(draft.nextRepairNumber || 1)}
+                onChange={(e) => setField("nextRepairNumber", Number(e.target.value) || 1)}
+              />
+            </Field>
+            <Field label="Préfixe devis">
+              <input
+                className={inputCls}
+                value={draft.quotePrefix || "DEV"}
+                onChange={(e) => setField("quotePrefix", e.target.value)}
+              />
+            </Field>
+            <Field label="N° suivant">
+              <input
+                className={inputCls}
+                type="number"
+                min={1}
+                value={String(draft.nextQuoteNumber || 1)}
+                onChange={(e) => setField("nextQuoteNumber", Number(e.target.value) || 1)}
+              />
+            </Field>
+            <Field label="Préfixe facture">
+              <input
+                className={inputCls}
+                value={draft.invoicePrefix || "FAC"}
+                onChange={(e) => setField("invoicePrefix", e.target.value)}
+              />
+            </Field>
+            <Field label="N° suivant">
+              <input
+                className={inputCls}
+                type="number"
+                min={1}
+                value={String(draft.nextInvoiceNumber || 1)}
+                onChange={(e) => setField("nextInvoiceNumber", Number(e.target.value) || 1)}
+              />
+            </Field>
+            <Field label="Préfixe reçu">
+              <input
+                className={inputCls}
+                value={draft.receiptPrefix || "REC"}
+                onChange={(e) => setField("receiptPrefix", e.target.value)}
+              />
+            </Field>
+            <Field label="N° suivant">
+              <input
+                className={inputCls}
+                type="number"
+                min={1}
+                value={String(draft.nextReceiptNumber || 1)}
+                onChange={(e) => setField("nextReceiptNumber", Number(e.target.value) || 1)}
+              />
+            </Field>
           </div>
           <div className="mt-4 grid gap-3">
-            <Field label="Conditions devis"><textarea className={areaCls} value={draft.quoteTerms || ""} onChange={(e) => setField("quoteTerms", e.target.value)} rows={2} /></Field>
-            <Field label="Conditions facture"><textarea className={areaCls} value={draft.invoiceTerms || ""} onChange={(e) => setField("invoiceTerms", e.target.value)} rows={2} /></Field>
-            <Field label="Conditions bon de prise en charge" hint="Texte libre ajouté aux mentions du bon de prise en charge.">
-              <textarea className={areaCls} value={draft.intakeTerms || ""} onChange={(e) => setField("intakeTerms", e.target.value)} rows={3} />
+            <Field label="Conditions devis">
+              <textarea
+                className={areaCls}
+                value={draft.quoteTerms || ""}
+                onChange={(e) => setField("quoteTerms", e.target.value)}
+                rows={2}
+              />
             </Field>
-            <Field label="Pied de page document"><textarea className={areaCls} value={draft.documentFooter || ""} onChange={(e) => setField("documentFooter", e.target.value)} rows={2} /></Field>
+            <Field label="Conditions facture">
+              <textarea
+                className={areaCls}
+                value={draft.invoiceTerms || ""}
+                onChange={(e) => setField("invoiceTerms", e.target.value)}
+                rows={2}
+              />
+            </Field>
+            <Field
+              label="Conditions bon de prise en charge"
+              hint="Texte libre ajouté aux mentions du bon de prise en charge."
+            >
+              <textarea
+                className={areaCls}
+                value={draft.intakeTerms || ""}
+                onChange={(e) => setField("intakeTerms", e.target.value)}
+                rows={3}
+              />
+            </Field>
+            <Field label="Pied de page document">
+              <textarea
+                className={areaCls}
+                value={draft.documentFooter || ""}
+                onChange={(e) => setField("documentFooter", e.target.value)}
+                rows={2}
+              />
+            </Field>
           </div>
         </Section>
       </div>
@@ -665,18 +932,27 @@ function CloudSyncBlock() {
       {lastSyncedAt && (
         <p className="mt-2 flex items-center gap-1.5 text-[#147065] text-[11.5px] font-medium">
           <Check className="size-3" />
-          Dernière sauvegarde : {new Date(lastSyncedAt).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}
+          Dernière sauvegarde :{" "}
+          {new Date(lastSyncedAt).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}
         </p>
       )}
 
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        <button type="button" onClick={onSave} disabled={busy !== null}
-          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-[12.5px] font-medium text-[#1A1916] transition active:scale-95 disabled:opacity-50 hover:bg-[#FAFAF8]">
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={busy !== null}
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-[12.5px] font-medium text-[#1A1916] transition active:scale-95 disabled:opacity-50 hover:bg-[#FAFAF8]"
+        >
           {busy === "upload" ? <Loader2 className="size-3.5 animate-spin" /> : <CloudUpload className="size-3.5" />}
           Sauvegarder
         </button>
-        <button type="button" onClick={onRestore} disabled={busy !== null}
-          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-[12.5px] font-medium text-[#1A1916] transition active:scale-95 disabled:opacity-50 hover:bg-[#FAFAF8]">
+        <button
+          type="button"
+          onClick={onRestore}
+          disabled={busy !== null}
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-[12.5px] font-medium text-[#1A1916] transition active:scale-95 disabled:opacity-50 hover:bg-[#FAFAF8]"
+        >
           {busy === "restore" ? <Loader2 className="size-3.5 animate-spin" /> : <CloudDownload className="size-3.5" />}
           Restaurer
         </button>
@@ -714,8 +990,15 @@ function InstallAppLink() {
       const p = (window as unknown as { deferredInstallPrompt?: BeforeInstallPromptEvent }).deferredInstallPrompt;
       if (p) setInstallPrompt(p);
     };
-    const onBeforePrompt = (e: Event) => { e.preventDefault(); setInstallPrompt(e as BeforeInstallPromptEvent); };
-    const onInstalled = () => { setInstalled(true); setInstallPrompt(null); toast.success("Application installée."); };
+    const onBeforePrompt = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e as BeforeInstallPromptEvent);
+    };
+    const onInstalled = () => {
+      setInstalled(true);
+      setInstallPrompt(null);
+      toast.success("Application installée.");
+    };
 
     window.addEventListener("pwa-prompt-available", onAvailable);
     window.addEventListener("beforeinstallprompt", onBeforePrompt);
@@ -741,35 +1024,53 @@ function InstallAppLink() {
         await installPrompt.prompt();
         const choice = await installPrompt.userChoice;
         if (choice.outcome === "accepted") setInstalled(true);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
       setInstallPrompt(null);
       return;
     }
-    if (isIos) { setIosOpen(true); return; }
+    if (isIos) {
+      setIosOpen(true);
+      return;
+    }
     toast.message("Ouvrez ce site dans Chrome / Edge puis cliquez sur l'icône Installer dans la barre d'adresse.");
   };
 
   return (
     <>
-      <button type="button" onClick={handleClick}
-        className="mt-3 flex items-center gap-1.5 text-[12px] text-[#8A8984] hover:text-[#2A9D8F] transition-colors">
+      <button
+        type="button"
+        onClick={handleClick}
+        className="mt-3 flex items-center gap-1.5 text-[12px] text-[#8A8984] hover:text-[#2A9D8F] transition-colors"
+      >
         <Download className="size-3" /> Installer l'application
       </button>
 
       {iosOpen && (
         <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true">
-          <button type="button" className="absolute inset-0 bg-[#1A1916]/40 backdrop-blur-sm" onClick={() => setIosOpen(false)} aria-label="Fermer" />
+          <button
+            type="button"
+            className="absolute inset-0 bg-[#1A1916]/40 backdrop-blur-sm"
+            onClick={() => setIosOpen(false)}
+            aria-label="Fermer"
+          />
           <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-[28px] bg-white pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_-20px_60px_rgba(26,25,22,0.18)]">
             <div className="flex justify-center pt-2 pb-1">
               <span className="h-1 w-9 rounded-full bg-[#D1CFCA]" aria-hidden />
             </div>
             <div className="px-6 pt-3 pb-4">
               <p className="font-semibold text-[#1A1916] text-[20px] tracking-tight">Installer sur iPhone / iPad</p>
-              <p className="mt-1 text-[#8A8984] text-[13px]">Safari : touchez l'icône <strong>Partager</strong>, puis <strong>« Sur l'écran d'accueil »</strong>.</p>
+              <p className="mt-1 text-[#8A8984] text-[13px]">
+                Safari : touchez l'icône <strong>Partager</strong>, puis <strong>« Sur l'écran d'accueil »</strong>.
+              </p>
             </div>
             <div className="px-5 pb-5">
-              <button type="button" onClick={() => setIosOpen(false)}
-                className="w-full h-11 rounded-[12px] bg-[#1A1916] text-white font-semibold text-[14px]">
+              <button
+                type="button"
+                onClick={() => setIosOpen(false)}
+                className="w-full h-11 rounded-[12px] bg-[#1A1916] text-white font-semibold text-[14px]"
+              >
                 Compris
               </button>
             </div>

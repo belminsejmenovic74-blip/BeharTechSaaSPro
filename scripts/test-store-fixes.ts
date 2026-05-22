@@ -151,11 +151,7 @@ reset();
   expect("Paiement encaissé", Boolean(paymentId));
 
   const saleAfter = store().sales.find((sl) => sl.id === saleId);
-  expect(
-    "Vente est passée Rattachée → Payée",
-    saleAfter?.status === "Payée",
-    `status actuel: ${saleAfter?.status}`,
-  );
+  expect("Vente est passée Rattachée → Payée", saleAfter?.status === "Payée", `status actuel: ${saleAfter?.status}`);
   expect("Vente a un paymentId", Boolean(saleAfter?.paymentId));
   expect("Vente a un paidAt", Boolean(saleAfter?.paidAt));
 }
