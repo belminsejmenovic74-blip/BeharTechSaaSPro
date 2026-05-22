@@ -1,7 +1,6 @@
 "use client";
 
 import { Key, CheckCircle2, ShieldOff, RefreshCw } from "lucide-react";
-import { toast } from "sonner";
 import { Panel, SecondaryButton } from "./primitives";
 import { useBeharStore } from "@/lib/behar-store";
 
@@ -9,22 +8,30 @@ export function LicenseCard() {
   const store = useBeharStore();
   const { licenseKey, licensePlan, licenseActivatedAt, deactivateLicense } = store;
 
-  // Pas de confirm() natif (bloqué dans Tauri/Capacitor), pas de toast à
-  // action (peut être manqué). Action directe au clic : l'utilisateur a
-  // explicitement cliqué le bouton, on désactive et on le ramène à l'écran
-  // d'activation, point.
+  // Action directe + reload complet. On évite tous les pièges :
+  // - pas de confirm() natif (bloqué en WebView)
+  // - pas de toast à action (peut être manqué)
+  // - pas de dépendance au re-render React qui peut être bloqué par un effet
+  //   de cloud-bootstrap encore en vol
+  // Le reload garantit un état complètement propre.
   const handleDeactivate = () => {
     // eslint-disable-next-line no-console
     console.log("[license-card] désactivation demandée");
     deactivateLicense();
-    toast.info("Licence désactivée. Saisissez une clé pour réactiver.");
+    if (typeof window !== "undefined") {
+      // Petit délai pour que le set du store soit persisté en localStorage
+      // avant le reload.
+      setTimeout(() => window.location.reload(), 50);
+    }
   };
 
   const handleChangeKey = () => {
     // eslint-disable-next-line no-console
     console.log("[license-card] changement de clé demandé");
     deactivateLicense();
-    toast.info("Saisissez la nouvelle clé de licence.");
+    if (typeof window !== "undefined") {
+      setTimeout(() => window.location.reload(), 50);
+    }
   };
 
   const maskedKey = licenseKey 
