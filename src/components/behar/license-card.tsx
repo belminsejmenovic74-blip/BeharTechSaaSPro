@@ -9,44 +9,22 @@ export function LicenseCard() {
   const store = useBeharStore();
   const { licenseKey, licensePlan, licenseActivatedAt, deactivateLicense } = store;
 
-  // On utilise un toast sonner avec action plutôt que `confirm()` natif :
-  // `window.confirm` est souvent bloqué dans les WebView Capacitor / Tauri
-  // (renvoie false silencieusement). Cette approche marche partout.
+  // Pas de confirm() natif (bloqué dans Tauri/Capacitor), pas de toast à
+  // action (peut être manqué). Action directe au clic : l'utilisateur a
+  // explicitement cliqué le bouton, on désactive et on le ramène à l'écran
+  // d'activation, point.
   const handleDeactivate = () => {
-    toast("Désactiver la licence ?", {
-      description: "Vous serez redirigé vers l'écran d'activation.",
-      duration: 10_000,
-      action: {
-        label: "Désactiver",
-        onClick: () => {
-          deactivateLicense();
-          toast.info("Licence désactivée.");
-        },
-      },
-      cancel: {
-        label: "Annuler",
-        onClick: () => {},
-      },
-    });
+    // eslint-disable-next-line no-console
+    console.log("[license-card] désactivation demandée");
+    deactivateLicense();
+    toast.info("Licence désactivée. Saisissez une clé pour réactiver.");
   };
 
   const handleChangeKey = () => {
-    toast("Changer de clé de licence ?", {
-      description:
-        "Vous serez redirigé vers l'écran d'activation. Vos données actuelles restent dans le cloud sous la clé en cours.",
-      duration: 10_000,
-      action: {
-        label: "Changer",
-        onClick: () => {
-          deactivateLicense();
-          toast.info("Saisissez la nouvelle clé de licence.");
-        },
-      },
-      cancel: {
-        label: "Annuler",
-        onClick: () => {},
-      },
-    });
+    // eslint-disable-next-line no-console
+    console.log("[license-card] changement de clé demandé");
+    deactivateLicense();
+    toast.info("Saisissez la nouvelle clé de licence.");
   };
 
   const maskedKey = licenseKey 

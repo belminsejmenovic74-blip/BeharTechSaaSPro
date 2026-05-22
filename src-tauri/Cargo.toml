@@ -1,6 +1,6 @@
 [package]
 name = "behar-tech-pro"
-version = "1.0.11"
+version = "1.0.12"
 description = "Behar Tech Pro — Logiciel d'atelier"
 authors = ["Behar Tech"]
 edition = "2021"
