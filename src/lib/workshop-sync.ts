@@ -498,7 +498,7 @@ export function hydrateStoreFromCloud(
   }
 }
 
-export async function ensureCloudStateForLicense(key: string): Promise<"loaded" | "created" | "offline"> {
+export async function ensureCloudStateForLicense(key: string, force = false): Promise<"loaded" | "created" | "offline"> {
   const normalizedKey = normalizeLicenseKey(key);
   if (!normalizedKey) throw new Error("Licence requise.");
 
@@ -517,10 +517,7 @@ export async function ensureCloudStateForLicense(key: string): Promise<"loaded" 
 
   const remote = await loadSnapshotByLicenseKey(normalizedKey);
   if (remote) {
-    // Activation d'une licence : on charge le cloud, même si un state local
-    // existe — c'est une action explicite de l'utilisateur qui veut récupérer
-    // ses données.
-    hydrateStoreFromCloud(remote, { force: true });
+    hydrateStoreFromCloud(remote, { force });
     return "loaded";
   }
 

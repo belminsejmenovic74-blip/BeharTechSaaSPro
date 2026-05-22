@@ -199,7 +199,7 @@ export function AutoSyncProvider() {
       if (!license || license === activeLicense) return;
       activeLicense = license;
       markSyncStatus("loading");
-      await fetchAndApplyRemote(license, true);
+      await fetchAndApplyRemote(license, false);
       if (disposed || activeLicense !== license) return;
       lastKnownVersion = getWorkshopStateVersion(useBeharStore.getState());
       startRealtime(license);

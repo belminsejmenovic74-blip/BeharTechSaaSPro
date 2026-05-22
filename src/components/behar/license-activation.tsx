@@ -37,7 +37,7 @@ export function LicenseActivation() {
     }
 
     try {
-      const result = await ensureCloudStateForLicense(normalizedKey);
+      const result = await ensureCloudStateForLicense(normalizedKey, true);
       if (result === "loaded") {
         toast.success("Atelier cloud chargé.");
       } else if (result === "created") {
