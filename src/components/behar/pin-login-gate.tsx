@@ -42,7 +42,7 @@ export function PinLoginGate({ children }: Readonly<{ children: ReactNode }>) {
   }, [sessionUserId, users]);
 
   if (!_hasHydrated && !hydrationTimedOut) {
-    return <div className="flex min-h-svh items-center justify-center bg-[#FAFAF8] text-[#6B6B6B]">Chargement…</div>;
+    return <div className="flex min-h-svh items-center justify-center bg-white text-[#6B6B6B]">Chargement…</div>;
   }
 
   if (!validSession) {
@@ -134,12 +134,12 @@ function UserSelectorScreen({
   onSelect: (user: CurrentUser) => void;
 }>) {
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center bg-[#FAFAF8] px-5 py-10">
+    <div className="flex min-h-svh flex-col items-center justify-center bg-white px-5 py-10">
       <div className="w-full max-w-[480px]">
         {/* Header */}
         <div className="mb-10 text-center">
           <h1 className="font-bold text-[#1A1916] text-[44px] tracking-[-0.03em] leading-none">Bonjour</h1>
-          <p className="mt-3 text-[#8A8984] text-[15px]">Choisissez votre compte</p>
+          <p className="mt-3 text-[#6B6B6B] text-[15px]">Choisissez votre compte</p>
         </div>
 
         {/* User cards */}
@@ -151,7 +151,7 @@ function UserSelectorScreen({
                 key={user.id}
                 type="button"
                 onClick={() => onSelect(user)}
-                className="group flex items-center gap-4 rounded-[20px] border border-[#F1F1EF] bg-white px-4 py-4 text-left shadow-[0_1px_4px_rgba(26,25,22,0.04)] transition active:scale-[0.98] hover:border-[#D1CFCA] hover:shadow-[0_4px_16px_rgba(26,25,22,0.08)]"
+                className="group flex items-center gap-4 rounded-[20px] border border-[#F7F7F7] bg-white px-4 py-4 text-left shadow-[0_1px_4px_rgba(26,25,22,0.04)] transition active:scale-[0.98] hover:border-[#DADADA] hover:shadow-[0_4px_16px_rgba(26,25,22,0.08)]"
               >
                 {/* Avatar */}
                 <span
@@ -163,12 +163,12 @@ function UserSelectorScreen({
                 {/* Info */}
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold text-[#1A1916] text-[15px] leading-tight">{user.name}</p>
-                  <p className="mt-0.5 text-[#8A8984] text-[12px] font-medium">{roleSubtitle(user.role, user.name)}</p>
+                  <p className="mt-0.5 text-[#6B6B6B] text-[12px] font-medium">{roleSubtitle(user.role, user.name)}</p>
                 </div>
 
                 {/* Arrow */}
                 <ChevronRight
-                  className="size-4 shrink-0 text-[#CDCBC5] transition group-hover:text-[#8A8984]"
+                  className="size-4 shrink-0 text-[#A3A3A3] transition group-hover:text-[#6B6B6B]"
                   strokeWidth={2}
                 />
               </button>
@@ -248,7 +248,7 @@ function PinEntryScreen({
   };
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-[#FAFAF8] px-5 py-10">
+    <div className="flex min-h-svh items-center justify-center bg-white px-5 py-10">
       <div className="w-full max-w-[380px]">
         {/* Back button */}
         <button
@@ -273,13 +273,13 @@ function PinEntryScreen({
           <h1 className="font-bold text-[#1A1916] text-[28px] tracking-[-0.02em] leading-tight">
             Bonjour {user.name.split(" ")[0]}
           </h1>
-          <p className="mt-1.5 text-[#8A8984] text-[12px] font-medium">{roleLabel(user.role)}</p>
+          <p className="mt-1.5 text-[#6B6B6B] text-[12px] font-medium">{roleLabel(user.role)}</p>
           {greeting && (
             <p className="mt-3 max-w-[300px] text-[#6B6B6B] text-[14px] leading-snug italic">« {greeting} »</p>
           )}
         </div>
 
-        <div className="rounded-[24px] border border-[#F1F1EF] bg-white p-6 shadow-[0_2px_8px_rgba(26,25,22,0.04)]">
+        <div className="rounded-[24px] border border-[#F7F7F7] bg-white p-6 shadow-[0_2px_8px_rgba(26,25,22,0.04)]">
           {/* PIN dots */}
           <div className="flex justify-center gap-3">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -289,7 +289,7 @@ function PinEntryScreen({
                   "grid h-12 w-10 place-items-center rounded-[12px] border text-[20px] font-semibold transition-all duration-150",
                   pin[i]
                     ? "border-[#2A9D8F]/50 bg-[#EAF6F2] text-[#1A1916] scale-105"
-                    : "border-[#E7E4DC] bg-[#FAFAF8] text-[#CDCBC5]",
+                    : "border-[#E8E8E5] bg-[#FAFAFA] text-[#A3A3A3]",
                   error && "border-[#DC3545]/40 bg-[#FDF2F2]",
                 )}
               >
@@ -310,7 +310,7 @@ function PinEntryScreen({
                 key={digit}
                 type="button"
                 onClick={() => onDigit(digit)}
-                className="h-14 rounded-[16px] bg-[#FAFAF8] font-semibold text-[#1A1916] text-[22px] transition active:scale-95 active:bg-[#F1F1EF] hover:bg-[#F1F1EF]"
+                className="h-14 rounded-[16px] bg-[#FAFAFA] font-semibold text-[#1A1916] text-[22px] transition active:scale-95 active:bg-[#F7F7F7] hover:bg-[#F7F7F7]"
               >
                 {digit}
               </button>
@@ -318,14 +318,14 @@ function PinEntryScreen({
             <button
               type="button"
               onClick={onBackspace}
-              className="h-14 rounded-[16px] bg-[#FAFAF8] font-medium text-[#6B6B6B] text-[13px] transition active:scale-95 active:bg-[#F1F1EF] hover:bg-[#F1F1EF]"
+              className="h-14 rounded-[16px] bg-[#FAFAFA] font-medium text-[#6B6B6B] text-[13px] transition active:scale-95 active:bg-[#F7F7F7] hover:bg-[#F7F7F7]"
             >
               ⌫
             </button>
             <button
               type="button"
               onClick={() => onDigit("0")}
-              className="h-14 rounded-[16px] bg-[#FAFAF8] font-semibold text-[#1A1916] text-[22px] transition active:scale-95 active:bg-[#F1F1EF] hover:bg-[#F1F1EF]"
+              className="h-14 rounded-[16px] bg-[#FAFAFA] font-semibold text-[#1A1916] text-[22px] transition active:scale-95 active:bg-[#F7F7F7] hover:bg-[#F7F7F7]"
             >
               0
             </button>
@@ -337,7 +337,7 @@ function PinEntryScreen({
                 "h-14 rounded-[16px] font-semibold text-[14px] transition active:scale-95",
                 pin
                   ? "bg-[#2A9D8F] text-white shadow-[0_2px_8px_rgba(42,157,143,0.25)]"
-                  : "bg-[#F1F1EF] text-[#CDCBC5]",
+                  : "bg-[#F7F7F7] text-[#A3A3A3]",
               )}
             >
               <LogIn className="mx-auto size-5" />
@@ -346,7 +346,7 @@ function PinEntryScreen({
 
           {/* Keyboard fallback */}
           <div className="mt-5 flex items-center gap-2">
-            <Lock className="size-4 text-[#8A8984]" />
+            <Lock className="size-4 text-[#6B6B6B]" />
             <input
               type="password"
               inputMode="numeric"
@@ -361,7 +361,7 @@ function PinEntryScreen({
                 if (e.key === "Enter") onValidate();
               }}
               placeholder="Saisie clavier"
-              className="h-10 flex-1 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-[#1A1916] text-sm outline-none focus:border-[#2A9D8F]"
+              className="h-10 flex-1 rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-sm outline-none focus:border-[#2A9D8F]"
             />
             <button
               type="button"
@@ -369,7 +369,7 @@ function PinEntryScreen({
                 setPin("");
                 setError("");
               }}
-              className="grid size-10 place-items-center rounded-[12px] text-[#6B6B6B] hover:bg-[#F6F7F4]"
+              className="grid size-10 place-items-center rounded-[12px] text-[#6B6B6B] hover:bg-[#FAFAFA]"
               title="Effacer"
             >
               <RefreshCw className="size-4" />
@@ -377,7 +377,7 @@ function PinEntryScreen({
           </div>
         </div>
 
-        <p className="mt-5 text-center text-[#B0AEA8] text-[12px]">Entrez votre code PIN à 4 chiffres.</p>
+        <p className="mt-5 text-center text-[#8A8A8A] text-[12px]">Entrez votre code PIN à 4 chiffres.</p>
       </div>
     </div>
   );

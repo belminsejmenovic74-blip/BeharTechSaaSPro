@@ -395,6 +395,7 @@ export async function saveSnapshotState(
   if (existing) {
     const localRecords = getSharedRecordCount(state);
     const remoteRecords = getSharedRecordCount(existing.state);
+    const localHasMoreRecords = localRecords > remoteRecords;
     const remoteTs = new Date(existing.updatedAt || 0).getTime();
     const baseSyncedTs = new Date(
       (state.cloudSync as StoreState["cloudSync"] | undefined)?.lastSyncedAt || 0,
@@ -412,8 +413,12 @@ export async function saveSnapshotState(
       return existing;
     }
 
-    if (remoteVersion > baseVersion && localVersion <= remoteVersion) {
-      devLog("save ✗ snapshot local obsolète, backend conservé", { baseVersion, localVersion, remoteVersion });
+    if (remoteVersion > baseVersion && localVersion <= remoteVersion && !localHasMoreRecords) {
+      devLog("save ✗ snapshot local obsolète, backend conservé", {
+        baseVersion,
+        localVersion,
+        remoteVersion,
+      });
       markSyncStatus("synced", { lastSyncedAt: existing.updatedAt, lastError: undefined });
       return existing;
     }
@@ -510,9 +515,8 @@ export async function ensureCloudStateForLicense(key: string, force = false): Pr
   } as Partial<StoreState> & Record<string, unknown>;
 
   if (!isSupabaseConfigured()) {
-    cacheWorkshopState(localState);
     markSyncStatus("error", { lastError: "Supabase non configuré sur ce déploiement." });
-    return "offline";
+    throw new Error("Connexion cloud requise. Configurez Supabase avant d'activer la licence.");
   }
 
   const remote = await loadSnapshotByLicenseKey(normalizedKey);

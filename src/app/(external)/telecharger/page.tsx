@@ -2,6 +2,8 @@
 
 import { Apple, ArrowRight, Download, MonitorSmartphone, ShieldAlert } from "lucide-react";
 
+import { BeharLogo } from "@/components/behar/behar-logo";
+
 // Les binaires sont hébergés directement dans /public/downloads/ et donc
 // servis statiquement par IONOS / Vercel à l'URL /downloads/...
 // Pour mettre à jour : dépose les nouveaux fichiers dans public/downloads/
@@ -28,16 +30,11 @@ const desktopDownloads = [
 
 export default function DownloadPage() {
   return (
-    <div className="min-h-svh bg-[#FAFAF8] flex flex-col items-center px-5 py-10">
+    <div className="min-h-svh bg-white flex flex-col items-center px-5 py-10">
       <div className="w-full max-w-[520px]">
         {/* Logo */}
-        <div className="mb-10 flex items-baseline justify-center gap-1.5">
-          <span className="text-[18px] font-bold tracking-[-0.02em] text-[#1A1916]">BEHAR</span>
-          <span className="-mt-px text-[8px] text-[#2A9D8F]">●</span>
-          <span className="text-[18px] font-bold tracking-[-0.02em] text-[#1A1916]">TECH</span>
-          <span className="ml-1.5 rounded-full border border-[#2A9D8F]/40 px-1.5 py-0 text-[10px] font-bold text-[#147065]">
-            PRO
-          </span>
+        <div className="mb-10 flex justify-center">
+          <BeharLogo size="md" />
         </div>
 
         <div className="text-center">
@@ -45,8 +42,7 @@ export default function DownloadPage() {
             Télécharger Behar Tech Pro
           </h1>
           <p className="mt-4 text-[14px] leading-6 text-[#6B6B6B]">
-            Logiciel d'atelier de réparation. Installation locale, fonctionne hors ligne, synchronisation cloud
-            automatique au retour du réseau.
+            Logiciel d'atelier de réparation avec installation rapide, postes dédiés et synchronisation cloud.
           </p>
         </div>
 
@@ -78,7 +74,7 @@ export default function DownloadPage() {
 
           <a
             href="/dashboard"
-            className="group inline-flex h-14 items-center justify-center gap-3 rounded-[14px] border border-[#E7E4DC] bg-white text-[15px] font-semibold text-[#1A1916] shadow-[0_4px_16px_rgba(26,25,22,0.06)] transition hover:border-[#D8D3C8] hover:bg-[#F5F4F0] active:scale-[0.98]"
+            className="group inline-flex h-14 items-center justify-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white text-[15px] font-semibold text-[#1A1916] shadow-[0_4px_16px_rgba(26,25,22,0.06)] transition hover:border-[#DADADA] hover:bg-[#FAFAFA] active:scale-[0.98]"
           >
             <span>Ouvrir Behar Tech Pro dans le navigateur</span>
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
@@ -130,11 +126,11 @@ function InstallCard({
   commandHint?: string;
 }>) {
   return (
-    <section className="rounded-[16px] border border-[#E7E4DC] bg-white p-5 shadow-[0_2px_10px_rgba(26,25,22,0.04)]">
+    <section className="rounded-[16px] border border-[#E8E8E5] bg-white p-5 shadow-[0_2px_10px_rgba(26,25,22,0.04)]">
       <h2 className="font-semibold text-[#1A1916] text-[15px] tracking-tight">{title}</h2>
       {warning && (
-        <div className="mt-3 flex items-start gap-2 rounded-[10px] bg-[#FFF8EB] px-3 py-2">
-          <ShieldAlert className="size-4 shrink-0 text-[#C2841C] mt-0.5" strokeWidth={2} />
+        <div className="mt-3 flex items-start gap-2 rounded-[10px] bg-[#FAFAFA] px-3 py-2">
+          <ShieldAlert className="size-4 shrink-0 text-[#6B6B6B] mt-0.5" strokeWidth={2} />
           <p className="text-[12px] leading-5 text-[#8C5B0E]">{warning}</p>
         </div>
       )}

@@ -19,13 +19,13 @@ export function RepairDemoActions() {
   const sendLog = (channel: "SMS" | "Email") => {
     const log = channel === "SMS" ? initialMessageLogs[0] : initialMessageLogs[1];
     setLogs((current) => (current.some((item) => item.id === log.id) ? current : [...current, log]));
-    setMessage(`${channel} simulé envoyé et ajouté dans message_logs.`);
+    setMessage(`${channel} ajouté dans message_logs.`);
     window.setTimeout(() => setMessage(""), 3000);
   };
 
   const cashIn = () => {
     setPaid(true);
-    setMessage("Paiement simulé reçu. Le reçu est disponible, sans obligation d’envoi au client.");
+    setMessage("Règlement indiqué. Le reçu est disponible, sans obligation d’envoi au client.");
     window.setTimeout(() => setMessage(""), 3500);
   };
 
@@ -75,13 +75,13 @@ export function RepairDemoActions() {
         </SecondaryButton>
         <PrimaryButton className="w-full" onClick={cashIn}>
           <WalletCards className="size-4" />
-          Encaisser 189,00 €
+          Indiquer règlement 189,00 €
         </PrimaryButton>
       </div>
 
       {paid && (
         <div className="rounded-2xl border border-[#2A9D8F]/20 bg-[#EAF6F2] p-4">
-          <p className="font-semibold text-[#1A1916]">Paiement simulé encaissé</p>
+          <p className="font-semibold text-[#1A1916]">Règlement indiqué</p>
           <p className="mt-1 text-[#6B6B6B] text-sm">
             Le réparateur peut s’arrêter ici, imprimer le reçu, ou l’envoyer plus tard.
           </p>
@@ -92,8 +92,8 @@ export function RepairDemoActions() {
                 Voir reçu / facture
               </Link>
             </SecondaryButton>
-            <SecondaryButton onClick={() => sendLog("SMS")}>SMS reçu simulé</SecondaryButton>
-            <SecondaryButton onClick={() => sendLog("Email")}>Email reçu simulé</SecondaryButton>
+            <SecondaryButton onClick={() => sendLog("SMS")}>SMS reçu</SecondaryButton>
+            <SecondaryButton onClick={() => sendLog("Email")}>Email reçu</SecondaryButton>
           </div>
         </div>
       )}

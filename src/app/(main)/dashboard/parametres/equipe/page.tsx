@@ -125,7 +125,7 @@ const PERMISSION_LABELS: Partial<Record<PermissionKey, string>> = {
   canCreateInvoice: "Créer une facture",
   canEditInvoice: "Modifier une facture",
   canViewPayments: "Voir les paiements",
-  canMarkPaymentPaid: "Encaisser un paiement",
+  canMarkPaymentPaid: "Indiquer un règlement",
   canCancelPayment: "Annuler / rembourser",
   canViewStock: "Voir le stock",
   canManageStock: "Gérer le stock",
@@ -184,8 +184,8 @@ export default function TeamPage() {
   if (!canManage) {
     return (
       <PageShell title="Équipe" subtitle="Accès restreint.">
-        <div className="mx-auto max-w-[480px] rounded-[20px] border border-[#E7E4DC] bg-white p-10 text-center shadow-[0_2px_8px_rgba(26,25,22,0.04)]">
-          <ShieldCheck className="mx-auto size-10 text-[#CDCBC5]" />
+        <div className="mx-auto max-w-[480px] rounded-[20px] border border-[#E8E8E5] bg-white p-10 text-center shadow-[0_2px_8px_rgba(26,25,22,0.04)]">
+          <ShieldCheck className="mx-auto size-10 text-[#A3A3A3]" />
           <p className="mt-4 font-semibold text-[#1A1916] text-[18px] tracking-tight">Permission requise</p>
           <p className="mt-1.5 text-[#6B6B6B] text-[14px]">Seul le gérant peut accéder à la gestion de l'équipe.</p>
         </div>
@@ -332,7 +332,7 @@ function TeamList({
             key={user.id}
             className={cn(
               "rounded-[18px] border bg-white p-4 transition shadow-[0_1px_2px_rgba(26,25,22,0.03)]",
-              user.active ? "border-[#F1F1EF]" : "border-[#F1F1EF] bg-[#FAFAF8] opacity-80",
+              user.active ? "border-[#F7F7F7]" : "border-[#F7F7F7] bg-[#FAFAFA] opacity-80",
             )}
           >
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -346,7 +346,7 @@ function TeamList({
                     {isSelf && <span className="ml-2 text-[#6B6B6B] text-[12px]">(vous)</span>}
                   </p>
                   <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                    <span className="rounded-full bg-[#F1F1EF] px-2 py-0.5 font-medium text-[#1A1916] text-[11px]">
+                    <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 font-medium text-[#1A1916] text-[11px]">
                       {roleLabel(user.role)}
                     </span>
                     {user.active ? (
@@ -358,7 +358,7 @@ function TeamList({
                         Désactivé
                       </span>
                     )}
-                    <span className="text-[#8A8984] text-[11px]">
+                    <span className="text-[#6B6B6B] text-[11px]">
                       PIN&nbsp;{user.pin ? "•".repeat(user.pin.length) : "—"}
                     </span>
                   </div>
@@ -368,7 +368,7 @@ function TeamList({
                 <button
                   type="button"
                   onClick={() => onResetPin(user.id)}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-[#1A1916] text-[12.5px] hover:bg-[#FAFAF8]"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-[12.5px] hover:bg-[#FAFAFA]"
                 >
                   <KeyRound className="size-3.5" /> PIN
                 </button>
@@ -376,7 +376,7 @@ function TeamList({
                   <button
                     type="button"
                     onClick={() => onPermissions(user.id)}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-[#1A1916] text-[12.5px] hover:bg-[#FAFAF8]"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-[12.5px] hover:bg-[#FAFAFA]"
                   >
                     <ShieldCheck className="size-3.5" /> Permissions
                   </button>
@@ -384,7 +384,7 @@ function TeamList({
                 <button
                   type="button"
                   onClick={() => onEdit(user.id)}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-[#1A1916] text-[12.5px] hover:bg-[#FAFAF8]"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-[12.5px] hover:bg-[#FAFAFA]"
                 >
                   <Pencil className="size-3.5" /> Modifier
                 </button>
@@ -394,7 +394,7 @@ function TeamList({
                   className={cn(
                     "inline-flex h-9 items-center gap-1.5 rounded-[10px] border px-3 text-[12.5px]",
                     user.active
-                      ? "border-[#E7E4DC] bg-white text-[#1A1916] hover:bg-[#FAFAF8]"
+                      ? "border-[#E8E8E5] bg-white text-[#1A1916] hover:bg-[#FAFAFA]"
                       : "border-[#2A9D8F]/40 bg-[#EAF6F2] text-[#147065] hover:bg-[#DFF1EB]",
                   )}
                 >
@@ -434,7 +434,7 @@ function MemberForm({
   const [pin, setPin] = useState("");
 
   return (
-    <div className="mx-auto max-w-[640px] space-y-4 rounded-[20px] border border-[#F1F1EF] bg-white p-6 shadow-[0_2px_8px_rgba(26,25,22,0.04)]">
+    <div className="mx-auto max-w-[640px] space-y-4 rounded-[20px] border border-[#F7F7F7] bg-white p-6 shadow-[0_2px_8px_rgba(26,25,22,0.04)]">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold text-[#1A1916] text-[18px] tracking-tight">
           {mode === "create" ? "Nouveau membre" : "Modifier le membre"}
@@ -442,7 +442,7 @@ function MemberForm({
         <button
           type="button"
           onClick={onCancel}
-          className="grid size-9 place-items-center rounded-full text-[#6B6B6B] hover:bg-[#F6F7F4]"
+          className="grid size-9 place-items-center rounded-full text-[#6B6B6B] hover:bg-[#FAFAFA]"
         >
           <X className="size-4" />
         </button>
@@ -455,7 +455,7 @@ function MemberForm({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Ex : Sarah, Mehdi, Comptoir 1…"
-            className="h-11 w-full rounded-[12px] border border-[#E7E4DC] bg-white px-3.5 text-[#1A1916] text-sm outline-none focus:border-[#2A9D8F]"
+            className="h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3.5 text-[#1A1916] text-sm outline-none focus:border-[#2A9D8F]"
           />
         </div>
 
@@ -469,7 +469,7 @@ function MemberForm({
                 onClick={() => setRole(r)}
                 className={cn(
                   "flex flex-col items-start gap-1 rounded-[14px] border bg-white px-3.5 py-3 text-left transition",
-                  role === r ? "border-[#2A9D8F] bg-[#F7FCFA]" : "border-[#E7E4DC] hover:bg-[#FAFAF8]",
+                  role === r ? "border-[#2A9D8F] bg-[#F7FCFA]" : "border-[#E8E8E5] hover:bg-[#FAFAFA]",
                 )}
               >
                 <span className="font-semibold text-[#1A1916] text-[14px]">{roleLabel(r)}</span>
@@ -493,7 +493,7 @@ function MemberForm({
               onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
               placeholder="Ex : 1234"
               inputMode="numeric"
-              className="h-11 w-full rounded-[12px] border border-[#E7E4DC] bg-white px-3.5 text-[#1A1916] text-sm outline-none focus:border-[#2A9D8F]"
+              className="h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3.5 text-[#1A1916] text-sm outline-none focus:border-[#2A9D8F]"
             />
           </div>
         )}
@@ -536,9 +536,9 @@ function PermissionsEditor({
   const effective = user.permissions;
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-[#F1F1EF] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.03)]">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-[#F7F7F7] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.03)]">
         <div className="flex items-center gap-3.5">
-          <span className="grid size-11 place-items-center rounded-[14px] bg-[#EAF6F2] font-semibold text-[#2A9D8F]">
+          <span className="grid size-11 place-items-center text-[#2A9D8F]">
             <UserCog className="size-5" />
           </span>
           <div>
@@ -557,7 +557,7 @@ function PermissionsEditor({
       </div>
 
       {!canEdit && (
-        <div className="rounded-[14px] border border-[#E7E4DC] bg-[#FAFAF8] px-4 py-3 text-[#6B6B6B] text-[13px]">
+        <div className="rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA] px-4 py-3 text-[#6B6B6B] text-[13px]">
           Vous n'avez pas la permission `canManageRoles`. Les permissions ci-dessous sont en lecture seule.
         </div>
       )}
@@ -566,7 +566,7 @@ function PermissionsEditor({
         {permissionGroups.map((group) => (
           <div
             key={group.title}
-            className="rounded-[20px] border border-[#F1F1EF] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.03)]"
+            className="rounded-[20px] border border-[#F7F7F7] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.03)]"
           >
             <h3 className="font-semibold text-[#1A1916] text-[14px] tracking-tight">{group.title}</h3>
             <div className="mt-3 space-y-1">
@@ -578,7 +578,7 @@ function PermissionsEditor({
                     key={key}
                     className={cn(
                       "flex cursor-pointer items-center justify-between gap-3 rounded-[12px] px-3 py-2 transition",
-                      canEdit ? "hover:bg-[#FAFAF8]" : "cursor-default",
+                      canEdit ? "hover:bg-[#FAFAFA]" : "cursor-default",
                     )}
                   >
                     <span className="text-[#1A1916] text-[13.5px]">{PERMISSION_LABELS[key] ?? key}</span>
@@ -624,26 +624,26 @@ function AuditLogView({
           Retour
         </SecondaryButton>
       </div>
-      <div className="rounded-[20px] border border-[#F1F1EF] bg-white shadow-[0_1px_2px_rgba(26,25,22,0.03)] overflow-hidden">
+      <div className="rounded-[20px] border border-[#F7F7F7] bg-white shadow-[0_1px_2px_rgba(26,25,22,0.03)] overflow-hidden">
         {logs.length === 0 ? (
           <p className="px-5 py-10 text-center text-[#6B6B6B] text-sm">Aucune action enregistrée pour le moment.</p>
         ) : (
-          <ul className="divide-y divide-[#F1F1EF]">
+          <ul className="divide-y divide-[#F7F7F7]">
             {[...logs]
               .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
               .slice(0, 200)
               .map((log) => (
                 <li key={log.id} className="flex items-start gap-3 px-5 py-3">
-                  <ChevronRight className="mt-1 size-3.5 text-[#CDCBC5]" />
+                  <ChevronRight className="mt-1 size-3.5 text-[#A3A3A3]" />
                   <div className="min-w-0 flex-1">
                     <p className="text-[#1A1916] text-[13.5px]">
                       <span className="font-semibold">{log.actorName}</span>
-                      <span className="ml-1.5 rounded-full bg-[#F1F1EF] px-1.5 py-0.5 font-medium text-[#6B6B6B] text-[10.5px]">
+                      <span className="ml-1.5 rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-1.5 py-0.5 font-medium text-[#6B6B6B] text-[10.5px]">
                         {roleLabel(log.actorRole)}
                       </span>
                       <span className="ml-2 text-[#6B6B6B]">{log.message}</span>
                     </p>
-                    <p className="mt-0.5 text-[#8A8984] text-[11.5px]">
+                    <p className="mt-0.5 text-[#6B6B6B] text-[11.5px]">
                       {log.action} · {new Date(log.createdAt).toLocaleString("fr-FR")}
                     </p>
                   </div>
@@ -701,9 +701,9 @@ function GreetingsEditor({ onClose }: Readonly<{ onClose: () => void }>) {
 
   return (
     <div className="mx-auto max-w-[720px]">
-      <div className="rounded-[20px] border border-[#E7E4DC] bg-white shadow-[0_2px_8px_rgba(26,25,22,0.04)]">
+      <div className="rounded-[20px] border border-[#E8E8E5] bg-white shadow-[0_2px_8px_rgba(26,25,22,0.04)]">
         {/* Header */}
-        <div className="flex items-start justify-between gap-3 border-b border-[#F1F1EF] p-5">
+        <div className="flex items-start justify-between gap-3 border-b border-[#F7F7F7] p-5">
           <div>
             <div className="flex items-center gap-2">
               <MessageCircle className="size-5 text-[#2A9D8F]" />
@@ -716,7 +716,7 @@ function GreetingsEditor({ onClose }: Readonly<{ onClose: () => void }>) {
           <button
             type="button"
             onClick={onClose}
-            className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#6B6B6B] transition hover:bg-[#E7E4DC]"
+            className="grid size-9 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white text-[#6B6B6B] transition hover:bg-[#E8E8E5]"
             aria-label="Fermer"
           >
             <X className="size-4" strokeWidth={2.2} />
@@ -724,7 +724,7 @@ function GreetingsEditor({ onClose }: Readonly<{ onClose: () => void }>) {
         </div>
 
         {/* Role tabs */}
-        <div className="flex gap-1.5 border-b border-[#F1F1EF] px-5 pt-3">
+        <div className="flex gap-1.5 border-b border-[#F7F7F7] px-5 pt-3">
           {tabs.map((t) => (
             <button
               key={t.role}
@@ -734,7 +734,7 @@ function GreetingsEditor({ onClose }: Readonly<{ onClose: () => void }>) {
                 "rounded-t-[10px] px-4 py-2 text-[13px] font-medium transition border-b-2 -mb-px",
                 activeRole === t.role
                   ? "border-[#2A9D8F] text-[#1A1916]"
-                  : "border-transparent text-[#8A8984] hover:text-[#1A1916]",
+                  : "border-transparent text-[#6B6B6B] hover:text-[#1A1916]",
               )}
             >
               {t.label}
@@ -751,7 +751,7 @@ function GreetingsEditor({ onClose }: Readonly<{ onClose: () => void }>) {
             value={draft[activeRole]}
             onChange={(e) => setDraft((d) => ({ ...d, [activeRole]: e.target.value }))}
             rows={14}
-            className="w-full resize-y rounded-[12px] border border-[#E7E4DC] bg-white p-3 text-[14px] text-[#1A1916] leading-relaxed outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
+            className="w-full resize-y rounded-[12px] border border-[#E8E8E5] bg-white p-3 text-[14px] text-[#1A1916] leading-relaxed outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
             placeholder="Un message par ligne…"
           />
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2">

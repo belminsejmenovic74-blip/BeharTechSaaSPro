@@ -49,29 +49,30 @@ import { useDocument } from "./print-provider";
 
 const statuses: PaymentStatus[] = ["Payé", "Annulé", "Remboursé"];
 
-type MethodFilter = "all" | "Carte" | "Espèces" | "Virement" | "Paiement en ligne simulé";
+type MethodFilter = "all" | PaymentMethod;
 
 const METHOD_TABS: ReadonlyArray<{ value: MethodFilter; label: string }> = [
   { value: "all", label: "Tous" },
-  { value: "Carte", label: "CB" },
-  { value: "Espèces", label: "Espèces" },
+  { value: "TPE externe", label: "TPE externe" },
+  { value: "Espèces hors Behar Tech", label: "Espèces ext." },
   { value: "Virement", label: "Virement" },
-  { value: "Paiement en ligne simulé", label: "En ligne" },
+  { value: "Lien externe", label: "Lien externe" },
 ];
 
 type KpiTone = "teal" | "amber" | "blue" | "violet" | "rose";
 
 function formatPaymentMethodLabel(method: PaymentMethod): string {
-  if (method === "Carte") return "Carte bancaire";
-  if (method === "Paiement en ligne simulé") return "Autre / en ligne (sim.)";
+  if (method === "Carte") return "TPE externe";
+  if (method === "Espèces") return "Espèces hors Behar Tech";
+  if (method === "En ligne") return "Lien externe";
   return method;
 }
 
 const KPI_TONES: Record<KpiTone, { bg: string; text: string }> = {
   teal: { bg: "bg-[#E7F5F1]", text: "text-[#2A9D8F]" },
-  amber: { bg: "bg-[#FCF1DF]", text: "text-[#C2841C]" },
-  blue: { bg: "bg-[#E6EFFB]", text: "text-[#2F6FD0]" },
-  violet: { bg: "bg-[#EFEAF8]", text: "text-[#7B5BC2]" },
+  amber: { bg: "bg-[#FAFAFA]", text: "text-[#6B6B6B]" },
+  blue: { bg: "bg-[#FAFAFA]", text: "text-[#6B6B6B]" },
+  violet: { bg: "bg-[#FAFAFA]", text: "text-[#6B6B6B]" },
   rose: { bg: "bg-[#FCEAEC]", text: "text-[#C7494E]" },
 };
 
@@ -182,16 +183,16 @@ export function PaymentsWorkspace() {
 
       {/* Mobile : strip horizontal de KPI compacts */}
       <section className="grid max-w-full min-w-0 gap-3 pb-1 min-[360px]:flex min-[360px]:overflow-x-auto md:hidden scrollbar-none">
-        <MobileKpi label="Encaissé ce mois" value={formatEuro(totalEncaisse)} helper="paiements réussis" tone="teal" />
+        <MobileKpi label="Règlements ce mois" value={formatEuro(totalEncaisse)} helper="factures réglées" tone="teal" />
         <MobileKpi label="En attente" value={formatEuro(pendingTotal)} helper="à régler" tone="amber" />
-        <MobileKpi label="Aujourd'hui" value={formatEuro(todayAmount)} helper={`${todayCount} paiements`} tone="teal" />
+        <MobileKpi label="Aujourd'hui" value={formatEuro(todayAmount)} helper={`${todayCount} règlements`} tone="teal" />
       </section>
 
       <section className="hidden md:grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
-          label="Total encaissé"
+          label="Total réglé"
           value={formatEuro(totalEncaisse)}
-          helper="paiements réussis"
+          helper="factures réglées"
           tone="teal"
           icon={Wallet}
         />
@@ -228,7 +229,7 @@ export function PaymentsWorkspace() {
               <label className="relative block w-full min-w-0 max-w-[280px]">
                 <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6B6B6B]" />
                 <input
-                  className="h-10 w-full rounded-[12px] border border-[#E7E4DC] bg-white pr-4 pl-10 text-sm outline-none transition placeholder:text-[#8A8984] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+                  className="h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white pr-4 pl-10 text-sm outline-none transition placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
                   placeholder="Rechercher un paiement, client..."
                   type="search"
                   value={search}
@@ -241,14 +242,14 @@ export function PaymentsWorkspace() {
               onClick={() => setFilterOverdue(!filterOverdue)}
             >
               <SlidersHorizontal className="size-4" />
-              {filterOverdue ? "À encaisser uniquement" : "Tous les paiements"}
+              {filterOverdue ? "À régler uniquement" : "Tous les règlements"}
             </SecondaryButton>
           </div>
 
           <div className="overflow-hidden rounded-[18px] border border-[#EAE7DF] bg-white shadow-[0_4px_14px_rgba(26,25,22,0.025)]">
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full min-w-[820px] border-collapse text-sm">
-                <thead className="bg-[#FAFAF8] text-[#6B6B6B] text-xs uppercase tracking-wide">
+                <thead className="bg-[#FAFAFA] text-[#6B6B6B] text-xs uppercase tracking-wide">
                   <tr>
                     <th className="px-4 py-3 text-left font-medium">Référence</th>
                     <th className="px-4 py-3 text-left font-medium">Client</th>
@@ -282,7 +283,7 @@ export function PaymentsWorkspace() {
                       return (
                         <tr
                           className={cn(
-                            "cursor-pointer border-[#EFEDE6] border-t transition hover:bg-[#FAFAF8]",
+                            "cursor-pointer border-[#E8E8E5] border-t transition hover:bg-[#FAFAFA]",
                             active && "bg-[#E7F5F1]",
                           )}
                           key={payment.id}
@@ -309,7 +310,7 @@ export function PaymentsWorkspace() {
                           <td className="px-4 py-3 text-right">
                             <button
                               type="button"
-                              className="grid size-7 place-items-center rounded-md text-[#6B6B6B] hover:bg-[#F1F1EF] hover:text-[#1A1916]"
+                              className="grid size-7 place-items-center rounded-md text-[#6B6B6B] hover:bg-[#F7F7F7] hover:text-[#1A1916]"
                               onClick={(event) => event.stopPropagation()}
                               aria-label="Plus d'options"
                             >
@@ -324,7 +325,7 @@ export function PaymentsWorkspace() {
               </table>
             </div>
             {/* Vue cartes mobile premium */}
-            <div className="md:hidden space-y-2.5 bg-[#FAFAF8] p-3">
+            <div className="md:hidden space-y-2.5 bg-[#FAFAFA] p-3">
               {filteredPayments.length === 0 ? (
                 <p className="rounded-[16px] bg-white px-4 py-10 text-center text-[#6B6B6B] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
                   Aucun paiement.
@@ -353,7 +354,7 @@ export function PaymentsWorkspace() {
                             </p>
                           </div>
                           <p className="mt-0.5 font-mono text-[#2A9D8F] text-[11px]">{payment.paymentNumber}</p>
-                          <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">
+                          <p className="mt-0.5 truncate text-[#6B6B6B] text-[11.5px]">
                             {entryInvoice?.number ?? entrySale?.number ?? "—"} · {payment.date}
                           </p>
                           {payment.status !== "Payé" && (
@@ -383,19 +384,19 @@ export function PaymentsWorkspace() {
               </div>
             </div>
 
-            <div className="mb-5 rounded-[14px] bg-[#F6F7F4] p-4">
+            <div className="mb-5 rounded-[14px] bg-[#FAFAFA] p-4">
               <div className="flex items-center gap-3">
-                <span className="grid size-11 place-items-center rounded-full bg-[#E8F7F3] text-[#2A9D8F]">
+                <span className="grid size-11 place-items-center text-[#2A9D8F]">
                   <CreditCard className="size-5" />
                 </span>
                 <div>
-                  <p className="text-[#6B6B6B] text-xs">Montant encaissé</p>
+                  <p className="text-[#6B6B6B] text-xs">Montant réglé</p>
                   <p className="font-semibold text-2xl text-[#1A1916]">{formatEuro(selected.amount)}</p>
                 </div>
               </div>
             </div>
 
-            <dl className="divide-y divide-[#EFEDE6]">
+            <dl className="divide-y divide-[#E8E8E5]">
               <DetailRow
                 label="Client"
                 value={
@@ -452,7 +453,7 @@ export function PaymentsWorkspace() {
                 label="Statut"
                 value={
                   <select
-                    className="rounded-[8px] border border-[#E7E4DC] bg-white px-2 py-1 text-sm"
+                    className="rounded-[8px] border border-[#E8E8E5] bg-white px-2 py-1 text-sm"
                     onChange={(event) => {
                       store.updatePaymentStatus(selected.id, event.target.value as PaymentStatus);
                       toast.success("Statut paiement mis à jour");
@@ -469,7 +470,7 @@ export function PaymentsWorkspace() {
               {selected.note && <DetailRow label="Note" value={selected.note} />}
             </dl>
 
-            <div className="mt-5 grid gap-2 border-[#EFEDE6] border-t pt-4">
+            <div className="mt-5 grid gap-2 border-[#E8E8E5] border-t pt-4">
               <PrimaryButton
                 className="w-full"
                 onClick={() => {
@@ -550,7 +551,7 @@ export function PaymentsWorkspace() {
               )}
             </div>
 
-            <div className="mt-5 border-[#EFEDE6] border-t pt-4">
+            <div className="mt-5 border-[#E8E8E5] border-t pt-4">
               <h3 className="mb-3 font-semibold text-[#1A1916] text-sm">Historique</h3>
               <Timeline
                 items={[
@@ -581,7 +582,7 @@ function CreatePaymentModal({
   const store = useBeharStore();
   const [sourceType, setSourceType] = useState<"invoice" | "repair">("invoice");
   const [selectedId, setSelectedId] = useState("");
-  const [method, setMethod] = useState<PaymentMethod>("Carte");
+  const [method, setMethod] = useState<PaymentMethod>("TPE externe");
   const [note, setNote] = useState("");
 
   const unpaidInvoices = useMemo(
@@ -653,7 +654,7 @@ function CreatePaymentModal({
           <button
             className={cn(
               "flex flex-col items-center gap-2 rounded-xl border p-4 transition-all",
-              sourceType === "invoice" ? "border-[#2A9D8F] bg-[#F1FAF8]" : "border-[#E7E4DC] bg-white",
+              sourceType === "invoice" ? "border-[#2A9D8F] bg-[#F1FAF8]" : "border-[#E8E8E5] bg-white",
             )}
             onClick={() => {
               setSourceType("invoice");
@@ -666,7 +667,7 @@ function CreatePaymentModal({
           <button
             className={cn(
               "flex flex-col items-center gap-2 rounded-xl border p-4 transition-all",
-              sourceType === "repair" ? "border-[#2A9D8F] bg-[#F1FAF8]" : "border-[#E7E4DC] bg-white",
+              sourceType === "repair" ? "border-[#2A9D8F] bg-[#F1FAF8]" : "border-[#E8E8E5] bg-white",
             )}
             onClick={() => {
               setSourceType("repair");
@@ -716,7 +717,7 @@ function CreatePaymentModal({
         <div className="space-y-2">
           <label className="text-sm font-medium text-[#6B6B6B]">Mode de paiement</label>
           <Select value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
-            {(["Carte", "Espèces", "Virement", "Paiement en ligne simulé"] as const).map((m) => (
+            {(["TPE externe", "Espèces hors Behar Tech", "Virement", "Lien externe", "Autre"] as const).map((m) => (
               <option key={m} value={m}>
                 {formatPaymentMethodLabel(m)}
               </option>
@@ -754,26 +755,26 @@ function MobileKpi({
   tone,
 }: Readonly<{ label: string; value: string; helper?: string; tone: "teal" | "amber" }>) {
   const t =
-    tone === "teal" ? { bg: "bg-[#EAF6F2]", text: "text-[#2A9D8F]" } : { bg: "bg-[#FCF1DF]", text: "text-[#C2841C]" };
+    tone === "teal" ? { bg: "bg-[#EAF6F2]", text: "text-[#2A9D8F]" } : { bg: "bg-[#FAFAFA]", text: "text-[#6B6B6B]" };
   return (
     <div className="w-full shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)] min-[360px]:w-[44%]">
       <span className={cn("grid size-9 place-items-center rounded-[10px]", t.bg, t.text)}>
         <Wallet className="size-[18px]" strokeWidth={2} />
       </span>
-      <p className="mt-3 text-[#8A8984] text-[11px] font-medium leading-tight tracking-tight">{label}</p>
+      <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium leading-tight tracking-tight">{label}</p>
       <p className={cn("mt-1.5 font-bold text-[20px] leading-none tracking-tight tabular-nums", t.text)}>{value}</p>
-      {helper && <p className="mt-1.5 truncate text-[#8A8984] text-[10px] font-medium">{helper}</p>}
+      {helper && <p className="mt-1.5 truncate text-[#6B6B6B] text-[10px] font-medium">{helper}</p>}
     </div>
   );
 }
 
 function PaymentMethodTile({ method }: Readonly<{ method: PaymentMethod }>) {
   const config = (() => {
-    if (method === "Carte") return { Icon: CreditCard, bg: "bg-[#EAF6F2]", color: "text-[#2A9D8F]", label: "Carte" };
-    if (method === "Espèces") return { Icon: Banknote, bg: "bg-[#FCF1DF]", color: "text-[#C2841C]", label: "Espèces" };
+    if (method === "Carte" || method === "TPE externe") return { Icon: CreditCard, bg: "bg-[#EAF6F2]", color: "text-[#2A9D8F]", label: "TPE externe" };
+    if (method === "Espèces" || method === "Espèces hors Behar Tech") return { Icon: Banknote, bg: "bg-[#FAFAFA]", color: "text-[#6B6B6B]", label: "Espèces ext." };
     if (method === "Virement")
-      return { Icon: Landmark, bg: "bg-[#E6EFFB]", color: "text-[#2F6FD0]", label: "Virement" };
-    return { Icon: Link2, bg: "bg-[#EFEAF8]", color: "text-[#7B5BC2]", label: "En ligne" };
+      return { Icon: Landmark, bg: "bg-[#FAFAFA]", color: "text-[#6B6B6B]", label: "Virement" };
+    return { Icon: Link2, bg: "bg-[#FAFAFA]", color: "text-[#6B6B6B]", label: "Lien externe" };
   })();
   const { Icon, bg, color, label } = config;
   return (

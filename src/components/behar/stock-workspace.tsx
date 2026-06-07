@@ -5,10 +5,18 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import type { LucideIcon } from "lucide-react";
-import { AlertTriangle, Filter, Package, Plus, Search, Trash2, X } from "lucide-react";
+import { AlertTriangle, Check, Filter, Package, Plus, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { type DeviceType, formatEuro, type StockItem, useBeharStore } from "@/lib/behar-store";
+import {
+  type DeviceType,
+  formatEuro,
+  STOCK_PRODUCT_CATEGORIES,
+  type StockItem,
+  type StockItemType,
+  type StockProductCategory,
+  useBeharStore,
+} from "@/lib/behar-store";
 import type { PriceBookItem } from "@/lib/price-book";
 import {
   findPriceBookBySelection,
@@ -47,17 +55,34 @@ function findLinkedTariff(item: StockItem, priceBookItems: PriceBookItem[]) {
 
 function tariffPriceLabel(item: StockItem, priceBookItems: PriceBookItem[]) {
   const tariff = findLinkedTariff(item, priceBookItems);
-  if (!tariff) return "Non défini dans les tarifs";
-  return formatEuro(tariff.prixVentePiece || tariff.prixClientTotal);
+  if (tariff) return formatEuro(tariff.prixVentePiece || tariff.prixClientTotal);
+  // §4 — article comptoir (accessoire/consommable) : prix de vente direct.
+  if (item.salePrice > 0) return formatEuro(item.salePrice);
+  return "Non défini dans les tarifs";
 }
 
 function tariffHelperLabel(item: StockItem, priceBookItems: PriceBookItem[]) {
   const tariff = findLinkedTariff(item, priceBookItems);
-  if (!tariff) return "À définir dans Tarifs / Prestations";
+  if (!tariff) {
+    if (item.salePrice > 0) return "Prix de vente comptoir";
+    return "À définir dans Tarifs / Prestations";
+  }
   if (tariff.prixClientTotal > 0 && tariff.prixClientTotal !== tariff.prixVentePiece) {
     return `Prestation ${formatEuro(tariff.prixClientTotal)}`;
   }
   return "Lecture seule depuis Tarifs";
+}
+
+function productCategoryToItemType(category: StockProductCategory): StockItemType {
+  if (category === "Accessoires") return "accessory";
+  if (category === "Pièces détachées") return "part";
+  return "product";
+}
+
+function stockItemKindLabel(item: StockItem) {
+  if (item.itemType === "accessory") return "Accessoire comptoir";
+  if (item.itemType === "product") return "Produit boutique";
+  return "Pièce atelier";
 }
 
 /** Model selector: type freely or pick from suggestions, adds as chips */
@@ -135,7 +160,7 @@ function ModelSelector({
                 }
               }}
               placeholder={availableModels.length > 0 ? "Sélectionner ou saisir…" : "Saisir un modèle…"}
-              className="h-9 flex-1 rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-[13px] text-[#1A1916] outline-none transition placeholder:text-[#8A8984] focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
+              className="h-9 flex-1 rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[13px] text-[#1A1916] outline-none transition placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
             />
             <button
               type="button"
@@ -215,11 +240,11 @@ export function StockWorkspace() {
               >
                 <Package className="size-[18px]" strokeWidth={2} />
               </span>
-              <p className="mt-3 text-[#8A8984] text-[11px] font-medium leading-tight tracking-tight">{kpi.label}</p>
+              <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium leading-tight tracking-tight">{kpi.label}</p>
               <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tracking-tight tabular-nums">
                 {kpi.value}
               </p>
-              {kpi.helper && <p className="mt-1.5 truncate text-[#8A8984] text-[10px] font-medium">{kpi.helper}</p>}
+              {kpi.helper && <p className="mt-1.5 truncate text-[#6B6B6B] text-[10px] font-medium">{kpi.helper}</p>}
             </div>
           ))}
         </section>
@@ -233,11 +258,11 @@ export function StockWorkspace() {
 
         <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_330px] 2xl:grid-cols-[minmax(0,1fr)_350px]">
           <TableShell className="min-h-[400px]">
-            <div className="sticky top-0 z-10 flex items-center gap-3 border-[#E7E4DC] border-b bg-white p-3">
+            <div className="sticky top-0 z-10 flex items-center gap-3 border-[#E8E8E5] border-b bg-white p-3">
               <label className="relative block flex-1">
                 <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6B6B6B]" />
                 <input
-                  className="h-10 w-full rounded-[13px] border border-[#E7E4DC] bg-white pr-4 pl-10 text-[#1A1916] text-sm outline-none transition placeholder:text-[#8A8984] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+                  className="h-10 w-full rounded-[13px] border border-[#E8E8E5] bg-white pr-4 pl-10 text-[#1A1916] text-sm outline-none transition placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
                   placeholder="Rechercher une pièce, référence, fournisseur..."
                   type="search"
                   value={search}
@@ -264,7 +289,7 @@ export function StockWorkspace() {
                 <tr>
                   <th className="px-4 py-3">Pièce</th>
                   <th className="px-4 py-3">SKU</th>
-                  <th className="px-4 py-3">Type</th>
+                  <th className="px-4 py-3">Usage</th>
                   <th className="px-4 py-3">Marque</th>
                   <th className="px-4 py-3">Modèles</th>
                   <th className="px-4 py-3">Catégorie</th>
@@ -280,20 +305,27 @@ export function StockWorkspace() {
                   const tariff = findLinkedTariff(item, store.priceBookItems);
                   return (
                     <tr
-                      className={`cursor-pointer transition hover:bg-[#FAFAF8] ${item.id === selected?.id ? "bg-[#EAF6F2]" : ""}`}
+                      className={`cursor-pointer transition hover:bg-[#FAFAFA] ${item.id === selected?.id ? "bg-[#EAF6F2]" : ""}`}
                       key={item.id}
                       onClick={() => store.setSelected("stockItem", item.id)}
                     >
                       <td className={`${tableCellClassName} py-2.5 font-semibold`}>
                         <div className="flex items-center gap-3">
-                          <span className="grid size-9 place-items-center rounded-[10px] bg-[#F1F1EF] text-[#2A9D8F]">
+                          <span className="grid size-9 place-items-center rounded-[10px] bg-[#F7F7F7] text-[#2A9D8F]">
                             <span className="block h-6 w-3 rounded-sm bg-[#1A1916]/80" />
                           </span>
                           {item.name}
                         </div>
                       </td>
                       <td className={`${tableCellClassName} py-2.5`}>{item.sku}</td>
-                      <td className={`${tableCellClassName} py-2.5`}>{item.deviceType}</td>
+                      <td className={`${tableCellClassName} py-2.5`}>
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-[#1A1916]">{stockItemKindLabel(item)}</span>
+                          <span className="mt-1 text-[#6B6B6B] text-[10px]">
+                            {item.repairEnabled ? "Atelier" : "Hors atelier"} · {item.counterSaleEnabled ? "Vente comptoir" : "Pas en comptoir"}
+                          </span>
+                        </div>
+                      </td>
                       <td className={`${tableCellClassName} py-2.5`}>{item.brandName || "Non défini"}</td>
                       <td className={`${tableCellClassName} max-w-[220px] py-2.5`}>
                         {item.compatibleModels.length ? item.compatibleModels.join(", ") : "Non défini"}
@@ -304,7 +336,7 @@ export function StockWorkspace() {
                       )}
                       <td className={`${tableCellClassName} py-2.5`}>
                         <div className="flex flex-col">
-                          <span className={cn("font-semibold", tariff ? "text-[#1A1916]" : "text-[#8A8984]")}>
+                          <span className={cn("font-semibold", tariff ? "text-[#1A1916]" : "text-[#6B6B6B]")}>
                             {tariffPriceLabel(item, store.priceBookItems)}
                           </span>
                           <span className="mt-1 text-[10px] font-medium text-[#167B70]">
@@ -339,7 +371,7 @@ export function StockWorkspace() {
               </tbody>
             </table>
             {/* Vue cartes mobile premium */}
-            <div className="md:hidden space-y-2.5 p-3 bg-[#FAFAF8]">
+            <div className="md:hidden space-y-2.5 p-3 bg-[#FAFAFA]">
               {filteredItems.length === 0 ? (
                 <p className="rounded-[16px] bg-white px-4 py-10 text-center text-[#6B6B6B] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
                   Aucune pièce.
@@ -363,7 +395,7 @@ export function StockWorkspace() {
                         <span
                           className={cn(
                             "grid size-12 shrink-0 place-items-center rounded-[14px]",
-                            isOut ? "bg-[#FDECEC] text-[#B42318]" : "bg-[#FAFAF8] text-[#1A1916]",
+                            isOut ? "bg-[#FDECEC] text-[#B42318]" : "bg-[#FAFAFA] text-[#1A1916]",
                           )}
                         >
                           <Package className="size-[20px]" strokeWidth={1.8} />
@@ -377,7 +409,7 @@ export function StockWorkspace() {
                               <span
                                 className={cn(
                                   "shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
-                                  isOut ? "bg-[#FDECEC] text-[#B42318]" : "bg-[#FFF4E5] text-[#9A6A17]",
+                                  isOut ? "bg-[#FDECEC] text-[#B42318]" : "bg-[#FAFAFA] text-[#6B6B6B]",
                                 )}
                               >
                                 {isOut ? <AlertTriangle className="size-3" /> : null}
@@ -385,16 +417,16 @@ export function StockWorkspace() {
                               </span>
                             )}
                           </div>
-                          <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">
-                            SKU {item.sku} · {item.categoryName}
+                          <p className="mt-0.5 truncate text-[#6B6B6B] text-[11.5px]">
+                            SKU {item.sku} · {stockItemKindLabel(item)}
                           </p>
                           <div className="mt-2.5 grid grid-cols-3 gap-2">
                             <div>
-                              <p className="text-[#8A8984] text-[10px] font-medium uppercase tracking-wider">Stock</p>
+                              <p className="text-[#6B6B6B] text-[10px] font-medium uppercase tracking-wider">Stock</p>
                               <p
                                 className={cn(
                                   "mt-0.5 font-semibold text-[14px] tabular-nums",
-                                  isOut ? "text-[#B42318]" : isLow ? "text-[#9A6A17]" : "text-[#2A9D8F]",
+                                  isOut ? "text-[#B42318]" : isLow ? "text-[#6B6B6B]" : "text-[#2A9D8F]",
                                 )}
                               >
                                 {item.quantity}
@@ -402,18 +434,18 @@ export function StockWorkspace() {
                             </div>
                             {canViewPurchasePrice && (
                               <div>
-                                <p className="text-[#8A8984] text-[10px] font-medium uppercase tracking-wider">Achat</p>
+                                <p className="text-[#6B6B6B] text-[10px] font-medium uppercase tracking-wider">Achat</p>
                                 <p className="mt-0.5 font-semibold text-[#1A1916] text-[14px] tabular-nums">
                                   {formatEuro(item.purchasePrice)}
                                 </p>
                               </div>
                             )}
                             <div className="min-w-0">
-                              <p className="text-[#8A8984] text-[10px] font-medium uppercase tracking-wider">Tarif</p>
+                              <p className="text-[#6B6B6B] text-[10px] font-medium uppercase tracking-wider">Tarif</p>
                               <p
                                 className={cn(
                                   "mt-0.5 truncate font-semibold text-[13px] tabular-nums",
-                                  tariff ? "text-[#1A1916]" : "text-[#8A8984]",
+                                  tariff ? "text-[#1A1916]" : "text-[#6B6B6B]",
                                 )}
                               >
                                 {tariff ? tariffPriceLabel(item, store.priceBookItems) : "Non défini"}
@@ -451,7 +483,7 @@ export function StockWorkspace() {
           {/* Backdrop */}
           <button
             type="button"
-            className="absolute inset-0 bg-[#1A1916]/40 backdrop-blur-sm animate-in fade-in duration-200"
+            className="absolute inset-0 bg-[#1A1916]/40 animate-in fade-in duration-200"
             onClick={() => setMobileDetailOpen(false)}
             aria-label="Fermer"
           />
@@ -459,15 +491,15 @@ export function StockWorkspace() {
           <div className="absolute inset-x-0 bottom-0 max-h-[92vh] flex flex-col rounded-t-[28px] bg-white shadow-[0_-20px_60px_rgba(26,25,22,0.18)] animate-in slide-in-from-bottom duration-300">
             {/* Handle */}
             <div className="flex justify-center pt-2.5 pb-1 shrink-0">
-              <span className="h-1 w-9 rounded-full bg-[#D1CFCA]" aria-hidden />
+              <span className="h-1 w-9 rounded-full bg-[#DADADA]" aria-hidden />
             </div>
             {/* Header */}
-            <div className="flex items-center justify-between gap-3 px-5 pt-2 pb-3 shrink-0 border-b border-[#F1F1EF]">
+            <div className="flex items-center justify-between gap-3 px-5 pt-2 pb-3 shrink-0 border-b border-[#F7F7F7]">
               <p className="font-semibold text-[#1A1916] text-[17px] truncate">{selected.name}</p>
               <button
                 type="button"
                 onClick={() => setMobileDetailOpen(false)}
-                className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#6B6B6B] active:scale-90 shrink-0"
+                className="grid size-9 place-items-center rounded-full bg-[#F7F7F7] text-[#6B6B6B] active:scale-90 shrink-0"
                 aria-label="Fermer"
               >
                 <X className="size-4" strokeWidth={2.2} />
@@ -506,10 +538,10 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
   const availableCategories = store.partCategories.filter((cat) => cat.deviceTypes.includes(item.deviceType));
 
   const inputClass =
-    "h-10 w-full rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-right text-[15px] text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+    "h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-right text-[15px] text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
   const textInputClass =
-    "h-10 w-full rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-[15px] text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
-  const rowClass = "flex items-start justify-between gap-3 py-3 border-b border-[#F1F1EF] last:border-0";
+    "h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[15px] text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+  const rowClass = "flex items-start justify-between gap-3 py-3 border-b border-[#F7F7F7] last:border-0";
   const labelClass = "shrink-0 w-[110px] text-[#6B6B6B] text-[13px] pt-2.5 font-medium";
 
   return (
@@ -519,7 +551,7 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
         status={item.stock === 0 ? "Rupture" : item.stock <= item.threshold ? "Stock faible" : "En stock"}
       />
       {item.stock <= item.threshold && (
-        <p className="mb-3 rounded-[12px] bg-[#FFF4DE] px-3 py-2 text-[#9A6A17] text-sm">
+        <p className="mb-3 rounded-[12px] bg-[#FAFAFA] px-3 py-2 text-[#6B6B6B] text-sm">
           Alerte stock bas : réapprovisionnement conseillé.
         </p>
       )}
@@ -527,7 +559,7 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
       <PartPlaceholder className="h-36 rounded-[16px] mb-4" />
 
       {/* Fields */}
-      <div className="rounded-[16px] border border-[#F1F1EF] bg-[#FAFAF8] px-4 divide-y divide-[#F1F1EF] mb-4">
+      <div className="rounded-[16px] border border-[#F7F7F7] bg-[#FAFAFA] px-4 divide-y divide-[#F7F7F7] mb-4">
         <div className={rowClass}>
           <span className={labelClass}>Référence</span>
           <input
@@ -611,6 +643,62 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
             ))}
           </select>
         </div>
+        <div className={rowClass}>
+          <span className={labelClass}>Type de produit</span>
+          <select
+            className={textInputClass}
+            value={item.productCategory ?? "Pièces détachées"}
+            disabled={!canManageStock}
+            onChange={(e) => {
+              const productCategory = e.target.value as StockProductCategory;
+              const itemType = productCategoryToItemType(productCategory);
+              const counterSaleEnabled = itemType !== "part";
+              store.updateStockItem(item.id, {
+                productCategory,
+                itemType,
+                repairEnabled: itemType === "part",
+                counterSaleEnabled,
+                counterVisible: counterSaleEnabled,
+              });
+            }}
+          >
+            {STOCK_PRODUCT_CATEGORIES.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className={rowClass}>
+          <span className={labelClass}>Vente comptoir</span>
+          <button
+            className={cn(
+              "flex flex-1 items-center justify-between rounded-[12px] border px-3 py-2 text-left text-sm transition",
+              item.counterSaleEnabled
+                ? "border-[#2A9D8F] bg-[#F1FAF8] text-[#167B70]"
+                : "border-[#E8E8E5] bg-white text-[#6B6B6B]",
+              !canManageStock && "cursor-not-allowed opacity-60",
+            )}
+            disabled={!canManageStock}
+            onClick={() => {
+              const counterSaleEnabled = !item.counterSaleEnabled;
+              store.updateStockItem(item.id, { counterSaleEnabled, counterVisible: counterSaleEnabled });
+            }}
+            type="button"
+          >
+            <span>{item.counterSaleEnabled ? "Visible en vente comptoir" : "Masqué en vente comptoir"}</span>
+            <span
+              className={cn(
+                "grid size-5 shrink-0 place-items-center rounded-full border transition",
+                item.counterSaleEnabled
+                  ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
+                  : "border-[#C4C2BB] text-transparent",
+              )}
+            >
+              <Check className="size-3.5" />
+            </span>
+          </button>
+        </div>
         {canViewPurchasePrice && (
           <div className={rowClass}>
             <span className={labelClass}>Prix d'achat</span>
@@ -627,8 +715,8 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
         )}
         <div className={rowClass}>
           <span className={labelClass}>Prix client</span>
-          <div className="flex-1 rounded-[12px] border border-[#E7E4DC] bg-white px-3 py-2 text-right">
-            <p className={cn("text-[15px] font-semibold", tariff ? "text-[#1A1916]" : "text-[#8A8984]")}>
+          <div className="flex-1 rounded-[12px] border border-[#E8E8E5] bg-white px-3 py-2 text-right">
+            <p className={cn("text-[15px] font-semibold", tariff ? "text-[#1A1916]" : "text-[#6B6B6B]")}>
               {tariffPriceLabel(item, store.priceBookItems)}
             </p>
             <p className="mt-0.5 text-[11px] font-medium text-[#167B70]">
@@ -698,7 +786,7 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
           Réapprovisionner
         </PrimaryButton>
         <select
-          className="h-11 w-full rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-[15px] text-[#1A1916] outline-none"
+          className="h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[15px] text-[#1A1916] outline-none"
           disabled={store.repairs.length === 0}
           value={targetRepairId}
           onChange={(e) => setTargetRepairId(e.target.value)}
@@ -777,9 +865,9 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
   const availableCategories = store.partCategories.filter((cat) => cat.deviceTypes.includes(item.deviceType));
 
   const inputClass =
-    "h-9 w-full rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-right text-sm text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+    "h-9 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-right text-sm text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
   const textInputClass =
-    "h-9 w-full rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-sm text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+    "h-9 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-sm text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
   return (
     <Panel className="overflow-y-auto rounded-[14px] p-4 md:max-h-[calc(100vh-11rem)]">
       <div className="mb-4">
@@ -794,13 +882,13 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
           status={item.stock === 0 ? "Rupture" : item.stock <= item.threshold ? "Stock faible" : "En stock"}
         />
         {item.stock <= item.threshold && (
-          <p className="mt-2 rounded-[10px] bg-[#FFF4DE] px-3 py-2 text-[#9A6A17] text-sm">
+          <p className="mt-2 rounded-[10px] bg-[#FAFAFA] px-3 py-2 text-[#6B6B6B] text-sm">
             Alerte stock bas : réapprovisionnement conseillé.
           </p>
         )}
       </div>
       <PartPlaceholder className="h-36 rounded-[14px]" />
-      <dl className="mt-4 divide-y divide-[#E7E4DC]">
+      <dl className="mt-4 divide-y divide-[#E8E8E5]">
         <DetailRow
           className="py-2"
           label="Référence"
@@ -897,6 +985,68 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
             </select>
           }
         />
+        <DetailRow
+          className="py-2"
+          label="Type de produit"
+          value={
+            <select
+              className={textInputClass}
+              disabled={!canManageStock}
+              onChange={(event) => {
+                const productCategory = event.target.value as StockProductCategory;
+                const itemType = productCategoryToItemType(productCategory);
+                const counterSaleEnabled = itemType !== "part";
+                store.updateStockItem(item.id, {
+                  productCategory,
+                  itemType,
+                  repairEnabled: itemType === "part",
+                  counterSaleEnabled,
+                  counterVisible: counterSaleEnabled,
+                });
+              }}
+              value={item.productCategory ?? "Pièces détachées"}
+            >
+              {STOCK_PRODUCT_CATEGORIES.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          }
+        />
+        <DetailRow
+          className="py-2"
+          label="Vente comptoir"
+          value={
+            <button
+              className={cn(
+                "flex w-full items-center justify-between rounded-[12px] border px-3 py-2 text-left text-sm transition",
+                item.counterSaleEnabled
+                  ? "border-[#2A9D8F] bg-[#F1FAF8] text-[#167B70]"
+                  : "border-[#E8E8E5] bg-white text-[#6B6B6B]",
+                !canManageStock && "cursor-not-allowed opacity-60",
+              )}
+              disabled={!canManageStock}
+              onClick={() => {
+                const counterSaleEnabled = !item.counterSaleEnabled;
+                store.updateStockItem(item.id, { counterSaleEnabled, counterVisible: counterSaleEnabled });
+              }}
+              type="button"
+            >
+              <span>{item.counterSaleEnabled ? "Visible" : "Masqué"}</span>
+              <span
+                className={cn(
+                  "grid size-5 shrink-0 place-items-center rounded-full border transition",
+                  item.counterSaleEnabled
+                    ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
+                    : "border-[#C4C2BB] text-transparent",
+                )}
+              >
+                <Check className="size-3.5" />
+              </span>
+            </button>
+          }
+        />
         {canViewPurchasePrice && (
           <DetailRow
             className="py-2"
@@ -920,8 +1070,8 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
           className="py-2"
           label="Prix client"
           value={
-            <div className="rounded-[10px] border border-[#E7E4DC] bg-white px-3 py-2 text-right">
-              <p className={cn("text-sm font-semibold", tariff ? "text-[#1A1916]" : "text-[#8A8984]")}>
+            <div className="rounded-[10px] border border-[#E8E8E5] bg-white px-3 py-2 text-right">
+              <p className={cn("text-sm font-semibold", tariff ? "text-[#1A1916]" : "text-[#6B6B6B]")}>
                 {tariffPriceLabel(item, store.priceBookItems)}
               </p>
               <p className="mt-0.5 text-[11px] font-medium text-[#167B70]">
@@ -989,7 +1139,7 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
           }
         />
       </dl>
-      <div className="mt-4 grid gap-2 border-[#E7E4DC] border-t pt-4">
+      <div className="mt-4 grid gap-2 border-[#E8E8E5] border-t pt-4">
         <PrimaryButton
           className="h-10 w-full"
           disabled={!canManageStock}
@@ -1027,7 +1177,7 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
           Utiliser dans une réparation
         </SecondaryButton>
         <select
-          className="h-9 w-full rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-sm text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
+          className="h-9 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-sm text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
           disabled={store.repairs.length === 0}
           onChange={(event) => setTargetRepairId(event.target.value)}
           value={targetRepairId}
@@ -1099,7 +1249,7 @@ function StockMetricCard({
   return (
     <Panel className="h-[116px] p-5">
       <div className="flex h-full flex-col justify-center gap-1">
-        <p className="text-[#8A8984] text-[13px]">{label}</p>
+        <p className="text-[#6B6B6B] text-[13px]">{label}</p>
         <p className="mt-1 font-semibold text-[28px] text-[#1A1916] leading-none tracking-tight">{value}</p>
         {trend ? (
           <p
@@ -1110,7 +1260,7 @@ function StockMetricCard({
             {trend}
           </p>
         ) : null}
-        <p className="mt-0.5 text-[#B0AEA8] text-[12px]">{helper}</p>
+        <p className="mt-0.5 text-[#8A8A8A] text-[12px]">{helper}</p>
       </div>
     </Panel>
   );
@@ -1131,6 +1281,12 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
   const [purchasePrice, setPurchasePrice] = useState<string>("");
   const [stockQty, setStockQty] = useState<string>("1");
   const [threshold, setThreshold] = useState<string>("1");
+  // §4 — stock élargi : type de produit + article comptoir (accessoire, consommable…).
+  const [productCategory, setProductCategory] = useState<StockProductCategory>("Pièces détachées");
+  const [counterVisible, setCounterVisible] = useState(false);
+  const [salePrice, setSalePrice] = useState<string>("");
+  const isPart = productCategory === "Pièces détachées";
+  const itemType = productCategoryToItemType(productCategory);
 
   const categoryMapping: Record<string, DeviceCategory> = {
     Smartphone: "smartphone",
@@ -1190,6 +1346,42 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
   );
 
   const submit = () => {
+    // §4 — article comptoir (accessoire, consommable, service…) : pas de modèle imposé.
+    if (!isPart) {
+      const name = nameOverride.trim();
+      if (!name) {
+        toast.error("Indiquez le nom de l'article.");
+        return;
+      }
+      const sale = Math.max(0, Number(salePrice.replace(",", ".")) || 0);
+      if (sale <= 0) {
+        toast.error("Indiquez le prix de vente TTC.");
+        return;
+      }
+      store.addStockItem({
+        sku: skuOverride.trim() || `ACC-${Date.now()}`,
+        name,
+        deviceType: "Autre",
+        compatibleModels: [],
+        modelIds: [],
+        categoryName: productCategory,
+        productCategory,
+        itemType,
+        repairEnabled: false,
+        counterSaleEnabled: counterVisible,
+        active: true,
+        counterVisible,
+        salePrice: sale,
+        supplier: supplier.trim() || "Non renseigné",
+        purchasePrice: Math.max(0, Number(purchasePrice) || 0),
+        quantity: Math.max(0, Number(stockQty) || 0),
+        threshold: Math.max(0, Number(threshold) || 0),
+        skipModelInference: true,
+      });
+      toast.success("Article ajouté au stock.");
+      onClose();
+      return;
+    }
     if (!selectedModel) {
       toast.error("Sélectionnez un modèle.");
       return;
@@ -1219,6 +1411,11 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
         modelIds: [selectedModel],
         categoryId: selectedCategory?.id,
         categoryName,
+        productCategory,
+        itemType,
+        repairEnabled: true,
+        counterSaleEnabled: counterVisible,
+        counterVisible,
         supplier: supplier.trim() || existingStock.supplier || "Non renseigné",
         purchasePrice: purchasePrice ? Number(purchasePrice) : existingStock.purchasePrice,
         quantity: Math.max(0, Number(stockQty) || 0) + (existingStock.quantity ?? 0),
@@ -1238,6 +1435,12 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
       compatibleModels: [selectedModel],
       categoryId: selectedCategory?.id,
       categoryName,
+      productCategory,
+      itemType,
+      repairEnabled: true,
+      counterSaleEnabled: counterVisible,
+      active: true,
+      counterVisible,
       supplier: supplier.trim() || "Non renseigné",
       purchasePrice: Math.max(0, Number(purchasePrice) || 0),
       quantity: Math.max(0, Number(stockQty) || 0),
@@ -1249,17 +1452,21 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1A1916]/24 p-0 backdrop-blur-sm md:p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1A1916]/24 p-0 md:p-4">
       <Panel className="mx-auto my-0 min-h-svh max-w-none overflow-y-auto rounded-none p-5 md:my-8 md:max-h-[calc(100svh-4rem)] md:max-w-2xl md:min-h-0 md:rounded-[20px] md:p-6">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="font-semibold text-2xl text-[#1A1916]">Nouvelle pièce</h2>
-            <p className="mt-1 text-[#6B6B6B] text-[13px]">Sélection guidée : marque → modèle → catégorie → gamme.</p>
+            <h2 className="font-semibold text-2xl text-[#1A1916]">{isPart ? "Nouvelle pièce" : "Nouvel article"}</h2>
+            <p className="mt-1 text-[#6B6B6B] text-[13px]">
+              {isPart
+                ? "Sélection guidée : marque → modèle → catégorie → gamme."
+                : "Accessoire ou prestation vendu directement au comptoir."}
+            </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#1A1916] active:scale-90"
+            className="grid size-9 place-items-center rounded-full bg-[#F7F7F7] text-[#1A1916] active:scale-90"
             aria-label="Fermer"
           >
             <X className="size-4" strokeWidth={2.2} />
@@ -1273,11 +1480,33 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
             submit();
           }}
         >
-          {/* Type d'appareil */}
-          <label className="block">
-            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Type</span>
+          {/* §4 — type de produit : pièce de réparation ou article vendu au comptoir. */}
+          <label className="block md:col-span-2">
+            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Type de produit</span>
             <select
-              className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              value={productCategory}
+              onChange={(event) => {
+                const nextCategory = event.target.value as StockProductCategory;
+                setProductCategory(nextCategory);
+                setCounterVisible(productCategoryToItemType(nextCategory) !== "part");
+              }}
+            >
+              {STOCK_PRODUCT_CATEGORIES.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {isPart && (
+            <>
+              {/* Type d'appareil */}
+              <label className="block">
+                <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Type</span>
+            <select
+              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
               value={deviceType}
               onChange={(event) => {
                 const nextType = event.target.value;
@@ -1309,7 +1538,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
           <label className="block">
             <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Marque</span>
             <select
-              className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
               value={brandName}
               onChange={(event) => {
                 setBrandName(event.target.value);
@@ -1329,7 +1558,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
           <label className="block md:col-span-2">
             <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Modèle</span>
             <select
-              className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
               value={selectedModel}
               onChange={(event) => setSelectedModel(event.target.value)}
               required
@@ -1347,7 +1576,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
           <label className="block">
             <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Catégorie</span>
             <select
-              className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
               value={categoryId}
               onChange={(event) => {
                 const nextId = event.target.value;
@@ -1375,7 +1604,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
           <label className="block">
             <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Gamme</span>
             <select
-              className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
               value={quality}
               onChange={(event) => setQuality(event.target.value)}
             >
@@ -1396,7 +1625,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
               </span>
               <input
                 type="text"
-                className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+                className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
                 placeholder="Ex : Service Pack"
                 value={customQuality}
                 onChange={(e) => setCustomQuality(e.target.value)}
@@ -1405,14 +1634,14 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
           )}
 
           {/* Aperçu auto-rempli (nom / SKU) avec override possible */}
-          <div className="rounded-xl border border-[#E7E4DC] bg-[#FAFAF8] p-3 md:col-span-2">
+          <div className="rounded-xl border border-[#E8E8E5] bg-[#FAFAFA] p-3 md:col-span-2">
             <p className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Auto-rempli</p>
             <div className="mt-2 grid gap-2 md:grid-cols-2">
               <label className="block">
                 <span className="text-[#6B6B6B] text-[11px]">Nom (modifiable)</span>
                 <input
                   type="text"
-                  className="mt-1 h-10 w-full rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-[13.5px] outline-none focus:border-[#2A9D8F]"
+                  className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[13.5px] outline-none focus:border-[#2A9D8F]"
                   placeholder={suggestedName || "Sélectionnez un modèle"}
                   value={nameOverride}
                   onChange={(e) => setNameOverride(e.target.value)}
@@ -1422,7 +1651,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
                 <span className="text-[#6B6B6B] text-[11px]">SKU (modifiable)</span>
                 <input
                   type="text"
-                  className="mt-1 h-10 w-full rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-[13.5px] font-mono outline-none focus:border-[#2A9D8F]"
+                  className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[13.5px] font-mono outline-none focus:border-[#2A9D8F]"
                   placeholder={suggestedSku || "Sélectionnez un modèle"}
                   value={skuOverride}
                   onChange={(e) => setSkuOverride(e.target.value)}
@@ -1432,18 +1661,86 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
           </div>
 
           {!linkedPriceBook && selectedModel && (
-            <div className="rounded-xl border border-[#E7E4DC] bg-white p-3 text-[12px] text-[#6B6B6B] md:col-span-2">
+            <div className="rounded-xl border border-[#E8E8E5] bg-white p-3 text-[12px] text-[#6B6B6B] md:col-span-2">
               Aucun tarif client lié pour cette sélection. Vous pourrez en créer un dans Paramètres → Tarifs /
               Prestations.
             </div>
           )}
+            </>
+          )}
+
+          {/* §4 — article comptoir : saisie directe nom + prix de vente, sans modèle. */}
+          {!isPart && (
+            <div className="rounded-xl border border-[#E8E8E5] bg-[#FAFAFA] p-3 md:col-span-2">
+              <p className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Article comptoir</p>
+              <div className="mt-2 grid gap-2 md:grid-cols-2">
+                <label className="block">
+                  <span className="text-[#6B6B6B] text-[11px]">Nom de l'article *</span>
+                  <input
+                    className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[13.5px] outline-none focus:border-[#2A9D8F]"
+                    onChange={(e) => setNameOverride(e.target.value)}
+                    placeholder="Ex : Coque silicone iPhone 15"
+                    type="text"
+                    value={nameOverride}
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-[#6B6B6B] text-[11px]">SKU (optionnel)</span>
+                  <input
+                    className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 font-mono text-[13.5px] outline-none focus:border-[#2A9D8F]"
+                    onChange={(e) => setSkuOverride(e.target.value)}
+                    placeholder="ACC-…"
+                    type="text"
+                    value={skuOverride}
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-[#6B6B6B] text-[11px]">Prix de vente TTC *</span>
+                  <input
+                    className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[13.5px] outline-none focus:border-[#2A9D8F]"
+                    min="0"
+                    onChange={(e) => setSalePrice(e.target.value)}
+                    placeholder="0,00"
+                    step="0.01"
+                    type="number"
+                    value={salePrice}
+                  />
+                </label>
+              </div>
+            </div>
+          )}
+
+          {/* §4 — visibilité comptoir (utile pour pièces ET accessoires). */}
+          <label className="flex items-center justify-between gap-3 rounded-xl border border-[#E8E8E5] bg-white px-3 py-2.5 md:col-span-2">
+            <span className="text-[#1A1916] text-[13.5px]">
+              Visible en vente comptoir
+              <span className="block text-[#6B6B6B] text-[11px]">Proposé dans l'écran de vente directe.</span>
+            </span>
+            <button
+              aria-checked={counterVisible}
+              className={cn(
+                "relative h-6 w-11 shrink-0 rounded-full transition",
+                counterVisible ? "bg-[#2A9D8F]" : "bg-[#D8D5CC]",
+              )}
+              onClick={() => setCounterVisible((v) => !v)}
+              role="switch"
+              type="button"
+            >
+              <span
+                className={cn(
+                  "absolute top-0.5 size-5 rounded-full bg-white transition-all",
+                  counterVisible ? "left-[22px]" : "left-0.5",
+                )}
+              />
+            </button>
+          </label>
 
           {/* Données internes : prix achat, fournisseur, quantité, seuil */}
           <label className="block">
             <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Fournisseur</span>
             <input
               type="text"
-              className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
               placeholder="UTOPYA, etc."
               value={supplier}
               onChange={(e) => setSupplier(e.target.value)}
@@ -1457,7 +1754,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
               type="number"
               step="0.01"
               min="0"
-              className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
               placeholder="À renseigner"
               value={purchasePrice}
               onChange={(e) => setPurchasePrice(e.target.value)}
@@ -1468,7 +1765,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
             <input
               type="number"
               min="0"
-              className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
               value={stockQty}
               onChange={(e) => setStockQty(e.target.value)}
             />
@@ -1478,13 +1775,13 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
             <input
               type="number"
               min="0"
-              className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
               value={threshold}
               onChange={(e) => setThreshold(e.target.value)}
             />
           </label>
 
-          <div className="rounded-xl border border-[#E7E4DC] bg-[#FAFAF8] px-3 py-2.5 text-[12.5px] text-[#6B6B6B] md:col-span-2">
+          <div className="rounded-xl border border-[#E8E8E5] bg-[#FAFAFA] px-3 py-2.5 text-[12.5px] text-[#6B6B6B] md:col-span-2">
             Le prix client est défini dans <strong>Paramètres → Tarifs / Prestations</strong>. Stock = inventaire
             interne, Catalogue = tarifs client.
           </div>

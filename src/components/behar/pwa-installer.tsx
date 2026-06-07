@@ -80,7 +80,7 @@ export function PwaInstaller() {
                   Installer sur ce PC
                 </PrimaryButton>
               ) : (
-                <div className="p-4 rounded-xl bg-[#F6F7F4] border border-[#E7E4DC]">
+                <div className="p-4 rounded-xl bg-[#FAFAFA] border border-[#E8E8E5]">
                   <p className="text-[#1A1916] text-sm font-medium">Si le bouton n’apparaît pas :</p>
                   <p className="mt-1 text-[#6B6B6B] text-xs leading-relaxed">
                     Ouvrez Chrome ou Edge puis cliquez sur l’icône <strong>Installer</strong> dans la barre d’adresse.
@@ -88,7 +88,7 @@ export function PwaInstaller() {
                 </div>
               )}
 
-              <p className="text-[#B0AEA8] text-[11px] flex items-center gap-1.5">
+              <p className="text-[#8A8A8A] text-[11px] flex items-center gap-1.5">
                 <Smartphone className="size-3" />
                 Fonctionne avec Chrome ou Edge. Vos données restent sur cet ordinateur.
               </p>

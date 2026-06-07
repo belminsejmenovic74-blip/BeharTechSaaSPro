@@ -45,11 +45,11 @@ const TABS = [
 
 /* ── Helpers ──────────────────────────────────────── */
 const inputCls =
-  "h-11 w-full rounded-[14px] border border-[#E7E4DC] bg-white px-4 text-[15px] text-[#1A1916] outline-none transition-all duration-200 placeholder:text-[#CDCBC5] hover:border-[#D1CFCA] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/8";
+  "h-11 w-full rounded-[14px] border border-[#E8E8E5] bg-white px-4 text-[15px] text-[#1A1916] outline-none transition-all duration-200 placeholder:text-[#A3A3A3] hover:border-[#DADADA] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/8";
 const areaCls =
-  "min-h-[88px] w-full rounded-[14px] border border-[#E7E4DC] bg-white px-4 py-3 text-[15px] text-[#1A1916] outline-none transition-all duration-200 placeholder:text-[#CDCBC5] hover:border-[#D1CFCA] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/8";
+  "min-h-[88px] w-full rounded-[14px] border border-[#E8E8E5] bg-white px-4 py-3 text-[15px] text-[#1A1916] outline-none transition-all duration-200 placeholder:text-[#A3A3A3] hover:border-[#DADADA] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/8";
 const selectCls =
-  "h-11 w-full rounded-[14px] border border-[#E7E4DC] bg-white px-4 text-[15px] text-[#1A1916] outline-none transition-all duration-200 hover:border-[#D1CFCA] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/8 appearance-none";
+  "h-11 w-full rounded-[14px] border border-[#E8E8E5] bg-white px-4 text-[15px] text-[#1A1916] outline-none transition-all duration-200 hover:border-[#DADADA] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/8 appearance-none";
 
 const blockedValues = new Set(["hj", "test", "undefined", "null", "nan", "none", "aucun", "n/a"]);
 
@@ -188,7 +188,7 @@ function Field({
       </span>
       {children}
       {error && <p className="text-[12px] text-[#DC3545] font-medium">{error}</p>}
-      {hint && !error && <p className="text-[11px] text-[#B0AEA8]">{hint}</p>}
+      {hint && !error && <p className="text-[11px] text-[#8A8A8A]">{hint}</p>}
     </label>
   );
 }
@@ -209,12 +209,12 @@ function Section({
   return (
     <Panel className={`p-6 ${className || ""}`}>
       <div className="flex items-start gap-3 mb-5">
-        <div className="size-9 rounded-[12px] bg-[#F6F7F4] flex items-center justify-center text-[#2A9D8F] shrink-0">
+        <div className="size-9 rounded-[12px] bg-[#FAFAFA] flex items-center justify-center text-[#2A9D8F] shrink-0">
           <Icon className="size-[18px]" />
         </div>
         <div>
           <h3 className="font-semibold text-[#1A1916] text-[15px] tracking-tight">{title}</h3>
-          {description && <p className="mt-0.5 text-[12px] text-[#B0AEA8] leading-relaxed">{description}</p>}
+          {description && <p className="mt-0.5 text-[12px] text-[#8A8A8A] leading-relaxed">{description}</p>}
         </div>
       </div>
       {children}
@@ -261,6 +261,9 @@ export default function SettingsPage() {
     if (isWeakText(city)) e.city = "Renseignez une ville réelle.";
     if (isInvalidLegalNumber(siret, 14)) e.siret = "SIRET obligatoire : 14 chiffres, hors valeurs de test.";
     if (typeof draft.vatApplicable !== "boolean") e.vatApplicable = "Sélectionnez un régime de TVA.";
+    if (draft.vatApplicable && ![20, 10, 5.5].includes(Number(draft.vatRate ?? 20))) {
+      e.vatRate = "Choisissez un taux de TVA valide.";
+    }
     if (draft.tvaNumber && isWeakText(draft.tvaNumber, 4)) e.tvaNumber = "Numéro TVA invalide.";
     if (draft.tvaMention && isWeakText(draft.tvaMention, 8)) e.tvaMention = "Mention TVA trop courte ou invalide.";
     setErrors(e);
@@ -292,6 +295,7 @@ export default function SettingsPage() {
       tvaNumber: normalizeSpaces(draft.tvaNumber),
       postalCity: [postalCode, city].filter(Boolean).join(" ").trim(),
       isMicroEnterprise: !draft.vatApplicable,
+      vatRate: draft.vatApplicable ? Number(draft.vatRate ?? 20) : 0,
       tvaMention: draft.vatApplicable ? "" : normalizeSpaces(draft.tvaMention),
     });
     setSaved(true);
@@ -337,7 +341,7 @@ export default function SettingsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `behar-tech-donnees-locales-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `behar-tech-donnees-atelier-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -386,7 +390,7 @@ export default function SettingsPage() {
       <PageShell title="Réglages" subtitle="Accès réservé au gérant/admin.">
         <Panel className="max-w-xl p-6">
           <div className="flex items-start gap-3">
-            <div className="grid size-10 place-items-center rounded-[12px] bg-[#FFF4DE] text-[#9A6A17]">
+            <div className="grid size-10 place-items-center rounded-[12px] bg-[#FAFAFA] text-[#6B6B6B]">
               <Shield className="size-5" />
             </div>
             <div>
@@ -405,7 +409,7 @@ export default function SettingsPage() {
     <PageShell title="Réglages" subtitle="Gérez les informations de votre atelier et vos préférences.">
       {/* Tabs + Save bar */}
       <div className="mb-6 flex min-w-0 flex-wrap items-start justify-between gap-4">
-        <nav className="flex w-full min-w-0 max-w-full gap-1 overflow-x-auto border-b border-[#F1F1EF] lg:w-auto">
+        <nav className="flex w-full min-w-0 max-w-full gap-1 overflow-x-auto border-b border-[#F7F7F7] lg:w-auto">
           {TABS.map((t) => {
             const isActive =
               t.key === "atelier"
@@ -420,7 +424,7 @@ export default function SettingsPage() {
                 className={`shrink-0 px-4 py-2.5 text-[13px] font-medium transition-colors border-b-2 -mb-px ${
                   isActive || (t.key === "atelier" && pathname === "/dashboard/parametres")
                     ? "border-[#2A9D8F] text-[#1A1916]"
-                    : "border-transparent text-[#8A8984] hover:text-[#1A1916]"
+                    : "border-transparent text-[#6B6B6B] hover:text-[#1A1916]"
                 }`}
               >
                 {t.label}
@@ -432,7 +436,7 @@ export default function SettingsPage() {
           <PrimaryButton onClick={save} className="h-10 w-full gap-2 px-5 sm:w-auto" disabled={!canEditSettings}>
             <Check className="size-4" /> Enregistrer les modifications
           </PrimaryButton>
-          <span className="max-w-full text-[12px] text-[#B0AEA8] sm:max-w-[180px]">
+          <span className="max-w-full text-[12px] text-[#8A8A8A] sm:max-w-[180px]">
             {saved ? "Toutes les modifications sont enregistrées" : "Modifications non enregistrées"}
           </span>
         </div>
@@ -502,8 +506,8 @@ export default function SettingsPage() {
                   inputMode="tel"
                   value={phoneLocal}
                   onChange={(e) => setInternationalPhone(phone.prefix, e.target.value)}
-                  placeholder={phone.prefix === "+33" ? "6 12 34 56 78" : "Numéro local"}
-                  aria-label="Numéro local"
+                  placeholder={phone.prefix === "+33" ? "6 12 34 56 78" : "Numéro"}
+                  aria-label="Numéro de téléphone"
                 />
               </div>
             </Field>
@@ -569,7 +573,7 @@ export default function SettingsPage() {
             <div className="grid grid-cols-2 gap-3">
               <Field label="SIREN" hint="9 chiffres">
                 <input
-                  className={`${inputCls} bg-[#FAFAF8] text-[#6B6B6B]`}
+                  className={`${inputCls} bg-[#FAFAFA] text-[#6B6B6B]`}
                   value={siren}
                   readOnly
                   aria-readonly="true"
@@ -614,21 +618,24 @@ export default function SettingsPage() {
               type="button"
               onClick={() => {
                 setField("vatApplicable", true);
+                setField("vatRate", draft.vatRate || 20);
                 // En TVA applicable, la mention 293 B n'a pas de sens.
                 setField("tvaMention", "");
                 setSaved(false);
               }}
-              className={`w-full text-left rounded-[14px] border p-4 transition-all ${draft.vatApplicable ? "border-[#2A9D8F] bg-[#F8FCFA] shadow-[0_0_0_1px_#2A9D8F]" : "border-[#E7E4DC] hover:border-[#D1CFCA]"}`}
+              className={`w-full text-left rounded-[14px] border p-4 transition-all ${draft.vatApplicable ? "border-[#2A9D8F] bg-[#F8FCFA] shadow-[0_0_0_1px_#2A9D8F]" : "border-[#E8E8E5] hover:border-[#DADADA]"}`}
             >
               <div className="flex items-center gap-3">
                 <div
-                  className={`size-4 rounded-full border-2 flex items-center justify-center ${draft.vatApplicable ? "border-[#2A9D8F]" : "border-[#CDCBC5]"}`}
+                  className={`size-4 rounded-full border-2 flex items-center justify-center ${draft.vatApplicable ? "border-[#2A9D8F]" : "border-[#A3A3A3]"}`}
                 >
                   {draft.vatApplicable && <div className="size-2 rounded-full bg-[#2A9D8F]" />}
                 </div>
                 <div>
-                  <p className="text-[13px] font-semibold text-[#1A1916]">TVA applicable (20%)</p>
-                  <p className="text-[11px] text-[#8A8984] mt-0.5">Les devis et factures affichent HT, TVA 20%, TTC.</p>
+                  <p className="text-[13px] font-semibold text-[#1A1916]">Assujetti à la TVA</p>
+                  <p className="text-[11px] text-[#6B6B6B] mt-0.5">
+                    Les devis et factures affichent Sous-total HT, TVA, Total TTC.
+                  </p>
                 </div>
               </div>
             </button>
@@ -643,23 +650,43 @@ export default function SettingsPage() {
                 }
                 setSaved(false);
               }}
-              className={`w-full text-left rounded-[14px] border p-4 transition-all ${!draft.vatApplicable ? "border-[#2A9D8F] bg-[#F8FCFA] shadow-[0_0_0_1px_#2A9D8F]" : "border-[#E7E4DC] hover:border-[#D1CFCA]"}`}
+              className={`w-full text-left rounded-[14px] border p-4 transition-all ${!draft.vatApplicable ? "border-[#2A9D8F] bg-[#F8FCFA] shadow-[0_0_0_1px_#2A9D8F]" : "border-[#E8E8E5] hover:border-[#DADADA]"}`}
             >
               <div className="flex items-center gap-3">
                 <div
-                  className={`size-4 rounded-full border-2 flex items-center justify-center ${!draft.vatApplicable ? "border-[#2A9D8F]" : "border-[#CDCBC5]"}`}
+                  className={`size-4 rounded-full border-2 flex items-center justify-center ${!draft.vatApplicable ? "border-[#2A9D8F]" : "border-[#A3A3A3]"}`}
                 >
                   {!draft.vatApplicable && <div className="size-2 rounded-full bg-[#2A9D8F]" />}
                 </div>
                 <div>
-                  <p className="text-[13px] font-semibold text-[#1A1916]">TVA non applicable</p>
-                  <p className="text-[11px] text-[#8A8984] mt-0.5">
+                  <p className="text-[13px] font-semibold text-[#1A1916]">Franchise en base (non assujetti)</p>
+                  <p className="text-[11px] text-[#6B6B6B] mt-0.5">
                     Aucune TVA sur les documents · mention art. 293 B du CGI ajoutée.
                   </p>
                 </div>
               </div>
             </button>
             {errors.vatApplicable && <p className="text-[12px] text-[#DC3545] font-medium">{errors.vatApplicable}</p>}
+            {draft.vatApplicable && (
+              <Field label="Taux de TVA" error={errors.vatRate}>
+                <div className="grid grid-cols-3 gap-2">
+                  {[20, 10, 5.5].map((rate) => (
+                    <button
+                      key={rate}
+                      type="button"
+                      onClick={() => setField("vatRate", rate)}
+                      className={`h-11 rounded-[14px] border px-3 text-[13px] font-semibold transition ${
+                        Number(draft.vatRate ?? 20) === rate
+                          ? "border-[#2A9D8F] bg-[#E6F4F1] text-[#1E7A6E]"
+                          : "border-[#E8E8E5] bg-white text-[#1A1916] hover:border-[#DADADA]"
+                      }`}
+                    >
+                      {String(rate).replace(".", ",")} %
+                    </button>
+                  ))}
+                </div>
+              </Field>
+            )}
             {!draft.vatApplicable && (
               <Field
                 label="Mention affichée sur les documents"
@@ -673,7 +700,7 @@ export default function SettingsPage() {
                   maxLength={120}
                   rows={2}
                 />
-                <p className="text-right text-[10px] text-[#CDCBC5]">{(draft.tvaMention || "").length}/120</p>
+                <p className="text-right text-[10px] text-[#A3A3A3]">{(draft.tvaMention || "").length}/120</p>
               </Field>
             )}
           </div>
@@ -729,14 +756,14 @@ export default function SettingsPage() {
                 toast.error("Réinitialisation réservée au gérant/admin.");
                 return;
               }
-              if (window.confirm("Cette action efface les données locales. Elle est irréversible.")) {
+              if (window.confirm("Cette action efface les données de l'atelier. Elle est irréversible.")) {
                 store.resetDemo();
                 store.setOnboardingCompleted(false);
                 toast.success("Données réinitialisées.");
               }
             }}
           >
-            <AlertTriangle className="size-3" /> Réinitialiser les données locales
+            <AlertTriangle className="size-3" /> Réinitialiser les données
           </button>
         </Section>
 
@@ -849,15 +876,15 @@ export default function SettingsPage() {
       </div>
 
       {/* Sidebar help */}
-      <div className="mt-6 rounded-[16px] border border-[#F1F1EF] bg-[#FAFAF8] px-5 py-4 flex items-start gap-3 max-w-sm">
+      <div className="mt-6 rounded-[16px] border border-[#F7F7F7] bg-[#FAFAFA] px-5 py-4 flex items-start gap-3 max-w-sm">
         <HelpCircle className="size-5 text-[#2A9D8F] shrink-0 mt-0.5" />
         <div>
           <p className="text-[13px] font-semibold text-[#1A1916]">Besoin d'aide ?</p>
-          <p className="mt-0.5 text-[12px] text-[#8A8984]">Consultez notre centre d'aide ou contactez le support.</p>
+          <p className="mt-0.5 text-[12px] text-[#6B6B6B]">Consultez notre centre d'aide ou contactez le support.</p>
           <button
             type="button"
             disabled
-            className="mt-2 inline-flex cursor-not-allowed items-center gap-1 text-[12px] font-medium text-[#8A8984]"
+            className="mt-2 inline-flex cursor-not-allowed items-center gap-1 text-[12px] font-medium text-[#6B6B6B]"
           >
             Centre d'aide bientôt disponible <ExternalLink className="size-3" />
           </button>
@@ -899,7 +926,7 @@ function CloudSyncBlock() {
   };
 
   const onRestore = async () => {
-    if (!window.confirm("Récupérer la dernière sauvegarde remplace vos données locales actuelles. Continuer ?")) return;
+    if (!window.confirm("Récupérer la dernière sauvegarde remplace vos données actuelles. Continuer ?")) return;
     setBusy("restore");
     try {
       const license = normalizeLicenseKey(useBeharStore.getState().licenseKey);
@@ -923,9 +950,9 @@ function CloudSyncBlock() {
   };
 
   return (
-    <div className="mt-4 rounded-[14px] border border-[#E7E4DC] bg-[#FAFAF8] p-3">
+    <div className="mt-4 rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA] p-3">
       <p className="font-semibold text-[#1A1916] text-[13px]">Sauvegarde</p>
-      <p className="mt-1 text-[#8A8984] text-[11.5px] leading-snug">
+      <p className="mt-1 text-[#6B6B6B] text-[11.5px] leading-snug">
         Vos données sont sauvegardées automatiquement. Vous pouvez aussi forcer une sauvegarde ou récupérer la dernière.
       </p>
 
@@ -942,7 +969,7 @@ function CloudSyncBlock() {
           type="button"
           onClick={onSave}
           disabled={busy !== null}
-          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-[12.5px] font-medium text-[#1A1916] transition active:scale-95 disabled:opacity-50 hover:bg-[#FAFAF8]"
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[12.5px] font-medium text-[#1A1916] transition active:scale-95 disabled:opacity-50 hover:bg-[#FAFAFA]"
         >
           {busy === "upload" ? <Loader2 className="size-3.5 animate-spin" /> : <CloudUpload className="size-3.5" />}
           Sauvegarder
@@ -951,7 +978,7 @@ function CloudSyncBlock() {
           type="button"
           onClick={onRestore}
           disabled={busy !== null}
-          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-[12.5px] font-medium text-[#1A1916] transition active:scale-95 disabled:opacity-50 hover:bg-[#FAFAF8]"
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[12.5px] font-medium text-[#1A1916] transition active:scale-95 disabled:opacity-50 hover:bg-[#FAFAFA]"
         >
           {busy === "restore" ? <Loader2 className="size-3.5 animate-spin" /> : <CloudDownload className="size-3.5" />}
           Restaurer
@@ -1012,7 +1039,7 @@ function InstallAppLink() {
 
   if (installed) {
     return (
-      <p className="mt-3 flex items-center gap-1.5 text-[12px] text-[#8A8984]">
+      <p className="mt-3 flex items-center gap-1.5 text-[12px] text-[#6B6B6B]">
         <Check className="size-3 text-[#2A9D8F]" /> Application installée
       </p>
     );
@@ -1042,7 +1069,7 @@ function InstallAppLink() {
       <button
         type="button"
         onClick={handleClick}
-        className="mt-3 flex items-center gap-1.5 text-[12px] text-[#8A8984] hover:text-[#2A9D8F] transition-colors"
+        className="mt-3 flex items-center gap-1.5 text-[12px] text-[#6B6B6B] hover:text-[#2A9D8F] transition-colors"
       >
         <Download className="size-3" /> Installer l'application
       </button>
@@ -1051,17 +1078,17 @@ function InstallAppLink() {
         <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true">
           <button
             type="button"
-            className="absolute inset-0 bg-[#1A1916]/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-[#1A1916]/40"
             onClick={() => setIosOpen(false)}
             aria-label="Fermer"
           />
           <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-[28px] bg-white pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_-20px_60px_rgba(26,25,22,0.18)]">
             <div className="flex justify-center pt-2 pb-1">
-              <span className="h-1 w-9 rounded-full bg-[#D1CFCA]" aria-hidden />
+              <span className="h-1 w-9 rounded-full bg-[#DADADA]" aria-hidden />
             </div>
             <div className="px-6 pt-3 pb-4">
               <p className="font-semibold text-[#1A1916] text-[20px] tracking-tight">Installer sur iPhone / iPad</p>
-              <p className="mt-1 text-[#8A8984] text-[13px]">
+              <p className="mt-1 text-[#6B6B6B] text-[13px]">
                 Safari : touchez l'icône <strong>Partager</strong>, puis <strong>« Sur l'écran d'accueil »</strong>.
               </p>
             </div>

@@ -58,8 +58,8 @@ export const demoScenario = {
   invoice: {
     number: "FA-2026-084",
     status: "Payée",
-    payment: "Simulé",
-    method: "Stripe Checkout simulé",
+    payment: "Indiqué",
+    method: "En ligne",
     paidAt: "21 mai 2026 à 14:32",
     total: "190,00 €",
   },
@@ -78,8 +78,8 @@ export const demoSteps = [
   },
   {
     id: "repair",
-    title: "Nouvelle réparation",
-    description: "Créer l’iPhone 13 écran cassé et passer en réparation.",
+    title: "Nouvelle prise en charge",
+    description: "Créer le dossier iPhone 13 écran cassé et passer en réparation.",
     icon: Smartphone,
   },
   {
@@ -96,7 +96,7 @@ export const demoSteps = [
   },
   {
     id: "payment",
-    title: "Paiement simulé",
+    title: "Règlement indiqué",
     description: "Marquer la facture comme payée.",
     icon: WalletCards,
   },
@@ -116,14 +116,14 @@ export const demoSteps = [
 
 export const demoTimeline = [
   "10:15 — Client créé",
-  "10:16 — Réparation créée",
+  "10:16 — Dossier créé",
   "10:20 — Diagnostic terminé",
   "10:25 — Devis généré",
   "10:30 — Devis accepté",
   "11:00 — Réparation démarrée",
   "14:20 — Facture générée",
-  "14:32 — Paiement simulé reçu",
-  "14:35 — SMS simulé envoyé",
+  "14:32 — Règlement indiqué",
+  "14:35 — SMS client ajouté",
   "14:40 — Appareil prêt",
 ];
 
@@ -146,7 +146,7 @@ export const demoDocuments = [
   {
     id: "receipt",
     title: "Reçu de paiement",
-    description: "Reçu Stripe Checkout simulé.",
+    description: "Justificatif de règlement lié au dossier.",
   },
   {
     id: "internal",
@@ -155,7 +155,7 @@ export const demoDocuments = [
   },
   {
     id: "summary",
-    title: "Résumé démo Behar Tech",
+    title: "Résumé dossier Behar Tech",
     description: "Récapitulatif complet du parcours de démonstration.",
   },
 ] as const;

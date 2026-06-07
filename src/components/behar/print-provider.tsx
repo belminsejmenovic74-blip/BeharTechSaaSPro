@@ -4,7 +4,7 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useR
 
 import { toast } from "sonner";
 
-import { useBeharStore } from "@/lib/behar-store";
+import { type BeharDocument, useBeharStore } from "@/lib/behar-store";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 
 import {
@@ -13,14 +13,38 @@ import {
   PaymentReceiptDocument,
   QuoteDocument,
   RepairIntakeDocument,
+  RepairSummaryDocument,
   SaleReceiptDocument,
 } from "./printable-documents";
 
-type DocumentType = "intake" | "quote" | "invoice" | "payment" | "internal" | "sale-receipt";
+type DocumentType = "intake" | "quote" | "invoice" | "payment" | "internal" | "summary" | "sale-receipt";
 
 interface DocumentContextType {
   print: (type: DocumentType, id: string) => void;
   download: (type: DocumentType, id: string) => void;
+  /** Génère le PDF et l'upload vers Supabase Storage, puis enregistre l'URL sur le document (documentId). Résout true si publié. */
+  uploadToCloud: (type: DocumentType, id: string, documentId: string, opts?: { silent?: boolean }) => Promise<boolean>;
+}
+
+/** Mappe un document du store vers sa cible imprimable côté CLIENT (jamais la fiche interne). */
+function clientDocTarget(doc: BeharDocument): { type: DocumentType; id: string } | null {
+  switch (doc.type) {
+    case "intake":
+      return doc.repairId ? { type: "intake", id: doc.repairId } : null;
+    case "summary":
+      return doc.repairId ? { type: "summary", id: doc.repairId } : null;
+    case "quote":
+      return doc.quoteId ? { type: "quote", id: doc.quoteId } : null;
+    case "invoice":
+    case "sale-invoice":
+      return doc.invoiceId ? { type: "invoice", id: doc.invoiceId } : null;
+    case "payment":
+      return doc.paymentId ? { type: "payment", id: doc.paymentId } : null;
+    case "sale-receipt":
+      return doc.saleId ? { type: "sale-receipt", id: doc.saleId } : null;
+    default:
+      return null; // "internal" : jamais publié au client
+  }
 }
 
 const DocumentContext = createContext<DocumentContextType | null>(null);
@@ -39,7 +63,11 @@ export function PrintProvider({ children }: { children: ReactNode }) {
   const [activeDoc, setActiveDoc] = useState<{
     type: DocumentType;
     id: string;
-    action: "print" | "download";
+    action: "print" | "download" | "upload";
+    /** Document store id cible pour l'action upload (où enregistrer fileUrl). */
+    documentId?: string;
+    /** Upload en arrière-plan : aucun toast (auto-publication). */
+    silent?: boolean;
     /** Identifiant unique de la requête, pour rejeter les callbacks périmés. */
     reqId: number;
   } | null>(null);
@@ -61,6 +89,59 @@ export function PrintProvider({ children }: { children: ReactNode }) {
     }
     setActiveDoc({ type, id, action: "download", reqId: ++reqCounterRef.current });
   }, []);
+
+  const uploadResolveRef = useRef<((ok: boolean) => void) | null>(null);
+
+  const uploadToCloud = useCallback(
+    (type: DocumentType, id: string, documentId: string, opts?: { silent?: boolean }): Promise<boolean> => {
+      return new Promise<boolean>((resolve) => {
+        if (inFlightRef.current) {
+          resolve(false);
+          return;
+        }
+        uploadResolveRef.current = resolve;
+        setActiveDoc({ type, id, action: "upload", documentId, silent: opts?.silent, reqId: ++reqCounterRef.current });
+      });
+    },
+    [],
+  );
+
+  // ── Auto-publication des documents client ────────────────────────────────
+  // Dès qu'un dossier a un suivi client actif, ses documents (facture, devis, reçu,
+  // rapport, bon de dépôt) sont générés en PDF + uploadés dans Supabase Storage en
+  // arrière-plan, pour que le client les télécharge directement (jamais la web app).
+  const autoAttemptedRef = useRef<Set<string>>(new Set());
+  const autoRunningRef = useRef(false);
+  // Signature : un document est « à publier » tant qu'il n'a pas de fileUrl.
+  const pendingDocsSignature = store.documents
+    .filter((d) => !d.fileUrl && clientDocTarget(d))
+    .map((d) => d.id)
+    .join(",");
+  useEffect(() => {
+    if (autoRunningRef.current) return;
+    // On publie TOUS les documents client (facture, devis, reçu, rapport, bon de dépôt),
+    // pas seulement ceux des dossiers partagés, pour garantir que « tout marche ».
+    const pick = () =>
+      useBeharStore
+        .getState()
+        .documents.find((d) => !d.fileUrl && !autoAttemptedRef.current.has(d.id) && clientDocTarget(d));
+    if (!pick()) return;
+    autoRunningRef.current = true;
+    void (async () => {
+      let next = pick();
+      while (next) {
+        autoAttemptedRef.current.add(next.id);
+        const target = clientDocTarget(next);
+        if (target) {
+          // eslint-disable-next-line no-await-in-loop
+          await uploadToCloud(target.type, target.id, next.id, { silent: true });
+        }
+        next = pick();
+      }
+      autoRunningRef.current = false;
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingDocsSignature, uploadToCloud]);
 
   // Refs pour découpler les fonctions de résolution du store : on évite que
   // chaque mutation du store ne ré-exécute l'effet de génération PDF.
@@ -91,6 +172,10 @@ export function PrintProvider({ children }: { children: ReactNode }) {
       const repair = s.repairs.find((repair) => repair.id === id);
       return `fiche-interne-${repair?.number || id}.pdf`;
     }
+    if (type === "summary") {
+      const repair = s.repairs.find((repair) => repair.id === id);
+      return `rapport-reparation-${repair?.number || id}.pdf`;
+    }
     if (type === "sale-receipt") {
       const sale = s.sales.find((sale) => sale.id === id);
       return `recu-vente-${sale?.number || id}.pdf`;
@@ -119,27 +204,35 @@ export function PrintProvider({ children }: { children: ReactNode }) {
       return () => clearTimeout(timer);
     }
 
-    // ── Download ──────────────────────────────────────────────────────────
+    // ── Download / Upload ─────────────────────────────────────────────────
+    const silent = activeDoc.action === "upload" && Boolean(activeDoc.silent);
     inFlightRef.current = true;
-    const processingToast = toast.loading("1/3 : Analyse du document…");
+    const processingToast = silent ? undefined : toast.loading("1/3 : Analyse du document…");
     let settled = false;
     let cancelled = false;
 
-    const finish = (kind: "ok" | "error" | "missing" | "timeout", payload?: string) => {
+    const finish = (kind: "ok" | "error" | "missing" | "timeout", payload?: string, okLabel?: string) => {
       if (settled) return;
       settled = true;
       clearTimeout(safetyTimer);
       clearTimeout(startTimer);
-      if (kind === "ok") {
-        toast.success(`3/3 : Téléchargé : ${payload}`, { id: processingToast });
-      } else if (kind === "missing") {
-        toast.error(payload || "Document introuvable.", { id: processingToast });
-      } else if (kind === "timeout") {
-        toast.error("Impossible de générer le PDF. Réessayez.", { id: processingToast });
-      } else {
-        toast.error("Impossible de générer le PDF. Réessayez.", { id: processingToast });
+      if (!silent) {
+        if (kind === "ok") {
+          toast.success(okLabel ?? `3/3 : Téléchargé : ${payload}`, { id: processingToast });
+        } else if (kind === "missing") {
+          toast.error(payload || "Document introuvable.", { id: processingToast });
+        } else if (kind === "timeout") {
+          toast.error("Impossible de générer le PDF. Réessayez.", { id: processingToast });
+        } else {
+          toast.error("Impossible de générer le PDF. Réessayez.", { id: processingToast });
+        }
       }
       inFlightRef.current = false;
+      // Résout la promesse d'upload (true seulement si succès), pour les batchs séquentiels.
+      if (uploadResolveRef.current) {
+        uploadResolveRef.current(kind === "ok");
+        uploadResolveRef.current = null;
+      }
       // Libère le state pour permettre une nouvelle génération
       setActiveDoc((current) => (current?.reqId === currentReqId ? null : current));
     };
@@ -166,9 +259,59 @@ export function PrintProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        toast.loading("2/3 : Création du PDF…", { id: processingToast });
         const filename = getFilename(activeDoc.type, activeDoc.id);
 
+        if (activeDoc.action === "upload") {
+          // Génère le PDF en data URL puis l'envoie vers Supabase Storage.
+          if (!silent) toast.loading("Préparation du document client…", { id: processingToast });
+          const dataUrl = await generatePdfFromElement(docElement, filename, "dataurl");
+          if (!dataUrl) {
+            if (!cancelled) finish("error");
+            return;
+          }
+          const response = await fetch("/api/repair-documents", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              repairId: activeDoc.id,
+              documentId: activeDoc.documentId,
+              fileName: filename,
+              dataUrl,
+            }),
+          }).catch(() => null);
+          if (!response?.ok) {
+            // Échec/non configuré : on ne bloque pas, le document reste consultable en local.
+            if (!cancelled) {
+              if (!silent) {
+                toast.message("Document enregistré en local.", {
+                  id: processingToast,
+                  description: "Upload cloud indisponible (Supabase Storage non configuré).",
+                });
+              }
+              settled = true;
+              inFlightRef.current = false;
+              if (uploadResolveRef.current) {
+                uploadResolveRef.current(false);
+                uploadResolveRef.current = null;
+              }
+              setActiveDoc((current) => (current?.reqId === currentReqId ? null : current));
+            }
+            return;
+          }
+          const json = (await response.json().catch(() => null)) as
+            | { url?: string; storagePath?: string }
+            | null;
+          if (json?.url && activeDoc.documentId) {
+            storeRef.current.updateDocument(activeDoc.documentId, {
+              fileUrl: json.url,
+              storagePath: json.storagePath,
+            });
+          }
+          if (!cancelled) finish("ok", filename, "Document prêt — téléchargeable par le client.");
+          return;
+        }
+
+        toast.loading("2/3 : Création du PDF…", { id: processingToast });
         await generatePdfFromElement(docElement, filename);
         if (!cancelled) finish("ok", filename);
       } catch (error) {
@@ -186,6 +329,10 @@ export function PrintProvider({ children }: { children: ReactNode }) {
       if (!settled) {
         toast.dismiss(processingToast);
         inFlightRef.current = false;
+        if (uploadResolveRef.current) {
+          uploadResolveRef.current(false);
+          uploadResolveRef.current = null;
+        }
       }
     };
     // ⚠️ Volontairement, on ne met PAS getFilename en deps : on a déjà découplé
@@ -255,6 +402,13 @@ export function PrintProvider({ children }: { children: ReactNode }) {
       return <InternalRepairDocument repair={repair} customer={customer} workshop={store.workshopInfo} />;
     }
 
+    if (type === "summary") {
+      const repair = store.repairs.find((repair) => repair.id === id);
+      const customer = store.customers.find((customer) => customer.id === repair?.customerId);
+      if (!repair || !customer) return null;
+      return <RepairSummaryDocument repair={repair} customer={customer} workshop={store.workshopInfo} />;
+    }
+
     if (type === "sale-receipt") {
       const sale = store.sales.find((s) => s.id === id);
       const customer = store.customers.find((c) => c.id === sale?.customerId) || store.customers[0];
@@ -266,7 +420,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <DocumentContext.Provider value={{ print, download }}>
+    <DocumentContext.Provider value={{ print, download, uploadToCloud }}>
       {children}
       {/* Container for printing - visible only during print media query */}
       <div className="hidden print:block">
@@ -286,7 +440,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
           zIndex: -1,
         }}
       >
-        {activeDoc?.action === "download" && renderDocument()}
+        {(activeDoc?.action === "download" || activeDoc?.action === "upload") && renderDocument()}
       </div>
     </DocumentContext.Provider>
   );

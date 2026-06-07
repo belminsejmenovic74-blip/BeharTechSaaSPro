@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -11,6 +11,7 @@ import {
   CreditCard,
   Edit3,
   FileText,
+  FolderOpen,
   Mail,
   MoreHorizontal,
   Plus,
@@ -29,7 +30,7 @@ import { useShallow } from "zustand/react/shallow";
 
 import { KanbanBoard } from "@/components/behar/kanban";
 import { RepairModal } from "@/components/behar/repair-create-modal";
-import { RepairIntakeScreen, RepairIntakeSummaryCard } from "@/components/behar/repair-intake-condition";
+import { RepairIntakeScreen } from "@/components/behar/repair-intake-condition";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,10 +56,12 @@ import {
   formatEuro,
   formatIsoToDisplay,
   type Invoice,
+  isTerminalRepairStatus,
   normalizeAppointmentStatus,
   type PaymentMethod,
   paymentMethods,
   type Quote,
+  type Repair,
   type RepairStatus,
   useBeharStore,
 } from "@/lib/behar-store";
@@ -68,18 +71,40 @@ import { sendRealSms } from "@/lib/send-sms";
 import { cn } from "@/lib/utils";
 import type { RepairCard } from "@/mock/repairs";
 
-import { DeviceThumb, Panel, PrimaryButton, SecondaryButton, StatusBadge, Timeline } from "./primitives";
+import { DeviceThumb, Panel, PrimaryButton, SecondaryButton, StatusBadge } from "./primitives";
 import { useDocument } from "./print-provider";
 
-const statuses: RepairStatus[] = ["Reçu", "Diagnostic", "Préparation / Réparation", "Test final", "Prêt"];
+const statuses: RepairStatus[] = ["Reçu", "Diagnostic", "En attente", "Devis envoyé", "Devis accepté", "En réparation", "Test final", "Prêt"];
+
+function compactStockText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function isAccessoryStockItem(item: { name: string; category?: string; categoryName?: string; part?: string }) {
+  const text = compactStockText(`${item.name} ${item.category ?? ""} ${item.categoryName ?? ""} ${item.part ?? ""}`);
+  const looksLikeAccessory = /\b(accessoire|coque|etui|housse|chargeur|cable|ecouteurs|verre trempe|protection ecran|film|adaptateur|batterie externe|support voiture)\b/.test(text);
+  const looksLikeRepairPart = /\b(ecran|lcd|oled|vitre arriere|connecteur|nappe|camera|haut parleur|micro|vibreur|batterie interne|chassis|carte mere)\b/.test(text);
+  return looksLikeAccessory && !looksLikeRepairPart;
+}
 
 function nextStatusLabel(from: RepairStatus): string | null {
   switch (from) {
     case "Reçu":
       return "Passer en diagnostic";
     case "Diagnostic":
-      return "Passer en préparation / réparation";
-    case "Préparation / Réparation":
+      return "Mettre en attente";
+    case "Devis envoyé":
+      return "Marquer devis accepté";
+    case "En attente":
+      return "Passer en réparation";
+    case "Devis accepté":
+      return "Passer en réparation";
+    case "En réparation":
       return "Passer en test final";
     case "Test final":
       return "Marquer comme prêt";
@@ -175,7 +200,7 @@ export function RepairsWorkspace() {
   const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "unpaid">("all");
   const [isSendingSms, setIsSendingSms] = useState(false);
   const [paymentNote, setPaymentNote] = useState("");
-  const [repairPayMethod, setRepairPayMethod] = useState<PaymentMethod>("Carte");
+  const [repairPayMethod, setRepairPayMethod] = useState<PaymentMethod>("TPE externe");
   const [importOpen, setImportOpen] = useState(false);
   const [prefillFromQuote, setPrefillFromQuote] = useState<any>(null);
   const [detailMode, setDetailMode] = useState<"repair" | "intake">("repair");
@@ -188,45 +213,6 @@ export function RepairsWorkspace() {
 
   const selectedRepair = repairs.find((repair) => repair.id === selectedRepairId);
 
-  const fullRepairHistory = useMemo(() => {
-    if (!selectedRepair) return [];
-
-    const items: any[] = (selectedRepair.history ?? []).map((h: string) => ({ text: h }));
-
-    // Add linked quotes
-    quotes
-      .filter((q) => q.repairId === selectedRepair.id)
-      .forEach((q) => {
-        items.push({
-          text: `Devis ${q.number}`,
-          detail: `${q.status} — ${formatEuro(q.totalAmount)}`,
-          icon: ReceiptText,
-          date: q.date,
-          type: "quote",
-          id: q.id,
-        });
-      });
-
-    // Add linked invoices
-    invoices
-      .filter((i) => i.repairId === selectedRepair.id)
-      .forEach((i) => {
-        items.push({
-          text: `Facture ${i.number}`,
-          detail: `${i.status} — ${formatEuro(i.paidAmount ?? 0)} / ${formatEuro(i.lines.reduce((acc, l) => acc + l.quantity * l.unitPrice, 0))}`,
-          icon: ReceiptText,
-          date: i.date,
-          type: "invoice",
-          id: i.id,
-        });
-      });
-
-    return items.sort((a, b) => {
-      // Strings don't have date, so we treat them as oldest or keep order
-      if (a.date && b.date) return b.date.localeCompare(a.date);
-      return 0;
-    });
-  }, [selectedRepair, quotes, invoices]);
   const selectedStockItem = stockItems.find((item) => item.id === selectedStockItemId);
   const maxPartQuantity = Math.max(1, selectedStockItem?.stock ?? 1);
   const selectedCustomer = selectedRepair
@@ -294,18 +280,17 @@ export function RepairsWorkspace() {
     });
   }, [repairs, search, statusFilter, paymentFilter, payments, customers]);
 
+  const accessoryStockItems = useMemo(() => stockItems.filter(isAccessoryStockItem), [stockItems]);
   const compatibleStockItems = selectedRepair
-    ? stockItems.filter(
+    ? accessoryStockItems.filter(
         (item) =>
           item.modelIds.includes(selectedRepair.modelId ?? "") ||
           item.compatibleModels.includes(selectedRepair.deviceModel ?? selectedRepair.model),
       )
     : [];
   const genericStockItems = selectedRepair
-    ? stockItems.filter((item) => !compatibleStockItems.some((compatible) => compatible.id === item.id))
-    : stockItems;
-
-  const snap = selectedRepair?.selectedPriceSnapshot;
+    ? accessoryStockItems.filter((item) => !compatibleStockItems.some((compatible) => compatible.id === item.id))
+    : accessoryStockItems;
 
   const columns = useMemo(
     () =>
@@ -369,7 +354,7 @@ export function RepairsWorkspace() {
 
   const deleteRepairAction = () => {
     if (!selectedRepair) {
-      toast.error("Aucune réparation sélectionnée.");
+      toast.error("Aucun dossier sélectionné.");
       return;
     }
     setRepairPendingDelete({
@@ -410,6 +395,10 @@ export function RepairsWorkspace() {
 
   const createQuoteAction = () => {
     if (!selectedRepair) return;
+    if (!["Reçu", "Diagnostic", "En attente", "Devis accepté"].includes(selectedRepair.status)) {
+      toast.error("Création de devis impossible à ce stade du dossier.");
+      return;
+    }
     const cust = selectedCustomer;
     if (!cust) {
       toast.error("Ajoutez un client avant de créer un devis.");
@@ -609,15 +598,18 @@ export function RepairsWorkspace() {
     selectedRepair &&
     (() => {
       const st = selectedRepair.status;
-      if (["Restitué", "Annulé"].includes(st)) {
+      if (isTerminalRepairStatus(st)) {
         return null;
       }
-      if (!["Prêt", "Restitué", "Annulé"].includes(st)) {
+      if (st !== "Prêt") {
         const next = (
           {
             Reçu: "Diagnostic" as RepairStatus,
-            Diagnostic: "Préparation / Réparation" as RepairStatus,
-            "Préparation / Réparation": "Test final" as RepairStatus,
+            Diagnostic: "En attente" as RepairStatus,
+            "En attente": "En réparation" as RepairStatus,
+            "Devis envoyé": "Devis accepté" as RepairStatus,
+            "Devis accepté": "En réparation" as RepairStatus,
+            "En réparation": "Test final" as RepairStatus,
             "Test final": "Prêt" as RepairStatus,
           } as Partial<Record<RepairStatus, RepairStatus>>
         )[st];
@@ -680,9 +672,9 @@ export function RepairsWorkspace() {
       {/* Mobile : barre recherche compacte + chips statut horizontaux */}
       <div className="md:hidden">
         <label className="relative block">
-          <Search className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3.5 size-4 text-[#8A8984]" />
+          <Search className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3.5 size-4 text-[#6B6B6B]" />
           <Input
-            className="h-12 rounded-[14px] border-[#E7E4DC] bg-white pr-4 pl-10 text-sm placeholder:text-[#8A8984]"
+            className="h-12 rounded-[14px] border-[#E8E8E5] bg-white pr-4 pl-10 text-sm placeholder:text-[#6B6B6B]"
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Rechercher…"
             type="search"
@@ -692,7 +684,7 @@ export function RepairsWorkspace() {
         <div className="-mx-1 mt-3 flex items-center gap-2 overflow-x-auto px-1 pb-1 scrollbar-none">
           {(["all", ...statuses] as const).map((s) => {
             const active = statusFilter === s;
-            const label = s === "all" ? "Tous" : s === "Préparation / Réparation" ? "Réparation" : s;
+            const label = s === "all" ? "Tous" : s;
             const count = s === "all" ? filteredRepairs.length : repairs.filter((r) => r.status === s).length;
             return (
               <button
@@ -701,14 +693,14 @@ export function RepairsWorkspace() {
                 onClick={() => setStatusFilter(s as RepairStatus | "all")}
                 className={cn(
                   "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-[12.5px] font-semibold tracking-tight transition active:scale-95",
-                  active ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : "border-[#E7E4DC] bg-white text-[#1A1916]",
+                  active ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : "border-[#E8E8E5] bg-white text-[#1A1916]",
                 )}
               >
                 {label}
                 <span
                   className={cn(
                     "rounded-full px-1.5 py-px text-[10px] font-bold",
-                    active ? "bg-white/25 text-white" : "bg-[#F1F1EF] text-[#6B6B6B]",
+                    active ? "bg-white/25 text-white" : "bg-[#F7F7F7] text-[#6B6B6B]",
                   )}
                 >
                   {count}
@@ -718,7 +710,7 @@ export function RepairsWorkspace() {
           })}
         </div>
         <PrimaryButton className="mt-3 h-11 w-full gap-2" onClick={() => openCreate()}>
-          <Plus className="size-4" /> Nouvelle réparation
+          <Plus className="size-4" /> Nouvelle prise en charge
         </PrimaryButton>
       </div>
 
@@ -737,7 +729,7 @@ export function RepairsWorkspace() {
             return;
           }
           setSelected("repair", repairId);
-          toast.success("Réparation créée depuis le rendez-vous");
+          toast.success("Dossier créé depuis le rendez-vous");
         }}
         onMarkArrived={(appointment) => {
           updateAppointment(appointment.id, { confirmed: true, status: "Arrivé" });
@@ -753,9 +745,9 @@ export function RepairsWorkspace() {
       <div className="hidden shrink-0 md:flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
         <div className="flex w-full min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
           <label className="relative block w-full min-w-[200px] max-w-[400px] sm:max-w-[320px]">
-            <Search className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3.5 size-4 text-[#8A8984]" />
+            <Search className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3.5 size-4 text-[#6B6B6B]" />
             <Input
-              className="h-11 rounded-[14px] border-[#E7E4DC] bg-white pr-4 pl-10 text-sm placeholder:text-[#8A8984]"
+              className="h-11 rounded-[14px] border-[#E8E8E5] bg-white pr-4 pl-10 text-sm placeholder:text-[#6B6B6B]"
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher dossier, appareil, client…"
               type="search"
@@ -764,7 +756,7 @@ export function RepairsWorkspace() {
           </label>
           <select
             className={cn(
-              "h-11 cursor-pointer rounded-[14px] border border-[#E7E4DC] bg-white px-3.5 font-medium text-[#1A1916] text-sm shadow-[0_4px_14px_rgba(26,25,22,0.025)] outline-none transition focus:border-[#2A9D8F]",
+              "h-11 cursor-pointer rounded-[14px] border border-[#E8E8E5] bg-white px-3.5 font-medium text-[#1A1916] text-sm shadow-[0_4px_14px_rgba(26,25,22,0.025)] outline-none transition focus:border-[#2A9D8F]",
             )}
             onChange={(event) =>
               setStatusFilter(event.target.value === "all" ? "all" : (event.target.value as RepairStatus))
@@ -779,7 +771,7 @@ export function RepairsWorkspace() {
             ))}
           </select>
           <select
-            className="h-11 cursor-pointer rounded-[14px] border border-[#E7E4DC] bg-white px-3.5 font-medium text-[#1A1916] text-sm outline-none transition focus:border-[#2A9D8F]"
+            className="h-11 cursor-pointer rounded-[14px] border border-[#E8E8E5] bg-white px-3.5 font-medium text-[#1A1916] text-sm outline-none transition focus:border-[#2A9D8F]"
             onChange={(event) => setPaymentFilter(event.target.value as typeof paymentFilter)}
             value={paymentFilter}
           >
@@ -795,7 +787,7 @@ export function RepairsWorkspace() {
           </SecondaryButton>
           <PrimaryButton className="h-11 shrink-0 gap-2 px-6" onClick={() => openCreate()}>
             <Plus className="size-4" />
-            Nouvelle réparation
+            Nouvelle prise en charge
           </PrimaryButton>
         </div>
       </div>
@@ -804,10 +796,10 @@ export function RepairsWorkspace() {
       <div className="md:hidden">
         {filteredRepairs.length === 0 ? (
           <div className="rounded-[20px] bg-white p-10 text-center shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-            <p className="text-[#8A8984] text-sm">
+            <p className="text-[#6B6B6B] text-sm">
               {search || statusFilter !== "all"
-                ? "Aucune réparation ne correspond aux filtres."
-                : "Aucune réparation pour l'instant."}
+                ? "Aucun dossier ne correspond aux filtres."
+                : "Aucun dossier pour l'instant."}
             </p>
           </div>
         ) : (
@@ -832,7 +824,7 @@ export function RepairsWorkspace() {
                     }}
                     className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
                   >
-                    <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FAFAF8] text-[#1A1916]">
+                    <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FAFAFA] text-[#1A1916]">
                       <Wrench className="size-[18px]" strokeWidth={1.8} />
                     </span>
                     <div className="min-w-0 flex-1">
@@ -840,10 +832,10 @@ export function RepairsWorkspace() {
                         <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
                           {displayCustomerName(customer)}
                         </p>
-                        <span className="shrink-0 font-mono text-[#8A8984] text-[10.5px]">{repair.number}</span>
+                        <span className="shrink-0 font-mono text-[#6B6B6B] text-[10.5px]">{repair.number}</span>
                       </div>
                       <p className="mt-0.5 truncate text-[#1A1916] text-[13px]">{formatDeviceLabel(repair)}</p>
-                      <p className="mt-0.5 truncate text-[#8A8984] text-[12px]">{repair.issue}</p>
+                      <p className="mt-0.5 truncate text-[#6B6B6B] text-[12px]">{repair.issue}</p>
                       {linkedAppointment && (
                         <p className="mt-0.5 inline-flex items-center gap-1 text-[#2A9D8F] text-[11px] font-medium">
                           <CalendarDays className="size-3" />
@@ -875,7 +867,7 @@ export function RepairsWorkspace() {
         className={cn(
           // Mobile : overlay full-screen when detail open. Desktop : grid.
           mobileDetailOpen && selectedRepair
-            ? "fixed inset-0 z-40 block overflow-y-auto bg-[#FAFAF8] md:relative md:inset-auto md:z-auto md:bg-transparent md:overflow-visible"
+            ? "fixed inset-0 z-40 block overflow-y-auto bg-white md:relative md:inset-auto md:z-auto md:bg-transparent md:overflow-visible"
             : "hidden md:grid",
           "md:grid md:min-h-0 md:flex-1 md:gap-4 md:grid-rows-[minmax(0,1fr)]",
           detailMode === "intake" && selectedRepair
@@ -901,7 +893,7 @@ export function RepairsWorkspace() {
         </div>
 
         {importOpen && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
             <Panel className="w-full max-w-md p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-bold text-lg text-[#1A1916]">Choisir un devis</h3>
@@ -934,7 +926,7 @@ export function RepairsWorkspace() {
                           setModal("create");
                           setImportOpen(false);
                         }}
-                        className="w-full flex items-center justify-between p-3 rounded-xl border border-[#E7E4DC] hover:border-[#2A9D8F] hover:bg-[#F1FAF8] transition-all text-left"
+                        className="w-full flex items-center justify-between p-3 rounded-xl border border-[#E8E8E5] hover:border-[#2A9D8F] hover:bg-[#F1FAF8] transition-all text-left"
                       >
                         <div>
                           <p className="font-bold text-sm text-[#1A1916]">
@@ -953,13 +945,13 @@ export function RepairsWorkspace() {
           </div>
         )}
 
-        <Panel className="flex min-h-0 flex-col overflow-hidden rounded-none md:rounded-[20px] border-0 md:border md:border-[#E5E3DC] bg-white/92 p-4 md:p-[18px] shadow-none md:shadow-[0_12px_40px_rgba(26,25,22,0.045)] backdrop-blur-sm xl:max-h-[calc(100svh-168px)]">
+        <Panel className="flex min-h-0 flex-col overflow-hidden rounded-none md:rounded-[20px] border-0 md:border md:border-[#E8E8E5] bg-white p-4 md:p-[18px] shadow-none md:shadow-[0_12px_40px_rgba(26,25,22,0.045)] xl:max-h-[calc(100svh-168px)]">
           {/* Mobile back button */}
-          <div className="md:hidden -mx-4 -mt-4 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#F1F1EF] bg-white/95 backdrop-blur-xl px-4 py-3">
+          <div className="md:hidden -mx-4 -mt-4 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#F7F7F7] bg-white px-4 py-3">
             <button
               type="button"
               onClick={() => setMobileDetailOpen(false)}
-              className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#1A1916] transition active:scale-90"
+              className="grid size-9 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white text-[#1A1916] transition active:scale-90"
               aria-label="Retour à la liste"
             >
               <ArrowLeft className="size-4" />
@@ -968,7 +960,7 @@ export function RepairsWorkspace() {
           </div>
           {selectedRepair ? (
             <div className="flex min-h-0 flex-1 flex-col">
-              <div className="mb-4 shrink-0 border-[#EDEAE3] border-b pb-4">
+              <div className="mb-4 shrink-0 border-[#E8E8E5] border-b pb-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="font-semibold text-[#1A1916] text-[11px] uppercase tracking-[0.08em]">Réparation</p>
@@ -978,27 +970,17 @@ export function RepairsWorkspace() {
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <StatusBadge status={selectedRepair.status} />
                       {selectedLinkedAppointment ? (
-                        <span className="inline-flex rounded-full bg-[#EAF6F2] px-2.5 py-1 font-semibold text-[#167B70] text-[11px]">
+                        <span className="inline-flex rounded-[7px] border border-[#D7EFEA] bg-[#F6FCFA] px-2 py-0.5 font-semibold text-[#167B70] text-[11px]">
                           Depuis RDV
                         </span>
                       ) : null}
                     </div>
                   </div>
-                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
-                    {selectedRepair.status === "Prêt" ? (
-                      <button
-                        className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#F3C7C3] bg-[#FFF7F6] px-3.5 font-semibold text-[#B42318] text-sm hover:bg-[#FDECEC]"
-                        onClick={deleteRepairAction}
-                        type="button"
-                      >
-                        <Trash2 className="size-4" />
-                        Supprimer
-                      </button>
-                    ) : null}
+                  <div className="flex shrink-0 items-center gap-1.5">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
-                          className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E7E4DC] bg-white px-3.5 font-medium text-[#1A1916] text-sm hover:bg-[#FAFAF8]"
+                          className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3.5 font-medium text-[#1A1916] text-sm hover:bg-[#FAFAFA]"
                           type="button"
                         >
                           Actions
@@ -1022,13 +1004,16 @@ export function RepairsWorkspace() {
                             <WalletCards className="mr-2 size-4" /> Compléter le client
                           </DropdownMenuItem>
                         ) : null}
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          onClick={() => createQuoteAction()}
-                          onSelect={(e) => e.preventDefault()}
-                        >
-                          <FileText className="mr-2 size-4" /> Créer un devis
-                        </DropdownMenuItem>
+                        {selectedRepair &&
+                          ["Reçu", "Diagnostic", "En attente", "Devis accepté"].includes(selectedRepair.status) && (
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              onClick={() => createQuoteAction()}
+                              onSelect={(e) => e.preventDefault()}
+                            >
+                              <FileText className="mr-2 size-4" /> Créer un devis
+                            </DropdownMenuItem>
+                          )}
                         <DropdownMenuItem
                           className="cursor-pointer"
                           onClick={() => setDetailMode("intake")}
@@ -1108,7 +1093,7 @@ export function RepairsWorkspace() {
 
                     <button
                       aria-label="Fermer le panneau"
-                      className="grid size-10 place-items-center rounded-[12px] text-[#6B6B6B] hover:bg-[#F6F7F4]"
+                      className="grid size-10 place-items-center rounded-[12px] text-[#6B6B6B] hover:bg-[#FAFAFA]"
                       onClick={() => setSelected("repair", "")}
                       type="button"
                     >
@@ -1135,25 +1120,25 @@ export function RepairsWorkspace() {
                 />
               ) : (
                 <div className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1 pb-4">
-                  <div className="rounded-[16px] border border-[#E7E4DC] bg-[#FAFAF8]/80 px-5 py-4">
+                  <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA]/80 px-5 py-4">
                     {primaryAction ? (
                       <>
                         {selectedRepair.status === "Prêt" && primaryInvoice?.status !== "Payée" && resteAPayer > 0 && (
-                          <div className="mt-4 space-y-2 rounded-[12px] border border-[#E7E4DC] bg-white p-3">
-                            <p className="text-[#6B6B6B] text-xs">Méthode d’encaissement simulée</p>
+                          <div className="mt-4 space-y-2 rounded-[12px] border border-[#E8E8E5] bg-white p-3">
+                            <p className="text-[#6B6B6B] text-xs">Moyen de règlement indiqué</p>
                             <select
-                              className="h-10 w-full rounded-[10px] border border-[#E7E4DC] bg-white px-2 text-sm outline-none focus:border-[#2A9D8F]"
+                              className="h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-2 text-sm outline-none focus:border-[#2A9D8F]"
                               onChange={(event) => setRepairPayMethod(event.target.value as PaymentMethod)}
                               value={repairPayMethod}
                             >
                               {paymentMethods.map((m) => (
                                 <option key={m} value={m}>
-                                  {m === "Carte" ? "Carte bancaire" : m}
+                                  {m === "Carte" ? "TPE externe" : m === "Espèces" ? "Espèces hors Behar Tech" : m === "En ligne" ? "Lien externe" : m}
                                 </option>
                               ))}
                             </select>
                             <textarea
-                              className="min-h-[48px] w-full rounded-[10px] border border-[#E7E4DC] bg-white px-3 py-2 text-xs outline-none placeholder:text-[#8A8984] focus:border-[#2A9D8F]"
+                              className="min-h-[48px] w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 py-2 text-xs outline-none placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]"
                               onChange={(e) => setPaymentNote(e.target.value)}
                               placeholder="Note facultative…"
                               value={paymentNote}
@@ -1183,7 +1168,16 @@ export function RepairsWorkspace() {
                     )}
                   </div>
 
-                  <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] backdrop-blur-sm">
+                  <button
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-[14px] border border-[#2A9D8F]/35 bg-white px-4 font-semibold text-[#167B70] text-sm transition hover:bg-[#F3FBF8]"
+                    onClick={() => router.push(`/dashboard/dossiers/${selectedRepair.id}`)}
+                    type="button"
+                  >
+                    <FolderOpen className="size-4" />
+                    Ouvrir le dossier complet
+                  </button>
+
+                  <section className="rounded-[16px] border border-[#E8E8E5]/90 bg-white px-[18px] py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
                     <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Client</h3>
                     <Link
                       href={`/dashboard/clients?id=${selectedCustomer?.id}`}
@@ -1216,188 +1210,50 @@ export function RepairsWorkspace() {
                     ) : null}
                   </section>
 
-                  <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4">
+                  <section className="rounded-[16px] border border-[#E8E8E5]/90 bg-white px-[18px] py-4">
                     <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Appareil</h3>
-                    <dl className="mt-4 space-y-2 text-sm">
-                      <Detail label="Type" value={selectedRepair.deviceType ?? "—"} />
-                      <Detail label="Marque" value={selectedRepair.brandName ?? "—"} />
-                      <Detail label="Modèle" value={selectedRepair.deviceModel ?? selectedRepair.model} />
-                      <Detail label="IMEI / série" value={selectedRepair.imei?.trim() || "—"} />
-                      <Detail
-                        label="Accès appareil"
-                        value={selectedRepair.intakeCondition?.accessMethod ?? "Non communiqué"}
-                      />
-                      {selectedRepair.intakeCondition?.accessCode ? (
-                        <Detail label="Code / mot de passe" value={selectedRepair.intakeCondition.accessCode} />
-                      ) : null}
-                      {selectedRepair.intakeCondition?.patternData?.points?.length ? (
-                        <Detail label="Schéma" value={selectedRepair.intakeCondition.patternData.points.join(" → ")} />
-                      ) : null}
-                      {selectedRepair.intakeCondition?.accessNote ? (
-                        <Detail label="Note accès" value={selectedRepair.intakeCondition.accessNote} />
-                      ) : null}
-                    </dl>
-                  </section>
-
-                  {(() => {
-                    const linkedAppointment = selectedRepair.appointmentId
-                      ? appointments.find((a) => a.id === selectedRepair.appointmentId)
-                      : appointments.find((a) => a.repairId === selectedRepair.id);
-                    if (!linkedAppointment) return null;
-                    return (
-                      <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">
-                              RDV d'origine
-                            </h3>
-                            <p className="mt-2 inline-flex items-center gap-2 font-semibold text-[#1A1916] text-sm">
-                              <CalendarDays className="size-4 text-[#2A9D8F]" />
-                              {linkedAppointment.date}
-                              {linkedAppointment.time ? ` · ${linkedAppointment.time}` : ""}
-                            </p>
-                            <p className="mt-0.5 text-[#6B6B6B] text-[12px]">
-                              {normalizeAppointmentStatus(linkedAppointment.status, linkedAppointment.confirmed, true)}
-                              {linkedAppointment.duration ? ` · ${linkedAppointment.duration}` : ""}
-                            </p>
-                          </div>
-                          <Link
-                            href="/dashboard/rendez-vous"
-                            onClick={() => setSelected("appointment", linkedAppointment.id)}
-                            className="inline-flex h-8 items-center rounded-full border border-[#E7E4DC] bg-white px-3 font-medium text-[#1A1916] text-[12px] hover:border-[#2A9D8F]"
-                          >
-                            Voir
-                          </Link>
-                        </div>
-                      </section>
-                    );
-                  })()}
-
-                  <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4">
-                    <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Intervention</h3>
-                    <p className="mt-4 font-semibold text-[#1A1916] text-base">{selectedRepair.issue}</p>
-                    {selectedRepair.notes?.trim() ? (
-                      <p className="mt-2 rounded-[12px] bg-[#FAFAF8] p-3 text-[#6B6B6B] text-[13px] leading-relaxed">
-                        {selectedRepair.notes}
-                      </p>
-                    ) : (
-                      <p className="mt-2 text-[#6B6B6B] text-sm">Aucune note interne.</p>
-                    )}
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                      <span className="text-[#6B6B6B] text-xs">Statut atelier</span>
-                      <StatusBadge className="h-7 px-2.5 text-[11px]" status={selectedRepair.status} />
-                    </div>
-                  </section>
-
-                  <RepairIntakeSummaryCard
-                    customer={selectedCustomer}
-                    onDownload={() => {
-                      ensureIntakeDocument();
-                      download("intake", selectedRepair.id);
-                    }}
-                    onOpen={() => setDetailMode("intake")}
-                    onOpenDocuments={openIntakeDocuments}
-                    repair={selectedRepair}
-                  />
-
-                  <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4">
-                    <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Tarification</h3>
-                    <div className="mt-4 grid gap-2 text-[13px]">
-                      <Line
-                        label="Prix pièce / prestation"
-                        value={snap?.prixVentePiece ? formatEuro(snap.prixVentePiece) : "—"}
-                      />
-                      <Line label="Main-d’œuvre" value={formatEuro(selectedRepair.laborPrice ?? 0)} />
-                    </div>
-                    {snap && (snap.prixAchat || snap.marge) ? (
-                      <p className="mt-4 text-[#8A897E] text-[11px]">
-                        Prix achat interne {snap.prixAchat != null ? formatEuro(snap.prixAchat) : "—"}
-                        {" · "}Marge {snap.marge != null ? formatEuro(snap.marge) : "—"}
-                      </p>
+                    <p className="mt-3 font-semibold text-[#1A1916] text-[15px]">
+                      {[
+                        selectedRepair.deviceType,
+                        selectedRepair.brandName,
+                        selectedRepair.deviceModel ?? selectedRepair.model,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ") || selectedRepair.device}
+                    </p>
+                    {selectedRepair.imei?.trim() ? (
+                      <p className="mt-1 text-[#6B6B6B] text-[13px]">IMEI / série : {selectedRepair.imei.trim()}</p>
                     ) : null}
-                    <div className="mt-5 rounded-[14px] bg-[#E7F5F1]/65 px-4 py-5">
-                      <p className="text-[#1A1916] text-xs uppercase tracking-[0.04em]">Total client</p>
-                      <p className="mt-2 font-semibold text-[#1A1916] text-[28px] leading-none tracking-tight tabular-nums">
-                        {formatEuro(totalClientAmount)}
-                        {workshopInfo.vatApplicable && (
-                          <span className="ml-2 text-xs font-medium text-[#6B6B6B]">TTC</span>
-                        )}
-                      </p>
-                      <div className="mt-5 grid gap-2 border-black/[0.06] border-t pt-5 text-[13px]">
-                        <div className="flex justify-between gap-4">
-                          <span className="text-[#6B6B6B]">Payé</span>
-                          <span className="font-medium tabular-nums text-[#1A1916]">
-                            {formatEuro(repairPaidAmount)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between gap-4">
-                          <span className="font-medium text-[#1A1916]">Reste à payer</span>
-                          <span className="font-semibold tabular-nums text-[#2A9D8F]">{formatEuro(resteAPayer)}</span>
-                        </div>
+                    <p className="mt-3 text-[#1A1916] text-sm">{selectedRepair.issue}</p>
+                  </section>
+
+                  <section className="rounded-[16px] border border-[#E8E8E5]/90 bg-white px-[18px] py-4">
+                    <div className="flex items-end justify-between gap-3">
+                      <div>
+                        <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Total client</h3>
+                        <p className="mt-2 font-semibold text-[#1A1916] text-[26px] leading-none tabular-nums">
+                          {formatEuro(totalClientAmount)}
+                          {workshopInfo.vatApplicable ? (
+                            <span className="ml-1.5 text-xs font-medium text-[#6B6B6B]">TTC</span>
+                          ) : null}
+                        </p>
                       </div>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                      <span className="rounded-full bg-[#F1F1EF] px-2.5 py-1 font-semibold text-[#6B6B6B]">
+                      <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 font-semibold text-[#6B6B6B] text-[11px]">
                         {paymentLabel}
                       </span>
                     </div>
+                    {resteAPayer > 0 ? (
+                      <p className="mt-3 text-[#6B6B6B] text-[13px]">
+                        Reste à payer <span className="font-semibold text-[#2A9D8F]">{formatEuro(resteAPayer)}</span>
+                      </p>
+                    ) : null}
                   </section>
 
-                  <section className="rounded-[16px] border border-[#EDEAE3]/90 bg-white/95 px-[18px] py-4">
-                    <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Facturation</h3>
-                    <dl className="mt-4 space-y-2 text-[13px]">
-                      <div className="flex justify-between gap-4">
-                        <dt className="text-[#6B6B6B]">Facture</dt>
-                        <dd className="font-medium text-[#1A1916]">
-                          {primaryInvoice ? (
-                            <Link
-                              href="/dashboard/factures"
-                              onClick={() => setSelected("invoice", primaryInvoice.id)}
-                              className="text-[#2A9D8F] hover:underline"
-                            >
-                              Facture {primaryInvoice.number}
-                            </Link>
-                          ) : (
-                            "À créer"
-                          )}
-                        </dd>
-                      </div>
-                      <div className="flex justify-between gap-4">
-                        <dt className="text-[#6B6B6B]">Devis</dt>
-                        <dd className="font-medium text-[#1A1916]">
-                          {acceptedQuote ? (
-                            <Link
-                              href="/dashboard/devis"
-                              onClick={() => setSelected("quote", acceptedQuote.id)}
-                              className="text-[#2A9D8F] hover:underline"
-                            >
-                              Devis {acceptedQuote.number}
-                            </Link>
-                          ) : relatedQuotes.length > 0 ? (
-                            <Link
-                              href="/dashboard/devis"
-                              onClick={() => setSelected("quote", relatedQuotes[0].id)}
-                              className="text-[#2A9D8F] hover:underline"
-                            >
-                              {relatedQuotes.length} devis lié(s)
-                            </Link>
-                          ) : (
-                            "Aucun"
-                          )}
-                        </dd>
-                      </div>
-                      <div className="flex justify-between gap-4">
-                        <dt className="text-[#6B6B6B]">Paiement</dt>
-                        <dd className="font-medium text-[#1A1916]">{paymentLabel}</dd>
-                      </div>
-                    </dl>
-                  </section>
-
-                  <section className="rounded-[16px] border border-[#E7E4DC] px-[14px] py-4">
+                  <section className="rounded-[16px] border border-[#E8E8E5] px-[14px] py-4">
                     <div className="flex items-center justify-between gap-3">
                       <h3 className="font-semibold text-[#1A1916] text-sm">Produits et accessoires</h3>
                       {(selectedRepair.repairSaleLines?.length ?? 0) > 0 ? (
-                        <span className="rounded-full bg-[#E8F7F3] px-3 py-1 font-semibold text-[#147065] text-xs">
+                        <span className="rounded-[7px] border border-[#D7EFEA] bg-[#F6FCFA] px-2 py-0.5 font-semibold text-[#147065] text-xs">
                           {selectedRepair.repairSaleLines?.length ?? 0}
                         </span>
                       ) : null}
@@ -1410,14 +1266,14 @@ export function RepairsWorkspace() {
                       <div className="mt-3 grid grid-cols-[minmax(0,1fr)_80px_auto] gap-2">
                         <select
                           aria-label="Produit du stock"
-                          className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm"
+                          className="h-10 rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-sm"
                           onChange={(event) => {
                             setSelectedStockItemId(event.target.value);
                             setPartQuantity(1);
                           }}
                           value={selectedStockItemId}
                         >
-                          <option value="">Ajouter produit / accessoire</option>
+                          <option value="">Ajouter un accessoire</option>
                           {compatibleStockItems.length > 0 ? (
                             <optgroup label="Compatibles">
                               {compatibleStockItems.map((item) => (
@@ -1427,7 +1283,7 @@ export function RepairsWorkspace() {
                               ))}
                             </optgroup>
                           ) : null}
-                          <optgroup label="Stock général">
+                          <optgroup label="Accessoires généraux">
                             {genericStockItems.map((item) => (
                               <option disabled={item.stock <= 0} key={item.id} value={item.id}>
                                 {item.name} · {formatEuro(item.salePrice)} · ×{item.stock}
@@ -1437,7 +1293,7 @@ export function RepairsWorkspace() {
                         </select>
                         <input
                           aria-label="Quantité"
-                          className="h-10 rounded-[12px] border border-[#E7E4DC] bg-white px-2 text-center text-sm"
+                          className="h-10 rounded-[12px] border border-[#E8E8E5] bg-white px-2 text-center text-sm"
                           max={maxPartQuantity}
                           min={1}
                           onBlur={() => setPartQuantity(normalizePartQuantity(partQuantity))}
@@ -1456,6 +1312,12 @@ export function RepairsWorkspace() {
                         </SecondaryButton>
                       </div>
                     )}
+                    {!primaryInvoice && repairPaidAmount <= 0 && accessoryStockItems.length === 0 ? (
+                      <p className="mt-3 rounded-[12px] border border-[#E8E8E5] bg-[#FAFAFA] p-3 text-[#6B6B6B] text-xs">
+                        Aucun accessoire de comptoir disponible dans le stock. Les pièces techniques restent dans la
+                        zone stock/réparation.
+                      </p>
+                    ) : null}
                     <div className="mt-4 space-y-2">
                       {(selectedRepair.repairSaleLines?.length ?? 0) === 0 ? (
                         <p className="text-[#6B6B6B] text-xs">Aucun produit ajouté à cette réparation.</p>
@@ -1473,7 +1335,7 @@ export function RepairsWorkspace() {
                               </p>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="rounded-full bg-[#FAFAF8] px-2 py-1 text-[10px] font-semibold text-[#6B6B6B]">
+                              <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 text-[10px] font-semibold text-[#6B6B6B]">
                                 {line.status === "draft"
                                   ? "À remettre"
                                   : line.status === "confirmed"
@@ -1525,19 +1387,18 @@ export function RepairsWorkspace() {
                     </div>
                   </section>
 
-                  <section>
-                    <h3 className="mb-3 font-semibold text-[#1A1916] text-sm">Historique & Documents</h3>
-                    <Timeline items={fullRepairHistory} />
-                  </section>
+                  <p className="px-1 pt-1 text-[#6B6B6B] text-[12px] leading-relaxed">
+                    Documents, anti-litige, suivi client et historique complet sont dans le dossier.
+                  </p>
                 </div>
               )}
             </div>
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4 py-14 text-center">
               <DeviceThumb />
-              <p className="text-[#1A1916] text-sm">Sélectionnez une carte ou créez une réparation.</p>
+              <p className="text-[#1A1916] text-sm">Sélectionnez une carte ou créez une prise en charge.</p>
               <SecondaryButton className="h-10" onClick={() => openCreate()}>
-                Nouvelle réparation
+                Nouvelle prise en charge
               </SecondaryButton>
             </div>
           )}
@@ -1599,16 +1460,16 @@ function PlannedEntriesPanel({
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <h2 className="font-semibold text-[#1A1916] text-[15px] tracking-tight md:text-[17px]">Entrées prévues</h2>
-          <p className="mt-1 text-[#8A8984] text-[12px] md:text-[13px]">
-            Rendez-vous confirmés ou en attente, pas encore dans le pipeline réparation.
+          <p className="mt-1 text-[#6B6B6B] text-[12px] md:text-[13px]">
+            Rendez-vous confirmés ou en attente, pas encore dans le pipeline atelier.
           </p>
         </div>
-        <span className="rounded-full bg-[#FAFAF8] px-2.5 py-1 font-semibold text-[#6B6B6B] text-xs">
+        <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 font-semibold text-[#6B6B6B] text-xs">
           {appointments.length}
         </span>
       </div>
       {appointments.length === 0 ? (
-        <div className="rounded-[14px] border border-dashed border-[#E8E8E5] bg-[#FAFAF8] px-4 py-5 text-center text-[#6B6B6B] text-sm">
+        <div className="rounded-[14px] border border-dashed border-[#E8E8E5] bg-[#FAFAFA] px-4 py-5 text-center text-[#6B6B6B] text-sm">
           Aucun rendez-vous à transformer pour le moment.
         </div>
       ) : (
@@ -1618,7 +1479,7 @@ function PlannedEntriesPanel({
             const status = normalizeAppointmentStatus(appointment.status, appointment.confirmed);
             const arrived = status === "Arrivé";
             return (
-              <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FAFAF8] p-4" key={appointment.id}>
+              <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA] p-4" key={appointment.id}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-mono font-semibold text-[#1A1916] text-xs">
@@ -1671,22 +1532,4 @@ function findRepairForAppointment(appointment: Appointment, repairs: { id: strin
 
 function appointmentSortKey(appointment: Appointment) {
   return `${appointment.date || ""} ${appointment.time || ""}`;
-}
-
-function Detail({ label, value }: Readonly<{ label: string; value: ReactNode }>) {
-  return (
-    <div className="flex justify-between gap-4 py-2">
-      <dt className="text-[#6B6B6B]">{label}</dt>
-      <dd className="truncate text-right font-medium text-[#1A1916]">{value ?? "—"}</dd>
-    </div>
-  );
-}
-
-function Line({ label, value }: Readonly<{ label: string; value: string }>) {
-  return (
-    <div className="flex justify-between gap-6">
-      <span className="text-[#6B6B6B]">{label}</span>
-      <span className="truncate font-semibold text-[#1A1916] tabular-nums">{value}</span>
-    </div>
-  );
 }

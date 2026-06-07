@@ -174,7 +174,7 @@ export default function CatalogueAppareilsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher (marque, modèle…)"
-              className="h-10 w-full rounded-[12px] border border-[#E7E4DC] bg-white pr-3 pl-10 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+              className="h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white pr-3 pl-10 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
             />
           </label>
         </Panel>
@@ -189,7 +189,7 @@ export default function CatalogueAppareilsPage() {
               0,
             );
             return (
-              <div className="rounded-[14px] border border-[#E7E4DC] bg-white" key={typeKey}>
+              <div className="rounded-[14px] border border-[#E8E8E5] bg-white" key={typeKey}>
                 <button
                   className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
                   onClick={() => setOpenTypes((p) => ({ ...p, [typeKey]: !typeOpen }))}
@@ -209,7 +209,7 @@ export default function CatalogueAppareilsPage() {
                 </button>
 
                 {typeOpen && (
-                  <div className="border-[#EFEDE6] border-t px-3 py-3">
+                  <div className="border-[#E8E8E5] border-t px-3 py-3">
                     <div className="mb-3 flex flex-wrap items-center gap-2">
                       <SecondaryButton onClick={() => createBrandForType(type)}>
                         <Plus className="mr-2 size-4" /> Ajouter une marque
@@ -234,10 +234,10 @@ export default function CatalogueAppareilsPage() {
                         return (
                           <div
                             key={brandId}
-                            className="rounded-xl border border-[#EFEDE6] bg-white overflow-hidden shadow-sm mb-2"
+                            className="rounded-xl border border-[#E8E8E5] bg-white overflow-hidden shadow-sm mb-2"
                           >
                             <div
-                              className="flex w-full items-center justify-between px-4 py-3 hover:bg-[#FAFAF8] transition cursor-pointer"
+                              className="flex w-full items-center justify-between px-4 py-3 hover:bg-[#FAFAFA] transition cursor-pointer"
                               onClick={() => setOpenBrands((p) => ({ ...p, [brandKey]: !isOpen }))}
                             >
                               <div className="flex items-center gap-3">
@@ -253,7 +253,7 @@ export default function CatalogueAppareilsPage() {
                                   {count} modèles
                                 </span>
                                 <button
-                                  className="p-1 hover:bg-[#F1EFE8] rounded-md transition"
+                                  className="p-1 hover:bg-[#FAFAFA] rounded-md transition"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     createModelForBrand(type, brandId);
@@ -266,19 +266,19 @@ export default function CatalogueAppareilsPage() {
                             </div>
 
                             {isOpen && (
-                              <div className="border-t border-[#EFEDE6] bg-[#FAFAF8]/40 p-3 space-y-3">
+                              <div className="border-t border-[#E8E8E5] bg-[#FAFAFA]/40 p-3 space-y-3">
                                 {[...bySeries.entries()]
                                   .sort((a, b) => a[0].localeCompare(b[0], "fr"))
                                   .map(([series, list]) => (
                                     <div key={series} className="space-y-1">
-                                      <div className="px-2 py-1 text-[10px] font-bold text-[#6B6B6B] uppercase tracking-widest bg-[#F1EFE8]/50 rounded-md inline-block mb-1">
+                                      <div className="px-2 py-1 text-[10px] font-bold text-[#6B6B6B] uppercase tracking-widest bg-[#FAFAFA]/50 rounded-md inline-block mb-1">
                                         {series}
                                       </div>
                                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                                         {list.map((m) => (
                                           <div
                                             key={m.id}
-                                            className={`flex items-center justify-between p-3 rounded-xl border bg-white transition hover:shadow-md group ${m.isActive ? "border-[#E7E4DC]" : "opacity-50 border-dashed"}`}
+                                            className={`flex items-center justify-between p-3 rounded-xl border bg-white transition hover:shadow-md group ${m.isActive ? "border-[#E8E8E5]" : "opacity-50 border-dashed"}`}
                                           >
                                             <div className="flex flex-col">
                                               <span className="font-semibold text-sm text-[#1A1916]">{m.name}</span>
@@ -290,7 +290,7 @@ export default function CatalogueAppareilsPage() {
                                             </div>
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
                                               <button
-                                                className="p-1.5 hover:bg-[#F1EFE8] rounded-lg transition"
+                                                className="p-1.5 hover:bg-[#FAFAFA] rounded-lg transition"
                                                 onClick={() => {
                                                   const newName = window.prompt("Nouveau nom du modèle ?", m.name);
                                                   if (newName && newName !== m.name) {

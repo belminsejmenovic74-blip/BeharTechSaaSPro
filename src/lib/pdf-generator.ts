@@ -6,7 +6,11 @@ import jsPDF from "jspdf";
  * @param element The DOM element to capture.
  * @param filename The name of the file to save.
  */
-export async function generatePdfFromElement(element: HTMLElement, filename: string) {
+export async function generatePdfFromElement(
+  element: HTMLElement,
+  filename: string,
+  mode: "save" | "dataurl" = "save",
+): Promise<string | void> {
   try {
     if (element.dataset.pdfPaginate === "true") {
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
@@ -53,6 +57,7 @@ export async function generatePdfFromElement(element: HTMLElement, filename: str
         subject: "Bon de prise en charge anti-litige",
         creator: "Behar Tech Pro",
       });
+      if (mode === "dataurl") return pdf.output("datauristring");
       pdf.save(filename.endsWith(".pdf") ? filename : `${filename}.pdf`);
       return;
     }
@@ -143,6 +148,7 @@ export async function generatePdfFromElement(element: HTMLElement, filename: str
       creator: "Behar Tech Pro",
     });
 
+    if (mode === "dataurl") return pdf.output("datauristring");
     pdf.save(filename.endsWith(".pdf") ? filename : `${filename}.pdf`);
   } catch (error) {
     console.error("Error generating PDF:", error);

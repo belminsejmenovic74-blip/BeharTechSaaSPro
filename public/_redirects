@@ -1,0 +1,5 @@
+# Netlify — déploiement statique (drag & drop du dossier `out/`).
+# Fallback SPA : toute route non générée statiquement (ex. tokens publics)
+# retombe sur l'app, qui gère la navigation côté client. Netlify n'applique
+# ce fallback que si aucun fichier statique ne correspond déjà.
+/*    /index.html    200

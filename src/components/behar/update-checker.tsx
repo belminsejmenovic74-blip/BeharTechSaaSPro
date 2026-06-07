@@ -104,9 +104,9 @@ export function UpdateChecker() {
   // Cas web : pas d'updater, juste un message rassurant.
   if (!isDesktop) {
     return (
-      <div className="rounded-[14px] border border-[#E7E4DC] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+      <div className="rounded-[14px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
         <div className="flex items-start gap-3">
-          <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F]">
+          <span className="grid size-9 shrink-0 place-items-center text-[#2A9D8F]">
             <CheckCircle2 className="size-[18px]" strokeWidth={2.2} />
           </span>
           <div className="min-w-0 flex-1">
@@ -123,9 +123,9 @@ export function UpdateChecker() {
 
   // Cas desktop (Tauri) : UI complète check / install.
   return (
-    <div className="rounded-[14px] border border-[#E7E4DC] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+    <div className="rounded-[14px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
       <div className="flex items-start gap-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F]">
+        <span className="grid size-9 shrink-0 place-items-center text-[#2A9D8F]">
           <ShieldCheck className="size-[18px]" strokeWidth={2.2} />
         </span>
         <div className="min-w-0 flex-1">
@@ -137,7 +137,7 @@ export function UpdateChecker() {
 
           {status === "downloading" && (
             <div className="mt-3">
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#F1F1EF]">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#F7F7F7]">
                 <div className="h-full rounded-full bg-[#2A9D8F] transition-all" style={{ width: `${progress}%` }} />
               </div>
               <p className="mt-1.5 text-[#6B6B6B] text-[11.5px]">Téléchargement {progress}%…</p>
@@ -161,7 +161,7 @@ export function UpdateChecker() {
               type="button"
               onClick={check}
               disabled={status === "checking" || status === "downloading"}
-              className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E7E4DC] bg-white px-3.5 text-[#1A1916] text-[13px] font-semibold transition active:scale-95 disabled:opacity-50"
+              className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3.5 text-[#1A1916] text-[13px] font-semibold transition active:scale-95 disabled:opacity-50"
             >
               {status === "checking" ? (
                 <Loader2 className="size-4 animate-spin" />

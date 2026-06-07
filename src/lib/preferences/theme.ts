@@ -1,12 +1,8 @@
-export const THEME_MODE_OPTIONS = [
-  { label: "Light", value: "light" },
-  { label: "Dark", value: "dark" },
-  { label: "System", value: "system" },
-] as const;
+export const THEME_MODE_OPTIONS = [{ label: "Light", value: "light" }] as const;
 
-export const THEME_MODE_VALUES = THEME_MODE_OPTIONS.map((o) => o.value);
+export const THEME_MODE_VALUES = ["light", "dark", "system"] as const;
 export type ThemeMode = (typeof THEME_MODE_VALUES)[number];
-export type ResolvedThemeMode = "light" | "dark";
+export type ResolvedThemeMode = "light";
 
 // --- generated:themePresets:start ---
 
@@ -16,7 +12,7 @@ export const THEME_PRESET_OPTIONS = [
     value: "default",
     primary: {
       light: "#2a9d8f",
-      dark: "#ededed",
+      dark: "#2a9d8f",
     },
   },
   {

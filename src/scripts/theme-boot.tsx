@@ -70,7 +70,7 @@ export function ThemeBootScript() {
           return value;
         }
 
-        var rawMode = readPreference("theme_mode", DEFAULTS.theme_mode);
+        var rawMode = "light";
         var rawPreset = readPreference("theme_preset", DEFAULTS.theme_preset);
         var rawFont = readPreference("font", DEFAULTS.font);
         var rawContentLayout = readPreference("content_layout", DEFAULTS.content_layout);
@@ -78,21 +78,18 @@ export function ThemeBootScript() {
         var rawSidebarVariant = readPreference("sidebar_variant", DEFAULTS.sidebar_variant);
         var rawSidebarCollapsible = readPreference("sidebar_collapsible", DEFAULTS.sidebar_collapsible);
 
-        var isValidMode = rawMode === "dark" || rawMode === "light" || rawMode === "system";
+        var isValidMode = rawMode === "light";
         var mode = isValidMode ? rawMode : DEFAULTS.theme_mode;
-        var resolvedMode =
-          mode === "system" && window.matchMedia
-            ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-            : mode;
-        var preset = rawPreset || DEFAULTS.theme_preset;
+        var resolvedMode = "light";
+        var preset = rawPreset === "default" ? rawPreset : DEFAULTS.theme_preset;
         var font = rawFont || DEFAULTS.font;
         var contentLayout = rawContentLayout || DEFAULTS.content_layout;
         var navbarStyle = rawNavbarStyle || DEFAULTS.navbar_style;
         var sidebarVariant = rawSidebarVariant || DEFAULTS.sidebar_variant;
         var sidebarCollapsible = rawSidebarCollapsible || DEFAULTS.sidebar_collapsible;
 
-        root.classList.toggle("dark", resolvedMode === "dark");
-        root.setAttribute("data-theme-mode", mode);
+        root.classList.remove("dark");
+        root.setAttribute("data-theme-mode", "light");
         root.setAttribute("data-theme-preset", preset);
         root.setAttribute("data-font", font);
         root.setAttribute("data-content-layout", contentLayout);
@@ -100,7 +97,7 @@ export function ThemeBootScript() {
         root.setAttribute("data-sidebar-variant", sidebarVariant);
         root.setAttribute("data-sidebar-collapsible", sidebarCollapsible);
 
-        root.style.colorScheme = resolvedMode === "dark" ? "dark" : "light";
+        root.style.colorScheme = "light";
 
       } catch (e) {
         console.warn("ThemeBootScript error:", e);

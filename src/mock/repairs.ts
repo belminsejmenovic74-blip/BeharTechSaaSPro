@@ -77,7 +77,7 @@ export const dashboardRepairColumns = [
     ],
   },
   {
-    title: "Réparation",
+    title: "En réparation",
     count: 3,
     cards: [
       {
@@ -87,7 +87,7 @@ export const dashboardRepairColumns = [
         issue: "Écran cassé",
         customer: "Belmin",
         time: "Aujourd'hui, 10:15",
-        status: "Préparation / Réparation",
+        status: "En réparation",
       },
       {
         id: "repair_iphone_12",
@@ -96,7 +96,7 @@ export const dashboardRepairColumns = [
         issue: "Remplacement batterie",
         customer: "Laura P.",
         time: "Aujourd'hui, 09:47",
-        status: "Préparation / Réparation",
+        status: "En réparation",
       },
       {
         id: "repair_macbook_pro",
@@ -105,7 +105,7 @@ export const dashboardRepairColumns = [
         issue: "Ventilateur bruyant",
         customer: "Antoine G.",
         time: "Hier, 13:30",
-        status: "Préparation / Réparation",
+        status: "En réparation",
       },
     ],
   },
@@ -202,10 +202,10 @@ export const selectedRepair = {
   imei: "35 123456 789012 3",
   issue: "Écran cassé",
   droppedAt: "Aujourd'hui, 10:15",
-  status: "Préparation / Réparation",
+  status: "En réparation",
   estimatedDoneAt: "Demain, 15:00",
   amount: "189,00 €",
   notes: "Le client souhaite conserver le True Tone.",
   parts: ["Écran OLED iPhone 13"],
-  history: ["Réparation créée", "Diagnostic terminé", "Réparation démarrée"],
+  history: ["Prise en charge créée", "Diagnostic terminé", "Dossier passé en réparation"],
 };

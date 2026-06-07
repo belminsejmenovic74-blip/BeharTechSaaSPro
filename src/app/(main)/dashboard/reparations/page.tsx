@@ -6,9 +6,9 @@ import { RepairsWorkspace } from "@/components/behar/repairs-workspace";
 export default function RepairsPage() {
   return (
     <PageShell
-      searchPlaceholder="Rechercher une réparation, client, appareil..."
+      searchPlaceholder="Rechercher un dossier, client, appareil..."
       title="Réparations"
-      subtitle="Priorisez les dossiers à faire avancer."
+      subtitle="Suivi des réparations en cours."
     >
       <Suspense fallback={null}>
         <RepairsWorkspace />

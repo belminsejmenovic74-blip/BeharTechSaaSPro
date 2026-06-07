@@ -11,7 +11,7 @@ export const dashboardKpis = [
   },
   {
     shop_id: "shop_atelier_belmin",
-    label: "Ticket moyen",
+    label: "Dossier moyen",
     value: "147 €",
     trend: "6,3 %",
     helper: "vs mois dernier",
@@ -19,7 +19,7 @@ export const dashboardKpis = [
   },
   {
     shop_id: "shop_atelier_belmin",
-    label: "Réparations en cours",
+    label: "Dossiers en cours",
     value: "24",
     trend: "20,0 %",
     helper: "vs hier",

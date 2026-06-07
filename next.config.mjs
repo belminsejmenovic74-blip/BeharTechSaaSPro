@@ -5,7 +5,9 @@ const projectRoot = dirname(fileURLToPath(import.meta.url));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "export",
+  // Export statique (dossier `out/` à glisser sur Netlify) uniquement quand
+  // STATIC_EXPORT=true (cf. `npm run build:static`). Sinon : runtime serveur.
+  ...(process.env.STATIC_EXPORT === "true" ? { output: "export" } : {}),
   outputFileTracingRoot: projectRoot,
   env: {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
@@ -16,10 +18,9 @@ const nextConfig = {
   },
   allowedDevOrigins: ["127.0.0.1", "localhost"],
 
-  // Apache / mutualisé IONOS : chaque page → dossier/index.html
+  // Déploiement runtime serveur (Vercel/Netlify Next runtime) : requis pour les API publiques Supabase.
   trailingSlash: true,
 
-  // L'optimisation d'images Next.js nécessite un serveur Node.js — désactivé en export statique
   images: {
     unoptimized: true,
   },

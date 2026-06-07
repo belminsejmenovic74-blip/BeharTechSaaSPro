@@ -77,12 +77,12 @@ export function DemoWorkflow() {
     window.setTimeout(() => setState((current) => ({ ...current, toast: "" })), 2800);
   };
 
-  const simulateMessage = (channel: "SMS" | "Email") => {
+  const addMessage = (channel: "SMS" | "Email") => {
     const log = channel === "SMS" ? initialMessageLogs[0] : initialMessageLogs[1];
     setState((current) => ({
       ...current,
       messages: current.messages.some((item) => item.id === log.id) ? current.messages : [...current.messages, log],
-      toast: `${channel} simulé ajouté à l’historique message_logs.`,
+      toast: `${channel} ajouté à l’historique message_logs.`,
     }));
     window.setTimeout(() => setState((current) => ({ ...current, toast: "" })), 2800);
   };
@@ -95,10 +95,10 @@ export function DemoWorkflow() {
         <Panel className="p-6">
           <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="font-medium text-[#2A9D8F] text-sm">Parcours guidé · Données locales</p>
+              <p className="font-medium text-[#2A9D8F] text-sm">Parcours guidé · Données atelier</p>
               <h2 className="mt-1 font-semibold text-2xl text-[#1A1916]">Parcours complet Belmin / iPhone 13</h2>
               <p className="mt-2 text-[#6B6B6B] text-sm">
-                Clique les étapes dans l’ordre pour simuler client, réparation, devis, facture, paiement et documents.
+                Clique les étapes dans l’ordre pour parcourir client, dossier, devis, facture, règlement et documents.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -115,7 +115,7 @@ export function DemoWorkflow() {
             </div>
           </div>
 
-          <div className="mb-6 rounded-2xl border border-black/[0.07] bg-[#FAFAF8] p-4">
+          <div className="mb-6 rounded-2xl border border-black/[0.07] bg-[#FAFAFA] p-4">
             <div className="mb-2 flex justify-between text-sm">
               <span className="font-medium text-[#1A1916]">Progression</span>
               <span className="font-semibold text-[#2A9D8F]">{progress}%</span>
@@ -145,7 +145,7 @@ export function DemoWorkflow() {
                   type="button"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#E8F7F3] text-[#2A9D8F]">
+                    <span className="grid size-11 shrink-0 place-items-center text-[#2A9D8F]">
                       {done ? <CheckCircle2 className="size-5" /> : <Icon className="size-5" />}
                     </span>
                     <span>
@@ -163,7 +163,7 @@ export function DemoWorkflow() {
           <div className="mb-5 flex items-start justify-between">
             <div>
               <h2 className="font-semibold text-[#1A1916] text-xl">Résumé live</h2>
-              <p className="mt-1 text-[#6B6B6B] text-sm">État local du parcours guidé</p>
+              <p className="mt-1 text-[#6B6B6B] text-sm">État du parcours guidé</p>
             </div>
             <StatusBadge status={state.invoicePaid ? "Payée" : "Brouillon"} />
           </div>
@@ -183,13 +183,13 @@ export function DemoWorkflow() {
               <WalletCards className="size-4" />
               Marquer comme payé
             </PrimaryButton>
-            <SecondaryButton onClick={() => simulateMessage("SMS")}>
+            <SecondaryButton onClick={() => addMessage("SMS")}>
               <Send className="size-4" />
-              Envoyer SMS simulé
+              Ajouter SMS client
             </SecondaryButton>
-            <SecondaryButton onClick={() => simulateMessage("Email")}>
+            <SecondaryButton onClick={() => addMessage("Email")}>
               <Send className="size-4" />
-              Envoyer email simulé
+              Ajouter email client
             </SecondaryButton>
           </div>
         </Panel>
@@ -222,10 +222,10 @@ export function DemoWorkflow() {
       <Panel className="p-6">
         <h2 className="mb-4 flex items-center gap-2 font-semibold text-[#1A1916] text-xl">
           <Sparkles className="size-5 text-[#2A9D8F]" />
-          Historique message_logs simulé
+          Historique message_logs
         </h2>
         {state.messages.length === 0 ? (
-          <p className="text-[#6B6B6B] text-sm">Aucun message simulé pour l’instant.</p>
+          <p className="text-[#6B6B6B] text-sm">Aucun message pour l’instant.</p>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
             {state.messages.map((message) => (

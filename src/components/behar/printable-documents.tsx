@@ -1,10 +1,11 @@
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 import {
   type Customer,
   workshopInfo as defaultWorkshopInfo,
   formatEuro,
   getInvoiceTotal,
+  getQuoteDevices,
   getQuoteTotal,
   getVatSummary,
   type Invoice,
@@ -17,14 +18,16 @@ import {
   type StockItem,
   type WorkshopInfo,
 } from "@/lib/behar-store";
-import { formatDeviceLabel } from "@/lib/format-device";
+import { formatBrandModel, formatDeviceLabel } from "@/lib/format-device";
+import { generateQrDataUrl, publicAbsoluteUrl } from "@/lib/public-link";
+import { formatIntakeBonNumber } from "@/lib/utils";
 
 const COLORS = {
   ink: "#1A1916",
   muted: "#6B6B6B",
   accent: "#2A9D8F",
   line: "#E8E8E5",
-  soft: "#FAFAF8",
+  soft: "#FAFAFA",
   accentSoft: "#EAF6F2",
 };
 
@@ -33,7 +36,7 @@ const COLORS = {
  * Le strip en haut + le chip du titre permettent d'identifier le type au
  * premier coup d'œil même si le destinataire reçoit plusieurs PDF.
  */
-export type PrintableDocType = "devis" | "facture" | "recu" | "bon-prise-en-charge";
+export type PrintableDocType = "devis" | "facture" | "recu" | "recu-vente" | "bon-prise-en-charge";
 
 const DOC_THEME: Record<
   PrintableDocType,
@@ -55,6 +58,13 @@ const DOC_THEME: Record<
   },
   recu: {
     label: "REÇU DE PAIEMENT",
+    accent: "#2A9D8F",
+    soft: "#EAF6F2",
+    ink: "#167B70",
+    chipText: "#167B70",
+  },
+  "recu-vente": {
+    label: "REÇU DE VENTE",
     accent: "#2A9D8F",
     soft: "#EAF6F2",
     ink: "#167B70",
@@ -125,7 +135,7 @@ function Badge({ children, tone = "accent" }: Readonly<{ children: ReactNode; to
   return (
     <span
       className={`inline-flex rounded-full px-3 py-1 font-semibold text-[11px] ${
-        tone === "accent" ? "bg-[#EAF6F2] text-[#167B70]" : "bg-[#FAFAF8] text-[#6B6B6B]"
+        tone === "accent" ? "bg-[#EAF6F2] text-[#167B70]" : "bg-[#FAFAFA] text-[#6B6B6B]"
       }`}
     >
       {children}
@@ -167,14 +177,61 @@ function RepairCard({
   invoice,
   quote,
 }: Readonly<{ repair?: Repair | null; invoice?: Invoice; quote?: Quote }>) {
+  const deviceType = repair?.deviceType ?? quote?.deviceType;
+  const brandName = repair?.brandName ?? quote?.brandName;
+  const modelName = repair?.deviceModel ?? repair?.model ?? quote?.deviceModel;
+  const device = repair
+    ? deviceName(repair)
+    : formatBrandModel(brandName, modelName, text(quote?.device, "Appareil non renseigné"));
+  const issue = repair?.issue ?? quote?.issue;
+  const statusLabel = quote ? "Statut du devis" : invoice ? "Statut de la facture" : "Statut du dossier";
+  const statusValue = quote?.status ?? invoice?.status ?? repair?.status;
   return (
     <PremiumCard title="Dossier / Appareil">
       <KeyValue label="Dossier" value={dash(repair?.number ?? invoice?.sourceNumber ?? quote?.number)} />
-      <KeyValue label="Appareil" value={deviceName(repair)} />
-      <KeyValue label="Intervention" value={dash(repair?.issue)} />
-      <KeyValue label="Statut" value={dash(repair?.status ?? invoice?.status ?? quote?.status)} />
+      <KeyValue label="Type" value={dash(deviceType)} />
+      <KeyValue label="Marque" value={dash(brandName)} />
+      <KeyValue label="Modèle" value={dash(modelName)} />
+      <KeyValue label="Appareil" value={device} />
+      <KeyValue label="Intervention" value={dash(issue)} />
+      <KeyValue label={statusLabel} value={dash(statusValue)} />
       <KeyValue label="Prise en charge" value={repair?.droppedAt ? dateLabel(repair.droppedAt) : "Non renseigné"} />
     </PremiumCard>
+  );
+}
+
+/**
+ * QR de suivi imprimé sur le bon de prise en charge : encode le lien public
+ * sécurisé du dossier pour que le client suive sa réparation depuis son
+ * téléphone. Génération locale (lib qrcode), prête bien avant l'impression.
+ */
+function DocumentTrackingQr({ url }: Readonly<{ url?: string }>) {
+  const [qr, setQr] = useState("");
+  useEffect(() => {
+    if (!url) return;
+    let active = true;
+    generateQrDataUrl(publicAbsoluteUrl(url))
+      .then((data) => {
+        if (active) setQr(data);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [url]);
+  if (!url || !qr) return null;
+  return (
+    <div className="flex shrink-0 flex-col items-center gap-1.5">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        alt="QR code de suivi de la réparation"
+        className="size-[96px] rounded-[8px] border border-[#E8E8E5] bg-white p-1"
+        src={qr}
+      />
+      <p className="max-w-[104px] text-center text-[9px] leading-tight text-[#6B6B6B]">
+        Scannez pour suivre votre réparation
+      </p>
+    </div>
   );
 }
 
@@ -184,17 +241,19 @@ function DocumentHeader({
   date,
   badge,
   workshop,
+  qrSlot,
 }: Readonly<{
   type: PrintableDocType;
   number?: string;
   date?: string;
   badge?: string;
   workshop: WorkshopInfo;
+  qrSlot?: ReactNode;
 }>) {
   const atelierName = text(workshop.name, "BEHAR • TECH PRO");
   const theme = DOC_THEME[type];
   return (
-    <header className="flex items-start justify-between gap-8 border-b border-[#E8E8E5] pb-6">
+    <header className="flex flex-col items-start justify-between gap-5 border-b border-[#E8E8E5] pb-6 sm:flex-row sm:gap-8">
       <div className="min-w-0 max-w-[470px] text-left">
         <div className="text-[12px] leading-relaxed text-[#6B6B6B]">
           <p className="font-semibold text-[#1A1916] text-[15px] tracking-tight">{atelierName}</p>
@@ -209,22 +268,25 @@ function DocumentHeader({
         </div>
       </div>
 
-      <div className="min-w-[260px] text-right">
-        <span
-          className="inline-flex max-w-full whitespace-nowrap rounded-full px-3.5 py-1.5 font-bold text-[11px] uppercase tracking-[0.16em]"
-          style={{ backgroundColor: theme.soft, color: theme.chipText }}
-        >
-          {theme.label}
-        </span>
-        <p className="mt-4 break-words font-mono font-semibold text-[#1A1916] text-[20px] tracking-tight">
-          {dash(number)}
-        </p>
-        <p className="mt-1 text-[#6B6B6B] text-[12px]">Émis le {date ? dateLabel(date) : "Non renseigné"}</p>
-        {badge ? (
-          <div className="mt-3">
-            <Badge>{badge}</Badge>
-          </div>
-        ) : null}
+      <div className="flex w-full flex-col items-start gap-5 sm:w-auto sm:flex-row sm:items-start sm:justify-end">
+        <div className="min-w-0 text-left sm:min-w-[200px] sm:text-right">
+          <span
+            className="inline-flex max-w-full whitespace-nowrap rounded-full px-3.5 py-1.5 font-bold text-[11px] uppercase tracking-[0.16em]"
+            style={{ backgroundColor: theme.soft, color: theme.chipText }}
+          >
+            {theme.label}
+          </span>
+          <p className="mt-4 break-words font-mono font-semibold text-[#1A1916] text-[20px] tracking-tight">
+            {dash(number)}
+          </p>
+          <p className="mt-1 text-[#6B6B6B] text-[12px]">Émis le {date ? dateLabel(date) : "Non renseigné"}</p>
+          {badge ? (
+            <div className="mt-3">
+              <Badge>{badge}</Badge>
+            </div>
+          ) : null}
+        </div>
+        {qrSlot ?? null}
       </div>
     </header>
   );
@@ -237,7 +299,7 @@ function DocumentFooter({
 }: Readonly<{ workshop: WorkshopInfo; page: number; pageCount: number }>) {
   const methods = workshop.acceptedPaymentMethods?.filter(Boolean) ?? [];
   return (
-    <footer className="mt-auto border-t border-[#E8E8E5] pt-6 text-[#8A8984] text-[10px] leading-relaxed">
+    <footer className="mt-auto border-t border-[#E8E8E5] pt-6 text-[#6B6B6B] text-[10px] leading-relaxed">
       {methods.length ? <p>Moyens de paiement acceptés : {methods.join(" · ")}</p> : null}
       {workshop.documentFooter ? <p>{text(workshop.documentFooter)}</p> : null}
       <p>
@@ -257,6 +319,7 @@ function DocumentLayout({
   children,
   page = 1,
   pageCount = 1,
+  qrSlot,
 }: Readonly<{
   type: PrintableDocType;
   number?: string;
@@ -266,17 +329,18 @@ function DocumentLayout({
   children: ReactNode;
   page?: number;
   pageCount?: number;
+  qrSlot?: ReactNode;
 }>) {
   const ws = workshop ?? defaultWorkshopInfo;
   const theme = DOC_THEME[type];
   return (
     <article
-      className="print-document pdf-page relative mx-auto flex min-h-[1123px] w-full max-w-[860px] flex-col overflow-hidden rounded-[18px] border border-[#E8E8E5] bg-white p-8 text-[#1A1916] shadow-[0_18px_60px_rgba(26,25,22,0.06)] print:min-h-screen print:rounded-none print:border-0 print:p-6 print:shadow-none"
+      className="print-document pdf-page relative mx-auto flex min-h-[1123px] w-full max-w-[860px] flex-col overflow-hidden rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-[#1A1916] shadow-[0_18px_60px_rgba(26,25,22,0.06)] sm:p-8 print:min-h-0 print:rounded-none print:border-0 print:p-0 print:shadow-none"
       style={{ color: COLORS.ink }}
     >
       {/* Bande de couleur en haut du doc, code visuel par type */}
       <span aria-hidden className="absolute inset-x-0 top-0 h-1.5" style={{ backgroundColor: theme.accent }} />
-      <DocumentHeader badge={badge} date={date} number={number} type={type} workshop={ws} />
+      <DocumentHeader badge={badge} date={date} number={number} qrSlot={qrSlot} type={type} workshop={ws} />
       <main className="flex-1 space-y-5 py-6">{children}</main>
       <DocumentFooter workshop={ws} page={page} pageCount={pageCount} />
     </article>
@@ -303,18 +367,18 @@ function PremiumTable({ rows, repair }: Readonly<{ rows: QuoteLine[]; repair?: R
     : [{ id: "empty", description: "Prestation atelier", quantity: 1, unitPrice: 0, total: 0 }];
   return (
     <section className="print-avoid-break overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-white print:rounded-none">
-      <div className="grid grid-cols-[1fr_70px_112px_112px] bg-[#FAFAF8] px-4 py-3 font-semibold text-[#6B6B6B] text-[11px] uppercase tracking-wide">
+      <div className="grid grid-cols-[minmax(0,1fr)_42px_90px] bg-[#FAFAFA] px-3 py-3 font-semibold text-[#6B6B6B] text-[10px] uppercase tracking-wide sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 sm:text-[11px] print:grid-cols-[1fr_70px_112px_112px] print:px-4 print:text-[11px]">
         <span>Désignation</span>
         <span className="text-center">Qté</span>
-        <span className="text-right">Prix unitaire</span>
+        <span className="hidden text-right sm:block print:block">Prix unitaire</span>
         <span className="text-right">Total</span>
       </div>
       <div className="divide-y divide-[#E8E8E5]">
         {safeRows.map((line) => (
-          <div className="grid grid-cols-[1fr_70px_112px_112px] items-center px-4 py-4 text-[13px]" key={line.id}>
+          <div className="grid grid-cols-[minmax(0,1fr)_42px_90px] items-center px-3 py-4 text-[12px] sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 sm:text-[13px] print:grid-cols-[1fr_70px_112px_112px] print:px-4 print:text-[13px]" key={line.id}>
             <span className="font-medium text-[#1A1916]">{serviceDescription(line, repair)}</span>
             <span className="text-center text-[#6B6B6B]">{text(line.quantity, "1")}</span>
-            <span className="text-right text-[#6B6B6B]">{money(line.unitPrice)}</span>
+            <span className="hidden text-right text-[#6B6B6B] sm:block print:block">{money(line.unitPrice)}</span>
             <span className="text-right font-semibold">
               {money(line.total ?? (line.quantity ?? 0) * (line.unitPrice ?? 0))}
             </span>
@@ -322,6 +386,46 @@ function PremiumTable({ rows, repair }: Readonly<{ rows: QuoteLine[]; repair?: R
         ))}
       </div>
     </section>
+  );
+}
+
+function QuoteDevicesTable({ quote }: Readonly<{ quote: Quote }>) {
+  const devices = getQuoteDevices(quote);
+  if (!devices.length) return <PremiumTable rows={quote.lines ?? []} />;
+  return (
+    <div className="space-y-4">
+      {devices.map((device, index) => (
+        <section className="print-avoid-break overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-white print:rounded-none" key={device.id}>
+          <h3 className="bg-white px-4 py-3 font-bold text-[#167B70] text-[13px]">
+            Appareil {index + 1} — {formatBrandModel(device.brand, device.model, `Appareil ${index + 1}`)}
+          </h3>
+          <div className="grid grid-cols-[minmax(0,1fr)_42px_90px] bg-[#FAFAFA] px-3 py-3 font-semibold text-[#6B6B6B] text-[10px] uppercase tracking-wide sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 sm:text-[11px] print:grid-cols-[1fr_70px_112px_112px] print:px-4 print:text-[11px]">
+            <span>Désignation</span>
+            <span className="text-center">Qté</span>
+            <span className="hidden text-right sm:block print:block">Prix unitaire</span>
+            <span className="text-right">Montant</span>
+          </div>
+          <div className="divide-y divide-[#E8E8E5]">
+            {device.services.map((service) => (
+              <div className="grid grid-cols-[minmax(0,1fr)_42px_90px] items-center px-3 py-3 text-[12px] sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 sm:text-[13px] print:grid-cols-[1fr_70px_112px_112px] print:px-4 print:text-[13px]" key={service.id}>
+                <span className="font-medium text-[#1A1916]">{service.label}</span>
+                <span className="text-center text-[#6B6B6B]">{service.quantity}</span>
+                <span className="hidden text-right text-[#6B6B6B] sm:block print:block">{money(service.priceTtc)}</span>
+                <span className="text-right font-semibold">{money(service.priceTtc * service.quantity)}</span>
+              </div>
+            ))}
+            {device.accessories.map((accessory) => (
+              <div className="grid grid-cols-[minmax(0,1fr)_42px_90px] items-center px-3 py-3 text-[12px] sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 sm:text-[13px] print:grid-cols-[1fr_70px_112px_112px] print:px-4 print:text-[13px]" key={accessory.id}>
+                <span className="font-medium text-[#1A1916]">{accessory.label}</span>
+                <span className="text-center text-[#6B6B6B]">1</span>
+                <span className="hidden text-right text-[#6B6B6B] sm:block print:block">{accessory.included ? "inclus" : money(accessory.priceTtc ?? 0)}</span>
+                <span className="text-right font-semibold">{accessory.included ? "inclus" : money(accessory.priceTtc ?? 0)}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
   );
 }
 
@@ -337,7 +441,7 @@ function TotalsCard({
   const finalTotal = ws.vatApplicable ? vat.ttc : total;
   const balance = Math.max(finalTotal - paid, 0);
   return (
-    <section className="ml-auto w-full max-w-[360px] rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] p-4">
+    <section className="ml-auto w-full max-w-[360px] rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA] p-4">
       {ws.vatApplicable ? (
         <>
           <TotalLine label="Sous-total HT" value={money(vat.ht)} />
@@ -372,9 +476,8 @@ function TotalLine({ label, value, emphasize }: Readonly<{ label: string; value:
 
 function SignatureGrid({ accord = false }: Readonly<{ accord?: boolean }>) {
   return (
-    <section className="grid gap-5 md:grid-cols-2">
+    <section className="grid gap-5">
       <SignatureBox title={accord ? "Bon pour accord" : "Signature client"} />
-      <SignatureBox title="Responsable atelier" />
     </section>
   );
 }
@@ -390,7 +493,7 @@ function SignatureBox({ title }: Readonly<{ title: string }>) {
 
 function NoticeCard({ title, children }: Readonly<{ title: string; children: ReactNode }>) {
   return (
-    <section className="rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] p-5">
+    <section className="rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA] p-5">
       <h3 className="mb-2 font-semibold text-[#1A1916] text-[13px]">{title}</h3>
       <div className="text-[#6B6B6B] text-[12px] leading-relaxed">{children}</div>
     </section>
@@ -470,7 +573,7 @@ function PatternMini({ points }: Readonly<{ points?: number[] }>) {
         return (
           <span
             className={`grid size-5 place-items-center rounded-full border text-[8px] font-bold ${
-              order ? "border-[#2A9D8F] bg-[#EAF6F2] text-[#167B70]" : "border-[#D8D8D2] bg-white text-transparent"
+              order ? "border-[#2A9D8F] bg-[#EAF6F2] text-[#167B70]" : "border-[#DADADA] bg-white text-transparent"
             }`}
             key={point}
           >
@@ -488,12 +591,12 @@ function IntakeSignatureBlock({ repair }: Readonly<{ repair: Repair }>) {
   const hasSignature = Boolean(intake?.signatureDataUrl);
   return (
     <IntakeBox title="Signature">
-      <div className="min-h-[92px] rounded-[8px] border border-dashed border-[#D8D8D2] bg-[#FAFAF8] p-2">
+      <div className="min-h-[92px] rounded-[8px] border border-dashed border-[#DADADA] bg-[#FAFAFA] p-2">
         {hasSignature ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img alt="Signature client" className="h-[64px] w-full object-contain" src={intake?.signatureDataUrl} />
         ) : (
-          <div className="grid h-[64px] place-items-center text-[#8A8984] text-[11px]">À signer</div>
+          <div className="grid h-[64px] place-items-center text-[#6B6B6B] text-[11px]">À signer</div>
         )}
       </div>
       <div className="mt-2 grid gap-1">
@@ -529,6 +632,7 @@ export function RepairIntakeDocument({
   const hasPhotos = photos.length > 0;
   const pageCount = hasPhotos ? 2 : 1;
   const accessories = intakeAccessories(repair);
+  const hasCustomerValidation = customerValidationRows.every(([, key]) => Boolean(repair.intakeCondition?.[key]));
   const isValidated = Boolean(
     repair.intakeCondition?.customerConfirmed &&
       repair.intakeCondition?.diagnosticAuthorized &&
@@ -544,12 +648,13 @@ export function RepairIntakeDocument({
     >
       <DocumentLayout
         type="bon-prise-en-charge"
-        number={repair.number}
+        number={formatIntakeBonNumber(repair.number)}
         date={repair.droppedAt}
         badge={isValidated ? "Signé" : "À signer"}
         workshop={ws}
         page={1}
         pageCount={pageCount}
+        qrSlot={<DocumentTrackingQr url={repair.publicAccess?.url} />}
       >
         {/* Client + Appareil */}
         <div className="grid grid-cols-2 gap-3">
@@ -578,6 +683,21 @@ export function RepairIntakeDocument({
             <IntakeKeyValue label="Date dépôt" value={dateLabel(repair.droppedAt)} />
           </div>
         </IntakeBox>
+
+        {/* Montant estimé — le client voit le prix convenu au dépôt. Mention
+            « sous réserve » car le tarif peut évoluer après diagnostic. */}
+        <section className="flex items-center justify-between gap-4 rounded-[10px] border border-[#2A9D8F] bg-[#EAF6F2] px-4 py-3">
+          <div className="min-w-0">
+            <p className="font-bold text-[#167B70] text-[12px] uppercase tracking-wide">Montant estimé</p>
+            <p className="mt-0.5 text-[#6B6B6B] text-[10px] leading-tight">
+              Estimation convenue au dépôt — susceptible d'évoluer après diagnostic.
+            </p>
+          </div>
+          <p className="shrink-0 font-mono font-bold text-[#1A1916] text-[22px] tracking-tight">
+            {formatEuro(repair.total ?? repair.amount ?? 0)}{" "}
+            <span className="text-[#6B6B6B] text-[12px]">TTC</span>
+          </p>
+        </section>
 
         {/* État d'entrée — compact 2 col */}
         <section className="overflow-hidden rounded-[10px] border border-[#E8E8E5] bg-white">
@@ -614,32 +734,38 @@ export function RepairIntakeDocument({
           </IntakeBox>
         </div>
 
-        {/* Validation + Signature */}
-        <div className="grid grid-cols-[1.35fr_1fr] gap-3">
-          <IntakeBox title="Validation client">
-            <div className="space-y-1.5 text-[11.5px] leading-relaxed">
-              {customerValidationRows.map(([label, key]) => {
-                const checked = Boolean(repair.intakeCondition?.[key]);
-                return (
-                  <p key={key} className="flex items-start gap-2">
-                    <span
-                      className="mt-0.5 inline-flex size-3.5 shrink-0 items-center justify-center rounded-[3px] border text-[9px] font-bold leading-none"
-                      style={{
-                        borderColor: checked ? "#2A9D8F" : "#CFCFCA",
-                        backgroundColor: checked ? "#EAF6F2" : "white",
-                        color: "#167B70",
-                      }}
-                    >
-                      {checked ? "✓" : ""}
-                    </span>
-                    {label}
-                  </p>
-                );
-              })}
-            </div>
-          </IntakeBox>
+        {/* Validation client : affichée uniquement si elle a réellement été
+            collectée au moment de la prise en charge (sinon on n'affiche pas
+            de cases vides — incohérentes avec le formulaire de création). */}
+        {hasCustomerValidation ? (
+          <div className="grid grid-cols-[1.35fr_1fr] gap-3">
+            <IntakeBox title="Validation client">
+              <div className="space-y-1.5 text-[11.5px] leading-relaxed">
+                {customerValidationRows.map(([label, key]) => {
+                  const checked = Boolean(repair.intakeCondition?.[key]);
+                  return (
+                    <p key={key} className="flex items-start gap-2">
+                      <span
+                        className="mt-0.5 inline-flex size-3.5 shrink-0 items-center justify-center rounded-[3px] border text-[9px] font-bold leading-none"
+                        style={{
+                          borderColor: checked ? "#2A9D8F" : "#CFCFCA",
+                          backgroundColor: checked ? "#EAF6F2" : "white",
+                          color: "#167B70",
+                        }}
+                      >
+                        {checked ? "✓" : ""}
+                      </span>
+                      {label}
+                    </p>
+                  );
+                })}
+              </div>
+            </IntakeBox>
+            <IntakeSignatureBlock repair={repair} />
+          </div>
+        ) : (
           <IntakeSignatureBlock repair={repair} />
-        </div>
+        )}
 
         {/* Mentions légales obligatoires */}
         <IntakeLegalMentions workshop={ws} />
@@ -663,7 +789,7 @@ export function RepairIntakeDocument({
           </p>
           <div className="mt-4 grid grid-cols-2 gap-4">
             {photos.slice(0, 6).map((photo) => (
-              <div className="overflow-hidden rounded-[10px] border border-[#E8E8E5] bg-[#FAFAF8]" key={photo.id}>
+              <div className="overflow-hidden rounded-[10px] border border-[#E8E8E5] bg-[#FAFAFA]" key={photo.id}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img alt={photo.name} className="h-[220px] w-full object-cover" src={photo.dataUrl} />
               </div>
@@ -687,7 +813,7 @@ function IntakeLegalMentions({ workshop }: Readonly<{ workshop: WorkshopInfo }>)
     .trim();
 
   return (
-    <section className="rounded-[10px] border border-[#E8E8E5] bg-[#FAFAF8] p-4">
+    <section className="rounded-[10px] border border-[#E8E8E5] bg-[#FAFAFA] p-4">
       <h3 className="mb-2 font-bold text-[#167B70] text-[11px] uppercase tracking-wide">
         Conditions de prise en charge et mentions légales
       </h3>
@@ -723,7 +849,12 @@ export function QuoteDocument({
   return (
     <DocumentLayout badge={quote.status} date={quote.date} number={quote.number} type="devis" workshop={ws}>
       <DocumentIntro customer={customer} quote={quote} repair={repair} />
-      <PremiumTable repair={repair} rows={quote.lines ?? []} />
+      {quote.notes ? (
+        <PremiumCard title="Notes">
+          <p className="whitespace-pre-wrap text-[#1A1916] text-[12px] leading-relaxed">{text(quote.notes)}</p>
+        </PremiumCard>
+      ) : null}
+      <QuoteDevicesTable quote={quote} />
       <TotalsCard lines={quote.lines ?? []} total={getQuoteTotal(quote)} workshop={ws} />
       <NoticeCard title="Validité et accord">
         Devis <strong>gratuit</strong>, valable jusqu'au {dateLabel(quote.expiryDate)}.{" "}
@@ -836,7 +967,7 @@ function InvoiceLegalMentions({
 
       {/* Médiation de la consommation : obligatoire pour les pros qui vendent à des particuliers
           (art. L612-1 du Code de la consommation). */}
-      <div className="md:col-span-2 rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] p-5 print:rounded-none">
+      <div className="md:col-span-2 rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA] p-5 print:rounded-none">
         <h3 className="mb-2 font-semibold text-[#1A1916] text-[13px]">Médiation de la consommation</h3>
         <p className="text-[#6B6B6B] text-[11px] leading-relaxed">
           Conformément à l'article L612-1 du Code de la consommation, en cas de litige et après avoir contacté notre
@@ -847,7 +978,7 @@ function InvoiceLegalMentions({
       </div>
 
       {ws.invoiceTerms ? (
-        <div className="md:col-span-2 rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] p-5 print:rounded-none">
+        <div className="md:col-span-2 rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA] p-5 print:rounded-none">
           <h3 className="mb-2 font-semibold text-[#1A1916] text-[13px]">Mentions complémentaires</h3>
           <p className="text-[#6B6B6B] text-[11px] leading-relaxed">{text(ws.invoiceTerms)}</p>
         </div>
@@ -900,7 +1031,7 @@ function InternalPartsTable({ parts }: Readonly<{ parts: RepairPart[] }>) {
   const rows = parts.length ? parts : [];
   return (
     <section className="overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-white print:rounded-none">
-      <div className="grid grid-cols-[1fr_90px_90px_90px] bg-[#FAFAF8] px-5 py-3 font-semibold text-[#6B6B6B] text-[11px] uppercase tracking-wide">
+      <div className="grid grid-cols-[1fr_90px_90px_90px] bg-[#FAFAFA] px-5 py-3 font-semibold text-[#6B6B6B] text-[11px] uppercase tracking-wide">
         <span>Pièce / fournisseur</span>
         <span className="text-right">Achat</span>
         <span className="text-right">Vente</span>
@@ -970,6 +1101,56 @@ export function InternalRepairDocument({
   );
 }
 
+/**
+ * Rapport de réparation côté CLIENT : version propre et sûre du dossier.
+ * N'expose jamais le prix d'achat, la marge, le fournisseur, le stock ou les notes internes.
+ */
+export function RepairSummaryDocument({
+  repair,
+  customer,
+  workshop,
+}: Readonly<{ repair: Repair; customer: Customer; workshop?: WorkshopInfo }>) {
+  const ws = workshop ?? defaultWorkshopInfo;
+  const usedParts = (repair.parts ?? []).filter((part) => part.confirmed);
+  const testValidated = Boolean(repair.finalTest?.validatedAt);
+  return (
+    <DocumentLayout
+      badge="Rapport de réparation"
+      date={repair.updatedAt || repair.droppedAt}
+      number={repair.number}
+      type="bon-prise-en-charge"
+      workshop={ws}
+    >
+      <DocumentIntro customer={customer} repair={repair} />
+      <PremiumCard title="Intervention réalisée">
+        <KeyValue label="Appareil" value={dash(repair.deviceModel || repair.device)} />
+        <KeyValue label="Panne signalée" value={dash(repair.issue)} />
+        <KeyValue label="Diagnostic" value={dash(repair.diagnosticNotes || repair.notes)} />
+        <KeyValue label="Intervention" value={dash(repair.recommendedIntervention || repair.issueType)} />
+        <KeyValue label="Technicien" value={dash(repair.technician)} />
+        <KeyValue label="Contrôle final" value={testValidated ? "Validé" : "En cours"} />
+      </PremiumCard>
+      {usedParts.length > 0 && (
+        <PremiumCard title="Pièces remplacées">
+          {usedParts.map((part) => (
+            <KeyValue key={part.stockItemId} label={dash(part.name)} value={`x${part.quantity}`} />
+          ))}
+        </PremiumCard>
+      )}
+      <PremiumCard title="Montant & garantie">
+        <KeyValue label="Total" value={money(repair.total ?? repair.amount)} />
+        <KeyValue label="Garantie" value={dash(repair.diagnosticWarranty || ws.defaultWarranty)} />
+      </PremiumCard>
+      <NoticeCard title="Garantie">
+        {text(
+          ws.defaultWarranty,
+          "Réparation garantie selon les conditions de l'atelier, hors casse, oxydation et mauvaise utilisation.",
+        )}
+      </NoticeCard>
+    </DocumentLayout>
+  );
+}
+
 export function SaleReceiptDocument({
   sale,
   customer,
@@ -981,7 +1162,7 @@ export function SaleReceiptDocument({
       badge={sale.status === "Payée" ? "Acquittée" : "À régler"}
       date={sale.paidAt || sale.createdAt}
       number={sale.number}
-      type="facture"
+      type="recu-vente"
       workshop={ws}
     >
       <DocumentIntro customer={customer} />
@@ -1020,7 +1201,8 @@ export function SaleReceiptDocument({
       </div>
       {sale.paymentMethod && (
         <NoticeCard title="Paiement">
-          Règlement effectué par {sale.paymentMethod} le {sale.paidAt?.split("T")[0]}.
+          Encaissement effectué par {sale.paymentMethod} le {sale.paidAt ? dateLabel(sale.paidAt) : "Non renseigné"}.
+          Ce reçu atteste du règlement de la vente comptoir indiquée ci-dessus.
         </NoticeCard>
       )}
       <NoticeCard title="Garantie">

@@ -30,10 +30,18 @@ function getAppEntryState({
 }): AppEntryState {
   if (!hasHydrated && !hydrationTimedOut) return "loading_local";
   if (!licenseActivated) return "license";
+  // Atelier déjà configuré : on entre tout de suite et on laisse
+  // AutoSyncProvider rafraîchir le cloud en arrière-plan. Sans ça, chaque
+  // navigation entre le dashboard et le comptoir (layouts séparés → remount du
+  // gate) ré-affichait le plein écran "Chargement de l'atelier cloud…" le temps
+  // d'un nouvel aller-retour Supabase — d'où l'impression que le comptoir
+  // "tourne en rond" juste après une modification.
+  if (onboardingCompleted) return "dashboard";
+  // Pas encore onboardé sur cet appareil : on attend le cloud pour savoir si la
+  // licence possède déjà un atelier (évite de relancer l'onboarding à tort).
   if (!isAutomatedBrowser && (cloudLoading || (normalizedActiveKey && cloudCheckedKey !== normalizedActiveKey))) {
     return "loading_cloud";
   }
-  if (onboardingCompleted) return "dashboard";
   return "onboarding";
 }
 
@@ -101,9 +109,9 @@ export function InstallationGate({ children }: { children: React.ReactNode }) {
   switch (entryState) {
     case "loading_local":
       return (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[#FAFAF8]">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-white">
           <div className="flex flex-col items-center gap-4">
-            <div className="size-10 rounded-full border-2 border-[#E7E4DC] border-t-[#2A9D8F] animate-spin" />
+            <div className="size-10 rounded-full border-2 border-[#E8E8E5] border-t-[#2A9D8F] animate-spin" />
             <p className="text-[#6B6B6B] text-sm">Chargement…</p>
           </div>
         </div>
@@ -112,9 +120,9 @@ export function InstallationGate({ children }: { children: React.ReactNode }) {
       return <LicenseActivation />;
     case "loading_cloud":
       return (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-[#FAFAF8]">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-white">
           <div className="flex flex-col items-center gap-4">
-            <div className="size-10 rounded-full border-2 border-[#E7E4DC] border-t-[#2A9D8F] animate-spin" />
+            <div className="size-10 rounded-full border-2 border-[#E8E8E5] border-t-[#2A9D8F] animate-spin" />
             <p className="text-[#6B6B6B] text-sm">Chargement de l’atelier cloud…</p>
           </div>
         </div>

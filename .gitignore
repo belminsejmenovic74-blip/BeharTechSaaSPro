@@ -10,8 +10,13 @@
 /coverage
 /playwright-report/
 /test-results/
-/qa-results/screenshots/
+/qa-results/
+/.playwright-mcp/
+public/assets/_review/
 *.webm
+
+# site vitrine séparé (projet Vite autonome, non déployé sur Vercel)
+/vitrine/
 
 # next.js
 /.next/

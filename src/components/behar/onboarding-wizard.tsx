@@ -163,7 +163,7 @@ export function OnboardingWizard() {
     receiptPrefix: store.workshopSettings.receiptPrefix || "REC",
     acceptedPaymentMethods: store.workshopSettings.acceptedPaymentMethods?.length
       ? store.workshopSettings.acceptedPaymentMethods
-      : ["Espèces", "Carte bancaire"],
+      : ["Espèces hors Behar Tech", "TPE externe"],
     businessHours: store.workshopSettings.businessHours || "Lun-Ven 09:00-18:00",
     quoteTerms: store.workshopSettings.quoteTerms || "Valable 30 jours.",
     invoiceTerms: store.workshopSettings.invoiceTerms || "Paiement à réception.",
@@ -245,7 +245,7 @@ export function OnboardingWizard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] flex flex-col items-center py-12 px-4 md:py-20">
+    <div className="min-h-screen bg-white flex flex-col items-center py-12 px-4 md:py-20">
       {/* Stepper */}
       <div className="w-full max-w-3xl mb-14 flex items-center justify-between px-4">
         <StepperItem active={step >= 1} current={step === 1} label="Atelier" step={1} />
@@ -259,7 +259,7 @@ export function OnboardingWizard() {
 
       <div className="w-full max-w-5xl flex flex-col md:flex-row gap-10 items-start">
         {/* Main Card */}
-        <div className="flex-1 w-full bg-white rounded-[24px] border border-[#E7E4DC] shadow-[0_1px_3px_rgba(26,25,22,0.04),0_8px_24px_rgba(26,25,22,0.025)] overflow-hidden">
+        <div className="flex-1 w-full bg-white rounded-[24px] border border-[#E8E8E5] shadow-[0_1px_3px_rgba(26,25,22,0.04),0_8px_24px_rgba(26,25,22,0.025)] overflow-hidden">
           <div className="p-8 md:p-12">
             {step === 1 && <StepAtelier draft={draft} setField={setField} />}
             {step === 2 && <StepSettings draft={draft} setField={setField} />}
@@ -267,7 +267,7 @@ export function OnboardingWizard() {
             {step === 4 && <StepSummary draft={draft} team={teamDraft} />}
 
             {/* Navigation Buttons */}
-            <div className="mt-14 pt-8 border-t border-[#F1F1EF] flex items-center justify-between">
+            <div className="mt-14 pt-8 border-t border-[#F7F7F7] flex items-center justify-between">
               {step > 1 ? (
                 <SecondaryButton onClick={prevStep} className="h-12 px-6 rounded-[14px] gap-2 text-[#6B6B6B]">
                   <ChevronLeft className="size-4" /> Retour
@@ -298,8 +298,8 @@ export function OnboardingWizard() {
 
         {/* Sidebar Info/Preview */}
         <div className="hidden lg:block w-[280px] space-y-5 shrink-0">
-          <div className="p-5 bg-white rounded-[18px] border border-[#E7E4DC] shadow-[0_1px_3px_rgba(26,25,22,0.04)]">
-            <p className="text-[#8A8984] text-[11px] font-medium uppercase tracking-wider">Étape {step} sur 4</p>
+          <div className="p-5 bg-white rounded-[18px] border border-[#E8E8E5] shadow-[0_1px_3px_rgba(26,25,22,0.04)]">
+            <p className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Étape {step} sur 4</p>
             <p className="mt-2.5 text-[#1A1916] text-[14px] leading-relaxed">
               {step === 1 && "L'identité de votre atelier apparaîtra sur tous vos documents officiels."}
               {step === 2 && "Définissez vos règles de facturation et la numérotation automatique."}
@@ -309,19 +309,19 @@ export function OnboardingWizard() {
           </div>
 
           {step === 1 && draft.name && (
-            <div className="p-5 bg-white rounded-[18px] border border-[#E7E4DC]">
-              <p className="text-[11px] font-medium text-[#8A8984] uppercase tracking-wider mb-4">Aperçu</p>
+            <div className="p-5 bg-white rounded-[18px] border border-[#E8E8E5]">
+              <p className="text-[11px] font-medium text-[#6B6B6B] uppercase tracking-wider mb-4">Aperçu</p>
               <div className="flex items-center gap-3">
                 {draft.logoUrl ? (
                   <img src={draft.logoUrl} className="size-10 rounded-[10px] object-cover" />
                 ) : (
-                  <div className="size-10 rounded-[10px] bg-[#F6F7F4] flex items-center justify-center text-[#B0AEA8]">
+                  <div className="size-10 rounded-[10px] bg-[#FAFAFA] flex items-center justify-center text-[#8A8A8A]">
                     <Building2 className="size-5" />
                   </div>
                 )}
                 <div className="min-w-0">
                   <p className="font-semibold text-[#1A1916] text-[14px] truncate">{draft.name}</p>
-                  <p className="text-[#8A8984] text-[12px] truncate">{draft.city || "Ville non définie"}</p>
+                  <p className="text-[#6B6B6B] text-[12px] truncate">{draft.city || "Ville non définie"}</p>
                 </div>
               </div>
             </div>
@@ -354,7 +354,7 @@ function StepAtelier({ draft, setField }: any) {
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div>
         <h2 className="text-[26px] font-semibold text-[#1A1916] tracking-tight">Configurez votre atelier</h2>
-        <p className="mt-2 text-[#8A8984] text-[15px]">Renseignez les informations principales de votre entreprise.</p>
+        <p className="mt-2 text-[#6B6B6B] text-[15px]">Renseignez les informations principales de votre entreprise.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-7">
@@ -383,12 +383,12 @@ function StepAtelier({ draft, setField }: any) {
               ))}
             </select>
             <input
-              aria-label="Numéro local"
+              aria-label="Numéro de téléphone"
               className={inputCls}
               inputMode="tel"
               value={phoneLocal}
               onChange={(e) => setInternationalPhone(phone.prefix, e.target.value)}
-              placeholder={phone.prefix === "+33" ? "6 12 34 56 78" : "Numéro local"}
+              placeholder={phone.prefix === "+33" ? "6 12 34 56 78" : "Numéro"}
             />
           </div>
         </Field>
@@ -437,7 +437,7 @@ function StepAtelier({ draft, setField }: any) {
 
         <div className="md:col-span-2 mt-4">
           <p className="text-sm font-medium text-[#1A1916] mb-3">Logo de l'atelier</p>
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#E7E4DC] rounded-2xl bg-[#FAFAF8] cursor-pointer hover:bg-[#F6F7F4] transition group">
+          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#E8E8E5] rounded-2xl bg-[#FAFAFA] cursor-pointer hover:bg-[#FAFAFA] transition group">
             {draft.logoUrl ? (
               <div className="flex items-center gap-4 px-6 w-full">
                 <img src={draft.logoUrl} className="size-16 rounded-xl object-cover shadow-sm" />
@@ -445,15 +445,15 @@ function StepAtelier({ draft, setField }: any) {
                   <p className="text-sm font-semibold text-[#1A1916]">Logo sélectionné</p>
                   <p className="text-xs text-[#6B6B6B]">Cliquez pour changer d'image</p>
                 </div>
-                <div className="size-8 rounded-full bg-white border border-[#E7E4DC] flex items-center justify-center group-hover:border-[#2A9D8F] transition">
-                  <RefreshCw className="size-4 text-[#B0AEA8] group-hover:text-[#2A9D8F]" />
+                <div className="size-8 rounded-full bg-white border border-[#E8E8E5] flex items-center justify-center group-hover:border-[#2A9D8F] transition">
+                  <RefreshCw className="size-4 text-[#8A8A8A] group-hover:text-[#2A9D8F]" />
                 </div>
               </div>
             ) : (
               <div className="flex flex-col items-center">
-                <Upload className="size-8 text-[#B0AEA8] mb-2 group-hover:text-[#2A9D8F] transition" />
+                <Upload className="size-8 text-[#8A8A8A] mb-2 group-hover:text-[#2A9D8F] transition" />
                 <p className="text-sm text-[#6B6B6B]">Cliquez pour ajouter votre logo</p>
-                <p className="text-[11px] text-[#B0AEA8]">PNG, JPG ou SVG (max. 2Mo)</p>
+                <p className="text-[11px] text-[#8A8A8A]">PNG, JPG ou SVG (max. 2Mo)</p>
               </div>
             )}
             <input
@@ -481,7 +481,7 @@ function StepSettings({ draft, setField }: any) {
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div>
         <h2 className="text-[26px] font-semibold text-[#1A1916] tracking-tight">Paramètres de fonctionnement</h2>
-        <p className="mt-2 text-[#8A8984] text-[15px]">Définissez les règles principales de votre atelier.</p>
+        <p className="mt-2 text-[#6B6B6B] text-[15px]">Définissez les règles principales de votre atelier.</p>
       </div>
 
       <div className="space-y-8">
@@ -495,7 +495,7 @@ function StepSettings({ draft, setField }: any) {
                 "p-5 rounded-2xl border-2 text-left transition",
                 !draft.vatApplicable
                   ? "border-[#2A9D8F] bg-[#EAF6F2]"
-                  : "border-[#E7E4DC] bg-white hover:border-[#B0AEA8]",
+                  : "border-[#E8E8E5] bg-white hover:border-[#8A8A8A]",
               )}
             >
               <div className="flex items-center justify-between mb-2">
@@ -512,7 +512,7 @@ function StepSettings({ draft, setField }: any) {
                 "p-5 rounded-2xl border-2 text-left transition",
                 draft.vatApplicable
                   ? "border-[#2A9D8F] bg-[#EAF6F2]"
-                  : "border-[#E7E4DC] bg-white hover:border-[#B0AEA8]",
+                  : "border-[#E8E8E5] bg-white hover:border-[#8A8A8A]",
               )}
             >
               <div className="flex items-center justify-between mb-2">
@@ -621,7 +621,7 @@ function StepTeam({ team, setTeam }: { team: Omit<TeamMember, "id">[]; setTeam: 
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-[26px] font-semibold text-[#1A1916] tracking-tight">Configurez votre équipe</h2>
-          <p className="mt-2 text-[#8A8984] text-[15px]">Ajoutez les personnes qui travaillent dans l'atelier.</p>
+          <p className="mt-2 text-[#6B6B6B] text-[15px]">Ajoutez les personnes qui travaillent dans l'atelier.</p>
         </div>
         <SecondaryButton onClick={addMember} className="h-11 rounded-[14px] gap-2 text-[#1A1916]">
           <UserPlus className="size-4" /> Ajouter un membre
@@ -630,23 +630,23 @@ function StepTeam({ team, setTeam }: { team: Omit<TeamMember, "id">[]; setTeam: 
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {team.map((member, index) => (
-          <div key={index} className="p-6 rounded-[24px] border border-[#E7E4DC] bg-[#FAFAF8]/50 relative group">
+          <div key={index} className="p-6 rounded-[24px] border border-[#E8E8E5] bg-[#FAFAFA]/50 relative group">
             <button
               onClick={() => removeMember(index)}
-              className="absolute top-4 right-4 p-2 text-[#B0AEA8] hover:text-[#E63946] transition opacity-0 group-hover:opacity-100"
+              className="absolute top-4 right-4 p-2 text-[#8A8A8A] hover:text-[#E63946] transition opacity-0 group-hover:opacity-100"
             >
               <Trash2 className="size-4" />
             </button>
 
             <div className="flex items-center gap-4 mb-6">
-              <div className="size-12 rounded-full bg-white border border-[#E7E4DC] flex items-center justify-center text-[#2A9D8F] font-bold text-lg shadow-sm">
+              <div className="size-12 rounded-full bg-white border border-[#E8E8E5] flex items-center justify-center text-[#2A9D8F] font-bold text-lg shadow-sm">
                 {member.firstName[0] || "?"}
               </div>
               <div className="flex-1">
                 <p className="font-semibold text-[#1A1916]">
                   {member.firstName || "Prénom"} {member.lastName}
                 </p>
-                <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white border border-[#E7E4DC] text-[#6B6B6B] text-[10px] font-bold uppercase tracking-wider">
+                <div className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white border border-[#E8E8E5] text-[#6B6B6B] text-[10px] font-bold uppercase tracking-wider">
                   {member.role}
                 </div>
               </div>
@@ -696,7 +696,7 @@ function StepSummary({ draft, team }: { draft: WorkshopSettings; team: any[] }) 
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div>
         <h2 className="text-[26px] font-semibold text-[#1A1916] tracking-tight">Votre atelier est prêt</h2>
-        <p className="mt-2 text-[#8A8984] text-[15px]">
+        <p className="mt-2 text-[#6B6B6B] text-[15px]">
           Vérifiez une dernière fois vos informations avant de commencer.
         </p>
       </div>
@@ -707,7 +707,7 @@ function StepSummary({ draft, team }: { draft: WorkshopSettings; team: any[] }) 
             {draft.logoUrl ? (
               <img src={draft.logoUrl} className="size-12 rounded-xl object-cover" />
             ) : (
-              <div className="size-12 rounded-xl bg-[#FAFAF8] border border-[#E7E4DC] flex items-center justify-center text-[#B0AEA8]">
+              <div className="size-12 rounded-xl bg-[#FAFAFA] border border-[#E8E8E5] flex items-center justify-center text-[#8A8A8A]">
                 <Building2 className="size-6" />
               </div>
             )}
@@ -718,7 +718,7 @@ function StepSummary({ draft, team }: { draft: WorkshopSettings; team: any[] }) 
               </p>
             </div>
           </div>
-          <div className="space-y-1.5 pt-2 border-t border-[#F1F1EF]">
+          <div className="space-y-1.5 pt-2 border-t border-[#F7F7F7]">
             <SummaryItem icon={<Phone className="size-3" />} label={draft.phone} />
             <SummaryItem icon={<Mail className="size-3" />} label={draft.email} />
             <SummaryItem icon={<FileText className="size-3" />} label={`SIRET: ${draft.siret}`} />
@@ -728,31 +728,31 @@ function StepSummary({ draft, team }: { draft: WorkshopSettings; team: any[] }) 
         <SummarySection title="Facturation & Équipe">
           <div className="space-y-4">
             <div>
-              <p className="text-[10px] font-bold text-[#B0AEA8] uppercase tracking-wider mb-1">Régime TVA</p>
+              <p className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider mb-1">Régime TVA</p>
               <p className="text-sm font-medium text-[#1A1916]">
                 {draft.vatApplicable ? "TVA applicable (20%)" : "TVA non applicable (Auto-entrepreneur)"}
               </p>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-[#B0AEA8] uppercase tracking-wider mb-1">Préfixes</p>
+              <p className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider mb-1">Préfixes</p>
               <div className="flex gap-3">
-                <span className="text-xs bg-[#F6F7F4] px-2 py-1 rounded-md text-[#6B6B6B] font-mono">
+                <span className="text-xs bg-[#FAFAFA] px-2 py-1 rounded-md text-[#6B6B6B] font-mono">
                   {draft.repairPrefix}
                 </span>
-                <span className="text-xs bg-[#F6F7F4] px-2 py-1 rounded-md text-[#6B6B6B] font-mono">
+                <span className="text-xs bg-[#FAFAFA] px-2 py-1 rounded-md text-[#6B6B6B] font-mono">
                   {draft.invoicePrefix}
                 </span>
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-[#B0AEA8] uppercase tracking-wider mb-2">
+              <p className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider mb-2">
                 Équipe ({team.length})
               </p>
               <div className="flex -space-x-2">
                 {team.map((m: any, i: number) => (
                   <div
                     key={i}
-                    className="size-8 rounded-full border-2 border-white bg-[#EAF6F2] flex items-center justify-center text-[#2A9D8F] text-[10px] font-bold shadow-sm ring-1 ring-[#E7E4DC]/20"
+                    className="size-8 rounded-full border-2 border-white bg-[#EAF6F2] flex items-center justify-center text-[#2A9D8F] text-[10px] font-bold shadow-sm ring-1 ring-[#E8E8E5]/20"
                   >
                     {m.firstName[0]}
                   </div>
@@ -794,7 +794,7 @@ function StepperItem({
       <div
         className={cn(
           "size-8 rounded-full flex items-center justify-center text-[13px] font-semibold transition-all duration-500",
-          current ? "bg-[#1A1916] text-white" : active ? "bg-[#E7F5F1] text-[#2A9D8F]" : "bg-[#F6F7F4] text-[#CDCBC5]",
+          current ? "bg-[#1A1916] text-white" : active ? "bg-[#E7F5F1] text-[#2A9D8F]" : "bg-[#FAFAFA] text-[#A3A3A3]",
         )}
       >
         {active && !current ? <Check className="size-3.5" /> : step}
@@ -802,7 +802,7 @@ function StepperItem({
       <span
         className={cn(
           "text-[12px] font-medium transition-all duration-500",
-          current ? "text-[#1A1916]" : active ? "text-[#6B6B6B]" : "text-[#CDCBC5]",
+          current ? "text-[#1A1916]" : active ? "text-[#6B6B6B]" : "text-[#A3A3A3]",
         )}
       >
         {label}
@@ -813,7 +813,7 @@ function StepperItem({
 
 function StepperDivider({ active }: { active: boolean }) {
   return (
-    <div className="flex-1 h-px mx-4 bg-[#E7E4DC] relative overflow-hidden">
+    <div className="flex-1 h-px mx-4 bg-[#E8E8E5] relative overflow-hidden">
       <div
         className={cn(
           "absolute inset-0 bg-[#2A9D8F] transition-all duration-700 ease-in-out",
@@ -829,15 +829,15 @@ function Field({ label, placeholder, children, hint }: any) {
     <div className="space-y-1.5">
       <label className="text-sm font-medium text-[#1A1916] block">{label}</label>
       {children || <input className={inputCls} placeholder={placeholder} />}
-      {hint && <p className="text-[12px] text-[#B0AEA8] px-0.5">{hint}</p>}
+      {hint && <p className="text-[12px] text-[#8A8A8A] px-0.5">{hint}</p>}
     </div>
   );
 }
 
 function SummarySection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="p-6 rounded-[20px] border border-[#E7E4DC] bg-white">
-      <p className="text-[13px] font-medium text-[#8A8984] uppercase tracking-wider mb-5">{title}</p>
+    <div className="p-6 rounded-[20px] border border-[#E8E8E5] bg-white">
+      <p className="text-[13px] font-medium text-[#6B6B6B] uppercase tracking-wider mb-5">{title}</p>
       {children}
     </div>
   );
@@ -846,7 +846,7 @@ function SummarySection({ title, children }: { title: string; children: React.Re
 function SummaryItem({ icon, label }: { icon: any; label: string }) {
   return (
     <div className="flex items-center gap-2 text-[#6B6B6B] text-[13px]">
-      <span className="text-[#B0AEA8]">{icon}</span>
+      <span className="text-[#8A8A8A]">{icon}</span>
       <span className="truncate">{label}</span>
     </div>
   );
@@ -875,4 +875,4 @@ function RefreshCw(props: any) {
 }
 
 const inputCls =
-  "h-12 w-full rounded-[14px] border border-[#E7E4DC] bg-white px-4 text-[#1A1916] text-[15px] outline-none transition-all duration-200 hover:border-[#D1CFCA] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/8 placeholder:text-[#CDCBC5]";
+  "h-12 w-full rounded-[14px] border border-[#E8E8E5] bg-white px-4 text-[#1A1916] text-[15px] outline-none transition-all duration-200 hover:border-[#DADADA] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/8 placeholder:text-[#A3A3A3]";

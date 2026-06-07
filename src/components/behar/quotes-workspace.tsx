@@ -12,8 +12,11 @@ import {
   ChevronDown,
   Download,
   FileText,
+  FolderOpen,
+  Mail,
   MoreHorizontal,
   Plus,
+  Printer,
   Save,
   Search,
   Smartphone,
@@ -27,18 +30,39 @@ import { toast } from "sonner";
 import {
   formatEuro,
   formatIsoToDisplay,
+  getQuoteDeviceListLabel,
+  getQuoteDevices,
   getQuoteTotal,
   getVatSummary,
+  isTerminalRepairStatus,
   Quote,
   type QuoteStatus,
   useBeharStore,
 } from "@/lib/behar-store";
 import { displayCustomerName } from "@/lib/customer-display";
-import { formatDeviceLabel } from "@/lib/format-device";
+import { formatBrandModel, formatDeviceLabel } from "@/lib/format-device";
 import { cn } from "@/lib/utils";
 
+import { DeviceSelector } from "../DeviceSelector";
+import { ProblemSelector } from "../ProblemSelector";
 import { Panel, PrimaryButton, StatusBadge, TableShell, tableClassName, tableHeadClassName } from "./primitives";
 import { useDocument } from "./print-provider";
+
+type DeviceState = {
+  deviceType: string;
+  brand: string;
+  model: string;
+  customModel: string;
+  deviceLabel: string;
+};
+
+const makeDeviceSeed = (label: string, deviceType?: string): DeviceState => ({
+  deviceType: deviceType || "Smartphone",
+  brand: "",
+  model: "Autre",
+  customModel: label,
+  deviceLabel: label,
+});
 
 // --- Types ---
 type QuoteOrigin = "repair" | "client" | "manual";
@@ -73,20 +97,56 @@ export function QuotesWorkspace() {
   const [quoteSearch, setQuoteSearch] = useState("");
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
-  const { download } = useDocument();
+  const { print, download } = useDocument();
 
   const visibleQuotes = useMemo(() => {
     const q = quoteSearch.trim().toLowerCase();
     return store.quotes.filter((quote) => {
       const entryCustomer = store.customers.find((c) => c.id === quote.customerId);
       if (!q) return true;
-      const needle = `${quote.number} ${displayCustomerName(entryCustomer)}`.toLowerCase();
+      const needle =
+        `${quote.number} ${displayCustomerName(entryCustomer)} ${entryCustomer?.phone ?? ""} ${getQuoteDeviceListLabel(quote)}`.toLowerCase();
       return needle.includes(q);
     });
   }, [store.quotes, store.customers, quoteSearch]);
 
   const selected = store.quotes.find((q) => q.id === store.selectedQuoteId) ?? store.quotes[0];
   const customer = selected ? store.customers.find((c) => c.id === selected.customerId) : undefined;
+  const selectedDevices = selected ? getQuoteDevices(selected) : [];
+  const transformSelectedQuote = () => {
+    if (!selected) return;
+    const devices = getQuoteDevices(selected);
+    if (!devices.length) return toast.error("Aucun appareil à transformer.");
+    const createdIds = devices.map((device, index) =>
+      store.addRepair({
+        customerId: selected.customerId,
+        quoteId: selected.id,
+        deviceType: device.type === "Autre" ? "Smartphone" : device.type,
+        brandName: device.brand,
+        deviceModel: device.model,
+        device: formatBrandModel(device.brand, device.model, `Appareil ${index + 1}`),
+        issue: [
+          ...device.services.map((service) => service.label),
+          ...device.accessories.map((accessory) => accessory.label),
+        ].join(", "),
+        amount: device.subtotalTtc,
+        total: device.subtotalTtc,
+        status: "Reçu",
+        notes: `Créé depuis le devis ${selected.number}`,
+        droppedAt: new Date().toISOString(),
+        technician: "",
+        counterPrestations: [
+          ...device.services.map((service) => ({ label: service.label, prixClient: service.priceTtc * service.quantity })),
+          ...device.accessories.map((accessory) => ({ label: accessory.label, prixClient: accessory.included ? 0 : accessory.priceTtc ?? 0 })),
+        ],
+      }),
+    ).filter(Boolean);
+    if (!createdIds.length) return toast.error("Transformation impossible.");
+    store.updateQuote(selected.id, { status: "Accepté", repairId: createdIds[0] });
+    store.setSelected("repair", createdIds[0]);
+    toast.success(`${createdIds.length} prise${createdIds.length > 1 ? "s" : ""} en charge créée${createdIds.length > 1 ? "s" : ""}.`);
+    router.push("/dashboard/reparations");
+  };
 
   const acceptedCount = store.quotes.filter((q) => q.status === "Accepté").length;
   const sentCount = store.quotes.filter((q) => q.status === "Envoyé").length;
@@ -101,7 +161,7 @@ export function QuotesWorkspace() {
           <label className="hidden md:block relative w-full max-w-[360px] min-w-[200px]">
             <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6B6B6B]" />
             <input
-              className="h-11 w-full rounded-[14px] border border-[#E7E4DC] bg-white pr-4 pl-10 text-sm outline-none transition placeholder:text-[#8A8984] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+              className="h-11 w-full rounded-[14px] border border-[#E8E8E5] bg-white pr-4 pl-10 text-sm outline-none transition placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
               placeholder="Rechercher un devis..."
               type="search"
               value={quoteSearch}
@@ -120,37 +180,37 @@ export function QuotesWorkspace() {
         <div className="md:hidden space-y-4">
           <section className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 scrollbar-none">
             <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-              <span className="grid size-9 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F]">
+              <span className="grid size-9 place-items-center text-[#2A9D8F]">
                 <FileText className="size-[18px]" />
               </span>
-              <p className="mt-3 text-[#8A8984] text-[11px] font-medium leading-tight">Devis envoyés</p>
+              <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium leading-tight">Devis envoyés</p>
               <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">{sentCount}</p>
-              <p className="mt-1.5 text-[#8A8984] text-[10px] font-medium">en attente</p>
+              <p className="mt-1.5 text-[#6B6B6B] text-[10px] font-medium">en attente</p>
             </div>
             <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-              <span className="grid size-9 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F]">
+              <span className="grid size-9 place-items-center text-[#2A9D8F]">
                 <FileText className="size-[18px]" />
               </span>
-              <p className="mt-3 text-[#8A8984] text-[11px] font-medium leading-tight">Acceptés</p>
+              <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium leading-tight">Acceptés</p>
               <p className="mt-1.5 font-bold text-[#2A9D8F] text-[20px] leading-none tabular-nums">{acceptedCount}</p>
-              <p className="mt-1.5 text-[#8A8984] text-[10px] font-medium">prêts à facturer</p>
+              <p className="mt-1.5 text-[#6B6B6B] text-[10px] font-medium">prêts à facturer</p>
             </div>
             <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-              <span className="grid size-9 place-items-center rounded-[10px] bg-[#FCF1DF] text-[#C2841C]">
+              <span className="grid size-9 place-items-center rounded-[10px] bg-[#FAFAFA] text-[#6B6B6B]">
                 <FileText className="size-[18px]" />
               </span>
-              <p className="mt-3 text-[#8A8984] text-[11px] font-medium leading-tight">Montant en cours</p>
+              <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium leading-tight">Montant en cours</p>
               <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">
                 {formatEuro(totalPending)}
               </p>
-              <p className="mt-1.5 text-[#8A8984] text-[10px] font-medium">non facturés</p>
+              <p className="mt-1.5 text-[#6B6B6B] text-[10px] font-medium">non facturés</p>
             </div>
           </section>
 
           <div className="relative">
-            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#8A8984]" />
+            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6B6B6B]" />
             <input
-              className="h-12 w-full rounded-[14px] border border-[#E7E4DC] bg-white pr-4 pl-10 text-sm outline-none focus:border-[#2A9D8F] placeholder:text-[#8A8984]"
+              className="h-12 w-full rounded-[14px] border border-[#E8E8E5] bg-white pr-4 pl-10 text-sm outline-none focus:border-[#2A9D8F] placeholder:text-[#6B6B6B]"
               placeholder="Rechercher un devis…"
               type="search"
               value={quoteSearch}
@@ -160,12 +220,13 @@ export function QuotesWorkspace() {
 
           <ul className="space-y-2.5">
             {visibleQuotes.length === 0 ? (
-              <li className="rounded-[18px] bg-white p-10 text-center text-[#8A8984] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+              <li className="rounded-[18px] bg-white p-10 text-center text-[#6B6B6B] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
                 Aucun devis.
               </li>
             ) : (
               visibleQuotes.map((quote) => {
                 const entryCustomer = store.customers.find((c) => c.id === quote.customerId);
+                const deviceLabel = getQuoteDeviceListLabel(quote);
                 return (
                   <li key={quote.id}>
                     <button
@@ -176,7 +237,7 @@ export function QuotesWorkspace() {
                       }}
                       className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
                     >
-                      <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FAFAF8] text-[#1A1916]">
+                      <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FAFAFA] text-[#1A1916]">
                         <FileText className="size-[18px]" strokeWidth={1.8} />
                       </span>
                       <div className="min-w-0 flex-1">
@@ -189,7 +250,9 @@ export function QuotesWorkspace() {
                           </p>
                         </div>
                         <p className="mt-0.5 font-mono text-[#2A9D8F] text-[11px]">{quote.number}</p>
-                        <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">{formatIsoToDisplay(quote.date)}</p>
+                        <p className="mt-0.5 truncate text-[#6B6B6B] text-[11.5px]">
+                          {deviceLabel} · {formatIsoToDisplay(quote.date)}
+                        </p>
                         <div className="mt-2">
                           <StatusBadge status={quote.status} />
                         </div>
@@ -208,6 +271,7 @@ export function QuotesWorkspace() {
               <tr>
                 <th className="px-5 py-3">N°</th>
                 <th className="px-5 py-3">Client</th>
+                <th className="px-5 py-3">Appareil</th>
                 <th className="px-5 py-3">Date</th>
                 <th className="px-5 py-3">Statut</th>
                 <th className="px-5 py-3">Montant</th>
@@ -218,25 +282,27 @@ export function QuotesWorkspace() {
               {visibleQuotes.map((quote) => {
                 const entryCustomer = store.customers.find((c) => c.id === quote.customerId);
                 const active = quote.id === selected?.id;
+                const deviceLabel = getQuoteDeviceListLabel(quote);
                 return (
                   <tr
-                    className={`cursor-pointer transition hover:bg-[#FAFAF8] ${
+                    className={`cursor-pointer transition hover:bg-[#FAFAFA] ${
                       active ? "border-[#2A9D8F]/30 border-y bg-[#E7F5F1] text-[#167B70]" : ""
                     }`}
                     key={quote.id}
                     onClick={() => store.setSelected("quote", quote.id)}
                   >
-                    <td className="border-[#E7E4DC] border-b px-5 py-4 font-medium">{quote.number}</td>
-                    <td className="border-[#E7E4DC] border-b px-5 py-4">{displayCustomerName(entryCustomer)}</td>
-                    <td className="border-[#E7E4DC] border-b px-5 py-4">{formatIsoToDisplay(quote.date)}</td>
-                    <td className="border-[#E7E4DC] border-b px-5 py-4">
+                    <td className="border-[#E8E8E5] border-b px-5 py-4 font-medium">{quote.number}</td>
+                    <td className="border-[#E8E8E5] border-b px-5 py-4">{displayCustomerName(entryCustomer)}</td>
+                    <td className="border-[#E8E8E5] border-b px-5 py-4">{deviceLabel}</td>
+                    <td className="border-[#E8E8E5] border-b px-5 py-4">{formatIsoToDisplay(quote.date)}</td>
+                    <td className="border-[#E8E8E5] border-b px-5 py-4">
                       <StatusBadge status={quote.status} />
                     </td>
-                    <td className="border-[#E7E4DC] border-b px-5 py-4 font-semibold">
+                    <td className="border-[#E8E8E5] border-b px-5 py-4 font-semibold">
                       {formatEuro(getQuoteTotal(quote))}
                     </td>
-                    <td className="border-[#E7E4DC] border-b px-5 py-4 text-right">
-                      <MoreHorizontal className="size-4 text-[#B0AEA8]" />
+                    <td className="border-[#E8E8E5] border-b px-5 py-4 text-right">
+                      <MoreHorizontal className="size-4 text-[#8A8A8A]" />
                     </td>
                   </tr>
                 );
@@ -256,11 +322,11 @@ export function QuotesWorkspace() {
           )}
         >
           {/* Mobile back button */}
-          <div className="md:hidden -mx-5 -mt-5 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#F1F1EF] bg-white/95 backdrop-blur-xl px-4 py-3">
+          <div className="md:hidden -mx-5 -mt-5 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#F7F7F7] bg-white px-4 py-3">
             <button
               type="button"
               onClick={() => setMobileDetailOpen(false)}
-              className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#1A1916] transition active:scale-90"
+              className="grid size-9 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white text-[#1A1916] transition active:scale-90"
               aria-label="Retour"
             >
               <ArrowLeft className="size-4" />
@@ -271,28 +337,53 @@ export function QuotesWorkspace() {
             <div>
               <h2 className="font-semibold text-[#1A1916] text-xl">Devis #{selected.number}</h2>
               <p className="text-xs text-[#6B6B6B] mt-1">Créé le {formatIsoToDisplay(selected.date)}</p>
+              {(() => {
+                const linkedRepair = selected.repairId
+                  ? store.repairs.find((repair) => repair.id === selected.repairId)
+                  : undefined;
+                if (!linkedRepair) return null;
+                return (
+                  <button
+                    className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#EAF6F2] px-2.5 py-1 font-semibold text-[#167B70] text-[11px] transition hover:bg-[#DCF0EA]"
+                    onClick={() => {
+                      store.setSelected("repair", linkedRepair.id);
+                      router.push(`/dashboard/dossiers/${linkedRepair.id}`);
+                    }}
+                    type="button"
+                  >
+                    <FolderOpen className="size-3" />
+                    Dossier lié · {linkedRepair.number}
+                  </button>
+                );
+              })()}
             </div>
             <StatusBadge status={selected.status} />
           </div>
 
           <div className="space-y-6 flex-1 overflow-y-auto custom-scrollbar pr-2">
             <div>
-              <p className="text-[10px] font-bold text-[#B0AEA8] uppercase tracking-wider mb-2">Client</p>
+              <p className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider mb-2">Client</p>
               <p className="font-bold text-[#1A1916]">{displayCustomerName(customer)}</p>
               <p className="text-sm text-[#6B6B6B]">{customer?.phone}</p>
             </div>
 
             <div className="space-y-3">
-              <p className="text-[10px] font-bold text-[#B0AEA8] uppercase tracking-wider">Lignes du devis</p>
-              {selected.lines.map((line) => (
-                <div key={line.id} className="flex justify-between items-start text-sm border-b border-[#F1F1EF] pb-2">
-                  <div className="flex-1">
-                    <p className="font-medium text-[#1A1916]">{line.description}</p>
-                    <p className="text-xs text-[#6B6B6B]">
-                      {line.quantity} x {formatEuro(line.unitPrice)}
-                    </p>
+              <p className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider">Appareils du devis</p>
+              {selectedDevices.map((device, index) => (
+                <div key={device.id} className="rounded-[16px] border border-[#E8E8E5] bg-white p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[#6E6E73] text-xs font-bold">Appareil {index + 1}</p>
+                      <p className="font-bold text-[#1D1D1F]">
+                        {formatBrandModel(device.brand, device.model, `Appareil ${index + 1}`)}
+                      </p>
+                    </div>
+                    <p className="font-black text-[#1D1D1F] tabular-nums">{formatEuro(device.subtotalTtc)}</p>
                   </div>
-                  <p className="font-bold text-[#1A1916]">{formatEuro(line.quantity * line.unitPrice)}</p>
+                  <ul className="mt-3 space-y-1 text-sm text-[#1D1D1F]">
+                    {device.services.map((service) => <li key={service.id}>• {service.label}</li>)}
+                    {device.accessories.map((accessory) => <li key={accessory.id}>• {accessory.label}</li>)}
+                  </ul>
                 </div>
               ))}
             </div>
@@ -307,7 +398,7 @@ export function QuotesWorkspace() {
                     </span>
                   </div>
                   <div className="flex justify-between text-xs text-[#6B6B6B]">
-                    <span>TVA (20%)</span>
+                    <span>TVA ({Math.round(getVatSummary(selected.lines, store.workshopInfo).rate * 1000) / 10}%)</span>
                     <span className="font-medium">
                       {formatEuro(getVatSummary(selected.lines, store.workshopInfo).tva)}
                     </span>
@@ -328,81 +419,83 @@ export function QuotesWorkspace() {
             </div>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-[#F1F1EF] space-y-3">
-            {selected.status === "Accepté" ? (
+          <div className="mt-8 pt-6 border-t border-[#F7F7F7] space-y-3">
+            {selected.repairId && store.repairs.some((repair) => repair.id === selected.repairId) ? (
               <button
                 onClick={() => {
-                  const invId = store.addInvoice({
-                    quoteId: selected.id,
-                    customerId: selected.customerId,
-                    lines: selected.lines,
-                    status: "Brouillon",
-                  });
-                  if (invId) {
-                    store.setSelected("invoice", invId);
-                    router.push("/dashboard/factures");
-                    toast.success("Facture générée depuis le devis");
-                  }
+                  store.setSelected("repair", selected.repairId as string);
+                  router.push(`/dashboard/dossiers/${selected.repairId}`);
                 }}
-                className="w-full h-11 rounded-xl bg-[#2A9D8F] text-white font-bold text-sm shadow-lg shadow-[#2A9D8F]/20 hover:bg-[#238b7e] transition-all flex items-center justify-center gap-2"
+                className="w-full h-12 rounded-xl bg-[#2A9D8F] text-white font-bold text-sm hover:bg-[#238b7e] transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                type="button"
               >
-                <FileText className="size-4" />
-                Générer la facture
-              </button>
-            ) : selected.status !== "Facturé" ? (
-              <button
-                onClick={() => {
-                  store.updateQuote(selected.id, { status: "Accepté" });
-                  const invId = store.addInvoice({
-                    quoteId: selected.id,
-                    customerId: selected.customerId,
-                    lines: selected.lines,
-                    status: "Brouillon",
-                  });
-                  if (invId) {
-                    toast.success("Devis accepté et facture créée");
-                  } else {
-                    toast.success("Devis marqué comme accepté");
-                  }
-                }}
-                className="w-full h-11 rounded-xl bg-[#2A9D8F] text-white font-bold text-sm shadow-lg shadow-[#2A9D8F]/20 hover:bg-[#238b7e] transition-all flex items-center justify-center gap-2"
-              >
-                <Check className="size-4" />
-                Marquer comme accepté
+                <FolderOpen className="size-4" />
+                Voir le dossier lié
               </button>
             ) : (
-              <div className="bg-[#E7F5F1] text-[#167B70] p-3 rounded-xl text-center text-xs font-bold">
-                Ce devis a déjà été facturé
-              </div>
+              <button
+                onClick={transformSelectedQuote}
+                className="w-full h-12 rounded-xl bg-[#2A9D8F] text-white font-bold text-sm hover:bg-[#238b7e] transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                type="button"
+              >
+                <Wrench className="size-4" />
+                Transformer en prise en charge
+              </button>
             )}
-            <div className="grid grid-cols-2 gap-3">
-              {selected.status !== "Facturé" && selected.status !== "Refusé" && (
-                <button
-                  className="h-11 rounded-xl border border-[#E7E4DC] bg-white text-[#1A1916] font-bold text-sm hover:bg-[#FAFAF8] transition-all flex items-center justify-center gap-2"
-                  onClick={() => {
-                    store.updateQuote(selected.id, { status: "Refusé" });
-                    toast.success("Devis marqué comme refusé");
-                  }}
-                  type="button"
-                >
-                  Refuser
-                </button>
-              )}
-              <button
-                onClick={() => download("quote", selected.id)}
-                className="h-11 rounded-xl border border-[#E7E4DC] bg-white text-[#1A1916] font-bold text-sm hover:bg-[#FAFAF8] transition-all flex items-center justify-center gap-2"
-              >
-                <Download className="size-4" />
-                PDF
-              </button>
-              <button
-                onClick={() => store.deleteQuote(selected.id)}
-                className="h-11 rounded-xl border border-[#E7E4DC] bg-white text-[#B42318] font-bold text-sm hover:bg-red-50 transition-all flex items-center justify-center gap-2"
-              >
-                <Trash2 className="size-4" />
-                Supprimer
-              </button>
-            </div>
+            <button
+              onClick={() => print("quote", selected.id)}
+              className="w-full h-11 rounded-xl border border-[#E8E8E5] bg-white text-[#1A1916] font-bold text-sm hover:bg-[#FAFAFA] transition-all flex items-center justify-center gap-2"
+              type="button"
+            >
+              <Printer className="size-4" />
+              Imprimer
+            </button>
+            <button
+              onClick={() => {
+                store.sendMessage({
+                  customerId: selected.customerId,
+                  channel: customer?.email ? "Email" : "SMS",
+                  subject: `Devis ${selected.number}`,
+                  body: `Bonjour, voici votre devis ${selected.number} d'un montant de ${formatEuro(getQuoteTotal(selected))}.`,
+                });
+                toast.success("Message ajouté à l'historique client.");
+              }}
+              className="w-full h-11 rounded-xl border border-[#E8E8E5] bg-white text-[#1A1916] font-bold text-sm hover:bg-[#FAFAFA] transition-all flex items-center justify-center gap-2"
+              type="button"
+            >
+              <Mail className="size-4" />
+              Notifier le client
+            </button>
+            <button
+              onClick={() => {
+                store.setSelected("quote", selected.id);
+                setCreateModalOpen(true);
+              }}
+              className="w-full h-11 rounded-xl border border-[#E8E8E5] bg-white text-[#1A1916] font-bold text-sm hover:bg-[#FAFAFA] transition-all flex items-center justify-center gap-2"
+              type="button"
+            >
+              <Save className="size-4" />
+              Modifier
+            </button>
+            <button
+              className="w-full h-11 rounded-xl border border-[#F2C8C3] bg-white text-[#C7493B] font-bold text-sm hover:bg-red-50 transition-all flex items-center justify-center gap-2"
+              onClick={() => {
+                store.updateQuote(selected.id, { status: "Refusé" });
+                toast.success("Devis marqué comme refusé");
+              }}
+              type="button"
+            >
+              <X className="size-4" />
+              Marquer refusé
+            </button>
+            <button
+              onClick={() => download("quote", selected.id)}
+              className="w-full h-11 rounded-xl border border-[#E8E8E5] bg-white text-[#1A1916] font-bold text-sm hover:bg-[#FAFAFA] transition-all flex items-center justify-center gap-2"
+              type="button"
+            >
+              <Download className="size-4" />
+              Télécharger
+            </button>
           </div>
         </Panel>
       )}
@@ -437,6 +530,8 @@ export function CreateQuoteModal({
     validityDays: 30,
   });
 
+  const [deviceState, setDeviceState] = useState<DeviceState>(makeDeviceSeed(""));
+
   // Sync prefill or selection
   useEffect(() => {
     if (!isOpen) return;
@@ -460,6 +555,7 @@ export function CreateQuoteModal({
         notes: prefill.notes || "",
         validityDays: 30,
       });
+      setDeviceState(makeDeviceSeed(r?.device || r?.deviceModel || "", r?.deviceType));
     }
   }, [isOpen, prefill, repairs, customers]);
 
@@ -490,6 +586,7 @@ export function CreateQuoteModal({
                 ]
               : f.lines,
         }));
+        setDeviceState(makeDeviceSeed(r.device || r.deviceModel || "", r.deviceType));
       }
     } else if (form.origin === "client" && form.customerId) {
       const c = customers.find((cust) => cust.id === form.customerId);
@@ -501,6 +598,7 @@ export function CreateQuoteModal({
           customerEmail: c.email || "",
           device: c.device || "",
         }));
+        setDeviceState(makeDeviceSeed(c.device || ""));
       }
     }
   }, [form.origin, form.repairId, form.customerId, repairs, customers]);
@@ -508,6 +606,10 @@ export function CreateQuoteModal({
   if (!isOpen) return null;
 
   const subtotal = form.lines.reduce((acc, line) => acc + line.quantity * line.unitPrice, 0);
+  const previewVat = getVatSummary(
+    form.lines.map((line) => ({ ...line, total: line.quantity * line.unitPrice })),
+    store.workshopInfo,
+  );
   const isFormValid = form.customerName.trim() !== "" && form.lines.some((l) => l.description.trim() !== "");
 
   const handleAddLine = () => {
@@ -564,10 +666,38 @@ export function CreateQuoteModal({
       }
     }
 
+    let repairIdForQuote = form.repairId;
+    if (!repairIdForQuote) {
+      repairIdForQuote = store.addRepair({
+        customerId: finalCustomerId,
+        device: form.device || deviceState.deviceLabel || "Appareil à renseigner",
+        model: form.device || deviceState.deviceLabel || "Appareil à renseigner",
+        deviceType: deviceState.deviceType as Quote["deviceType"],
+        deviceModel: form.device || deviceState.customModel || "",
+        issue: form.issue || form.lines.find((line) => line.description.trim())?.description || "Diagnostic",
+        status: "Reçu",
+        amount: subtotal,
+        total: subtotal,
+        laborPrice: subtotal,
+        notes: "Dossier créé automatiquement depuis un devis.",
+        droppedAt: new Date().toISOString(),
+        technician: "Atelier principal",
+        history: ["Prise en charge créée", "Devis créé depuis la page Devis"],
+      });
+      if (!repairIdForQuote) {
+        toast.error("Impossible de créer le dossier lié au devis.");
+        return;
+      }
+    }
+
     const quoteId = addQuote({
       customerId: finalCustomerId,
-      repairId: form.repairId,
+      repairId: repairIdForQuote,
       status,
+      deviceType: deviceState.deviceType as Quote["deviceType"],
+      deviceModel: form.device,
+      device: form.device,
+      issue: form.issue,
       lines: form.lines.filter((l) => l.description.trim() !== ""),
       notes: form.notes,
     });
@@ -587,17 +717,17 @@ export function CreateQuoteModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-stretch justify-stretch bg-black/40 backdrop-blur-sm p-0 md:items-center md:justify-center md:p-4">
-      <div className="relative flex min-h-svh w-full max-w-none flex-col overflow-hidden rounded-none border border-[#E7E4DC] bg-[#FAFAF8] shadow-2xl animate-in fade-in zoom-in duration-200 md:h-[90vh] md:min-h-0 md:max-w-[1200px] md:rounded-[16px]">
+    <div className="fixed inset-0 z-50 flex items-stretch justify-stretch bg-black/40 p-0 md:items-center md:justify-center md:p-4">
+      <div className="relative flex min-h-svh w-full max-w-none flex-col overflow-hidden rounded-none border border-[#E8E8E5] bg-white shadow-2xl animate-in fade-in zoom-in duration-200 md:h-[90vh] md:min-h-0 md:max-w-[1200px] md:rounded-[16px]">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#F1F1EF] bg-white md:px-8 md:py-6">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#F7F7F7] bg-white md:px-8 md:py-6">
           <div>
             <h2 className="text-[18px] font-bold text-[#1A1916] md:text-[22px]">Nouveau devis</h2>
             <p className="mt-0.5 text-[12.5px] text-[#6B6B6B] md:mt-1 md:text-sm">Proposition commerciale</p>
           </div>
           <button
             onClick={onClose}
-            className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#1A1916] transition hover:bg-[#E7E4DC] md:size-auto md:bg-transparent md:p-0"
+            className="grid size-9 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white text-[#1A1916] transition hover:bg-[#E8E8E5] md:size-auto md:bg-transparent md:p-0"
             aria-label="Fermer"
           >
             <X className="size-5 md:size-6" />
@@ -612,9 +742,9 @@ export function CreateQuoteModal({
               <label className="text-[13px] font-bold text-[#1A1916] md:text-sm">Origine du devis</label>
               <div className="grid grid-cols-3 gap-2 md:gap-4">
                 {[
-                  { id: "repair", label: "Depuis une réparation", icon: <Wrench /> },
+                  { id: "repair", label: "Depuis un dossier", icon: <Wrench /> },
                   { id: "client", label: "Client existant", icon: <User /> },
-                  { id: "manual", label: "Devis libre", icon: <Plus /> },
+                  { id: "manual", label: "Nouveau dossier", icon: <Plus /> },
                 ].map((opt) => (
                   <button
                     key={opt.id}
@@ -624,7 +754,7 @@ export function CreateQuoteModal({
                     className={`relative flex flex-col items-center justify-center gap-2 rounded-[12px] border h-[86px] transition-all md:gap-3 md:h-[110px] ${
                       form.origin === opt.id
                         ? "border-[#2A9D8F] bg-[#F1FAF8] shadow-sm"
-                        : "border-[#E7E4DC] bg-white hover:border-[#2A9D8F]/30"
+                        : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/30"
                     }`}
                   >
                     <div className={`${form.origin === opt.id ? "text-[#2A9D8F]" : "text-[#6B6B6B]"}`}>
@@ -647,26 +777,26 @@ export function CreateQuoteModal({
 
             {/* Context Selection (Conditional) */}
             {form.origin !== "manual" && (
-              <div className="mt-8 p-4 rounded-xl bg-white border border-[#E7E4DC] space-y-4 animate-in slide-in-from-top-2 duration-300">
+              <div className="mt-8 p-4 rounded-xl bg-white border border-[#E8E8E5] space-y-4 animate-in slide-in-from-top-2 duration-300">
                 {form.origin === "repair" ? (
                   <div className="space-y-2">
-                    <p className="text-xs font-semibold text-[#6B6B6B]">Sélectionner la réparation</p>
+                    <p className="text-xs font-semibold text-[#6B6B6B]">Sélectionner le dossier</p>
                     <div className="relative">
                       <select
-                        className="h-11 w-full appearance-none rounded-[10px] border border-[#E7E4DC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
+                        className="h-11 w-full appearance-none rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
                         value={form.repairId}
                         onChange={(e) => setForm((f) => ({ ...f, repairId: e.target.value }))}
                       >
-                        <option value="">-- Choisir une réparation --</option>
+                        <option value="">-- Choisir un dossier --</option>
                         {repairs
-                          .filter((r) => r.status !== "Restitué")
+                          .filter((r) => !isTerminalRepairStatus(r.status))
                           .map((r) => (
                             <option key={r.id} value={r.id}>
                               {r.number} — {customers.find((c) => c.id === r.customerId)?.name} ({r.deviceModel})
                             </option>
                           ))}
                       </select>
-                      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[#B0AEA8]" />
+                      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[#8A8A8A]" />
                     </div>
                   </div>
                 ) : (
@@ -674,7 +804,7 @@ export function CreateQuoteModal({
                     <p className="text-xs font-semibold text-[#6B6B6B]">Sélectionner le client</p>
                     <div className="relative">
                       <select
-                        className="h-11 w-full appearance-none rounded-[10px] border border-[#E7E4DC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
+                        className="h-11 w-full appearance-none rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
                         value={form.customerId}
                         onChange={(e) => setForm((f) => ({ ...f, customerId: e.target.value }))}
                       >
@@ -685,7 +815,7 @@ export function CreateQuoteModal({
                           </option>
                         ))}
                       </select>
-                      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[#B0AEA8]" />
+                      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[#8A8A8A]" />
                     </div>
                   </div>
                 )}
@@ -699,7 +829,7 @@ export function CreateQuoteModal({
                 <div className="space-y-2">
                   <p className="text-xs font-semibold text-[#6B6B6B]">Client</p>
                   <input
-                    className="h-11 w-full rounded-[10px] border border-[#E7E4DC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
+                    className="h-11 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
                     placeholder="Nom du client..."
                     value={form.customerName}
                     onChange={(e) => setForm({ ...form, customerName: e.target.value })}
@@ -708,7 +838,7 @@ export function CreateQuoteModal({
                 <div className="space-y-2">
                   <p className="text-xs font-semibold text-[#6B6B6B]">Email client</p>
                   <input
-                    className="h-11 w-full rounded-[10px] border border-[#E7E4DC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
+                    className="h-11 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
                     placeholder="Email (optionnel)..."
                     value={form.customerEmail}
                     onChange={(e) => setForm({ ...form, customerEmail: e.target.value })}
@@ -717,7 +847,7 @@ export function CreateQuoteModal({
                 <div className="space-y-2">
                   <p className="text-xs font-semibold text-[#6B6B6B]">Téléphone</p>
                   <input
-                    className="h-11 w-full rounded-[10px] border border-[#E7E4DC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
+                    className="h-11 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
                     placeholder="Numéro de téléphone..."
                     value={form.customerPhone}
                     onChange={(e) => setForm({ ...form, customerPhone: e.target.value })}
@@ -727,30 +857,32 @@ export function CreateQuoteModal({
                   <p className="text-xs font-semibold text-[#6B6B6B]">Validité (jours)</p>
                   <input
                     type="number"
-                    className="h-11 w-full rounded-[10px] border border-[#E7E4DC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F]"
+                    className="h-11 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F]"
                     value={form.validityDays}
                     onChange={(e) => setForm({ ...form, validityDays: parseInt(e.target.value) })}
                   />
                 </div>
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold text-[#6B6B6B]">Appareil</p>
-                  <input
-                    className="h-11 w-full rounded-[10px] border border-[#E7E4DC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
-                    placeholder="Ex. iPhone 14 Pro Max"
-                    value={form.device}
-                    onChange={(e) => setForm({ ...form, device: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold text-[#6B6B6B]">Panne / description</p>
-                  <input
-                    className="h-11 w-full rounded-[10px] border border-[#E7E4DC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
-                    placeholder="Écran, Batterie..."
-                    value={form.issue}
-                    onChange={(e) => setForm({ ...form, issue: e.target.value })}
-                  />
-                </div>
               </div>
+            </div>
+
+            {/* Appareil & problème guidés */}
+            <div className="mt-8 space-y-4 p-4 rounded-xl bg-white border border-[#E8E8E5]">
+              <label className="text-sm font-bold text-[#1A1916]">Appareil &amp; problème</label>
+              <DeviceSelector
+                deviceType={deviceState.deviceType}
+                brand={deviceState.brand}
+                model={deviceState.model}
+                customModel={deviceState.customModel}
+                onChange={(updates) => {
+                  setDeviceState(updates);
+                  setForm((f) => ({ ...f, device: updates.deviceLabel }));
+                }}
+              />
+              <ProblemSelector
+                deviceType={deviceState.deviceType}
+                value={form.issue}
+                onChange={(issue) => setForm((f) => ({ ...f, issue }))}
+              />
             </div>
 
             {/* 3. Lignes */}
@@ -774,7 +906,7 @@ export function CreateQuoteModal({
                   >
                     <div className="flex-1">
                       <input
-                        className="h-11 w-full rounded-[10px] border border-[#E7E4DC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F]"
+                        className="h-11 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F]"
                         placeholder="Description de la prestation..."
                         value={line.description}
                         onChange={(e) => handleLineChange(line.id, "description", e.target.value)}
@@ -783,7 +915,7 @@ export function CreateQuoteModal({
                     <div className="w-20">
                       <input
                         type="number"
-                        className="h-11 w-full rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-center text-sm outline-none focus:border-[#2A9D8F]"
+                        className="h-11 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-center text-sm outline-none focus:border-[#2A9D8F]"
                         placeholder="Qté"
                         value={line.quantity}
                         onChange={(e) => handleLineChange(line.id, "quantity", parseInt(e.target.value) || 0)}
@@ -792,7 +924,7 @@ export function CreateQuoteModal({
                     <div className="w-28">
                       <input
                         type="number"
-                        className="h-11 w-full rounded-[10px] border border-[#E7E4DC] bg-white px-3 text-right text-sm outline-none focus:border-[#2A9D8F]"
+                        className="h-11 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-right text-sm outline-none focus:border-[#2A9D8F]"
                         placeholder="Prix Unit."
                         value={line.unitPrice}
                         onChange={(e) => handleLineChange(line.id, "unitPrice", parseFloat(e.target.value) || 0)}
@@ -800,7 +932,7 @@ export function CreateQuoteModal({
                     </div>
                     <button
                       onClick={() => handleRemoveLine(line.id)}
-                      className="flex size-11 items-center justify-center rounded-[10px] text-[#B0AEA8] transition hover:bg-red-50 hover:text-red-500"
+                      className="flex size-11 items-center justify-center rounded-[10px] text-[#8A8A8A] transition hover:bg-red-50 hover:text-red-500"
                     >
                       <Trash2 className="size-4" />
                     </button>
@@ -813,7 +945,7 @@ export function CreateQuoteModal({
             <div className="mt-10 space-y-4">
               <label className="text-sm font-bold text-[#1A1916]">Notes & Conditions</label>
               <textarea
-                className="min-h-[100px] w-full rounded-[12px] border border-[#E7E4DC] bg-white p-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
+                className="min-h-[100px] w-full rounded-[12px] border border-[#E8E8E5] bg-white p-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
                 placeholder="Notes à l'attention du client ou conditions particulières..."
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -822,13 +954,13 @@ export function CreateQuoteModal({
           </div>
 
           {/* Right Column - Preview (hidden on mobile) */}
-          <div className="hidden lg:flex w-[440px] border-l border-[#F1F1EF] bg-[#F6F6F4]/30 flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#F1F1EF] bg-white/50 backdrop-blur-sm">
-              <span className="text-[10px] font-bold text-[#B0AEA8] uppercase tracking-widest">Aperçu en direct</span>
+          <div className="hidden lg:flex w-[440px] border-l border-[#F7F7F7] bg-[#FAFAFA]/30 flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#F7F7F7] bg-white/50">
+              <span className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-widest">Aperçu en direct</span>
               <div className="flex items-center gap-2">
-                <div className="size-1.5 rounded-full bg-[#E7E4DC]" />
-                <div className="size-1.5 rounded-full bg-[#E7E4DC]" />
-                <div className="px-2 py-0.5 rounded-full bg-[#FFF4E5] text-[9px] font-bold text-[#D97706] uppercase">
+                <div className="size-1.5 rounded-full bg-[#E8E8E5]" />
+                <div className="size-1.5 rounded-full bg-[#E8E8E5]" />
+                <div className="px-2 py-0.5 rounded-full bg-[#FAFAFA] text-[9px] font-bold text-[#6B6B6B] uppercase">
                   Brouillon
                 </div>
               </div>
@@ -836,9 +968,9 @@ export function CreateQuoteModal({
 
             <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
               {/* Document Simulé */}
-              <div className="bg-white shadow-sm border border-[#E7E4DC] rounded-xl p-8 min-h-[500px] flex flex-col">
+              <div className="bg-white shadow-sm border border-[#E8E8E5] rounded-xl p-8 min-h-[500px] flex flex-col">
                 {/* Header Atelier */}
-                <div className="flex items-center gap-4 border-b border-[#F1F1EF] pb-8 mb-8">
+                <div className="flex items-center gap-4 border-b border-[#F7F7F7] pb-8 mb-8">
                   <div />
                   <div>
                     <h4 className="font-bold text-[#1A1916] text-sm">{workshopInfo?.name || "Atelier"}</h4>
@@ -851,34 +983,34 @@ export function CreateQuoteModal({
                     <div className="grid grid-cols-2 gap-8 text-[11px]">
                       <div className="space-y-4">
                         <div>
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#B0AEA8] mb-1">
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A8A8A] mb-1">
                             DEVIS POUR
                           </p>
                           <p className="font-bold text-[#1A1916]">{form.customerName}</p>
                           <p className="text-[#6B6B6B]">{form.customerPhone || "—"}</p>
                         </div>
                         <div>
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#B0AEA8] mb-1">APPAREIL</p>
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A8A8A] mb-1">APPAREIL</p>
                           <p className="font-bold text-[#1A1916]">{form.device || "—"}</p>
                           <p className="text-[#6B6B6B] italic">{form.issue || "—"}</p>
                         </div>
                       </div>
                       <div className="space-y-4 text-right">
                         <div>
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#B0AEA8] mb-1">DATE</p>
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A8A8A] mb-1">DATE</p>
                           <p className="font-bold text-[#1A1916]">
                             {new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
                           </p>
                         </div>
                         <div>
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#B0AEA8] mb-1">VALIDITÉ</p>
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A8A8A] mb-1">VALIDITÉ</p>
                           <p className="font-bold text-[#2A9D8F]">{form.validityDays} jours</p>
                         </div>
                       </div>
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between border-b border-[#F1F1EF] pb-2 text-[10px] font-bold text-[#B0AEA8] uppercase tracking-wider">
+                      <div className="flex items-center justify-between border-b border-[#F7F7F7] pb-2 text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider">
                         <span>Description</span>
                         <span>Total</span>
                       </div>
@@ -897,20 +1029,20 @@ export function CreateQuoteModal({
                         ))}
                     </div>
 
-                    <div className="mt-auto pt-8 border-t border-[#F1F1EF] space-y-2">
+                    <div className="mt-auto pt-8 border-t border-[#F7F7F7] space-y-2">
                       {store.workshopInfo.vatApplicable ? (
                         <div className="space-y-1">
                           <div className="flex justify-between text-[10px] text-[#6B6B6B]">
-                            <span>Total HT</span>
-                            <span className="font-medium">{formatEuro(subtotal)}</span>
+                            <span>Sous-total HT</span>
+                            <span className="font-medium">{formatEuro(previewVat.ht)}</span>
                           </div>
                           <div className="flex justify-between text-[10px] text-[#6B6B6B]">
-                            <span>TVA (20%)</span>
-                            <span className="font-medium">{formatEuro(subtotal * 0.2)}</span>
+                            <span>TVA ({Math.round(previewVat.rate * 1000) / 10}%)</span>
+                            <span className="font-medium">{formatEuro(previewVat.tva)}</span>
                           </div>
                           <div className="flex justify-between items-end pt-2">
                             <span className="text-xs font-bold text-[#1A1916]">TOTAL TTC</span>
-                            <span className="text-xl font-bold text-[#2A9D8F]">{formatEuro(subtotal * 1.2)}</span>
+                            <span className="text-xl font-bold text-[#2A9D8F]">{formatEuro(previewVat.ttc)}</span>
                           </div>
                         </div>
                       ) : (
@@ -923,8 +1055,8 @@ export function CreateQuoteModal({
                   </div>
                 ) : (
                   <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
-                    <div className="size-12 rounded-full bg-[#FAFAF8] flex items-center justify-center mb-4">
-                      <FileText className="size-6 text-[#B0AEA8]" />
+                    <div className="size-12 rounded-[12px] border border-[#E8E8E5] bg-[#FAFAFA] flex items-center justify-center mb-4">
+                      <FileText className="size-6 text-[#8A8A8A]" />
                     </div>
                     <p className="text-sm font-bold text-[#1A1916] mb-1">Devis en cours de saisie</p>
                     <p className="text-xs text-[#6B6B6B]">Les informations du devis s'afficheront ici.</p>
@@ -936,7 +1068,7 @@ export function CreateQuoteModal({
         </div>
 
         {/* Footer Sticky */}
-        <div className="absolute bottom-0 left-0 right-0 border-t border-[#F1F1EF] bg-white px-8 py-5 flex items-center justify-between z-20">
+        <div className="absolute bottom-0 left-0 right-0 border-t border-[#F7F7F7] bg-white px-8 py-5 flex items-center justify-between z-20">
           <div className="flex items-center gap-6">
             <button
               onClick={onClose}
@@ -963,7 +1095,7 @@ export function CreateQuoteModal({
             <button
               onClick={() => handleCreate("Envoyé", true)}
               disabled={!isFormValid}
-              className="h-11 px-8 rounded-[12px] bg-[#2A9D8F] text-sm font-bold text-white shadow-lg shadow-[#2A9D8F]/20 hover:bg-[#238b7e] transition-all disabled:opacity-50 active:scale-[0.98] flex items-center gap-2"
+              className="h-11 px-8 rounded-[12px] bg-[#2A9D8F] text-sm font-bold text-white hover:bg-[#238b7e] transition-all disabled:opacity-50 active:scale-[0.98] flex items-center gap-2"
             >
               <Download className="size-4" />
               Créer et télécharger le PDF

@@ -18,13 +18,11 @@ import {
 } from "@/lib/preferences/layout-utils";
 import { PREFERENCE_DEFAULTS } from "@/lib/preferences/preferences-config";
 import { persistPreference } from "@/lib/preferences/preferences-storage";
-import { THEME_PRESET_OPTIONS, type ThemeMode, type ThemePreset } from "@/lib/preferences/theme";
+import { THEME_PRESET_OPTIONS, type ThemePreset } from "@/lib/preferences/theme";
 import { applyThemePreset } from "@/lib/preferences/theme-utils";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 
 export function LayoutControls() {
-  const themeMode = usePreferencesStore((s) => s.themeMode);
-  const resolvedThemeMode = usePreferencesStore((s) => s.resolvedThemeMode);
   const setThemeMode = usePreferencesStore((s) => s.setThemeMode);
   const themePreset = usePreferencesStore((s) => s.themePreset);
   const setThemePreset = usePreferencesStore((s) => s.setThemePreset);
@@ -45,10 +43,9 @@ export function LayoutControls() {
     void persistPreference("theme_preset", preset);
   };
 
-  const onThemeModeChange = (mode: ThemeMode | "") => {
-    if (!mode) return;
-    setThemeMode(mode);
-    void persistPreference("theme_mode", mode);
+  const onThemeModeChange = () => {
+    setThemeMode("light");
+    void persistPreference("theme_mode", "light");
   };
 
   const onContentLayoutChange = (layout: ContentLayout | "") => {
@@ -88,7 +85,7 @@ export function LayoutControls() {
 
   const handleRestore = () => {
     onThemePresetChange(PREFERENCE_DEFAULTS.theme_preset);
-    onThemeModeChange(PREFERENCE_DEFAULTS.theme_mode);
+    onThemeModeChange();
     onContentLayoutChange(PREFERENCE_DEFAULTS.content_layout);
     onNavbarStyleChange(PREFERENCE_DEFAULTS.navbar_style);
     onSidebarStyleChange(PREFERENCE_DEFAULTS.sidebar_variant);
@@ -123,8 +120,7 @@ export function LayoutControls() {
                         <span
                           className="size-2.5 rounded-full"
                           style={{
-                            backgroundColor:
-                              (resolvedThemeMode ?? "light") === "dark" ? preset.primary.dark : preset.primary.light,
+                            backgroundColor: preset.primary.light,
                           }}
                         />
                         {preset.label}
@@ -151,27 +147,6 @@ export function LayoutControls() {
                   </SelectGroup>
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="space-y-1">
-              <Label className="font-medium text-xs">Theme Mode</Label>
-              <ToggleGroup
-                size="sm"
-                variant="outline"
-                type="single"
-                value={themeMode}
-                onValueChange={onThemeModeChange}
-              >
-                <ToggleGroupItem value="light" aria-label="Toggle light">
-                  Light
-                </ToggleGroupItem>
-                <ToggleGroupItem value="dark" aria-label="Toggle dark">
-                  Dark
-                </ToggleGroupItem>
-                <ToggleGroupItem value="system" aria-label="Toggle system">
-                  System
-                </ToggleGroupItem>
-              </ToggleGroup>
             </div>
 
             <div className="space-y-1">

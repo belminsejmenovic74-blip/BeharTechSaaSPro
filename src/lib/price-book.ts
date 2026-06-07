@@ -464,6 +464,12 @@ export const getBestPriceBookItem = (items: PriceBookItem[]): PriceBookItem | un
   if (items.length === 0) return undefined;
 
   return [...items].sort((a, b) => {
+    // Préférer une pièce réellement en stock : un tarif posé sur une pièce à 0 en
+    // stock ne doit pas masquer le prix de la pièce disponible (cohérence avec les
+    // paramètres prix — ex. Écran 89 € dispo plutôt qu'un doublon 200 € à 0 en stock).
+    const aInStock = (a.stockDisponible ?? 0) > 0 ? 1 : 0;
+    const bInStock = (b.stockDisponible ?? 0) > 0 ? 1 : 0;
+    if (aInStock !== bInStock) return bInStock - aInStock;
     const priorityDiff = SOURCE_PRIORITY[b.source] - SOURCE_PRIORITY[a.source];
     if (priorityDiff !== 0) return priorityDiff;
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();

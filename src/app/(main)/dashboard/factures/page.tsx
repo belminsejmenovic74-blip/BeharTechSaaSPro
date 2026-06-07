@@ -6,7 +6,7 @@ export default function InvoicesPage() {
     <PageShell
       searchPlaceholder="Rechercher facture ou client..."
       title="Factures"
-      subtitle="Non payée / payée, reste à encaisser, liens réparations."
+      subtitle="Statut de facture, règlements indiqués et liens dossiers."
     >
       <InvoicesWorkspace />
     </PageShell>

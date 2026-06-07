@@ -1,5 +1,20 @@
 import type { Repair } from "@/lib/behar-store";
 
+const cleanDevicePart = (value: unknown) =>
+  String(value ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+export function formatBrandModel(brandValue: unknown, modelValue: unknown, fallback = "Appareil"): string {
+  const brand = cleanDevicePart(brandValue);
+  const model = cleanDevicePart(modelValue);
+  if (!brand && !model) return fallback;
+  if (!brand) return model;
+  if (!model) return brand;
+  if (model.toLowerCase().startsWith(brand.toLowerCase())) return model;
+  return `${brand} ${model}`;
+}
+
 /**
  * Combine la marque et le modèle d'un appareil en évitant les doublons :
  * - brand = "Apple", model = "iPhone 13"            → "Apple iPhone 13"
@@ -16,15 +31,8 @@ export function formatDeviceLabel(
   fallback = "Appareil",
 ): string {
   if (!source) return fallback;
-  const clean = (value: unknown) =>
-    String(value ?? "")
-      .replace(/\s+/g, " ")
-      .trim();
-  const brand = clean(source.brandName);
-  const model = clean(source.deviceModel || source.model);
-  if (!brand && !model) return clean(source.device) || fallback;
-  if (!brand) return model;
-  if (!model) return brand;
-  if (model.toLowerCase().startsWith(brand.toLowerCase())) return model;
-  return `${brand} ${model}`;
+  const brand = cleanDevicePart(source.brandName);
+  const model = cleanDevicePart(source.deviceModel || source.model);
+  if (!brand && !model) return cleanDevicePart(source.device) || fallback;
+  return formatBrandModel(brand, model, fallback);
 }

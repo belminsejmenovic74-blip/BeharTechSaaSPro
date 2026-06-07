@@ -12,7 +12,7 @@ export function LicenseCard() {
 
   /**
    * Désactiver la licence : désactive simplement la licence (licenseActivated = false),
-   * mais conserve les données locales sur l'appareil.
+   * et conserve l'atelier associé à la licence.
    */
   const handleDeactivate = () => {
     // eslint-disable-next-line no-console
@@ -56,7 +56,7 @@ export function LicenseCard() {
   return (
     <Panel className="p-5">
       <div className="flex items-start gap-4">
-        <div className="size-10 rounded-xl bg-[#EAF6F2] flex items-center justify-center text-[#2A9D8F] shrink-0">
+        <div className="size-10 flex items-center justify-center text-[#2A9D8F] shrink-0">
           <Key className="size-5" />
         </div>
         <div className="flex-1">
@@ -76,10 +76,10 @@ export function LicenseCard() {
           </div>
 
           {/* Options de gestion de licence */}
-          <div className="mt-6 pt-5 border-t border-[#F1F1EF] space-y-4">
+          <div className="mt-6 pt-5 border-t border-[#F7F7F7] space-y-4">
             <div className="flex flex-wrap gap-2.5">
               <SecondaryButton
-                className="h-10 px-4 text-xs font-semibold gap-2 border-[#E7E4DC] hover:border-[#2A9D8F] hover:text-[#2A9D8F] active:scale-[0.98] transition-all duration-200"
+                className="h-10 px-4 text-xs font-semibold gap-2 border-[#E8E8E5] hover:border-[#2A9D8F] hover:text-[#2A9D8F] active:scale-[0.98] transition-all duration-200"
                 onClick={handleChangeKey}
               >
                 <RefreshCw className="size-3.5" />
@@ -94,12 +94,12 @@ export function LicenseCard() {
               </SecondaryButton>
             </div>
 
-            <p className="text-[11px] text-[#8A8984] leading-relaxed">
-              <strong>Changer de clé :</strong> Efface complètement les données locales de cet appareil pour pouvoir
+            <p className="text-[11px] text-[#6B6B6B] leading-relaxed">
+              <strong>Changer de clé :</strong> Déconnecte complètement cet appareil pour pouvoir
               connecter un autre atelier sans risque de mélange.
               <br />
-              <strong>Désactiver la licence :</strong> Déconnecte temporairement l'appareil. Vos données locales restent
-              en mémoire sur cet appareil si vous souhaitez réactiver la même clé plus tard.
+              <strong>Désactiver la licence :</strong> Déconnecte temporairement l'appareil. L'atelier reste associé à
+              la licence pour une réactivation ultérieure.
             </p>
           </div>
         </div>

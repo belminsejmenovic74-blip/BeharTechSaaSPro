@@ -29,10 +29,10 @@ function readDomState(): Partial<PreferencesState> {
   const root = document.documentElement;
 
   const themeModeAttr = getSafeValue(root.getAttribute("data-theme-mode"), THEME_MODE_VALUES);
-  const resolvedMode = root.classList.contains("dark") ? "dark" : "light";
+  const resolvedMode = "light";
 
   return {
-    themeMode: themeModeAttr ?? resolvedMode,
+    themeMode: themeModeAttr ?? "light",
     resolvedThemeMode: resolvedMode,
     themePreset: getSafeValue(root.getAttribute("data-theme-preset"), THEME_PRESET_VALUES),
     font: getSafeValue(root.getAttribute("data-font"), FONT_VALUES),

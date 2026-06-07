@@ -100,7 +100,7 @@ export function Combobox({
           aria-expanded={open}
           autoComplete="off"
           className={cn(
-            "h-11 w-full rounded-[12px] border border-[#E7E4DC] bg-white px-4 pr-10 text-[#1A1916] text-sm outline-none transition placeholder:text-[#8A8984] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10 disabled:cursor-not-allowed disabled:opacity-50",
+            "h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-4 pr-10 text-[#1A1916] text-sm outline-none transition placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10 disabled:cursor-not-allowed disabled:opacity-50",
             leftIcon ? "pl-10" : "",
             inputClassName,
           )}
@@ -150,7 +150,7 @@ export function Combobox({
       </div>
       {open && (
         <ul
-          className="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto rounded-[12px] border border-[#E7E4DC] bg-[#FAFAF8] py-1 shadow-[0_18px_42px_rgba(26,25,22,0.10)]"
+          className="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto rounded-[12px] border border-[#E8E8E5] bg-[#FAFAFA] py-1 shadow-[0_18px_42px_rgba(26,25,22,0.10)]"
           id={listId}
           role="listbox"
         >
@@ -181,7 +181,7 @@ export function Combobox({
           {showCreate && (
             <li
               className={cn(
-                "flex cursor-pointer items-center gap-2 border-[#E7E4DC] border-t px-3 py-2 text-[#167B70] text-sm",
+                "flex cursor-pointer items-center gap-2 border-[#E8E8E5] border-t px-3 py-2 text-[#167B70] text-sm",
                 highlight === filtered.length ? "bg-[#E8F7F3]" : "hover:bg-[#E8F7F3]",
               )}
               onMouseDown={(e) => {

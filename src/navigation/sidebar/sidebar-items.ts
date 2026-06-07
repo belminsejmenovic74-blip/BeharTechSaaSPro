@@ -1,7 +1,7 @@
 import {
   CalendarDays,
-  CreditCard,
   FileText,
+  FolderOpen,
   Home,
   type LucideIcon,
   Package,
@@ -41,11 +41,12 @@ export const sidebarItems: NavGroup[] = [
     id: 1,
     items: [
       { title: "Tableau de bord", url: "/dashboard", icon: Home },
-      { title: "Réparations", url: "/dashboard/reparations", icon: Wrench },
+      { title: "Atelier", url: "/dashboard/atelier", icon: Wrench },
+      { title: "Réparations", url: "/dashboard/reparations", icon: FolderOpen },
       { title: "Clients", url: "/dashboard/clients", icon: Users },
       { title: "Devis", url: "/dashboard/devis", icon: FileText },
       { title: "Factures", url: "/dashboard/factures", icon: Receipt },
-      { title: "Paiements", url: "/dashboard/paiements", icon: CreditCard },
+      { title: "Documents", url: "/dashboard/documents", icon: FileText },
       { title: "Rendez-vous", url: "/dashboard/rendez-vous", icon: CalendarDays },
       { title: "Stock", url: "/dashboard/stock", icon: Package },
       { title: "Paramètres", url: "/dashboard/parametres", icon: Settings },

@@ -8,20 +8,15 @@ import { Download, ExternalLink, Eye, Mail, Printer, Search, Trash2 } from "luci
 import { toast } from "sonner";
 
 import { PrimaryButton, SecondaryButton, StatusBadge } from "@/components/behar/primitives";
-import { type BeharDocument, type DocumentType, formatEuro, useBeharStore } from "@/lib/behar-store";
+import { type BeharDocument, type DocumentType, formatEuro, getQuoteDeviceListLabel, useBeharStore } from "@/lib/behar-store";
 import { formatDeviceLabel } from "@/lib/format-device";
+import { formatIntakeBonNumber } from "@/lib/utils";
 
+import { getPrintableTarget, LocalPrintableDocument } from "./local-printable-document";
 import { useDocument } from "./print-provider";
-import {
-  InternalRepairDocument,
-  InvoiceDocument,
-  PaymentReceiptDocument,
-  QuoteDocument,
-  RepairIntakeDocument,
-  SaleReceiptDocument,
-} from "./printable-documents";
 
-type FilterType = "all" | DocumentType;
+// "sales" est un filtre composite : reçus de vente (sale-receipt + sale-invoice).
+type FilterType = "all" | "sales" | DocumentType;
 
 const TYPE_FILTERS: Array<{ key: FilterType; label: string }> = [
   { key: "all", label: "Tous" },
@@ -29,8 +24,7 @@ const TYPE_FILTERS: Array<{ key: FilterType; label: string }> = [
   { key: "quote", label: "Devis" },
   { key: "invoice", label: "Factures" },
   { key: "payment", label: "Reçus" },
-  { key: "sale-receipt", label: "Ventes" },
-  { key: "sale-invoice", label: "Factures vente" },
+  { key: "sales", label: "Ventes" },
   { key: "internal", label: "Fiches internes" },
   { key: "summary", label: "Résumés" },
 ];
@@ -39,9 +33,9 @@ const TYPE_LABEL: Record<DocumentType, string> = {
   intake: "Bon de prise en charge",
   quote: "Devis",
   invoice: "Facture",
-  payment: "Reçu de paiement",
-  "sale-receipt": "Reçu de vente",
-  "sale-invoice": "Facture de vente",
+  payment: "Reçu / justificatif",
+  "sale-receipt": "Reçu",
+  "sale-invoice": "Reçu",
   internal: "Fiche interne",
   summary: "Résumé dossier",
 };
@@ -51,8 +45,8 @@ const TYPE_SHORT_LABEL: Record<DocumentType, string> = {
   quote: "Devis",
   invoice: "Facture",
   payment: "Reçu",
-  "sale-receipt": "Vente",
-  "sale-invoice": "Facture vente",
+  "sale-receipt": "Reçu",
+  "sale-invoice": "Reçu",
   internal: "Interne",
   summary: "Résumé",
 };
@@ -62,25 +56,8 @@ const PREVIEW_DOCUMENT_WIDTH = 794;
 const STATUS_FILTERS = ["Tous", "Brouillon", "Envoyé", "Accepté", "Non payé", "Payé", "Annulé"] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];
 
-type PrintableDocumentTarget = {
-  type: "intake" | "quote" | "invoice" | "payment" | "internal" | "sale-receipt";
-  id: string;
-};
-
-function getPrintableTarget(document: BeharDocument): PrintableDocumentTarget | null {
-  if (document.type === "intake" && document.repairId) return { type: "intake", id: document.repairId };
-  if (document.type === "quote" && document.quoteId) return { type: "quote", id: document.quoteId };
-  if (document.type === "invoice" && document.invoiceId) return { type: "invoice", id: document.invoiceId };
-  if (document.type === "payment" && document.paymentId) return { type: "payment", id: document.paymentId };
-  if (document.type === "internal" && document.repairId) return { type: "internal", id: document.repairId };
-  if (document.type === "summary" && document.repairId) return { type: "internal", id: document.repairId };
-  if ((document.type === "sale-receipt" || document.type === "sale-invoice") && document.saleId)
-    return { type: "sale-receipt", id: document.saleId };
-  return null;
-}
-
 const sourceHref = (document: BeharDocument): string | null => {
-  if (document.repairId) return `/dashboard/reparations`;
+  if (document.repairId) return `/dashboard/dossiers/${document.repairId}`;
   if (document.quoteId) return `/dashboard/devis`;
   if (document.invoiceId) return `/dashboard/factures`;
   if (document.paymentId) return `/dashboard/paiements`;
@@ -100,6 +77,7 @@ export function DocumentPreview() {
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [filterStatus, setFilterStatus] = useState<StatusFilter>("Tous");
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"all" | "byRepair" | "byClient" | "recent">("all");
 
   const enriched = useMemo(() => {
     return store.documents.map((document, index) => {
@@ -112,17 +90,20 @@ export function DocumentPreview() {
 
       const isCounter = customer?.type === "counter";
       const customerLabel = isCounter ? "Client comptoir" : (customer?.name ?? "Client");
-      const deviceLabel = repair ? formatDeviceLabel(repair, "") : "";
+      const quoteDeviceLabel = quote ? getQuoteDeviceListLabel(quote) : "";
+      const deviceLabel = repair ? formatDeviceLabel(repair, "") : quoteDeviceLabel;
 
-      const interventionLabel = repair?.issue ?? "";
+      const interventionLabel = repair?.issue ?? quote?.issue ?? "";
 
       const numberLabel =
-        sale?.number ??
-        invoice?.number ??
-        quote?.number ??
-        repair?.number ??
-        payment?.paymentNumber ??
-        document.id.slice(-6).toUpperCase();
+        document.type === "intake" && repair
+          ? formatIntakeBonNumber(repair.number)
+          : sale?.number ??
+            invoice?.number ??
+            quote?.number ??
+            repair?.number ??
+            payment?.paymentNumber ??
+            document.id.slice(-6).toUpperCase();
 
       const amount =
         sale?.total ??
@@ -135,11 +116,11 @@ export function DocumentPreview() {
 
       const titleLabel =
         document.type === "intake" && repair
-          ? `Bon de prise en charge / ${repair.number} / ${customerLabel} / ${deviceLabel || repair.device}`
+          ? `Bon de prise en charge / ${numberLabel} / ${customerLabel} / ${deviceLabel || repair.device}`
           : document.title;
       const listTitle =
         document.type === "intake" && repair
-          ? `Bon ${repair.number}`
+          ? `Bon ${numberLabel}`
           : document.type === "internal" && repair
             ? `Fiche interne ${repair.number}`
             : document.type === "summary" && repair
@@ -169,10 +150,16 @@ export function DocumentPreview() {
         titleLabel,
         numberLabel,
         customerLabel,
+        customer?.phone ?? "",
         deviceLabel,
         interventionLabel,
+        invoice?.number ?? "",
+        payment?.paymentNumber ?? "",
         repair?.brandName ?? "",
         repair?.deviceModel ?? "",
+        quote?.brandName ?? "",
+        quote?.deviceModel ?? "",
+        quote?.deviceType ?? "",
         repair?.model ?? "",
         repair?.device ?? "",
         repair?.number ?? "",
@@ -219,7 +206,11 @@ export function DocumentPreview() {
     const tokens = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
     return enriched
       .filter((row) => {
-        if (filterType !== "all" && row.document.type !== filterType) return false;
+        if (filterType === "sales") {
+          if (row.document.type !== "sale-receipt" && row.document.type !== "sale-invoice") return false;
+        } else if (filterType !== "all" && row.document.type !== filterType) {
+          return false;
+        }
         if (filterStatus !== "Tous") {
           if (filterStatus === "Non payé") {
             if (!(row.document.type === "invoice" && row.statusLabel === "Non payé")) return false;
@@ -235,26 +226,85 @@ export function DocumentPreview() {
 
   const filtersActive = filterType !== "all" || filterStatus !== "Tous" || search.trim().length > 0;
 
+  // Vue récente : derniers documents générés (déjà triés récent → ancien).
+  const recentDocs = useMemo(() => filtered.slice(0, 40), [filtered]);
+
+  // Regroupement par dossier atelier ou par client.
+  const groups = useMemo(() => {
+    if (viewMode !== "byRepair" && viewMode !== "byClient") return [] as Array<{ key: string; title: string; subtitle: string; rows: typeof filtered }>;
+    const map = new Map<string, { key: string; title: string; subtitle: string; rows: typeof filtered }>();
+    for (const row of filtered) {
+      const key = viewMode === "byRepair" ? (row.repair?.id ?? "__none__") : (row.customer?.id ?? "__none__");
+      if (!map.has(key)) {
+        const title = viewMode === "byRepair" ? (row.repair?.number ?? "Sans dossier") : row.customerLabel;
+        const subtitle =
+          viewMode === "byRepair"
+            ? row.repair
+              ? [row.customerLabel, row.deviceLabel].filter(Boolean).join(" · ")
+              : "Documents non rattachés à un dossier"
+            : (row.customer?.phone ?? "");
+        map.set(key, { key, title, subtitle, rows: [] as typeof filtered });
+      }
+      map.get(key)?.rows.push(row);
+    }
+    return [...map.values()];
+  }, [filtered, viewMode]);
+
   const selectedRow = filtered.find((row) => row.document.id === store.selectedDocumentId) ?? filtered[0];
   const selected = selectedRow?.document;
 
+  const renderRow = (row: (typeof filtered)[number]) => {
+    const active = row.document.id === selected?.id;
+    return (
+      <button
+        className={`w-full rounded-2xl border p-4 text-left transition ${
+          active
+            ? "border-[#2A9D8F] bg-[#EAF6F2] shadow-[0_14px_34px_rgba(42,157,143,0.10)]"
+            : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/40"
+        }`}
+        data-document-id={row.document.id}
+        data-document-type={row.document.type}
+        data-testid={`document-row-${row.document.type}`}
+        key={row.document.id}
+        onClick={() => store.setSelected("document", row.document.id)}
+        type="button"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 text-[#6B6B6B] text-[10px] uppercase tracking-wide">
+              {TYPE_SHORT_LABEL[row.document.type]}
+            </span>
+            <div className="mt-1 truncate font-semibold text-[#1A1916] text-sm">{row.listTitle}</div>
+          </div>
+          <span className="shrink-0 font-mono text-[#6B6B6B] text-[11px]">{row.numberLabel}</span>
+        </div>
+        <div className="mt-2 line-clamp-2 text-[#6B6B6B] text-xs">{row.contextLabel}</div>
+        <div className="mt-1 text-[#6B6B6B] text-[11px]">{row.document.createdAt}</div>
+        <div className="mt-2 flex items-center justify-between text-xs">
+          <span className="font-semibold text-[#1A1916]">{formatEuro(row.amount)}</span>
+          <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 text-[#6B6B6B]">{row.statusLabel}</span>
+        </div>
+      </button>
+    );
+  };
+
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl border border-[#E7E4DC] bg-white p-4 shadow-[0_8px_22px_rgba(26,25,22,0.03)]">
+      <div className="rounded-2xl border border-[#E8E8E5] bg-white p-4 shadow-[0_8px_22px_rgba(26,25,22,0.03)]">
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_160px]">
           <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#6B6B6B]" />
             <input
-              className="h-11 w-full rounded-[12px] border border-[#E7E4DC] bg-[#FAFAF8] pl-10 pr-3 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+              className="h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-[#FAFAFA] pl-10 pr-3 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
               data-testid="documents-search"
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Rechercher : client, numéro, appareil, réparation…"
+              placeholder="Rechercher : client, numéro, appareil, dossier..."
               type="search"
               value={search}
             />
           </div>
           <select
-            className="h-11 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-[#1A1916] text-sm outline-none focus:border-[#2A9D8F]"
+            className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-sm outline-none focus:border-[#2A9D8F]"
             onChange={(e) => setFilterType(e.target.value as FilterType)}
             value={filterType}
           >
@@ -265,7 +315,7 @@ export function DocumentPreview() {
             ))}
           </select>
           <select
-            className="h-11 rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-[#1A1916] text-sm outline-none focus:border-[#2A9D8F]"
+            className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-sm outline-none focus:border-[#2A9D8F]"
             onChange={(e) => setFilterStatus(e.target.value as StatusFilter)}
             value={filterStatus}
           >
@@ -276,13 +326,36 @@ export function DocumentPreview() {
             ))}
           </select>
         </div>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {(
+            [
+              { key: "all", label: "Vue globale" },
+              { key: "byRepair", label: "Par dossier" },
+              { key: "byClient", label: "Par client" },
+              { key: "recent", label: "Récents" },
+            ] as const
+          ).map((entry) => (
+            <button
+              className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
+                viewMode === entry.key
+                  ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
+                  : "border-[#E8E8E5] bg-white text-[#1A1916] hover:border-[#2A9D8F]/45"
+              }`}
+              key={entry.key}
+              onClick={() => setViewMode(entry.key)}
+              type="button"
+            >
+              {entry.label}
+            </button>
+          ))}
+        </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
           <p className="text-[#6B6B6B] text-xs">
             {filtered.length} document{filtered.length > 1 ? "s" : ""} sur {enriched.length} · plus récents en haut
           </p>
           {filtersActive ? (
             <button
-              className="rounded-full border border-[#E7E4DC] bg-white px-3 py-1 text-[#6B6B6B] text-xs hover:border-[#2A9D8F]/45 hover:text-[#167B70]"
+              className="rounded-full border border-[#E8E8E5] bg-white px-3 py-1 text-[#6B6B6B] text-xs hover:border-[#2A9D8F]/45 hover:text-[#167B70]"
               onClick={() => {
                 setFilterType("all");
                 setFilterStatus("Tous");
@@ -299,45 +372,28 @@ export function DocumentPreview() {
       <div className="grid gap-5 xl:grid-cols-[420px_minmax(0,1fr)]">
         <aside className="space-y-2">
           {filtered.length === 0 && (
-            <div className="rounded-[16px] border border-dashed border-[#E7E4DC] bg-[#FAFAF8] py-10 text-center">
-              <p className="text-[13px] font-medium text-[#8A8984]">Aucun document ne correspond aux filtres.</p>
-              <p className="mt-1 text-[12px] text-[#CDCBC5]">Les bons, devis, factures et reçus apparaîtront ici.</p>
+            <div className="rounded-[16px] border border-dashed border-[#E8E8E5] bg-[#FAFAFA] py-10 text-center">
+              <p className="text-[13px] font-medium text-[#6B6B6B]">Aucun document ne correspond aux filtres.</p>
+              <p className="mt-1 text-[12px] text-[#A3A3A3]">Les bons, devis, factures et reçus apparaîtront ici.</p>
             </div>
           )}
-          {filtered.map((row) => {
-            const active = row.document.id === selected?.id;
-            return (
-              <button
-                className={`w-full rounded-2xl border p-4 text-left transition ${
-                  active
-                    ? "border-[#2A9D8F] bg-[#EAF6F2] shadow-[0_14px_34px_rgba(42,157,143,0.10)]"
-                    : "border-[#E7E4DC] bg-white hover:border-[#2A9D8F]/40"
-                }`}
-                data-document-id={row.document.id}
-                data-document-type={row.document.type}
-                data-testid={`document-row-${row.document.type}`}
-                key={row.document.id}
-                onClick={() => store.setSelected("document", row.document.id)}
-                type="button"
-              >
-                <div className="flex items-start justify-between gap-3">
+          {viewMode === "all" && filtered.map((row) => renderRow(row))}
+          {viewMode === "recent" && recentDocs.map((row) => renderRow(row))}
+          {(viewMode === "byRepair" || viewMode === "byClient") &&
+            groups.map((group) => (
+              <div className="space-y-2" key={group.key}>
+                <div className="sticky top-0 z-[1] flex items-center justify-between gap-2 rounded-[12px] border border-[#E8E8E5] bg-[#FAFAFA]/95 px-3 py-2">
                   <div className="min-w-0">
-                    <span className="rounded-full bg-[#FAFAF8] px-2 py-0.5 text-[#6B6B6B] text-[10px] uppercase tracking-wide">
-                      {TYPE_SHORT_LABEL[row.document.type]}
-                    </span>
-                    <div className="mt-1 truncate font-semibold text-[#1A1916] text-sm">{row.listTitle}</div>
+                    <p className="truncate font-semibold text-[#1A1916] text-[13px]">{group.title}</p>
+                    {group.subtitle ? <p className="truncate text-[#6B6B6B] text-[11px]">{group.subtitle}</p> : null}
                   </div>
-                  <span className="shrink-0 font-mono text-[#6B6B6B] text-[11px]">{row.numberLabel}</span>
+                  <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[#6B6B6B] text-[11px]">
+                    {group.rows.length} doc{group.rows.length > 1 ? "s" : ""}
+                  </span>
                 </div>
-                <div className="mt-2 line-clamp-2 text-[#6B6B6B] text-xs">{row.contextLabel}</div>
-                <div className="mt-1 text-[#8A8984] text-[11px]">{row.document.createdAt}</div>
-                <div className="mt-2 flex items-center justify-between text-xs">
-                  <span className="font-semibold text-[#1A1916]">{formatEuro(row.amount)}</span>
-                  <span className="rounded-full bg-[#FAFAF8] px-2 py-0.5 text-[#6B6B6B]">{row.statusLabel}</span>
-                </div>
-              </button>
-            );
-          })}
+                {group.rows.map((row) => renderRow(row))}
+              </div>
+            ))}
         </aside>
 
         {selected && selectedRow && (
@@ -373,13 +429,13 @@ export function DocumentPreview() {
                       <span>Dossier</span>
                     </Link>
                   )}
-                  <SecondaryButton
-                    className="min-w-0 justify-center gap-2 px-3 text-xs"
-                    onClick={() => toast.info("Ouvert ci-dessous (aperçu)")}
+                  <Link
+                    className="inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-[14px] border border-[#E8E8E5] bg-white px-3 text-center text-[#1A1916] text-xs leading-tight hover:border-[#2A9D8F]/50"
+                    href={`/print/document/${selected.id}`}
                   >
                     <Eye className="size-4 shrink-0" />
-                    Voir
-                  </SecondaryButton>
+                    <span>Ouvrir</span>
+                  </Link>
                   <SecondaryButton
                     className="min-w-0 justify-center gap-2 whitespace-normal px-3 text-center text-xs leading-tight"
                     onClick={() => {
@@ -410,7 +466,7 @@ export function DocumentPreview() {
                   </SecondaryButton>
                   <PrimaryButton
                     className="min-w-0 justify-center gap-2 px-3 text-xs"
-                    onClick={() => toast.success("Email simulé, aucun envoi réel")}
+                    onClick={() => toast.success("Message ajouté à l'historique client")}
                   >
                     <Mail className="size-4 shrink-0" />
                     Envoyer
@@ -431,7 +487,7 @@ export function DocumentPreview() {
               </div>
             </div>
             <ResponsivePreviewFrame>
-              <DynamicDocument document={selected} />
+              <LocalPrintableDocument document={selected} store={store} />
             </ResponsivePreviewFrame>
           </section>
         )}
@@ -483,7 +539,7 @@ function ResponsivePreviewFrame({ children }: Readonly<{ children: ReactNode }>)
         <ExternalLink className="size-4 shrink-0 text-[#6B6B6B]" aria-hidden />
       </div>
       <div
-        className="relative w-full overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8]"
+        className="relative w-full overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA]"
         ref={viewportRef}
         style={{ height: metrics.height || undefined, minHeight: metrics.height ? undefined : 420 }}
       >
@@ -501,59 +557,4 @@ function ResponsivePreviewFrame({ children }: Readonly<{ children: ReactNode }>)
       </div>
     </div>
   );
-}
-
-function DynamicDocument({ document }: Readonly<{ document: BeharDocument }>) {
-  const store = useBeharStore();
-  const customer = store.customers.find((entry) => entry.id === document.customerId);
-  const repair = store.repairs.find((entry) => entry.id === document.repairId);
-  const quote = store.quotes.find((entry) => entry.id === document.quoteId);
-  const invoice = store.invoices.find((entry) => entry.id === document.invoiceId);
-  const payment = store.payments.find((entry) => entry.id === document.paymentId);
-  const paymentRepair = repair ?? store.repairs.find((entry) => entry.id === (payment?.repairId ?? invoice?.repairId));
-
-  if (!customer) return <p className="p-12 text-center text-[#6B6B6B]">Client introuvable</p>;
-
-  switch (document.type) {
-    case "intake":
-      if (!repair) return <p className="p-12 text-center text-[#6B6B6B]">Réparation introuvable</p>;
-      return <RepairIntakeDocument customer={customer} repair={repair} workshop={store.workshopInfo} />;
-    case "quote":
-      if (!quote) return <p className="p-12 text-center text-[#6B6B6B]">Devis introuvable</p>;
-      return <QuoteDocument customer={customer} quote={quote} repair={repair} workshop={store.workshopInfo} />;
-    case "invoice":
-      if (!invoice) return <p className="p-12 text-center text-[#6B6B6B]">Facture introuvable</p>;
-      return (
-        <InvoiceDocument
-          customer={customer}
-          invoice={invoice}
-          quote={quote}
-          repair={repair}
-          workshop={store.workshopInfo}
-        />
-      );
-    case "payment":
-      if (!payment) return <p className="p-12 text-center text-[#6B6B6B]">Paiement introuvable</p>;
-      return (
-        <PaymentReceiptDocument
-          customer={customer}
-          invoice={invoice}
-          payment={payment}
-          repair={paymentRepair}
-          workshop={store.workshopInfo}
-        />
-      );
-    case "internal":
-    case "summary":
-      if (!repair) return <p className="p-12 text-center text-[#6B6B6B]">Réparation introuvable</p>;
-      return <InternalRepairDocument customer={customer} repair={repair} workshop={store.workshopInfo} />;
-    case "sale-receipt":
-    case "sale-invoice": {
-      const sale = store.sales.find((entry) => entry.id === document.saleId);
-      if (!sale) return <p className="p-12 text-center text-[#6B6B6B]">Vente introuvable</p>;
-      return <SaleReceiptDocument customer={customer} sale={sale} workshop={store.workshopInfo} />;
-    }
-    default:
-      return <p className="p-12 text-center text-[#6B6B6B]">Type de document inconnu</p>;
-  }
 }

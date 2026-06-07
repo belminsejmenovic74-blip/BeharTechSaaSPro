@@ -148,7 +148,7 @@ export function DeviceSelector({ deviceType, brand, model, customModel, onChange
         <div className="grid gap-1.5">
           <label className="text-sm font-medium text-[#1A1916]">Modèle personnalisé</label>
           <Input
-            className="h-10 rounded-xl border-[#E7E4DC] focus:border-[#2A9D8F]/60 focus:ring-[#2A9D8F]/10"
+            className="h-10 rounded-xl border-[#E8E8E5] focus:border-[#2A9D8F]/60 focus:ring-[#2A9D8F]/10"
             value={customModel}
             onChange={handleCustomModelChange}
             placeholder="Ex: iPhone inconnu"
@@ -159,7 +159,7 @@ export function DeviceSelector({ deviceType, brand, model, customModel, onChange
       <div className="grid gap-1.5">
         <label className="text-sm font-medium text-[#1A1916]">Appareil final</label>
         <Input
-          className="h-10 rounded-xl border-[#E7E4DC] bg-[#FAFAF8] text-[#6B6B6B]"
+          className="h-10 rounded-xl border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]"
           value={calculateLabel(brand, model, customModel)}
           readOnly
           disabled

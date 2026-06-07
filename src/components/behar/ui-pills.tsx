@@ -7,12 +7,12 @@ import { cn } from "@/lib/utils";
 export type PillTone = "ok" | "warn" | "info" | "muted" | "danger" | "violet";
 
 const TONE_STYLES: Record<PillTone, string> = {
-  ok: "bg-[#E7F5F1] text-[#1d6f65]",
-  warn: "bg-[#FCF1DF] text-[#A06A12]",
-  info: "bg-[#E6EFFB] text-[#2F6FD0]",
-  muted: "bg-[#F1F1EF] text-[#6B6B6B]",
-  danger: "bg-[#FCEAEC] text-[#A23A40]",
-  violet: "bg-[#EFEAF8] text-[#7B5BC2]",
+  ok: "border-[#D7EFEA] bg-[#F6FCFA] text-[#1d6f65]",
+  warn: "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]",
+  info: "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]",
+  muted: "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]",
+  danger: "border-[#F2D4D1] bg-[#FFF8F7] text-[#A23A40]",
+  violet: "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]",
 };
 
 export function StatusPill({
@@ -23,7 +23,7 @@ export function StatusPill({
   return (
     <span
       className={cn(
-        "inline-flex h-6 items-center rounded-full px-2.5 font-medium text-[11px]",
+        "inline-flex min-h-6 items-center rounded-[7px] border px-2 py-0.5 font-semibold text-[11px] leading-none",
         TONE_STYLES[tone],
         className,
       )}
@@ -62,7 +62,10 @@ export const REPAIR_STATUS_TONE: Record<string, PillTone> = {
   "En réparation": "info",
   "Test final": "info",
   Prêt: "ok",
-  Restitué: "ok",
+  Rendu: "ok",
+  Irréparable: "danger",
+  SAV: "warn",
+  Clôturé: "ok",
   Annulé: "danger",
 };
 
@@ -78,7 +81,7 @@ export function TabBar<T extends string>({
   counts?: Partial<Record<T, number>>;
 }>) {
   return (
-    <div className="flex h-10 max-w-full items-center gap-1 overflow-x-auto rounded-[12px] border border-[#E7E4DC] bg-white p-1 scrollbar-none">
+    <div className="flex h-10 max-w-full items-center gap-1 overflow-x-auto rounded-[12px] border border-[#E8E8E5] bg-white p-1 scrollbar-none">
       {tabs.map((tab) => {
         const active = tab.value === value;
         const count = counts?.[tab.value];
@@ -89,7 +92,7 @@ export function TabBar<T extends string>({
             onClick={() => onChange(tab.value)}
             className={cn(
               "h-8 shrink-0 rounded-[9px] px-3 font-medium text-[13px] transition",
-              active ? "bg-[#E7F5F1] text-[#1d6f65]" : "text-[#6B6B6B] hover:bg-[#FAFAF8] hover:text-[#1A1916]",
+              active ? "bg-[#E7F5F1] text-[#1d6f65]" : "text-[#6B6B6B] hover:bg-[#FAFAFA] hover:text-[#1A1916]",
             )}
           >
             {tab.label}

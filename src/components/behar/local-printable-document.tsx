@@ -1,0 +1,166 @@
+"use client";
+
+import type { ReactNode } from "react";
+
+import {
+  type BeharDocument,
+  type DocumentType,
+  type useBeharStore,
+} from "@/lib/behar-store";
+import { formatIntakeBonNumber } from "@/lib/utils";
+
+import {
+  InternalRepairDocument,
+  InvoiceDocument,
+  PaymentReceiptDocument,
+  QuoteDocument,
+  RepairIntakeDocument,
+  RepairSummaryDocument,
+  SaleReceiptDocument,
+} from "./printable-documents";
+
+type BeharStoreSnapshot = ReturnType<typeof useBeharStore.getState>;
+
+export type PrintableDocumentTarget = {
+  type: "intake" | "quote" | "invoice" | "payment" | "internal" | "sale-receipt";
+  id: string;
+};
+
+const TYPE_LABEL: Record<DocumentType, string> = {
+  intake: "Bon de prise en charge",
+  quote: "Devis",
+  invoice: "Facture",
+  payment: "Reçu de paiement",
+  "sale-receipt": "Reçu de vente",
+  "sale-invoice": "Reçu de vente comptoir",
+  internal: "Fiche intervention interne",
+  summary: "Résumé dossier",
+};
+
+const SLUG_LABEL: Record<PrintableDocumentTarget["type"], string> = {
+  intake: "bon-prise-en-charge",
+  quote: "devis",
+  invoice: "facture",
+  payment: "recu-paiement",
+  internal: "fiche-interne",
+  "sale-receipt": "recu-vente",
+};
+
+export function getPrintableTarget(document: BeharDocument): PrintableDocumentTarget | null {
+  if (document.type === "intake" && document.repairId) return { type: "intake", id: document.repairId };
+  if (document.type === "quote" && document.quoteId) return { type: "quote", id: document.quoteId };
+  if (document.type === "invoice" && document.invoiceId) return { type: "invoice", id: document.invoiceId };
+  if (document.type === "payment" && document.paymentId) return { type: "payment", id: document.paymentId };
+  if (document.type === "internal" && document.repairId) return { type: "internal", id: document.repairId };
+  if (document.type === "summary" && document.repairId) return { type: "internal", id: document.repairId };
+  if ((document.type === "sale-receipt" || document.type === "sale-invoice") && document.saleId) {
+    return { type: "sale-receipt", id: document.saleId };
+  }
+  return null;
+}
+
+export function isInternalDocument(document?: BeharDocument | null) {
+  // Seule la fiche d'intervention "internal" reste privée (prix d'achat, marge, fournisseur).
+  // Le "summary" est un rapport de réparation propre, destiné au client.
+  return document?.type === "internal";
+}
+
+export function getDocumentTypeLabel(type?: DocumentType) {
+  return type ? TYPE_LABEL[type] : "Document";
+}
+
+export function getDocumentPreviewTitle(document?: BeharDocument | null) {
+  if (!document) return "Aperçu du document";
+  return `Aperçu ${TYPE_LABEL[document.type].toLowerCase()}`;
+}
+
+export function getDocumentFileName(document: BeharDocument, store: BeharStoreSnapshot) {
+  const target = getPrintableTarget(document);
+  const slug = target ? SLUG_LABEL[target.type] : "document";
+  const repair = document.repairId ? store.repairs.find((entry) => entry.id === document.repairId) : undefined;
+  const quote = document.quoteId ? store.quotes.find((entry) => entry.id === document.quoteId) : undefined;
+  const invoice = document.invoiceId ? store.invoices.find((entry) => entry.id === document.invoiceId) : undefined;
+  const payment = document.paymentId ? store.payments.find((entry) => entry.id === document.paymentId) : undefined;
+  const sale = document.saleId ? store.sales.find((entry) => entry.id === document.saleId) : undefined;
+  const rawNumber =
+    sale?.number ??
+    invoice?.number ??
+    quote?.number ??
+    payment?.paymentNumber ??
+    (document.type === "intake" && repair ? formatIntakeBonNumber(repair.number) : repair?.number) ??
+    document.id.slice(-8);
+  const number = String(rawNumber).replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
+  return `${slug}-${number || document.id}.pdf`;
+}
+
+function MissingDocument({ children }: Readonly<{ children: ReactNode }>) {
+  return (
+    <div className="mx-auto grid min-h-[520px] w-full max-w-[794px] place-items-center rounded-[18px] border border-[#E8E8E5] bg-white p-10 text-center text-[#6B6B6B]">
+      <p>{children}</p>
+    </div>
+  );
+}
+
+export function LocalPrintableDocument({
+  document,
+  store,
+}: Readonly<{ document?: BeharDocument | null; store: BeharStoreSnapshot }>) {
+  if (!document) return <MissingDocument>Document introuvable.</MissingDocument>;
+
+  const customer = store.customers.find((entry) => entry.id === document.customerId);
+  const repair = document.repairId ? store.repairs.find((entry) => entry.id === document.repairId) : undefined;
+  const quote = document.quoteId ? store.quotes.find((entry) => entry.id === document.quoteId) : undefined;
+  const invoice = document.invoiceId ? store.invoices.find((entry) => entry.id === document.invoiceId) : undefined;
+  const payment = document.paymentId ? store.payments.find((entry) => entry.id === document.paymentId) : undefined;
+  const sale = document.saleId ? store.sales.find((entry) => entry.id === document.saleId) : undefined;
+  const paymentRepair = repair ?? store.repairs.find((entry) => entry.id === (payment?.repairId ?? invoice?.repairId));
+  const counterCustomer = store.customers.find((entry) => entry.type === "counter") ?? store.customers[0];
+
+  if (!customer && document.type !== "sale-receipt" && document.type !== "sale-invoice") {
+    return <MissingDocument>Client lié introuvable.</MissingDocument>;
+  }
+
+  switch (document.type) {
+    case "intake":
+      if (!repair || !customer) return <MissingDocument>Bon de prise en charge incomplet.</MissingDocument>;
+      return <RepairIntakeDocument customer={customer} repair={repair} workshop={store.workshopInfo} />;
+    case "quote":
+      if (!quote || !customer) return <MissingDocument>Devis incomplet.</MissingDocument>;
+      return <QuoteDocument customer={customer} quote={quote} repair={repair} workshop={store.workshopInfo} />;
+    case "invoice":
+      if (!invoice || !customer) return <MissingDocument>Facture incomplète.</MissingDocument>;
+      return (
+        <InvoiceDocument
+          customer={customer}
+          invoice={invoice}
+          quote={quote}
+          repair={repair}
+          workshop={store.workshopInfo}
+        />
+      );
+    case "payment":
+      if (!payment || !customer) return <MissingDocument>Reçu de paiement incomplet.</MissingDocument>;
+      return (
+        <PaymentReceiptDocument
+          customer={customer}
+          invoice={invoice}
+          payment={payment}
+          repair={paymentRepair}
+          workshop={store.workshopInfo}
+        />
+      );
+    case "internal":
+      if (!repair || !customer) return <MissingDocument>Fiche interne incomplète.</MissingDocument>;
+      return <InternalRepairDocument customer={customer} repair={repair} workshop={store.workshopInfo} />;
+    case "summary":
+      // Rapport de réparation côté client : version propre, sans données sensibles.
+      if (!repair || !customer) return <MissingDocument>Rapport de réparation incomplet.</MissingDocument>;
+      return <RepairSummaryDocument customer={customer} repair={repair} workshop={store.workshopInfo} />;
+    case "sale-receipt":
+    case "sale-invoice":
+      if (!sale) return <MissingDocument>Reçu de vente incomplet.</MissingDocument>;
+      return <SaleReceiptDocument customer={customer ?? counterCustomer} sale={sale} workshop={store.workshopInfo} />;
+    default:
+      return <MissingDocument>Type de document non pris en charge.</MissingDocument>;
+  }
+}

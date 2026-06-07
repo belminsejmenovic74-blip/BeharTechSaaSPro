@@ -162,7 +162,7 @@ export function RepairIntakeSummaryCard({
   const accessories = intake?.accessories?.filter(Boolean) ?? [];
 
   return (
-    <section className="rounded-[16px] border border-[#E8E8E5] bg-white/95 px-[18px] py-4 shadow-[0_10px_30px_rgba(26,25,22,0.035)]">
+    <section className="rounded-[16px] border border-[#E8E8E5] bg-white px-[18px] py-4 shadow-[0_10px_30px_rgba(26,25,22,0.035)]">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="font-semibold text-[#1A1916] text-sm">État d'entrée / anti-litige</h3>
@@ -175,7 +175,7 @@ export function RepairIntakeSummaryCard({
           )}
         </div>
         <span
-          className={`rounded-full px-3 py-1 font-semibold text-[11px] ${validated ? "bg-[#E4F3DA] text-[#477A23]" : "bg-[#FAFAF8] text-[#6B6B6B]"}`}
+          className={`rounded-full px-3 py-1 font-semibold text-[11px] ${validated ? "bg-[#E4F3DA] text-[#477A23]" : "bg-[#FAFAFA] text-[#6B6B6B]"}`}
         >
           {validated ? "État d'entrée validé" : "État d'entrée incomplet"}
         </span>
@@ -338,7 +338,7 @@ export function RepairIntakeScreen({
   const advancedFields = intakeFields.filter((f) => !primaryFields.includes(f));
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-none md:rounded-[20px] bg-[#FAFAF8]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-none bg-white md:rounded-[20px]">
       <div className="grid min-h-0 flex-1 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="scrollbar-thin min-h-0 overflow-y-auto px-4 py-4 pb-[120px] md:px-5 md:py-5 md:pb-5">
           <button
@@ -514,7 +514,7 @@ export function RepairIntakeScreen({
           {/* Photos (collapsible) */}
           <Accordion title="Photos de l'appareil" count={(draft.photos ?? []).length}>
             <div className="grid gap-2.5 grid-cols-2 md:gap-3 lg:grid-cols-3">
-              <label className="grid min-h-[96px] cursor-pointer place-items-center rounded-[12px] border border-dashed border-[#D8D8D2] bg-white text-center text-[#6B6B6B] transition hover:border-[#2A9D8F] hover:text-[#167B70] md:min-h-[112px] md:rounded-[14px]">
+              <label className="grid min-h-[96px] cursor-pointer place-items-center rounded-[12px] border border-dashed border-[#DADADA] bg-white text-center text-[#6B6B6B] transition hover:border-[#2A9D8F] hover:text-[#167B70] md:min-h-[112px] md:rounded-[14px]">
                 <input accept="image/*" className="hidden" multiple onChange={addPhotos} type="file" />
                 <span>
                   <ImagePlus className="mx-auto mb-1 size-5" />
@@ -531,7 +531,7 @@ export function RepairIntakeScreen({
                   ) : null}
                   <button
                     aria-label="Supprimer photo"
-                    className="absolute right-1.5 top-1.5 grid size-7 place-items-center rounded-full bg-white/90 text-[#6B6B6B] shadow-sm hover:text-[#B42318] md:size-8"
+                    className="absolute right-1.5 top-1.5 grid size-7 place-items-center rounded-full bg-white text-[#6B6B6B] shadow-sm hover:text-[#B42318] md:size-8"
                     onClick={() =>
                       setField(
                         "photos",
@@ -576,7 +576,7 @@ export function RepairIntakeScreen({
 
       {/* Mobile : sticky bottom action bar */}
       <div
-        className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 border-t border-[#E8E8E5] bg-white/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:hidden"
+        className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 border-t border-[#E8E8E5] bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden"
         style={{ boxShadow: "0 -10px 24px rgba(26,25,22,0.06)" }}
       >
         <StatusBadge status={validated ? "État d'entrée validé" : "État d'entrée incomplet"} />
@@ -629,7 +629,7 @@ export function RepairIntakeQuickPanel({
   };
 
   return (
-    <section className="space-y-4 rounded-[16px] border border-[#E7E4DC] bg-[#FAFAF8] p-4">
+    <section className="space-y-4 rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA] p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="flex items-center gap-2 font-medium text-[#1A1916] text-sm">
@@ -876,7 +876,7 @@ function PatternPicker({ value, onChange }: Readonly<{ value: number[]; onChange
               className={`grid size-9 place-items-center rounded-full border text-[12px] font-semibold transition ${
                 order
                   ? "border-[#2A9D8F] bg-[#E8F7F3] text-[#167B70]"
-                  : "border-[#D8D8D2] bg-white text-[#6B6B6B] hover:border-[#2A9D8F]"
+                  : "border-[#DADADA] bg-white text-[#6B6B6B] hover:border-[#2A9D8F]"
               }`}
               key={point}
               onClick={() => addPoint(point)}
@@ -892,7 +892,7 @@ function PatternPicker({ value, onChange }: Readonly<{ value: number[]; onChange
           Touchez les points dans l'ordre du schéma. La séquence visuelle est enregistrée avec la réparation.
         </p>
         <div className="mt-2 flex gap-2">
-          <span className="rounded-full bg-[#FAFAF8] px-3 py-1 text-[#1A1916] text-[12px]">
+          <span className="rounded-full bg-[#FAFAFA] px-3 py-1 text-[#1A1916] text-[12px]">
             {value.length ? value.join(" → ") : "Aucun schéma"}
           </span>
           {value.length ? (
@@ -1008,7 +1008,7 @@ function SignaturePad({
       <canvas
         ref={canvasRef}
         aria-label="Signature client"
-        className="h-[118px] w-full rounded-[10px] border border-dashed border-[#D8D8D2] bg-[#FAFAF8]"
+        className="h-[118px] w-full rounded-[10px] border border-dashed border-[#DADADA] bg-[#FAFAFA]"
         height={180}
         onPointerCancel={finish}
         onPointerDown={start}
@@ -1058,7 +1058,7 @@ function Accordion({
             </span>
           )}
         </span>
-        <span className="grid size-6 place-items-center rounded-full bg-[#FAFAF8] text-[#6B6B6B] transition group-open:rotate-45 md:hidden">
+        <span className="grid size-6 place-items-center rounded-full bg-[#FAFAFA] text-[#6B6B6B] transition group-open:rotate-45 md:hidden">
           +
         </span>
       </summary>

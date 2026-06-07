@@ -1,15 +1,34 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
-import { Check, ChevronDown, FileText, Mail, Phone, Sparkles, Tag, User, Wrench, X } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarPlus,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ClipboardCheck,
+  FileText,
+  FolderOpen,
+  Mail,
+  Phone,
+  Printer,
+  ShoppingCart,
+  Sparkles,
+  Tag,
+  User,
+  Wrench,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
 
 import { Combobox, PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
-import { RepairIntakeQuickPanel, RepairIntakeScreen } from "@/components/behar/repair-intake-condition";
+import { RepairIntakeScreen } from "@/components/behar/repair-intake-condition";
+import { printDocument } from "@/lib/documents/document-actions";
 import { deviceCatalog } from "@/data/deviceCatalog";
 import { useAddressAutocomplete } from "@/hooks/use-address-autocomplete";
 import { fetchPostalCodeByCity, usePostalCities } from "@/hooks/use-postal-cities";
@@ -44,6 +63,20 @@ import {
 
 const UI_DEVICE_TYPES: DeviceType[] = ["Smartphone", "Tablette", "Ordinateur", "Console", "Autre"];
 const countryOptions = COUNTRY_NAMES;
+
+const COMMON_ACCESSORIES = [
+  "Coque",
+  "Étui / housse",
+  "Protection écran",
+  "Chargeur",
+  "Câble",
+  "Écouteurs",
+  "Carte SIM",
+  "Carte SD / mémoire",
+  "Boîte / emballage",
+  "Stylet",
+  "Manette",
+] as const;
 
 function digitsOnly(value: unknown): string {
   return String(value ?? "").replace(/\D/g, "");
@@ -217,8 +250,17 @@ export function RepairModal({
   const [customInterventionFinal, setCustomInterventionFinal] = useState("");
   const [customInterventionSave, setCustomInterventionSave] = useState(true);
   // Anti-litige optionnel pendant la création
-  const [view, setView] = useState<"form" | "intake">("form");
+  const [view, setView] = useState<"form" | "accessories" | "intake" | "done">("form");
   const [intakeDraft, setIntakeDraft] = useState<RepairIntakeCondition | undefined>(source?.intakeCondition);
+  // Étape 5 — écran de suite logique après création (vrai parcours atelier).
+  const [created, setCreated] = useState<{
+    repairId: string;
+    repairNumber: string;
+    quoteId?: string;
+    customerId: string;
+    deviceLabel: string;
+    clientLabel: string;
+  } | null>(null);
 
   const [selectedCatalogId, setSelectedCatalogId] = useState<string | null>(null);
   const [selectedQuality, setSelectedQuality] = useState<string>("");
@@ -502,37 +544,32 @@ export function RepairModal({
     return selectedCustomerId;
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const intent = (e.nativeEvent as SubmitEvent).submitter?.getAttribute("value") ?? "repair";
-    const withQuote = intent === "repair-quote";
-
+  const validateBasics = (): boolean => {
     if (!marque.trim()) {
       toast.error("Sélectionnez une marque.");
-      return;
+      return false;
     }
-
     if (!modele.trim()) {
       toast.error("Sélectionnez un modèle.");
-      return;
+      return false;
     }
-
     if (!intervention.trim()) {
       toast.error("Sélectionnez une intervention.");
-      return;
+      return false;
     }
-
     if (clientType === "nouveau" && newPhone.trim() && !isValidPhoneNumber(newPhone)) {
       toast.error("Numéro client invalide.");
-      return;
+      return false;
     }
-
-    const customerId = resolveCustomerId();
-    if (clientType === "existant" && !customerId) {
+    if (clientType === "existant" && !selectedCustomerId) {
       toast.error("Sélectionnez un client.");
-      return;
+      return false;
     }
+    return true;
+  };
 
+  const runCreate = (withQuote: boolean) => {
+    const customerId = resolveCustomerId();
     const finalIssue = prefill?.appointmentId ? intervention.trim() : canonicalizeIntervention(intervention.trim());
     let savedPbId: string | undefined;
 
@@ -638,11 +675,11 @@ export function RepairModal({
     }
 
     const deviceLabel = modelFull;
-    const histCreate = ["Réparation créée"];
+    const histCreate = ["Prise en charge créée"];
     if (fromCatalog) histCreate.push("Tarif issu du catalogue atelier");
     else histCreate.push("Tarif saisi manuellement");
     if (saveToCatalog) histCreate.push("Tarif enregistré dans le catalogue");
-    if (appointmentId) histCreate.push(prefill?.appointmentId ? "Créée depuis un rendez-vous" : "Rendez-vous créé");
+    if (appointmentId) histCreate.push(prefill?.appointmentId ? "Prise en charge créée depuis un rendez-vous" : "Rendez-vous lié");
 
     const basePayload = {
       customerId,
@@ -671,14 +708,14 @@ export function RepairModal({
     if (initial) {
       updateRepair(initial.id, {
         ...basePayload,
-        history: [...initial.history, "Fiche réparation mise à jour"],
+        history: [...initial.history, "Fiche dossier mise à jour"],
       });
       if (withQuote && totalClient > 0) {
         const lines = buildQuoteLines(snapshot, modelFull, finalIssue, totalClient);
         if (lines.length) {
           const quoteId = addQuote({ customerId, repairId: initial.id, lines });
           if (quoteId) {
-            toast.success("Réparation mise à jour et devis créé");
+            toast.success("Dossier mis à jour et devis créé");
             setSelected("quote", quoteId);
             onClose();
             router.push("/dashboard/devis");
@@ -686,7 +723,7 @@ export function RepairModal({
           }
         }
       }
-      toast.success("Réparation modifiée");
+      toast.success("Dossier modifié");
       onClose();
       return;
     }
@@ -701,6 +738,7 @@ export function RepairModal({
       return;
     }
 
+    let createdQuoteId: string | undefined;
     if (withQuote) {
       if (totalClient <= 0) {
         toast.error("Ajoutez un tarif pour créer un devis.");
@@ -712,27 +750,89 @@ export function RepairModal({
         return;
       }
       const quoteId = addQuote({ customerId, repairId, lines });
-      if (quoteId) {
-        toast.success("Réparation et devis créés");
-        setSelected("quote", quoteId);
-        onClose();
-        router.push("/dashboard/devis");
+      if (!quoteId) {
+        toast.error("Devis non créé");
         return;
       }
-      toast.error("Devis non créé");
-      return;
+      createdQuoteId = quoteId;
+      toast.success("Dossier et devis créés");
+    } else {
+      toast.success("Dossier créé");
     }
 
-    toast.success("Réparation créée");
+    // Étape 5 — on garde le modal ouvert sur l'écran de suite logique au lieu de
+    // naviguer immédiatement. L'utilisateur choisit l'action suivante.
+    const repairNumber =
+      useBeharStore.getState().repairs.find((r) => r.id === repairId)?.number ?? "Nouveau dossier";
     setSelected("repair", repairId);
+    setCreated({
+      repairId,
+      repairNumber,
+      quoteId: createdQuoteId,
+      customerId,
+      deviceLabel: modelFull,
+      clientLabel:
+        clientType === "anonyme"
+          ? "Client comptoir"
+          : clientType === "nouveau"
+            ? newName.trim() || "Nouveau client"
+            : (chosenCustomer?.name ?? "Client"),
+    });
+    setView("done");
+  };
+
+  // Actions de l'écran post-création (Étape 5).
+  const openCreatedDossier = () => {
+    if (!created) return;
+    setSelected("repair", created.repairId);
     onClose();
-    router.push("/dashboard/reparations");
+    router.push(`/dashboard/dossiers/${created.repairId}`);
+  };
+  const printCreatedIntake = () => {
+    if (!created) return;
+    const doc = useBeharStore.getState().documents.find((d) => d.id === `doc_intake_${created.repairId}`);
+    if (!printDocument(doc)) toast.error("Bon de prise en charge indisponible.");
+  };
+  const goToLinkedAppointment = () => {
+    if (!created) return;
+    setSelected("repair", created.repairId);
+    onClose();
+    router.push("/dashboard/rendez-vous");
+  };
+  const goToCounterSale = () => {
+    onClose();
+    router.push("/dashboard/ventes");
+  };
+  const goToCreatedQuote = () => {
+    if (!created?.quoteId) return;
+    setSelected("quote", created.quoteId);
+    onClose();
+    router.push("/dashboard/devis");
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const intent = (e.nativeEvent as SubmitEvent).submitter?.getAttribute("value") ?? "repair";
+    if (!validateBasics()) return;
+    if (intent === "continue") {
+      setView("accessories");
+      return;
+    }
+    runCreate(intent === "repair-quote");
+  };
+
+  const toggleAccessory = (label: string) => {
+    setIntakeDraft((prev) => {
+      const current = prev?.accessories ?? [];
+      const next = current.includes(label) ? current.filter((a) => a !== label) : [...current, label];
+      return { ...(prev ?? {}), accessories: next };
+    });
   };
 
   const suggestionChips = filterSuggestionChips(intervention, deviceType);
   const canSubmitQuote = totalClient > 0 && intervention.trim().length > 0;
 
-  // Minimums pour créer une réparation : client résolvable + appareil + intervention.
+  // Minimums pour créer un dossier : client résolvable + appareil + intervention.
   // Le prix peut être vide (diagnostic sans prix accepté), mais l'intervention reste obligatoire.
   const hasClient =
     clientType === "anonyme" ||
@@ -748,30 +848,98 @@ export function RepairModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-stretch overflow-y-auto bg-[#1A1916]/20 p-0 backdrop-blur-sm md:place-items-center md:p-4"
+      className="fixed inset-0 z-50 grid place-items-stretch overflow-y-auto bg-[#1A1916]/20 p-0 md:place-items-center md:p-4"
       data-testid="new-repair-modal"
     >
       <div
-        className={`relative flex w-full ${view === "intake" ? "max-w-6xl" : "max-w-5xl"} flex-col overflow-hidden border border-[#E7E4DC] bg-white shadow-2xl min-h-svh md:min-h-0 rounded-none md:rounded-[20px] md:max-h-[92vh] ${view === "intake" ? "" : "md:flex-row"}`}
+        className={`relative flex w-full ${view === "intake" ? "max-w-6xl" : view === "accessories" || view === "done" ? "max-w-2xl" : "max-w-5xl"} flex-col overflow-hidden border border-[#E8E8E5] bg-white shadow-2xl min-h-svh md:min-h-0 rounded-none md:rounded-[20px] md:max-h-[92vh] ${view === "form" ? "md:flex-row" : ""}`}
       >
         {/* Croix X de fermeture globale — toujours visible, ferme le modal peu importe la vue */}
         <button
           aria-label="Fermer"
-          className="absolute top-3 right-3 z-10 grid size-9 place-items-center rounded-full bg-white/90 text-[#6B6B6B] shadow-sm backdrop-blur transition hover:bg-white hover:text-[#1A1916]"
+          className="absolute top-3 right-3 z-10 grid size-9 place-items-center rounded-full bg-white text-[#6B6B6B] shadow-sm transition hover:bg-white hover:text-[#1A1916]"
           onClick={onClose}
           type="button"
         >
           <X className="size-4" />
         </button>
-        {view === "intake" ? (
+        {view === "done" && created ? (
+          <div className="flex min-h-[500px] flex-1 flex-col p-6 md:p-8">
+            <div className="flex flex-col items-center text-center">
+              <div className="grid size-14 place-items-center text-[#167B70]">
+                <CheckCircle2 className="size-9" />
+              </div>
+              <h2 className="mt-4 font-semibold text-[#1A1916] text-[22px] tracking-tight">Prise en charge créée</h2>
+              <p className="mt-1.5 font-medium text-[#1A1916] text-sm">{created.deviceLabel}</p>
+              <p className="text-[#6B6B6B] text-[13px]">
+                Dossier {created.repairNumber} · {created.clientLabel}
+              </p>
+              {created.quoteId ? (
+                <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[#D7EFEA] bg-[#F6FCFA] px-3 py-1 font-medium text-[#167B70] text-xs">
+                  <FileText className="size-3.5" />
+                  Devis créé
+                </span>
+              ) : null}
+            </div>
+
+            <p className="mt-7 mb-2.5 font-medium text-[#6B6B6B] text-[13px]">Suite logique</p>
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              <DoneAction
+                icon={<FolderOpen className="size-[18px]" />}
+                title="Ouvrir le dossier"
+                desc="Gérer la réparation"
+                onClick={openCreatedDossier}
+                primary
+              />
+              <DoneAction
+                icon={<Printer className="size-[18px]" />}
+                title="Imprimer le bon"
+                desc="Prise en charge à signer"
+                onClick={printCreatedIntake}
+              />
+              <DoneAction
+                icon={<ClipboardCheck className="size-[18px]" />}
+                title="État d'entrée anti-litige"
+                desc="Compléter la fiche détaillée"
+                onClick={() => setView("intake")}
+              />
+              <DoneAction
+                icon={<CalendarPlus className="size-[18px]" />}
+                title="Rendez-vous lié"
+                desc="Planifier une intervention"
+                onClick={goToLinkedAppointment}
+              />
+              <DoneAction
+                icon={<ShoppingCart className="size-[18px]" />}
+                title="Vente comptoir"
+                desc="Accessoire ou prestation"
+                onClick={goToCounterSale}
+              />
+              {created.quoteId ? (
+                <DoneAction
+                  icon={<FileText className="size-[18px]" />}
+                  title="Voir le devis"
+                  desc="Devis lié au dossier"
+                  onClick={goToCreatedQuote}
+                />
+              ) : null}
+            </div>
+
+            <div className="mt-auto flex justify-center border-t border-[#F7F7F7] pt-5">
+              <SecondaryButton className="h-11 px-8" onClick={onClose} type="button">
+                Terminer
+              </SecondaryButton>
+            </div>
+          </div>
+        ) : view === "intake" ? (
           <div className="flex min-h-[500px] flex-1 flex-col p-4 md:p-6">
             <RepairIntakeScreen
               repair={
                 {
-                  id: initial?.id ?? "draft",
+                  id: created?.repairId ?? initial?.id ?? "draft",
                   shopId: "shop_atelier_belmin",
-                  number: initial?.number ?? "Nouvelle réparation",
-                  customerId: resolveCustomerId() || "",
+                  number: created?.repairNumber ?? initial?.number ?? "Nouveau dossier",
+                  customerId: chosenCustomer?.id ?? "",
                   deviceType,
                   brandName: marque || "—",
                   brandId: marque,
@@ -781,7 +949,7 @@ export function RepairModal({
                   device: modelFull || "Appareil",
                   issue: intervention || "—",
                   issueType: "Diagnostic",
-                  status: (initial?.status ?? "Nouvelle") as RepairStatus,
+                  status: (initial?.status ?? "Reçu") as RepairStatus,
                   amount: 0,
                   laborPrice: 0,
                   total: 0,
@@ -794,18 +962,118 @@ export function RepairModal({
                 } as unknown as Repair
               }
               customer={chosenCustomer}
-              onBack={() => setView("form")}
+              onBack={() => setView(created ? "done" : "accessories")}
               onDownload={() => {
-                toast.info("Le bon de prise en charge sera disponible après création.");
+                if (created) printCreatedIntake();
+                else toast.info("Le bon de prise en charge sera disponible après création.");
               }}
               onOpenDocuments={() => {
-                toast.info("Les documents seront disponibles après création de la réparation.");
+                if (created) openCreatedDossier();
+                else toast.info("Les documents seront disponibles après création du dossier.");
               }}
               onSave={(intakeCondition) => {
                 setIntakeDraft(intakeCondition);
-                toast.success("État d'entrée enregistré pour cette réparation.");
+                if (created) {
+                  updateRepair(created.repairId, { intakeCondition });
+                  toast.success("État d'entrée enregistré dans le dossier.");
+                } else {
+                  toast.success("État d'entrée enregistré pour ce dossier.");
+                }
               }}
             />
+            {created ? (
+              <div className="mt-4 flex flex-col gap-2 border-t border-[#F7F7F7] pt-4 sm:flex-row sm:justify-between">
+                <SecondaryButton className="h-11 justify-center" onClick={() => setView("done")} type="button">
+                  Retour aux options
+                </SecondaryButton>
+                <PrimaryButton className="h-11 justify-center gap-2" onClick={openCreatedDossier} type="button">
+                  <Check className="size-4" />
+                  Ouvrir le dossier
+                </PrimaryButton>
+              </div>
+            ) : (
+              <div className="mt-4 flex flex-col gap-2 border-t border-[#F7F7F7] pt-4 sm:flex-row sm:justify-between">
+                <SecondaryButton className="h-11 justify-center" onClick={() => setView("accessories")} type="button">
+                  Retour aux accessoires
+                </SecondaryButton>
+                <PrimaryButton
+                  className="h-11 justify-center gap-2"
+                  disabled={!canSubmitRepair}
+                  onClick={() => {
+                    if (validateBasics()) runCreate(false);
+                  }}
+                  type="button"
+                >
+                  <Check className="size-4" />
+                  {initial ? "Enregistrer le dossier" : "Créer le dossier"}
+                </PrimaryButton>
+              </div>
+            )}
+          </div>
+        ) : view === "accessories" ? (
+          <div className="flex min-h-[500px] flex-1 flex-col p-5 md:p-8">
+            <div className="mb-2 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="font-semibold text-[#1A1916] text-[20px] tracking-tight">Accessoires confiés</h2>
+                <p className="mt-1 text-[#6B6B6B] text-[13px]">
+                  Cochez ce que le client laisse avec l'appareil ({modelFull || "appareil"}).
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {COMMON_ACCESSORIES.map((label) => {
+                const active = (intakeDraft?.accessories ?? []).includes(label);
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => toggleAccessory(label)}
+                    className={`flex items-center justify-between rounded-xl border px-3 py-3 text-left text-sm transition ${
+                      active
+                        ? "border-[#2A9D8F] bg-[#F1FAF8] text-[#167B70]"
+                        : "border-[#E8E8E5] bg-white text-[#1A1916] hover:border-[#2A9D8F]/40"
+                    }`}
+                  >
+                    <span>{label}</span>
+                    {active && <Check className="size-4 shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+            <label className="mt-5 grid gap-2 text-sm text-[#1A1916]">
+              Autre accessoire / précision
+              <input
+                className="h-11 rounded-xl border border-[#E8E8E5] px-3 text-sm outline-none focus:border-[#2A9D8F]"
+                onChange={(e) =>
+                  setIntakeDraft((prev) => ({ ...(prev ?? {}), accessoriesOther: e.target.value }))
+                }
+                placeholder="Ex. carte SIM Free, coque transparente…"
+                value={intakeDraft?.accessoriesOther ?? ""}
+              />
+            </label>
+            <p className="mt-3 text-[#6B6B6B] text-[12px]">
+              Aucun accessoire ? Continuez, vous pourrez l'indiquer sur la fiche anti-litige.
+            </p>
+            <div className="mt-auto flex flex-col gap-2 border-t border-[#F7F7F7] pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <SecondaryButton className="h-11 justify-center" onClick={() => setView("form")} type="button">
+                Retour
+              </SecondaryButton>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <SecondaryButton
+                  className="h-11 justify-center"
+                  disabled={!canSubmitRepair}
+                  onClick={() => {
+                    if (validateBasics()) runCreate(false);
+                  }}
+                  type="button"
+                >
+                  {initial ? "Enregistrer sans fiche" : "Créer le dossier"}
+                </SecondaryButton>
+                <PrimaryButton className="h-11 justify-center gap-2" onClick={() => setView("intake")} type="button">
+                  Continuer · Fiche anti-litige
+                </PrimaryButton>
+              </div>
+            </div>
           </div>
         ) : (
           <>
@@ -813,14 +1081,14 @@ export function RepairModal({
               <div className="mb-6 flex items-start justify-between gap-3 md:mb-7">
                 <div>
                   <h2 className="font-semibold text-[#1A1916] text-[20px] tracking-tight">
-                    {initial ? "Modifier la réparation" : "Nouvelle réparation"}
+                    {initial ? "Modifier le dossier" : "Nouvelle prise en charge"}
                   </h2>
-                  <p className="mt-1 text-[#8A8984] text-[13px] md:text-[14px]">
+                  <p className="mt-1 text-[#6B6B6B] text-[13px] md:text-[14px]">
                     Client → Appareil → Intervention → Tarif client
                   </p>
                 </div>
                 <button
-                  className="grid size-9 place-items-center rounded-full text-[#8A8984] transition hover:bg-[#F6F7F4] hover:text-[#6B6B6B]"
+                  className="grid size-9 place-items-center rounded-full text-[#6B6B6B] transition hover:bg-[#FAFAFA] hover:text-[#6B6B6B]"
                   onClick={onClose}
                   type="button"
                   aria-label="Fermer"
@@ -851,7 +1119,7 @@ export function RepairModal({
                   </div>
 
                   {clientType === "anonyme" && (
-                    <p className="rounded-lg border border-[#E7E4DC] bg-[#FAFAF8] px-3 py-2 text-[#6B6B6B] text-sm">
+                    <p className="rounded-lg border border-[#E8E8E5] bg-[#FAFAFA] px-3 py-2 text-[#6B6B6B] text-sm">
                       Client comptoir — informations à compléter plus tard.
                     </p>
                   )}
@@ -878,7 +1146,7 @@ export function RepairModal({
                   {clientType === "nouveau" && (
                     <div className="grid gap-3 sm:grid-cols-3">
                       <input
-                        className="h-11 rounded-xl border border-[#E7E4DC] px-3 text-sm"
+                        className="h-11 rounded-xl border border-[#E8E8E5] px-3 text-sm"
                         onChange={(e) => setNewName(e.target.value)}
                         placeholder="Nom *"
                         value={newName}
@@ -886,7 +1154,7 @@ export function RepairModal({
                       <div className="grid grid-cols-[80px_1fr] sm:grid-cols-[90px_1fr] gap-2">
                         <select
                           aria-label="Indicatif client"
-                          className="min-w-0 h-11 w-full rounded-xl border border-[#E7E4DC] pl-3 pr-6 text-sm appearance-none bg-white bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236B6B6B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:14px_14px] bg-[position:right_8px_center] bg-no-repeat overflow-hidden text-ellipsis"
+                          className="min-w-0 h-11 w-full rounded-xl border border-[#E8E8E5] pl-3 pr-6 text-sm appearance-none bg-white bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236B6B6B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:14px_14px] bg-[position:right_8px_center] bg-no-repeat overflow-hidden text-ellipsis"
                           onChange={(e) => setNewInternationalPhone(e.target.value, newPhoneParts.local)}
                           value={
                             (CALLING_CODES as readonly string[]).includes(newPhoneParts.prefix)
@@ -902,17 +1170,17 @@ export function RepairModal({
                         </select>
                         <input
                           aria-label="Téléphone client"
-                          className="min-w-0 h-11 w-full rounded-xl border border-[#E7E4DC] px-3 text-sm"
+                          className="min-w-0 h-11 w-full rounded-xl border border-[#E8E8E5] px-3 text-sm"
                           inputMode="tel"
                           onChange={(e) => setNewInternationalPhone(newPhoneParts.prefix, e.target.value)}
-                          placeholder={newPhoneParts.prefix === "+33" ? "6 12 34 56 78" : "Numéro local"}
+                          placeholder={newPhoneParts.prefix === "+33" ? "6 12 34 56 78" : "Numéro"}
                           value={newPhoneLocal}
                         />
                       </div>
                       <div className="relative min-w-0">
                         <Mail className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#6B6B6B]" />
                         <input
-                          className="min-w-0 h-11 w-full rounded-xl border border-[#E7E4DC] py-2 pr-3 pl-10 text-sm"
+                          className="min-w-0 h-11 w-full rounded-xl border border-[#E8E8E5] py-2 pr-3 pl-10 text-sm"
                           onChange={(e) => setNewEmail(e.target.value)}
                           placeholder="Email (optionnel)"
                           type="email"
@@ -920,7 +1188,7 @@ export function RepairModal({
                         />
                       </div>
                       <select
-                        className="h-11 rounded-xl border border-[#E7E4DC] px-3 pr-8 text-sm appearance-none bg-white bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236B6B6B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat"
+                        className="h-11 rounded-xl border border-[#E8E8E5] px-3 pr-8 text-sm appearance-none bg-white bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236B6B6B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat"
                         onChange={(e) => {
                           setNewCountry(e.target.value as (typeof countryOptions)[number]);
                           if (e.target.value === "Suisse" && newPhoneParts.prefix === "+33") {
@@ -936,7 +1204,7 @@ export function RepairModal({
                         ))}
                       </select>
                       <input
-                        className="h-11 rounded-xl border border-[#E7E4DC] px-3 text-sm"
+                        className="h-11 rounded-xl border border-[#E8E8E5] px-3 text-sm"
                         inputMode="numeric"
                         onChange={(e) => setNewPostal(e.target.value)}
                         placeholder="Code postal"
@@ -944,7 +1212,7 @@ export function RepairModal({
                       />
                       <div className="relative">
                         <input
-                          className="h-11 w-full rounded-xl border border-[#E7E4DC] px-3 text-sm"
+                          className="h-11 w-full rounded-xl border border-[#E8E8E5] px-3 text-sm"
                           onChange={(e) => setNewCity(e.target.value)}
                           onBlur={() => {
                             if (newCity && !newPostalCode && newCountry === "France") {
@@ -966,7 +1234,7 @@ export function RepairModal({
                         )}
                       </div>
                       <input
-                        className="h-11 rounded-xl border border-[#E7E4DC] px-3 text-sm sm:col-span-3"
+                        className="h-11 rounded-xl border border-[#E8E8E5] px-3 text-sm sm:col-span-3"
                         list="repair-address-suggestions"
                         onChange={(e) => {
                           const val = e.target.value;
@@ -993,7 +1261,7 @@ export function RepairModal({
                 </section>
 
                 {/* 2 Appareil */}
-                <section className="space-y-4 border-[#F1F1EF] border-t pt-5">
+                <section className="space-y-4 border-[#F7F7F7] border-t pt-5">
                   <h3 className="text-[14px] text-[#1A1916] font-medium">
                     <span className="text-[#2A9D8F]">2.</span> Appareil
                   </h3>
@@ -1003,7 +1271,7 @@ export function RepairModal({
                         className={`rounded-full border px-3 py-1.5 text-xs transition ${
                           deviceType === t
                             ? "border-[#2A9D8F] bg-[#E8F7F3] text-[#1A1916]"
-                            : "border-[#E7E4DC] bg-white text-[#6B6B6B] hover:border-[#2A9D8F]/50"
+                            : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:border-[#2A9D8F]/50"
                         }`}
                         key={t}
                         data-testid={
@@ -1117,13 +1385,13 @@ export function RepairModal({
                 </section>
 
                 {/* 3 Intervention */}
-                <section className="space-y-4 border-[#F1F1EF] border-t pt-5">
+                <section className="space-y-4 border-[#F7F7F7] border-t pt-5">
                   <h3 className="text-[14px] text-[#1A1916] font-medium">
                     <span className="text-[#2A9D8F]">3.</span> Intervention
                   </h3>
 
                   {!modele ? (
-                    <div className="rounded-xl border border-dashed border-[#E7E4DC] bg-[#FAFAF8] py-8 text-center">
+                    <div className="rounded-xl border border-dashed border-[#E8E8E5] bg-[#FAFAFA] py-8 text-center">
                       <p className="text-[#6B6B6B] text-sm">
                         Sélectionnez un modèle pour voir les interventions disponibles.
                       </p>
@@ -1131,7 +1399,7 @@ export function RepairModal({
                   ) : (
                     <>
                       <input
-                        className="h-11 w-full rounded-xl border border-[#E7E4DC] px-3 text-sm focus:border-[#2A9D8F] focus:outline-none"
+                        className="h-11 w-full rounded-xl border border-[#E8E8E5] px-3 text-sm focus:border-[#2A9D8F] focus:outline-none"
                         onChange={(e) => setInterventionSearch(e.target.value)}
                         placeholder="Filtrer: vitre, batterie, connecteur, sim..."
                         value={interventionSearch}
@@ -1145,7 +1413,7 @@ export function RepairModal({
                               className={`group relative flex min-w-[120px] flex-col rounded-xl border p-3 text-left transition ${
                                 isSelected
                                   ? "border-[#2A9D8F] bg-[#E8F7F3]"
-                                  : "border-[#E7E4DC] bg-white hover:border-[#2A9D8F]/50"
+                                  : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/50"
                               }`}
                               key={entry.label}
                               onClick={() => {
@@ -1188,7 +1456,7 @@ export function RepairModal({
                         })}
 
                         <button
-                          className="flex min-w-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-[#E7E4DC] bg-[#FAFAF8] p-3 text-[#6B6B6B] transition hover:border-[#2A9D8F]/50 hover:bg-white"
+                          className="flex min-w-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-[#E8E8E5] bg-[#FAFAFA] p-3 text-[#6B6B6B] transition hover:border-[#2A9D8F]/50 hover:bg-white"
                           onClick={() => setCustomInterventionOpen((prev) => !prev)}
                           type="button"
                         >
@@ -1205,29 +1473,29 @@ export function RepairModal({
                     </>
                   )}
                   {customInterventionOpen && (
-                    <div className="grid gap-2 rounded-xl border border-[#E7E4DC] bg-[#FAFAF8] p-3 sm:grid-cols-2">
+                    <div className="grid gap-2 rounded-xl border border-[#E8E8E5] bg-[#FAFAFA] p-3 sm:grid-cols-2">
                       <input
-                        className="h-10 rounded-lg border border-[#E7E4DC] bg-white px-3 text-sm sm:col-span-2"
+                        className="h-10 rounded-lg border border-[#E8E8E5] bg-white px-3 text-sm sm:col-span-2"
                         onChange={(e) => setCustomInterventionName(e.target.value)}
                         placeholder="Nom intervention (ex: Lecteur carte SIM)"
                         value={customInterventionName}
                       />
                       <input
-                        className="h-10 rounded-lg border border-[#E7E4DC] bg-white px-3 text-sm"
+                        className="h-10 rounded-lg border border-[#E8E8E5] bg-white px-3 text-sm"
                         inputMode="decimal"
                         onChange={(e) => setCustomInterventionPurchase(e.target.value)}
                         placeholder="Prix achat conseillé (optionnel)"
                         value={customInterventionPurchase}
                       />
                       <input
-                        className="h-10 rounded-lg border border-[#E7E4DC] bg-white px-3 text-sm"
+                        className="h-10 rounded-lg border border-[#E8E8E5] bg-white px-3 text-sm"
                         inputMode="decimal"
                         onChange={(e) => setCustomInterventionSale(e.target.value)}
                         placeholder="Prix vente conseillé"
                         value={customInterventionSale}
                       />
                       <input
-                        className="h-10 rounded-lg border border-[#E7E4DC] bg-white px-3 text-sm"
+                        className="h-10 rounded-lg border border-[#E8E8E5] bg-white px-3 text-sm"
                         inputMode="decimal"
                         onChange={(e) => setCustomInterventionLabor(e.target.value)}
                         placeholder="Main-d'œuvre conseillée"
@@ -1292,7 +1560,7 @@ export function RepairModal({
                           toast.success(
                             customInterventionSave
                               ? "Intervention enregistrée pour les prochaines fois."
-                              : "Intervention ajoutée à cette réparation.",
+                              : "Intervention ajoutée à ce dossier.",
                           );
                         }}
                         type="button"
@@ -1322,7 +1590,7 @@ export function RepairModal({
                                 className={`rounded-lg border p-3 text-left text-sm transition ${
                                   active
                                     ? "border-[#167B70] bg-white shadow-sm"
-                                    : "border-[#E7E4DC] bg-white hover:border-[#167B70]/40"
+                                    : "border-[#E8E8E5] bg-white hover:border-[#167B70]/40"
                                 }`}
                                 key={opt.itemId}
                                 onClick={() => {
@@ -1371,7 +1639,7 @@ export function RepairModal({
                               className={`w-full rounded-lg border p-3 text-left text-sm transition ${
                                 active
                                   ? "border-[#167B70] bg-white shadow-sm"
-                                  : "border-[#E7E4DC] bg-white hover:border-[#167B70]/40"
+                                  : "border-[#E8E8E5] bg-white hover:border-[#167B70]/40"
                               }`}
                               key={quality}
                               onClick={() => {
@@ -1405,7 +1673,7 @@ export function RepairModal({
 
                 {/* 4 Tarif */}
                 {intervention && (
-                  <section className="space-y-4 border-[#F1F1EF] border-t pt-5">
+                  <section className="space-y-4 border-[#F7F7F7] border-t pt-5">
                     <h3 className="text-[14px] text-[#1A1916] font-medium">
                       <span className="text-[#2A9D8F]">4.</span> Tarif client
                     </h3>
@@ -1413,7 +1681,7 @@ export function RepairModal({
                       <label className="text-xs">
                         <span className="text-[#6B6B6B]">Prix pièce / prestation (€)</span>
                         <input
-                          className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] px-3 text-sm focus:border-[#2A9D8F] focus:outline-none"
+                          className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] px-3 text-sm focus:border-[#2A9D8F] focus:outline-none"
                           inputMode="decimal"
                           onChange={(e) => {
                             setSelectedCatalogId(null);
@@ -1427,7 +1695,7 @@ export function RepairModal({
                       <label className="text-xs">
                         <span className="text-[#6B6B6B]">Main-d&apos;œuvre (€)</span>
                         <input
-                          className="mt-1 h-11 w-full rounded-xl border border-[#E7E4DC] px-3 text-sm focus:border-[#2A9D8F] focus:outline-none"
+                          className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] px-3 text-sm focus:border-[#2A9D8F] focus:outline-none"
                           inputMode="decimal"
                           onChange={(e) => {
                             setSelectedCatalogId(null);
@@ -1449,13 +1717,13 @@ export function RepairModal({
                     </div>
                     {totalClient <= 0 && (
                       <p className="text-[#6B6B6B] text-[11px] italic">
-                        Aucun tarif défini. Vous pourrez le compléter plus tard sur la fiche réparation.
+                        Aucun tarif défini. Vous pourrez le compléter plus tard sur le dossier.
                       </p>
                     )}
                   </section>
                 )}
 
-                <div className="rounded-xl border border-[#E7E4DC] bg-[#FAFAF8] p-3">
+                <div className="rounded-xl border border-[#E8E8E5] bg-[#FAFAFA] p-3">
                   <button
                     className="flex w-full cursor-pointer items-center justify-between font-medium text-[#1A1916] text-sm"
                     onClick={() => setAdvancedOpen((o) => !o)}
@@ -1465,11 +1733,11 @@ export function RepairModal({
                     <ChevronDown className={`size-4 transition ${advancedOpen ? "rotate-180" : ""}`} />
                   </button>
                   {advancedOpen && (
-                    <div className="mt-4 grid gap-3 border-[#E7E4DC] border-t pt-4 sm:grid-cols-2">
+                    <div className="mt-4 grid gap-3 border-[#E8E8E5] border-t pt-4 sm:grid-cols-2">
                       <label className="text-xs">
                         <span className="text-[#6B6B6B]">Prix achat interne (€)</span>
                         <input
-                          className="mt-1 h-10 w-full rounded-lg border border-[#E7E4DC] px-2 text-sm"
+                          className="mt-1 h-10 w-full rounded-lg border border-[#E8E8E5] px-2 text-sm"
                           onChange={(e) => setPrixAchat(e.target.value)}
                           value={prixAchat}
                         />
@@ -1477,7 +1745,7 @@ export function RepairModal({
                       <label className="text-xs">
                         <span className="text-[#6B6B6B]">Fournisseur</span>
                         <input
-                          className="mt-1 h-10 w-full rounded-lg border border-[#E7E4DC] px-2 text-sm"
+                          className="mt-1 h-10 w-full rounded-lg border border-[#E8E8E5] px-2 text-sm"
                           onChange={(e) => setFournisseur(e.target.value)}
                           value={fournisseur}
                         />
@@ -1485,7 +1753,7 @@ export function RepairModal({
                       <label className="text-xs">
                         <span className="text-[#6B6B6B]">SKU</span>
                         <input
-                          className="mt-1 h-10 w-full rounded-lg border border-[#E7E4DC] px-2 text-sm"
+                          className="mt-1 h-10 w-full rounded-lg border border-[#E8E8E5] px-2 text-sm"
                           onChange={(e) => setSkuAdv(e.target.value)}
                           value={skuAdv}
                         />
@@ -1493,7 +1761,7 @@ export function RepairModal({
                       <label className="text-xs">
                         <span className="text-[#6B6B6B]">Stock (interne)</span>
                         <input
-                          className="mt-1 h-10 w-full rounded-lg border border-[#E7E4DC] px-2 text-sm"
+                          className="mt-1 h-10 w-full rounded-lg border border-[#E8E8E5] px-2 text-sm"
                           onChange={(e) => setStockAdv(e.target.value)}
                           value={stockAdv}
                         />
@@ -1501,7 +1769,7 @@ export function RepairModal({
                       <label className="text-xs sm:col-span-2">
                         <span className="text-[#6B6B6B]">Garantie</span>
                         <input
-                          className="mt-1 h-10 w-full rounded-lg border border-[#E7E4DC] px-2 text-sm"
+                          className="mt-1 h-10 w-full rounded-lg border border-[#E8E8E5] px-2 text-sm"
                           onChange={(e) => setGarantieAdv(e.target.value)}
                           value={garantieAdv}
                         />
@@ -1509,7 +1777,7 @@ export function RepairModal({
                       <label className="text-xs sm:col-span-2">
                         <span className="text-[#6B6B6B]">Notes internes</span>
                         <textarea
-                          className="mt-1 min-h-[64px] w-full rounded-lg border border-[#E7E4DC] px-2 py-1 text-sm"
+                          className="mt-1 min-h-[64px] w-full rounded-lg border border-[#E8E8E5] px-2 py-1 text-sm"
                           onChange={(e) => setNotesInternes(e.target.value)}
                           value={notesInternes}
                         />
@@ -1528,7 +1796,7 @@ export function RepairModal({
                 </div>
 
                 {/* RDV */}
-                <section className="space-y-2 border-[#E7E4DC] border-t pt-4">
+                <section className="space-y-2 border-[#E8E8E5] border-t pt-4">
                   <p className="font-medium text-[#1A1916] text-sm">Ajouter un rendez-vous ?</p>
                   <div className="flex gap-6 text-sm">
                     <label className="flex cursor-pointer items-center gap-2">
@@ -1558,11 +1826,11 @@ export function RepairModal({
                     </label>
                   </div>
                   {rdvOui && (
-                    <div className="grid gap-2 rounded-xl bg-[#FAFAF8] p-3 sm:grid-cols-2">
+                    <div className="grid gap-2 rounded-xl bg-[#FAFAFA] p-3 sm:grid-cols-2">
                       <label className="text-xs">
                         Date *
                         <input
-                          className="mt-1 h-10 w-full rounded-lg border border-[#E7E4DC] px-2"
+                          className="mt-1 h-10 w-full rounded-lg border border-[#E8E8E5] px-2"
                           onChange={(e) => setRdvDate(e.target.value)}
                           required={rdvOui}
                           type="date"
@@ -1572,7 +1840,7 @@ export function RepairModal({
                       <label className="text-xs">
                         Heure *
                         <input
-                          className="mt-1 h-10 w-full rounded-lg border border-[#E7E4DC] px-2"
+                          className="mt-1 h-10 w-full rounded-lg border border-[#E8E8E5] px-2"
                           onChange={(e) => setRdvTime(e.target.value)}
                           required={rdvOui}
                           type="time"
@@ -1582,7 +1850,7 @@ export function RepairModal({
                       <label className="text-xs">
                         Durée
                         <input
-                          className="mt-1 h-10 w-full rounded-lg border border-[#E7E4DC] px-2"
+                          className="mt-1 h-10 w-full rounded-lg border border-[#E8E8E5] px-2"
                           onChange={(e) => setRdvDuration(e.target.value)}
                           value={rdvDuration}
                         />
@@ -1590,7 +1858,7 @@ export function RepairModal({
                       <label className="text-xs sm:col-span-2">
                         Motif *
                         <input
-                          className="mt-1 h-10 w-full rounded-lg border border-[#E7E4DC] px-2"
+                          className="mt-1 h-10 w-full rounded-lg border border-[#E8E8E5] px-2"
                           onChange={(e) => setRdvMotif(e.target.value)}
                           placeholder={`${intervention || "Intervention"} — ${modelFull}`}
                           value={rdvMotif}
@@ -1600,21 +1868,36 @@ export function RepairModal({
                   )}
                 </section>
 
-                <RepairIntakeQuickPanel
-                  value={intakeDraft}
-                  onChange={setIntakeDraft}
-                  onOpenFull={() => setView("intake")}
-                />
+                {/* §5 — l'étape 1 reste "infos simples". L'état d'entrée / anti-litige
+                    (écran, tactile, oxydation, signature…) se remplit à l'étape 2, jamais ici. */}
+                <section className="flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA] p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="grid size-9 shrink-0 place-items-center text-[#2A9D8F]">
+                      <ClipboardCheck className="size-[18px]" />
+                    </span>
+                    <div>
+                      <p className="font-medium text-[#1A1916] text-sm">État d'entrée / anti-litige</p>
+                      <p className="mt-1 text-[#6B6B6B] text-xs">
+                        {intakeDraft
+                          ? "Fiche commencée — à finaliser à l'étape suivante."
+                          : "Écran, tactile, oxydation, accessoires, signature client : à l'étape suivante."}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center rounded-full border border-[#E8E8E5] bg-white px-3 py-1 font-medium text-[#6B6B6B] text-[11px]">
+                    Étape suivante
+                  </span>
+                </section>
               </form>
             </div>
 
             {/* Mobile : barre d'action sticky en bas */}
             <div
-              className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 border-t border-[#F1F1EF] bg-white/95 px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:hidden"
+              className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 border-t border-[#F7F7F7] bg-white px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden"
               style={{ boxShadow: "0 -10px 24px rgba(26,25,22,0.06)" }}
             >
               <div className="min-w-0">
-                <p className="text-[#8A8984] text-[11px] font-medium tracking-tight">Total</p>
+                <p className="text-[#6B6B6B] text-[11px] font-medium tracking-tight">Total</p>
                 <p className="font-bold text-[#1A1916] text-[18px] leading-none tracking-tight tabular-nums">
                   {totalClient > 0 ? formatEuro(totalClient) : "À définir"}
                 </p>
@@ -1626,7 +1909,7 @@ export function RepairModal({
                   form="repair-quick-form"
                   type="submit"
                   value="repair-quote"
-                  aria-label="Créer réparation et devis"
+                  aria-label="Créer dossier et devis"
                 >
                   <FileText className="size-4" />
                   Devis
@@ -1636,16 +1919,16 @@ export function RepairModal({
                   disabled={!canSubmitRepair}
                   form="repair-quick-form"
                   type="submit"
-                  value="repair"
+                  value="continue"
                 >
-                  <Check className="size-4" />
-                  {initial ? "Enregistrer" : "Créer"}
+                  Continuer
+                  <ChevronDown className="size-4 -rotate-90" />
                 </PrimaryButton>
               </div>
             </div>
 
             {/* Résumé desktop */}
-            <aside className="hidden md:flex w-full flex-col border-[#F1F1EF] border-t bg-[#FAFAF8] p-6 md:w-[320px] md:border-t-0 md:border-l">
+            <aside className="hidden md:flex w-full flex-col border-[#F7F7F7] border-t bg-[#FAFAFA] p-6 md:w-[320px] md:border-t-0 md:border-l">
               <div className="mb-5">
                 <h3 className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Résumé</h3>
               </div>
@@ -1691,7 +1974,7 @@ export function RepairModal({
               </dl>
 
               {!canSubmitQuote && (
-                <p className="mt-4 rounded-lg border border-[#F2DFA7] bg-[#FFF8EB] px-3 py-2 text-[#9A6A17] text-xs">
+                <p className="mt-4 rounded-lg border border-[#E8E8E5] bg-[#FAFAFA] px-3 py-2 text-[#6B6B6B] text-xs">
                   Ajoutez un tarif pour créer un devis.
                 </p>
               )}
@@ -1705,20 +1988,20 @@ export function RepairModal({
                   value="repair-quote"
                 >
                   <FileText className="size-4" />
-                  Créer réparation + devis
+                  Créer dossier + devis
                 </SecondaryButton>
                 <PrimaryButton
                   className="h-11 w-full justify-center gap-2"
                   disabled={!canSubmitRepair}
                   form="repair-quick-form"
                   type="submit"
-                  value="repair"
+                  value="continue"
                 >
-                  <Check className="size-4" />
-                  {initial ? "Enregistrer" : "Créer réparation"}
+                  Continuer · Accessoires
+                  <ChevronDown className="size-4 -rotate-90" />
                 </PrimaryButton>
                 {!canSubmitRepair && missingSummary.length > 0 && (
-                  <p className="text-[#B0AEA8] text-[11px] text-center">Manquant : {missingSummary.join(", ")}.</p>
+                  <p className="text-[#8A8A8A] text-[11px] text-center">Manquant : {missingSummary.join(", ")}.</p>
                 )}
               </div>
             </aside>
@@ -1726,5 +2009,45 @@ export function RepairModal({
         )}
       </div>
     </div>
+  );
+}
+
+// Carte d'action de l'écran post-création (Étape 5) — style net, blanc, sans décor.
+function DoneAction({
+  icon,
+  title,
+  desc,
+  onClick,
+  primary,
+}: {
+  icon: ReactNode;
+  title: string;
+  desc: string;
+  onClick: () => void;
+  primary?: boolean;
+}) {
+  return (
+    <button
+      className={`group flex items-center gap-3 rounded-2xl border p-3.5 text-left transition ${
+        primary
+          ? "border-[#2A9D8F] bg-[#F1FAF8] hover:bg-[#E8F7F3]"
+          : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/40 hover:bg-[#FAFAFA]"
+      }`}
+      onClick={onClick}
+      type="button"
+    >
+      <span
+        className={`grid size-9 shrink-0 place-items-center rounded-xl ${
+          primary ? "bg-[#2A9D8F] text-white" : "bg-[#F4F4F2] text-[#167B70]"
+        }`}
+      >
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-medium text-[#1A1916] text-[14px]">{title}</span>
+        <span className="block truncate text-[#6B6B6B] text-[12px]">{desc}</span>
+      </span>
+      <ArrowRight className="size-4 shrink-0 text-[#C4C2BB] transition group-hover:text-[#6B6B6B]" />
+    </button>
   );
 }

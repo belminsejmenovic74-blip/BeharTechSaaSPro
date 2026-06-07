@@ -483,7 +483,7 @@ export default function CataloguePrixPage() {
                   setPage(1);
                 }}
                 placeholder="Rechercher (marque, modèle, pièce, SKU…)"
-                className="h-10 w-full rounded-[12px] border border-[#E7E4DC] bg-white pr-3 pl-10 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+                className="h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white pr-3 pl-10 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
               />
             </label>
             <FilterSelect
@@ -546,16 +546,16 @@ export default function CataloguePrixPage() {
             <span className="text-[#6B6B6B] text-sm">
               {filtered.length} ligne{filtered.length > 1 ? "s" : ""} sur {items.length}
             </span>
-            <div className="ml-auto inline-flex rounded-full border border-[#E7E4DC] bg-white p-1 text-xs">
+            <div className="ml-auto inline-flex rounded-[12px] border border-[#E8E8E5] bg-white p-1 text-xs">
               <button
-                className={`rounded-full px-3 py-1 transition ${view === "tree" ? "bg-[#E8F7F3] text-[#167B70]" : "text-[#6B6B6B] hover:text-[#1A1916]"}`}
+                className={`rounded-[9px] px-3 py-1 transition ${view === "tree" ? "bg-[#F3FBFA] text-[#167B70]" : "text-[#6B6B6B] hover:text-[#1A1916]"}`}
                 onClick={() => setView("tree")}
                 type="button"
               >
                 Arborescence
               </button>
               <button
-                className={`rounded-full px-3 py-1 transition ${view === "table" ? "bg-[#E8F7F3] text-[#167B70]" : "text-[#6B6B6B] hover:text-[#1A1916]"}`}
+                className={`rounded-[9px] px-3 py-1 transition ${view === "table" ? "bg-[#F3FBFA] text-[#167B70]" : "text-[#6B6B6B] hover:text-[#1A1916]"}`}
                 onClick={() => setView("table")}
                 type="button"
               >
@@ -584,7 +584,7 @@ export default function CataloguePrixPage() {
           <Panel className="overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1200px] border-collapse text-sm">
-                <thead className="bg-[#FAFAF8] text-[#6B6B6B] text-xs uppercase tracking-wide">
+                <thead className="bg-[#FAFAFA] text-[#6B6B6B] text-xs uppercase tracking-wide">
                   <tr>
                     <Th>Marque</Th>
                     <Th>Modèle</Th>
@@ -612,7 +612,7 @@ export default function CataloguePrixPage() {
                     </tr>
                   ) : (
                     visible.map((item) => (
-                      <tr key={item.id} className="border-[#EFEDE6] border-t hover:bg-[#FAFAF8]/60">
+                      <tr key={item.id} className="border-[#E8E8E5] border-t hover:bg-[#FAFAFA]/60">
                         <Td>{item.marque}</Td>
                         <Td>{item.modele}</Td>
                         <Td>{item.reparation}</Td>
@@ -663,7 +663,7 @@ export default function CataloguePrixPage() {
                           </div>
                         </Td>
                         <Td>
-                          <span className="rounded-full bg-[#FAFAF8] px-2 py-0.5 text-[#6B6B6B] text-xs">
+                          <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 text-[#6B6B6B] text-xs">
                             {PRICE_BOOK_SOURCE_LABELS[item.source]}
                           </span>
                         </Td>
@@ -671,8 +671,10 @@ export default function CataloguePrixPage() {
                           <button
                             type="button"
                             onClick={() => toggleItem(item.id, !item.isActive)}
-                            className={`rounded-full px-2 py-0.5 text-xs ${
-                              item.isActive ? "bg-[#2A9D8F]/10 text-[#1d6f65]" : "bg-[#F1EFE8] text-[#8A8984]"
+                            className={`rounded-[7px] border px-2 py-0.5 text-xs ${
+                              item.isActive
+                                ? "border-[#D7EFEA] bg-[#F6FCFA] text-[#1d6f65]"
+                                : "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]"
                             }`}
                           >
                             {item.isActive ? "Actif" : "Inactif"}
@@ -683,7 +685,7 @@ export default function CataloguePrixPage() {
                             <button
                               type="button"
                               onClick={() => openEdit(item)}
-                              className="grid size-8 place-items-center rounded-lg text-[#6B6B6B] hover:bg-[#F1EFE8] hover:text-[#1A1916]"
+                              className="grid size-8 place-items-center rounded-lg text-[#6B6B6B] hover:bg-[#FAFAFA] hover:text-[#1A1916]"
                               aria-label="Modifier"
                             >
                               <Pencil className="size-4" />
@@ -705,7 +707,7 @@ export default function CataloguePrixPage() {
               </table>
             </div>
             {totalPages > 1 && (
-              <div className="flex items-center justify-between border-[#EFEDE6] border-t px-4 py-3 text-sm">
+              <div className="flex items-center justify-between border-[#E8E8E5] border-t px-4 py-3 text-sm">
                 <span className="text-[#6B6B6B]">
                   Page {safePage} / {totalPages}
                 </span>
@@ -971,7 +973,7 @@ function FormDialog({
             />
           </Field>
         </div>
-        <div className="mt-5 grid grid-cols-3 gap-3 rounded-[14px] bg-[#FAFAF8] p-4 text-sm">
+        <div className="mt-5 grid grid-cols-3 gap-3 rounded-[14px] bg-[#FAFAFA] p-4 text-sm">
           <Stat label="Total client" value={formatEuroPriceBook(totals.prixClientTotal)} highlight />
           <Stat label="Marge" value={formatEuroPriceBook(totals.marge)} tone={totals.marge < 0 ? "danger" : "ok"} />
           <Stat label="Marge %" value={`${totals.margePourcentage.toFixed(1)} %`} />
@@ -986,7 +988,7 @@ function FormDialog({
 }
 
 const inputClass =
-  "h-10 w-full rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10";
+  "h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10";
 
 function Field({
   label,
@@ -1048,11 +1050,11 @@ function ImportPreviewDialog({
         </div>
 
         <div className="mb-6 grid grid-cols-3 gap-4">
-          <div className="rounded-xl border border-[#E7E4DC] p-4 text-center">
+          <div className="rounded-xl border border-[#E8E8E5] p-4 text-center">
             <div className="text-[#6B6B6B] text-xs">Lignes valides</div>
             <div className="mt-1 font-semibold text-[#2A9D8F] text-2xl">{preview.validLines.length}</div>
           </div>
-          <div className="rounded-xl border border-[#E7E4DC] p-4 text-center">
+          <div className="rounded-xl border border-[#E8E8E5] p-4 text-center">
             <div className="text-[#6B6B6B] text-xs">Lignes en erreur</div>
             <div
               className={`mt-1 font-semibold text-2xl ${preview.errorCount > 0 ? "text-red-500" : "text-[#1A1916]"}`}
@@ -1060,7 +1062,7 @@ function ImportPreviewDialog({
               {preview.errorCount}
             </div>
           </div>
-          <div className="rounded-xl border border-[#E7E4DC] p-4 text-center">
+          <div className="rounded-xl border border-[#E8E8E5] p-4 text-center">
             <div className="text-[#6B6B6B] text-xs">Total lu</div>
             <div className="mt-1 font-semibold text-[#1A1916] text-2xl">
               {preview.validLines.length + preview.errorCount}
@@ -1095,9 +1097,9 @@ function ImportPreviewDialog({
 
         <div className="mb-6">
           <h3 className="mb-2 font-medium text-[#1A1916] text-sm">Aperçu des premières lignes</h3>
-          <div className="overflow-x-auto rounded-xl border border-[#E7E4DC]">
+          <div className="overflow-x-auto rounded-xl border border-[#E8E8E5]">
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#FAFAF8] text-[#6B6B6B]">
+              <thead className="bg-[#FAFAFA] text-[#6B6B6B]">
                 <tr>
                   <th className="px-3 py-2 font-medium">Modèle</th>
                   <th className="px-3 py-2 font-medium">Réparation</th>
@@ -1106,7 +1108,7 @@ function ImportPreviewDialog({
                   <th className="px-3 py-2 font-medium text-right">M.O.</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E7E4DC]">
+              <tbody className="divide-y divide-[#E8E8E5]">
                 {preview.validLines.slice(0, 5).map((line, i) => (
                   <tr key={i}>
                     <td className="px-3 py-2">{line.modele}</td>
@@ -1201,7 +1203,7 @@ function QualityField({
         />
       )}
       {category && !isQualityValidForCategory(value, category) && value && value !== "Autre" && (
-        <p className="text-[11px] text-[#C2841C]">
+        <p className="text-[11px] text-[#6B6B6B]">
           La qualité « {value} » n'est pas standard pour la catégorie « {category} ».
         </p>
       )}

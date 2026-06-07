@@ -3,7 +3,7 @@ import { SalesWorkspace } from "@/components/behar/sales-workspace";
 
 export default function SalesPage() {
   return (
-    <PageShell title="Ventes" subtitle="Encaissez accessoires, produits et ventes comptoir.">
+    <PageShell title="Ventes accessoires" subtitle="Ventes hors flux dossier, conservées en gestion stock." fitScreen>
       <SalesWorkspace />
     </PageShell>
   );

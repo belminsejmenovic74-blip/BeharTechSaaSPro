@@ -11,7 +11,7 @@ type Props = {
   open: boolean;
 };
 
-const PAYMENT_OPTIONS = ["Espèces", "Carte bancaire", "Virement", "Chèque", "Autre"] as const;
+const PAYMENT_OPTIONS = ["Espèces hors Behar Tech", "TPE externe", "Virement", "Chèque", "Autre"] as const;
 
 export function InstallationOnboarding({ open }: Readonly<Props>) {
   const store = useBeharStore();
@@ -42,7 +42,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
     nextReceiptNumber: store.workshopSettings.nextReceiptNumber ?? 1,
     acceptedPaymentMethods: store.workshopSettings.acceptedPaymentMethods?.length
       ? store.workshopSettings.acceptedPaymentMethods
-      : ["Espèces", "Carte bancaire", "Virement"],
+      : ["Espèces hors Behar Tech", "TPE externe", "Virement"],
     businessHours: store.workshopSettings.businessHours || "Lun-Ven 09:00-18:00 · Sam 09:00-13:00",
     quoteTerms: store.workshopSettings.quoteTerms || "Devis valable 30 jours.",
     invoiceTerms: store.workshopSettings.invoiceTerms || "Paiement comptant à réception.",
@@ -138,8 +138,8 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] overflow-y-auto bg-[#FAFAF8] p-5 md:p-8">
-      <div className="mx-auto max-w-5xl rounded-[24px] border border-[#E7E4DC] bg-white/90 p-6 shadow-[0_20px_60px_rgba(26,25,22,0.08)] backdrop-blur-sm md:p-8">
+    <div className="fixed inset-0 z-[100] overflow-y-auto bg-white p-5 md:p-8">
+      <div className="mx-auto max-w-5xl rounded-[24px] border border-[#E8E8E5] bg-white p-6 shadow-[0_20px_60px_rgba(26,25,22,0.08)] md:p-8">
         <h1 className="font-semibold text-[#1A1916] text-3xl tracking-tight">Configurer votre atelier</h1>
         <p className="mt-2 text-[#6B6B6B] text-sm">
           Ces informations apparaîtront sur vos devis, factures, reçus et documents client.
@@ -153,7 +153,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
           </div>
         ) : null}
 
-        <section className="mt-7 grid gap-4 rounded-[18px] border border-[#E7E4DC] bg-[#FAFAF8]/70 p-4 md:grid-cols-2">
+        <section className="mt-7 grid gap-4 rounded-[18px] border border-[#E8E8E5] bg-[#FAFAFA]/70 p-4 md:grid-cols-2">
           <h2 className="md:col-span-2 font-semibold text-[#1A1916] text-lg">Identité atelier</h2>
           <Field label="Nom de l’atelier">
             <input className={inputCls} value={draft.name || ""} onChange={(e) => setField("name", e.target.value)} />
@@ -161,7 +161,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
           <Field label="Logo atelier">
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-3">
-                <label className="inline-flex h-10 cursor-pointer items-center rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-sm text-[#1A1916]">
+                <label className="inline-flex h-10 cursor-pointer items-center rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-sm text-[#1A1916]">
                   {draft.logoUrl ? "Changer logo" : "Choisir logo"}
                   <input
                     type="file"
@@ -184,7 +184,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
                   </span>
                 )}
               </div>
-              <p className="text-[12px] text-[#8A8984] leading-relaxed">
+              <p className="text-[12px] text-[#6B6B6B] leading-relaxed">
                 Si vous importez un logo, il apparaîtra automatiquement sur vos documents.
               </p>
             </div>
@@ -204,7 +204,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
           </Field>
         </section>
 
-        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E7E4DC] bg-[#FAFAF8]/70 p-4 md:grid-cols-2">
+        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E8E8E5] bg-[#FAFAFA]/70 p-4 md:grid-cols-2">
           <h2 className="md:col-span-2 font-semibold text-[#1A1916] text-lg">Adresse</h2>
           <Field label="Adresse">
             <input
@@ -232,7 +232,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
           </Field>
         </section>
 
-        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E7E4DC] bg-[#FAFAF8]/70 p-4 md:grid-cols-2">
+        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E8E8E5] bg-[#FAFAFA]/70 p-4 md:grid-cols-2">
           <h2 className="md:col-span-2 font-semibold text-[#1A1916] text-lg">Informations légales</h2>
           <Field label="SIREN / SIRET (Obligatoire)">
             <input className={inputCls} value={draft.siret || ""} onChange={(e) => setField("siret", e.target.value)} />
@@ -269,7 +269,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
           ) : null}
         </section>
 
-        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E7E4DC] bg-[#FAFAF8]/70 p-4 md:grid-cols-4">
+        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E8E8E5] bg-[#FAFAFA]/70 p-4 md:grid-cols-4">
           <h2 className="md:col-span-4 font-semibold text-[#1A1916] text-lg">Numérotation documents</h2>
           <Field label="Préfixe réparation">
             <input
@@ -337,7 +337,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
           </Field>
         </section>
 
-        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E7E4DC] bg-[#FAFAF8]/70 p-4 md:grid-cols-2">
+        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E8E8E5] bg-[#FAFAFA]/70 p-4 md:grid-cols-2">
           <h2 className="md:col-span-2 font-semibold text-[#1A1916] text-lg">Paiements / horaires / conditions</h2>
           <Field label="Paiements acceptés">
             <div className="grid grid-cols-2 gap-2 text-sm">
@@ -432,6 +432,6 @@ function Field({ label, children }: Readonly<{ label: string; children: ReactNod
 }
 
 const inputCls =
-  "h-10 w-full rounded-[12px] border border-[#E7E4DC] bg-white px-3 text-[#1A1916] text-sm outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+  "h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-sm outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
 const areaCls =
-  "min-h-[76px] w-full rounded-[12px] border border-[#E7E4DC] bg-white px-3 py-2 text-[#1A1916] text-sm outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+  "min-h-[76px] w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 py-2 text-[#1A1916] text-sm outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";

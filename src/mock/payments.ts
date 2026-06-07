@@ -3,7 +3,7 @@ import { CreditCard, Link2, Percent, WalletCards } from "lucide-react";
 export const paymentKpis = [
   {
     shop_id: "shop_atelier_belmin",
-    label: "Encaissements du mois",
+    label: "Règlements du mois",
     value: "9 480 €",
     trend: "12,5 %",
     helper: "vs mois dernier",
@@ -11,7 +11,7 @@ export const paymentKpis = [
   },
   {
     shop_id: "shop_atelier_belmin",
-    label: "Paiements en attente",
+    label: "Règlements en attente",
     value: "3",
     trend: "2 à relancer",
     helper: "liens non payés",
@@ -19,7 +19,7 @@ export const paymentKpis = [
   },
   {
     shop_id: "shop_atelier_belmin",
-    label: "Taux de paiement en ligne",
+    label: "Taux de règlement en ligne",
     value: "62 %",
     trend: "8,4 pts",
     helper: "vs mois dernier",
@@ -30,7 +30,7 @@ export const paymentKpis = [
     label: "Liens envoyés",
     value: "27",
     trend: "5 cette semaine",
-    helper: "simulation Stripe",
+    helper: "liens de règlement",
     icon: Link2,
   },
 ];

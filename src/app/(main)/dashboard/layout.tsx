@@ -14,7 +14,7 @@ export default function Layout({ children }: Readonly<{ children: ReactNode }>) 
       <InstallationGate>
         <PinLoginGate>
           <AutoSyncProvider />
-          <div className="min-h-svh bg-[#FAFAF8] text-[#1A1916]">
+          <div className="min-h-svh bg-white text-[#1A1916]">
             <DashboardSidebar />
             <div className="flex min-h-svh flex-col md:pl-[230px]">
               <div className="hidden md:block">

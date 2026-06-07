@@ -3,7 +3,7 @@ import { QuotesWorkspace } from "@/components/behar/quotes-workspace";
 
 export default function QuotePage() {
   return (
-    <PageShell searchPlaceholder="Rechercher..." title="Devis" subtitle="Créez, envoyez et acceptez vos devis client.">
+    <PageShell searchPlaceholder="Rechercher..." title="Devis" subtitle="Des devis toujours liés à un dossier atelier.">
       <QuotesWorkspace />
     </PageShell>
   );

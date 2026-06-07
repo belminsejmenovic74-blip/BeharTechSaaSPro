@@ -118,9 +118,9 @@ function formatDayShort(iso: string): string {
 export function RevenueChart() {
   const payments = useBeharStore((s) => s.payments);
 
-  // Agrégation par jour des paiements encaissés sur les 30 derniers jours.
+  // Agrégation par jour des règlements indiqués sur les 30 derniers jours.
   // Source : uniquement payments.status === "Payé" — les factures impayées
-  // n'entrent pas dans le CA encaissé.
+  // n'entrent pas dans le total réglé.
   const dailyRevenue = useMemo(() => {
     const days = buildLast30Days();
     const totals = new Map<string, number>(days.map((d) => [d, 0]));
@@ -158,12 +158,12 @@ export function RevenueChart() {
 
   return (
     <div className="w-full">
-      <p className="mb-2 text-[12px] text-[#8A8984]">
+      <p className="mb-2 text-[12px] text-[#6B6B6B]">
         Total période : <span className="font-semibold text-[#1A1916]">{formatEuroShort(totalPeriod)}</span>
       </p>
       <div className="h-[260px] w-full">
         <svg
-          aria-label="CA encaissé par jour, 30 derniers jours"
+          aria-label="Règlements indiqués par jour, 30 derniers jours"
           className="h-full w-full overflow-visible"
           role="img"
           viewBox={`0 0 ${chartWidth} ${chartHeight}`}

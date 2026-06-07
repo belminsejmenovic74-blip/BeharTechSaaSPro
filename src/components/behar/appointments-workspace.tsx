@@ -33,6 +33,7 @@ import {
   type Appointment,
   type AppointmentStatus,
   appointmentStatuses,
+  type Customer,
   formatIsoToDisplay,
   getNowIso,
   normalizeAppointmentStatus,
@@ -44,6 +45,7 @@ import {
 import { cn } from "@/lib/utils";
 
 import { DeviceSelector } from "../DeviceSelector";
+import { ProblemSelector } from "../ProblemSelector";
 import { DetailRow, Panel, PrimaryButton, SecondaryButton, StatusBadge, ToolbarSelect } from "./primitives";
 import { RepairModal } from "./repair-create-modal";
 
@@ -78,6 +80,7 @@ export function AppointmentsWorkspace() {
   const store = useBeharStore();
   const router = useRouter();
   const [weekOffset, setWeekOffset] = useState(0);
+  const [viewMode, setViewMode] = useState<"week" | "agenda">("week");
   const [createOpen, setCreateOpen] = useState(false);
   const [reportingId, setReportingId] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -131,6 +134,28 @@ export function AppointmentsWorkspace() {
     }
     setRepairPrefillAppointmentId(appointment.id);
   };
+  // Reporter / changer la date d'un rendez-vous : ouvre le formulaire d'édition
+  // pré-rempli. Réutilisé par le bouton « Reporter » de la fiche et de l'agenda.
+  const openReschedule = (appointment: Appointment) => {
+    store.setSelected("appointment", appointment.id);
+    setReportingId(appointment.id);
+    setForm({
+      customerType: "existing",
+      customerId: appointment.customerId,
+      newCustomerName: "",
+      newCustomerPhone: "",
+      newCustomerEmail: "",
+      date: displayToInputDate(appointment.date),
+      time: appointment.time,
+      duration: appointment.duration,
+      status: appointment.status,
+      notes: appointment.notes,
+      device: appointment.device,
+      issue: appointment.issue,
+      source: appointment.source,
+      technician: appointment.technician,
+    });
+  };
 
   // ─── Mobile RDV state ─────────────────────────────────────────────────────
   const todayIso = toInputDate(new Date());
@@ -176,7 +201,7 @@ export function AppointmentsWorkspace() {
             <button
               type="button"
               onClick={() => setMobileWeekOffset((o) => o - 1)}
-              className="grid size-9 place-items-center rounded-full bg-[#FAFAF8] text-[#1A1916] transition active:scale-90"
+              className="grid size-9 place-items-center rounded-full bg-[#FAFAFA] text-[#1A1916] transition active:scale-90"
               aria-label="Semaine précédente"
             >
               <ChevronLeft className="size-4" strokeWidth={2.2} />
@@ -191,7 +216,7 @@ export function AppointmentsWorkspace() {
             <button
               type="button"
               onClick={() => setMobileWeekOffset((o) => o + 1)}
-              className="grid size-9 place-items-center rounded-full bg-[#FAFAF8] text-[#1A1916] transition active:scale-90"
+              className="grid size-9 place-items-center rounded-full bg-[#FAFAFA] text-[#1A1916] transition active:scale-90"
               aria-label="Semaine suivante"
             >
               <ChevronRight className="size-4" strokeWidth={2.2} />
@@ -210,7 +235,7 @@ export function AppointmentsWorkspace() {
                   onClick={() => setMobileSelectedDay(iso)}
                   className="flex flex-col items-center gap-1 py-1.5"
                 >
-                  <span className="text-[#8A8984] text-[10.5px] font-semibold uppercase tracking-wide">
+                  <span className="text-[#6B6B6B] text-[10.5px] font-semibold uppercase tracking-wide">
                     {dayLabels[idx]?.replace(".", "")}
                   </span>
                   <span
@@ -220,7 +245,7 @@ export function AppointmentsWorkspace() {
                         ? "bg-[#2A9D8F] text-white shadow-[0_4px_12px_rgba(42,157,143,0.3)]"
                         : isToday
                           ? "bg-[#EAF6F2] text-[#2A9D8F]"
-                          : "text-[#1A1916] hover:bg-[#FAFAF8]",
+                          : "text-[#1A1916] hover:bg-[#FAFAFA]",
                     )}
                   >
                     {date.getDate()}
@@ -250,7 +275,7 @@ export function AppointmentsWorkspace() {
           <div className="mb-3 flex items-baseline justify-between">
             <div>
               <h3 className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Agenda du jour</h3>
-              <p className="mt-0.5 text-[#8A8984] text-[11.5px]">{capitalize(formatLongDate(mobileSelectedDay))}</p>
+              <p className="mt-0.5 text-[#6B6B6B] text-[11.5px]">{capitalize(formatLongDate(mobileSelectedDay))}</p>
             </div>
             {mobileSelectedDay !== todayIso && (
               <button type="button" onClick={goToToday} className="text-[#2A9D8F] text-[12px] font-semibold">
@@ -260,13 +285,13 @@ export function AppointmentsWorkspace() {
           </div>
 
           {appointmentsForSelectedDay.length === 0 ? (
-            <div className="flex items-center gap-3 rounded-[14px] bg-[#FAFAF8] px-4 py-3.5">
-              <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white text-[#8A8984]">
+            <div className="flex items-center gap-3 rounded-[14px] bg-[#FAFAFA] px-4 py-3.5">
+              <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white text-[#6B6B6B]">
                 <CalendarDays className="size-[16px]" strokeWidth={1.8} />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-[#1A1916] text-[13px]">Aucun rendez-vous</p>
-                <p className="mt-0.5 text-[#8A8984] text-[11.5px]">Touchez "+" pour en ajouter un.</p>
+                <p className="mt-0.5 text-[#6B6B6B] text-[11.5px]">Touchez "+" pour en ajouter un.</p>
               </div>
               <button
                 type="button"
@@ -288,7 +313,7 @@ export function AppointmentsWorkspace() {
               </button>
             </div>
           ) : (
-            <ul className="divide-y divide-[#F1F1EF]">
+            <ul className="divide-y divide-[#F7F7F7]">
               {appointmentsForSelectedDay.map((appt) => {
                 const apptCustomer = store.customers.find((c) => c.id === appt.customerId);
                 const linked = findLinkedRepair(appt, store.repairs);
@@ -307,7 +332,7 @@ export function AppointmentsWorkspace() {
                         <span
                           className={cn(
                             "size-2 rounded-full",
-                            tone === "teal" ? "bg-[#2A9D8F]" : tone === "amber" ? "bg-[#C2841C]" : "bg-[#10B981]",
+                            tone === "teal" ? "bg-[#2A9D8F]" : tone === "amber" ? "bg-[#6B6B6B]" : "bg-[#10B981]",
                           )}
                           aria-hidden
                         />
@@ -327,7 +352,7 @@ export function AppointmentsWorkspace() {
                       </div>
                       <span className="flex shrink-0 items-center gap-1.5">
                         <AppointmentStatusPill status={appt.status} confirmed={appt.confirmed} />
-                        <ChevronRight className="size-4 text-[#CDCBC5]" strokeWidth={2} />
+                        <ChevronRight className="size-4 text-[#A3A3A3]" strokeWidth={2} />
                       </span>
                     </button>
                   </li>
@@ -358,20 +383,50 @@ export function AppointmentsWorkspace() {
 
       <section className="grid gap-5 md:grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
         <Panel className="hidden md:block min-w-0 overflow-hidden p-0">
-          <div className="flex h-[72px] items-center justify-between gap-3 overflow-hidden border-[#E7E4DC] border-b px-5">
+          <div className="flex h-[72px] items-center justify-between gap-3 overflow-hidden border-[#E8E8E5] border-b px-5">
             <div className="flex min-w-0 shrink-0 items-center gap-2">
-              <SecondaryButton className="h-10 px-3" onClick={() => setWeekOffset((value) => value - 1)}>
-                <ArrowLeft className="size-4" />
-              </SecondaryButton>
-              <SecondaryButton className="h-10 px-3" onClick={() => setWeekOffset((value) => value + 1)}>
-                <ArrowRight className="size-4" />
-              </SecondaryButton>
-              <span className="inline-flex h-10 items-center gap-2 whitespace-nowrap px-2 font-semibold text-[#1A1916] text-sm">
-                {formatWeekRange(weekDays)}
-                <ArrowRight className="size-4 text-[#6B6B6B]" />
-              </span>
+              {viewMode === "week" ? (
+                <>
+                  <SecondaryButton className="h-10 px-3" onClick={() => setWeekOffset((value) => value - 1)}>
+                    <ArrowLeft className="size-4" />
+                  </SecondaryButton>
+                  <SecondaryButton className="h-10 px-3" onClick={() => setWeekOffset((value) => value + 1)}>
+                    <ArrowRight className="size-4" />
+                  </SecondaryButton>
+                  <span className="inline-flex h-10 items-center gap-2 whitespace-nowrap px-2 font-semibold text-[#1A1916] text-sm">
+                    {formatWeekRange(weekDays)}
+                    <ArrowRight className="size-4 text-[#6B6B6B]" />
+                  </span>
+                </>
+              ) : (
+                <span className="inline-flex h-10 items-center whitespace-nowrap px-2 font-semibold text-[#1A1916] text-sm">
+                  Agenda — passés &amp; à venir
+                </span>
+              )}
             </div>
             <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+              <div className="flex shrink-0 items-center rounded-[10px] border border-[#E8E8E5] bg-[#FAFAFA] p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("week")}
+                  className={cn(
+                    "h-9 rounded-[8px] px-3 font-semibold text-[13px] transition",
+                    viewMode === "week" ? "bg-white text-[#1A1916] shadow-sm" : "text-[#6B6B6B]",
+                  )}
+                >
+                  Semaine
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("agenda")}
+                  className={cn(
+                    "h-9 rounded-[8px] px-3 font-semibold text-[13px] transition",
+                    viewMode === "agenda" ? "bg-white text-[#1A1916] shadow-sm" : "text-[#6B6B6B]",
+                  )}
+                >
+                  Agenda
+                </button>
+              </div>
               <PrimaryButton
                 className="h-10 shrink-0 px-4"
                 onClick={() => {
@@ -393,12 +448,23 @@ export function AppointmentsWorkspace() {
               </PrimaryButton>
             </div>
           </div>
-          <CalendarGrid
-            appointments={visibleAppointments}
-            selectedId={selected?.id ?? ""}
-            weekDays={weekDays}
-            weekOffset={weekOffset}
-          />
+          {viewMode === "week" ? (
+            <CalendarGrid
+              appointments={visibleAppointments}
+              selectedId={selected?.id ?? ""}
+              weekDays={weekDays}
+              weekOffset={weekOffset}
+            />
+          ) : (
+            <AgendaList
+              appointments={store.appointments}
+              customers={store.customers}
+              selectedId={selected?.id ?? ""}
+              todayIso={todayIso}
+              onSelect={(id) => store.setSelected("appointment", id)}
+              onReschedule={openReschedule}
+            />
+          )}
         </Panel>
 
         {selected && customer && (
@@ -410,22 +476,22 @@ export function AppointmentsWorkspace() {
               "md:relative md:inset-auto md:z-auto md:block md:rounded-[22px] md:border-[#E8E8E5] md:bg-white md:p-5 md:shadow-[0_18px_45px_rgba(26,25,22,0.07)] md:overflow-visible",
             )}
           >
-            <div className="md:hidden -mx-5 -mt-5 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#F1F1EF] bg-white/95 backdrop-blur-xl px-4 py-3">
+            <div className="md:hidden -mx-5 -mt-5 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#F7F7F7] bg-white px-4 py-3">
               <span
-                className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-[#D1CFCA]"
+                className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-[#DADADA]"
                 aria-hidden
               />
               <button
                 type="button"
                 onClick={() => setMobileDetailOpen(false)}
-                className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#1A1916] transition active:scale-90"
+                className="grid size-9 place-items-center rounded-full bg-[#F7F7F7] text-[#1A1916] transition active:scale-90"
                 aria-label="Retour"
               >
                 <ArrowLeft className="size-4" />
               </button>
               <span className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Détail rendez-vous</span>
             </div>
-            <div className="mb-5 rounded-[20px] border border-[#E8E8E5] bg-[#FAFAF8] p-4">
+            <div className="mb-5 rounded-[20px] border border-[#E8E8E5] bg-[#FAFAFA] p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-[#6B6B6B]">
@@ -461,7 +527,7 @@ export function AppointmentsWorkspace() {
               </div>
               <button
                 aria-label="Options"
-                className="cursor-not-allowed text-[#B0AEA8]"
+                className="cursor-not-allowed text-[#8A8A8A]"
                 disabled
                 title="Options avancées bientôt disponibles"
                 type="button"
@@ -469,7 +535,7 @@ export function AppointmentsWorkspace() {
                 <MoreHorizontal className="size-5" />
               </button>
             </div>
-            <dl className="border-[#E7E4DC] border-t pt-5">
+            <dl className="border-[#E8E8E5] border-t pt-5">
               <DetailRow label="Appareil" value={cleanDeviceLabel(selected.device)} />
               <DetailRow label="Intervention" value={selected.issue} />
               <DetailRow label="Date" value={selected.date} />
@@ -499,7 +565,7 @@ export function AppointmentsWorkspace() {
               )}
             </dl>
 
-            <div className="mt-7 grid gap-3 border-[#E7E4DC] border-t pt-5">
+            <div className="mt-7 grid gap-3 border-[#E8E8E5] border-t pt-5">
               <PrimaryButton
                 className="h-12 w-full text-base"
                 onClick={() => {
@@ -522,30 +588,9 @@ export function AppointmentsWorkspace() {
                   Marquer arrivé
                 </PrimaryButton>
               )}
-              <SecondaryButton
-                className="h-12 w-full text-base"
-                onClick={() => {
-                  setReportingId(selected.id);
-                  setForm({
-                    customerType: "existing",
-                    customerId: selected.customerId,
-                    newCustomerName: "",
-                    newCustomerPhone: "",
-                    newCustomerEmail: "",
-                    date: displayToInputDate(selected.date),
-                    time: selected.time,
-                    duration: selected.duration,
-                    status: selected.status,
-                    notes: selected.notes,
-                    device: selected.device,
-                    issue: selected.issue,
-                    source: selected.source,
-                    technician: selected.technician,
-                  });
-                }}
-              >
+              <SecondaryButton className="h-12 w-full text-base" onClick={() => openReschedule(selected)}>
                 <RotateCw className="size-4" />
-                Modifier
+                Reporter / changer la date
               </SecondaryButton>
               <SecondaryButton className="h-12 w-full text-base" onClick={() => setPreviewOpen(true)}>
                 <Eye className="size-4" />
@@ -716,7 +761,7 @@ export function AppointmentsWorkspace() {
       )}
 
       {previewOpen && selected && customer && (
-        <div className="fixed inset-0 z-50 grid place-items-stretch bg-[#1A1916]/20 p-0 backdrop-blur-sm md:place-items-center md:p-6">
+        <div className="fixed inset-0 z-50 grid place-items-stretch bg-[#1A1916]/20 p-0 md:place-items-center md:p-6">
           <Panel className="w-full max-w-none min-h-svh rounded-none p-5 md:max-w-[480px] md:min-h-0 md:rounded-[20px] md:p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -725,7 +770,7 @@ export function AppointmentsWorkspace() {
               </div>
               {selectedRepair && <StatusBadge status={selectedRepair.status} />}
             </div>
-            <dl className="mt-6 border-[#E7E4DC] border-t pt-4">
+            <dl className="mt-6 border-[#E8E8E5] border-t pt-4">
               <DetailRow label="Client" value={customer.name} />
               <DetailRow label="Appareil" value={cleanDeviceLabel(selectedRepair?.device ?? selected.device)} />
               <DetailRow label="Problème" value={selectedRepair?.issue ?? selected.issue} />
@@ -824,10 +869,10 @@ function AppointmentModal({
   }, [deviceState.deviceLabel]);
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-stretch overflow-y-auto bg-[#1A1916]/20 p-0 backdrop-blur-sm md:place-items-center md:p-4">
+    <div className="fixed inset-0 z-50 grid place-items-stretch overflow-y-auto bg-[#1A1916]/20 p-0 md:place-items-center md:p-4">
       <Panel className="w-full max-w-none min-h-svh overflow-y-auto rounded-none p-5 md:max-h-[calc(100svh-2rem)] md:max-w-[520px] md:min-h-0 md:rounded-[20px] md:p-6">
         <h2 className="font-semibold text-2xl text-[#1A1916]">{title}</h2>
-        <p className="mt-2 text-[#6B6B6B] text-sm">Le client reçoit un email simulé après validation.</p>
+        <p className="mt-2 text-[#6B6B6B] text-sm">Le client reçoit une confirmation après validation.</p>
         <div className="mt-6 grid gap-4">
           <div className="grid gap-3 text-[#1A1916] text-sm">
             <span>Client</span>
@@ -851,7 +896,7 @@ function AppointmentModal({
             </div>
             {form.customerType === "existing" ? (
               <select
-                className="h-11 rounded-[13px] border border-[#E7E4DC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+                className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F]"
                 onChange={(event) => {
                   const customer = store.customers.find((entry) => entry.id === event.target.value);
                   onChange({
@@ -873,20 +918,20 @@ function AppointmentModal({
             {form.customerType === "new" ? (
               <div className="grid gap-2 sm:grid-cols-3">
                 <input
-                  className="h-11 rounded-[13px] border border-[#E7E4DC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+                  className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F]"
                   onChange={(event) => onChange({ ...form, newCustomerName: event.target.value })}
                   placeholder="Nom du client"
                   value={form.newCustomerName}
                 />
                 <input
-                  className="h-11 rounded-[13px] border border-[#E7E4DC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+                  className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F]"
                   inputMode="tel"
                   onChange={(event) => onChange({ ...form, newCustomerPhone: event.target.value })}
                   placeholder="Téléphone"
                   value={form.newCustomerPhone}
                 />
                 <input
-                  className="h-11 rounded-[13px] border border-[#E7E4DC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+                  className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F]"
                   onChange={(event) => onChange({ ...form, newCustomerEmail: event.target.value })}
                   placeholder="Email"
                   type="email"
@@ -895,18 +940,35 @@ function AppointmentModal({
               </div>
             ) : null}
             {form.customerType === "counter" ? (
-              <p className="rounded-[13px] border border-[#E7E4DC] bg-[#FAFAF8] px-4 py-3 text-[#6B6B6B]">
+              <p className="rounded-[13px] border border-[#E8E8E5] bg-[#FAFAFA] px-4 py-3 text-[#6B6B6B]">
                 Un client comptoir séparé sera créé pour ce rendez-vous.
               </p>
             ) : null}
           </div>
-          <div className="rounded-2xl bg-[#F1F1EF]/50 p-4 border border-[#E7E4DC]/50 shadow-sm">
+          <div className="rounded-2xl bg-[#F7F7F7]/50 p-4 border border-[#E8E8E5]/50 shadow-sm">
+            <div className="mb-4 text-[#1A1916] font-semibold text-sm">Appareil &amp; problème</div>
+            <div className="grid gap-4">
+              <DeviceSelector
+                deviceType={deviceState.deviceType}
+                brand={deviceState.brand}
+                model={deviceState.model}
+                customModel={deviceState.customModel}
+                onChange={(updates) => setDeviceState((prev) => ({ ...prev, ...updates }))}
+              />
+              <ProblemSelector
+                deviceType={deviceState.deviceType}
+                value={form.issue}
+                onChange={(issue) => onChange({ ...form, issue })}
+              />
+            </div>
+          </div>
+          <div className="rounded-2xl bg-[#F7F7F7]/50 p-4 border border-[#E8E8E5]/50 shadow-sm">
             <div className="mb-4 text-[#1A1916] font-semibold text-sm">Détails du créneau</div>
             <div className="grid gap-4">
               <label className="grid gap-2 text-[#1A1916] text-sm">
                 <span className="text-[#6B6B6B] mb-1">Délai rapide</span>
                 <select
-                  className="h-11 rounded-[13px] border border-[#E7E4DC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+                  className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F]"
                   onChange={(event) => {
                     const durationValue = event.target.value;
                     if (durationValue === "custom") return;
@@ -939,7 +1001,7 @@ function AppointmentModal({
                 <label className="grid gap-2 text-[#1A1916] text-sm">
                   <span className="text-[#6B6B6B] mb-1">Date</span>
                   <input
-                    className="h-11 rounded-[13px] border border-[#E7E4DC] bg-white px-4 outline-none focus:border-[#2A9D8F] font-bold text-[#1A1916]"
+                    className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F] font-bold text-[#1A1916]"
                     onChange={(event) => onChange({ ...form, date: event.target.value })}
                     type="date"
                     value={form.date}
@@ -948,7 +1010,7 @@ function AppointmentModal({
                 <label className="grid gap-2 text-[#1A1916] text-sm">
                   <span className="text-[#6B6B6B] mb-1">Heure</span>
                   <input
-                    className="h-11 rounded-[13px] border border-[#E7E4DC] bg-white px-4 outline-none focus:border-[#2A9D8F] font-bold text-[#1A1916]"
+                    className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F] font-bold text-[#1A1916]"
                     onChange={(event) => onChange({ ...form, time: event.target.value })}
                     type="time"
                     value={form.time}
@@ -960,7 +1022,7 @@ function AppointmentModal({
           <label className="grid gap-2 text-[#1A1916] text-sm">
             Durée
             <select
-              className="h-11 rounded-[13px] border border-[#E7E4DC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+              className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F]"
               onChange={(event) => onChange({ ...form, duration: event.target.value })}
               value={form.duration}
             >
@@ -971,30 +1033,10 @@ function AppointmentModal({
             </select>
           </label>
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="md:col-span-2">
-              <DeviceSelector
-                deviceType={deviceState.deviceType}
-                brand={deviceState.brand}
-                model={deviceState.model}
-                customModel={deviceState.customModel}
-                onChange={(updates) => setDeviceState((prev) => ({ ...prev, ...updates }))}
-              />
-            </div>
-
-            <label className="grid gap-2 text-[#1A1916] text-sm">
-              Problème
-              <input
-                className="h-11 rounded-[13px] border border-[#E7E4DC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
-                onChange={(event) => onChange({ ...form, issue: event.target.value })}
-                value={form.issue}
-              />
-            </label>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
             <label className="grid gap-2 text-[#1A1916] text-sm">
               Source
               <select
-                className="h-11 rounded-[13px] border border-[#E7E4DC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+                className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F]"
                 onChange={(event) => onChange({ ...form, source: event.target.value })}
                 value={form.source}
               >
@@ -1007,7 +1049,7 @@ function AppointmentModal({
             <label className="grid gap-2 text-[#1A1916] text-sm">
               Statut
               <select
-                className="h-11 rounded-[13px] border border-[#E7E4DC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+                className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F]"
                 onChange={(event) => onChange({ ...form, status: event.target.value as AppointmentStatus })}
                 value={form.status}
               >
@@ -1021,7 +1063,7 @@ function AppointmentModal({
             <label className="grid gap-2 text-[#1A1916] text-sm">
               Technicien
               <select
-                className="h-11 rounded-[13px] border border-[#E7E4DC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+                className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F]"
                 onChange={(event) => onChange({ ...form, technician: event.target.value })}
                 value={form.technician}
               >
@@ -1035,7 +1077,7 @@ function AppointmentModal({
           <label className="grid gap-2 text-[#1A1916] text-sm">
             Notes
             <textarea
-              className="min-h-20 rounded-[13px] border border-[#E7E4DC] bg-white px-4 py-3 outline-none focus:border-[#2A9D8F]"
+              className="min-h-20 rounded-[13px] border border-[#E8E8E5] bg-white px-4 py-3 outline-none focus:border-[#2A9D8F]"
               onChange={(event) => onChange({ ...form, notes: event.target.value })}
               value={form.notes}
             />
@@ -1071,10 +1113,10 @@ function CalendarGrid({
             <span className="block h-px bg-[#E95E5E]/55" />
           </div>
         )}
-        <div className="border-[#E7E4DC] border-r border-b bg-white" />
+        <div className="border-[#E8E8E5] border-r border-b bg-white" />
         {weekDays.map((day) => (
           <div
-            className="flex h-[86px] flex-col items-center justify-center border-[#E7E4DC] border-r border-b last:border-r-0"
+            className="flex h-[86px] flex-col items-center justify-center border-[#E8E8E5] border-r border-b last:border-r-0"
             key={day.input}
           >
             <span className="text-[#6B6B6B] text-xs">{day.label}</span>
@@ -1090,24 +1132,24 @@ function CalendarGrid({
           </div>
         ))}
 
-        <div className="h-[58px] border-[#E7E4DC] border-r border-b px-3 pt-4 text-[#6B6B6B] text-xs">
+        <div className="h-[58px] border-[#E8E8E5] border-r border-b px-3 pt-4 text-[#6B6B6B] text-xs">
           Toute la journée
         </div>
         {weekDays.map((day) => (
           <div
-            className="relative h-[58px] border-[#E7E4DC] border-r border-b last:border-r-0"
+            className="relative h-[58px] border-[#E8E8E5] border-r border-b last:border-r-0"
             key={`all-${day.input}`}
           />
         ))}
 
         {hours.map((hour, hourIndex) => (
           <div className="contents" key={hour}>
-            <div className="relative h-[60px] border-[#E7E4DC] border-r border-b px-3 pt-3 text-[#6B6B6B] text-xs">
+            <div className="relative h-[60px] border-[#E8E8E5] border-r border-b px-3 pt-3 text-[#6B6B6B] text-xs">
               {hour}
             </div>
             {weekDays.map((day, dayIndex) => (
               <div
-                className="relative h-[60px] border-[#E7E4DC] border-r border-b last:border-r-0"
+                className="relative h-[60px] border-[#E8E8E5] border-r border-b last:border-r-0"
                 key={`${hour}-${day.input}`}
               >
                 {appointments
@@ -1166,7 +1208,7 @@ function AppointmentStat({
           <p className="mt-1 font-semibold text-3xl text-[#1A1916] leading-none tracking-normal">{value}</p>
           <p className="mt-2 text-[#6B6B6B] text-xs">{helper}</p>
         </div>
-        <div className="grid size-12 place-items-center rounded-full bg-[#E8F7F3] text-[#2A9D8F]">
+        <div className="grid size-12 place-items-center text-[#2A9D8F]">
           <Icon className="size-5" />
         </div>
       </div>
@@ -1251,6 +1293,101 @@ function appointmentDayIndex(appointment: Appointment, weekDays: CalendarDay[], 
     (day) => day.display === appointment.date || day.input === displayToInputDate(appointment.date),
   );
   return fromDate >= 0 ? fromDate : appointment.dayIndex;
+}
+
+// Vue agenda : tous les rendez-vous, regroupés « À venir » et « Passés ».
+// Permet de consulter l'historique (anciens RDV) en plus des prochains, et de
+// reporter directement depuis la liste.
+function AgendaList({
+  appointments,
+  customers,
+  selectedId,
+  todayIso,
+  onSelect,
+  onReschedule,
+}: Readonly<{
+  appointments: Appointment[];
+  customers: Customer[];
+  selectedId: string;
+  todayIso: string;
+  onSelect: (id: string) => void;
+  onReschedule: (appointment: Appointment) => void;
+}>) {
+  const withIso = appointments
+    .filter((appt) => normalizeAppointmentStatus(appt.status) !== "Annulé")
+    .map((appt) => ({ appt, iso: toAppointmentInput(appt) }))
+    .filter((row) => row.iso);
+
+  const upcoming = withIso
+    .filter((row) => row.iso >= todayIso)
+    .sort((a, b) => (a.iso === b.iso ? timeToMinutes(a.appt.time) - timeToMinutes(b.appt.time) : a.iso < b.iso ? -1 : 1));
+  const past = withIso
+    .filter((row) => row.iso < todayIso)
+    .sort((a, b) => (a.iso === b.iso ? timeToMinutes(b.appt.time) - timeToMinutes(a.appt.time) : a.iso > b.iso ? -1 : 1));
+
+  const renderRow = ({ appt, iso }: { appt: Appointment; iso: string }, dimmed: boolean) => {
+    const customer = customers.find((c) => c.id === appt.customerId);
+    const active = appt.id === selectedId;
+    return (
+      <div
+        key={appt.id}
+        role="button"
+        tabIndex={0}
+        onClick={() => onSelect(appt.id)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") onSelect(appt.id);
+        }}
+        className={cn(
+          "flex w-full cursor-pointer items-center gap-4 border-[#F7F7F7] border-b px-5 py-3.5 text-left transition last:border-b-0",
+          active ? "bg-[#EAF6F2]" : "hover:bg-[#FAFAFA]",
+          dimmed && !active ? "opacity-70" : "",
+        )}
+      >
+        <div className="w-[150px] shrink-0">
+          <p className="font-semibold text-[#1A1916] text-[13px]">{capitalize(formatLongDate(iso))}</p>
+          <p className="text-[#6B6B6B] text-[12px]">{appt.time}</p>
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold text-[#1A1916] text-[14px]">{customer?.name ?? "Client"}</p>
+          <p className="truncate text-[#6B6B6B] text-[12.5px]">
+            {cleanDeviceLabel(appt.device)} · {appt.issue}
+          </p>
+        </div>
+        <StatusBadge status={normalizeAppointmentStatus(appt.status, appt.confirmed)} />
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onReschedule(appt);
+          }}
+          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white px-3 font-semibold text-[#1A1916] text-[12.5px] transition hover:border-[#2A9D8F]/50"
+        >
+          <RotateCw className="size-3.5" /> Reporter
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <div className="max-h-[640px] overflow-y-auto">
+      <div className="sticky top-0 z-10 border-[#E8E8E5] border-b bg-white px-5 py-2.5 font-semibold text-[#167B70] text-[12px] uppercase tracking-wide">
+        À venir ({upcoming.length})
+      </div>
+      {upcoming.length === 0 ? (
+        <p className="px-5 py-6 text-center text-[#6B6B6B] text-[13px]">Aucun rendez-vous à venir.</p>
+      ) : (
+        upcoming.map((row) => renderRow(row, false))
+      )}
+      <div className="sticky top-0 z-10 border-[#E8E8E5] border-y bg-white px-5 py-2.5 font-semibold text-[#6B6B6B] text-[12px] uppercase tracking-wide">
+        Passés ({past.length})
+      </div>
+      {past.length === 0 ? (
+        <p className="px-5 py-6 text-center text-[#6B6B6B] text-[13px]">Aucun rendez-vous passé.</p>
+      ) : (
+        past.map((row) => renderRow(row, true))
+      )}
+    </div>
+  );
 }
 
 function formatWeekRange(weekDays: CalendarDay[]) {
@@ -1404,7 +1541,7 @@ function MobileKpiTile({
 }>) {
   const palette = {
     teal: { bg: "bg-[#EAF6F2]", text: "text-[#2A9D8F]" },
-    amber: { bg: "bg-[#FCF1DF]", text: "text-[#C2841C]" },
+    amber: { bg: "bg-[#FAFAFA]", text: "text-[#6B6B6B]" },
     success: { bg: "bg-[#E7F8F0]", text: "text-[#0B7A56]" },
   }[tone];
   return (
@@ -1412,7 +1549,7 @@ function MobileKpiTile({
       <span className={cn("grid size-8 place-items-center rounded-[10px]", palette.bg, palette.text)}>
         <Icon className="size-[15px]" strokeWidth={2.2} />
       </span>
-      <p className="mt-2.5 text-[#8A8984] text-[10.5px] font-medium leading-tight tracking-tight">{label}</p>
+      <p className="mt-2.5 text-[#6B6B6B] text-[10.5px] font-medium leading-tight tracking-tight">{label}</p>
       <p className={cn("mt-1 font-bold text-[20px] leading-none tabular-nums", palette.text)}>{value}</p>
     </div>
   );
@@ -1424,7 +1561,7 @@ function AppointmentStatusPill({ status, confirmed }: Readonly<{ status: string;
     if (label === "Arrivé" || label === "Réparation créée") return "bg-[#E7F8F0] text-[#0B7A56]";
     if (label === "Annulé" || label === "Non venu") return "bg-[#FDECEC] text-[#B42318]";
     if (label === "Confirmé") return "bg-[#EAF6F2] text-[#167B70]";
-    return "bg-[#FCF1DF] text-[#C2841C]";
+    return "bg-[#FAFAFA] text-[#6B6B6B]";
   })();
   return (
     <span

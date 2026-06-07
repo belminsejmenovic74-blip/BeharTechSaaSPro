@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 
 import { Plus } from "lucide-react";
 
-import { Panel, StatusBadge } from "@/components/behar/primitives";
+import { StatusBadge } from "@/components/behar/primitives";
 import { cn } from "@/lib/utils";
 import type { RepairCard } from "@/mock/repairs";
 
@@ -41,10 +41,12 @@ export function KanbanBoard({
 
   return (
     <div
-      className={cn(
-        "grid h-full min-h-0 gap-2.5 overflow-x-auto pb-1",
-        compact ? "grid-cols-[repeat(5,minmax(145px,1fr))]" : "grid-cols-[repeat(5,minmax(164px,1fr))]",
-      )}
+      className={cn("grid h-full min-h-0 gap-2.5 overflow-x-auto pb-1")}
+      style={{
+        // Une piste par colonne réelle (corrige l'ancien repeat(5) qui faisait passer
+        // la 6e colonne « Prêt » à la ligne) + colonnes plus larges pour aérer le board.
+        gridTemplateColumns: `repeat(${columns.length}, minmax(${compact ? 150 : 184}px, 1fr))`,
+      }}
     >
       {columns.map((column) => (
         <div
@@ -73,17 +75,15 @@ export function KanbanBoard({
           }}
           className="contents"
         >
-          <Panel
+          <div
             className={cn(
-              "flex h-[690px] min-h-0 min-w-0 flex-col rounded-[14px] p-3 shadow-[0_8px_22px_rgba(26,25,22,0.025)] md:h-full md:min-h-[420px] transition",
-              dragOverColumn === column.title && "ring-2 ring-[#2A9D8F]/40 bg-[#F3FBF8]/30",
+              "flex h-[690px] min-h-0 min-w-0 flex-col rounded-[14px] border border-[#EEEEEC] bg-white p-3 md:h-full md:min-h-[420px] transition",
+              dragOverColumn === column.title && "ring-2 ring-[#2A9D8F]/40",
             )}
           >
             <div className="mb-3 flex shrink-0 items-center gap-2 px-0.5">
               <h3 className="font-semibold text-[#1A1916] text-[15px]">{column.title}</h3>
-              <span className="rounded-full bg-[#F1F1EF] px-2 py-0.5 font-medium text-[#6B6B6B] text-xs">
-                {column.count}
-              </span>
+              <span className="font-semibold text-[#6B6B6B] text-xs">{column.count}</span>
             </div>
             <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-0.5">
               {column.cards.map((card) => (
@@ -154,7 +154,7 @@ export function KanbanBoard({
             </div>
             {!compact && (
               <button
-                className="mt-3 flex shrink-0 items-center gap-2 rounded-xl px-2 py-2.5 text-[#6B6B6B] text-sm transition hover:bg-[#FAFAF8] hover:text-[#1A1916]"
+                className="mt-3 flex shrink-0 items-center gap-2 rounded-xl px-2 py-2.5 text-[#6B6B6B] text-sm transition hover:bg-[#FAFAFA] hover:text-[#1A1916]"
                 onClick={() => onAdd?.(column.title)}
                 type="button"
               >
@@ -162,7 +162,7 @@ export function KanbanBoard({
                 Ajouter une réparation
               </button>
             )}
-          </Panel>
+          </div>
         </div>
       ))}
     </div>
@@ -197,8 +197,8 @@ function RepairCardView({
   return (
     <button
       className={cn(
-        "w-full rounded-[14px] border border-[#E7E4DC] bg-white/95 p-[14px] text-left shadow-[0_10px_28px_rgba(26,25,22,0.035)] backdrop-blur-[2px] transition hover:border-[#2A9D8F]/40",
-        selected && "border-[#2A9D8F] bg-[#F3FBFA] shadow-[0_14px_32px_rgba(42,157,143,0.10)]",
+        "w-full rounded-[14px] border border-[#E8E8E5] bg-white p-[14px] text-left shadow-[0_1px_2px_rgba(26,25,22,0.035)] transition hover:border-[#2A9D8F]/40",
+        selected && "border-[#2A9D8F] bg-[#F3FBFA] shadow-[0_1px_3px_rgba(42,157,143,0.10)]",
         draggable && "cursor-grab touch-none active:cursor-grabbing",
         isDragging && "opacity-50",
       )}
@@ -223,31 +223,20 @@ function RepairCardView({
           <p className="mt-3 font-semibold text-[#1A1916] text-[13px] tabular-nums">{card.totalLabel}</p>
         )}
         {(card.paymentPaid !== undefined || card.showCounterBadge || card.showInvoiceBadge || card.showReadyBadge) && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
             {card.paymentPaid !== undefined ? (
-              <span
-                className={cn(
-                  "rounded-full px-2 py-0.5 font-semibold text-[10px]",
-                  card.paymentPaid ? "bg-[#E7F5F1] text-[#147065]" : "bg-[#F1F1EF] text-[#6B6B6B]",
-                )}
-              >
+              <span className={cn("font-semibold text-[10px]", card.paymentPaid ? "text-[#147065]" : "text-[#6B6B6B]")}>
                 {card.paymentPaid ? "Payé" : "Non payé"}
               </span>
             ) : null}
             {card.showCounterBadge ? (
-              <span className="rounded-full bg-[#EEF7FF] px-2 py-0.5 font-semibold text-[#426996] text-[10px]">
-                Client comptoir
-              </span>
+              <span className="font-semibold text-[#6B6B6B] text-[10px]">Client comptoir</span>
             ) : null}
             {card.showInvoiceBadge ? (
-              <span className="rounded-full bg-[#FCF1DF] px-2 py-0.5 font-semibold text-[#9A6A17] text-[10px]">
-                Facture à créer
-              </span>
+              <span className="font-semibold text-[#6B6B6B] text-[10px]">Facture à créer</span>
             ) : null}
             {card.showReadyBadge ? (
-              <span className="rounded-full bg-[#E7F5F1] px-2 py-0.5 font-semibold text-[#147065] text-[10px]">
-                Prêt
-              </span>
+              <span className="font-semibold text-[#147065] text-[10px]">Prêt</span>
             ) : null}
           </div>
         )}

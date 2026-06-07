@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import {
   ArrowLeft,
   CalendarDays,
   ChevronRight,
+  FolderOpen,
   Mail,
   MessageCircle,
   MoreHorizontal,
@@ -74,6 +76,7 @@ function formatPhoneLocal(prefix: string, value: unknown): string {
 
 export function CustomersWorkspace() {
   const store = useBeharStore();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Customer | null>(null);
   const [appointmentCustomerId, setAppointmentCustomerId] = useState<string | null>(null);
@@ -104,7 +107,39 @@ export function CustomersWorkspace() {
     type?: "repair" | "quote" | "invoice" | "payment";
     id?: string;
   };
-  const [tab, setTab] = useState<"resume" | "historique">("resume");
+  const [tab, setTab] = useState<"resume" | "documents" | "historique">("resume");
+
+  // Documents du client regroupés par dossier atelier (le reste dans « Autres »).
+  const clientDocGroups = useMemo(() => {
+    if (!selectedCustomer) return [] as Array<{ key: string; title: string; subtitle: string; docs: typeof store.documents }>;
+    const docs = store.documents.filter((doc) => doc.customerId === selectedCustomer.id);
+    const map = new Map<string, { key: string; title: string; subtitle: string; docs: typeof store.documents }>();
+    for (const doc of docs) {
+      const repair = doc.repairId ? store.repairs.find((entry) => entry.id === doc.repairId) : undefined;
+      const key = repair?.id ?? "__other__";
+      if (!map.has(key)) {
+        map.set(key, {
+          key,
+          title: repair ? `Dossier ${repair.number}` : "Autres documents",
+          subtitle: repair ? repair.deviceModel || repair.device || "" : "Documents hors dossier",
+          docs: [] as typeof store.documents,
+        });
+      }
+      map.get(key)?.docs.push(doc);
+    }
+    return [...map.values()];
+  }, [selectedCustomer, store.documents, store.repairs]);
+  const clientDocCount = clientDocGroups.reduce((sum, group) => sum + group.docs.length, 0);
+  const docLabel: Record<string, string> = {
+    intake: "Bon de prise en charge",
+    quote: "Devis",
+    invoice: "Facture",
+    payment: "Reçu / justificatif",
+    "sale-receipt": "Reçu de vente",
+    "sale-invoice": "Facture de vente",
+    internal: "Fiche interne",
+    summary: "Résumé dossier",
+  };
 
   const historyItems: HistoryItem[] = selectedCustomer
     ? (
@@ -115,7 +150,7 @@ export function CustomersWorkspace() {
               detail: `${repair.device} — ${repair.issue}`,
               icon: Wrench,
               time: repair.droppedAt,
-              title: `Réparation ${repair.number}`,
+              title: `Dossier ${repair.number}`,
               type: "repair" as const,
               id: repair.id,
             })),
@@ -155,7 +190,7 @@ export function CustomersWorkspace() {
               detail: `${payment.method} — ${formatEuro(payment.amount)}`,
               icon: ReceiptText,
               time: payment.date,
-              title: `Paiement enregistré`,
+              title: `Règlement indiqué`,
               type: "payment" as const,
               id: payment.id,
             })),
@@ -214,30 +249,30 @@ export function CustomersWorkspace() {
           return (
             <section className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 scrollbar-none">
               <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-                <span className="grid size-9 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F]">
+                <span className="grid size-9 place-items-center text-[#2A9D8F]">
                   <span className="font-bold text-[14px]">{totalCustomers}</span>
                 </span>
-                <p className="mt-3 text-[#8A8984] text-[11px] font-medium">Clients</p>
+                <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium">Clients</p>
                 <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">
                   {totalCustomers}
                 </p>
-                <p className="mt-1.5 text-[#8A8984] text-[10px] font-medium">enregistrés</p>
+                <p className="mt-1.5 text-[#6B6B6B] text-[10px] font-medium">enregistrés</p>
               </div>
               <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-                <span className="grid size-9 place-items-center rounded-[10px] bg-[#FDF3E2] text-[#C2841C]">
-                  <span className="text-[14px]">★</span>
+                <span className="grid size-9 place-items-center text-[#C99A2E]">
+                  <span className="text-[16px]">★</span>
                 </span>
-                <p className="mt-3 text-[#8A8984] text-[11px] font-medium">VIP</p>
-                <p className="mt-1.5 font-bold text-[#C2841C] text-[20px] leading-none tabular-nums">{vipCount}</p>
-                <p className="mt-1.5 text-[#8A8984] text-[10px] font-medium">clients prioritaires</p>
+                <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium">VIP</p>
+                <p className="mt-1.5 font-bold text-[#6B6B6B] text-[20px] leading-none tabular-nums">{vipCount}</p>
+                <p className="mt-1.5 text-[#6B6B6B] text-[10px] font-medium">clients prioritaires</p>
               </div>
               <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-                <span className="grid size-9 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F]">€</span>
-                <p className="mt-3 text-[#8A8984] text-[11px] font-medium">CA cumulé</p>
+                <span className="grid size-9 place-items-center text-[#2A9D8F]">€</span>
+                <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium">CA cumulé</p>
                 <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">
                   {formatEuro(totalSpent)}
                 </p>
-                <p className="mt-1.5 text-[#8A8984] text-[10px] font-medium">historique</p>
+                <p className="mt-1.5 text-[#6B6B6B] text-[10px] font-medium">historique</p>
               </div>
             </section>
           );
@@ -245,7 +280,7 @@ export function CustomersWorkspace() {
 
         <ul className="space-y-2.5">
           {filteredCustomers.length === 0 ? (
-            <li className="rounded-[18px] bg-white p-10 text-center text-[#8A8984] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+            <li className="rounded-[18px] bg-white p-10 text-center text-[#6B6B6B] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
               Aucun client.
             </li>
           ) : (
@@ -271,12 +306,12 @@ export function CustomersWorkspace() {
                         {formatEuro(customer.totalSpent)}
                       </p>
                     </div>
-                    <p className="mt-0.5 truncate text-[#8A8984] text-[11.5px]">
+                    <p className="mt-0.5 truncate text-[#6B6B6B] text-[11.5px]">
                       {customer.device || "—"} · {customer.phone || "—"}
                     </p>
                     <div className="mt-2 flex items-center justify-between gap-2">
                       <StatusBadge className="h-6 px-2 text-[10px] font-medium" status={customer.status} />
-                      <span className="text-[#8A8984] text-[11px]">{formatIsoToDisplay(customer.lastVisit)}</span>
+                      <span className="text-[#6B6B6B] text-[11px]">{formatIsoToDisplay(customer.lastVisit)}</span>
                     </div>
                   </div>
                 </button>
@@ -302,29 +337,29 @@ export function CustomersWorkspace() {
             <tbody>
               {filteredCustomers.map((customer) => (
                 <tr
-                  className={`cursor-pointer transition-colors ${customer.id === selectedCustomer?.id ? "bg-[#F1FAF8]" : "hover:bg-[#FAFAF8]"}`}
+                  className={`cursor-pointer transition-colors ${customer.id === selectedCustomer?.id ? "bg-[#F1FAF8]" : "hover:bg-[#FAFAFA]"}`}
                   key={customer.id}
                   onClick={() => store.setSelected("customer", customer.id)}
                 >
-                  <td className="border-[#E7E4DC] border-b px-4 py-3 text-[#1A1916]">
+                  <td className="border-[#E8E8E5] border-b px-4 py-3 text-[#1A1916]">
                     <div className="flex items-center gap-3">
-                      <span className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] font-semibold text-[#1A1916] text-[11px] uppercase">
+                      <span className="grid size-9 place-items-center rounded-full bg-[#F7F7F7] font-semibold text-[#1A1916] text-[11px] uppercase">
                         {customer.initials}
                       </span>
                       <span className="font-semibold text-sm">{displayCustomerName(customer)}</span>
                     </div>
                   </td>
-                  <td className="border-[#E7E4DC] border-b px-4 py-3 text-[#1A1916] text-sm">{customer.device}</td>
-                  <td className="border-[#E7E4DC] border-b px-4 py-3 text-[#1A1916] text-sm">
+                  <td className="border-[#E8E8E5] border-b px-4 py-3 text-[#1A1916] text-sm">{customer.device}</td>
+                  <td className="border-[#E8E8E5] border-b px-4 py-3 text-[#1A1916] text-sm">
                     {formatIsoToDisplay(customer.lastVisit)}
                   </td>
-                  <td className="border-[#E7E4DC] border-b px-4 py-3 font-semibold text-[#1A1916] text-sm tabular-nums">
+                  <td className="border-[#E8E8E5] border-b px-4 py-3 font-semibold text-[#1A1916] text-sm tabular-nums">
                     {formatEuro(customer.totalSpent)}
                   </td>
-                  <td className="border-[#E7E4DC] border-b px-4 py-3 text-[#1A1916]">
+                  <td className="border-[#E8E8E5] border-b px-4 py-3 text-[#1A1916]">
                     <StatusBadge className="h-6 px-2 text-[10px] font-medium" status={customer.status} />
                   </td>
-                  <td className="border-[#E7E4DC] border-b px-4 py-3 text-[#1A1916]">
+                  <td className="border-[#E8E8E5] border-b px-4 py-3 text-[#1A1916]">
                     <ChevronRight className="ml-auto size-4 text-[#6B6B6B]" />
                   </td>
                 </tr>
@@ -337,15 +372,15 @@ export function CustomersWorkspace() {
           <Panel
             className={cn(
               mobileDetailOpen ? "fixed inset-0 z-40 overflow-y-auto bg-white p-5 flex flex-col" : "hidden",
-              "md:relative md:inset-auto md:z-auto md:flex md:min-h-0 md:flex-col md:overflow-hidden md:rounded-[20px] md:bg-white md:border md:border-[#E7E4DC] md:shadow-[0_1px_3px_rgba(26,25,22,0.04),0_8px_24px_rgba(26,25,22,0.025)] md:p-5 md:h-full",
+              "md:relative md:inset-auto md:z-auto md:flex md:min-h-0 md:flex-col md:overflow-hidden md:rounded-[20px] md:bg-white md:border md:border-[#E8E8E5] md:shadow-[0_1px_3px_rgba(26,25,22,0.04),0_8px_24px_rgba(26,25,22,0.025)] md:p-5 md:h-full",
             )}
           >
             {/* Mobile back button */}
-            <div className="md:hidden -mx-5 -mt-5 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#F1F1EF] bg-white/95 backdrop-blur-xl px-4 py-3">
+            <div className="md:hidden -mx-5 -mt-5 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#F7F7F7] bg-white px-4 py-3">
               <button
                 type="button"
                 onClick={() => setMobileDetailOpen(false)}
-                className="grid size-9 place-items-center rounded-full bg-[#F1F1EF] text-[#1A1916] transition active:scale-90"
+                className="grid size-9 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white text-[#1A1916] transition active:scale-90"
                 aria-label="Retour"
               >
                 <ArrowLeft className="size-4" />
@@ -353,7 +388,7 @@ export function CustomersWorkspace() {
               <span className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Détail client</span>
             </div>
             <div className="mb-5 flex shrink-0 items-start gap-4">
-              <span className="grid size-14 place-items-center rounded-2xl bg-[#F6F7F4] font-semibold text-[#1A1916] text-xl">
+              <span className="grid size-14 place-items-center rounded-2xl bg-[#FAFAFA] font-semibold text-[#1A1916] text-xl">
                 {selectedCustomer.initials}
               </span>
               <div className="min-w-0 flex-1">
@@ -373,7 +408,7 @@ export function CustomersWorkspace() {
               </div>
               <button
                 aria-label="Options client"
-                className="rounded-xl p-2 hover:bg-[#F1F1EF] transition-colors"
+                className="rounded-xl p-2 hover:bg-[#F7F7F7] transition-colors"
                 onClick={() => setEditing(selectedCustomer)}
                 type="button"
               >
@@ -382,19 +417,27 @@ export function CustomersWorkspace() {
             </div>
 
             {/* Tab Switcher */}
-            <div className="mb-5 flex rounded-xl bg-[#F8F7F3] p-1 shadow-inner">
+            <div className="mb-5 flex rounded-xl bg-[#F7F7F7] p-1 shadow-inner">
               <button
                 onClick={() => setTab("resume")}
                 className={`flex-1 rounded-[10px] py-2 text-center text-xs font-medium transition-all ${
-                  tab === "resume" ? "bg-white text-[#2A9D8F] shadow-sm" : "text-[#8A8984] hover:text-[#1A1916]"
+                  tab === "resume" ? "bg-white text-[#2A9D8F] shadow-sm" : "text-[#6B6B6B] hover:text-[#1A1916]"
                 }`}
               >
                 Résumé
               </button>
               <button
+                onClick={() => setTab("documents")}
+                className={`flex-1 rounded-[10px] py-2 text-center text-xs font-medium transition-all ${
+                  tab === "documents" ? "bg-white text-[#2A9D8F] shadow-sm" : "text-[#6B6B6B] hover:text-[#1A1916]"
+                }`}
+              >
+                Documents ({clientDocCount})
+              </button>
+              <button
                 onClick={() => setTab("historique")}
                 className={`flex-1 rounded-[10px] py-2 text-center text-xs font-medium transition-all ${
-                  tab === "historique" ? "bg-white text-[#2A9D8F] shadow-sm" : "text-[#8A8984] hover:text-[#1A1916]"
+                  tab === "historique" ? "bg-white text-[#2A9D8F] shadow-sm" : "text-[#6B6B6B] hover:text-[#1A1916]"
                 }`}
               >
                 Historique ({historyItems.length})
@@ -402,7 +445,7 @@ export function CustomersWorkspace() {
             </div>
 
             <div className="min-h-0 flex-1 overflow-hidden flex flex-col">
-              {tab === "resume" ? (
+              {tab === "resume" && (
                 <div className="overflow-y-auto pr-2 custom-scrollbar flex-1">
                   <div className="space-y-0.5">
                     <DetailRow
@@ -442,8 +485,8 @@ export function CustomersWorkspace() {
                       }
                     />
                   </div>
-                  <div className="mt-4 rounded-[16px] bg-[#FAFAF8] p-4 border border-[#F1F1EF]">
-                    <h3 className="mb-2 font-medium text-[#8A8984] text-[12px] uppercase tracking-wider">
+                  <div className="mt-4 rounded-[16px] bg-[#FAFAFA] p-4 border border-[#F7F7F7]">
+                    <h3 className="mb-2 font-medium text-[#6B6B6B] text-[12px] uppercase tracking-wider">
                       Notes internes
                     </h3>
                     <p className="text-[#6B6B6B] text-[13px] leading-relaxed italic">
@@ -451,7 +494,54 @@ export function CustomersWorkspace() {
                     </p>
                   </div>
                 </div>
-              ) : (
+              )}
+              {tab === "documents" && (
+                <div className="overflow-y-auto pr-2 custom-scrollbar flex-1">
+                  {clientDocGroups.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                      <ReceiptText className="size-8 mb-3 text-[#A3A3A3]" />
+                      <p className="text-[13px] font-medium text-[#6B6B6B]">Aucun document pour ce client</p>
+                      <p className="mt-1 text-[12px] text-[#A3A3A3]">Bons, devis, factures et reçus apparaîtront ici.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {clientDocGroups.map((group) => (
+                        <div key={group.key}>
+                          <div className="mb-2 flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-[#1A1916] text-[13px]">{group.title}</p>
+                              {group.subtitle ? (
+                                <p className="truncate text-[#6B6B6B] text-[11px]">{group.subtitle}</p>
+                              ) : null}
+                            </div>
+                            <span className="shrink-0 rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 text-[#6B6B6B] text-[11px]">
+                              {group.docs.length}
+                            </span>
+                          </div>
+                          <div className="space-y-2">
+                            {group.docs.map((doc) => (
+                              <Link
+                                key={doc.id}
+                                href={`/print/document/${doc.id}`}
+                                className="flex items-center justify-between gap-3 rounded-2xl border border-[#E8E8E5] bg-white p-3 transition hover:border-[#2A9D8F]/40 hover:shadow-md"
+                              >
+                                <div className="min-w-0">
+                                  <p className="truncate font-medium text-[#1A1916] text-[13px]">
+                                    {docLabel[doc.type] ?? "Document"}
+                                  </p>
+                                  <p className="truncate text-[#6B6B6B] text-[11px]">{doc.createdAt}</p>
+                                </div>
+                                <ChevronRight className="size-4 shrink-0 text-[#2A9D8F]" />
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {tab === "historique" && (
                 <div className="overflow-y-auto pr-2 custom-scrollbar flex-1">
                   <div className="space-y-2">
                     {historyItems.length > 0 ? (
@@ -459,17 +549,19 @@ export function CustomersWorkspace() {
                         <Link
                           href={
                             type
-                              ? `/dashboard/${type === "repair" ? "reparations" : type === "quote" ? "devis" : type === "invoice" ? "factures" : type === "payment" ? "paiements" : ""}`
+                              ? type === "repair"
+                                ? `/dashboard/dossiers/${id}`
+                                : `/dashboard/${type === "quote" ? "devis" : type === "invoice" ? "factures" : type === "payment" ? "paiements" : ""}`
                               : "#"
                           }
                           onClick={() => {
                             if (type && id) store.setSelected(type, id);
                           }}
-                          className="group flex items-start gap-4 p-3.5 rounded-2xl bg-[#FAFAF8] border border-transparent hover:border-[#2A9D8F]/30 hover:bg-white hover:shadow-md transition-all animate-in fade-in slide-in-from-right-2 duration-300"
+                          className="group flex items-start gap-4 p-3.5 rounded-2xl bg-[#FAFAFA] border border-transparent hover:border-[#2A9D8F]/30 hover:bg-white hover:shadow-md transition-all animate-in fade-in slide-in-from-right-2 duration-300"
                           style={{ animationDelay: `${idx * 40}ms` }}
                           key={`${title}-${detail}-${time}`}
                         >
-                          <span className="grid size-10 place-items-center rounded-2xl bg-white border border-[#E7E4DC] text-[#2A9D8F] shadow-sm shrink-0 group-hover:scale-110 transition-transform">
+                          <span className="grid size-10 place-items-center rounded-2xl bg-white border border-[#E8E8E5] text-[#2A9D8F] shadow-sm shrink-0 group-hover:scale-110 transition-transform">
                             <Icon className="size-4" />
                           </span>
                           <div className="min-w-0 flex-1">
@@ -477,7 +569,7 @@ export function CustomersWorkspace() {
                               <p className="font-semibold text-[#1A1916] text-sm leading-tight tracking-tight">
                                 {title}
                               </p>
-                              <span className="text-[#B0AEA8] text-[9px] font-medium uppercase whitespace-nowrap">
+                              <span className="text-[#8A8A8A] text-[9px] font-medium uppercase whitespace-nowrap">
                                 {formatIsoToDisplay(time)}
                               </span>
                             </div>
@@ -487,10 +579,10 @@ export function CustomersWorkspace() {
                       ))
                     ) : (
                       <div className="flex flex-col items-center justify-center py-10 text-center">
-                        <ReceiptText className="size-8 mb-3 text-[#CDCBC5]" />
-                        <p className="text-[13px] font-medium text-[#8A8984]">Aucun historique disponible</p>
-                        <p className="mt-1 text-[12px] text-[#CDCBC5]">
-                          Les interventions, devis et paiements apparaîtront ici.
+                        <ReceiptText className="size-8 mb-3 text-[#A3A3A3]" />
+                        <p className="text-[13px] font-medium text-[#6B6B6B]">Aucun historique disponible</p>
+                        <p className="mt-1 text-[12px] text-[#A3A3A3]">
+                          Les dossiers, devis et règlements apparaîtront ici.
                         </p>
                       </div>
                     )}
@@ -499,17 +591,33 @@ export function CustomersWorkspace() {
               )}
             </div>
 
-            <div className="mt-5 grid shrink-0 gap-2 border-[#E7E4DC] border-t pt-5">
+            <div className="mt-5 grid shrink-0 gap-2 border-[#E8E8E5] border-t pt-5">
               <PrimaryButton
                 className="h-11 w-full"
                 onClick={() => {
-                  const quoteId = store.addQuote({ customerId: selectedCustomer.id });
-                  store.setSelected("quote", quoteId);
-                  toast.success("Devis créé");
+                  const todayStr = getNowIso().split("T")[0];
+                  const repairId = store.addRepair({
+                    customerId: selectedCustomer.id,
+                    device: selectedCustomer.device || "Appareil à renseigner",
+                    issue: selectedCustomer.lastRepair || "Intervention atelier",
+                    status: "Reçu",
+                    amount: 0,
+                    notes: "Dossier créé depuis la fiche client.",
+                    droppedAt: todayStr,
+                    technician: "Atelier principal",
+                    history: ["Prise en charge créée"],
+                  });
+                  if (!repairId) {
+                    toast.error("Impossible de créer le dossier");
+                    return;
+                  }
+                  store.setSelected("repair", repairId);
+                  toast.success("Prise en charge créée");
+                  router.push(`/dashboard/dossiers/${repairId}`);
                 }}
               >
-                <ReceiptText className="size-4" />
-                Créer un devis
+                <Wrench className="size-4" />
+                Nouvelle prise en charge
               </PrimaryButton>
               <div className="grid grid-cols-2 gap-2">
                 <SecondaryButton
@@ -518,23 +626,30 @@ export function CustomersWorkspace() {
                     const todayStr = getNowIso().split("T")[0];
                     const repairId = store.addRepair({
                       customerId: selectedCustomer.id,
-                      device: selectedCustomer.device,
-                      issue: selectedCustomer.lastRepair || "Intervention atelier",
+                      device: selectedCustomer.device || "Appareil à renseigner",
+                      issue: selectedCustomer.lastRepair || "Diagnostic atelier",
                       status: "Reçu",
                       amount: 0,
-                      notes: "",
+                      notes: "Dossier créé depuis la fiche client.",
                       droppedAt: todayStr,
                       technician: "Atelier principal",
+                      history: ["Prise en charge créée", "Devis demandé depuis la fiche client"],
                     });
                     if (!repairId) {
-                      toast.error("Impossible de créer une réparation");
+                      toast.error("Impossible de créer le dossier");
                       return;
                     }
-                    toast.success("Dossier de réparation créé");
+                    const quoteId = store.addQuote({ customerId: selectedCustomer.id, repairId, status: "Brouillon" });
+                    if (!quoteId) {
+                      toast.error("Impossible de créer le devis");
+                      return;
+                    }
+                    store.setSelected("quote", quoteId);
+                    toast.success("Devis créé");
                   }}
                 >
-                  <Wrench className="size-4" />
-                  Réparation
+                  <ReceiptText className="size-4" />
+                  Créer un devis
                 </SecondaryButton>
                 <SecondaryButton
                   className="h-11 w-full font-medium"
@@ -542,6 +657,12 @@ export function CustomersWorkspace() {
                 >
                   <CalendarDays className="size-4" />
                   Rendez-vous
+                </SecondaryButton>
+                <SecondaryButton asChild className="col-span-2 h-11 w-full font-medium">
+                  <Link href="/dashboard/dossiers">
+                    <FolderOpen className="size-4" />
+                    Voir les dossiers
+                  </Link>
                 </SecondaryButton>
               </div>
             </div>
@@ -577,7 +698,7 @@ function CustomerModal({ onClose, initial }: Readonly<{ onClose: () => void; ini
   });
 
   const inputClass =
-    "h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+    "h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
   const { suggestions: addressSuggestions } = useAddressAutocomplete(address, country);
   const phoneInfo = phoneParts(phone);
   const phoneLocal = formatPhoneLocal(phoneInfo.prefix, phoneInfo.local);
@@ -594,7 +715,7 @@ function CustomerModal({ onClose, initial }: Readonly<{ onClose: () => void; ini
     setPostalCode(nextPostalCode);
   };
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1A1916]/24 p-0 backdrop-blur-sm md:p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1A1916]/24 p-0 md:p-4">
       <Panel className="mx-auto my-0 min-h-svh max-w-none overflow-y-auto rounded-none p-5 md:my-8 md:max-h-[calc(100svh-4rem)] md:max-w-xl md:min-h-0 md:rounded-[20px] md:p-6">
         <h2 className="font-semibold text-2xl text-[#1A1916]">{initial ? "Modifier client" : "Nouveau client"}</h2>
         <form
@@ -635,7 +756,7 @@ function CustomerModal({ onClose, initial }: Readonly<{ onClose: () => void; ini
             onClose();
           }}
         >
-          <label className="flex items-center gap-3 rounded-2xl bg-[#FAFAF8] p-3 text-sm">
+          <label className="flex items-center gap-3 rounded-2xl bg-[#FAFAFA] p-3 text-sm">
             <input name="anonymous" type="checkbox" />
             Le client souhaite rester anonyme
           </label>
@@ -658,7 +779,7 @@ function CustomerModal({ onClose, initial }: Readonly<{ onClose: () => void; ini
               className={`min-w-0 ${inputClass}`}
               inputMode="tel"
               onChange={(e) => setInternationalPhone(phoneInfo.prefix, e.target.value)}
-              placeholder={phoneInfo.prefix === "+33" ? "6 12 34 56 78" : "Numéro local"}
+              placeholder={phoneInfo.prefix === "+33" ? "6 12 34 56 78" : "Numéro"}
               value={phoneLocal}
             />
           </div>
@@ -749,7 +870,7 @@ function CustomerModal({ onClose, initial }: Readonly<{ onClose: () => void; ini
             placeholder="Tags"
           />
           <textarea
-            className="min-h-24 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 py-2 outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
+            className="min-h-24 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 py-2 outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
             defaultValue={initial?.notes}
             name="notes"
             placeholder="Notes client"
@@ -777,7 +898,7 @@ function AppointmentFromCustomerModal({ customerId, onClose }: Readonly<{ custom
   const [error, setError] = useState("");
 
   const inputClass =
-    "h-11 w-full rounded-xl border border-[#E7E4DC] bg-white px-3 outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+    "h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -801,7 +922,7 @@ function AppointmentFromCustomerModal({ customerId, onClose }: Readonly<{ custom
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1A1916]/24 p-0 backdrop-blur-sm md:p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1A1916]/24 p-0 md:p-4">
       <Panel className="mx-auto my-0 min-h-svh max-w-none overflow-y-auto rounded-none p-5 md:my-8 md:max-w-md md:min-h-0 md:rounded-[20px] md:p-6">
         <h2 className="font-semibold text-xl text-[#1A1916]">Nouveau rendez-vous</h2>
         <p className="mt-1 text-sm text-[#6B6B6B]">

@@ -1,26 +1,32 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 import Link from "next/link";
 
 import type { LucideIcon } from "lucide-react";
-import { ArrowRight, CalendarDays, CheckCheck, MoreHorizontal, Wrench } from "lucide-react";
+import { AlertTriangle, ArrowRight, CalendarDays, CheckCheck, FileText, FolderOpen, MoreHorizontal, Package, Plus, Receipt, ShoppingCart, TrendingUp, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
 import { DetailRow, Panel, PrimaryButton, StatusBadge } from "@/components/behar/primitives";
 import { RevenueChart } from "@/components/behar/revenue-chart";
-import { formatEuro, formatIsoToDisplay, normalizeAppointmentStatus, useBeharStore } from "@/lib/behar-store";
+import { formatEuro, formatIsoToDisplay, isTerminalRepairStatus, normalizeAppointmentStatus, type RepairStatus, useBeharStore } from "@/lib/behar-store";
 import type { RepairCard } from "@/mock/repairs";
+
+// Action principale dynamique du panneau détail (même logique que le comptoir).
+const DASHBOARD_NEXT_STATUS: Partial<Record<RepairStatus, { next: RepairStatus; label: string }>> = {
+  Reçu: { next: "Diagnostic", label: "Passer en diagnostic" },
+  Diagnostic: { next: "En attente", label: "Mettre en attente" },
+  "En attente": { next: "En réparation", label: "Passer en réparation" },
+  "Devis accepté": { next: "En réparation", label: "Passer en réparation" },
+  "En réparation": { next: "Test final", label: "Passer en test final" },
+  "Test final": { next: "Prêt", label: "Marquer prêt" },
+};
 
 export function DashboardWorkspace() {
   const store = useBeharStore();
   const selected = store.repairs.find((repair) => repair.id === store.selectedRepairId) ?? store.repairs[0];
   const customer = selected ? store.customers.find((entry) => entry.id === selected.customerId) : undefined;
-  const paidPayments = store.payments.filter((payment) => payment.status === "Payé");
-  const monthlyPayments = paidPayments.filter((payment) => isCurrentMonthLabel(payment.date));
-  const monthRevenue = monthlyPayments.reduce((total, payment) => total + payment.amount, 0);
-  const averageTicket = paidPayments.length
-    ? paidPayments.reduce((total, payment) => total + payment.amount, 0) / paidPayments.length
-    : 0;
   const unpaidInvoices = store.invoices.filter((invoice) => invoice.status !== "Payée");
   const amountToCollect = unpaidInvoices.reduce(
     (total, invoice) => total + invoice.lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0),
@@ -40,12 +46,36 @@ export function DashboardWorkspace() {
     )
     .sort((a, b) => a.time.localeCompare(b.time));
   const todaysAppointments = todaysAppointmentRows.length;
+  const activeRepairs = store.repairs.filter((repair) => repair.status !== "Prêt" && !isTerminalRepairStatus(repair.status));
+  const todayRepairs = store.repairs.filter(
+    (repair) => (repair.droppedAt || repair.createdAt || "").slice(0, 10) === todayIsoLocal,
+  );
+  const readyRepairs = store.repairs.filter((repair) => repair.status === "Prêt");
+  const todaysPaidPayments = store.payments.filter(
+    (payment) =>
+      payment.status === "Payé" &&
+      ((payment.createdAt || "").slice(0, 10) === todayIsoLocal ||
+        payment.date === todayIsoLocal ||
+        payment.date === today ||
+        payment.date?.startsWith("Aujourd'hui")),
+  );
+  const paidTodayRepairIds = new Set(todaysPaidPayments.map((payment) => payment.repairId).filter(Boolean));
+  // CA encaissé du jour : règlements réparation + ventes comptoir (paySale crée un Payment lié au saleId).
+  const revenueToday = todaysPaidPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+  // Ventes comptoir du jour (§3) — accessoires/produits encaissés hors Behar Tech Pro.
+  const todaysSales = store.sales.filter(
+    (sale) => sale.status !== "Annulée" && (sale.createdAt || "").slice(0, 10) === todayIsoLocal,
+  );
+  const todaysSalesTotal = todaysSales.reduce((sum, sale) => sum + (sale.total || 0), 0);
+  const lowStockItems = store.stockItems.filter((item) => item.stock <= item.threshold);
+  const pendingQuotes = store.quotes.filter((quote) => quote.status === "Envoyé" || quote.status === "Brouillon");
+  const blockedRepairs = activeRepairs.filter((repair) => isOlderThanDays(repair.updatedAt || repair.droppedAt || repair.createdAt, 3));
   const selectedPaid = selected
     ? store.payments.some((payment) => payment.repairId === selected.id && payment.status === "Payé")
     : false;
   const relatedQuotes = selected ? store.quotes.filter((quote) => quote.repairId === selected.id) : [];
   const canViewAuditLog = store.hasPermission("canViewAuditLog");
-  const recentAuditLogs = store.auditLogs.slice(0, 5);
+  const recentAuditLogs = [...store.auditLogs].sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1)).slice(0, 5);
   const relatedInvoices = selected ? store.invoices.filter((invoice) => invoice.repairId === selected.id) : [];
   const selectedQuoteAmount = relatedQuotes[0]
     ? relatedQuotes[0].lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0)
@@ -53,57 +83,72 @@ export function DashboardWorkspace() {
   const selectedInvoiceAmount = relatedInvoices[0]
     ? relatedInvoices[0].lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0)
     : 0;
-  const selectedPaidAmount = selected
-    ? store.payments
-        .filter((payment) => payment.repairId === selected.id && payment.status === "Payé")
-        .reduce((sum, payment) => sum + payment.amount, 0)
+  // Montant affiché dans le panneau détail : tarif du dossier, sinon facture/devis lié.
+  const selectedRepairTotal = selected
+    ? typeof selected.total === "number"
+      ? selected.total
+      : (selected.amount ?? 0)
     : 0;
-  const selectedPartsAmount = selected
-    ? selected.parts.reduce((sum, part) => sum + part.salePrice * part.quantity, 0)
-    : 0;
+  const selectedMontant = selectedRepairTotal > 0 ? selectedRepairTotal : selectedInvoiceAmount || selectedQuoteAmount;
   const dynamicKpis = [
     {
-      label: "CA encaissé",
-      value: formatEuro(monthRevenue),
+      label: "Dossiers du jour",
+      value: String(todayRepairs.length),
       trend: "",
-      helper: "paiements du mois en cours",
-      icon: ArrowRight,
-      href: "/dashboard/paiements",
-    },
-    {
-      label: "Factures payées",
-      value: String(store.invoices.filter((invoice) => invoice.status === "Payée").length),
-      trend: "",
-      helper: "factures réglées",
-      icon: ArrowRight,
-      href: "/dashboard/factures?status=paid",
+      helper: "prises en charge créées",
+      icon: FolderOpen,
+      href: "/dashboard/dossiers",
     },
     {
       label: "Réparations en cours",
-      value: String(store.repairs.filter((repair) => repair.status !== "Prêt").length),
+      value: String(activeRepairs.length),
       trend: "",
-      helper: "hors réparations prêtes",
-      icon: ArrowRight,
+      helper: "dossiers actifs",
+      icon: Wrench,
       href: "/dashboard/reparations",
     },
     {
-      label: "Devis",
-      value: String(store.quotes.length),
-      trend: "",
-      helper: "devis créés",
-      icon: ArrowRight,
-      href: "/dashboard/devis",
-    },
-    {
-      label: "RDV du jour",
+      label: "Rendez-vous du jour",
       value: String(todaysAppointments),
       trend: "",
       helper: "rendez-vous planifiés",
-      icon: ArrowRight,
+      icon: CalendarDays,
       href: "/dashboard/rendez-vous",
     },
     {
-      label: "Montant à encaisser",
+      label: "Dossiers prêts",
+      value: String(readyRepairs.length),
+      trend: "",
+      helper: "à restituer",
+      icon: CheckCheck,
+      href: "/dashboard/reparations",
+    },
+    {
+      label: "Ventes comptoir",
+      value: String(todaysSales.length),
+      trend: "",
+      helper: `${formatEuro(todaysSalesTotal)} aujourd'hui`,
+      icon: ShoppingCart,
+      href: "/dashboard/ventes",
+    },
+    {
+      label: "CA du jour",
+      value: formatEuro(revenueToday),
+      trend: "",
+      helper: "réparations + comptoir",
+      icon: TrendingUp,
+      href: "/dashboard/paiements",
+    },
+    {
+      label: "Dossiers réglés",
+      value: String(paidTodayRepairIds.size),
+      trend: "",
+      helper: "règlements du jour",
+      icon: Receipt,
+      href: "/dashboard/paiements",
+    },
+    {
+      label: "Factures à régler",
       value: formatEuro(amountToCollect),
       trend: "",
       helper: "factures impayées",
@@ -111,8 +156,14 @@ export function DashboardWorkspace() {
       href: "/dashboard/factures?status=unpaid",
     },
   ];
-  const columns = ["Reçu", "Diagnostic", "En réparation", "Prêt"].map((status) => ({
-    title: status === "En réparation" ? "Réparation" : status,
+  const dashboardAlerts: Array<{ label: string; value: number; helper: string; href: string; icon: LucideIcon }> = [
+    { label: "Stock faible", value: lowStockItems.length, helper: "articles sous le seuil", href: "/dashboard/stock", icon: Package },
+    { label: "Dossiers bloqués", value: blockedRepairs.length, helper: "sans activité depuis 3 jours", href: "/dashboard/reparations", icon: AlertTriangle },
+    { label: "Devis en attente", value: pendingQuotes.length, helper: "brouillons ou envoyés", href: "/dashboard/devis", icon: FileText },
+    { label: "Rendez-vous proches", value: todaysAppointments, helper: "prévus aujourd'hui", href: "/dashboard/rendez-vous", icon: CalendarDays },
+  ];
+  const columns = ["Reçu", "Diagnostic", "Devis accepté", "En réparation", "Test final", "Prêt"].map((status) => ({
+    title: status,
     count: store.repairs.filter((repair) => repair.status === status).length,
     cards: store.repairs
       .filter((repair) => repair.status === status)
@@ -132,12 +183,12 @@ export function DashboardWorkspace() {
   const conversionRate = totalQuotes > 0 ? ((acceptedQuotes / totalQuotes) * 100).toFixed(1) : "0";
   const computedStats = [
     {
-      label: "Réparations",
+      label: "Dossiers",
       value: String(store.repairs.length),
       trend: "",
-      helper: "total dans le système",
-      icon: ArrowRight,
-      href: "/dashboard/reparations",
+      helper: "total dans l'atelier",
+      icon: FolderOpen,
+      href: "/dashboard/dossiers",
     },
     {
       label: "Devis en attente",
@@ -156,7 +207,7 @@ export function DashboardWorkspace() {
       href: "/dashboard/factures?status=paid",
     },
     {
-      label: "Factures impayées",
+      label: "Factures à régler",
       value: String(store.invoices.filter((i) => i.status !== "Payée").length),
       trend: "",
       helper: "factures non réglées",
@@ -164,33 +215,80 @@ export function DashboardWorkspace() {
       href: "/dashboard/factures?status=unpaid",
     },
     {
-      label: "Paiements récents",
-      value: String(store.payments.slice(0, 5).length),
+      label: "Règlements indiqués",
+      value: String(store.payments.filter((payment) => payment.status === "Payé").length),
       trend: "",
       helper: `${conversionRate}% conversion devis`,
       icon: ArrowRight,
-      href: "/dashboard/paiements",
+      href: "/dashboard/factures",
     },
   ];
 
   return (
     <div className="hidden space-y-6 md:block">
-      <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      {/* Actions rapides — prise en charge, mode comptoir tablette, vente directe. */}
+      <section className="flex flex-wrap items-center gap-2.5">
+        <Link href="/dashboard/reparations?create=1" prefetch={false}>
+          <PrimaryButton className="h-11 gap-2 px-4">
+            <Plus className="size-4" />
+            Nouvelle prise en charge
+          </PrimaryButton>
+        </Link>
+        <Link
+          className="inline-flex h-11 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-medium text-[#1A1916] text-sm transition hover:border-[#2A9D8F]/40 hover:bg-[#FAFAFA]"
+          href="/dashboard/ventes"
+        >
+          <ShoppingCart className="size-4 text-[#167B70]" />
+          Vente comptoir
+        </Link>
+      </section>
+
+      <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6">
         {dynamicKpis.map((kpi) => (
           <DashboardMetricCard {...kpi} key={kpi.label} />
         ))}
+      </section>
+
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Alertes utiles</h2>
+          <span className="text-[#6B6B6B] text-[12px]">Données actuelles de l'atelier</span>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {dashboardAlerts.map((alert) => {
+            const Icon = alert.icon;
+            return (
+              <Link
+                href={alert.href}
+                key={alert.label}
+                className="flex min-h-[92px] items-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_3px_rgba(26,25,22,0.04)] transition hover:border-[#2A9D8F]/40"
+              >
+                <span className={`grid size-8 shrink-0 place-items-center ${alert.value > 0 ? "text-[#6B6B6B]" : "text-[#2A9D8F]"}`}>
+                  <Icon className="size-[18px]" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center justify-between gap-2">
+                    <b className="truncate text-[#1A1916] text-sm">{alert.label}</b>
+                    <strong className="text-[#1A1916] text-lg tabular-nums">{alert.value}</strong>
+                  </span>
+                  <span className="mt-1 block truncate text-[#6B6B6B] text-xs">{alert.helper}</span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
       </section>
 
       <Panel className="p-4">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
             <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Entrées prévues aujourd'hui</h2>
-            <p className="mt-1 text-[#8A8984] text-[13px]">
+            <p className="mt-1 text-[#6B6B6B] text-[13px]">
               Appareils attendus à l'atelier, séparés des réparations réelles.
             </p>
           </div>
           <Link
-            className="inline-flex items-center gap-1.5 text-[#8A8984] text-[13px] transition-colors hover:text-[#6B6B6B]"
+            className="inline-flex items-center gap-1.5 text-[#6B6B6B] text-[13px] transition-colors hover:text-[#6B6B6B]"
             href="/dashboard/rendez-vous"
           >
             Tous les RDV
@@ -198,7 +296,7 @@ export function DashboardWorkspace() {
           </Link>
         </div>
         {todaysAppointmentRows.length === 0 ? (
-          <div className="rounded-[14px] border border-dashed border-[#E8E8E5] bg-[#FAFAF8] px-4 py-6 text-center text-[#6B6B6B] text-sm">
+          <div className="rounded-[14px] border border-dashed border-[#E8E8E5] bg-[#FAFAFA] px-4 py-6 text-center text-[#6B6B6B] text-sm">
             Aucun appareil prévu aujourd'hui.
           </div>
         ) : (
@@ -217,7 +315,7 @@ export function DashboardWorkspace() {
                 !linkedRepair && status !== "Arrivé" && status !== "Annulé" && status !== "Non venu";
               const canCreateRepair = !linkedRepair && status === "Arrivé";
               return (
-                <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FAFAF8] p-4" key={appointment.id}>
+                <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA] p-4" key={appointment.id}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="font-mono font-semibold text-[#1A1916] text-sm">{appointment.time || "—"}</p>
@@ -280,23 +378,25 @@ export function DashboardWorkspace() {
         )}
       </Panel>
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_340px]">
-        <Panel className="min-w-0 p-4">
+      <section className="grid items-stretch gap-5 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_340px]">
+        <Panel className="flex min-h-[440px] min-w-0 flex-col p-4">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Flux des réparations</h2>
             <Link
-              className="inline-flex items-center gap-1.5 text-[#8A8984] text-[13px] hover:text-[#6B6B6B] transition-colors"
+              className="inline-flex items-center gap-1.5 text-[#6B6B6B] text-[13px] hover:text-[#6B6B6B] transition-colors"
               href="/dashboard/reparations"
             >
               Voir toutes les réparations
               <ArrowRight className="size-4" />
             </Link>
           </div>
-          <DashboardKanban
-            columns={columns}
-            onSelect={(id) => store.setSelected("repair", id)}
-            selectedId={selected?.id ?? ""}
-          />
+          <div className="min-h-0 flex-1">
+            <DashboardKanban
+              columns={columns}
+              onSelect={(id) => store.setSelected("repair", id)}
+              selectedId={selected?.id ?? ""}
+            />
+          </div>
         </Panel>
 
         {selected && customer && (
@@ -305,8 +405,8 @@ export function DashboardWorkspace() {
               <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">{selected.device}</h2>
               <Link
                 aria-label="Ouvrir le dossier réparation"
-                className="rounded-full p-1 text-[#6B6B6B] transition hover:bg-[#F6F7F4] hover:text-[#1A1916]"
-                href="/dashboard/reparations"
+                className="rounded-full p-1 text-[#6B6B6B] transition hover:bg-[#FAFAFA] hover:text-[#1A1916]"
+                href={`/dashboard/dossiers/${selected.id}`}
                 onClick={() => store.setSelected("repair", selected.id)}
               >
                 <MoreHorizontal className="size-5" />
@@ -322,41 +422,67 @@ export function DashboardWorkspace() {
                 value={<StatusBadge status={selected.status === "Test final" ? "Test" : selected.status} />}
               />
               <DetailRow
-                label="Devis"
-                value={selectedQuoteAmount > 0 ? formatEuro(selectedQuoteAmount) : "À chiffrer"}
-              />
-              <DetailRow
-                label="Facture"
-                value={selectedInvoiceAmount > 0 ? formatEuro(selectedInvoiceAmount) : "À chiffrer"}
-              />
-              <DetailRow label="Payé" value={selectedPaidAmount > 0 ? formatEuro(selectedPaidAmount) : "0,00 €"} />
-              <DetailRow
                 emphasize
-                label="Pièces utilisées"
-                value={selectedPartsAmount > 0 ? formatEuro(selectedPartsAmount) : "0,00 €"}
+                label="Montant"
+                value={selectedMontant > 0 ? formatEuro(selectedMontant) : "À chiffrer"}
               />
+              <DetailRow label="Règlement" value={selectedPaid ? "Réglé" : "À régler"} />
             </dl>
 
-            <PrimaryButton
-              className="mt-5 w-full"
-              disabled={selectedPaid}
-              onClick={() => {
+            {(() => {
+              const nextStep = DASHBOARD_NEXT_STATUS[selected.status];
+              const indiquerReglement = () => {
                 if (selectedPaid) return;
                 const total = typeof selected.total === "number" ? selected.total : (selected.amount ?? 0);
                 if (total <= 0) {
-                  toast.error("Ajoutez un tarif à la réparation avant d'encaisser.");
+                  toast.error("Ajoutez un tarif au dossier avant d'indiquer le règlement.");
                   return;
                 }
                 const paymentId = store.markRepairAsPaid(selected.id, "Carte", "");
                 if (paymentId) {
-                  toast.success(`Paiement encaissé (${formatEuro(total)}).`);
+                  toast.success(`Règlement indiqué (${formatEuro(total)}).`);
                 } else {
-                  toast.error("Encaissement impossible. Vérifiez le tarif et le stock.");
+                  toast.error("Règlement impossible. Vérifiez le tarif et le stock.");
                 }
-              }}
-            >
-              {selectedPaid ? "Déjà encaissé" : "Encaisser"}
-            </PrimaryButton>
+              };
+              return (
+                <div className="mt-5 space-y-2">
+                  {nextStep ? (
+                    <PrimaryButton
+                      className="w-full"
+                      onClick={() => {
+                        store.changeRepairStatus(selected.id, nextStep.next);
+                        toast.success(`Dossier passé en « ${nextStep.next} ».`);
+                      }}
+                    >
+                      {nextStep.label}
+                    </PrimaryButton>
+                  ) : (
+                    <PrimaryButton className="w-full" disabled={selectedPaid} onClick={indiquerReglement}>
+                      {selectedPaid ? "Règlement indiqué" : "Indiquer règlement"}
+                    </PrimaryButton>
+                  )}
+                  {nextStep && selected.status === "Prêt" ? null : nextStep ? (
+                    <button
+                      type="button"
+                      disabled={selectedPaid}
+                      onClick={indiquerReglement}
+                      className="h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 font-medium text-[#1A1916] text-[13px] transition hover:border-[#2A9D8F]/40 disabled:cursor-not-allowed disabled:opacity-45"
+                    >
+                      {selectedPaid ? "Règlement indiqué" : "Indiquer règlement"}
+                    </button>
+                  ) : null}
+                  <Link
+                    className="flex h-10 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3 font-medium text-[#1A1916] text-[13px] transition hover:border-[#2A9D8F]/40"
+                    href={`/dashboard/dossiers/${selected.id}`}
+                    onClick={() => store.setSelected("repair", selected.id)}
+                  >
+                    <FolderOpen className="size-4" />
+                    Ouvrir le dossier
+                  </Link>
+                </div>
+              );
+            })()}
           </Panel>
         )}
       </section>
@@ -364,8 +490,8 @@ export function DashboardWorkspace() {
       <section className="grid gap-4 xl:grid-cols-[1.05fr_1fr]">
         <Panel className="p-4">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">CA encaissé par jour</h2>
-            <span className="text-[#8A8984] text-[13px]">30 derniers jours</span>
+            <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Règlements indiqués par jour</h2>
+            <span className="text-[#6B6B6B] text-[13px]">30 derniers jours</span>
           </div>
           <RevenueChart />
         </Panel>
@@ -393,23 +519,23 @@ export function DashboardWorkspace() {
         <Panel className="p-4">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Activité récente</h2>
-            <span className="text-[#8A8984] text-[12px]">{recentAuditLogs.length} actions</span>
+            <span className="text-[#6B6B6B] text-[12px]">{recentAuditLogs.length} actions</span>
           </div>
           {recentAuditLogs.length === 0 ? (
-            <p className="rounded-[12px] bg-[#FAFAF8] px-4 py-5 text-center text-[#6B6B6B] text-sm">
+            <p className="rounded-[12px] bg-[#FAFAFA] px-4 py-5 text-center text-[#6B6B6B] text-sm">
               Aucune activité tracée pour le moment.
             </p>
           ) : (
-            <div className="divide-y divide-[#EFEDE6]">
+            <div className="divide-y divide-[#E8E8E5]">
               {recentAuditLogs.map((entry) => (
                 <div className="flex items-start justify-between gap-4 py-3" key={entry.id}>
                   <div className="min-w-0">
                     <p className="truncate font-medium text-[#1A1916] text-sm">{entry.message}</p>
-                    <p className="mt-1 text-[#8A8984] text-xs">
+                    <p className="mt-1 text-[#6B6B6B] text-xs">
                       {entry.actorName} · {entry.action}
                     </p>
                   </div>
-                  <span className="shrink-0 text-[#B0AEA8] text-xs">{entry.createdAt}</span>
+                  <span className="shrink-0 text-[#8A8A8A] text-xs">{entry.createdAt}</span>
                 </div>
               ))}
             </div>
@@ -422,6 +548,13 @@ export function DashboardWorkspace() {
 
 function displayDate(date: Date) {
   return `${date.getDate()} ${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+function isOlderThanDays(value: string | undefined, days: number) {
+  if (!value) return false;
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return false;
+  return Date.now() - timestamp > days * 24 * 60 * 60 * 1000;
 }
 
 function isCurrentMonthLabel(value: string) {
@@ -470,13 +603,12 @@ const shortMonthNames = [
 ];
 
 const DASHBOARD_TESTIDS: Record<string, string> = {
-  "CA encaissé": "dashboard-revenue-card",
-  "Réparations en cours": "dashboard-active-repairs-card",
+  Dossiers: "dashboard-active-repairs-card",
+  "Dossiers en cours": "dashboard-active-repairs-card",
   "Réparations prêtes": "dashboard-ready-repairs-card",
   "Devis en attente": "dashboard-pending-quotes-card",
   Devis: "dashboard-pending-quotes-card",
-  "Factures impayées": "dashboard-unpaid-invoices-card",
-  "Montant à encaisser": "dashboard-unpaid-invoices-card",
+  "Factures à régler": "dashboard-unpaid-invoices-card",
   "RDV du jour": "dashboard-today-appointments-card",
   "Stock bas": "dashboard-low-stock-card",
 };
@@ -501,7 +633,7 @@ function AppointmentBadge({ status }: Readonly<{ status: string }>) {
         ? "bg-[#FDECEC] text-[#B42318]"
         : status === "Confirmé"
           ? "bg-[#EAF6F2] text-[#167B70]"
-          : "bg-[#FAFAF8] text-[#6B6B6B]";
+          : "bg-[#FAFAFA] text-[#6B6B6B]";
   return <span className={`shrink-0 rounded-full px-2.5 py-1 font-semibold text-[11px] ${tone}`}>{status}</span>;
 }
 
@@ -516,10 +648,10 @@ function DashboardMetricCard({
   const testId = dashboardTestId(label);
   const content = (
     <div className="flex h-full flex-col justify-center gap-1">
-      <p className="text-[#8A8984] text-[13px]">{label}</p>
+      <p className="text-[#6B6B6B] text-[13px]">{label}</p>
       <p className="font-semibold text-[28px] text-[#1A1916] leading-none tracking-tight">{value}</p>
       {trend ? <p className="mt-1 font-medium text-[#2A9D8F] text-[13px]">{trend}</p> : null}
-      <p className="mt-0.5 text-[#B0AEA8] text-[12px]">{helper}</p>
+      <p className="mt-0.5 text-[#8A8A8A] text-[12px]">{helper}</p>
     </div>
   );
 
@@ -550,14 +682,14 @@ function DashboardStatCard({
   const content = (
     <div className="flex h-full items-center justify-between gap-4">
       <div>
-        <p className="text-[#8A8984] text-[13px]">{label}</p>
+        <p className="text-[#6B6B6B] text-[13px]">{label}</p>
         <p className="mt-2 font-semibold text-[24px] text-[#1A1916] leading-none tracking-tight">{value}</p>
         <p className="mt-3 text-[12px]">
           {trend ? <span className="font-medium text-[#2A9D8F]">{trend} </span> : null}
-          <span className="text-[#B0AEA8]">{helper}</span>
+          <span className="text-[#8A8A8A]">{helper}</span>
         </p>
       </div>
-      <div className="grid size-11 place-items-center rounded-full bg-[#E8F7F3] text-[#2A9D8F]">
+      <div className="grid size-9 place-items-center text-[#2A9D8F]">
         <Icon className="size-5" />
       </div>
     </div>
@@ -587,45 +719,74 @@ function DashboardKanban({
   selectedId: string;
   onSelect: (id: string) => void;
 }>) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Molette verticale → défilement horizontal (souris sans axe X).
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (el.scrollWidth <= el.clientWidth) return;
+      // Trackpad déjà horizontal : on laisse le navigateur gérer.
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      const atStart = el.scrollLeft <= 0;
+      const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
+      // Aux extrémités on rend la main au scroll vertical de la page.
+      if ((e.deltaY < 0 && atStart) || (e.deltaY > 0 && atEnd)) return;
+      el.scrollLeft += e.deltaY;
+      e.preventDefault();
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
+
   return (
-    <div className="grid h-[360px] grid-cols-[repeat(4,minmax(150px,1fr))] gap-2.5 overflow-hidden">
-      {columns.map((column) => (
-        <div
-          className="flex min-h-0 flex-col rounded-[14px] border border-[#E7E4DC] bg-[#FAFAF8]/60 p-3"
-          key={column.title}
-        >
-          <div className="mb-3 flex shrink-0 items-center gap-2">
-            <h3 className="font-medium text-[#1A1916] text-[13px]">{column.title}</h3>
-            <span className="rounded-full bg-[#F1F1EF] px-2 py-0.5 text-[#8A8984] text-[11px] font-medium">
-              {column.count}
-            </span>
-          </div>
-          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-1">
-            {column.cards.map((card) => (
-              <button
-                className={`w-full rounded-[12px] border p-3 text-left transition ${
-                  card.id === selectedId
-                    ? "border-[#2A9D8F] bg-[#F8FFFC] shadow-[0_8px_20px_rgba(42,157,143,0.10)]"
-                    : "border-[#E7E4DC] bg-white hover:border-[#2A9D8F]/40"
-                }`}
-                key={card.id}
-                onClick={() => onSelect(card.id)}
-                type="button"
-              >
-                <p className="truncate font-semibold text-[#1A1916] text-sm">{card.device}</p>
-                <p className="mt-1 truncate text-[#6B6B6B] text-xs">{card.issue}</p>
-                <p className="mt-2 truncate font-medium text-[#1A1916] text-xs">{card.customer}</p>
-                <div className="mt-2 flex items-end justify-between gap-2">
-                  <span className="truncate text-[#6B6B6B] text-xs" suppressHydrationWarning>
-                    {card.time}
-                  </span>
-                  <StatusBadge status={card.status} />
+    <div className="kanban-scroll h-full overflow-x-auto pb-2" ref={scrollRef}>
+      <div className="flex h-full min-h-[320px] gap-3">
+        {columns.map((column) => (
+          <div
+            className="flex h-full w-[210px] shrink-0 flex-col rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA]/60 p-3"
+            key={column.title}
+          >
+            <div className="mb-3 flex shrink-0 items-center gap-2">
+              <h3 className="font-semibold text-[#1A1916] text-[13px]">{column.title}</h3>
+              <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 text-[#6B6B6B] text-[11px] font-medium">
+                {column.count}
+              </span>
+            </div>
+            <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-1">
+              {column.cards.length === 0 ? (
+                <div className="flex h-full items-center justify-center">
+                  <p className="text-[#C4C2BB] text-[12px]">—</p>
                 </div>
-              </button>
-            ))}
+              ) : (
+                column.cards.map((card) => (
+                  <button
+                    className={`w-full rounded-[12px] border p-3 text-left transition ${
+                      card.id === selectedId
+                        ? "border-[#2A9D8F] bg-[#F8FFFC] shadow-[0_8px_20px_rgba(42,157,143,0.10)]"
+                        : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/40"
+                    }`}
+                    key={card.id}
+                    onClick={() => onSelect(card.id)}
+                    type="button"
+                  >
+                    <p className="line-clamp-2 font-semibold text-[#1A1916] text-sm leading-snug">{card.device}</p>
+                    <p className="mt-1 line-clamp-1 text-[#6B6B6B] text-xs">{card.issue}</p>
+                    <p className="mt-2 line-clamp-1 font-medium text-[#1A1916] text-xs">{card.customer}</p>
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <span className="truncate text-[#6B6B6B] text-xs" suppressHydrationWarning>
+                        {card.time}
+                      </span>
+                      <StatusBadge status={card.status} />
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

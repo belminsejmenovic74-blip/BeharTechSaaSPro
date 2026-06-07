@@ -8,35 +8,33 @@ import { usePathname } from "next/navigation";
 import {
   CalendarDays,
   ChevronsUpDown,
-  CreditCard,
-  FileStack,
+  Files,
   FileText,
-  Home,
+  LayoutDashboard,
   LogOut,
   Monitor,
   Package,
   Receipt,
   Settings,
-  ShoppingBag,
+  Store,
   Users,
   Wrench,
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { BeharLogo } from "@/components/behar/behar-logo";
 import { useBeharStore } from "@/lib/behar-store";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { label: "Tableau de bord", href: "/dashboard", icon: Home },
+  { label: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
   { label: "Réparations", href: "/dashboard/reparations", icon: Wrench },
   { label: "Clients", href: "/dashboard/clients", icon: Users },
-  { label: "Ventes", href: "/dashboard/ventes", icon: ShoppingBag },
   { label: "Devis", href: "/dashboard/devis", icon: FileText },
   { label: "Factures", href: "/dashboard/factures", icon: Receipt },
-  { label: "Paiements", href: "/dashboard/paiements", icon: CreditCard },
   { label: "Rendez-vous", href: "/dashboard/rendez-vous", icon: CalendarDays },
   { label: "Stock", href: "/dashboard/stock", icon: Package },
-  { label: "Documents", href: "/dashboard/documents", icon: FileStack },
+  { label: "Documents", href: "/dashboard/documents", icon: Files },
   { label: "Paramètres", href: "/dashboard/parametres", icon: Settings },
 ];
 
@@ -58,15 +56,13 @@ export function DashboardSidebar() {
     .toUpperCase();
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-[230px] border-[#E7E4DC] border-r bg-white px-3.5 py-6 md:flex md:flex-col">
+    <aside className="fixed inset-y-0 left-0 z-30 hidden w-[230px] border-[#E8E8E5] border-r bg-white px-3.5 py-6 md:flex md:flex-col">
       <Link
-        className="flex h-10 items-baseline gap-1.5 px-2 font-semibold text-[#1A1916] tracking-tight"
+        className="flex h-10 items-center px-2"
         href="/dashboard"
         prefetch={false}
       >
-        <span className="text-[15px] tracking-[-0.02em] font-semibold">BEHAR</span>
-        <span className="-mt-px text-[7px] text-[#2A9D8F] opacity-80">●</span>
-        <span className="text-[15px] tracking-[-0.02em] font-semibold">TECH</span>
+        <BeharLogo size="sm" />
       </Link>
 
       <nav className="mt-6 flex flex-1 flex-col gap-0.5">
@@ -80,28 +76,48 @@ export function DashboardSidebar() {
               <Link
                 className={cn(
                   "flex h-[42px] items-center gap-3 rounded-[12px] px-3 font-medium text-[#6B6B6B] text-[13.5px] transition",
-                  "hover:bg-[#F6F7F4] hover:text-[#1A1916]",
-                  active && "bg-[#E7F5F1] font-semibold text-[#167B70]",
+                  "hover:bg-[#FAFAFA] hover:text-[#1A1916]",
+                  active && "bg-[#F3FBFA] font-semibold text-[#167B70]",
                 )}
                 href={item.href}
                 key={item.href}
                 prefetch={false}
               >
-                <Icon className={cn("size-[18px]", active && "text-[#2A9D8F]")} />
+                <Icon className={cn("size-[17px]", active && "text-[#2A9D8F]")} />
                 <span>{item.label}</span>
               </Link>
             );
           })}
+
+        {/* Les deux modes plein écran (comptoir + atelier) = boutons jumeaux en bas. */}
+        <div className="mt-auto flex flex-col gap-2 pt-4">
+          <Link
+            href="/comptoir"
+            prefetch={false}
+            className="flex h-[44px] items-center gap-3 rounded-[12px] border border-[#2A9D8F]/30 bg-[#E8F7F3] px-3.5 font-semibold text-[#167B70] text-[13.5px] transition hover:bg-[#DCF1EC]"
+          >
+            <Store className="size-[18px]" />
+            <span>Mode comptoir</span>
+          </Link>
+          <Link
+            href="/atelier"
+            prefetch={false}
+            className="flex h-[44px] items-center gap-3 rounded-[12px] border border-[#2A9D8F]/30 bg-[#E8F7F3] px-3.5 font-semibold text-[#167B70] text-[13.5px] transition hover:bg-[#DCF1EC]"
+          >
+            <Wrench className="size-[18px]" />
+            <span>Atelier</span>
+          </Link>
+        </div>
       </nav>
 
       <div className="space-y-2">
-        <div className="flex items-center gap-3 rounded-[14px] border border-[#F1F1EF] bg-white px-3 py-2.5">
-          <span className="grid size-9 place-items-center rounded-full bg-[#EAF6F2] font-semibold text-[#2A9D8F] text-[13px]">
+        <div className="flex items-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white px-3 py-2.5">
+          <span className="grid size-9 place-items-center rounded-[10px] bg-[#F3FBFA] font-semibold text-[#2A9D8F] text-[13px]">
             {currentUser.name.charAt(0).toUpperCase()}
           </span>
           <div className="flex-1 leading-tight min-w-0">
             <div className="truncate font-medium text-[#1A1916] text-[13px]">{currentUser.name}</div>
-            <div className="text-[#8A8984] text-[11px]">{userRoleLabel}</div>
+            <div className="text-[#6B6B6B] text-[11px]">{userRoleLabel}</div>
           </div>
           <button
             type="button"
@@ -115,25 +131,25 @@ export function DashboardSidebar() {
         </div>
         <Link
           href={canViewSettings ? "/dashboard/parametres" : "/dashboard"}
-          className="flex items-center gap-3 rounded-[14px] border border-[#F1F1EF] bg-white px-3 py-3 text-left transition-colors duration-200 hover:bg-[#FAFAF8]"
+          className="flex items-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white px-3 py-3 text-left transition-colors duration-200 hover:bg-[#FAFAFA]"
         >
           {workshopLogo ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               alt={`Logo ${workshopName}`}
-              className="size-9 rounded-[10px] border border-[#F1F1EF] bg-white object-cover"
+              className="size-9 rounded-[10px] border border-[#E8E8E5] bg-white object-cover"
               src={workshopLogo}
             />
           ) : (
-            <span className="grid size-9 place-items-center rounded-[10px] bg-[#1A1916] font-semibold text-white text-[11px] tracking-wide">
+            <span className="grid size-9 place-items-center rounded-[10px] border border-[#E8E8E5] bg-[#FAFAFA] font-semibold text-[#1A1916] text-[11px] tracking-wide">
               {workshopInitials || "AT"}
             </span>
           )}
           <div className="flex-1 leading-tight">
             <div className="font-medium text-[#1A1916] text-[13px]">{workshopName}</div>
-            <div className="text-[#B0AEA8] text-[11px]">Atelier principal</div>
+            <div className="text-[#8A8A8A] text-[11px]">Atelier principal</div>
           </div>
-          <ChevronsUpDown className="size-4 text-[#CDCBC5]" />
+          <ChevronsUpDown className="size-4 text-[#A3A3A3]" />
         </Link>
       </div>
     </aside>
