@@ -1,6 +1,6 @@
 "use client";
 
-import { Apple, ArrowRight, Download, MonitorSmartphone, ShieldAlert } from "lucide-react";
+import { Apple, ArrowRight, Download, MonitorSmartphone, ShieldAlert, Smartphone } from "lucide-react";
 
 import { BeharLogo } from "@/components/behar/behar-logo";
 
@@ -9,9 +9,9 @@ import { BeharLogo } from "@/components/behar/behar-logo";
 // Pour mettre à jour : dépose les nouveaux fichiers dans public/downloads/
 // (ou via FileZilla dans htdocs/downloads/ sur IONOS) puis change la
 // version ci-dessous.
-const APP_VERSION = "1.0.12";
+const APP_VERSION = "1.0.16";
 
-const desktopDownloads = [
+const downloads = [
   {
     platform: "windows" as const,
     label: "Télécharger pour Windows",
@@ -25,6 +25,13 @@ const desktopDownloads = [
     detail: "Image disque .dmg — macOS 10.15+",
     href: `/downloads/BeharTechPro-${APP_VERSION}-mac.dmg`,
     icon: Apple,
+  },
+  {
+    platform: "android" as const,
+    label: "Télécharger pour Android",
+    detail: "Fichier APK — Android 8.0+",
+    href: `/downloads/BeharTechPro-${APP_VERSION}-android.apk`,
+    icon: Smartphone,
   },
 ];
 
@@ -48,7 +55,7 @@ export default function DownloadPage() {
 
         {/* Boutons de téléchargement */}
         <div className="mt-10 grid gap-2.5">
-          {desktopDownloads.map((item) => {
+          {downloads.map((item) => {
             const Icon = item.icon;
             return (
               <a
@@ -104,9 +111,19 @@ export default function DownloadPage() {
             command="sudo xattr -dr com.apple.quarantine /Applications/BeharTechPro.app"
             commandHint="Saisissez votre mot de passe Mac quand demandé. L'app s'ouvrira ensuite directement par double-clic."
           />
+          <InstallCard
+            title="Android — Installation et premier lancement"
+            warning="Android affichera un message concernant l'installation d'applications de sources inconnues."
+            steps={[
+              "Téléchargez le fichier .apk sur votre smartphone ou tablette Android",
+              "Ouvrez le fichier téléchargé (.apk) depuis les notifications ou votre dossier de Téléchargements",
+              "Si demandé, autorisez votre navigateur ou gestionnaire de fichiers à installer des applications",
+              "Appuyez sur « Installer » puis ouvrez l'application",
+            ]}
+          />
         </div>
 
-        <p className="mt-10 text-center text-xs text-[#6B6B6B]">Version desktop : {APP_VERSION}</p>
+        <p className="mt-10 text-center text-xs text-[#6B6B6B]">Version application : {APP_VERSION}</p>
       </div>
     </div>
   );

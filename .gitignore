@@ -63,6 +63,7 @@ public/downloads/*.exe
 public/downloads/*.msi
 public/downloads/*.deb
 public/downloads/*.AppImage
+public/downloads/*.apk
 
 # Capacitor / Android
 /android/.gradle/
