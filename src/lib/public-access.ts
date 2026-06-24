@@ -44,7 +44,11 @@ function browserOrigin(): string {
 function publicBaseUrl(): string {
   const envBase = process.env.NEXT_PUBLIC_PUBLIC_BASE_URL?.replace(/\/$/, "") || "";
   const origin = browserOrigin();
-  if (origin && (!envBase || isLocalPublicBase(envBase))) return origin;
+  const isLocalOrigin = !origin || origin.startsWith("tauri:") || isLocalPublicBase(origin);
+  const isLocalEnv = !envBase || isLocalPublicBase(envBase);
+  if (isLocalOrigin || isLocalEnv) {
+    return "https://behartechpro.fr";
+  }
   return envBase || origin;
 }
 
