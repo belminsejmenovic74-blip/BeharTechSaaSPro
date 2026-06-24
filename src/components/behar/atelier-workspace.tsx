@@ -45,6 +45,8 @@ import {
   type RepairStatus,
   type RepairSubStatus,
   type RepairTestResult,
+  type StockItem,
+  type DeviceModel,
   formatEuro,
   formatIsoToDisplay,
   getNowIso,
@@ -59,6 +61,7 @@ import { cn } from "@/lib/utils";
 
 import { Panel, PrimaryButton, SearchBox, SecondaryButton, StatusBadge } from "./primitives";
 import { useDocument } from "./print-provider";
+import { TrackingQrModal } from "./tracking-qr-modal";
 
 type AtelierView =
   | "queue"
@@ -272,8 +275,93 @@ function customerFor(repair: Repair | undefined, customers: Customer[]) {
   return repair ? customers.find((customer) => customer.id === repair.customerId) : undefined;
 }
 
+function inferModelFromPieceNameStrict(pieceName: string, brandId?: string, deviceModelsList: DeviceModel[] = []): DeviceModel | undefined {
+  const pName = pieceName.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").replace(/[^a-z0-9]+/g, " ").trim();
+  if (!pName) return undefined;
+  
+  let bestMatch: DeviceModel | undefined = undefined;
+  let longestLength = 0;
+  
+  const candidateModels = brandId 
+    ? deviceModelsList.filter((m) => m.brandId === brandId) 
+    : deviceModelsList;
+    
+  for (const m of candidateModels) {
+    const mName = m.name.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").replace(/[^a-z0-9]+/g, " ").trim();
+    if (!mName) continue;
+    
+    const regex = new RegExp(`\\b${mName}\\b`, 'i');
+    if (regex.test(pName)) {
+      if (mName.length > longestLength) {
+        longestLength = mName.length;
+        bestMatch = m;
+      }
+    }
+    
+    if (m.aliases) {
+      for (const alias of m.aliases) {
+        const aName = alias.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").replace(/[^a-z0-9]+/g, " ").trim();
+        if (!aName) continue;
+        const aliasRegex = new RegExp(`\\b${aName}\\b`, 'i');
+        if (aliasRegex.test(pName)) {
+          if (aName.length > longestLength) {
+            longestLength = aName.length;
+            bestMatch = m;
+          }
+        }
+      }
+    }
+  }
+  
+  return bestMatch;
+}
+
+export function isStockItemCompatibleWithRepair(
+  item: StockItem,
+  repair: Repair,
+  deviceModelsList: DeviceModel[]
+): boolean {
+  if (item.brandId && repair.brandId && item.brandId !== repair.brandId) {
+    return false;
+  }
+  if (item.brandName && repair.brandName && item.brandName.toLowerCase() !== repair.brandName.toLowerCase()) {
+    return false;
+  }
+
+  if (repair.modelId && item.modelIds && item.modelIds.includes(repair.modelId)) {
+    return true;
+  }
+
+  const repairModelName = (repair.deviceModel ?? repair.model ?? "").trim().toLowerCase();
+  if (repairModelName && item.compatibleModels && item.compatibleModels.length > 0) {
+    const isCompatible = item.compatibleModels.some(
+      (m) => m.trim().toLowerCase() === repairModelName
+    );
+    if (isCompatible) return true;
+  }
+
+  const hasNoModels = (!item.modelIds || item.modelIds.length === 0) && 
+                      (!item.compatibleModels || item.compatibleModels.length === 0);
+  if (hasNoModels) {
+    const inferred = inferModelFromPieceNameStrict(item.name || item.part, item.brandId, deviceModelsList);
+    if (inferred) {
+      if (repair.modelId && inferred.id === repair.modelId) {
+        return true;
+      }
+      const inferredName = inferred.name.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").replace(/[^a-z0-9]+/g, " ").trim();
+      const repairName = repairModelName.normalize("NFD").replace(/\p{M}/gu, "").replace(/[^a-z0-9]+/g, " ").trim();
+      if (inferredName === repairName) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 export function AtelierWorkspace() {
   const {
+    deviceModels,
     repairs,
     customers,
     stockItems,
@@ -326,11 +414,13 @@ export function AtelierWorkspace() {
       addRepair: s.addRepair,
       ensureRepairPublicAccess: s.ensureRepairPublicAccess,
       hasPermission: s.hasPermission,
+      deviceModels: s.deviceModels,
     })),
   );
 
   const [query, setQuery] = useState("");
   const [view, setView] = useState<AtelierView>("queue");
+  const [showAllStock, setShowAllStock] = useState(false);
   const [codeVisible, setCodeVisible] = useState(false);
   const [diagnosisItems, setDiagnosisItems] = useState<RepairChecklistItem[]>([]);
   const [finalItems, setFinalItems] = useState<RepairChecklistItem[]>([]);
@@ -340,12 +430,20 @@ export function AtelierWorkspace() {
   const [noteDraft, setNoteDraft] = useState("");
   const [noteTag, setNoteTag] = useState<NoteTag>("Général");
   const [clientDraft, setClientDraft] = useState("");
+  const [selectedQrRepairId, setSelectedQrRepairId] = useState<string | null>(null);
 
   // Génération/téléchargement PDF réel (bon de dépôt, fiche d'intervention, devis, facture…).
   const { download: downloadDocument, uploadToCloud: uploadDocumentToCloud } = useDocument();
 
   const selectedRepair = repairs.find((repair) => repair.id === selectedRepairId) ?? repairs[0];
   const selectedCustomer = customerFor(selectedRepair, customers);
+
+  const compatibleItems = useMemo(() => {
+    if (!selectedRepair) return [];
+    return stockItems.filter((item) =>
+      isStockItemCompatibleWithRepair(item, selectedRepair, deviceModels)
+    );
+  }, [stockItems, selectedRepair, deviceModels]);
 
   const canViewMoney = hasPermission("canViewMargin");
   const canViewPurchasePrice = hasPermission("canViewPurchasePrice");
@@ -394,6 +492,7 @@ export function AtelierWorkspace() {
     setFinalComment(selectedRepair.finalTest?.comment ?? "");
     setImpossibleReason(selectedRepair.finalTest?.testImpossibleReason ?? "");
     setCodeVisible(false);
+    setShowAllStock(false);
   }, [selectedRepair?.id]);
 
   useEffect(() => {
@@ -405,6 +504,7 @@ export function AtelierWorkspace() {
   const openRepair = (repairId: string, nextView: AtelierView = "fiche") => {
     setSelected("repair", repairId);
     setView(nextView);
+    setShowAllStock(false);
     window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
   };
 
@@ -1129,9 +1229,18 @@ export function AtelierWorkspace() {
       {view === "parts" && (
         <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
           <Panel className="overflow-hidden">
-            <div className="flex items-center justify-between border-[#E8E8E5] border-b p-5">
-              <SectionTitle title="Pièces compatibles" />
-              <span className="text-[#6B6B6B] text-sm">{stockItems.length} références stock</span>
+            <div className="flex flex-wrap items-center justify-between border-[#E8E8E5] border-b p-5 gap-3">
+              <div>
+                <SectionTitle title={`Pièces compatibles avec ${selectedRepair.brandName} ${selectedRepair.deviceModel || selectedRepair.model}`} />
+                <span className="text-[#6B6B6B] text-xs font-normal mt-0.5 block">
+                  {showAllStock 
+                    ? `${stockItems.length} références stock totales` 
+                    : `${compatibleItems.length} références compatibles`}
+                </span>
+              </div>
+              <SecondaryButton className="h-9 text-xs px-3" onClick={() => setShowAllStock(!showAllStock)}>
+                {showAllStock ? "Voir uniquement compatibles" : "Voir tout le stock"}
+              </SecondaryButton>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[840px] text-sm">
@@ -1149,47 +1258,78 @@ export function AtelierWorkspace() {
                   </tr>
                 </thead>
                 <tbody>
-                  {stockItems.map((item) => {
-                    const selectedPart = selectedRepair.parts.find((part) => part.stockItemId === item.id);
-                    const margin = item.salePrice - item.purchasePrice;
-                    return (
-                      <tr className="border-[#E8E8E5] border-t" key={item.id}>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <RealProductVisual category={item.categoryName} className="size-10 rounded-[10px] border border-[#E8E8E5]" name={item.name} />
-                            <div>
-                              <p className="font-semibold text-[#1A1916]">{item.name}</p>
-                              <p className="text-[#6B6B6B] text-xs">{item.compatibleModels.join(", ") || "Compatibilité à vérifier"}</p>
+                  {compatibleItems.length === 0 && !showAllStock ? (
+                    <tr>
+                      <td colSpan={12} className="px-4 py-8 text-center">
+                        <div className="flex flex-col items-center justify-center gap-3">
+                          <Package className="size-8 text-[#A3A3A3]" />
+                          <p className="text-[#6B6B6B] text-sm font-medium">
+                            Aucune pièce compatible trouvée pour {selectedRepair.brandName} {selectedRepair.deviceModel || selectedRepair.model}.
+                          </p>
+                          <SecondaryButton 
+                            className="h-9 text-xs px-4 mt-1" 
+                            onClick={() => setShowAllStock(true)}
+                          >
+                            Voir tout le stock
+                          </SecondaryButton>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    (showAllStock ? stockItems : compatibleItems).map((item) => {
+                      const selectedPart = selectedRepair.parts.find((part) => part.stockItemId === item.id);
+                      const margin = item.salePrice - item.purchasePrice;
+                      return (
+                        <tr className="border-[#E8E8E5] border-t" key={item.id}>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <RealProductVisual category={item.categoryName} className="size-10 rounded-[10px] border border-[#E8E8E5]" name={item.name} />
+                              <div>
+                                <p className="font-semibold text-[#1A1916]">{item.name}</p>
+                                <p className="text-[#6B6B6B] text-xs">{item.compatibleModels.join(", ") || "Compatibilité à vérifier"}</p>
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-[#6B6B6B]">{item.sku}</td>
-                        <td className="px-4 py-3"><StatusBadge status={item.categoryName || "En stock"} /></td>
-                        <td className="px-4 py-3">
-                          <span className={item.stock <= item.threshold ? "font-semibold text-[#B42318]" : "text-[#1A1916]"}>
-                            {item.stock}
-                          </span>
-                        </td>
-                        {canViewSupplier && <td className="px-4 py-3 text-[#6B6B6B]">{item.supplier}</td>}
-                        {canViewPurchasePrice && <td className="px-4 py-3">{formatEuro(item.purchasePrice)}</td>}
-                        <td className="px-4 py-3 font-semibold">{formatEuro(item.salePrice)}</td>
-                        {canViewMoney && <td className="px-4 py-3 text-[#167B70]">{formatEuro(margin)}</td>}
-                        <td className="px-4 py-3">
-                          {selectedPart?.confirmed ? (
-                            <StatusBadge status="Pièce reçue" />
-                          ) : selectedPart ? (
-                            <PrimaryButton className="h-9 px-3" onClick={() => confirmPartUsage(selectedRepair.id, item.id)}>
-                              Utiliser
-                            </PrimaryButton>
-                          ) : (
-                            <SecondaryButton className="h-9 px-3" onClick={() => addPartToRepair(selectedRepair.id, item.id, 1)}>
-                              Réserver
-                            </SecondaryButton>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                          </td>
+                          <td className="px-4 py-3 text-[#6B6B6B]">{item.sku}</td>
+                          <td className="px-4 py-3"><StatusBadge status={item.categoryName || "En stock"} /></td>
+                          <td className="px-4 py-3">
+                            <span className={item.stock <= item.threshold ? "font-semibold text-[#B42318]" : "text-[#1A1916]"}>
+                              {item.stock}
+                            </span>
+                          </td>
+                          {canViewSupplier && <td className="px-4 py-3 text-[#6B6B6B]">{item.supplier}</td>}
+                          {canViewPurchasePrice && <td className="px-4 py-3">{formatEuro(item.purchasePrice)}</td>}
+                          <td className="px-4 py-3 font-semibold">{formatEuro(item.salePrice)}</td>
+                          {canViewMoney && <td className="px-4 py-3 text-[#167B70]">{formatEuro(margin)}</td>}
+                          <td className="px-4 py-3">
+                            {selectedPart?.confirmed ? (
+                              <StatusBadge status="Pièce reçue" />
+                            ) : selectedPart ? (
+                              <PrimaryButton className="h-9 px-3" onClick={() => confirmPartUsage(selectedRepair.id, item.id)}>
+                                Utiliser
+                              </PrimaryButton>
+                            ) : (
+                              <SecondaryButton 
+                                className="h-9 px-3" 
+                                onClick={() => {
+                                  const isCompatible = isStockItemCompatibleWithRepair(item, selectedRepair, deviceModels);
+                                  if (!isCompatible) {
+                                    const confirm = window.confirm(
+                                      `Attention : La pièce "${item.name}" n'est pas marquée compatible avec ${selectedRepair.brandName} ${selectedRepair.deviceModel || selectedRepair.model}. Voulez-vous tout de même la réserver pour ce dossier ?`
+                                    );
+                                    if (!confirm) return;
+                                  }
+                                  addPartToRepair(selectedRepair.id, item.id, 1);
+                                }}
+                              >
+                                Réserver
+                              </SecondaryButton>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
@@ -1622,11 +1762,45 @@ export function AtelierWorkspace() {
                 </div>
                 <p className="mt-8 text-[#6B6B6B] text-sm">Les documents client n'affichent pas les prix d'achat, marge, fournisseur ou notes internes sensibles.</p>
               </div>
-              <div className="mt-5 flex items-center gap-3 rounded-[16px] border border-[#E8E8E5] p-4">
-                <QrCode className="size-10 text-[#1A1916]" />
-                <div className="min-w-0">
-                  <p className="font-semibold text-[#1A1916] text-sm">Lien de suivi client</p>
-                  <p className="truncate text-[#6B6B6B] text-xs">{publicUrl}</p>
+              <div className="mt-5 rounded-[16px] border border-[#E8E8E5] bg-white p-4">
+                <div className="flex items-center gap-3 cursor-pointer" onClick={() => setSelectedQrRepairId(selectedRepair.id)}>
+                  <QrCode className="size-10 text-[#1A1916] shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-[#1A1916] text-sm">Lien de suivi client</p>
+                    <p className="truncate text-[#6B6B6B] text-xs">{publicUrl || "Générer le lien"}</p>
+                  </div>
+                </div>
+                <div className="mt-3 flex gap-2 border-t border-[#F7F7F7] pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedQrRepairId(selectedRepair.id)}
+                    className="flex-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white font-semibold text-[#1A1916] text-xs transition hover:bg-[#FAFAFA]"
+                  >
+                    Afficher QR
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!publicUrl) return;
+                      try {
+                        await navigator.clipboard.writeText(publicUrl);
+                        toast.success("Lien de suivi copié");
+                      } catch {
+                        toast.error("Impossible de copier");
+                      }
+                    }}
+                    className="flex-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white font-semibold text-[#1A1916] text-xs transition hover:bg-[#FAFAFA]"
+                  >
+                    Copier lien
+                  </button>
+                  <a
+                    href={publicUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-[#2A9D8F] font-semibold text-white text-xs transition hover:bg-[#238579]"
+                  >
+                    Ouvrir
+                  </a>
                 </div>
               </div>
             </div>
@@ -1671,6 +1845,13 @@ export function AtelierWorkspace() {
             </PrimaryButton>
           </Panel>
         </div>
+      )}
+      {selectedQrRepairId && (
+        <TrackingQrModal
+          isOpen={Boolean(selectedQrRepairId)}
+          onClose={() => setSelectedQrRepairId(null)}
+          repairId={selectedQrRepairId}
+        />
       )}
     </div>
   );

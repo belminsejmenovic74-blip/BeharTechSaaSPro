@@ -21,6 +21,18 @@ import { transactions as paymentMocks } from "@/mock/payments";
 import { quote as quoteMock } from "@/mock/quotes";
 import { repairKanbanColumns } from "@/mock/repairs";
 import { stockItems as stockMocks } from "@/mock/stock";
+import {
+  formatMoney,
+  createBillingProfile,
+  getWorkshopCountryConfig,
+  isBillingProfileComplete,
+  normalizeWorkshopCountry,
+  parseMoney,
+  type BillingProfiles,
+  type WorkshopCountry,
+  type WorkshopCurrency,
+  type WorkshopLocale,
+} from "@/lib/workshop-country";
 
 export type RepairStatus =
   | "Reçu"
@@ -42,6 +54,8 @@ export type PaymentStatus = "Payé" | "Annulé" | "Remboursé";
 export type PaymentMethod =
   | "TPE externe"
   | "Espèces hors Behar Tech"
+  | "TWINT"
+  | "Carte externe"
   | "Virement"
   | "Lien externe"
   | "Autre"
@@ -242,6 +256,11 @@ export type RepairPart = {
   salePrice: number;
   quantity: number;
   confirmed?: boolean;
+  margin?: number;
+  currency?: WorkshopCurrency;
+  supplier?: string;
+  modelName?: string;
+  modelId?: string;
 };
 
 export type RepairSaleLineStatus = "draft" | "confirmed" | "invoiced" | "paid";
@@ -386,6 +405,11 @@ export type RepairIntakeCondition = {
 
 export type Repair = {
   id: string;
+  billingCountry: WorkshopCountry;
+  market?: WorkshopCountry;
+  currency?: WorkshopCurrency;
+  currencySymbol?: string;
+  locale: WorkshopLocale;
   shopId: string;
   number: string;
   customerId: string;
@@ -403,6 +427,9 @@ export type Repair = {
   deviceModel?: string;
   issueType?: string;
   device: string;
+  deviceColor?: string;
+  deviceCapacity?: string;
+  plannedPaymentMethod?: PaymentMethod;
   model: string;
   issue: string;
   status: RepairStatus;
@@ -504,6 +531,9 @@ export type QuoteDevice = {
 
 export type Quote = {
   id: string;
+  billingCountry: WorkshopCountry;
+  currency?: WorkshopCurrency;
+  locale: WorkshopLocale;
   shopId: string;
   number: string;
   customerId: string;
@@ -543,6 +573,9 @@ export type Quote = {
 
 export type Invoice = {
   id: string;
+  billingCountry: WorkshopCountry;
+  currency?: WorkshopCurrency;
+  locale: WorkshopLocale;
   shopId: string;
   number: string;
   customerId: string;
@@ -567,6 +600,9 @@ export type Invoice = {
 
 export type Payment = {
   id: string;
+  billingCountry: WorkshopCountry;
+  currency?: WorkshopCurrency;
+  locale: WorkshopLocale;
   shopId: string;
   invoiceId?: string;
   saleId?: string;
@@ -581,6 +617,7 @@ export type Payment = {
   amount: number;
   date: string;
   note?: string;
+  twintReference?: string;
   createdAt: string;
   updatedAt: string;
   createdBy?: string;
@@ -700,6 +737,9 @@ export type TeamMember = {
   phone?: string;
 };
 
+export type { WorkshopCountry, WorkshopCurrency } from "@/lib/workshop-country";
+export type WorkshopTaxRegime = "not_subject_to_vat" | "vat_subject";
+
 export type WorkshopInfo = {
   brand: string;
   name: string;
@@ -707,12 +747,23 @@ export type WorkshopInfo = {
   postalCode?: string;
   city?: string;
   postalCity: string;
-  country: string;
+  country: WorkshopCountry;
+  defaultMarket?: WorkshopCountry;
+  allowedMarkets?: WorkshopCountry[];
+  currency: WorkshopCurrency;
+  taxRegime: WorkshopTaxRegime;
+  defaultPhonePrefix: "+33" | "+41";
   siret: string;
   email: string;
   phone: string;
   website?: string;
   tvaNumber?: string;
+  swissUid?: string;
+  swissVatNumber?: string;
+  swissCanton?: string;
+  twintEnabled?: boolean;
+  twintPaymentLink?: string;
+  twintQrCode?: string;
   vatApplicable?: boolean;
   vatRate?: number;
   isMicroEnterprise?: boolean;
@@ -739,6 +790,7 @@ export type WorkshopInfo = {
   logoUrl?: string;
   showLogo?: boolean;
   commercialName?: string;
+  billingProfiles?: BillingProfiles;
 };
 
 export type WorkshopSettings = WorkshopInfo & {
@@ -766,6 +818,9 @@ export type SaleLine = {
 
 export type Sale = {
   id: string;
+  billingCountry: WorkshopCountry;
+  currency?: WorkshopCurrency;
+  locale: WorkshopLocale;
   shopId: string;
   number: string;
   customerId: string;
@@ -1007,6 +1062,7 @@ export type StoreState = {
     date: string;
     reference: string;
     note?: string;
+    twintReference?: string;
   }) => string;
   markRepairAsPaid: (repairId: string, method?: PaymentMethod, note?: string) => string;
   updatePaymentStatus: (id: string, status: PaymentStatus) => void;
@@ -1032,6 +1088,7 @@ export type StoreState = {
     customerName: string;
     lines: Omit<SaleLine, "id">[];
     repairId?: string;
+    billingCountry?: WorkshopCountry;
     status?: SaleStatus;
   }) => string;
   paySale: (saleId: string, method: PaymentMethod) => string;
@@ -1057,6 +1114,9 @@ type RepairInput = Pick<
   Partial<
     Pick<
       Repair,
+      | "billingCountry"
+      | "currency"
+      | "locale"
       | "model"
       | "imei"
       | "quoteId"
@@ -1068,6 +1128,9 @@ type RepairInput = Pick<
       | "brandName"
       | "modelId"
       | "deviceModel"
+      | "deviceColor"
+      | "deviceCapacity"
+      | "plannedPaymentMethod"
       | "issueType"
       | "laborPrice"
       | "total"
@@ -1103,6 +1166,9 @@ type QuoteInput = Pick<Quote, "customerId"> &
   Partial<
     Pick<
       Quote,
+      | "billingCountry"
+      | "currency"
+      | "locale"
       | "repairId"
       | "notes"
       | "status"
@@ -1121,7 +1187,20 @@ type QuoteInput = Pick<Quote, "customerId"> &
     >
   > & { lines?: any[] };
 type InvoiceInput = Pick<Invoice, "customerId"> &
-  Partial<Pick<Invoice, "repairId" | "quoteId" | "status" | "sourceType" | "sourceNumber" | "paymentMethod">> & {
+  Partial<
+    Pick<
+      Invoice,
+      | "billingCountry"
+      | "currency"
+      | "locale"
+      | "repairId"
+      | "quoteId"
+      | "status"
+      | "sourceType"
+      | "sourceNumber"
+      | "paymentMethod"
+    >
+  > & {
     lines?: any[];
   };
 type AppointmentInput = Pick<Appointment, "customerId" | "device" | "issue" | "date" | "time"> &
@@ -1516,12 +1595,21 @@ const defaultWorkshopInfo: WorkshopInfo = {
   postalCode: "",
   city: "",
   postalCity: "",
-  country: "France",
+  country: "FR",
+  currency: "EUR",
+  taxRegime: "not_subject_to_vat",
+  defaultPhonePrefix: "+33",
   siret: "000 000 000 00000",
   email: "contact@behartechpro.fr",
   phone: "06 12 34 56 78",
   website: "",
   tvaNumber: "",
+  swissUid: "",
+  swissVatNumber: "",
+  swissCanton: "",
+  twintEnabled: false,
+  twintPaymentLink: "",
+  twintQrCode: "",
   vatApplicable: false,
   vatRate: 20,
   isMicroEnterprise: true,
@@ -1546,6 +1634,21 @@ const defaultWorkshopInfo: WorkshopInfo = {
   defaultWarranty: "Garantie 3 mois sur pièce remplacée.",
   managerSignature: "Responsable atelier",
   logoUrl: "",
+  defaultMarket: "FR",
+  allowedMarkets: ["FR"],
+  billingProfiles: {
+    FR: createBillingProfile(
+      {
+        country: "FR",
+        name: "Behar Tech",
+        phone: "06 12 34 56 78",
+        email: "contact@behartechpro.fr",
+        siret: "00000000000000",
+      },
+      "FR",
+    ),
+    CH: createBillingProfile({ country: "CH" }, "CH"),
+  },
 };
 export const workshopInfo = defaultWorkshopInfo;
 const defaultWorkshopSettings: WorkshopSettings = {
@@ -1558,12 +1661,154 @@ const asWorkshopInfo = (settings: WorkshopSettings): WorkshopInfo => ({
   ...settings,
 });
 
-const euro = (value: string | number) =>
-  typeof value === "number" ? value : Number(value.replace(/\s/g, "").replace("€", "").replace(",", ".").trim()) || 0;
-export const formatEuro = (value: number) =>
-  new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(
-    typeof value === "number" && Number.isFinite(value) ? value : 0,
+let activeWorkshopCountry: WorkshopCountry = "FR";
+const countryLabel = (country: WorkshopCountry) => (country === "CH" ? "Suisse" : "France");
+export const getWorkshopCountryLabel = (country: WorkshopCountry) => countryLabel(country);
+const withWorkshopLocaleDefaults = (settings: WorkshopSettings): WorkshopSettings => {
+  const defaultMarket = settings.defaultMarket || (settings.country === "CH" ? "CH" : "FR");
+  const allowedMarkets = settings.allowedMarkets && settings.allowedMarkets.length > 0
+    ? settings.allowedMarkets
+    : [defaultMarket];
+  const country = normalizeWorkshopCountry(defaultMarket);
+  const isSwiss = country === "CH";
+  const countryConfig = getWorkshopCountryConfig(country);
+  const taxRegime: WorkshopTaxRegime =
+    settings.taxRegime === "vat_subject" || settings.vatApplicable ? "vat_subject" : "not_subject_to_vat";
+  const currency = countryConfig.currency;
+  activeWorkshopCountry = country;
+  const currentProfile = createBillingProfile(
+    {
+      country,
+      name: settings.name,
+      commercialName: settings.commercialName,
+      address: settings.address,
+      postalCode: settings.postalCode,
+      city: settings.city,
+      canton: settings.swissCanton,
+      phone: settings.phone,
+      email: settings.email,
+      siret: settings.siret,
+      tvaNumber: settings.tvaNumber,
+      swissUid: settings.swissUid,
+      swissVatNumber: settings.swissVatNumber,
+      vatApplicable: settings.vatApplicable,
+      vatRate: settings.vatRate,
+      tvaMention: settings.tvaMention,
+    },
+    country,
   );
+  return {
+    ...settings,
+    defaultMarket,
+    allowedMarkets,
+    country,
+    currency,
+    taxRegime,
+    defaultPhonePrefix: countryConfig.phonePrefix,
+    vatApplicable: taxRegime === "vat_subject",
+    vatRate: taxRegime === "vat_subject" ? Number(settings.vatRate || (isSwiss ? 8.1 : 20)) : 0,
+    isMicroEnterprise: taxRegime === "not_subject_to_vat",
+    tvaMention:
+      taxRegime === "not_subject_to_vat"
+        ? isSwiss
+          ? "TVA non facturée — entreprise non assujettie à la TVA suisse."
+          : settings.tvaMention || "TVA non applicable — art. 293 B du CGI"
+        : "",
+    acceptedPaymentMethods: isSwiss
+      ? ["Espèces", ...(settings.twintEnabled === false ? [] : ["TWINT"]), "Carte externe", "Virement", "Autre"]
+      : settings.acceptedPaymentMethods?.length
+        ? settings.acceptedPaymentMethods.filter((method) => method !== "TWINT" && method !== "Carte externe")
+        : defaultWorkshopInfo.acceptedPaymentMethods,
+    billingProfiles: {
+      ...(settings.billingProfiles ?? {}),
+      [country]: currentProfile,
+    },
+  };
+};
+export const formatCurrency = (value: number, currency?: WorkshopCurrency) =>
+  formatMoney(value, currency ?? activeWorkshopCountry);
+const euro = (value: string | number) => parseMoney(value);
+export const formatEuro = (value: number) => formatMoney(value, activeWorkshopCountry);
+export const getBillingWorkshopInfo = (
+  workshop: WorkshopInfo,
+  countryValue: WorkshopCountry,
+): WorkshopInfo => {
+  const config = getWorkshopCountryConfig(countryValue);
+  const profile = createBillingProfile(
+    workshop.billingProfiles?.[config.country] ?? {
+      country: config.country,
+      name: workshop.name,
+      commercialName: workshop.commercialName,
+      address: workshop.address,
+      postalCode: workshop.postalCode,
+      city: workshop.city,
+      canton: workshop.swissCanton,
+      phone: workshop.phone,
+      email: workshop.email,
+      siret: workshop.siret,
+      tvaNumber: workshop.tvaNumber,
+      swissUid: workshop.swissUid,
+      swissVatNumber: workshop.swissVatNumber,
+      vatApplicable: workshop.vatApplicable,
+      vatRate: workshop.vatRate,
+      tvaMention: workshop.tvaMention,
+    },
+    config.country,
+  );
+  return {
+    ...workshop,
+    country: config.country,
+    currency: config.currency,
+    defaultPhonePrefix: config.phonePrefix,
+    taxRegime: profile.vatApplicable ? "vat_subject" : "not_subject_to_vat",
+    name: profile.name || workshop.name,
+    commercialName: profile.commercialName || "",
+    address: profile.address || "",
+    postalCode: profile.postalCode || "",
+    city: profile.city || "",
+    postalCity: [profile.postalCode, profile.city].filter(Boolean).join(" "),
+    phone: profile.phone || config.phonePrefix,
+    email: profile.email || "",
+    siret: config.country === "FR" ? profile.siret || "" : "",
+    tvaNumber: config.country === "FR" ? profile.tvaNumber || "" : "",
+    swissUid: config.country === "CH" ? profile.swissUid || "" : "",
+    swissVatNumber: config.country === "CH" ? profile.swissVatNumber || "" : "",
+    swissCanton: config.country === "CH" ? profile.canton || "" : "",
+    vatApplicable: Boolean(profile.vatApplicable),
+    vatRate: profile.vatApplicable ? profile.vatRate || config.defaultVatRate : 0,
+    isMicroEnterprise: !profile.vatApplicable,
+    tvaMention: profile.tvaMention || "",
+  };
+};
+export const isWorkshopBillingProfileComplete = (
+  workshop: WorkshopInfo,
+  country: WorkshopCountry,
+): boolean => {
+  const resolved = getBillingWorkshopInfo(workshop, country);
+  return isBillingProfileComplete(
+    createBillingProfile(
+      {
+        country,
+        name: resolved.name,
+        commercialName: resolved.commercialName,
+        address: resolved.address,
+        postalCode: resolved.postalCode,
+        city: resolved.city,
+        canton: resolved.swissCanton,
+        phone: resolved.phone,
+        email: resolved.email,
+        siret: resolved.siret,
+        tvaNumber: resolved.tvaNumber,
+        swissUid: resolved.swissUid,
+        swissVatNumber: resolved.swissVatNumber,
+        vatApplicable: resolved.vatApplicable,
+        vatRate: resolved.vatRate,
+        tvaMention: resolved.tvaMention,
+      },
+      country,
+    ),
+  );
+};
 const uid = (prefix: string) => `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
 
 // Token public non devinable (ex : "rp_8F3K92XQ9M2AZ7H") pour les liens de suivi/reçu.
@@ -1715,6 +1960,8 @@ const paymentStatuses: PaymentStatus[] = ["Payé", "Annulé", "Remboursé"];
 export const paymentMethods: PaymentMethod[] = [
   "TPE externe",
   "Espèces hors Behar Tech",
+  "TWINT",
+  "Carte externe",
   "Virement",
   "Lien externe",
   "Autre",
@@ -2198,6 +2445,8 @@ const normalizePaymentMethod = (method: unknown): PaymentMethod => {
   const text = normalizeText(method);
   if (paymentMethods.includes(text as PaymentMethod)) return text as PaymentMethod;
   const lower = text.toLowerCase();
+  if (lower.includes("twint")) return "TWINT";
+  if (lower.includes("carte externe")) return "Carte externe";
   if (lower.includes("tpe") || lower.includes("carte")) return "TPE externe";
   if (lower.includes("virement")) return "Virement";
   if (lower.includes("esp")) return "Espèces hors Behar Tech";
@@ -2325,8 +2574,15 @@ const createRepairRecord = (input: RepairInput, sequence: number): Repair => {
   const brandName = normalizeText(input.brandName, brand?.name ?? inferred.brandName);
   const deviceModel = normalizeText(input.deviceModel, selectedModel?.name ?? model);
   const laborPrice = clampMoney(input.laborPrice ?? input.amount);
+  const billingConfig = getWorkshopCountryConfig(input.billingCountry ?? activeWorkshopCountry);
+  const currencySymbol = billingConfig.currency === "CHF" ? "CHF" : "€";
   return {
     id: uid("repair"),
+    billingCountry: billingConfig.country,
+    market: billingConfig.country,
+    currency: billingConfig.currency,
+    currencySymbol,
+    locale: billingConfig.locale,
     shopId,
     number: `R-2026-${String(sequence + 520).padStart(4, "0")}`,
     customerId: normalizeText(input.customerId),
@@ -2392,6 +2648,11 @@ const normalizeRepair = (
         salePrice: clampMoney(part.salePrice),
         quantity: clampQuantity(part.quantity),
         confirmed: Boolean(part.confirmed),
+        margin: part.margin !== undefined ? clampMoney(part.margin) : clampMoney(part.salePrice - part.purchasePrice),
+        currency: part.currency,
+        supplier: part.supplier ? normalizeText(part.supplier) : undefined,
+        modelName: part.modelName ? normalizeText(part.modelName) : undefined,
+        modelId: part.modelId ? normalizeText(part.modelId) : undefined,
       }))
     : [];
   const repairSaleLines: RepairSaleLine[] = Array.isArray(repair.repairSaleLines)
@@ -2425,8 +2686,17 @@ const normalizeRepair = (
     repair.laborPrice ?? (repair.amount !== undefined ? Math.max(0, repair.amount - partsTotal - accessoriesTotal) : 0),
   );
   const total = clampMoney(repair.total ?? laborPrice + partsTotal + accessoriesTotal);
+  const billingConfig = getWorkshopCountryConfig(
+    repair.billingCountry ?? repair.market ?? (repair.currency === "CHF" ? "CH" : activeWorkshopCountry),
+  );
+  const currencySymbol = repair.currencySymbol ?? (billingConfig.currency === "CHF" ? "CHF" : "€");
   return {
     id,
+    billingCountry: billingConfig.country,
+    market: repair.market ?? billingConfig.country,
+    currency: billingConfig.currency,
+    currencySymbol,
+    locale: billingConfig.locale,
     shopId: normalizeText(repair.shopId, shopId),
     number: normalizeText(repair.number, `R-2026-${id.slice(-4).padStart(4, "0")}`),
     customerId,
@@ -2444,6 +2714,11 @@ const normalizeRepair = (
     deviceModel,
     issueType: normalizeText(repair.issueType, normalizeText(repair.issue, "Diagnostic")),
     device,
+    deviceColor: normalizeText(repair.deviceColor) || undefined,
+    deviceCapacity: normalizeText(repair.deviceCapacity) || undefined,
+    plannedPaymentMethod: repair.plannedPaymentMethod
+      ? normalizePaymentMethod(repair.plannedPaymentMethod)
+      : undefined,
     model: deviceModel,
     issue: normalizeText(repair.issue, "Problème à renseigner"),
     status: normalizeRepairStatus(repair.status),
@@ -2493,7 +2768,7 @@ const normalizeRepair = (
       repair.publicAccess && repair.publicAccess.token
         ? {
             token: normalizeText(repair.publicAccess.token),
-            url: makePublicAccessUrl("/suivi", normalizeText(repair.publicAccess.token)),
+            url: makePublicAccessUrl("/p", normalizeText(repair.publicAccess.token)),
             createdAt: normalizeText(repair.publicAccess.createdAt, getNowIso()),
             active: repair.publicAccess.active !== false,
           }
@@ -2624,8 +2899,14 @@ const normalizeQuote = (quote: Partial<Quote>, customers: Customer[], repairs: R
       ]
     : initialLines;
   const totalTtc = normalizedLines.reduce((sum, line) => sum + safeLineAmount(line), 0);
+  const billingConfig = getWorkshopCountryConfig(
+    quote.billingCountry ?? repair?.billingCountry ?? (quote.currency === "CHF" ? "CH" : activeWorkshopCountry),
+  );
   return {
     id,
+    billingCountry: billingConfig.country,
+    currency: billingConfig.currency,
+    locale: billingConfig.locale,
     shopId: normalizeText(quote.shopId, shopId),
     number: normalizeText(quote.number, `DV-${id.slice(-4).padStart(4, "0")}`),
     customerId: getValidCustomerId(quote.customerId, customers, repair?.customerId),
@@ -2714,8 +2995,17 @@ const normalizeInvoice = (invoice: Partial<Invoice>, customers: Customer[], repa
         }))
       : undefined;
   const lineSource = Array.isArray(invoice.lines) && invoice.lines.length ? invoice.lines : fromItems;
+  const billingConfig = getWorkshopCountryConfig(
+    invoice.billingCountry ??
+      quote?.billingCountry ??
+      repair?.billingCountry ??
+      (invoice.currency === "CHF" ? "CH" : activeWorkshopCountry),
+  );
   return {
     id,
+    billingCountry: billingConfig.country,
+    currency: billingConfig.currency,
+    locale: billingConfig.locale,
     shopId: normalizeText(invoice.shopId, shopId),
     number: normalizeText(invoice.number, `FA-2026-${id.slice(-4).padStart(4, "0")}`),
     customerId: getValidCustomerId(invoice.customerId, customers, quote?.customerId ?? repair?.customerId),
@@ -2753,8 +3043,17 @@ const normalizePayment = (
     normalizeText(payment.reference, `PAY-2026-${id.slice(-4)}`),
   );
   const date = normalizeText(payment.date, nowLabel());
+  const billingConfig = getWorkshopCountryConfig(
+    payment.billingCountry ??
+      invoice?.billingCountry ??
+      sale?.billingCountry ??
+      (payment.currency === "CHF" ? "CH" : activeWorkshopCountry),
+  );
   return {
     id,
+    billingCountry: billingConfig.country,
+    currency: billingConfig.currency,
+    locale: billingConfig.locale,
     shopId: normalizeText(payment.shopId, shopId),
     invoiceId: invoice?.id,
     saleId: sale?.id ?? payment.saleId,
@@ -2762,13 +3061,14 @@ const normalizePayment = (
     repairId: payment.repairId ?? invoice?.repairId ?? sale?.repairId,
     quoteId: payment.quoteId ?? invoice?.quoteId,
     paymentNumber,
-    reference: paymentNumber,
+    reference: normalizeText(payment.reference, paymentNumber),
     method,
     mode: method,
     status: normalizePaymentStatus(payment.status),
     amount: clampMoney(payment.amount),
     date,
     note: normalizeText(payment.note),
+    twintReference: normalizeText(payment.twintReference) || undefined,
     createdAt: normalizeText(payment.createdAt, date),
     updatedAt: normalizeText(payment.updatedAt, date),
   };
@@ -2818,8 +3118,15 @@ const normalizeSale = (sale: Partial<Sale>, customers: Customer[], repairs: Repa
       : getValidCustomerId(sale.customerId, customers, counterCustomerId);
   const repairId = repairs.some((repair) => repair.id === sale.repairId) ? sale.repairId : undefined;
   const subtotal = clampMoney(sale.subtotal ?? lines.reduce((sum, line) => sum + line.total, 0));
+  const repair = repairs.find((entry) => entry.id === repairId);
+  const billingConfig = getWorkshopCountryConfig(
+    sale.billingCountry ?? repair?.billingCountry ?? (sale.currency === "CHF" ? "CH" : activeWorkshopCountry),
+  );
   return {
     id,
+    billingCountry: billingConfig.country,
+    currency: billingConfig.currency,
+    locale: billingConfig.locale,
     shopId: normalizeText(sale.shopId, shopId),
     number: normalizeText(sale.number, `VTE-${id.slice(-4).padStart(4, "0")}`),
     customerId,
@@ -3309,6 +3616,9 @@ const getStockClientPrice = (item: StockItem, pbItems: PriceBookItem[]): number 
 const normalizePersistedState = (state: unknown) => {
   try {
     const persisted = state && typeof state === "object" ? (state as Partial<StoreState>) : {};
+    activeWorkshopCountry = normalizeWorkshopCountry(
+      persisted.workshopSettings?.country ?? persisted.workshopInfo?.country ?? "FR",
+    );
     const now = nowLabel();
     const DEVICE_TYPES: DeviceType[] = ["Smartphone", "Tablette", "Ordinateur", "Console", "Autre"];
     const asDeviceType = (v: unknown): DeviceType | null =>
@@ -3411,7 +3721,7 @@ const normalizePersistedState = (state: unknown) => {
           ]
         : seed.stockItems
     ).filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i);
-    const workshopSettings: WorkshopSettings = {
+    const workshopSettings = withWorkshopLocaleDefaults({
       ...defaultWorkshopSettings,
       ...(persisted.workshopSettings ?? persisted.workshopInfo ?? seed.workshopInfo),
       configuredAt:
@@ -3422,7 +3732,7 @@ const normalizePersistedState = (state: unknown) => {
         typeof (persisted.workshopSettings ?? persisted)?.updatedAt === "string"
           ? (persisted.workshopSettings ?? persisted).updatedAt
           : undefined,
-    };
+    } as WorkshopSettings);
     workshopSettings.nextRepairNumber = normalizeCounter(
       workshopSettings.nextRepairNumber,
       Math.max(1, repairsWithLinks.length + 1),
@@ -4397,6 +4707,9 @@ export const useBeharStore = create<StoreState>()(
           amount: totalClient,
           laborPrice: labor,
           total: totalClient,
+          deviceColor: input.deviceColor,
+          deviceCapacity: input.deviceCapacity,
+          plannedPaymentMethod: input.plannedPaymentMethod,
           selectedPriceSnapshot: input.selectedPriceSnapshot,
           counterPrestations: input.counterPrestations,
           counterTasks: input.counterTasks,
@@ -4700,7 +5013,7 @@ export const useBeharStore = create<StoreState>()(
       ensureRepairPublicAccess: (repairId) => {
         const existing = get().repairs.find((repair) => repair.id === repairId)?.publicAccess;
         if (existing?.token) {
-          const access = { ...existing, url: makePublicAccessUrl("/suivi", existing.token) };
+          const access = { ...existing, url: makePublicAccessUrl("/p", existing.token) };
           if (existing.url !== access.url) {
             set((state) => ({
               repairs: state.repairs.map((repair) => (repair.id === repairId ? { ...repair, publicAccess: access } : repair)),
@@ -4708,7 +5021,7 @@ export const useBeharStore = create<StoreState>()(
           }
           return access;
         }
-        const access = makePublicAccess("rp", "/suivi");
+        const access = makePublicAccess("rp", "/p");
         set((state) => ({
           repairs: state.repairs.map((repair) => (repair.id === repairId ? { ...repair, publicAccess: access } : repair)),
         }));
@@ -5087,6 +5400,11 @@ export const useBeharStore = create<StoreState>()(
                     salePrice: clientSalePrice,
                     quantity: wanted,
                     confirmed: false, // Explicitly not confirmed yet
+                    margin: clientSalePrice - currentItem.purchasePrice,
+                    currency: repair.currency,
+                    supplier: currentItem.supplier || "Non renseigné",
+                    modelName: currentItem.compatibleModels?.[0],
+                    modelId: currentItem.modelIds?.[0],
                   },
                 ];
             const amount = clampMoney((repair.laborPrice ?? 0) + repairPartsTotal(parts));
@@ -5351,16 +5669,22 @@ export const useBeharStore = create<StoreState>()(
           (l) => isUsableInvoiceLineDescription(l.description) && l.quantity > 0 && l.unitPrice > 0,
         );
         const lineTotal = sanitizedLines.reduce((sum, l) => sum + safeLineAmount(l), 0);
-        // Devis non-brouillon : interdiction de créer vide / à 0 €
+        // Devis non-brouillon : interdiction de créer vide ou à montant nul.
         if (status !== "Brouillon") {
           if (!usableLines.length || lineTotal <= 0) return "";
         }
 
         const id = uid("quote");
+        const quoteBillingConfig = getWorkshopCountryConfig(
+          input.billingCountry ?? repairForQuote?.billingCountry ?? ws.country,
+        );
         const quote = normalizeQuote(
           {
             ...input,
             id,
+            billingCountry: quoteBillingConfig.country,
+            currency: quoteBillingConfig.currency,
+            locale: quoteBillingConfig.locale,
             number: docNumber(ws.quotePrefix, ws.nextQuoteNumber ?? 1, "DEV"),
             customerId: candidateCustomerId,
             ...actorFields(actor),
@@ -5626,8 +5950,14 @@ export const useBeharStore = create<StoreState>()(
           return "";
         }
         const id = uid("invoice");
+        const invoiceBillingConfig = getWorkshopCountryConfig(
+          input.billingCountry ?? quote?.billingCountry ?? repair?.billingCountry ?? ws.country,
+        );
         const invoice: Invoice = {
           id,
+          billingCountry: invoiceBillingConfig.country,
+          currency: invoiceBillingConfig.currency,
+          locale: invoiceBillingConfig.locale,
           shopId,
           number: docNumber(ws.invoicePrefix, ws.nextInvoiceNumber ?? 1, "FAC"),
           customerId,
@@ -5707,9 +6037,27 @@ export const useBeharStore = create<StoreState>()(
       updateInvoice: (id, patch) => {
         if (!get().requirePermission("canEditInvoice", "Modifier une facture")) return;
         const actor = get().currentUser ?? defaultCurrentUser;
+        const existingInvoice = get().invoices.find((invoice) => invoice.id === id);
+        if (existingInvoice?.status === "Payée") {
+          // TODO: ajouter un vrai flux d'avoir / annulation de facture au lieu d'éditer une facture validée.
+          get().addNotification({
+            type: "warning",
+            title: "Facture verrouillée",
+            message: `${existingInvoice.number} est réglée : créez un avoir ou une annulation dédiée plus tard.`,
+            targetType: "invoice",
+            targetId: id,
+          });
+          get().addAuditLog({
+            action: "invoice.update_blocked",
+            targetType: "invoice",
+            targetId: id,
+            message: `${actor.name} a tenté de modifier la facture réglée ${existingInvoice.number}`,
+          });
+          return;
+        }
         set((state) => ({
           invoices: state.invoices.map((invoice) => {
-            if (invoice.id !== id || invoice.status === "Payée") return invoice;
+            if (invoice.id !== id) return invoice;
             const quote = patch.quoteId ? state.quotes.find((entry) => entry.id === patch.quoteId) : undefined;
             const repair =
               (patch.repairId ?? quote?.repairId)
@@ -5741,6 +6089,23 @@ export const useBeharStore = create<StoreState>()(
         if (!get().requirePermission("canEditInvoice", "Supprimer une facture")) return;
         const actor = get().currentUser ?? defaultCurrentUser;
         const deleted = get().invoices.find((invoice) => invoice.id === id);
+        if (deleted?.status === "Payée") {
+          // TODO: ajouter un vrai flux d'avoir / annulation de facture au lieu de supprimer une facture validée.
+          get().addNotification({
+            type: "warning",
+            title: "Suppression bloquée",
+            message: `${deleted.number} est réglée : suppression directe interdite.`,
+            targetType: "invoice",
+            targetId: id,
+          });
+          get().addAuditLog({
+            action: "invoice.delete_blocked",
+            targetType: "invoice",
+            targetId: id,
+            message: `${actor.name} a tenté de supprimer la facture réglée ${deleted.number}`,
+          });
+          return;
+        }
         set((state) => {
           const invoices = state.invoices.filter((invoice) => invoice.id !== id);
           return {
@@ -5791,8 +6156,12 @@ export const useBeharStore = create<StoreState>()(
         const amount = Math.max(0, total - activePaidAmount);
         const paymentId = uid("payment");
         const timestamp = nowLabel();
+        const paymentBillingConfig = getWorkshopCountryConfig(invoice.billingCountry);
         const payment: Payment = {
           id: paymentId,
+          billingCountry: paymentBillingConfig.country,
+          currency: paymentBillingConfig.currency,
+          locale: paymentBillingConfig.locale,
           shopId,
           invoiceId,
           customerId: invoice.customerId,
@@ -5806,6 +6175,7 @@ export const useBeharStore = create<StoreState>()(
           amount,
           date: timestamp,
           note,
+          twintReference: method === "TWINT" ? normalizeText(note) || undefined : undefined,
           createdAt: timestamp,
           updatedAt: timestamp,
           createdBy: actor.id,
@@ -5933,12 +6303,23 @@ export const useBeharStore = create<StoreState>()(
         const id = uid("payment");
         const timestamp = nowLabel();
         const ws = get().workshopSettings;
+        const linkedInvoice = input.invoiceId
+          ? get().invoices.find((invoice) => invoice.id === input.invoiceId)
+          : undefined;
+        const linkedRepair = input.repairId ? get().repairs.find((repair) => repair.id === input.repairId) : undefined;
+        const paymentBillingConfig = getWorkshopCountryConfig(
+          linkedInvoice?.billingCountry ?? linkedRepair?.billingCountry ?? ws.country,
+        );
         const payment: Payment = {
           id,
+          billingCountry: paymentBillingConfig.country,
+          currency: paymentBillingConfig.currency,
+          locale: paymentBillingConfig.locale,
           shopId,
           ...input,
           paymentNumber: docNumber(ws.receiptPrefix, ws.nextReceiptNumber ?? 1, "REC"),
           mode: input.method,
+          twintReference: input.method === "TWINT" ? normalizeText(input.twintReference ?? input.note) || undefined : undefined,
           createdAt: timestamp,
           updatedAt: timestamp,
           createdBy: actor.id,
@@ -5999,6 +6380,9 @@ export const useBeharStore = create<StoreState>()(
         return state.addInvoice({
           customerId: repair.customerId,
           repairId: repair.id,
+          billingCountry: repair.billingCountry,
+          currency: repair.currency,
+          locale: repair.locale,
           lines: built.lines,
           status: "Envoyée",
           sourceType: "repair",
@@ -6452,11 +6836,11 @@ export const useBeharStore = create<StoreState>()(
         if (!get().requirePermission("canEditSettings", "Modifier les paramètres")) return;
         const actor = get().currentUser ?? defaultCurrentUser;
         set((state) => {
-          const nextSettings: WorkshopSettings = {
+          const nextSettings = withWorkshopLocaleDefaults({
             ...(state.workshopSettings ?? defaultWorkshopSettings),
             ...patch,
             updatedAt: nowLabel(),
-          };
+          } as WorkshopSettings);
           return {
             workshopSettings: nextSettings,
             workshopInfo: asWorkshopInfo(nextSettings),
@@ -6475,12 +6859,12 @@ export const useBeharStore = create<StoreState>()(
         const actor = get().currentUser ?? defaultCurrentUser;
         set((state) => {
           const now = nowLabel();
-          const nextSettings: WorkshopSettings = {
+          const nextSettings = withWorkshopLocaleDefaults({
             ...(state.workshopSettings ?? defaultWorkshopSettings),
             ...settings,
             configuredAt: state.configuredAt ?? now,
             updatedAt: now,
-          };
+          } as WorkshopSettings);
           return {
             workshopSettings: nextSettings,
             workshopInfo: asWorkshopInfo(nextSettings),
@@ -6612,8 +6996,15 @@ export const useBeharStore = create<StoreState>()(
             ? "Client comptoir"
             : input.customerName;
         const taxAmount = 0;
+        const linkedRepair = input.repairId ? get().repairs.find((repair) => repair.id === input.repairId) : undefined;
+        const saleBillingConfig = getWorkshopCountryConfig(
+          input.billingCountry ?? linkedRepair?.billingCountry ?? ws.country,
+        );
         const sale: Sale = {
           id,
+          billingCountry: saleBillingConfig.country,
+          currency: saleBillingConfig.currency,
+          locale: saleBillingConfig.locale,
           shopId,
           number,
           customerId,
@@ -6700,6 +7091,9 @@ export const useBeharStore = create<StoreState>()(
           saleId,
           repairId: sale.repairId,
           customerId: sale.customerId,
+          billingCountry: sale.billingCountry,
+          currency: sale.currency,
+          locale: sale.locale,
           amount: sale.total,
           method,
           mode: method,

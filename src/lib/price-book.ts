@@ -2,6 +2,7 @@
 // Modèle, helpers de calcul et données d'exemple Behar Tech.
 
 import { deviceCatalog } from "@/data/deviceCatalog";
+import type { WorkshopCountry } from "@/lib/workshop-country";
 
 export type PriceBookSource = "behar_example" | "preloaded" | "workshop_import" | "manual";
 
@@ -26,6 +27,12 @@ export type PriceBookItem = {
   prixClientTotal: number;
   marge: number;
   margePourcentage?: number;
+  prixAchatChf?: number;
+  mainOeuvreChf?: number;
+  prixVentePieceChf?: number;
+  prixClientTotalChf?: number;
+  margeChf?: number;
+  margePourcentageChf?: number;
   fournisseur?: string;
   stockDisponible?: number;
   stockItemId?: string;
@@ -59,11 +66,16 @@ export const PRICE_BOOK_SOURCE_LABELS: Record<PriceBookSource, string> = {
 const toNumber = (value: unknown): number => {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string") {
-    const cleaned = value.replace(/\s/g, "").replace(",", ".").replace(/[€$]/g, "");
+    const cleaned = value.replace(/\s/g, "").replace(",", ".").replace(/[\u20AC$]/g, "");
     const parsed = Number.parseFloat(cleaned);
     if (Number.isFinite(parsed)) return parsed;
   }
   return 0;
+};
+
+const toOptionalNumber = (value: unknown): number | undefined => {
+  if (value === undefined || value === null || String(value).trim() === "") return undefined;
+  return toNumber(value);
 };
 
 const round2 = (value: number) => Math.round(value * 100) / 100;
@@ -105,6 +117,49 @@ export const computePriceBookTotals = (
   const marge = round2(total - prixAchat);
   const margePct = total > 0 ? round2((marge / total) * 100) : 0;
   return { prixClientTotal: total, marge, margePourcentage: margePct };
+};
+
+export type PriceBookMarketPrice = {
+  country: WorkshopCountry;
+  prixAchat: number;
+  mainOeuvre: number;
+  prixVentePiece: number;
+  prixClientTotal: number;
+  marge: number;
+  margePourcentage: number;
+  hasPrice: boolean;
+};
+
+export const getPriceBookMarketPrice = (
+  item: PriceBookItem,
+  country: WorkshopCountry,
+): PriceBookMarketPrice => {
+  if (country === "CH") {
+    const prixAchat = item.prixAchatChf ?? 0;
+    const mainOeuvre = item.mainOeuvreChf ?? 0;
+    const prixVentePiece = item.prixVentePieceChf ?? 0;
+    const totals = computePriceBookTotals(prixVentePiece, mainOeuvre, prixAchat);
+    return {
+      country,
+      prixAchat,
+      mainOeuvre,
+      prixVentePiece,
+      prixClientTotal: item.prixClientTotalChf ?? totals.prixClientTotal,
+      marge: item.margeChf ?? totals.marge,
+      margePourcentage: item.margePourcentageChf ?? totals.margePourcentage,
+      hasPrice: prixVentePiece > 0 || mainOeuvre > 0 || (item.prixClientTotalChf ?? 0) > 0,
+    };
+  }
+  return {
+    country,
+    prixAchat: item.prixAchat,
+    mainOeuvre: item.mainOeuvre,
+    prixVentePiece: item.prixVentePiece,
+    prixClientTotal: item.prixClientTotal,
+    marge: item.marge,
+    margePourcentage: item.margePourcentage ?? 0,
+    hasPrice: item.prixVentePiece > 0 || item.mainOeuvre > 0 || item.prixClientTotal > 0,
+  };
 };
 
 const todayIso = () => new Date().toISOString();
@@ -353,6 +408,17 @@ export const createPriceBookItem = (input: PriceBookInput): PriceBookItem => {
   const mainOeuvre = round2(toNumber(input.mainOeuvre));
   const prixAchat = round2(prixAchatRaw);
   const totals = computePriceBookTotals(prixVentePiece, mainOeuvre, prixAchat);
+  const prixAchatChfRaw = toOptionalNumber(input.prixAchatChf);
+  const prixVentePieceChfRaw = toOptionalNumber(input.prixVentePieceChf);
+  const mainOeuvreChfRaw = toOptionalNumber(input.mainOeuvreChf);
+  const hasSwissPrice =
+    prixAchatChfRaw !== undefined || prixVentePieceChfRaw !== undefined || mainOeuvreChfRaw !== undefined;
+  const prixAchatChf = prixAchatChfRaw === undefined ? undefined : round2(prixAchatChfRaw);
+  const prixVentePieceChf = prixVentePieceChfRaw === undefined ? undefined : round2(prixVentePieceChfRaw);
+  const mainOeuvreChf = mainOeuvreChfRaw === undefined ? undefined : round2(mainOeuvreChfRaw);
+  const swissTotals = hasSwissPrice
+    ? computePriceBookTotals(prixVentePieceChf ?? 0, mainOeuvreChf ?? 0, prixAchatChf ?? 0)
+    : undefined;
   const now = todayIso();
   const notesParts: string[] = [];
   if (input.notes) notesParts.push(input.notes);
@@ -379,6 +445,12 @@ export const createPriceBookItem = (input: PriceBookInput): PriceBookItem => {
     prixClientTotal: totals.prixClientTotal,
     marge: totals.marge,
     margePourcentage: totals.margePourcentage,
+    prixAchatChf,
+    mainOeuvreChf,
+    prixVentePieceChf,
+    prixClientTotalChf: swissTotals?.prixClientTotal,
+    margeChf: swissTotals?.marge,
+    margePourcentageChf: swissTotals?.margePourcentage,
     fournisseur: input.fournisseur ? String(input.fournisseur).trim() : undefined,
     stockDisponible:
       input.stockDisponible === undefined || input.stockDisponible === null
@@ -402,12 +474,26 @@ export const updatePriceBookItem = (current: PriceBookItem, patch: Partial<Price
   const prixVentePiece = round2(toNumber(next.prixVentePiece));
   const mainOeuvre = round2(toNumber(next.mainOeuvre));
   const totals = computePriceBookTotals(prixVentePiece, mainOeuvre, prixAchat);
+  const prixAchatChf = toOptionalNumber(next.prixAchatChf);
+  const prixVentePieceChf = toOptionalNumber(next.prixVentePieceChf);
+  const mainOeuvreChf = toOptionalNumber(next.mainOeuvreChf);
+  const hasSwissPrice =
+    prixAchatChf !== undefined || prixVentePieceChf !== undefined || mainOeuvreChf !== undefined;
+  const swissTotals = hasSwissPrice
+    ? computePriceBookTotals(prixVentePieceChf ?? 0, mainOeuvreChf ?? 0, prixAchatChf ?? 0)
+    : undefined;
   return {
     ...next,
     prixAchat,
     prixVentePiece,
     mainOeuvre,
     ...totals,
+    prixAchatChf: prixAchatChf === undefined ? undefined : round2(prixAchatChf),
+    prixVentePieceChf: prixVentePieceChf === undefined ? undefined : round2(prixVentePieceChf),
+    mainOeuvreChf: mainOeuvreChf === undefined ? undefined : round2(mainOeuvreChf),
+    prixClientTotalChf: swissTotals?.prixClientTotal,
+    margeChf: swissTotals?.marge,
+    margePourcentageChf: swissTotals?.margePourcentage,
     updatedAt: todayIso(),
   };
 };
@@ -445,10 +531,11 @@ export const priceBookDuplicateKey = (
     (item.sku ?? "").trim().toLowerCase(),
   ].join("|");
 
-export const formatEuroPriceBook = (value: number) =>
-  new Intl.NumberFormat("fr-FR", {
+export const formatEuroPriceBook = (value: number, currency: "EUR" | "CHF" = "EUR") =>
+  new Intl.NumberFormat(currency === "CHF" ? "fr-CH" : "fr-FR", {
     style: "currency",
-    currency: "EUR",
+    currency,
+    currencyDisplay: currency === "CHF" ? "code" : "symbol",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value || 0);
@@ -466,7 +553,7 @@ export const getBestPriceBookItem = (items: PriceBookItem[]): PriceBookItem | un
   return [...items].sort((a, b) => {
     // Préférer une pièce réellement en stock : un tarif posé sur une pièce à 0 en
     // stock ne doit pas masquer le prix de la pièce disponible (cohérence avec les
-    // paramètres prix — ex. Écran 89 € dispo plutôt qu'un doublon 200 € à 0 en stock).
+    // paramètres prix — ex. un écran disponible plutôt qu'un doublon à 0 en stock).
     const aInStock = (a.stockDisponible ?? 0) > 0 ? 1 : 0;
     const bInStock = (b.stockDisponible ?? 0) > 0 ? 1 : 0;
     if (aInStock !== bInStock) return bInStock - aInStock;

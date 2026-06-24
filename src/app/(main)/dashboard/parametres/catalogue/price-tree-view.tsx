@@ -11,12 +11,14 @@ import { type DeviceBrand, type DeviceModel, type DeviceType, useBeharStore } fr
 import { getDeviceSeries } from "@/lib/device-series";
 import {
   extractPartQuality,
+  getPriceBookMarketPrice,
   PRICE_BOOK_DEVICE_LABELS,
   type PriceBookDeviceType,
   type PriceBookItem,
 } from "@/lib/price-book";
 import { getDefaultInterventionsByDeviceType, type InterventionDeviceType } from "@/lib/repair-intervention";
 import { liveStockForPriceBook } from "@/lib/stock-catalog-link";
+import { formatMoney, getWorkshopCountryConfig, type WorkshopCountry } from "@/lib/workshop-country";
 
 const STORE_TYPE_TO_PRICEBOOK: Record<DeviceType, PriceBookDeviceType> = {
   Smartphone: "smartphone",
@@ -33,6 +35,7 @@ export function PriceTreeView({
   onEdit,
   onPatch,
   onDelete,
+  marketCountry,
 }: Readonly<{
   items: PriceBookItem[];
   deviceModels?: DeviceModel[];
@@ -40,12 +43,14 @@ export function PriceTreeView({
   onEdit: (item: PriceBookItem) => void;
   onPatch: (id: string, patch: Partial<PriceBookItem>) => void;
   onDelete: (item: PriceBookItem) => void;
+  marketCountry: WorkshopCountry;
 }>) {
   const [openTypes, setOpenTypes] = useState<Record<string, boolean>>({});
   const [openBrands, setOpenBrands] = useState<Record<string, boolean>>({});
   const [openSeries, setOpenSeries] = useState<Record<string, boolean>>({});
   const [openModels, setOpenModels] = useState<Record<string, boolean>>({});
   const [openInterventions, setOpenInterventions] = useState<Record<string, boolean>>({});
+  const marketConfig = getWorkshopCountryConfig(marketCountry);
 
   const tree = useMemo(() => {
     // Structure: Type -> Brand -> Series -> Model -> Intervention -> PriceBookItem[]
@@ -240,18 +245,19 @@ export function PriceTreeView({
                                                         const interventionOpen =
                                                           openInterventions[interventionKey] ?? false;
 
-                                                        const hasPrice = list.length > 0;
-                                                        const prices = list.map((i) => i.prixClientTotal);
+                                                        const hasRows = list.length > 0;
+                                                        const prices = list
+                                                          .map((item) => getPriceBookMarketPrice(item, marketCountry))
+                                                          .filter((price) => price.hasPrice)
+                                                          .map((price) => price.prixClientTotal);
+                                                        const hasPrice = prices.length > 0;
                                                         const minPrice = hasPrice ? Math.min(...prices) : 0;
                                                         const maxPrice = hasPrice ? Math.max(...prices) : 0;
                                                         const priceRange = !hasPrice
                                                           ? "À définir"
                                                           : minPrice === maxPrice
-                                                            ? new Intl.NumberFormat("fr-FR", {
-                                                                style: "currency",
-                                                                currency: "EUR",
-                                                              }).format(minPrice)
-                                                            : `${new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(minPrice)} - ${new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(maxPrice)}`;
+                                                            ? formatMoney(minPrice, marketConfig.currency)
+                                                            : `${formatMoney(minPrice, marketConfig.currency)} - ${formatMoney(maxPrice, marketConfig.currency)}`;
 
                                                         return (
                                                           <div key={interventionKey} className="group">
@@ -285,7 +291,7 @@ export function PriceTreeView({
                                                                 >
                                                                   {priceRange}
                                                                 </span>
-                                                                {hasPrice && (
+                                                                {hasRows && (
                                                                   <span className="text-[#6B6B6B] text-[11px] opacity-0 group-hover:opacity-100 transition">
                                                                     {list.length} variante{list.length > 1 ? "s" : ""}
                                                                   </span>
@@ -295,7 +301,7 @@ export function PriceTreeView({
 
                                                             {interventionOpen && (
                                                               <div className="bg-[#FAFAFA]/40 overflow-x-auto">
-                                                                {hasPrice ? (
+                                                                {hasRows ? (
                                                                   <table className="w-full min-w-[820px] text-sm">
                                                                     <thead className="bg-[#FAFAFA]/80 text-[#6B6B6B] text-[10px] uppercase tracking-wider font-bold">
                                                                       <tr>
@@ -325,7 +331,8 @@ export function PriceTreeView({
                                                                         <PriceTreeRow
                                                                           item={item}
                                                                           qualityLabel={extractPartQuality(item)}
-                                                                          key={item.id}
+                                                                          key={`${item.id}-${marketCountry}`}
+                                                                          marketCountry={marketCountry}
                                                                           onDelete={onDelete}
                                                                           onEdit={onEdit}
                                                                           onPatch={onPatch}
@@ -397,12 +404,14 @@ export function PriceTreeView({
 function PriceTreeRow({
   item,
   qualityLabel,
+  marketCountry,
   onEdit,
   onPatch,
   onDelete,
 }: Readonly<{
   item: PriceBookItem;
   qualityLabel: string;
+  marketCountry: WorkshopCountry;
   onEdit: (item: PriceBookItem) => void;
   onPatch: (id: string, patch: Partial<PriceBookItem>) => void;
   onDelete: (item: PriceBookItem) => void;
@@ -411,10 +420,11 @@ function PriceTreeRow({
   // Source de vérité du stock = module Stock, jamais PriceBookItem.stockDisponible
   const stockItems = useBeharStore((s) => s.stockItems);
   const liveStock = liveStockForPriceBook(item, stockItems);
-  const [achat, setAchat] = useState(String(item.prixAchat ?? ""));
-  const [vente, setVente] = useState(String(item.prixVentePiece ?? ""));
-  const [mo, setMo] = useState(String(item.mainOeuvre ?? ""));
-  const [client, setClient] = useState(String(item.prixClientTotal ?? ""));
+  const marketPrice = getPriceBookMarketPrice(item, marketCountry);
+  const [achat, setAchat] = useState(String(marketPrice.prixAchat || ""));
+  const [vente, setVente] = useState(String(marketPrice.prixVentePiece || ""));
+  const [mo, setMo] = useState(String(marketPrice.mainOeuvre || ""));
+  const [client, setClient] = useState(String(marketPrice.prixClientTotal || ""));
 
   const numA = Number.parseFloat(achat.replace(",", ".") || "0") || 0;
   const numV = Number.parseFloat(vente.replace(",", ".") || "0") || 0;
@@ -423,21 +433,25 @@ function PriceTreeRow({
   const liveClient = numV + numM;
 
   const dirty =
-    numA !== item.prixAchat ||
-    numV !== item.prixVentePiece ||
-    numM !== item.mainOeuvre ||
-    numC !== item.prixClientTotal;
+    numA !== marketPrice.prixAchat ||
+    numV !== marketPrice.prixVentePiece ||
+    numM !== marketPrice.mainOeuvre ||
+    numC !== marketPrice.prixClientTotal;
 
   const save = () => {
-    const patch: Partial<PriceBookItem> = {
-      prixAchat: numA,
-      prixVentePiece: numV,
-      mainOeuvre: numM,
-    };
+    const patch: Partial<PriceBookItem> =
+      marketCountry === "CH"
+        ? { prixAchatChf: numA, prixVentePieceChf: numV, mainOeuvreChf: numM }
+        : { prixAchat: numA, prixVentePiece: numV, mainOeuvre: numM };
     if (numC > 0 && numC !== numV + numM) {
       const ratio = numC / (numV + numM || 1);
-      patch.prixVentePiece = Math.round(numV * ratio * 100) / 100;
-      patch.mainOeuvre = Math.round(numM * ratio * 100) / 100;
+      if (marketCountry === "CH") {
+        patch.prixVentePieceChf = Math.round(numV * ratio * 100) / 100;
+        patch.mainOeuvreChf = Math.round(numM * ratio * 100) / 100;
+      } else {
+        patch.prixVentePiece = Math.round(numV * ratio * 100) / 100;
+        patch.mainOeuvre = Math.round(numM * ratio * 100) / 100;
+      }
     }
     onPatch(item.id, patch);
     toast.success("Prix mis à jour");

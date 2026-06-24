@@ -16,6 +16,7 @@ import {
   tableHeadClassName,
 } from "@/components/behar/primitives";
 import { useBeharStore } from "@/lib/behar-store";
+import { formatMoney } from "@/lib/workshop-country";
 
 type ImportRow = {
   reference: string;
@@ -33,6 +34,7 @@ export function StockImportModal() {
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [ignoredRows, setIgnoredRows] = useState(0);
   const importStockItems = useBeharStore((state) => state.importStockItems);
+  const currency = useBeharStore((state) => state.workshopInfo.currency);
 
   if (!open) {
     return (
@@ -155,8 +157,8 @@ export function StockImportModal() {
                     <tr key={row.reference}>
                       <td className={tableCellClassName}>{row.reference}</td>
                       <td className={tableCellClassName}>{row.part}</td>
-                      <td className={tableCellClassName}>{formatImportEuro(row.purchasePrice)}</td>
-                      <td className={tableCellClassName}>{formatImportEuro(row.salePrice)}</td>
+                      <td className={tableCellClassName}>{formatImportEuro(row.purchasePrice, currency)}</td>
+                      <td className={tableCellClassName}>{formatImportEuro(row.salePrice, currency)}</td>
                       <td className={tableCellClassName}>{row.stock}</td>
                       <td className={tableCellClassName}>
                         <StatusBadge status={row.stock > 0 ? "En stock" : "En attente"} />
@@ -223,7 +225,12 @@ function readCell(row: Record<string, unknown>, names: string[]) {
 }
 
 function parseImportNumber(value: string) {
-  const normalized = value.replace(/\s/g, "").replace("€", "").replace(",", ".").trim();
+  const normalized = value
+    .replace(/\s/g, "")
+    .replace(/\u20AC/g, "")
+    .replace(/\b(?:EUR|CHF)\b/gi, "")
+    .replace(",", ".")
+    .trim();
   const amount = Number.parseFloat(normalized);
   return Number.isFinite(amount) ? amount : 0;
 }
@@ -244,6 +251,6 @@ function parseImportRow(row: Record<string, unknown>): ImportRow | null {
   };
 }
 
-function formatImportEuro(value: number) {
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(value);
+function formatImportEuro(value: number, currency: "EUR" | "CHF") {
+  return formatMoney(value, currency);
 }

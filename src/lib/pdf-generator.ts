@@ -1,16 +1,21 @@
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
+import { downloadPdfFile } from "@/lib/download-file.client";
+
 /**
  * Generates a PDF from a DOM element and triggers a download.
  * @param element The DOM element to capture.
  * @param filename The name of the file to save.
  */
+export function generatePdfFromElement(element: HTMLElement, filename: string, mode: "dataurl"): Promise<string>;
+export function generatePdfFromElement(element: HTMLElement, filename: string, mode: "blob"): Promise<Blob>;
+export function generatePdfFromElement(element: HTMLElement, filename: string, mode?: "save"): Promise<void>;
 export async function generatePdfFromElement(
   element: HTMLElement,
   filename: string,
-  mode: "save" | "dataurl" = "save",
-): Promise<string | void> {
+  mode: "save" | "dataurl" | "blob" = "save",
+): Promise<string | Blob | void> {
   try {
     if (element.dataset.pdfPaginate === "true") {
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
@@ -39,7 +44,7 @@ export async function generatePdfFromElement(
 
       const readableText = element.innerText
         .replace(/\s+/g, " ")
-        .replace(/[^\x20-\x7EÀ-ÿ€]/g, " ")
+        .replace(/[^\x20-\x7EÀ-ÿ\u20AC]/g, " ")
         .replace(/\b(undefined|null)\b/g, "—")
         .trim();
       if (readableText) {
@@ -58,7 +63,9 @@ export async function generatePdfFromElement(
         creator: "Behar Tech Pro",
       });
       if (mode === "dataurl") return pdf.output("datauristring");
-      pdf.save(filename.endsWith(".pdf") ? filename : `${filename}.pdf`);
+      const blob = pdf.output("blob");
+      if (mode === "blob") return blob;
+      downloadPdfFile(blob, filename);
       return;
     }
 
@@ -128,7 +135,7 @@ export async function generatePdfFromElement(
     // - lisible par les outils OCR / recherche / tests automatisés (sentinel inclus).
     const readableText = element.innerText
       .replace(/\s+/g, " ")
-      .replace(/[^\x20-\x7EÀ-ÿ€]/g, " ")
+      .replace(/[^\x20-\x7EÀ-ÿ\u20AC]/g, " ")
       .replace(/\b(undefined|null)\b/g, "—")
       .replace(/\b(TypeError|ReferenceError|SyntaxError|RangeError)\b[^.]*\.?/g, "")
       .trim();
@@ -149,7 +156,9 @@ export async function generatePdfFromElement(
     });
 
     if (mode === "dataurl") return pdf.output("datauristring");
-    pdf.save(filename.endsWith(".pdf") ? filename : `${filename}.pdf`);
+    const blob = pdf.output("blob");
+    if (mode === "blob") return blob;
+    downloadPdfFile(blob, filename);
   } catch (error) {
     console.error("Error generating PDF:", error);
     throw error;

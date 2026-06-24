@@ -6,12 +6,14 @@ import { toast } from "sonner";
 
 import { PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
 import { useBeharStore, type WorkshopSettings } from "@/lib/behar-store";
+import { getLegalFieldsByCountry, getWorkshopCountryConfig } from "@/lib/workshop-country";
 
 type Props = {
   open: boolean;
 };
 
 const PAYMENT_OPTIONS = ["Espèces hors Behar Tech", "TPE externe", "Virement", "Chèque", "Autre"] as const;
+const SWISS_PAYMENT_OPTIONS = ["Espèces", "TWINT", "Carte externe", "Virement", "Autre"] as const;
 
 export function InstallationOnboarding({ open }: Readonly<Props>) {
   const store = useBeharStore();
@@ -27,9 +29,15 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
     address: store.workshopSettings.address || "",
     postalCode: store.workshopSettings.postalCode || "",
     city: store.workshopSettings.city || "",
-    country: store.workshopSettings.country || "France",
+    country: store.workshopSettings.country || "FR",
+    currency: store.workshopSettings.country === "CH" ? "CHF" : "EUR",
+    defaultPhonePrefix: store.workshopSettings.country === "CH" ? "+41" : "+33",
+    taxRegime: store.workshopSettings.vatApplicable ? "vat_subject" : "not_subject_to_vat",
     siret: store.workshopSettings.siret || "",
     tvaNumber: store.workshopSettings.tvaNumber || "",
+    swissUid: store.workshopSettings.swissUid || "",
+    swissVatNumber: store.workshopSettings.swissVatNumber || "",
+    swissCanton: store.workshopSettings.swissCanton || "",
     vatApplicable: store.workshopSettings.vatApplicable ?? false,
     tvaMention: store.workshopSettings.tvaMention || "TVA non applicable, art. 293 B du CGI",
     repairPrefix: store.workshopSettings.repairPrefix || "REP",
@@ -71,6 +79,10 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
 
   const validate = () => {
     const nextErrors: string[] = [];
+    const countryConfig = getWorkshopCountryConfig(draft.country);
+    const postalCode = String(draft.postalCode || "").trim();
+    const email = String(draft.email || "").trim();
+    const compactPhone = String(draft.phone || "").replace(/[\s().-]/g, "");
     if (!String(draft.name || "").trim()) {
       nextErrors.push("Le nom de l’atelier est obligatoire.");
     }
@@ -80,8 +92,23 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
     if (!String(draft.city || "").trim()) {
       nextErrors.push("La ville est obligatoire.");
     }
-    if (!String(draft.siret || "").trim()) {
+    if (!countryConfig.postalCodePattern.test(postalCode)) {
+      nextErrors.push(draft.country === "CH" ? "Le NPA suisse doit contenir 4 chiffres." : "Le code postal doit contenir 5 chiffres.");
+    }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      nextErrors.push("L’email atelier est invalide.");
+    }
+    if (compactPhone && !/^(?:\+41|0)\d{9}$/.test(compactPhone) && !/^\+\d{7,15}$/.test(compactPhone)) {
+      nextErrors.push("Le téléphone est invalide.");
+    }
+    if (draft.country === "FR" && !/^\d{14}$/.test(String(draft.siret || "").replace(/\D/g, ""))) {
       nextErrors.push("Le numéro SIREN / SIRET est obligatoire.");
+    }
+    if (draft.country === "CH" && !String(draft.swissCanton || "").trim()) {
+      nextErrors.push("Le canton est obligatoire.");
+    }
+    if (draft.country === "CH" && draft.vatApplicable && !String(draft.swissVatNumber || "").trim()) {
+      nextErrors.push("Le numéro TVA suisse est obligatoire pour un atelier assujetti.");
     }
     setErrors(nextErrors);
     if (nextErrors.length > 0) {
@@ -95,6 +122,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
     if (!validate()) return;
     const city = String(draft.city || "").trim();
     const postalCode = String(draft.postalCode || "").trim();
+    const countryConfig = getWorkshopCountryConfig(draft.country);
     saveWorkshopSettings({
       ...draft,
       brand: "BEHAR • TECH",
@@ -104,13 +132,28 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
       address: String(draft.address || "").trim() || "Non renseigné",
       city,
       postalCode,
+      country: countryConfig.country,
+      currency: countryConfig.currency,
+      defaultPhonePrefix: countryConfig.phonePrefix,
+      taxRegime: draft.vatApplicable ? "vat_subject" : "not_subject_to_vat",
+      siret: countryConfig.country === "FR" ? String(draft.siret || "").replace(/\D/g, "") : "",
+      tvaNumber: countryConfig.country === "FR" ? String(draft.tvaNumber || "").trim() : "",
+      swissUid: countryConfig.country === "CH" ? String(draft.swissUid || "").trim() : "",
+      swissVatNumber:
+        countryConfig.country === "CH" && draft.vatApplicable ? String(draft.swissVatNumber || "").trim() : "",
+      swissCanton: countryConfig.country === "CH" ? String(draft.swissCanton || "").trim() : "",
       postalCity: [postalCode, city].filter(Boolean).join(" ").trim() || city,
       website: String(draft.website || "").trim(),
       quoteTerms: String(draft.quoteTerms || "").trim(),
       invoiceTerms: String(draft.invoiceTerms || "").trim(),
       intakeTerms: String(draft.intakeTerms || "").trim(),
       documentFooter: String(draft.documentFooter || "").trim(),
-      tvaMention: draft.vatApplicable ? "" : String(draft.tvaMention || "").trim(),
+      vatRate: draft.vatApplicable ? Number(draft.vatRate || countryConfig.defaultVatRate) : 0,
+      tvaMention: draft.vatApplicable
+        ? ""
+        : countryConfig.country === "CH"
+          ? "TVA non applicable / non assujetti"
+          : String(draft.tvaMention || "").trim(),
       isMicroEnterprise: !draft.vatApplicable,
       repairPrefix: String(draft.repairPrefix || "REP")
         .toUpperCase()
@@ -213,37 +256,85 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
               onChange={(e) => setField("address", e.target.value)}
             />
           </Field>
-          <Field label="Code postal">
+          <Field label={getLegalFieldsByCountry(draft.country).postalCodeLabel}>
             <input
               className={inputCls}
               value={draft.postalCode || ""}
-              onChange={(e) => setField("postalCode", e.target.value)}
+              inputMode="numeric"
+              onChange={(e) =>
+                setField(
+                  "postalCode",
+                  e.target.value.replace(/\D/g, "").slice(0, draft.country === "CH" ? 4 : 5),
+                )
+              }
             />
           </Field>
           <Field label="Ville">
             <input className={inputCls} value={draft.city || ""} onChange={(e) => setField("city", e.target.value)} />
           </Field>
           <Field label="Pays">
-            <input
+            <select
               className={inputCls}
-              value={draft.country || ""}
-              onChange={(e) => setField("country", e.target.value)}
-            />
+              value={draft.country || "FR"}
+              onChange={(e) => {
+                const country = e.target.value as "FR" | "CH";
+                const config = getWorkshopCountryConfig(country);
+                setDraft((current) => ({
+                  ...current,
+                  country,
+                  currency: config.currency,
+                  defaultPhonePrefix: config.phonePrefix,
+                  phone: config.phonePrefix,
+                  postalCode: "",
+                  city: "",
+                  vatApplicable: false,
+                  taxRegime: "not_subject_to_vat",
+                  vatRate: 0,
+                  tvaMention:
+                    country === "CH"
+                      ? "TVA non applicable / non assujetti"
+                      : "TVA non applicable, art. 293 B du CGI",
+                  acceptedPaymentMethods:
+                    country === "CH" ? [...SWISS_PAYMENT_OPTIONS] : ["Espèces hors Behar Tech", "TPE externe", "Virement"],
+                }));
+              }}
+            >
+              <option value="FR">France</option>
+              <option value="CH">Suisse</option>
+            </select>
           </Field>
         </section>
 
         <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E8E8E5] bg-[#FAFAFA]/70 p-4 md:grid-cols-2">
           <h2 className="md:col-span-2 font-semibold text-[#1A1916] text-lg">Informations légales</h2>
-          <Field label="SIREN / SIRET (Obligatoire)">
-            <input className={inputCls} value={draft.siret || ""} onChange={(e) => setField("siret", e.target.value)} />
-          </Field>
-          <Field label="TVA intracommunautaire (optionnel)">
-            <input
-              className={inputCls}
-              value={draft.tvaNumber || ""}
-              onChange={(e) => setField("tvaNumber", e.target.value)}
-            />
-          </Field>
+          {draft.country === "CH" ? (
+            <>
+              <Field label="Canton">
+                <input className={inputCls} value={draft.swissCanton || ""} onChange={(e) => setField("swissCanton", e.target.value)} />
+              </Field>
+              <Field label="IDE / UID entreprise suisse">
+                <input className={inputCls} value={draft.swissUid || ""} onChange={(e) => setField("swissUid", e.target.value)} />
+              </Field>
+              {draft.vatApplicable ? (
+                <Field label="Numéro TVA suisse">
+                  <input className={inputCls} value={draft.swissVatNumber || ""} onChange={(e) => setField("swissVatNumber", e.target.value)} />
+                </Field>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <Field label="SIREN / SIRET (Obligatoire)">
+                <input className={inputCls} value={draft.siret || ""} onChange={(e) => setField("siret", e.target.value)} />
+              </Field>
+              <Field label="TVA intracommunautaire (optionnel)">
+                <input
+                  className={inputCls}
+                  value={draft.tvaNumber || ""}
+                  onChange={(e) => setField("tvaNumber", e.target.value)}
+                />
+              </Field>
+            </>
+          )}
           <div className="md:col-span-2 flex flex-wrap gap-5 text-sm">
             <label className="inline-flex items-center gap-2">
               <input
@@ -251,7 +342,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
                 checked={Boolean(draft.vatApplicable)}
                 onChange={() => setField("vatApplicable", true)}
               />
-              TVA applicable (20 %)
+              TVA applicable ({String(draft.country === "CH" ? 8.1 : 20).replace(".", ",")} %)
             </label>
             <label className="inline-flex items-center gap-2">
               <input type="radio" checked={!draft.vatApplicable} onChange={() => setField("vatApplicable", false)} />
@@ -341,7 +432,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
           <h2 className="md:col-span-2 font-semibold text-[#1A1916] text-lg">Paiements / horaires / conditions</h2>
           <Field label="Paiements acceptés">
             <div className="grid grid-cols-2 gap-2 text-sm">
-              {PAYMENT_OPTIONS.map((option) => {
+              {(draft.country === "CH" ? SWISS_PAYMENT_OPTIONS : PAYMENT_OPTIONS).map((option) => {
                 const active = (draft.acceptedPaymentMethods ?? []).includes(option);
                 return (
                   <label key={option} className="inline-flex items-center gap-2">

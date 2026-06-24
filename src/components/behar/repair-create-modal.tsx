@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
 
 import { Combobox, PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
+import { MobileRepairIntakeWizard } from "@/components/behar/mobile-repair-intake-wizard";
 import { RepairIntakeScreen } from "@/components/behar/repair-intake-condition";
 import { printDocument } from "@/lib/documents/document-actions";
 import { deviceCatalog } from "@/data/deviceCatalog";
@@ -36,13 +37,14 @@ import {
   type DeviceType,
   deviceBrands,
   deviceModels,
-  formatEuro,
+  formatCurrency,
   getNowIso,
   getTomorrowIso,
   type PriceSnapshot,
   type Repair,
   type RepairIntakeCondition,
   type RepairStatus,
+  type WorkshopCountry,
   useBeharStore,
 } from "@/lib/behar-store";
 import { CALLING_CODES, COUNTRIES, COUNTRY_NAMES } from "@/lib/countries";
@@ -51,6 +53,7 @@ import {
   extractPartQuality,
   findCatalogMatches,
   getBestPriceBookItem,
+  getPriceBookMarketPrice,
   groupCatalogByQualityLabel,
 } from "@/lib/price-book";
 import {
@@ -60,6 +63,7 @@ import {
   INTERVENTION_ALIASES,
   normalizeInterventionHint,
 } from "@/lib/repair-intervention";
+import { getWorkshopCountryConfig } from "@/lib/workshop-country";
 
 const UI_DEVICE_TYPES: DeviceType[] = ["Smartphone", "Tablette", "Ordinateur", "Console", "Autre"];
 const countryOptions = COUNTRY_NAMES;
@@ -202,6 +206,9 @@ export function RepairModal({
     addQuote,
     setSelected,
     addRepair,
+    defaultCountry,
+    configuredAllowedMarkets,
+    defaultMarket,
   } = useBeharStore(
     useShallow((s) => ({
       customers: s.customers,
@@ -213,11 +220,18 @@ export function RepairModal({
       addQuote: s.addQuote,
       setSelected: s.setSelected,
       addRepair: s.addRepair,
+      defaultCountry: s.workshopInfo.country,
+      configuredAllowedMarkets: s.workshopSettings.allowedMarkets,
+      defaultMarket: s.workshopSettings.defaultMarket || s.workshopInfo.country,
     })),
   );
   const router = useRouter();
   const source = initial ?? prefill;
   const sourceDeviceParts = inferRepairDeviceParts(source);
+  const allowedMarkets = useMemo(
+    () => configuredAllowedMarkets ?? [defaultCountry],
+    [configuredAllowedMarkets, defaultCountry],
+  );
 
   useEffect(() => {
     useBeharStore.getState().loadPreloadedCatalog();
@@ -233,6 +247,18 @@ export function RepairModal({
   const [newPostalCode, setNewPostalCode] = useState("");
   const [newCity, setNewCity] = useState("");
   const [newCountry, setNewCountry] = useState<(typeof countryOptions)[number]>("France");
+  const [billingCountry, setBillingCountry] = useState<WorkshopCountry>(
+    source?.billingCountry ?? defaultMarket,
+  );
+  const billingConfig = getWorkshopCountryConfig(billingCountry);
+  const currency = billingConfig.currency;
+  const formatDossier = (value: number) => formatCurrency(value, currency);
+
+  useEffect(() => {
+    if (allowedMarkets.length === 1 && billingCountry !== allowedMarkets[0]) {
+      setBillingCountry(allowedMarkets[0]);
+    }
+  }, [allowedMarkets, billingCountry]);
 
   const [deviceType, setDeviceType] = useState<DeviceType>(source?.deviceType ?? "Smartphone");
   const [marque, setMarque] = useState(sourceDeviceParts.brand);
@@ -285,6 +311,7 @@ export function RepairModal({
     const parts = inferRepairDeviceParts(source);
     setClientType("existant");
     setSelectedCustomerId(source.customerId ?? "");
+    setBillingCountry(source.billingCountry ?? defaultCountry);
     setDeviceType(source.deviceType ?? "Smartphone");
     setMarque(parts.brand);
     setModele(parts.model);
@@ -430,10 +457,15 @@ export function RepairModal({
     for (const [q, items] of byQuality.entries()) {
       const best = getBestPriceBookItem(items);
       if (!best) continue;
-      options.push({ label: q, itemId: best.id, price: best.prixClientTotal, item: best });
+      options.push({
+        label: q,
+        itemId: best.id,
+        price: getPriceBookMarketPrice(best, billingCountry).prixClientTotal,
+        item: best,
+      });
     }
     return options.sort((a, b) => a.label.localeCompare(b.label, "fr"));
-  }, [catalogPool, selectedInterventionKey]);
+  }, [billingCountry, catalogPool, selectedInterventionKey]);
 
   // Auto-sélection d'une qualité si une seule existe (uniquement après intervention choisie)
   useEffect(() => {
@@ -441,10 +473,11 @@ export function RepairModal({
     if (selectedCatalogId) return;
     if (qualityOptionsForIntervention.length !== 1) return;
     const only = qualityOptionsForIntervention[0];
+    const marketPrice = getPriceBookMarketPrice(only.item, billingCountry);
     setSelectedCatalogId(only.itemId);
     setSelectedQuality(only.label);
-    setPrixPiece(String(only.item.prixVentePiece));
-    setMainOeuvre(String(only.item.mainOeuvre));
+    setPrixPiece(String(marketPrice.prixVentePiece || ""));
+    setMainOeuvre(String(marketPrice.mainOeuvre || ""));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedInterventionKey, qualityOptionsForIntervention.length]);
   const interventionCards = useMemo(() => {
@@ -461,10 +494,20 @@ export function RepairModal({
     // 1. Catalog Items
     for (const item of catalogPool) {
       const label = canonicalizeIntervention(item.reparation);
+      const marketPrice = getPriceBookMarketPrice(item, billingCountry);
       const existing = map.get(label);
       // Keep cheapest or first found
-      if (!existing || (item.prixClientTotal > 0 && item.prixClientTotal < existing.price)) {
-        map.set(label, { label, price: item.prixClientTotal, labor: item.mainOeuvre, itemId: item.id });
+      if (
+        !existing ||
+        (marketPrice.prixClientTotal > 0 &&
+          (existing.price <= 0 || marketPrice.prixClientTotal < existing.price))
+      ) {
+        map.set(label, {
+          label,
+          price: marketPrice.prixClientTotal,
+          labor: marketPrice.mainOeuvre,
+          itemId: item.id,
+        });
       }
     }
 
@@ -494,7 +537,7 @@ export function RepairModal({
         return aliases.some((a) => a.toLowerCase().includes(q));
       })
       .sort((a, b) => a.label.localeCompare(b.label, "fr"));
-  }, [catalogPool, deviceType, interventionSearch]);
+  }, [billingCountry, catalogPool, deviceType, interventionSearch]);
 
   const selectedCatalogItem = useMemo(
     () => (selectedCatalogId ? priceBookItems.find((i) => i.id === selectedCatalogId) : undefined),
@@ -581,6 +624,7 @@ export function RepairModal({
     const canAutoSaveToCatalog = isManualPricing && hasMeaningfulPrice && marque.trim() && modele.trim() && finalIssue;
     const shouldSaveToCatalog = (saveToCatalog || canAutoSaveToCatalog) && !initial;
     if (shouldSaveToCatalog) {
+      const purchasePrice = parseFloat(prixAchat.replace(",", ".") || "0") || 0;
       savedPbId = addPriceBookItem({
         source: "manual",
         typeAppareil: uiTypeToPriceBook(deviceType),
@@ -589,9 +633,17 @@ export function RepairModal({
         reparation: finalIssue,
         piece: finalIssue,
         qualite: "Personnalisé",
-        prixAchat: parseFloat(prixAchat.replace(",", ".") || "0") || 0,
-        prixVentePiece: prixPieceNum,
-        mainOeuvre: mainNum,
+        ...(billingCountry === "CH"
+          ? {
+              prixAchatChf: purchasePrice,
+              prixVentePieceChf: prixPieceNum,
+              mainOeuvreChf: mainNum,
+            }
+          : {
+              prixAchat: purchasePrice,
+              prixVentePiece: prixPieceNum,
+              mainOeuvre: mainNum,
+            }),
         fournisseur: fournisseur || undefined,
         sku: skuAdv || undefined,
         stockDisponible: stockAdv ? parseInt(stockAdv, 10) : undefined,
@@ -604,6 +656,7 @@ export function RepairModal({
     let snapshot: PriceSnapshot;
 
     if (fromCatalog && selectedCatalogItem) {
+      const selectedMarketPrice = getPriceBookMarketPrice(selectedCatalogItem, billingCountry);
       snapshot = {
         source: "catalogue",
         priceBookItemId: selectedCatalogItem.id,
@@ -615,11 +668,11 @@ export function RepairModal({
         qualite: selectedCatalogItem.qualite,
         sku: selectedCatalogItem.sku,
         fournisseur: selectedCatalogItem.fournisseur,
-        prixAchat: selectedCatalogItem.prixAchat,
+        prixAchat: selectedMarketPrice.prixAchat,
         prixVentePiece: prixPieceNum,
         mainOeuvre: mainNum,
         prixClientTotal: totalClient,
-        marge: selectedCatalogItem.marge,
+        marge: totalClient - selectedMarketPrice.prixAchat,
         garantie: selectedCatalogItem.garantie,
         notes: notesInternes || selectedCatalogItem.notes,
         stockDisponible: selectedCatalogItem.stockDisponible,
@@ -683,6 +736,9 @@ export function RepairModal({
 
     const basePayload = {
       customerId,
+      billingCountry,
+      currency: billingConfig.currency,
+      locale: billingConfig.locale,
       deviceType,
       brandId: marque,
       brandName: marque,
@@ -713,7 +769,7 @@ export function RepairModal({
       if (withQuote && totalClient > 0) {
         const lines = buildQuoteLines(snapshot, modelFull, finalIssue, totalClient);
         if (lines.length) {
-          const quoteId = addQuote({ customerId, repairId: initial.id, lines });
+          const quoteId = addQuote({ customerId, repairId: initial.id, billingCountry, lines });
           if (quoteId) {
             toast.success("Dossier mis à jour et devis créé");
             setSelected("quote", quoteId);
@@ -749,7 +805,7 @@ export function RepairModal({
         toast.error("Aucune ligne de devis.");
         return;
       }
-      const quoteId = addQuote({ customerId, repairId, lines });
+      const quoteId = addQuote({ customerId, repairId, billingCountry, lines });
       if (!quoteId) {
         toast.error("Devis non créé");
         return;
@@ -786,7 +842,7 @@ export function RepairModal({
     if (!created) return;
     setSelected("repair", created.repairId);
     onClose();
-    router.push(`/dashboard/dossiers/${created.repairId}`);
+    router.push(`/dashboard/dossiers/_/?id=${created.repairId}`);
   };
   const printCreatedIntake = () => {
     if (!created) return;
@@ -848,11 +904,20 @@ export function RepairModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-stretch overflow-y-auto bg-[#1A1916]/20 p-0 md:place-items-center md:p-4"
+      className="fixed inset-0 z-[100] grid place-items-stretch overflow-y-auto bg-[#1A1916]/20 p-0 md:place-items-center md:p-4"
       data-testid="new-repair-modal"
     >
+      {!initial && view === "form" ? (
+        <div className="w-full md:hidden">
+          <MobileRepairIntakeWizard
+            initialStatus={initialStatus}
+            onClose={onClose}
+            prefill={prefill}
+          />
+        </div>
+      ) : null}
       <div
-        className={`relative flex w-full ${view === "intake" ? "max-w-6xl" : view === "accessories" || view === "done" ? "max-w-2xl" : "max-w-5xl"} flex-col overflow-hidden border border-[#E8E8E5] bg-white shadow-2xl min-h-svh md:min-h-0 rounded-none md:rounded-[20px] md:max-h-[92vh] ${view === "form" ? "md:flex-row" : ""}`}
+        className={`relative ${!initial && view === "form" ? "hidden md:flex" : "flex"} w-full ${view === "intake" ? "max-w-6xl" : view === "accessories" || view === "done" ? "max-w-2xl" : "max-w-5xl"} flex-col overflow-hidden border border-[#E8E8E5] bg-white shadow-2xl min-h-svh md:min-h-0 rounded-none md:rounded-[20px] md:max-h-[92vh] ${view === "form" ? "md:flex-row" : ""}`}
       >
         {/* Croix X de fermeture globale — toujours visible, ferme le modal peu importe la vue */}
         <button
@@ -1098,6 +1163,41 @@ export function RepairModal({
               </div>
 
               <form className="space-y-6" id="repair-quick-form" onSubmit={handleSubmit}>
+                {allowedMarkets.length > 1 && (
+                  <section className="rounded-[16px] border border-[#D7EFEA] bg-[#F6FCFA] p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-[14px] font-semibold text-[#1A1916]">Pays de facturation / marché</h3>
+                        <p className="mt-0.5 text-[12px] text-[#6B6B6B]">
+                          Ce choix est enregistré sur le dossier et fixe sa devise définitivement.
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {allowedMarkets.map((country: WorkshopCountry) => {
+                          const active = billingCountry === country;
+                          return (
+                            <button
+                              key={country}
+                              type="button"
+                              onClick={() => setBillingCountry(country)}
+                              className={`min-w-[118px] rounded-[12px] border px-4 py-2.5 text-left transition ${
+                                active
+                                  ? "border-[#2A9D8F] bg-white text-[#167B70] shadow-[0_0_0_1px_#2A9D8F]"
+                                  : "border-[#E8E8E5] bg-white text-[#6B6B6B]"
+                              }`}
+                            >
+                              <span className="block text-[13px] font-semibold">
+                                {country === "CH" ? "Suisse" : "France"}
+                              </span>
+                              <span className="text-[11px]">{country === "CH" ? "CHF · fr-CH" : "EUR · fr-FR"}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </section>
+                )}
+
                 {/* 1 Client */}
                 <section className="space-y-4">
                   <h3 className="text-[14px] text-[#1A1916] font-medium">
@@ -1435,7 +1535,7 @@ export function RepairModal({
                               </div>
                               <div className="mt-1 flex flex-col">
                                 {entry.price > 0 ? (
-                                  <span className="font-bold text-[#2A9D8F] text-sm">{formatEuro(entry.price)}</span>
+                                  <span className="font-bold text-[#2A9D8F] text-sm">{formatDossier(entry.price)}</span>
                                 ) : (
                                   <span className="text-[#6B6B6B] text-xs italic">Prix à définir</span>
                                 )}
@@ -1505,7 +1605,7 @@ export function RepairModal({
                         className="h-10 rounded-lg border border-[#2A9D8F]/40 bg-white px-3 text-sm"
                         inputMode="decimal"
                         onChange={(e) => setCustomInterventionFinal(e.target.value)}
-                        placeholder="Prix client final (€)"
+                        placeholder={`Prix client final (${currency})`}
                         value={customInterventionFinal}
                       />
                       <label className="flex items-center gap-2 text-xs sm:col-span-2">
@@ -1594,17 +1694,20 @@ export function RepairModal({
                                 }`}
                                 key={opt.itemId}
                                 onClick={() => {
+                                  const marketPrice = getPriceBookMarketPrice(opt.item, billingCountry);
                                   setSelectedCatalogId(opt.itemId);
                                   setSelectedQuality(opt.label);
-                                  setPrixPiece(String(opt.item.prixVentePiece));
-                                  setMainOeuvre(String(opt.item.mainOeuvre));
+                                  setPrixPiece(String(marketPrice.prixVentePiece || ""));
+                                  setMainOeuvre(String(marketPrice.mainOeuvre || ""));
                                 }}
                                 type="button"
                               >
                                 <div className="flex items-center justify-between gap-3">
                                   <span className="font-medium text-[#1A1916]">{opt.label}</span>
                                   <div className="text-right">
-                                    <span className="block font-semibold text-[#167B70]">{formatEuro(opt.price)}</span>
+                                    <span className="block font-semibold text-[#167B70]">
+                                      {opt.price > 0 ? formatDossier(opt.price) : "Tarif à définir"}
+                                    </span>
                                     <span
                                       className={`text-[10px] ${(opt.item.stockDisponible ?? 0 > 0) ? "text-[#167B70]" : "text-red-500 font-medium"}`}
                                     >
@@ -1633,6 +1736,7 @@ export function RepairModal({
                         {[...catalogByQuality.entries()].map(([quality, items]) => {
                           const best = getBestPriceBookItem(items);
                           if (!best) return null;
+                          const bestMarketPrice = getPriceBookMarketPrice(best, billingCountry);
                           const active = selectedCatalogId === best.id;
                           return (
                             <button
@@ -1645,8 +1749,8 @@ export function RepairModal({
                               onClick={() => {
                                 setSelectedCatalogId(best.id);
                                 setSelectedQuality(extractPartQuality(best));
-                                setPrixPiece(String(best.prixVentePiece));
-                                setMainOeuvre(String(best.mainOeuvre));
+                                setPrixPiece(String(bestMarketPrice.prixVentePiece || ""));
+                                setMainOeuvre(String(bestMarketPrice.mainOeuvre || ""));
                               }}
                               type="button"
                             >
@@ -1655,7 +1759,11 @@ export function RepairModal({
                               <div className="mt-1 flex justify-between items-end text-[#167B70]">
                                 <div>
                                   <span className="block text-[#167B70] text-xs">Prix client proposé</span>
-                                  <span className="font-semibold">{formatEuro(best.prixClientTotal)}</span>
+                                  <span className="font-semibold">
+                                    {bestMarketPrice.hasPrice
+                                      ? formatDossier(bestMarketPrice.prixClientTotal)
+                                      : "Tarif à définir"}
+                                  </span>
                                 </div>
                                 <span
                                   className={`text-[10px] font-medium ${(best.stockDisponible ?? 0 > 0) ? "text-[#167B70]" : "text-red-500"}`}
@@ -1679,7 +1787,7 @@ export function RepairModal({
                     </h3>
                     <div className="grid gap-3 sm:grid-cols-3">
                       <label className="text-xs">
-                        <span className="text-[#6B6B6B]">Prix pièce / prestation (€)</span>
+                        <span className="text-[#6B6B6B]">Prix pièce / prestation ({currency})</span>
                         <input
                           className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] px-3 text-sm focus:border-[#2A9D8F] focus:outline-none"
                           inputMode="decimal"
@@ -1693,7 +1801,7 @@ export function RepairModal({
                         />
                       </label>
                       <label className="text-xs">
-                        <span className="text-[#6B6B6B]">Main-d&apos;œuvre (€)</span>
+                        <span className="text-[#6B6B6B]">Main-d&apos;œuvre ({currency})</span>
                         <input
                           className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] px-3 text-sm focus:border-[#2A9D8F] focus:outline-none"
                           inputMode="decimal"
@@ -1709,7 +1817,7 @@ export function RepairModal({
                       <div className="flex flex-col justify-end">
                         <span className="text-[#6B6B6B] text-xs">Total client</span>
                         {totalClient > 0 ? (
-                          <span className="font-bold text-[#167B70] text-xl">{formatEuro(totalClient)}</span>
+                          <span className="font-bold text-[#167B70] text-xl">{formatDossier(totalClient)}</span>
                         ) : (
                           <span className="font-bold text-[#6B6B6B] text-xl">—</span>
                         )}
@@ -1735,7 +1843,7 @@ export function RepairModal({
                   {advancedOpen && (
                     <div className="mt-4 grid gap-3 border-[#E8E8E5] border-t pt-4 sm:grid-cols-2">
                       <label className="text-xs">
-                        <span className="text-[#6B6B6B]">Prix achat interne (€)</span>
+                        <span className="text-[#6B6B6B]">Prix achat interne ({currency})</span>
                         <input
                           className="mt-1 h-10 w-full rounded-lg border border-[#E8E8E5] px-2 text-sm"
                           onChange={(e) => setPrixAchat(e.target.value)}
@@ -1899,7 +2007,7 @@ export function RepairModal({
               <div className="min-w-0">
                 <p className="text-[#6B6B6B] text-[11px] font-medium tracking-tight">Total</p>
                 <p className="font-bold text-[#1A1916] text-[18px] leading-none tracking-tight tabular-nums">
-                  {totalClient > 0 ? formatEuro(totalClient) : "À définir"}
+                  {totalClient > 0 ? formatDossier(totalClient) : "À définir"}
                 </p>
               </div>
               <div className="flex shrink-0 gap-2">
@@ -1958,13 +2066,13 @@ export function RepairModal({
                 <div>
                   <dt className="text-[#6B6B6B] text-xs">Tarif client</dt>
                   <dd>
-                    Pièce {formatEuro(prixPieceNum)} · M.O. {formatEuro(mainNum)}
+                    Pièce {formatDossier(prixPieceNum)} · M.O. {formatDossier(mainNum)}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-[#6B6B6B] text-xs">Total</dt>
                   <dd className="font-semibold text-[#1A1916] text-[24px] tracking-tight">
-                    {totalClient > 0 ? formatEuro(totalClient) : "À définir"}
+                    {totalClient > 0 ? formatDossier(totalClient) : "À définir"}
                   </dd>
                 </div>
                 <div>

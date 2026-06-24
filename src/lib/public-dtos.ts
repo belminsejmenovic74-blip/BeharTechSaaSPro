@@ -4,7 +4,16 @@ export type PublicWorkshopDto = {
   phone?: string;
   email?: string;
   address?: string;
+  postalCode?: string;
   city?: string;
+  country: "FR" | "CH";
+  currency: "EUR" | "CHF";
+  locale: "fr-FR" | "fr-CH";
+  canton?: string;
+  businessId?: string;
+  vatNumber?: string;
+  vatApplicable?: boolean;
+  vatMention?: string;
 };
 
 export type PublicRepairDto = {
@@ -22,16 +31,23 @@ export type PublicRepairDto = {
   };
   client: { displayName: string };
   timeline: Array<{ title: string; description?: string; date: string; visibility: "client" }>;
-  documents: Array<{ type: string; title: string; number?: string; status: string; url?: string }>;
+  documents: Array<{
+    type: string;
+    title: string;
+    number?: string;
+    status: string;
+    previewUrl?: string;
+    downloadUrl?: string;
+  }>;
   messages: Array<{
     authorType: "staff" | "client" | "system";
     authorName: string;
     body: string;
     createdAt: string;
   }>;
-  quoteLinks: Array<{ number: string; status: string; totalTtc: number; url: string }>;
-  invoiceLinks: Array<{ number: string; status: string; totalTtc: number; url: string }>;
-  receiptLinks: Array<{ number: string; status: string; amount: number; url: string }>;
+  quoteLinks: Array<{ number: string; status: string; totalTtc: number; previewUrl: string; downloadUrl?: string }>;
+  invoiceLinks: Array<{ number: string; status: string; totalTtc: number; previewUrl: string; downloadUrl?: string }>;
+  receiptLinks: Array<{ number: string; status: string; amount: number; previewUrl: string; downloadUrl?: string }>;
 };
 
 export type PublicCommercialDocumentDto = {
@@ -47,7 +63,7 @@ export type PublicCommercialDocumentDto = {
   };
   lines: Array<{ label: string; quantity: number; unitPriceTtc: number; totalTtc: number }>;
   relatedRepair?: { number: string; url?: string };
-  documents: Array<{ type: string; title: string; status: string; url?: string }>;
+  documents: Array<{ type: string; title: string; status: string; previewUrl?: string; downloadUrl?: string }>;
 };
 
 export type PublicPrintableDocumentDto = {

@@ -34,6 +34,7 @@ import {
   type AppointmentStatus,
   appointmentStatuses,
   type Customer,
+  formatCurrency,
   formatIsoToDisplay,
   getNowIso,
   normalizeAppointmentStatus,
@@ -777,7 +778,11 @@ export function AppointmentsWorkspace() {
               <DetailRow label="Technicien" value={selectedRepair?.technician ?? selected.technician} />
               <DetailRow
                 label="Montant estimé"
-                value={selectedRepair ? `${selectedRepair.amount.toFixed(2)} €` : "À définir"}
+                value={
+                  selectedRepair
+                    ? formatCurrency(selectedRepair.amount, selectedRepair.currency ?? store.workshopInfo.currency)
+                    : "À définir"
+                }
               />
               <DetailRow label="Notes" value={selectedRepair?.notes || selected.notes || "Aucune note"} />
             </dl>

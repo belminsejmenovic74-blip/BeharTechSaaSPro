@@ -41,7 +41,14 @@ import {
   Timeline,
 } from "@/components/behar/primitives";
 import { PAYMENT_STATUS_TONE, type PillTone, StatusPill, TabBar } from "@/components/behar/ui-pills";
-import { formatEuro, getInvoiceTotal, type PaymentMethod, type PaymentStatus, useBeharStore } from "@/lib/behar-store";
+import {
+  formatCurrency,
+  formatEuro,
+  getInvoiceTotal,
+  type PaymentMethod,
+  type PaymentStatus,
+  useBeharStore,
+} from "@/lib/behar-store";
 import { displayCustomerName } from "@/lib/customer-display";
 import { cn } from "@/lib/utils";
 
@@ -51,12 +58,20 @@ const statuses: PaymentStatus[] = ["Payé", "Annulé", "Remboursé"];
 
 type MethodFilter = "all" | PaymentMethod;
 
-const METHOD_TABS: ReadonlyArray<{ value: MethodFilter; label: string }> = [
+const FR_METHOD_TABS: ReadonlyArray<{ value: MethodFilter; label: string }> = [
   { value: "all", label: "Tous" },
   { value: "TPE externe", label: "TPE externe" },
   { value: "Espèces hors Behar Tech", label: "Espèces ext." },
   { value: "Virement", label: "Virement" },
   { value: "Lien externe", label: "Lien externe" },
+];
+const CH_METHOD_TABS: ReadonlyArray<{ value: MethodFilter; label: string }> = [
+  { value: "all", label: "Tous" },
+  { value: "Espèces", label: "Espèces hors Behar Tech" },
+  { value: "TWINT", label: "TWINT" },
+  { value: "Carte externe", label: "Carte externe" },
+  { value: "Virement", label: "Virement" },
+  { value: "Autre", label: "Autre" },
 ];
 
 type KpiTone = "teal" | "amber" | "blue" | "violet" | "rose";
@@ -65,6 +80,7 @@ function formatPaymentMethodLabel(method: PaymentMethod): string {
   if (method === "Carte") return "TPE externe";
   if (method === "Espèces") return "Espèces hors Behar Tech";
   if (method === "En ligne") return "Lien externe";
+  if (method === "TWINT") return "TWINT";
   return method;
 }
 
@@ -121,6 +137,7 @@ export function PaymentsWorkspace() {
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [filterOverdue, setFilterOverdue] = useState(false);
+  const methodTabs = store.workshopInfo.country === "CH" ? CH_METHOD_TABS : FR_METHOD_TABS;
 
   const filteredPayments = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -153,12 +170,20 @@ export function PaymentsWorkspace() {
   const repair = selected ? store.repairs.find((entry) => entry.id === selected.repairId) : undefined;
   const invoice = selected ? store.invoices.find((entry) => entry.id === selected.invoiceId) : undefined;
   const sale = selected ? store.sales.find((entry) => entry.id === selected.saleId) : undefined;
-  const paid = store.payments.filter((payment) => payment.status === "Payé");
-  const totalEncaisse = paid.reduce((total, payment) => total + payment.amount, 0);
+  const currentCurrency = store.workshopInfo.currency;
+  const paid = store.payments.filter(
+    (payment) => payment.status === "Payé" && (payment.currency ?? currentCurrency) === currentCurrency,
+  );
+  const totalRegle = paid.reduce((total, payment) => total + payment.amount, 0);
   const todayCount = paid.filter((p) => isToday(p.date)).length;
   const todayAmount = paid.filter((p) => isToday(p.date)).reduce((sum, p) => sum + p.amount, 0);
   const pendingTotal = store.invoices
-    .filter((inv) => inv.status !== "Payée" && inv.status !== "Annulée")
+    .filter(
+      (inv) =>
+        inv.status !== "Payée" &&
+        inv.status !== "Annulée" &&
+        (inv.currency ?? currentCurrency) === currentCurrency,
+    )
     .reduce((sum, inv) => sum + inv.lines.reduce((s, l) => s + l.quantity * l.unitPrice, 0), 0);
   const overdueTotal = 0;
 
@@ -170,7 +195,7 @@ export function PaymentsWorkspace() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-end gap-2">
         <PrimaryButton onClick={() => setModalOpen(true)}>
-          <Plus className="size-4" /> Ajouter un paiement
+          <Plus className="size-4" /> Ajouter un règlement
         </PrimaryButton>
       </div>
 
@@ -183,7 +208,7 @@ export function PaymentsWorkspace() {
 
       {/* Mobile : strip horizontal de KPI compacts */}
       <section className="grid max-w-full min-w-0 gap-3 pb-1 min-[360px]:flex min-[360px]:overflow-x-auto md:hidden scrollbar-none">
-        <MobileKpi label="Règlements ce mois" value={formatEuro(totalEncaisse)} helper="factures réglées" tone="teal" />
+        <MobileKpi label="Règlements ce mois" value={formatEuro(totalRegle)} helper="factures réglées" tone="teal" />
         <MobileKpi label="En attente" value={formatEuro(pendingTotal)} helper="à régler" tone="amber" />
         <MobileKpi label="Aujourd'hui" value={formatEuro(todayAmount)} helper={`${todayCount} règlements`} tone="teal" />
       </section>
@@ -191,7 +216,7 @@ export function PaymentsWorkspace() {
       <section className="hidden md:grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           label="Total réglé"
-          value={formatEuro(totalEncaisse)}
+          value={formatEuro(totalRegle)}
           helper="factures réglées"
           tone="teal"
           icon={Wallet}
@@ -211,7 +236,7 @@ export function PaymentsWorkspace() {
           icon={AlertCircle}
         />
         <KpiCard
-          label="Paiements du jour"
+          label="Règlements du jour"
           value={`${todayCount} · ${formatEuro(todayAmount)}`}
           helper="aujourd'hui"
           tone="blue"
@@ -224,7 +249,7 @@ export function PaymentsWorkspace() {
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
               <div className="w-full min-w-0 overflow-x-auto pb-1 sm:w-auto sm:pb-0 scrollbar-none">
-                <TabBar tabs={METHOD_TABS} value={methodFilter} onChange={setMethodFilter} />
+                <TabBar tabs={methodTabs} value={methodFilter} onChange={setMethodFilter} />
               </div>
               <label className="relative block w-full min-w-0 max-w-[280px]">
                 <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6B6B6B]" />
@@ -299,7 +324,7 @@ export function PaymentsWorkspace() {
                           </td>
                           <td className="px-4 py-3 text-[#1A1916]">{formatPaymentMethodLabel(payment.method)}</td>
                           <td className="px-4 py-3 text-right font-semibold text-[#1A1916]">
-                            {formatEuro(payment.amount)}
+                            {formatCurrency(payment.amount, payment.currency ?? currentCurrency)}
                           </td>
                           <td className="px-4 py-3 text-[#6B6B6B]">{payment.date}</td>
                           <td className="px-4 py-3">
@@ -350,7 +375,7 @@ export function PaymentsWorkspace() {
                               {displayCustomerName(entryCustomer)}
                             </p>
                             <p className="shrink-0 font-bold text-[#1A1916] text-[15px] tabular-nums">
-                              {formatEuro(payment.amount)}
+                              {formatCurrency(payment.amount, payment.currency ?? currentCurrency)}
                             </p>
                           </div>
                           <p className="mt-0.5 font-mono text-[#2A9D8F] text-[11px]">{payment.paymentNumber}</p>
@@ -391,7 +416,9 @@ export function PaymentsWorkspace() {
                 </span>
                 <div>
                   <p className="text-[#6B6B6B] text-xs">Montant réglé</p>
-                  <p className="font-semibold text-2xl text-[#1A1916]">{formatEuro(selected.amount)}</p>
+                  <p className="font-semibold text-2xl text-[#1A1916]">
+                    {formatCurrency(selected.amount, selected.currency ?? currentCurrency)}
+                  </p>
                 </div>
               </div>
             </div>
@@ -584,6 +611,11 @@ function CreatePaymentModal({
   const [selectedId, setSelectedId] = useState("");
   const [method, setMethod] = useState<PaymentMethod>("TPE externe");
   const [note, setNote] = useState("");
+  const currentCurrency = store.workshopInfo.currency;
+  const isSwiss = store.workshopInfo.country === "CH";
+  const availableMethods: PaymentMethod[] = isSwiss
+    ? ["Espèces", ...(store.workshopInfo.twintEnabled === false ? [] : ["TWINT" as const]), "Carte externe", "Virement", "Autre"]
+    : ["TPE externe", "Espèces hors Behar Tech", "Virement", "Lien externe", "Autre"];
 
   const unpaidInvoices = useMemo(
     () => store.invoices.filter((inv) => inv.status !== "Payée" && inv.status !== "Annulée"),
@@ -603,6 +635,8 @@ function CreatePaymentModal({
 
   useEffect(() => {
     if (!isOpen) return;
+    setMethod(isSwiss ? (store.workshopInfo.twintEnabled === false ? "Espèces" : "TWINT") : "TPE externe");
+    setNote("");
     const s = useBeharStore.getState();
     const openUnpaidInv = s.invoices.filter((inv) => inv.status !== "Payée" && inv.status !== "Annulée");
     const openUnpaidRep = s.repairs.filter((r) => {
@@ -623,7 +657,7 @@ function CreatePaymentModal({
       return;
     }
     setSelectedId("");
-  }, [isOpen, presetInvoiceId, presetRepairId]);
+  }, [isOpen, presetInvoiceId, presetRepairId, isSwiss, store.workshopInfo.twintEnabled]);
 
   const handleCreate = () => {
     if (!selectedId) {
@@ -688,7 +722,8 @@ function CreatePaymentModal({
                   const customer = store.customers.find((c) => c.id === inv.customerId);
                   return (
                     <option key={inv.id} value={inv.id}>
-                      {inv.number} — {displayCustomerName(customer)} ({formatEuro(getInvoiceTotal(inv))})
+                      {inv.number} — {displayCustomerName(customer)} (
+                      {formatCurrency(getInvoiceTotal(inv), inv.currency ?? currentCurrency)})
                     </option>
                   );
                 })
@@ -698,7 +733,7 @@ function CreatePaymentModal({
                   return (
                     <option key={r.id} value={r.id}>
                       {r.number} — {displayCustomerName(customer)} ({r.device} — reste estimé{" "}
-                      {formatEuro(
+                      {formatCurrency(
                         Math.max(
                           0,
                           amt -
@@ -706,6 +741,7 @@ function CreatePaymentModal({
                               .filter((p) => p.repairId === r.id && p.status === "Payé")
                               .reduce((s, x) => s + x.amount, 0),
                         ),
+                        r.currency ?? currentCurrency,
                       )}
                       )
                     </option>
@@ -717,7 +753,7 @@ function CreatePaymentModal({
         <div className="space-y-2">
           <label className="text-sm font-medium text-[#6B6B6B]">Mode de paiement</label>
           <Select value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
-            {(["TPE externe", "Espèces hors Behar Tech", "Virement", "Lien externe", "Autre"] as const).map((m) => (
+            {availableMethods.map((m) => (
               <option key={m} value={m}>
                 {formatPaymentMethodLabel(m)}
               </option>
@@ -726,9 +762,11 @@ function CreatePaymentModal({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-[#6B6B6B]">Note (facultatif)</label>
+          <label className="text-sm font-medium text-[#6B6B6B]">
+            {method === "TWINT" ? "Référence paiement TWINT (facultatif)" : "Note (facultatif)"}
+          </label>
           <Textarea
-            placeholder="Ex: Terminal 1, Chèque n°..."
+            placeholder={method === "TWINT" ? "Ex : TWINT-2026-0042" : "Ex: Terminal 1, référence..."}
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={3}
@@ -740,7 +778,7 @@ function CreatePaymentModal({
             Annuler
           </SecondaryButton>
           <PrimaryButton className="flex-1" onClick={handleCreate}>
-            Enregistrer le paiement
+            {method === "TWINT" ? "Marquer payé par TWINT" : "Enregistrer le paiement"}
           </PrimaryButton>
         </div>
       </div>
@@ -774,6 +812,8 @@ function PaymentMethodTile({ method }: Readonly<{ method: PaymentMethod }>) {
     if (method === "Espèces" || method === "Espèces hors Behar Tech") return { Icon: Banknote, bg: "bg-[#FAFAFA]", color: "text-[#6B6B6B]", label: "Espèces ext." };
     if (method === "Virement")
       return { Icon: Landmark, bg: "bg-[#FAFAFA]", color: "text-[#6B6B6B]", label: "Virement" };
+    if (method === "TWINT")
+      return { Icon: Wallet, bg: "bg-[#EAF6F2]", color: "text-[#2A9D8F]", label: "TWINT" };
     return { Icon: Link2, bg: "bg-[#FAFAFA]", color: "text-[#6B6B6B]", label: "Lien externe" };
   })();
   const { Icon, bg, color, label } = config;

@@ -45,14 +45,17 @@ import {
 } from "@/components/behar/primitives";
 import {
   buildInvoiceLinesFromRepair,
+  formatCurrency,
   formatEuro,
   formatIsoToDisplay,
+  getBillingWorkshopInfo,
   getInvoiceTotal,
   getVatSummary,
   type InvoiceStatus,
   linesForInvoiceFromQuote,
   type PaymentMethod,
   type QuoteLine,
+  type WorkshopCountry,
   useBeharStore,
 } from "@/lib/behar-store";
 import { displayCustomerName, isCounterCustomer } from "@/lib/customer-display";
@@ -61,7 +64,8 @@ import { cn } from "@/lib/utils";
 import { useDocument } from "./print-provider";
 
 const invoiceStatuses: InvoiceStatus[] = ["Brouillon", "Envoyée", "Payée", "Annulée"];
-const paymentMethods: PaymentMethod[] = ["TPE externe", "Espèces hors Behar Tech", "Virement", "Lien externe", "Autre"];
+const francePaymentMethods: PaymentMethod[] = ["TPE externe", "Espèces hors Behar Tech", "Virement", "Lien externe", "Autre"];
+const swissPaymentMethods: PaymentMethod[] = ["Espèces", "TWINT", "Carte externe", "Virement", "Autre"];
 
 function invoicePaymentBadge(invoice: { status: string }): string {
   if (invoice.status === "Payée") return "Payée";
@@ -97,6 +101,7 @@ export function InvoicesWorkspace() {
 
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("TPE externe");
+  const [twintReference, setTwintReference] = useState("");
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [linesEditing, setLinesEditing] = useState(false);
   const [invoiceSearch, setInvoiceSearch] = useState("");
@@ -104,6 +109,10 @@ export function InvoicesWorkspace() {
     "all" | "unpaid" | "paid" | "overdue" | "month" | "cancelled" | "counter"
   >("all");
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const isSwiss = store.workshopInfo.country === "CH";
+  const paymentMethods = isSwiss
+    ? swissPaymentMethods.filter((method) => method !== "TWINT" || store.workshopInfo.twintEnabled !== false)
+    : francePaymentMethods;
 
   // Métadonnées enrichies par facture : dossier / devis / reçu liés + index de
   // recherche puissant (n°, client, téléphone, appareil, REP, DEV, REC).
@@ -166,6 +175,7 @@ export function InvoicesWorkspace() {
   const invoicePayments = selected ? store.payments.filter((payment) => payment.invoiceId === selected.id) : [];
   const activePayments = invoicePayments.filter((payment) => payment.status === "Payé");
   const invoiceGrandTotal = selected ? getInvoiceTotal(selected) : 0;
+  const selectedCurrency = selected?.currency ?? store.workshopInfo.currency;
   const paidAmount =
     selected && selected.status === "Payée"
       ? invoiceGrandTotal
@@ -223,9 +233,18 @@ export function InvoicesWorkspace() {
         <div className="md:hidden space-y-4">
           {(() => {
             const allInvoices = store.invoices;
-            const paid = allInvoices.filter((i) => i.status === "Payée").reduce((s, i) => s + getInvoiceTotal(i), 0);
+            const paid = allInvoices
+              .filter(
+                (i) => i.status === "Payée" && (i.currency ?? store.workshopInfo.currency) === store.workshopInfo.currency,
+              )
+              .reduce((s, i) => s + getInvoiceTotal(i), 0);
             const pending = allInvoices
-              .filter((i) => i.status !== "Payée" && i.status !== "Annulée")
+              .filter(
+                (i) =>
+                  i.status !== "Payée" &&
+                  i.status !== "Annulée" &&
+                  (i.currency ?? store.workshopInfo.currency) === store.workshopInfo.currency,
+              )
               .reduce((s, i) => s + getInvoiceTotal(i), 0);
             const count = allInvoices.length;
             return (
@@ -324,7 +343,7 @@ export function InvoicesWorkspace() {
                             {displayCustomerName(entryCustomer)}
                           </p>
                           <p className="shrink-0 font-bold text-[#1A1916] text-[15px] tabular-nums">
-                            {formatEuro(getInvoiceTotal(invoice))}
+                            {formatCurrency(getInvoiceTotal(invoice), invoice.currency ?? store.workshopInfo.currency)}
                           </p>
                         </div>
                         <p className="mt-0.5 font-mono text-[#2A9D8F] text-[11px]">{invoice.number}</p>
@@ -400,7 +419,7 @@ export function InvoicesWorkspace() {
                       <StatusBadge status={isInvoiceOverdue(invoice) ? "En retard" : invoice.status} />
                     </td>
                     <td className="border-[#E8E8E5] border-b px-5 py-4 font-black tabular-nums">
-                      {formatEuro(getInvoiceTotal(invoice))}
+                      {formatCurrency(getInvoiceTotal(invoice), invoice.currency ?? store.workshopInfo.currency)}
                     </td>
                     <td className="border-[#E8E8E5] border-b px-5 py-4 text-right">
                       <ChevronRight className="ml-auto size-4 text-[#8A8A8A]" />
@@ -485,7 +504,9 @@ export function InvoicesWorkspace() {
                       ) : (
                         <p className="flex-1 font-medium text-[#1A1916] text-sm">{line.description}</p>
                       )}
-                      <p className="font-bold text-[#1A1916] text-sm">{formatEuro(line.quantity * line.unitPrice)}</p>
+                      <p className="font-bold text-[#1A1916] text-sm">
+                        {formatCurrency(line.quantity * line.unitPrice, selectedCurrency)}
+                      </p>
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -507,7 +528,7 @@ export function InvoicesWorkspace() {
                         </div>
                       ) : (
                         <p className="text-[10px] text-[#6B6B6B]">
-                          {line.quantity} x {formatEuro(line.unitPrice)}
+                          {line.quantity} x {formatCurrency(line.unitPrice, selectedCurrency)}
                         </p>
                       )}
 
@@ -551,30 +572,30 @@ export function InvoicesWorkspace() {
                     <div className="flex justify-between text-xs text-[#6B6B6B]">
                       <span>Sous-total HT</span>
                       <span className="font-medium">
-                        {formatEuro(getVatSummary(selected.lines, store.workshopInfo).ht)}
+                        {formatCurrency(getVatSummary(selected.lines, store.workshopInfo).ht, selectedCurrency)}
                       </span>
                     </div>
                     <div className="flex justify-between text-xs text-[#6B6B6B]">
                       <span>TVA ({Math.round(getVatSummary(selected.lines, store.workshopInfo).rate * 1000) / 10}%)</span>
                       <span className="font-medium">
-                        {formatEuro(getVatSummary(selected.lines, store.workshopInfo).tva)}
+                        {formatCurrency(getVatSummary(selected.lines, store.workshopInfo).tva, selectedCurrency)}
                       </span>
                     </div>
                   </>
                 ) : (
                   <div className="flex justify-between text-xs text-[#6B6B6B]">
                     <span>Sous-total HT</span>
-                    <span className="font-medium">{formatEuro(invoiceGrandTotal)}</span>
+                    <span className="font-medium">{formatCurrency(invoiceGrandTotal, selectedCurrency)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-xs text-[#6B6B6B]">
                   <span>Total Réglé</span>
-                  <span className="font-medium">{formatEuro(paidAmount)}</span>
+                  <span className="font-medium">{formatCurrency(paidAmount, selectedCurrency)}</span>
                 </div>
                 {remainingAmount > 0 && (
                   <div className="flex justify-between text-xs text-[#1A1916] font-bold">
                     <span>Reste à payer</span>
-                    <span>{formatEuro(remainingAmount)}</span>
+                    <span>{formatCurrency(remainingAmount, selectedCurrency)}</span>
                   </div>
                 )}
               </div>
@@ -584,10 +605,11 @@ export function InvoicesWorkspace() {
                   {store.workshopInfo.vatApplicable ? "Total TTC" : "Total Net"}
                 </span>
                 <span className="font-bold text-[#1A1916] text-2xl tracking-tight">
-                  {formatEuro(
+                  {formatCurrency(
                     store.workshopInfo.vatApplicable
                       ? getVatSummary(selected.lines, store.workshopInfo).ttc
                       : invoiceGrandTotal,
+                    selectedCurrency,
                   )}
                 </span>
               </div>
@@ -595,7 +617,7 @@ export function InvoicesWorkspace() {
               <p className="text-center text-[9px] text-[#8A8A8A] uppercase tracking-widest pt-4">
                 {store.workshopInfo.vatApplicable
                   ? "TVA incluse au taux légal"
-                  : "TVA non applicable — article 293 B du CGI"}
+                  : store.workshopInfo.tvaMention}
               </p>
             </div>
 
@@ -612,7 +634,9 @@ export function InvoicesWorkspace() {
                         <p className="font-semibold text-[#1A1916]">{p.method}</p>
                         <p className="text-[10px] text-[#8A8A8A] font-bold">{formatIsoToDisplay(p.date)}</p>
                       </div>
-                      <span className="font-bold text-[#1A1916]">{formatEuro(p.amount)}</span>
+                      <span className="font-bold text-[#1A1916]">
+                        {formatCurrency(p.amount, p.currency ?? selectedCurrency)}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -654,7 +678,7 @@ export function InvoicesWorkspace() {
 
             <button
               onClick={() => {
-                const body = `Bonjour ${displayCustomerName(customer)}, votre facture ${selected.number} (${formatEuro(invoiceGrandTotal)}) est disponible. Merci de votre confiance.`;
+                const body = `Bonjour ${displayCustomerName(customer)}, votre facture ${selected.number} (${formatCurrency(invoiceGrandTotal, selectedCurrency)}) est disponible. Merci de votre confiance.`;
                 if (window.confirm(`Envoyer le lien de la facture par SMS au ${customer?.phone} ?`)) {
                   toast.success("SMS envoyé");
                 }
@@ -685,9 +709,24 @@ export function InvoicesWorkspace() {
                     defaultValue={remainingAmount}
                     id="payment-amount"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-lg text-[#8A8A8A]">€</span>
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-lg text-[#8A8A8A]">
+                    {store.workshopInfo.currency}
+                  </span>
                 </div>
               </div>
+              {paymentMethod === "TWINT" && (
+                <div>
+                  <label className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider block mb-2">
+                    Référence paiement TWINT
+                  </label>
+                  <input
+                    className="h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F]"
+                    value={twintReference}
+                    onChange={(event) => setTwintReference(event.target.value)}
+                    placeholder="Optionnel"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider block mb-2">
@@ -730,6 +769,7 @@ export function InvoicesWorkspace() {
                     status: "Payé",
                     date: new Date().toISOString().split("T")[0],
                     reference: `PAY-${Date.now()}`,
+                    twintReference: paymentMethod === "TWINT" ? twintReference : undefined,
                   });
 
                   if (amt >= remainingAmount) {
@@ -737,10 +777,11 @@ export function InvoicesWorkspace() {
                   }
 
                   setPaymentOpen(false);
-                  toast.success("Paiement enregistré");
+                  setTwintReference("");
+                  toast.success(paymentMethod === "TWINT" ? "Facture marquée payée par TWINT" : "Paiement enregistré");
                 }}
               >
-                Confirmer
+                {paymentMethod === "TWINT" ? "Marquer payé par TWINT" : "Confirmer"}
               </PrimaryButton>
             </div>
           </Panel>
@@ -763,6 +804,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
     due: new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0],
   });
   const [customerInfo, setCustomerInfo] = useState({ name: "", phone: "", email: "", device: "", issue: "" });
+  const [billingCountry, setBillingCountry] = useState<WorkshopCountry>(store.workshopInfo.country);
 
   const availableQuotes = store.quotes.filter((q) => q.status === "Accepté" && !q.invoiceId);
   const availableRepairs = store.repairs.filter((r) => !r.invoiceId);
@@ -774,6 +816,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
       const c = store.customers.find((item) => item.id === q?.customerId);
       const r = q?.repairId ? store.repairs.find((item) => item.id === q.repairId) : undefined;
       if (q && c) {
+        setBillingCountry(q.billingCountry);
         setLines(q.lines.map((l) => ({ ...l })));
         setCustomerInfo({
           name: c.name,
@@ -787,6 +830,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
       const r = store.repairs.find((item) => item.id === selectedId);
       const c = store.customers.find((item) => item.id === r?.customerId);
       if (r && c) {
+        setBillingCountry(r.billingCountry);
         const built = buildInvoiceLinesFromRepair(r);
         if (built.ok) {
           setLines(built.lines.map((l) => ({ ...l, total: l.quantity * l.unitPrice })));
@@ -821,8 +865,10 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
   }, [sourceType, selectedId, store.quotes, store.repairs, store.customers]);
 
   const subtotal = lines.reduce((acc, line) => acc + line.quantity * line.unitPrice, 0);
-  const isMicro = store.workshopInfo?.isMicroEnterprise === true;
-  const tva = isMicro ? 0 : subtotal * 0.2;
+  const billingWorkshop = getBillingWorkshopInfo(store.workshopInfo, billingCountry);
+  const invoiceCurrency = billingWorkshop.currency;
+  const isMicro = billingWorkshop.isMicroEnterprise === true;
+  const tva = isMicro ? 0 : subtotal * ((billingWorkshop.vatRate ?? 0) / 100);
   const total = subtotal + tva;
 
   const { download } = useDocument();
@@ -834,7 +880,9 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
     }
 
     if (total <= 0 && status !== "Brouillon") {
-      const confirmZero = window.confirm("Cette facture est à 0 €. Voulez-vous vraiment la créer ?");
+      const confirmZero = window.confirm(
+        `Cette facture est à 0 ${invoiceCurrency}. Voulez-vous vraiment la créer ?`,
+      );
       if (!confirmZero) return;
     }
 
@@ -875,6 +923,9 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
     if (!repairIdForInvoice) {
       repairIdForInvoice = store.addRepair({
         customerId: finalCustomerId,
+        billingCountry,
+        currency: invoiceCurrency,
+        locale: billingCountry === "CH" ? "fr-CH" : "fr-FR",
         device: customerInfo.device || "Appareil à renseigner",
         model: customerInfo.device || "Appareil à renseigner",
         deviceModel: customerInfo.device || "",
@@ -897,6 +948,9 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
     const id = store.addInvoice({
       customerId: finalCustomerId,
       repairId: repairIdForInvoice,
+      billingCountry,
+      currency: invoiceCurrency,
+      locale: billingCountry === "CH" ? "fr-CH" : "fr-FR",
       quoteId: sourceType === "quote" ? selectedId : undefined,
       lines: filteredLines,
       sourceType,
@@ -982,6 +1036,27 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                         <Check className="size-3 text-white" />
                       </div>
                     )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-[14px] border border-[#DDEFEA] bg-[#F6FCFA] p-4">
+              <p className="text-xs font-semibold text-[#1A1916]">Pays de facturation du dossier</p>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {(["FR", "CH"] as const).map((country) => (
+                  <button
+                    key={country}
+                    type="button"
+                    disabled={(sourceType === "quote" || sourceType === "repair") && Boolean(selectedId)}
+                    onClick={() => setBillingCountry(country)}
+                    className={`h-10 rounded-[10px] border text-xs font-semibold ${
+                      billingCountry === country
+                        ? "border-[#2A9D8F] bg-white text-[#167B70]"
+                        : "border-[#E8E8E5] bg-white text-[#6B6B6B]"
+                    } disabled:cursor-not-allowed disabled:opacity-70`}
+                  >
+                    {country === "CH" ? "Suisse · CHF" : "France · EUR"}
                   </button>
                 ))}
               </div>
@@ -1164,9 +1239,11 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                             }}
                           />
                         </td>
-                        <td className="p-2 text-center text-[#6B6B6B]">{isMicro ? "N/A" : "20 %"}</td>
+                        <td className="p-2 text-center text-[#6B6B6B]">
+                          {isMicro ? "N/A" : `${billingWorkshop.vatRate ?? 0} %`}
+                        </td>
                         <td className="p-2 text-right font-semibold text-[#1A1916]">
-                          {formatEuro(line.quantity * line.unitPrice)}
+                          {formatCurrency(line.quantity * line.unitPrice, invoiceCurrency)}
                         </td>
                         <td className="p-2">
                           <button
@@ -1271,10 +1348,12 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                             <div className="flex-1">
                               <p className="font-semibold text-[#1A1916]">{l.description}</p>
                               <p className="text-[10px] text-[#6B6B6B]">
-                                Qté : {l.quantity} x {formatEuro(l.unitPrice)}
+                                Qté : {l.quantity} x {formatCurrency(l.unitPrice, invoiceCurrency)}
                               </p>
                             </div>
-                            <p className="font-bold text-[#1A1916]">{formatEuro(l.quantity * l.unitPrice)}</p>
+                            <p className="font-bold text-[#1A1916]">
+                              {formatCurrency(l.quantity * l.unitPrice, invoiceCurrency)}
+                            </p>
                           </div>
                         ))}
                     </div>
@@ -1282,21 +1361,25 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                     <div className="mt-auto pt-8 border-t border-[#F7F7F7] space-y-2">
                       <div className="flex justify-between text-[11px] text-[#6B6B6B]">
                         <span>Total HT</span>
-                        <span className="font-bold text-[#1A1916]">{formatEuro(subtotal)}</span>
+                        <span className="font-bold text-[#1A1916]">
+                          {formatCurrency(subtotal, invoiceCurrency)}
+                        </span>
                       </div>
                       {!isMicro && (
                         <div className="flex justify-between text-[11px] text-[#6B6B6B]">
                           <span>TVA (20 %)</span>
-                          <span className="font-bold text-[#1A1916]">{formatEuro(tva)}</span>
+                          <span className="font-bold text-[#1A1916]">{formatCurrency(tva, invoiceCurrency)}</span>
                         </div>
                       )}
                       <div className="flex justify-between items-end pt-2">
                         <span className="text-xs font-bold text-[#1A1916]">TOTAL TTC</span>
-                        <span className="text-xl font-bold text-[#2A9D8F]">{formatEuro(total)}</span>
+                        <span className="text-xl font-bold text-[#2A9D8F]">
+                          {formatCurrency(total, invoiceCurrency)}
+                        </span>
                       </div>
                       {isMicro && (
                         <p className="text-[9px] text-center text-[#8A8A8A] pt-4 italic">
-                          TVA non applicable — art. 293 B du CGI
+                          {billingWorkshop.tvaMention || "TVA non applicable"}
                         </p>
                       )}
                     </div>

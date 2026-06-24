@@ -16,6 +16,7 @@ import { useBeharStore } from "@/lib/behar-store";
 import {
   computePriceBookTotals,
   formatEuroPriceBook,
+  getPriceBookMarketPrice,
   normalizePriceBookStructure,
   PRICE_BOOK_DEVICE_LABELS,
   PRICE_BOOK_SOURCE_LABELS,
@@ -23,6 +24,7 @@ import {
   type PriceBookItem,
   type PriceBookSource,
 } from "@/lib/price-book";
+import { getWorkshopCountryConfig, type WorkshopCountry } from "@/lib/workshop-country";
 import {
   getDefaultQualityForCategory,
   getQualitiesForCategory,
@@ -52,6 +54,10 @@ type FormState = {
   prixVentePiece: string;
   mainOeuvre: string;
   prixClientFinal: string;
+  prixAchatChf: string;
+  prixVentePieceChf: string;
+  mainOeuvreChf: string;
+  prixClientFinalChf: string;
   fournisseur: string;
   garantie: string;
   stockDisponible: string;
@@ -70,6 +76,10 @@ const emptyForm: FormState = {
   prixVentePiece: "",
   mainOeuvre: "",
   prixClientFinal: "",
+  prixAchatChf: "",
+  prixVentePieceChf: "",
+  mainOeuvreChf: "",
+  prixClientFinalChf: "",
   fournisseur: "",
   garantie: "",
   stockDisponible: "",
@@ -99,6 +109,11 @@ const exportCatalogueCsv = (items: PriceBookItem[]) => {
     "prixVentePiece",
     "prixClientTotal",
     "marge",
+    "prixAchatChf",
+    "mainOeuvreChf",
+    "prixVentePieceChf",
+    "prixClientTotalChf",
+    "margeChf",
     "fournisseur",
     "stockDisponible",
     "dateMaj",
@@ -120,6 +135,11 @@ const exportCatalogueCsv = (items: PriceBookItem[]) => {
         item.prixVentePiece,
         item.prixClientTotal,
         item.marge,
+        item.prixAchatChf ?? "",
+        item.mainOeuvreChf ?? "",
+        item.prixVentePieceChf ?? "",
+        item.prixClientTotalChf ?? "",
+        item.margeChf ?? "",
         item.fournisseur ?? "",
         item.stockDisponible ?? "",
         item.updatedAt,
@@ -143,6 +163,7 @@ const exportCatalogueCsv = (items: PriceBookItem[]) => {
 
 export default function CataloguePrixPage() {
   const router = useRouter();
+  const defaultCountry = useBeharStore((s) => s.workshopInfo.country);
   const items = useBeharStore((s) => s.priceBookItems);
   const deviceBrands = useBeharStore((s) => s.deviceBrands);
   const deviceModels = useBeharStore((s) => s.deviceModels);
@@ -165,6 +186,7 @@ export default function CataloguePrixPage() {
   const [page, setPage] = useState(1);
 
   const [view, setView] = useState<"tree" | "table">("tree");
+  const [marketCountry, setMarketCountry] = useState<WorkshopCountry>(defaultCountry);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
 
@@ -210,11 +232,17 @@ export default function CataloguePrixPage() {
   const safePage = Math.min(page, totalPages);
   const visible = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  const formTotals = computePriceBookTotals(
+  const formTotalsFr = computePriceBookTotals(
     Number.parseFloat(form.prixVentePiece.replace(",", ".")) || 0,
     Number.parseFloat(form.mainOeuvre.replace(",", ".")) || 0,
     Number.parseFloat(form.prixAchat.replace(",", ".")) || 0,
   );
+  const formTotalsCh = computePriceBookTotals(
+    Number.parseFloat(form.prixVentePieceChf.replace(",", ".")) || 0,
+    Number.parseFloat(form.mainOeuvreChf.replace(",", ".")) || 0,
+    Number.parseFloat(form.prixAchatChf.replace(",", ".")) || 0,
+  );
+  const marketConfig = getWorkshopCountryConfig(marketCountry);
 
   const openCreate = () => {
     setForm(emptyForm);
@@ -263,6 +291,18 @@ export default function CataloguePrixPage() {
           const prixAchat = parsePrice(getVal(["prix achat", "prix d'achat", "prixachat"]));
           const prixVentePiece = parsePrice(getVal(["prix vente", "prix de vente", "prixventepiece"]));
           const mainOeuvre = parsePrice(getVal(["main oeuvre", "main-d'œuvre", "mainoeuvre", "m.o."]));
+          const prixAchatChfRaw = getVal(["prix achat chf", "prixachat chf", "prixachatchf"]);
+          const prixVentePieceChfRaw = getVal([
+            "prix vente chf",
+            "prix de vente chf",
+            "prixventepiecechf",
+          ]);
+          const mainOeuvreChfRaw = getVal([
+            "main oeuvre chf",
+            "main-d'œuvre chf",
+            "mainoeuvrechf",
+            "m.o. chf",
+          ]);
           const stockDisponibleRaw = getVal(["stock", "stock disponible", "stockdisponible"]);
           const stockDisponible = stockDisponibleRaw ? Number.parseFloat(stockDisponibleRaw) : undefined;
           const notes = getVal(["notes", "remarques"]);
@@ -303,6 +343,9 @@ export default function CataloguePrixPage() {
             prixAchat,
             prixVentePiece,
             mainOeuvre,
+            prixAchatChf: prixAchatChfRaw ? parsePrice(prixAchatChfRaw) : undefined,
+            prixVentePieceChf: prixVentePieceChfRaw ? parsePrice(prixVentePieceChfRaw) : undefined,
+            mainOeuvreChf: mainOeuvreChfRaw ? parsePrice(mainOeuvreChfRaw) : undefined,
             fournisseur: fournisseur || undefined,
             stockDisponible,
             notes:
@@ -380,6 +423,10 @@ export default function CataloguePrixPage() {
       prixVentePiece: String(item.prixVentePiece ?? ""),
       mainOeuvre: String(item.mainOeuvre ?? ""),
       prixClientFinal: item.prixClientTotal > 0 ? String(item.prixClientTotal) : "",
+      prixAchatChf: item.prixAchatChf === undefined ? "" : String(item.prixAchatChf),
+      prixVentePieceChf: item.prixVentePieceChf === undefined ? "" : String(item.prixVentePieceChf),
+      mainOeuvreChf: item.mainOeuvreChf === undefined ? "" : String(item.mainOeuvreChf),
+      prixClientFinalChf: item.prixClientTotalChf === undefined ? "" : String(item.prixClientTotalChf),
       fournisseur: item.fournisseur ?? "",
       garantie: item.garantie ?? "",
       stockDisponible: item.stockDisponible !== undefined ? String(item.stockDisponible) : "",
@@ -393,28 +440,36 @@ export default function CataloguePrixPage() {
       toast.error("Marque, modèle, réparation et pièce sont obligatoires.");
       return;
     }
-    let prixVentePiece = Number.parseFloat(form.prixVentePiece.replace(",", ".")) || 0;
-    let mainOeuvre = Number.parseFloat(form.mainOeuvre.replace(",", ".")) || 0;
-    const prixClientFinal = Number.parseFloat(form.prixClientFinal.replace(",", ".")) || 0;
-    // Si l'utilisateur a saisi un prix client final différent du calcul, on redistribue
-    if (prixClientFinal > 0) {
-      const computed = prixVentePiece + mainOeuvre;
-      if (computed !== prixClientFinal) {
-        if (prixVentePiece > 0 && mainOeuvre > 0) {
-          const ratio = prixClientFinal / (computed || 1);
-          prixVentePiece = Math.round(prixVentePiece * ratio * 100) / 100;
-          mainOeuvre = Math.round(mainOeuvre * ratio * 100) / 100;
-        } else if (prixVentePiece === 0 && mainOeuvre === 0) {
-          // Aucun détail saisi : mettre tout en prixVentePiece
-          prixVentePiece = prixClientFinal;
-        } else if (prixVentePiece === 0) {
-          mainOeuvre = prixClientFinal;
+    const resolveMarketPrice = (pieceValue: string, laborValue: string, finalValue: string) => {
+      let piece = Number.parseFloat(pieceValue.replace(",", ".")) || 0;
+      let labor = Number.parseFloat(laborValue.replace(",", ".")) || 0;
+      const final = Number.parseFloat(finalValue.replace(",", ".")) || 0;
+      if (final > 0 && piece + labor !== final) {
+        if (piece > 0 && labor > 0) {
+          const ratio = final / (piece + labor || 1);
+          piece = Math.round(piece * ratio * 100) / 100;
+          labor = Math.round(labor * ratio * 100) / 100;
+        } else if (piece === 0) {
+          labor = final;
         } else {
-          prixVentePiece = prixClientFinal;
-          mainOeuvre = 0;
+          piece = final;
+          labor = 0;
         }
       }
-    }
+      return { piece, labor };
+    };
+    const francePrice = resolveMarketPrice(form.prixVentePiece, form.mainOeuvre, form.prixClientFinal);
+    const swissPrice = resolveMarketPrice(
+      form.prixVentePieceChf,
+      form.mainOeuvreChf,
+      form.prixClientFinalChf,
+    );
+    const hasSwissPrice = [
+      form.prixAchatChf,
+      form.prixVentePieceChf,
+      form.mainOeuvreChf,
+      form.prixClientFinalChf,
+    ].some((value) => value.trim() !== "");
     const payload = {
       typeAppareil: form.typeAppareil,
       marque: form.marque,
@@ -424,8 +479,11 @@ export default function CataloguePrixPage() {
       qualite: form.qualite || "Standard",
       sku: form.sku || undefined,
       prixAchat: Number.parseFloat(form.prixAchat.replace(",", ".")) || 0,
-      prixVentePiece,
-      mainOeuvre,
+      prixVentePiece: francePrice.piece,
+      mainOeuvre: francePrice.labor,
+      prixAchatChf: hasSwissPrice ? Number.parseFloat(form.prixAchatChf.replace(",", ".")) || 0 : undefined,
+      prixVentePieceChf: hasSwissPrice ? swissPrice.piece : undefined,
+      mainOeuvreChf: hasSwissPrice ? swissPrice.labor : undefined,
       fournisseur: form.fournisseur || undefined,
       garantie: form.garantie || undefined,
       stockDisponible: form.stockDisponible ? Number.parseFloat(form.stockDisponible.replace(",", ".")) : undefined,
@@ -546,6 +604,20 @@ export default function CataloguePrixPage() {
             <span className="text-[#6B6B6B] text-sm">
               {filtered.length} ligne{filtered.length > 1 ? "s" : ""} sur {items.length}
             </span>
+            <div className="inline-flex rounded-[12px] border border-[#E8E8E5] bg-white p-1 text-xs">
+              {(["FR", "CH"] as const).map((country) => (
+                <button
+                  key={country}
+                  type="button"
+                  onClick={() => setMarketCountry(country)}
+                  className={`rounded-[9px] px-3 py-1 font-semibold transition ${
+                    marketCountry === country ? "bg-[#E8F7F3] text-[#167B70]" : "text-[#6B6B6B]"
+                  }`}
+                >
+                  {country === "CH" ? "Suisse · CHF" : "France · EUR"}
+                </button>
+              ))}
+            </div>
             <div className="ml-auto inline-flex rounded-[12px] border border-[#E8E8E5] bg-white p-1 text-xs">
               <button
                 className={`rounded-[9px] px-3 py-1 transition ${view === "tree" ? "bg-[#F3FBFA] text-[#167B70]" : "text-[#6B6B6B] hover:text-[#1A1916]"}`}
@@ -576,6 +648,7 @@ export default function CataloguePrixPage() {
                 updateItem(id, patch);
               }}
               onDelete={handleDelete}
+              marketCountry={marketCountry}
             />
           </Panel>
         )}
@@ -611,22 +684,26 @@ export default function CataloguePrixPage() {
                       </td>
                     </tr>
                   ) : (
-                    visible.map((item) => (
+                    visible.map((item) => {
+                      const marketPrice = getPriceBookMarketPrice(item, marketCountry);
+                      return (
                       <tr key={item.id} className="border-[#E8E8E5] border-t hover:bg-[#FAFAFA]/60">
                         <Td>{item.marque}</Td>
                         <Td>{item.modele}</Td>
                         <Td>{item.reparation}</Td>
                         <Td>{item.piece}</Td>
                         <Td>{item.qualite}</Td>
-                        <Td align="right">{formatEuroPriceBook(item.prixAchat)}</Td>
-                        <Td align="right">{formatEuroPriceBook(item.prixVentePiece)}</Td>
-                        <Td align="right">{formatEuroPriceBook(item.mainOeuvre)}</Td>
+                        <Td align="right">{formatEuroPriceBook(marketPrice.prixAchat, marketConfig.currency)}</Td>
+                        <Td align="right">{formatEuroPriceBook(marketPrice.prixVentePiece, marketConfig.currency)}</Td>
+                        <Td align="right">{formatEuroPriceBook(marketPrice.mainOeuvre, marketConfig.currency)}</Td>
                         <Td align="right" className="font-semibold text-[#1A1916]">
-                          {formatEuroPriceBook(item.prixClientTotal)}
+                          {marketPrice.hasPrice
+                            ? formatEuroPriceBook(marketPrice.prixClientTotal, marketConfig.currency)
+                            : "À définir"}
                         </Td>
                         <Td align="right">
-                          <span className={item.marge < 0 ? "text-red-600" : "text-[#2A9D8F]"}>
-                            {formatEuroPriceBook(item.marge)}
+                          <span className={marketPrice.marge < 0 ? "text-red-600" : "text-[#2A9D8F]"}>
+                            {formatEuroPriceBook(marketPrice.marge, marketConfig.currency)}
                           </span>
                         </Td>
                         <Td>
@@ -701,7 +778,8 @@ export default function CataloguePrixPage() {
                           </div>
                         </Td>
                       </tr>
-                    ))
+                    );
+                    })
                   )}
                 </tbody>
               </table>
@@ -731,7 +809,8 @@ export default function CataloguePrixPage() {
           <FormDialog
             form={form}
             setForm={setForm}
-            totals={formTotals}
+            totalsFr={formTotalsFr}
+            totalsCh={formTotalsCh}
             items={items}
             marques={marques}
             onCancel={() => {
@@ -802,7 +881,8 @@ function FilterSelect({
 function FormDialog({
   form,
   setForm,
-  totals,
+  totalsFr,
+  totalsCh,
   items,
   marques,
   onCancel,
@@ -810,7 +890,8 @@ function FormDialog({
 }: Readonly<{
   form: FormState;
   setForm: (next: FormState) => void;
-  totals: { prixClientTotal: number; marge: number; margePourcentage: number };
+  totalsFr: { prixClientTotal: number; marge: number; margePourcentage: number };
+  totalsCh: { prixClientTotal: number; marge: number; margePourcentage: number };
   items: PriceBookItem[];
   marques: string[];
   onCancel: () => void;
@@ -915,7 +996,10 @@ function FormDialog({
               className={inputClass}
             />
           </Field>
-          <Field label="Prix achat (€)">
+          <div className="md:col-span-2 mt-2 rounded-[10px] bg-[#F7F7F5] px-3 py-2 font-semibold text-[#1A1916] text-sm">
+            Tarif France · EUR
+          </div>
+          <Field label="Prix achat (EUR)">
             <input
               value={form.prixAchat}
               onChange={(event) => update("prixAchat", event.target.value)}
@@ -923,7 +1007,7 @@ function FormDialog({
               inputMode="decimal"
             />
           </Field>
-          <Field label="Prix vente pièce (€)">
+          <Field label="Prix vente pièce (EUR)">
             <input
               value={form.prixVentePiece}
               onChange={(event) => update("prixVentePiece", event.target.value)}
@@ -931,7 +1015,7 @@ function FormDialog({
               inputMode="decimal"
             />
           </Field>
-          <Field label="Main-d’œuvre (€)">
+          <Field label="Main-d’œuvre (EUR)">
             <input
               value={form.mainOeuvre}
               onChange={(event) => update("mainOeuvre", event.target.value)}
@@ -939,14 +1023,51 @@ function FormDialog({
               inputMode="decimal"
             />
           </Field>
-          <Field label="Prix client final (€) — optionnel, prioritaire">
+          <Field label="Prix client final (EUR) — optionnel, prioritaire">
             <input
               value={form.prixClientFinal}
               onChange={(event) => update("prixClientFinal", event.target.value)}
               className={`${inputClass} border-[#2A9D8F]/40 font-semibold text-[#167B70]`}
               inputMode="decimal"
-              placeholder={String(totals.prixClientTotal || "")}
+              placeholder={String(totalsFr.prixClientTotal || "")}
               data-testid="price-modal-client-price"
+            />
+          </Field>
+          <div className="md:col-span-2 mt-2 rounded-[10px] bg-[#F3FBFA] px-3 py-2 font-semibold text-[#167B70] text-sm">
+            Tarif Suisse · CHF — aucune conversion automatique
+          </div>
+          <Field label="Prix achat (CHF)">
+            <input
+              value={form.prixAchatChf}
+              onChange={(event) => update("prixAchatChf", event.target.value)}
+              className={inputClass}
+              inputMode="decimal"
+            />
+          </Field>
+          <Field label="Prix vente pièce (CHF)">
+            <input
+              value={form.prixVentePieceChf}
+              onChange={(event) => update("prixVentePieceChf", event.target.value)}
+              className={inputClass}
+              inputMode="decimal"
+            />
+          </Field>
+          <Field label="Main-d’œuvre (CHF)">
+            <input
+              value={form.mainOeuvreChf}
+              onChange={(event) => update("mainOeuvreChf", event.target.value)}
+              className={inputClass}
+              inputMode="decimal"
+            />
+          </Field>
+          <Field label="Prix client final (CHF) — optionnel, prioritaire">
+            <input
+              value={form.prixClientFinalChf}
+              onChange={(event) => update("prixClientFinalChf", event.target.value)}
+              className={`${inputClass} border-[#2A9D8F]/40 font-semibold text-[#167B70]`}
+              inputMode="decimal"
+              placeholder={String(totalsCh.prixClientTotal || "")}
+              data-testid="price-modal-client-price-chf"
             />
           </Field>
           <Field label="Garantie">
@@ -973,10 +1094,25 @@ function FormDialog({
             />
           </Field>
         </div>
-        <div className="mt-5 grid grid-cols-3 gap-3 rounded-[14px] bg-[#FAFAFA] p-4 text-sm">
-          <Stat label="Total client" value={formatEuroPriceBook(totals.prixClientTotal)} highlight />
-          <Stat label="Marge" value={formatEuroPriceBook(totals.marge)} tone={totals.marge < 0 ? "danger" : "ok"} />
-          <Stat label="Marge %" value={`${totals.margePourcentage.toFixed(1)} %`} />
+        <div className="mt-5 grid gap-3 rounded-[14px] bg-[#FAFAFA] p-4 text-sm md:grid-cols-2">
+          <div className="grid grid-cols-3 gap-3">
+            <Stat label="Total FR" value={formatEuroPriceBook(totalsFr.prixClientTotal, "EUR")} highlight />
+            <Stat
+              label="Marge FR"
+              value={formatEuroPriceBook(totalsFr.marge, "EUR")}
+              tone={totalsFr.marge < 0 ? "danger" : "ok"}
+            />
+            <Stat label="Marge FR %" value={`${totalsFr.margePourcentage.toFixed(1)} %`} />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <Stat label="Total CH" value={formatEuroPriceBook(totalsCh.prixClientTotal, "CHF")} highlight />
+            <Stat
+              label="Marge CH"
+              value={formatEuroPriceBook(totalsCh.marge, "CHF")}
+              tone={totalsCh.marge < 0 ? "danger" : "ok"}
+            />
+            <Stat label="Marge CH %" value={`${totalsCh.margePourcentage.toFixed(1)} %`} />
+          </div>
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <SecondaryButton onClick={onCancel}>Annuler</SecondaryButton>
@@ -1039,6 +1175,7 @@ function ImportPreviewDialog({
   onCancel: () => void;
   onConfirm: () => void;
 }>) {
+  const currency = useBeharStore((state) => state.workshopInfo.currency);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[18px] bg-white p-6 shadow-2xl">
@@ -1114,8 +1251,8 @@ function ImportPreviewDialog({
                     <td className="px-3 py-2">{line.modele}</td>
                     <td className="px-3 py-2">{line.reparation}</td>
                     <td className="px-3 py-2">{line.piece}</td>
-                    <td className="px-3 py-2 text-right">{formatEuroPriceBook(line.prixVentePiece ?? 0)}</td>
-                    <td className="px-3 py-2 text-right">{formatEuroPriceBook(line.mainOeuvre ?? 0)}</td>
+                    <td className="px-3 py-2 text-right">{formatEuroPriceBook(line.prixVentePiece ?? 0, currency)}</td>
+                    <td className="px-3 py-2 text-right">{formatEuroPriceBook(line.mainOeuvre ?? 0, currency)}</td>
                   </tr>
                 ))}
               </tbody>

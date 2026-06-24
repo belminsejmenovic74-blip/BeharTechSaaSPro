@@ -6,29 +6,30 @@
 // interne `/print/document/[documentId]` (composant LocalDocumentPrintPage), qui
 // rend le vrai document via LocalPrintableDocument.
 //
-// - mode interne  : `/print/document/{id}`            (atelier, données complètes)
-// - mode public   : `/print/document/{id}?public=1`   (client, fiches internes bloquées)
-// - impression    : on ajoute `?print=1` pour déclencher window.print() au chargement.
+// - mode interne  : `/print/document/_/?doc={id}`            (atelier, données complètes)
+// - mode public   : `/print/document/_/?doc={id}&public=1`   (client, fiches internes bloquées)
+// - impression    : on ajoute `&print=1` pour déclencher window.print() au chargement.
+//
+// IMPORTANT (404) : la route dynamique `[documentId]` n'est pré-générée QUE pour le
+// segment placeholder `_` (cf. generateStaticParams). En export statique, ouvrir
+// `/print/document/<vrai-id>/` renvoie donc une 404. On passe l'identifiant réel via
+// le query param `doc` sur la page placeholder `_`, qui sait le lire côté client.
 
 import type { BeharDocument, DocumentType } from "@/lib/behar-store";
 
-export type DocumentLike = Pick<BeharDocument, "id" | "type"> & Partial<BeharDocument>;
+// Seul l'identifiant est requis pour construire l'URL : le filtrage interne/public
+// se fait côté route à partir du vrai document du store. On accepte donc tout objet
+// porteur d'un `id` (y compris des documents faiblement typés du dossier) sans cast.
+export type DocumentLike = { id: string; type?: DocumentType | string };
+
+/** Segment statique unique pré-généré pour la route document (cf. generateStaticParams). */
+const DOCUMENT_ROUTE_PLACEHOLDER = "_";
 
 /** Types de documents jamais exposés côté client. */
 const INTERNAL_ONLY_TYPES: DocumentType[] = ["internal", "summary"];
 
-export function isInternalOnlyDocument(document?: DocumentLike | null): boolean {
-  return Boolean(document && INTERNAL_ONLY_TYPES.includes(document.type));
-}
-
-/** URL interne (atelier) du document — données complètes. */
-export function getInternalDocumentUrl(document: DocumentLike): string {
-  return `/print/document/${document.id}`;
-}
-
-/** URL publique (client) du document — fiches internes bloquées par la route. */
-export function getPublicDocumentUrl(document: DocumentLike): string {
-  return `/print/document/${document.id}?public=1`;
+export function isInternalOnlyDocument(document?: { type?: DocumentType } | null): boolean {
+  return Boolean(document?.type && INTERNAL_ONLY_TYPES.includes(document.type));
 }
 
 type OpenOptions = {
@@ -40,14 +41,26 @@ type OpenOptions = {
 
 function buildUrl(document: DocumentLike, options?: OpenOptions): string {
   const params = new URLSearchParams();
+  // L'identifiant réel est passé en query param pour rester compatible avec
+  // l'export statique (seule la page placeholder `_` est pré-générée).
+  params.set("doc", document.id);
   if (options?.public) params.set("public", "1");
   if (options?.print) params.set("print", "1");
-  const query = params.toString();
-  return `/print/document/${document.id}${query ? `?${query}` : ""}`;
+  return `/print/document/${DOCUMENT_ROUTE_PLACEHOLDER}/?${params.toString()}`;
+}
+
+/** URL interne (atelier) du document — données complètes. */
+export function getInternalDocumentUrl(document: DocumentLike): string {
+  return buildUrl(document);
+}
+
+/** URL publique (client) du document — fiches internes bloquées par la route. */
+export function getPublicDocumentUrl(document: DocumentLike): string {
+  return buildUrl(document, { public: true });
 }
 
 /**
- * Ouvre le vrai document dans un nouvel onglet (idéal POS / comptoir : la caisse
+ * Ouvre le vrai document dans un nouvel onglet (idéal POS / comptoir : la vente
  * reste ouverte). Retourne false si le document est introuvable.
  */
 export function openDocument(document?: DocumentLike | null, options?: OpenOptions): boolean {

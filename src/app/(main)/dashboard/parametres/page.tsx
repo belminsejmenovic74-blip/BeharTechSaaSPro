@@ -11,6 +11,7 @@ import {
   Check,
   CloudDownload,
   CloudUpload,
+  CreditCard,
   Download,
   ExternalLink,
   FileText,
@@ -27,6 +28,11 @@ import { PageShell } from "@/components/behar/page-shell";
 import { Panel, PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
 import { UpdateChecker } from "@/components/behar/update-checker";
 import { useBeharStore, type WorkshopSettings } from "@/lib/behar-store";
+import {
+  createBillingProfile,
+  getLegalFieldsByCountry,
+  getWorkshopCountryConfig,
+} from "@/lib/workshop-country";
 import {
   hydrateStoreFromCloud,
   loadSnapshotByLicenseKey,
@@ -249,6 +255,7 @@ export default function SettingsPage() {
     const address = normalizeSpaces(draft.address);
     const city = normalizeSpaces(draft.city);
     const postalCode = normalizeSpaces(draft.postalCode);
+    const isSwiss = draft.country === "CH";
     const siret = digitsOnly(draft.siret);
 
     if (isWeakText(name)) e.name = "Renseignez un nom d'atelier réel.";
@@ -257,14 +264,21 @@ export default function SettingsPage() {
     if (!isValidPhoneNumber(draft.phone)) e.phone = "Numéro international requis : indicatif puis 7 à 15 chiffres.";
     if (!isValidEmail(draft.email)) e.email = "Renseignez un email valide.";
     if (isWeakText(address, 6)) e.address = "Adresse complète obligatoire.";
-    if (!/^\d{5}$/.test(postalCode) || /^0+$/.test(postalCode)) e.postalCode = "Code postal obligatoire à 5 chiffres.";
-    if (isWeakText(city)) e.city = "Renseignez une ville réelle.";
-    if (isInvalidLegalNumber(siret, 14)) e.siret = "SIRET obligatoire : 14 chiffres, hors valeurs de test.";
-    if (typeof draft.vatApplicable !== "boolean") e.vatApplicable = "Sélectionnez un régime de TVA.";
-    if (draft.vatApplicable && ![20, 10, 5.5].includes(Number(draft.vatRate ?? 20))) {
-      e.vatRate = "Choisissez un taux de TVA valide.";
+    if (!(isSwiss ? /^\d{4}$/ : /^\d{5}$/).test(postalCode) || /^0+$/.test(postalCode)) {
+      e.postalCode = isSwiss ? "NPA suisse attendu sur 4 chiffres." : "Code postal obligatoire à 5 chiffres.";
     }
-    if (draft.tvaNumber && isWeakText(draft.tvaNumber, 4)) e.tvaNumber = "Numéro TVA invalide.";
+    if (isWeakText(city)) e.city = "Renseignez une ville réelle.";
+    if (!isSwiss && isInvalidLegalNumber(siret, 14)) {
+      e.siret = "SIRET obligatoire : 14 chiffres, hors valeurs de test.";
+    }
+    if (typeof draft.vatApplicable !== "boolean") e.vatApplicable = "Sélectionnez un régime de TVA.";
+    if (draft.vatApplicable && (!Number.isFinite(Number(draft.vatRate)) || Number(draft.vatRate) <= 0)) {
+      e.vatRate = "Renseignez un taux de TVA valide.";
+    }
+    if (!isSwiss && draft.tvaNumber && isWeakText(draft.tvaNumber, 4)) e.tvaNumber = "Numéro TVA invalide.";
+    if (isSwiss && draft.vatApplicable && !normalizeSpaces(draft.swissVatNumber)) {
+      e.swissVatNumber = "Numéro TVA suisse obligatoire pour un atelier assujetti.";
+    }
     if (draft.tvaMention && isWeakText(draft.tvaMention, 8)) e.tvaMention = "Mention TVA trop courte ou invalide.";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -281,9 +295,12 @@ export default function SettingsPage() {
     }
     const city = normalizeSpaces(draft.city);
     const postalCode = normalizeSpaces(draft.postalCode);
-    const siret = digitsOnly(draft.siret);
+    const isSwiss = draft.country === "CH";
+    const siret = isSwiss ? draft.siret : digitsOnly(draft.siret);
     store.saveWorkshopSettings({
       ...draft,
+      defaultMarket: draft.defaultMarket || (isSwiss ? "CH" : "FR"),
+      allowedMarkets: draft.allowedMarkets && draft.allowedMarkets.length > 0 ? draft.allowedMarkets : [draft.defaultMarket || (isSwiss ? "CH" : "FR")],
       name: normalizeSpaces(draft.name),
       commercialName: normalizeSpaces(draft.commercialName),
       phone: normalizeSpaces(draft.phone),
@@ -292,11 +309,22 @@ export default function SettingsPage() {
       postalCode,
       city,
       siret,
-      tvaNumber: normalizeSpaces(draft.tvaNumber),
+      country: isSwiss ? "CH" : "FR",
+      currency: isSwiss ? "CHF" : "EUR",
+      taxRegime: draft.vatApplicable ? "vat_subject" : "not_subject_to_vat",
+      defaultPhonePrefix: isSwiss ? "+41" : "+33",
+      tvaNumber: isSwiss ? "" : normalizeSpaces(draft.tvaNumber),
+      swissUid: isSwiss ? normalizeSpaces(draft.swissUid) : "",
+      swissVatNumber: isSwiss && draft.vatApplicable ? normalizeSpaces(draft.swissVatNumber) : "",
+      swissCanton: isSwiss ? normalizeSpaces(draft.swissCanton) : "",
       postalCity: [postalCode, city].filter(Boolean).join(" ").trim(),
       isMicroEnterprise: !draft.vatApplicable,
-      vatRate: draft.vatApplicable ? Number(draft.vatRate ?? 20) : 0,
-      tvaMention: draft.vatApplicable ? "" : normalizeSpaces(draft.tvaMention),
+      vatRate: draft.vatApplicable ? Number(draft.vatRate ?? (isSwiss ? 8.1 : 20)) : 0,
+      tvaMention: draft.vatApplicable
+        ? ""
+        : isSwiss
+          ? "TVA non facturée — entreprise non assujettie à la TVA suisse."
+          : normalizeSpaces(draft.tvaMention),
     });
     setSaved(true);
     toast.success("Paramètres enregistrés.");
@@ -368,6 +396,8 @@ export default function SettingsPage() {
     .replace(/(\d{3})(?=\d)/g, "$1 ");
   const postalCities = cityByPostalCode[normalizeSpaces(draft.postalCode)] ?? [];
   const phone = phoneParts(draft.phone);
+  const isSwiss = draft.country === "CH";
+  const legalFields = getLegalFieldsByCountry(draft.country);
   const phoneLocal = formatPhoneLocal(phone.prefix, phone.local);
   const setInternationalPhone = (prefixValue: string, localValue: string) => {
     const normalizedPrefix = `+${digitsOnly(prefixValue).slice(0, 4) || "33"}`;
@@ -375,7 +405,7 @@ export default function SettingsPage() {
     setField("phone", local ? `${normalizedPrefix} ${local}` : normalizedPrefix);
   };
   const setPostalCode = (value: string) => {
-    const postalCode = digitsOnly(value).slice(0, 5);
+    const postalCode = digitsOnly(value).slice(0, isSwiss ? 4 : 5);
     setField("postalCode", postalCode);
     const cities = cityByPostalCode[postalCode] ?? [];
     if (cities.length === 1) {
@@ -383,6 +413,69 @@ export default function SettingsPage() {
     } else if (cities.length > 1 && (!draft.city || !cities.includes(draft.city))) {
       setField("city", cities[0]);
     }
+  };
+  const setCountry = (country: "FR" | "CH") => {
+    setDraft((prev) => {
+      const currentCountry = prev.country === "CH" ? "CH" : "FR";
+      const currentProfile = createBillingProfile(
+        {
+          country: currentCountry,
+          name: prev.name,
+          commercialName: prev.commercialName,
+          address: prev.address,
+          postalCode: prev.postalCode,
+          city: prev.city,
+          canton: prev.swissCanton,
+          phone: prev.phone,
+          email: prev.email,
+          siret: prev.siret,
+          tvaNumber: prev.tvaNumber,
+          swissUid: prev.swissUid,
+          swissVatNumber: prev.swissVatNumber,
+          vatApplicable: prev.vatApplicable,
+          vatRate: prev.vatRate,
+          tvaMention: prev.tvaMention,
+        },
+        currentCountry,
+      );
+      const billingProfiles = {
+        ...(prev.billingProfiles ?? {}),
+        [currentCountry]: currentProfile,
+      };
+      const config = getWorkshopCountryConfig(country);
+      const target = createBillingProfile(billingProfiles[country] ?? { country }, country);
+      const swiss = country === "CH";
+      return {
+        ...prev,
+        billingProfiles,
+        country,
+        currency: config.currency,
+        defaultPhonePrefix: config.phonePrefix,
+        name: target.name || "",
+        commercialName: target.commercialName || "",
+        address: target.address || "",
+        postalCode: target.postalCode || "",
+        city: target.city || "",
+        postalCity: [target.postalCode, target.city].filter(Boolean).join(" "),
+        phone: target.phone || config.phonePrefix,
+        email: target.email || "",
+        siret: swiss ? "" : target.siret || "",
+        tvaNumber: swiss ? "" : target.tvaNumber || "",
+        swissUid: swiss ? target.swissUid || "" : "",
+        swissVatNumber: swiss ? target.swissVatNumber || "" : "",
+        swissCanton: swiss ? target.canton || "" : "",
+        taxRegime: target.vatApplicable ? "vat_subject" : "not_subject_to_vat",
+        vatApplicable: Boolean(target.vatApplicable),
+        vatRate: target.vatApplicable ? target.vatRate || config.defaultVatRate : 0,
+        tvaMention: target.tvaMention || "",
+        acceptedPaymentMethods: swiss
+          ? ["Espèces", "TWINT", "Carte externe", "Virement", "Autre"]
+          : ["Espèces hors Behar Tech", "TPE externe", "Virement"],
+        twintEnabled: swiss,
+      };
+    });
+    setSaved(false);
+    setErrors({});
   };
 
   if (!canViewSettings) {
@@ -469,17 +562,88 @@ export default function SettingsPage() {
                 placeholder="https://behartechpro.fr"
               />
             </Field>
-            <Field label="Pays">
+            <Field label="Marché principal" required>
               <select
                 className={selectCls}
-                value={draft.country || "France"}
-                onChange={(e) => setField("country", e.target.value)}
+                value={draft.defaultMarket || draft.country || "FR"}
+                onChange={(e) => {
+                  const newMarket = e.target.value as "FR" | "CH";
+                  setField("defaultMarket", newMarket);
+                  const currentAllowed = draft.allowedMarkets || [draft.country || "FR"];
+                  if (!currentAllowed.includes(newMarket)) {
+                    setField("allowedMarkets", [...currentAllowed, newMarket]);
+                  }
+                  setCountry(newMarket);
+                }}
               >
-                <option>France</option>
-                <option>Belgique</option>
-                <option>Suisse</option>
-                <option>Luxembourg</option>
+                <option value="FR">France</option>
+                <option value="CH">Suisse</option>
               </select>
+            </Field>
+            <Field label="Marchés activés" hint="Sélectionnez les pays de facturation activés pour cet atelier.">
+              <div className="mt-2 space-y-2">
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={draft.allowedMarkets?.includes("FR") ?? (draft.country !== "CH")}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      let nextAllowed = [...(draft.allowedMarkets || [draft.country || "FR"])];
+                      if (checked) {
+                        if (!nextAllowed.includes("FR")) nextAllowed.push("FR");
+                      } else {
+                        if (nextAllowed.includes("CH")) {
+                          nextAllowed = nextAllowed.filter((m) => m !== "FR");
+                          if (draft.defaultMarket === "FR") {
+                            setField("defaultMarket", "CH");
+                            setCountry("CH");
+                          }
+                        } else {
+                          toast.error("Au moins un marché doit être activé.");
+                          return;
+                        }
+                      }
+                      setField("allowedMarkets", nextAllowed);
+                    }}
+                    className="rounded text-[#2A9D8F] focus:ring-[#2A9D8F]/8"
+                  />
+                  <span className="text-[13px] text-[#1A1916]">France · EUR</span>
+                </label>
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={draft.allowedMarkets?.includes("CH") ?? (draft.country === "CH")}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      let nextAllowed = [...(draft.allowedMarkets || [draft.country || "FR"])];
+                      if (checked) {
+                        if (!nextAllowed.includes("CH")) nextAllowed.push("CH");
+                      } else {
+                        if (nextAllowed.includes("FR")) {
+                          nextAllowed = nextAllowed.filter((m) => m !== "CH");
+                          if (draft.defaultMarket === "CH") {
+                            setField("defaultMarket", "FR");
+                            setCountry("FR");
+                          }
+                        } else {
+                          toast.error("Au moins un marché doit être activé.");
+                          return;
+                        }
+                      }
+                      setField("allowedMarkets", nextAllowed);
+                    }}
+                    className="rounded text-[#2A9D8F] focus:ring-[#2A9D8F]/8"
+                  />
+                  <span className="text-[13px] text-[#1A1916]">Suisse · CHF</span>
+                </label>
+              </div>
+            </Field>
+            <Field label="Devise par défaut" hint="Déterminée automatiquement par le marché principal.">
+              <input
+                className={`${inputCls} bg-[#FAFAFA] text-[#6B6B6B]`}
+                value={draft.defaultMarket === "CH" ? "CHF (Franc suisse)" : "EUR (Euro)"}
+                readOnly
+              />
             </Field>
           </div>
         </Section>
@@ -527,7 +691,7 @@ export default function SettingsPage() {
               />
             </Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Code postal" required error={errors.postalCode}>
+              <Field label={legalFields.postalCodeLabel} required error={errors.postalCode}>
                 <input
                   className={inputCls}
                   inputMode="numeric"
@@ -557,6 +721,16 @@ export default function SettingsPage() {
                 )}
               </Field>
             </div>
+            {isSwiss && (
+              <Field label="Canton" hint="Optionnel">
+                <input
+                  className={inputCls}
+                  value={draft.swissCanton || ""}
+                  onChange={(e) => setField("swissCanton", e.target.value)}
+                  placeholder="Genève, Vaud, Valais…"
+                />
+              </Field>
+            )}
           </div>
         </Section>
       </div>
@@ -570,7 +744,9 @@ export default function SettingsPage() {
           description="Ces informations apparaîtront sur vos documents."
         >
           <div className="grid gap-4">
-            <div className="grid grid-cols-2 gap-3">
+            {!isSwiss ? (
+              <>
+                <div className="grid grid-cols-2 gap-3">
               <Field label="SIREN" hint="9 chiffres">
                 <input
                   className={`${inputCls} bg-[#FAFAFA] text-[#6B6B6B]`}
@@ -592,21 +768,37 @@ export default function SettingsPage() {
                   )}
                 </div>
               </Field>
-            </div>
-            <Field label="TVA Intracommunautaire" hint="Optionnel" error={errors.tvaNumber}>
-              <input
-                className={inputCls}
-                value={draft.tvaNumber || ""}
-                onChange={(e) => setField("tvaNumber", e.target.value)}
-              />
-            </Field>
-            <Field label="Mention TVA" error={errors.tvaMention}>
-              <input
-                className={inputCls}
-                value={draft.tvaMention || ""}
-                onChange={(e) => setField("tvaMention", e.target.value)}
-              />
-            </Field>
+                </div>
+                <Field label="TVA Intracommunautaire" hint="Optionnel" error={errors.tvaNumber}>
+                  <input
+                    className={inputCls}
+                    value={draft.tvaNumber || ""}
+                    onChange={(e) => setField("tvaNumber", e.target.value)}
+                  />
+                </Field>
+              </>
+            ) : (
+              <>
+                <Field label="IDE / CHE" hint="Optionnel">
+                  <input
+                    className={inputCls}
+                    value={draft.swissUid || ""}
+                    onChange={(e) => setField("swissUid", e.target.value)}
+                    placeholder="CHE-123.456.789"
+                  />
+                </Field>
+                {draft.vatApplicable && (
+                  <Field label="Numéro TVA suisse" error={errors.swissVatNumber} hint="Format libre">
+                    <input
+                      className={inputCls}
+                      value={draft.swissVatNumber || ""}
+                      onChange={(e) => setField("swissVatNumber", e.target.value)}
+                      placeholder="CHE-123.456.789 TVA"
+                    />
+                  </Field>
+                )}
+              </>
+            )}
           </div>
         </Section>
 
@@ -618,7 +810,8 @@ export default function SettingsPage() {
               type="button"
               onClick={() => {
                 setField("vatApplicable", true);
-                setField("vatRate", draft.vatRate || 20);
+                setField("taxRegime", "vat_subject");
+                setField("vatRate", draft.vatRate || (isSwiss ? 8.1 : 20));
                 // En TVA applicable, la mention 293 B n'a pas de sens.
                 setField("tvaMention", "");
                 setSaved(false);
@@ -643,11 +836,15 @@ export default function SettingsPage() {
               type="button"
               onClick={() => {
                 setField("vatApplicable", false);
+                setField("taxRegime", "not_subject_to_vat");
                 // Pré-remplit la mention légale standard si vide pour éviter
                 // qu'un document parte sans mention obligatoire.
-                if (!draft.tvaMention || !draft.tvaMention.trim()) {
-                  setField("tvaMention", "TVA non applicable, art. 293 B du CGI");
-                }
+                setField(
+                  "tvaMention",
+                  isSwiss
+                    ? "TVA non facturée — entreprise non assujettie à la TVA suisse."
+                    : "TVA non applicable, art. 293 B du CGI",
+                );
                 setSaved(false);
               }}
               className={`w-full text-left rounded-[14px] border p-4 transition-all ${!draft.vatApplicable ? "border-[#2A9D8F] bg-[#F8FCFA] shadow-[0_0_0_1px_#2A9D8F]" : "border-[#E8E8E5] hover:border-[#DADADA]"}`}
@@ -659,9 +856,13 @@ export default function SettingsPage() {
                   {!draft.vatApplicable && <div className="size-2 rounded-full bg-[#2A9D8F]" />}
                 </div>
                 <div>
-                  <p className="text-[13px] font-semibold text-[#1A1916]">Franchise en base (non assujetti)</p>
+                  <p className="text-[13px] font-semibold text-[#1A1916]">
+                    {isSwiss ? "Non assujetti à la TVA suisse" : "Franchise en base (non assujetti)"}
+                  </p>
                   <p className="text-[11px] text-[#6B6B6B] mt-0.5">
-                    Aucune TVA sur les documents · mention art. 293 B du CGI ajoutée.
+                    {isSwiss
+                      ? "Aucune TVA calculée · mention suisse ajoutée aux documents."
+                      : "Aucune TVA sur les documents · mention art. 293 B du CGI ajoutée."}
                   </p>
                 </div>
               </div>
@@ -670,7 +871,7 @@ export default function SettingsPage() {
             {draft.vatApplicable && (
               <Field label="Taux de TVA" error={errors.vatRate}>
                 <div className="grid grid-cols-3 gap-2">
-                  {[20, 10, 5.5].map((rate) => (
+                  {(isSwiss ? [8.1, 3.8, 2.6] : [20, 10, 5.5]).map((rate) => (
                     <button
                       key={rate}
                       type="button"
@@ -685,6 +886,18 @@ export default function SettingsPage() {
                     </button>
                   ))}
                 </div>
+                {isSwiss && (
+                  <input
+                    className={`${inputCls} mt-2`}
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={draft.vatRate ?? 8.1}
+                    onChange={(e) => setField("vatRate", Number(e.target.value))}
+                    aria-label="Taux de TVA suisse personnalisé"
+                    placeholder="8,1"
+                  />
+                )}
               </Field>
             )}
             {!draft.vatApplicable && (
@@ -714,6 +927,51 @@ export default function SettingsPage() {
       <div className="mt-5">
         <UpdateChecker />
       </div>
+
+      {isSwiss && (
+        <div className="mt-5">
+          <Section
+            icon={CreditCard}
+            title="Paiements Suisse"
+            description="TWINT reste un moyen de paiement manuel : aucune API externe n'est connectée."
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="TWINT">
+                <button
+                  type="button"
+                  onClick={() => setField("twintEnabled", !draft.twintEnabled)}
+                  className={`h-11 w-full rounded-[14px] border px-4 text-left text-[13px] font-semibold transition ${
+                    draft.twintEnabled
+                      ? "border-[#2A9D8F] bg-[#E6F4F1] text-[#1E7A6E]"
+                      : "border-[#E8E8E5] bg-white text-[#6B6B6B]"
+                  }`}
+                >
+                  {draft.twintEnabled ? "TWINT activé" : "Activer TWINT"}
+                </button>
+              </Field>
+              <Field label="Lien TWINT" hint="Optionnel">
+                <input
+                  className={inputCls}
+                  value={draft.twintPaymentLink || ""}
+                  onChange={(e) => setField("twintPaymentLink", e.target.value)}
+                  placeholder="https://..."
+                />
+              </Field>
+              <Field label="QR code TWINT / image" hint="URL ou image encodée, optionnel">
+                <input
+                  className={inputCls}
+                  value={draft.twintQrCode || ""}
+                  onChange={(e) => setField("twintQrCode", e.target.value)}
+                  placeholder="https://.../qr-twint.png"
+                />
+              </Field>
+              <div className="rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA] p-4 text-[12px] leading-relaxed text-[#6B6B6B]">
+                Moyens proposés : Espèces · TWINT · Carte externe · Virement · Autre.
+              </div>
+            </div>
+          </Section>
+        </div>
+      )}
 
       {/* Row 3 */}
       <div className="grid gap-5 xl:grid-cols-3 mt-5">

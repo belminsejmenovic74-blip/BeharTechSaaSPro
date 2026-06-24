@@ -4,7 +4,7 @@ export const dashboardKpis = [
   {
     shop_id: "shop_atelier_belmin",
     label: "CA du mois",
-    value: "12 840 €",
+    value: "12 840 EUR",
     trend: "18,6 %",
     helper: "vs mois dernier",
     icon: TrendingUp,
@@ -12,7 +12,7 @@ export const dashboardKpis = [
   {
     shop_id: "shop_atelier_belmin",
     label: "Dossier moyen",
-    value: "147 €",
+    value: "147 EUR",
     trend: "6,3 %",
     helper: "vs mois dernier",
     icon: ReceiptText,

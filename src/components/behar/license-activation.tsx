@@ -111,7 +111,7 @@ export function LicenseActivation() {
               <div className="flex items-center justify-between pt-1">
                 <div>
                   <p className="text-[9px] text-[#6B6B6B]">Chiffre d'affaires</p>
-                  <p className="text-[15px] font-semibold text-[#1A1916]">12 540,00 €</p>
+                  <p className="text-[15px] font-semibold text-[#1A1916]">12 540,00 EUR</p>
                 </div>
                 <span className="text-[11px] font-medium text-[#2A9D8F]">+15%</span>
               </div>

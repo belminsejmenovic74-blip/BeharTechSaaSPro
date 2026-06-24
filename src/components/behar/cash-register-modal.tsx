@@ -37,15 +37,19 @@ import { toast } from "sonner";
 
 import {
   type Customer,
+  formatCurrency,
   formatEuro,
   type PaymentMethod,
   type Repair,
   type Sale,
   type SaleLine,
   type StockItem,
+  type WorkshopCountry,
   useBeharStore,
 } from "@/lib/behar-store";
+import { getInternalDocumentUrl } from "@/lib/documents/document-actions";
 import { realProductImage } from "@/lib/real-product-images";
+import { getWorkshopCountryConfig } from "@/lib/workshop-country";
 
 import { useDocument } from "./print-provider";
 
@@ -145,12 +149,23 @@ function matchCategory(item: StockItem, key: CategoryKey): boolean {
 // §4 — la vente comptoir n'affiche que les articles explicitement activés pour le comptoir.
 const isSellable = (item: StockItem) => item.active !== false && item.counterSaleEnabled === true && item.stock > 0 && item.salePrice > 0;
 
-const PAYMENT_OPTIONS: Array<{ key: PaymentMethod; label: string; icon: typeof CreditCard }> = [
+const FR_PAYMENT_OPTIONS: Array<{ key: PaymentMethod; label: string; icon: typeof CreditCard }> = [
   { key: "TPE externe", label: "TPE ext.", icon: CreditCard },
   { key: "Espèces hors Behar Tech", label: "Espèces ext.", icon: Banknote },
   { key: "Autre", label: "Mixte / autre", icon: Shuffle },
   { key: "Virement", label: "Virement", icon: Landmark },
 ];
+const CH_PAYMENT_OPTIONS: Array<{ key: PaymentMethod; label: string; icon: typeof CreditCard }> = [
+  { key: "Espèces", label: "Espèces", icon: Banknote },
+  { key: "TWINT", label: "TWINT", icon: Zap },
+  { key: "Carte externe", label: "Carte ext.", icon: CreditCard },
+  { key: "Virement", label: "Virement", icon: Landmark },
+  { key: "Autre", label: "Autre", icon: Shuffle },
+];
+const getPaymentOptions = (country: "FR" | "CH", twintEnabled = true) =>
+  country === "CH"
+    ? CH_PAYMENT_OPTIONS.filter((option) => option.key !== "TWINT" || twintEnabled)
+    : FR_PAYMENT_OPTIONS;
 
 function formatPaymentLabel(method?: PaymentMethod) {
   if (!method) return "—";
@@ -170,6 +185,7 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
   const [category, setCategory] = useState<CategoryKey>("accessoires");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("TPE externe");
+  const [saleCountry, setSaleCountry] = useState<WorkshopCountry>(store.workshopInfo.country);
 
   const [serialDraft, setSerialDraft] = useState<Record<string, string>>({});
   const [conditionDraft, setConditionDraft] = useState<Record<string, string>>({});
@@ -195,6 +211,17 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
       searchRef.current?.focus();
     }
   }, [step]);
+
+  useEffect(() => {
+    const defaultMethod: PaymentMethod =
+      store.workshopInfo.country === "CH"
+        ? store.workshopInfo.twintEnabled === false
+          ? "Espèces"
+          : "TWINT"
+        : "TPE externe";
+    setPaymentMethod(defaultMethod);
+    setRepairPaymentMethod(defaultMethod);
+  }, [store.workshopInfo.country, store.workshopInfo.twintEnabled]);
 
   const sellable = useMemo(() => store.stockItems.filter(isSellable), [store.stockItems]);
 
@@ -314,7 +341,7 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
       return;
     }
     if (subtotal <= 0) {
-      toast.error("Le total doit être supérieur à 0 €.");
+      toast.error(`Le total doit être supérieur à 0 ${store.workshopInfo.currency}.`);
       return;
     }
     for (const line of cart) {
@@ -355,6 +382,7 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
         customerName: repairCustomer?.name || "Vente comptoir",
         lines: finalCart,
         repairId: selectedRepairId,
+        billingCountry: repair.billingCountry,
         status: "Rattachée",
       });
       if (!saleId) {
@@ -406,9 +434,9 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
       customerName = existing?.name || name;
     }
 
-    const saleId = store.addSale({ customerId, customerName, lines: finalCart });
+    const saleId = store.addSale({ customerId, customerName, lines: finalCart, billingCountry: saleCountry });
     if (!saleId) {
-      toast.error("Encaissement impossible : vérifiez votre permission de vente.");
+      toast.error("Règlement externe impossible : vérifiez votre permission de vente.");
       return;
     }
     const paymentId = store.paySale(saleId, paymentMethod);
@@ -541,6 +569,8 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
           extractedTax={extractedTax}
           paymentMethod={paymentMethod}
           setPaymentMethod={setPaymentMethod}
+          saleCountry={saleCountry}
+          setSaleCountry={setSaleCountry}
           clientType={clientType}
           setClientType={setClientType}
           selectedCustomerId={selectedCustomerId}
@@ -577,7 +607,7 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
           onOpenReceipt={() => {
             if (completedDocument) {
               store.setSelected("document", completedDocument.id);
-              router.push(`/print/document/${completedDocument.id}`);
+              router.push(getInternalDocumentUrl(completedDocument));
             } else {
               print("sale-receipt", completedSale.id);
             }
@@ -788,6 +818,8 @@ interface CashierStepProps {
 }
 
 function CashierStep(props: CashierStepProps) {
+  const store = useBeharStore();
+  const paymentOptions = getPaymentOptions(store.workshopInfo.country, store.workshopInfo.twintEnabled !== false);
   const {
     search,
     setSearch,
@@ -837,7 +869,7 @@ function CashierStep(props: CashierStepProps) {
           className="inline-flex h-[52px] items-center justify-center gap-2 rounded-[8px] bg-[#11998E] px-7 text-[15px] font-semibold text-white shadow-[0_10px_24px_rgba(17,153,142,0.20)] transition hover:bg-[#0F8C82]"
         >
           <PackagePlus className="size-4" strokeWidth={1.8} />
-          Ouvrir la caisse
+          Ouvrir la vente
         </button>
       </div>
 
@@ -996,7 +1028,7 @@ function CashierStep(props: CashierStepProps) {
             <div className="mt-6">
               <p className="mb-2 text-[#6B6B6B] text-[12px] font-medium">Paiement</p>
               <div className="grid grid-cols-2 gap-2">
-                {PAYMENT_OPTIONS.map((opt) => (
+                {paymentOptions.map((opt) => (
                   <PaymentButton
                     key={opt.key}
                     icon={opt.icon}
@@ -1251,6 +1283,8 @@ interface CheckoutStepProps {
   extractedTax: number;
   paymentMethod: PaymentMethod;
   setPaymentMethod: (m: PaymentMethod) => void;
+  saleCountry: WorkshopCountry;
+  setSaleCountry: (country: WorkshopCountry) => void;
   clientType: "comptoir" | "existing" | "new";
   setClientType: (v: "comptoir" | "existing" | "new") => void;
   selectedCustomerId: string;
@@ -1278,6 +1312,7 @@ interface CheckoutStepProps {
 }
 
 function CheckoutStep(props: CheckoutStepProps) {
+  const store = useBeharStore();
   const {
     cart,
     subtotal,
@@ -1285,6 +1320,8 @@ function CheckoutStep(props: CheckoutStepProps) {
     extractedTax,
     paymentMethod,
     setPaymentMethod,
+    saleCountry,
+    setSaleCountry,
     clientType,
     setClientType,
     selectedCustomerId,
@@ -1310,6 +1347,17 @@ function CheckoutStep(props: CheckoutStepProps) {
     finalize,
     onBack,
   } = props;
+  const linkedRepair = eligibleRepairs.find((repair) => repair.id === selectedRepairId);
+  const activeCountry = attachRepair && linkedRepair ? linkedRepair.billingCountry : saleCountry;
+  const activeConfig = getWorkshopCountryConfig(activeCountry);
+  const paymentOptions = getPaymentOptions(activeCountry, store.workshopInfo.twintEnabled !== false);
+  const formatSale = (value: number) => formatCurrency(value, activeConfig.currency);
+
+  useEffect(() => {
+    if (!paymentOptions.some((option) => option.key === paymentMethod)) {
+      setPaymentMethod(paymentOptions[0].key);
+    }
+  }, [paymentMethod, paymentOptions, setPaymentMethod]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
@@ -1320,7 +1368,7 @@ function CheckoutStep(props: CheckoutStepProps) {
           className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-[12.5px] font-medium transition hover:border-[#2A9D8F]/40"
         >
           <ArrowLeft className="size-3.5" />
-          Retour à la caisse
+          Retour à la vente
         </button>
       </div>
 
@@ -1367,6 +1415,27 @@ function CheckoutStep(props: CheckoutStepProps) {
             ) : (
               <p className="text-[#8A8A8A] text-[12px]">Pour une vente comptoir simple, laissez cette option désactivée.</p>
             )}
+          </div>
+
+          <div className="rounded-[18px] border border-[#DDEFEA] bg-[#F6FCFA] p-5">
+            <h3 className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Pays de facturation</h3>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {(["FR", "CH"] as const).map((country) => (
+                <button
+                  key={country}
+                  type="button"
+                  disabled={attachRepair && Boolean(linkedRepair)}
+                  onClick={() => setSaleCountry(country)}
+                  className={`h-11 rounded-[12px] border text-sm font-semibold ${
+                    activeCountry === country
+                      ? "border-[#2A9D8F] bg-white text-[#167B70]"
+                      : "border-[#E8E8E5] bg-white text-[#6B6B6B]"
+                  } disabled:cursor-not-allowed disabled:opacity-70`}
+                >
+                  {country === "CH" ? "Suisse · CHF" : "France · EUR"}
+                </button>
+              ))}
+            </div>
           </div>
 
           {!attachRepair ? (
@@ -1525,28 +1594,28 @@ function CheckoutStep(props: CheckoutStepProps) {
                     <div className="min-w-0">
                       <p className="truncate font-medium text-[#1A1916]">{line.name}</p>
                       <p className="text-[#8A8A8A] text-[11.5px]">
-                        {line.quantity} × {formatEuro(line.unitPrice)}
+                        {line.quantity} × {formatSale(line.unitPrice)}
                       </p>
                     </div>
-                    <span className="font-medium text-[#1A1916] tabular-nums">{formatEuro(line.total)}</span>
+                    <span className="font-medium text-[#1A1916] tabular-nums">{formatSale(line.total)}</span>
                   </li>
                 ))}
               </ul>
             </div>
             <div className="shrink-0 border-t border-[#E8E8E5] bg-[#FAFAFA] px-5 py-4">
               <div className="space-y-1.5 text-[13px]">
-                <Row label="Sous-total" value={formatEuro(preTax)} />
-                <Row label="TVA (20 %)" value={formatEuro(extractedTax)} />
+                <Row label="Sous-total" value={formatSale(preTax)} />
+                <Row label="TVA" value={formatSale(extractedTax)} />
               </div>
               <div className="mt-3 flex items-baseline justify-between">
                 <span className="font-medium text-[#1A1916] text-[15px]">Total TTC</span>
-                <span className="font-bold text-[#2A9D8F] text-[26px] tabular-nums tracking-tight">{formatEuro(subtotal)}</span>
+                <span className="font-bold text-[#2A9D8F] text-[26px] tabular-nums tracking-tight">{formatSale(subtotal)}</span>
               </div>
 
               <div className="mt-4">
                 <p className="mb-2 text-[#6B6B6B] text-[12px] font-medium">Paiement</p>
                 <div className="grid grid-cols-2 gap-2">
-                  {PAYMENT_OPTIONS.map((opt) => (
+                  {paymentOptions.map((opt) => (
                     <PaymentButton
                       key={opt.key}
                       icon={opt.icon}
@@ -1642,7 +1711,7 @@ function QuickAddStockModal({
     }
     const price = Number(salePrice.replace(",", "."));
     if (!Number.isFinite(price) || price <= 0) {
-      toast.error("Prix de vente obligatoire et supérieur à 0 €.");
+      toast.error(`Prix de vente obligatoire et supérieur à 0 ${store.workshopInfo.currency}.`);
       return;
     }
     const stock = Math.max(1, Math.floor(Number(quantity) || 1));
@@ -1745,7 +1814,9 @@ function QuickAddStockModal({
                   placeholder="0,00"
                   className="h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-white pl-3 pr-9 text-[14px] text-[#1A1916] tabular-nums outline-none focus:border-[#2A9D8F]"
                 />
-                <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[#8A8A8A] text-[13px]">€</span>
+                <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[#8A8A8A] text-[13px]">
+                  {store.workshopInfo.currency}
+                </span>
               </div>
             </label>
 

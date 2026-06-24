@@ -6,7 +6,7 @@ export const invoices = [
     customer: "Belmin",
     date: "21 mai 2026",
     status: "Payée",
-    amount: "190,00 €",
+    amount: "190,00 EUR",
     payment: "Stripe",
   },
   {
@@ -16,7 +16,7 @@ export const invoices = [
     customer: "Julien R.",
     date: "20 mai 2026",
     status: "Envoyée",
-    amount: "89,00 €",
+    amount: "89,00 EUR",
     payment: "Lien envoyé",
   },
   {
@@ -26,7 +26,7 @@ export const invoices = [
     customer: "Laura P.",
     date: "19 mai 2026",
     status: "Payée",
-    amount: "259,00 €",
+    amount: "259,00 EUR",
     payment: "Carte",
   },
 ];

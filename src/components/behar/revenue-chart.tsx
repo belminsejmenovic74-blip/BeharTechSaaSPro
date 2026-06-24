@@ -3,6 +3,8 @@
 import { useMemo } from "react";
 
 import { useBeharStore } from "@/lib/behar-store";
+import { paymentDateToIso } from "@/lib/payment-date";
+import { formatMoneyShort } from "@/lib/workshop-country";
 
 const chartWidth = 720;
 const chartHeight = 240;
@@ -21,93 +23,6 @@ function buildLast30Days(): string[] {
   return days;
 }
 
-// Tente d'extraire une date locale YYYY-MM-DD depuis le format libre des paiements.
-// Formats rencontrés : "17 mai 2026, 14:30", "Aujourd'hui, 14:30", "Hier, 10:00",
-// "2026-05-17", "17/05/2026", etc.
-const FR_MONTHS: Record<string, number> = {
-  janv: 0,
-  "janv.": 0,
-  janvier: 0,
-  févr: 1,
-  "févr.": 1,
-  fevr: 1,
-  "fevr.": 1,
-  février: 1,
-  fevrier: 1,
-  mars: 2,
-  avr: 3,
-  "avr.": 3,
-  avril: 3,
-  mai: 4,
-  juin: 5,
-  juil: 6,
-  "juil.": 6,
-  juillet: 6,
-  août: 7,
-  aout: 7,
-  sept: 8,
-  "sept.": 8,
-  septembre: 8,
-  oct: 9,
-  "oct.": 9,
-  octobre: 9,
-  nov: 10,
-  "nov.": 10,
-  novembre: 10,
-  déc: 11,
-  "déc.": 11,
-  dec: 11,
-  "dec.": 11,
-  décembre: 11,
-  decembre: 11,
-};
-
-function toLocalIso(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function paymentDateToIso(raw: string): string | null {
-  if (!raw) return null;
-  const value = raw.trim();
-  // "Aujourd'hui" / "Hier"
-  if (/^aujourd['’]hui/i.test(value)) return toLocalIso(new Date());
-  if (/^hier/i.test(value)) {
-    const y = new Date();
-    y.setDate(y.getDate() - 1);
-    return toLocalIso(y);
-  }
-  // ISO direct : "2026-05-17" ou "2026-05-17T..."
-  const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
-  // jj/mm/aaaa
-  const slashMatch = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if (slashMatch) {
-    return `${slashMatch[3]}-${slashMatch[2].padStart(2, "0")}-${slashMatch[1].padStart(2, "0")}`;
-  }
-  // "17 mai 2026" / "17 mai 2026, 14:30" / "17 mai. 2026"
-  const frMatch = value.match(/^(\d{1,2})\s+([A-Za-zÀ-ÿ.]+)\s+(\d{4})/);
-  if (frMatch) {
-    const day = Number(frMatch[1]);
-    const monthKey = frMatch[2].toLowerCase();
-    const month = FR_MONTHS[monthKey];
-    if (month !== undefined && Number.isFinite(day)) {
-      return `${frMatch[3]}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    }
-  }
-  // Fallback : tentative Date()
-  const fallback = new Date(value);
-  if (!Number.isNaN(fallback.getTime())) return toLocalIso(fallback);
-  return null;
-}
-
-function formatEuroShort(amount: number): string {
-  if (amount >= 1000) {
-    const k = amount / 1000;
-    return `${k % 1 === 0 ? k.toFixed(0) : k.toFixed(1)}k€`;
-  }
-  return `${Math.round(amount)}€`;
-}
-
 function formatDayShort(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   if (!y || !m || !d) return "";
@@ -117,6 +32,7 @@ function formatDayShort(iso: string): string {
 
 export function RevenueChart() {
   const payments = useBeharStore((s) => s.payments);
+  const currency = useBeharStore((s) => s.workshopInfo.currency);
 
   // Agrégation par jour des règlements indiqués sur les 30 derniers jours.
   // Source : uniquement payments.status === "Payé" — les factures impayées
@@ -159,7 +75,7 @@ export function RevenueChart() {
   return (
     <div className="w-full">
       <p className="mb-2 text-[12px] text-[#6B6B6B]">
-        Total période : <span className="font-semibold text-[#1A1916]">{formatEuroShort(totalPeriod)}</span>
+        Total période : <span className="font-semibold text-[#1A1916]">{formatMoneyShort(totalPeriod, currency)}</span>
       </p>
       <div className="h-[260px] w-full">
         <svg
@@ -188,7 +104,7 @@ export function RevenueChart() {
                   y2={y}
                 />
                 <text fill="#6B6B6B" fontSize="11" textAnchor="end" x={padding.left - 10} y={y + 4}>
-                  {formatEuroShort(value)}
+                  {formatMoneyShort(value, currency)}
                 </text>
               </g>
             );

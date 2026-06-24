@@ -5,9 +5,10 @@ import type { ReactNode } from "react";
 import {
   type BeharDocument,
   type DocumentType,
+  getBillingWorkshopInfo,
   type useBeharStore,
 } from "@/lib/behar-store";
-import { formatIntakeBonNumber } from "@/lib/utils";
+import { getDocumentFilename } from "@/lib/workshop-country";
 
 import {
   InternalRepairDocument,
@@ -22,7 +23,7 @@ import {
 type BeharStoreSnapshot = ReturnType<typeof useBeharStore.getState>;
 
 export type PrintableDocumentTarget = {
-  type: "intake" | "quote" | "invoice" | "payment" | "internal" | "sale-receipt";
+  type: "intake" | "quote" | "invoice" | "payment" | "internal" | "summary" | "sale-receipt";
   id: string;
 };
 
@@ -37,22 +38,13 @@ const TYPE_LABEL: Record<DocumentType, string> = {
   summary: "Résumé dossier",
 };
 
-const SLUG_LABEL: Record<PrintableDocumentTarget["type"], string> = {
-  intake: "bon-prise-en-charge",
-  quote: "devis",
-  invoice: "facture",
-  payment: "recu-paiement",
-  internal: "fiche-interne",
-  "sale-receipt": "recu-vente",
-};
-
 export function getPrintableTarget(document: BeharDocument): PrintableDocumentTarget | null {
   if (document.type === "intake" && document.repairId) return { type: "intake", id: document.repairId };
   if (document.type === "quote" && document.quoteId) return { type: "quote", id: document.quoteId };
   if (document.type === "invoice" && document.invoiceId) return { type: "invoice", id: document.invoiceId };
   if (document.type === "payment" && document.paymentId) return { type: "payment", id: document.paymentId };
   if (document.type === "internal" && document.repairId) return { type: "internal", id: document.repairId };
-  if (document.type === "summary" && document.repairId) return { type: "internal", id: document.repairId };
+  if (document.type === "summary" && document.repairId) return { type: "summary", id: document.repairId };
   if ((document.type === "sale-receipt" || document.type === "sale-invoice") && document.saleId) {
     return { type: "sale-receipt", id: document.saleId };
   }
@@ -76,21 +68,23 @@ export function getDocumentPreviewTitle(document?: BeharDocument | null) {
 
 export function getDocumentFileName(document: BeharDocument, store: BeharStoreSnapshot) {
   const target = getPrintableTarget(document);
-  const slug = target ? SLUG_LABEL[target.type] : "document";
   const repair = document.repairId ? store.repairs.find((entry) => entry.id === document.repairId) : undefined;
   const quote = document.quoteId ? store.quotes.find((entry) => entry.id === document.quoteId) : undefined;
   const invoice = document.invoiceId ? store.invoices.find((entry) => entry.id === document.invoiceId) : undefined;
   const payment = document.paymentId ? store.payments.find((entry) => entry.id === document.paymentId) : undefined;
+  const paymentInvoice = invoice ?? store.invoices.find((entry) => entry.id === payment?.invoiceId);
   const sale = document.saleId ? store.sales.find((entry) => entry.id === document.saleId) : undefined;
   const rawNumber =
-    sale?.number ??
-    invoice?.number ??
-    quote?.number ??
-    payment?.paymentNumber ??
-    (document.type === "intake" && repair ? formatIntakeBonNumber(repair.number) : repair?.number) ??
-    document.id.slice(-8);
-  const number = String(rawNumber).replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
-  return `${slug}-${number || document.id}.pdf`;
+    target?.type === "payment"
+      ? paymentInvoice?.number ?? payment?.paymentNumber ?? document.id.slice(-8)
+      : sale?.number ??
+        invoice?.number ??
+        quote?.number ??
+        repair?.number ??
+        document.id.slice(-8);
+  return target
+    ? getDocumentFilename(target.type, rawNumber)
+    : `document-${String(rawNumber).replace(/[^a-zA-Z0-9_-]+/g, "-")}.pdf`;
 }
 
 function MissingDocument({ children }: Readonly<{ children: ReactNode }>) {
@@ -115,6 +109,14 @@ export function LocalPrintableDocument({
   const sale = document.saleId ? store.sales.find((entry) => entry.id === document.saleId) : undefined;
   const paymentRepair = repair ?? store.repairs.find((entry) => entry.id === (payment?.repairId ?? invoice?.repairId));
   const counterCustomer = store.customers.find((entry) => entry.type === "counter") ?? store.customers[0];
+  const billingCountry =
+    repair?.billingCountry ??
+    quote?.billingCountry ??
+    invoice?.billingCountry ??
+    payment?.billingCountry ??
+    sale?.billingCountry ??
+    store.workshopInfo.country;
+  const billingWorkshop = getBillingWorkshopInfo(store.workshopInfo, billingCountry);
 
   if (!customer && document.type !== "sale-receipt" && document.type !== "sale-invoice") {
     return <MissingDocument>Client lié introuvable.</MissingDocument>;
@@ -123,10 +125,10 @@ export function LocalPrintableDocument({
   switch (document.type) {
     case "intake":
       if (!repair || !customer) return <MissingDocument>Bon de prise en charge incomplet.</MissingDocument>;
-      return <RepairIntakeDocument customer={customer} repair={repair} workshop={store.workshopInfo} />;
+      return <RepairIntakeDocument customer={customer} repair={repair} workshop={billingWorkshop} />;
     case "quote":
       if (!quote || !customer) return <MissingDocument>Devis incomplet.</MissingDocument>;
-      return <QuoteDocument customer={customer} quote={quote} repair={repair} workshop={store.workshopInfo} />;
+      return <QuoteDocument customer={customer} quote={quote} repair={repair} workshop={billingWorkshop} />;
     case "invoice":
       if (!invoice || !customer) return <MissingDocument>Facture incomplète.</MissingDocument>;
       return (
@@ -135,7 +137,7 @@ export function LocalPrintableDocument({
           invoice={invoice}
           quote={quote}
           repair={repair}
-          workshop={store.workshopInfo}
+          workshop={billingWorkshop}
         />
       );
     case "payment":
@@ -146,20 +148,20 @@ export function LocalPrintableDocument({
           invoice={invoice}
           payment={payment}
           repair={paymentRepair}
-          workshop={store.workshopInfo}
+          workshop={billingWorkshop}
         />
       );
     case "internal":
       if (!repair || !customer) return <MissingDocument>Fiche interne incomplète.</MissingDocument>;
-      return <InternalRepairDocument customer={customer} repair={repair} workshop={store.workshopInfo} />;
+      return <InternalRepairDocument customer={customer} repair={repair} workshop={billingWorkshop} />;
     case "summary":
       // Rapport de réparation côté client : version propre, sans données sensibles.
       if (!repair || !customer) return <MissingDocument>Rapport de réparation incomplet.</MissingDocument>;
-      return <RepairSummaryDocument customer={customer} repair={repair} workshop={store.workshopInfo} />;
+      return <RepairSummaryDocument customer={customer} repair={repair} workshop={billingWorkshop} />;
     case "sale-receipt":
     case "sale-invoice":
       if (!sale) return <MissingDocument>Reçu de vente incomplet.</MissingDocument>;
-      return <SaleReceiptDocument customer={customer ?? counterCustomer} sale={sale} workshop={store.workshopInfo} />;
+      return <SaleReceiptDocument customer={customer ?? counterCustomer} sale={sale} workshop={billingWorkshop} />;
     default:
       return <MissingDocument>Type de document non pris en charge.</MissingDocument>;
   }

@@ -4,8 +4,14 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useR
 
 import { toast } from "sonner";
 
-import { type BeharDocument, useBeharStore } from "@/lib/behar-store";
+import {
+  type BeharDocument,
+  getBillingWorkshopInfo,
+  isWorkshopBillingProfileComplete,
+  useBeharStore,
+} from "@/lib/behar-store";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
+import { getDocumentFilename } from "@/lib/workshop-country";
 
 import {
   InternalRepairDocument,
@@ -22,6 +28,7 @@ type DocumentType = "intake" | "quote" | "invoice" | "payment" | "internal" | "s
 interface DocumentContextType {
   print: (type: DocumentType, id: string) => void;
   download: (type: DocumentType, id: string) => void;
+  preview: (type: DocumentType, id: string) => void;
   /** Génère le PDF et l'upload vers Supabase Storage, puis enregistre l'URL sur le document (documentId). Résout true si publié. */
   uploadToCloud: (type: DocumentType, id: string, documentId: string, opts?: { silent?: boolean }) => Promise<boolean>;
 }
@@ -63,7 +70,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
   const [activeDoc, setActiveDoc] = useState<{
     type: DocumentType;
     id: string;
-    action: "print" | "download" | "upload";
+    action: "print" | "download" | "upload" | "preview";
     /** Document store id cible pour l'action upload (où enregistrer fileUrl). */
     documentId?: string;
     /** Upload en arrière-plan : aucun toast (auto-publication). */
@@ -76,9 +83,26 @@ export function PrintProvider({ children }: { children: ReactNode }) {
   const inFlightRef = useRef(false);
   /** Compteur pour générer des IDs de requête uniques. */
   const reqCounterRef = useRef(0);
+  const pendingPreviewsRef = useRef<Map<number, Window | null>>(new Map());
 
   const print = useCallback((type: DocumentType, id: string) => {
     setActiveDoc({ type, id, action: "print", reqId: ++reqCounterRef.current });
+  }, []);
+
+  const preview = useCallback((type: DocumentType, id: string) => {
+    const newWin = window.open("", "_blank");
+    if (newWin) {
+      newWin.document.title = "Génération du PDF...";
+      newWin.document.body.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; background-color: #FAFAF8; color: #1A1916; margin: 0;">
+          <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Génération de l'aperçu PDF...</div>
+          <div style="font-size: 14px; color: #6B6B6B;">Veuillez patienter quelques instants.</div>
+        </div>
+      `;
+    }
+    const reqId = ++reqCounterRef.current;
+    pendingPreviewsRef.current.set(reqId, newWin);
+    setActiveDoc({ type, id, action: "preview", reqId });
   }, []);
 
   const download = useCallback((type: DocumentType, id: string) => {
@@ -86,6 +110,19 @@ export function PrintProvider({ children }: { children: ReactNode }) {
       // Un download est déjà en cours — on ne relance pas.
       toast.info("Un téléchargement est déjà en cours…");
       return;
+    }
+    if (type === "quote" || type === "invoice") {
+      const state = useBeharStore.getState();
+      const billingCountry =
+        type === "quote"
+          ? state.quotes.find((quote) => quote.id === id)?.billingCountry
+          : state.invoices.find((invoice) => invoice.id === id)?.billingCountry;
+      if (billingCountry && !isWorkshopBillingProfileComplete(state.workshopInfo, billingCountry)) {
+        toast.error(
+          `Complétez le profil de facturation ${billingCountry === "CH" ? "Suisse" : "France"} avant de générer ce document.`,
+        );
+        return;
+      }
     }
     setActiveDoc({ type, id, action: "download", reqId: ++reqCounterRef.current });
   }, []);
@@ -98,6 +135,17 @@ export function PrintProvider({ children }: { children: ReactNode }) {
         if (inFlightRef.current) {
           resolve(false);
           return;
+        }
+        if (type === "quote" || type === "invoice") {
+          const state = useBeharStore.getState();
+          const billingCountry =
+            type === "quote"
+              ? state.quotes.find((quote) => quote.id === id)?.billingCountry
+              : state.invoices.find((invoice) => invoice.id === id)?.billingCountry;
+          if (billingCountry && !isWorkshopBillingProfileComplete(state.workshopInfo, billingCountry)) {
+            resolve(false);
+            return;
+          }
         }
         uploadResolveRef.current = resolve;
         setActiveDoc({ type, id, action: "upload", documentId, silent: opts?.silent, reqId: ++reqCounterRef.current });
@@ -154,31 +202,32 @@ export function PrintProvider({ children }: { children: ReactNode }) {
     const s = storeRef.current;
     if (type === "intake") {
       const repair = s.repairs.find((repair) => repair.id === id);
-      return `bon-prise-en-charge-${repair?.number || id}.pdf`;
+      return getDocumentFilename(type, repair?.number || id);
     }
     if (type === "quote") {
       const quote = s.quotes.find((quote) => quote.id === id);
-      return `devis-${quote?.number || id}.pdf`;
+      return getDocumentFilename(type, quote?.number || id);
     }
     if (type === "invoice") {
       const invoice = s.invoices.find((invoice) => invoice.id === id);
-      return `facture-${invoice?.number || id}.pdf`;
+      return getDocumentFilename(type, invoice?.number || id);
     }
     if (type === "payment") {
       const payment = s.payments.find((payment) => payment.id === id);
-      return `recu-paiement-${payment?.paymentNumber || id}.pdf`;
+      const invoice = s.invoices.find((invoice) => invoice.id === payment?.invoiceId);
+      return getDocumentFilename(type, invoice?.number || payment?.paymentNumber || id);
     }
     if (type === "internal") {
       const repair = s.repairs.find((repair) => repair.id === id);
-      return `fiche-interne-${repair?.number || id}.pdf`;
+      return getDocumentFilename(type, repair?.number || id);
     }
     if (type === "summary") {
       const repair = s.repairs.find((repair) => repair.id === id);
-      return `rapport-reparation-${repair?.number || id}.pdf`;
+      return getDocumentFilename(type, repair?.number || id);
     }
     if (type === "sale-receipt") {
       const sale = s.sales.find((sale) => sale.id === id);
-      return `recu-vente-${sale?.number || id}.pdf`;
+      return getDocumentFilename(type, sale?.number || id);
     }
     return `document-${id}.pdf`;
   }, []);
@@ -202,6 +251,91 @@ export function PrintProvider({ children }: { children: ReactNode }) {
         }
       }, 500);
       return () => clearTimeout(timer);
+    }
+
+    if (activeDoc.action === "preview") {
+      const newWin = pendingPreviewsRef.current.get(currentReqId) ?? null;
+      inFlightRef.current = true;
+      const processingToast = toast.loading("Génération du document pour l'aperçu…");
+      let settled = false;
+      let cancelled = false;
+
+      const finish = (kind: "ok" | "error" | "missing" | "timeout", payload?: string) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(safetyTimer);
+        clearTimeout(startTimer);
+        
+        toast.dismiss(processingToast);
+        inFlightRef.current = false;
+        
+        if (kind !== "ok" && newWin) {
+          newWin.document.body.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; background-color: #FAFAF8; color: #1A1916; margin: 0; padding: 20px; text-align: center;">
+              <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #D9383A;">Erreur de génération</div>
+              <div style="font-size: 14px; color: #6B6B6B; margin-bottom: 16px;">${payload || "Impossible de prévisualiser ce document."}</div>
+              <button onclick="window.close()" style="height: 36px; padding: 0 16px; border: none; border-radius: 8px; background-color: #1A1916; color: white; font-weight: 600; cursor: pointer; border: 1px solid #1A1916;">Fermer l'onglet</button>
+            </div>
+          `;
+        }
+        
+        pendingPreviewsRef.current.delete(currentReqId);
+        setActiveDoc((current) => (current?.reqId === currentReqId ? null : current));
+      };
+
+      const safetyTimer = setTimeout(() => {
+        if (cancelled) return;
+        finish("timeout", "La génération du PDF a expiré.");
+      }, 45_000);
+
+      const startTimer = setTimeout(async () => {
+        if (cancelled) return;
+        try {
+          if (!hiddenContainerRef.current) {
+            finish("missing", "Conteneur PDF absent.");
+            return;
+          }
+
+          const docElement = hiddenContainerRef.current.querySelector(
+            '[data-pdf-paginate="true"], .print-document'
+          ) as HTMLElement | null;
+          if (!docElement) {
+            finish("missing", "Document lié introuvable.");
+            return;
+          }
+
+          const filename = getFilename(activeDoc.type, activeDoc.id);
+
+          const blob = await generatePdfFromElement(docElement, filename, "blob");
+          
+          if (!cancelled && blob) {
+            const blobUrl = URL.createObjectURL(blob);
+            if (newWin) {
+              newWin.location.href = blobUrl;
+            }
+            toast.success("Aperçu généré !");
+            finish("ok");
+          } else {
+            finish("error", "Aucun PDF généré.");
+          }
+        } catch (error) {
+          console.error("Preview error:", error);
+          if (!cancelled) finish("error");
+        }
+      }, 1200);
+
+      return () => {
+        cancelled = true;
+        clearTimeout(startTimer);
+        clearTimeout(safetyTimer);
+        if (!settled) {
+          toast.dismiss(processingToast);
+          inFlightRef.current = false;
+          const currentWin = pendingPreviewsRef.current.get(currentReqId);
+          if (currentWin) currentWin.close();
+          pendingPreviewsRef.current.delete(currentReqId);
+        }
+      };
     }
 
     // ── Download / Upload ─────────────────────────────────────────────────
@@ -350,7 +484,13 @@ export function PrintProvider({ children }: { children: ReactNode }) {
       const repair = store.repairs.find((repair) => repair.id === id);
       const customer = store.customers.find((customer) => customer.id === repair?.customerId);
       if (!repair || !customer) return null;
-      return <RepairIntakeDocument repair={repair} customer={customer} workshop={store.workshopInfo} />;
+      return (
+        <RepairIntakeDocument
+          repair={repair}
+          customer={customer}
+          workshop={getBillingWorkshopInfo(store.workshopInfo, repair.billingCountry)}
+        />
+      );
     }
 
     if (type === "quote") {
@@ -358,7 +498,14 @@ export function PrintProvider({ children }: { children: ReactNode }) {
       const customer = store.customers.find((customer) => customer.id === quote?.customerId);
       const repair = store.repairs.find((repair) => repair.id === quote?.repairId);
       if (!quote || !customer) return null;
-      return <QuoteDocument quote={quote} customer={customer} repair={repair} workshop={store.workshopInfo} />;
+      return (
+        <QuoteDocument
+          quote={quote}
+          customer={customer}
+          repair={repair}
+          workshop={getBillingWorkshopInfo(store.workshopInfo, quote.billingCountry)}
+        />
+      );
     }
 
     if (type === "invoice") {
@@ -373,7 +520,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
           invoice={invoice}
           quote={quote}
           repair={repair}
-          workshop={store.workshopInfo}
+          workshop={getBillingWorkshopInfo(store.workshopInfo, invoice.billingCountry)}
         />
       );
     }
@@ -390,7 +537,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
           invoice={invoice}
           payment={payment}
           repair={repair}
-          workshop={store.workshopInfo}
+          workshop={getBillingWorkshopInfo(store.workshopInfo, payment.billingCountry)}
         />
       );
     }
@@ -399,28 +546,46 @@ export function PrintProvider({ children }: { children: ReactNode }) {
       const repair = store.repairs.find((repair) => repair.id === id);
       const customer = store.customers.find((customer) => customer.id === repair?.customerId);
       if (!repair || !customer) return null;
-      return <InternalRepairDocument repair={repair} customer={customer} workshop={store.workshopInfo} />;
+      return (
+        <InternalRepairDocument
+          repair={repair}
+          customer={customer}
+          workshop={getBillingWorkshopInfo(store.workshopInfo, repair.billingCountry)}
+        />
+      );
     }
 
     if (type === "summary") {
       const repair = store.repairs.find((repair) => repair.id === id);
       const customer = store.customers.find((customer) => customer.id === repair?.customerId);
       if (!repair || !customer) return null;
-      return <RepairSummaryDocument repair={repair} customer={customer} workshop={store.workshopInfo} />;
+      return (
+        <RepairSummaryDocument
+          repair={repair}
+          customer={customer}
+          workshop={getBillingWorkshopInfo(store.workshopInfo, repair.billingCountry)}
+        />
+      );
     }
 
     if (type === "sale-receipt") {
       const sale = store.sales.find((s) => s.id === id);
       const customer = store.customers.find((c) => c.id === sale?.customerId) || store.customers[0];
       if (!sale) return null;
-      return <SaleReceiptDocument sale={sale} customer={customer!} workshop={store.workshopInfo} />;
+      return (
+        <SaleReceiptDocument
+          sale={sale}
+          customer={customer!}
+          workshop={getBillingWorkshopInfo(store.workshopInfo, sale.billingCountry)}
+        />
+      );
     }
 
     return null;
   };
 
   return (
-    <DocumentContext.Provider value={{ print, download, uploadToCloud }}>
+    <DocumentContext.Provider value={{ print, download, preview, uploadToCloud }}>
       {children}
       {/* Container for printing - visible only during print media query */}
       <div className="hidden print:block">
@@ -440,7 +605,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
           zIndex: -1,
         }}
       >
-        {(activeDoc?.action === "download" || activeDoc?.action === "upload") && renderDocument()}
+        {(activeDoc?.action === "download" || activeDoc?.action === "upload" || activeDoc?.action === "preview") && renderDocument()}
       </div>
     </DocumentContext.Provider>
   );

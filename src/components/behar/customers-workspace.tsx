@@ -27,6 +27,7 @@ import { type Customer, formatEuro, formatIsoToDisplay, getNowIso, toLocalIso, u
 import { CALLING_CODES, COUNTRY_NAMES } from "@/lib/countries";
 import { displayCustomerName } from "@/lib/customer-display";
 import { sendRealSms } from "@/lib/send-sms";
+import { getInternalDocumentUrl } from "@/lib/documents/document-actions";
 import { cn } from "@/lib/utils";
 
 import { DeviceSelector } from "../DeviceSelector";
@@ -267,7 +268,9 @@ export function CustomersWorkspace() {
                 <p className="mt-1.5 text-[#6B6B6B] text-[10px] font-medium">clients prioritaires</p>
               </div>
               <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-                <span className="grid size-9 place-items-center text-[#2A9D8F]">€</span>
+                <span className="grid size-9 place-items-center font-semibold text-[#2A9D8F] text-[11px]">
+                  {store.workshopInfo.currency}
+                </span>
                 <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium">CA cumulé</p>
                 <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">
                   {formatEuro(totalSpent)}
@@ -522,7 +525,7 @@ export function CustomersWorkspace() {
                             {group.docs.map((doc) => (
                               <Link
                                 key={doc.id}
-                                href={`/print/document/${doc.id}`}
+                                href={getInternalDocumentUrl(doc)}
                                 className="flex items-center justify-between gap-3 rounded-2xl border border-[#E8E8E5] bg-white p-3 transition hover:border-[#2A9D8F]/40 hover:shadow-md"
                               >
                                 <div className="min-w-0">
@@ -550,7 +553,7 @@ export function CustomersWorkspace() {
                           href={
                             type
                               ? type === "repair"
-                                ? `/dashboard/dossiers/${id}`
+                                ? `/dashboard/dossiers/_/?id=${id}`
                                 : `/dashboard/${type === "quote" ? "devis" : type === "invoice" ? "factures" : type === "payment" ? "paiements" : ""}`
                               : "#"
                           }
@@ -613,7 +616,7 @@ export function CustomersWorkspace() {
                   }
                   store.setSelected("repair", repairId);
                   toast.success("Prise en charge créée");
-                  router.push(`/dashboard/dossiers/${repairId}`);
+                  router.push(`/dashboard/dossiers/_/?id=${repairId}`);
                 }}
               >
                 <Wrench className="size-4" />

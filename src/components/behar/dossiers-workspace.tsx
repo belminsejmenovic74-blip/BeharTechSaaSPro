@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 import {
-  formatEuro,
+  formatCurrency,
   formatIsoToDisplay,
   getInvoiceTotal,
   getQuoteTotal,
@@ -262,7 +262,7 @@ function DossierRow({
     <li>
       <Link
         className="flex items-center gap-4 px-4 py-3 transition hover:bg-[#FAFAFA]"
-        href={`/dashboard/dossiers/${repair.id}`}
+        href={`/dashboard/dossiers/_/?id=${repair.id}`}
       >
         <span className="w-[88px] shrink-0 font-mono font-semibold text-[#167B70] text-xs">#{repair.number}</span>
         <RealDeviceVisual
@@ -281,7 +281,9 @@ function DossierRow({
           {quote ? `Devis ${quote.number}` : "Aucun devis"}
           {invoice ? ` · Fac. ${invoice.number}` : ""}
         </span>
-        <span className="w-[88px] shrink-0 text-right font-semibold text-[#1A1916] text-sm">{formatEuro(amount)}</span>
+        <span className="w-[88px] shrink-0 text-right font-semibold text-[#1A1916] text-sm">
+          {formatCurrency(amount, repair.currency)}
+        </span>
         <span className="w-[120px] shrink-0 text-right">
           <StatusBadge status={repair.status} />
         </span>
@@ -322,7 +324,7 @@ function DossierCard({
   return (
     <Link
       className="block rounded-[16px] border border-[#E8E8E5] bg-white p-3 text-left shadow-[0_4px_14px_rgba(26,25,22,0.035)] transition hover:border-[#2A9D8F]/50 hover:shadow-[0_12px_26px_rgba(26,25,22,0.06)]"
-      href={`/dashboard/dossiers/${repair.id}`}
+      href={`/dashboard/dossiers/_/?id=${repair.id}`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
@@ -350,7 +352,7 @@ function DossierCard({
         <MiniRef label="Facture" value={invoice ? `${invoice.number} · ${invoice.status}` : "Aucune"} />
       </div>
       <div className="mt-3 flex items-center justify-between gap-2 border-[#F7F7F7] border-t pt-3 text-xs">
-        <span className="font-semibold text-[#1A1916]">{formatEuro(amount)}</span>
+        <span className="font-semibold text-[#1A1916]">{formatCurrency(amount, repair.currency)}</span>
         <span className="inline-flex items-center gap-1 text-[#6B6B6B]">
           <CalendarDays className="size-3.5" />
           {lastActivity ? formatIsoToDisplay(new Date(lastActivity).toISOString()) : formatIsoToDisplay(repair.droppedAt)}

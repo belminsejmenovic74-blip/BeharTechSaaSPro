@@ -6,11 +6,16 @@ import { useSearchParams } from "next/navigation";
 
 import { Check, Copy, Download, FileText, Link2, MessageCircle, Phone, Send, ShieldCheck, Wrench } from "lucide-react";
 
+import { getPrintableTarget } from "@/components/behar/local-printable-document";
+import { useDocument } from "@/components/behar/print-provider";
 import { RealDeviceVisual } from "@/components/behar/real-product-visual";
+import { getPublicDocumentUrl } from "@/lib/documents/document-actions";
+import { downloadPdfUrl } from "@/lib/download-file.client";
 import type { PublicRepairDto } from "@/lib/public-dtos";
 import { generateQrDataUrl, publicAbsoluteUrl } from "@/lib/public-link";
-import { useBeharStore } from "@/lib/behar-store";
+import { getBillingWorkshopInfo, type WorkshopInfo, useBeharStore } from "@/lib/behar-store";
 import { getSupabase } from "@/lib/supabase/client";
+import { formatMoney, getDocumentFilename, getWorkshopCountryConfig } from "@/lib/workshop-country";
 
 // Page publique client : fond BLANC PUR, jamais de crème. Branding = boutique.
 const COLORS = { bg: "#FFFFFF", text: "#1A1916", sub: "#6B6B6B", accent: "#2A9D8F", border: "#E8E8E5" };
@@ -105,10 +110,6 @@ function headline(status: string) {
   }
 }
 
-function formatMoney(value: number) {
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(value || 0);
-}
-
 function cleanToken(value?: string | null) {
   const token = (value ?? "").trim();
   return token && token !== "_" ? token : "";
@@ -118,7 +119,7 @@ function tokenFromBrowserUrl() {
   if (typeof window === "undefined") return "";
   const queryToken = cleanToken(new URLSearchParams(window.location.search).get("t"));
   if (queryToken) return queryToken;
-  const [, rawToken] = window.location.pathname.match(/\/suivi\/([^/?#]+)/) ?? [];
+  const [, rawToken] = window.location.pathname.match(/\/(?:p|suivi)\/([^/?#]+)/) ?? [];
   return cleanToken(rawToken ? decodeURIComponent(rawToken) : "");
 }
 
@@ -141,17 +142,40 @@ function snapshotToPublicRepair(state: any, token: string, fallbackWorkshopName?
   const invoices = Array.isArray(state?.invoices) ? state.invoices : [];
   const payments = Array.isArray(state?.payments) ? state.payments : [];
   const ws = state?.workshopSettings ?? state?.workshopInfo ?? {};
+  const billingWorkshop = getBillingWorkshopInfo(
+    ws as WorkshopInfo,
+    repair.billingCountry ?? ws.country ?? "FR",
+  );
+  const countryConfig = getWorkshopCountryConfig(billingWorkshop.country);
   const customer = customers.find((entry: any) => entry?.id === repair.customerId);
-  const shopName = resolveShopName([ws.commercialName, ws.name, ws.brand, fallbackWorkshopName]);
+  const shopName = resolveShopName([
+    billingWorkshop.commercialName,
+    billingWorkshop.name,
+    billingWorkshop.brand,
+    fallbackWorkshopName,
+  ]);
 
   return {
     workshop: {
       name: shopName,
-      logoUrl: ws.showLogo ? ws.logoUrl : undefined,
-      phone: ws.phone || undefined,
-      email: ws.email || undefined,
-      address: ws.address || undefined,
-      city: ws.postalCity || ws.city || undefined,
+      logoUrl: billingWorkshop.showLogo ? billingWorkshop.logoUrl : undefined,
+      phone: billingWorkshop.phone || undefined,
+      email: billingWorkshop.email || undefined,
+      address: billingWorkshop.address || undefined,
+      postalCode: billingWorkshop.postalCode || undefined,
+      city: billingWorkshop.postalCity || billingWorkshop.city || undefined,
+      country: countryConfig.country,
+      currency: countryConfig.currency,
+      locale: countryConfig.locale,
+      canton: countryConfig.country === "CH" ? billingWorkshop.swissCanton || undefined : undefined,
+      businessId:
+        countryConfig.country === "CH" ? billingWorkshop.swissUid || undefined : billingWorkshop.siret || undefined,
+      vatNumber:
+        countryConfig.country === "CH"
+          ? billingWorkshop.swissVatNumber || undefined
+          : billingWorkshop.tvaNumber || undefined,
+      vatApplicable: Boolean(billingWorkshop.vatApplicable),
+      vatMention: billingWorkshop.tvaMention || undefined,
     },
     repair: {
       number: repair.number,
@@ -175,9 +199,14 @@ function snapshotToPublicRepair(state: any, token: string, fallbackWorkshopName?
       .map((doc: any) => ({
         type: doc.type,
         title: doc.title,
-        number: undefined,
+        number:
+          quotes.find((quote: any) => quote.id === doc.quoteId)?.number ||
+          invoices.find((invoice: any) => invoice.id === doc.invoiceId)?.number ||
+          payments.find((payment: any) => payment.id === doc.paymentId)?.paymentNumber ||
+          (doc.type === "intake" ? repair.number : undefined),
         status: "ready",
-        url: doc.fileUrl || `/print/document/${doc.id}?public=1`,
+        previewUrl: getPublicDocumentUrl(doc),
+        downloadUrl: doc.fileUrl || undefined,
       })),
     messages: (repair.messages ?? [])
       .filter((message: any) => message.visibility === "client")
@@ -193,7 +222,8 @@ function snapshotToPublicRepair(state: any, token: string, fallbackWorkshopName?
         number: quote.number,
         status: quote.status,
         totalTtc: quote.totalTtc ?? quote.totalAmount ?? 0,
-        url: documents.find((d: any) => d.quoteId === quote.id && d.type === "quote")?.fileUrl || quote.publicUrl || "",
+        previewUrl: quote.publicUrl || "",
+        downloadUrl: documents.find((d: any) => d.quoteId === quote.id && d.type === "quote")?.fileUrl || undefined,
       })),
     invoiceLinks: invoices
       .filter((invoice: any) => invoice.repairId === repair.id)
@@ -201,7 +231,9 @@ function snapshotToPublicRepair(state: any, token: string, fallbackWorkshopName?
         number: invoice.number,
         status: invoice.status,
         totalTtc: (invoice.lines ?? []).reduce((sum: number, line: any) => sum + (line.total ?? 0), 0),
-        url: documents.find((d: any) => d.invoiceId === invoice.id && d.type === "invoice")?.fileUrl || invoice.publicUrl || "",
+        previewUrl: invoice.publicUrl || "",
+        downloadUrl:
+          documents.find((d: any) => d.invoiceId === invoice.id && d.type === "invoice")?.fileUrl || undefined,
       })),
     receiptLinks: payments
       .filter((payment: any) => payment.repairId === repair.id && payment.status === "Payé")
@@ -209,7 +241,9 @@ function snapshotToPublicRepair(state: any, token: string, fallbackWorkshopName?
         number: payment.paymentNumber,
         status: payment.status,
         amount: payment.amount,
-        url: documents.find((d: any) => d.paymentId === payment.id && d.type === "payment")?.fileUrl || payment.publicUrl || "",
+        previewUrl: payment.publicUrl || "",
+        downloadUrl:
+          documents.find((d: any) => d.paymentId === payment.id && d.type === "payment")?.fileUrl || undefined,
       })),
   };
 }
@@ -268,6 +302,7 @@ function notFound(shopName?: string) {
 }
 
 export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
+  const { download, preview } = useDocument();
   const searchParams = useSearchParams();
   const [browserToken, setBrowserToken] = useState("");
   const token = cleanToken(tokenProp) || cleanToken(searchParams.get("t")) || browserToken;
@@ -276,6 +311,7 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
   const [draft, setDraft] = useState("");
   const [qr, setQr] = useState("");
   const [copied, setCopied] = useState(false);
+  const [downloadingDocument, setDownloadingDocument] = useState("");
 
   const hydrated = useBeharStore((s) => s._hasHydrated);
   const repairs = useBeharStore((s) => s.repairs);
@@ -327,15 +363,36 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
     // Pour un client sur un autre appareil, il n'y a pas de localRepair → on retombe sur le remote (Supabase).
     if (!localRepair) return remote ?? null;
     const customer = customers.find((entry) => entry.id === localRepair.customerId);
-    const shopName = resolveShopName([ws.commercialName, ws.name, ws.brand]);
+    const billingWorkshop = getBillingWorkshopInfo(ws, localRepair.billingCountry);
+    const shopName = resolveShopName([
+      billingWorkshop.commercialName,
+      billingWorkshop.name,
+      billingWorkshop.brand,
+    ]);
+    const countryConfig = getWorkshopCountryConfig(billingWorkshop.country);
     return {
       workshop: {
         name: shopName,
-        logoUrl: ws.showLogo ? ws.logoUrl : undefined,
-        phone: ws.phone || undefined,
-        email: ws.email || undefined,
-        address: ws.address || undefined,
-        city: ws.postalCity || ws.city || undefined,
+        logoUrl: billingWorkshop.showLogo ? billingWorkshop.logoUrl : undefined,
+        phone: billingWorkshop.phone || undefined,
+        email: billingWorkshop.email || undefined,
+        address: billingWorkshop.address || undefined,
+        postalCode: billingWorkshop.postalCode || undefined,
+        city: billingWorkshop.postalCity || billingWorkshop.city || undefined,
+        country: countryConfig.country,
+        currency: countryConfig.currency,
+        locale: countryConfig.locale,
+        canton: countryConfig.country === "CH" ? billingWorkshop.swissCanton || undefined : undefined,
+        businessId:
+          countryConfig.country === "CH"
+            ? billingWorkshop.swissUid || undefined
+            : billingWorkshop.siret || undefined,
+        vatNumber:
+          countryConfig.country === "CH"
+            ? billingWorkshop.swissVatNumber || undefined
+            : billingWorkshop.tvaNumber || undefined,
+        vatApplicable: Boolean(billingWorkshop.vatApplicable),
+        vatMention: billingWorkshop.tvaMention || undefined,
       },
       repair: {
         number: localRepair.number,
@@ -359,9 +416,14 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
         .map((doc) => ({
           type: doc.type,
           title: doc.title,
-          number: undefined,
+          number:
+            quotes.find((quote) => quote.id === doc.quoteId)?.number ||
+            invoices.find((invoice) => invoice.id === doc.invoiceId)?.number ||
+            payments.find((payment) => payment.id === doc.paymentId)?.paymentNumber ||
+            (doc.type === "intake" ? localRepair.number : undefined),
           status: "ready",
-          url: doc.fileUrl || `/print/document/${doc.id}?public=1`,
+          previewUrl: getPublicDocumentUrl(doc),
+          downloadUrl: doc.fileUrl || undefined,
         })),
       messages: (localRepair.messages ?? [])
         .filter((message) => message.visibility === "client")
@@ -379,7 +441,8 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
             number: quote.number,
             status: quote.status,
             totalTtc: quote.totalTtc ?? quote.totalAmount ?? 0,
-            url: document?.fileUrl || (document ? `/print/document/${document.id}?public=1` : ""),
+            previewUrl: document ? getPublicDocumentUrl(document) : "",
+            downloadUrl: document?.fileUrl || undefined,
           };
         }),
       invoiceLinks: invoices
@@ -390,7 +453,8 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
             number: invoice.number,
             status: invoice.status,
             totalTtc: invoice.lines.reduce((sum, line) => sum + line.total, 0),
-            url: document?.fileUrl || (document ? `/print/document/${document.id}?public=1` : ""),
+            previewUrl: document ? getPublicDocumentUrl(document) : "",
+            downloadUrl: document?.fileUrl || undefined,
           };
         }),
       receiptLinks: payments
@@ -401,7 +465,8 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
             number: payment.paymentNumber,
             status: payment.status,
             amount: payment.amount,
-            url: document?.fileUrl || (document ? `/print/document/${document.id}?public=1` : ""),
+            previewUrl: document ? getPublicDocumentUrl(document) : "",
+            downloadUrl: document?.fileUrl || undefined,
           };
         }),
     } satisfies PublicRepairDto;
@@ -409,18 +474,28 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
 
   const publicUrl = useMemo(() => {
     if (localRepair?.publicAccess?.url) return publicAbsoluteUrl(localRepair.publicAccess.url);
-    return token ? publicAbsoluteUrl(`/suivi/${token}`) : "";
+    return token ? publicAbsoluteUrl(`/p/${token}`) : "";
   }, [localRepair, token]);
 
   const documentRows = useMemo(() => {
     if (!data) return [];
-    const rows = [
+    const rows: Array<{
+      key: string;
+      type: string;
+      title: string;
+      status: string;
+      number?: string;
+      previewUrl?: string;
+      downloadUrl?: string;
+    }> = [
       ...data.documents.map((doc) => ({
         key: `${doc.type}:${doc.number || doc.title}`,
         type: doc.type,
         title: doc.title,
         status: doc.status,
-        url: doc.url,
+        number: doc.number,
+        previewUrl: doc.previewUrl,
+        downloadUrl: doc.downloadUrl,
       })),
     ];
     const hasType = (type: string) => rows.some((row) => row.type === type);
@@ -429,9 +504,11 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
         ...data.quoteLinks.map((quote) => ({
           key: `quote:${quote.number}`,
           type: "quote",
-          title: `Devis ${quote.number} - ${formatMoney(quote.totalTtc)}`,
+          title: `Devis ${quote.number} - ${formatMoney(quote.totalTtc, data.workshop.currency)}`,
           status: quote.status,
-          url: quote.url,
+          number: quote.number,
+          previewUrl: quote.previewUrl,
+          downloadUrl: quote.downloadUrl,
         })),
       );
     }
@@ -440,9 +517,11 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
         ...data.invoiceLinks.map((invoice) => ({
           key: `invoice:${invoice.number}`,
           type: "invoice",
-          title: `Facture ${invoice.number} - ${formatMoney(invoice.totalTtc)}`,
+          title: `Facture ${invoice.number} - ${formatMoney(invoice.totalTtc, data.workshop.currency)}`,
           status: invoice.status,
-          url: invoice.url,
+          number: invoice.number,
+          previewUrl: invoice.previewUrl,
+          downloadUrl: invoice.downloadUrl,
         })),
       );
     }
@@ -451,14 +530,51 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
         ...data.receiptLinks.map((receipt) => ({
           key: `receipt:${receipt.number}`,
           type: "payment_receipt",
-          title: `Reçu ${receipt.number} - ${formatMoney(receipt.amount)}`,
+          title: `Reçu ${receipt.number} - ${formatMoney(receipt.amount, data.workshop.currency)}`,
           status: receipt.status,
-          url: receipt.url,
+          number: receipt.number,
+          previewUrl: receipt.previewUrl,
+          downloadUrl: receipt.downloadUrl,
         })),
       );
     }
-    return rows;
-  }, [data]);
+    return rows.map((row) => {
+      const linkedQuote = row.type === "quote" ? quotes.find((quote) => quote.number === row.number) : undefined;
+      const linkedInvoice =
+        row.type === "invoice" ? invoices.find((invoice) => invoice.number === row.number) : undefined;
+      const linkedPayment =
+        row.type === "payment_receipt"
+          ? payments.find((payment) => payment.paymentNumber === row.number)
+          : undefined;
+      const localDocument = localRepair
+        ? documents.find((document) => {
+            if (document.repairId !== localRepair.id) return false;
+            if (linkedQuote) return document.quoteId === linkedQuote.id;
+            if (linkedInvoice) return document.invoiceId === linkedInvoice.id;
+            if (linkedPayment) return document.paymentId === linkedPayment.id;
+            if (row.type === "payment_receipt") return document.type === "payment";
+            return document.type === row.type;
+          })
+        : undefined;
+      const localTarget = localDocument ? getPrintableTarget(localDocument) : null;
+      const filenameType =
+        row.type === "payment_receipt"
+          ? "payment"
+          : row.type === "repair_intake"
+            ? "intake"
+            : row.type === "sale_receipt"
+              ? "sale-receipt"
+              : row.type;
+      return {
+        ...row,
+        localTarget,
+        filename: getDocumentFilename(
+          filenameType as "intake" | "quote" | "invoice" | "payment" | "sale-receipt",
+          row.number || localRepair?.number || "document",
+        ),
+      };
+    });
+  }, [data, documents, invoices, localRepair, payments, quotes]);
 
   useEffect(() => {
     if (publicUrl) generateQrDataUrl(publicUrl).then(setQr).catch(() => setQr(""));
@@ -686,30 +802,56 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-semibold text-[14px]">{doc.title}</p>
                       <p className="text-[12px]" style={{ color: COLORS.sub }}>
-                        {doc.url ? "Disponible" : "À venir"}
+                        {doc.previewUrl || doc.downloadUrl || doc.localTarget ? "Disponible" : "À venir"}
                       </p>
                     </div>
-                    {doc.url ? (
+                    {doc.previewUrl || doc.downloadUrl || doc.localTarget ? (
                       <div className="flex shrink-0 items-center gap-1.5">
-                        <a
-                          href={doc.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="rounded-full px-3 py-1 font-semibold text-[12.5px]"
-                          style={{ background: "#E6F4F1", color: "#1E7A6E" }}
-                        >
-                          Ouvrir
-                        </a>
-                        <a
-                          href={doc.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        {doc.previewUrl || doc.downloadUrl || doc.localTarget ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (doc.localTarget) {
+                                preview(doc.localTarget.type, doc.localTarget.id);
+                                return;
+                              }
+                              if (doc.downloadUrl) {
+                                window.open(doc.downloadUrl, "_blank", "noopener,noreferrer");
+                                return;
+                              }
+                              if (doc.previewUrl) {
+                                window.open(doc.previewUrl, "_blank", "noopener,noreferrer");
+                              }
+                            }}
+                            className="rounded-full px-3 py-1 font-semibold text-[12.5px]"
+                            style={{ background: "#E6F4F1", color: "#1E7A6E" }}
+                          >
+                            Ouvrir
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          disabled={downloadingDocument === doc.key}
+                          onClick={() => {
+                            if (doc.downloadUrl) {
+                              setDownloadingDocument(doc.key);
+                              void downloadPdfUrl(doc.downloadUrl, doc.filename).finally(() =>
+                                setDownloadingDocument(""),
+                              );
+                              return;
+                            }
+                            if (doc.localTarget) {
+                              download(doc.localTarget.type, doc.localTarget.id);
+                              return;
+                            }
+                            if (doc.previewUrl) window.open(doc.previewUrl, "_blank", "noopener,noreferrer");
+                          }}
                           aria-label="Télécharger le document"
-                          className="grid size-8 place-items-center rounded-full border"
+                          className="grid size-8 place-items-center rounded-full border disabled:opacity-50"
                           style={{ borderColor: COLORS.border, color: COLORS.sub }}
                         >
                           <Download className="size-4" />
-                        </a>
+                        </button>
                       </div>
                     ) : (
                       <span

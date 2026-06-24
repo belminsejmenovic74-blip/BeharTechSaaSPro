@@ -13,7 +13,7 @@ async function clickFirstButton(page: Page, names: string[]): Promise<void> {
       const count = await buttons.count();
       for (let index = 0; index < count; index += 1) {
         const button = buttons.nth(index);
-        if (await button.isVisible().catch(() => false)) {
+        if ((await button.isVisible().catch(() => false)) && (await button.isEnabled().catch(() => false))) {
           await button.click();
           return;
         }
@@ -26,7 +26,14 @@ async function clickFirstButton(page: Page, names: string[]): Promise<void> {
 
 async function createCounterRepair(page: Page, marker: string): Promise<void> {
   await page.goto("/dashboard/reparations", { waitUntil: "domcontentloaded" });
-  await clickFirstButton(page, ["Nouvelle réparation", "Nouvelle reparation", "Ajouter réparation", "Nouveau"]);
+  await clickFirstButton(page, [
+    "Nouvelle prise en charge",
+    "Nouvelle réparation",
+    "Nouvelle reparation",
+    "Ajouter une réparation",
+    "Ajouter réparation",
+    "Nouveau",
+  ]);
 
   await page
     .getByLabel("Client comptoir")
@@ -59,7 +66,7 @@ async function createCounterRepair(page: Page, marker: string): Promise<void> {
   }
   await page.getByPlaceholder("Nom intervention (ex: Lecteur carte SIM)").first().fill(`Sync écran ${marker}`);
   await page
-    .getByPlaceholder("Prix client final (€)")
+    .getByPlaceholder(/Prix client final/i)
     .first()
     .fill("129")
     .catch(() => undefined);

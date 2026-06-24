@@ -9,6 +9,7 @@ import type {
   PublicWorkshopDto,
 } from "@/lib/public-dtos";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { getWorkshopCountryConfig } from "@/lib/workshop-country";
 
 type Supabase = NonNullable<ReturnType<typeof getSupabaseAdmin>>;
 
@@ -24,13 +25,24 @@ const REPAIR_STATUS_LABELS: Record<string, string> = {
 
 function workshopDto(workshop: any): PublicWorkshopDto {
   const name = workshop?.commercial_name || workshop?.name || workshop?.brand || "Votre atelier";
+  const config = getWorkshopCountryConfig(workshop?.country);
+  const isSwiss = config.country === "CH";
   return {
     name,
     logoUrl: workshop?.logo_url || undefined,
     phone: workshop?.phone || undefined,
     email: workshop?.email || undefined,
     address: workshop?.address || undefined,
+    postalCode: workshop?.postal_code || undefined,
     city: workshop?.city || undefined,
+    country: config.country,
+    currency: config.currency,
+    locale: config.locale,
+    canton: isSwiss ? workshop?.swiss_canton || undefined : undefined,
+    businessId: isSwiss ? workshop?.swiss_uid || undefined : workshop?.siret || undefined,
+    vatNumber: isSwiss ? workshop?.swiss_vat_number || undefined : workshop?.vat_number || undefined,
+    vatApplicable: workshop?.vat_regime === "vat" || workshop?.vat_regime === "vat_subject",
+    vatMention: workshop?.vat_mention || undefined,
   };
 }
 
@@ -67,7 +79,7 @@ export async function getPublicRepair(token: string): Promise<PublicRepairDto | 
         .order("created_at", { ascending: true }),
       supabase
         .from("documents")
-        .select("document_type, title, document_number, status, public_url, file_url")
+        .select("document_type, title, document_number, status, public_url, file_url, quote_id, invoice_id, payment_id")
         .eq("repair_id", repair.id)
         .eq("public_visible", true)
         .neq("document_type", "internal_intervention_sheet")
@@ -80,19 +92,19 @@ export async function getPublicRepair(token: string): Promise<PublicRepairDto | 
         .order("created_at", { ascending: true }),
       supabase
         .from("quotes")
-        .select("quote_number, status, total_ttc, public_url")
+        .select("id, quote_number, status, total_ttc, public_url")
         .eq("repair_id", repair.id)
         .eq("public_active", true)
         .order("created_at", { ascending: true }),
       supabase
         .from("invoices")
-        .select("invoice_number, status, total_ttc, public_url")
+        .select("id, invoice_number, status, total_ttc, public_url")
         .eq("repair_id", repair.id)
         .eq("public_active", true)
         .order("created_at", { ascending: true }),
       supabase
         .from("payments")
-        .select("payment_number, status, amount, public_url")
+        .select("id, payment_number, status, amount, public_url")
         .eq("repair_id", repair.id)
         .eq("public_active", true)
         .order("created_at", { ascending: true }),
@@ -132,7 +144,8 @@ export async function getPublicRepair(token: string): Promise<PublicRepairDto | 
       title: doc.title,
       number: doc.document_number || undefined,
       status: doc.status,
-      url: doc.file_url || doc.public_url || undefined,
+      previewUrl: doc.public_url || undefined,
+      downloadUrl: doc.file_url || undefined,
     })),
     messages: (messagesRes.data ?? []).map((message: any) => ({
       authorType: message.author_type,
@@ -144,19 +157,30 @@ export async function getPublicRepair(token: string): Promise<PublicRepairDto | 
       number: quote.quote_number,
       status: quote.status,
       totalTtc: Number(quote.total_ttc ?? 0),
-      url: quote.public_url,
+      previewUrl: quote.public_url,
+      downloadUrl:
+        (docsRes.data ?? []).find((doc: any) => doc.document_type === "quote" && doc.quote_id === quote.id)?.file_url ||
+        undefined,
     })),
     invoiceLinks: (invoicesRes.data ?? []).map((invoice: any) => ({
       number: invoice.invoice_number,
       status: invoice.status,
       totalTtc: Number(invoice.total_ttc ?? 0),
-      url: invoice.public_url,
+      previewUrl: invoice.public_url,
+      downloadUrl:
+        (docsRes.data ?? []).find(
+          (doc: any) => doc.document_type === "invoice" && doc.invoice_id === invoice.id,
+        )?.file_url || undefined,
     })),
     receiptLinks: (paymentsRes.data ?? []).map((payment: any) => ({
       number: payment.payment_number,
       status: payment.status,
       amount: Number(payment.amount ?? 0),
-      url: payment.public_url,
+      previewUrl: payment.public_url,
+      downloadUrl:
+        (docsRes.data ?? []).find(
+          (doc: any) => doc.document_type === "payment_receipt" && doc.payment_id === payment.id,
+        )?.file_url || undefined,
     })),
   };
 }
@@ -300,7 +324,8 @@ export async function getPublicCommercialDocument(
       type: doc.document_type,
       title: doc.title,
       status: doc.status,
-      url: doc.file_url || doc.public_url || undefined,
+      previewUrl: doc.public_url || undefined,
+      downloadUrl: doc.file_url || undefined,
     })),
   };
 }

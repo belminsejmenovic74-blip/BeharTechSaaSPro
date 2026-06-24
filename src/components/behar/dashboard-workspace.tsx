@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { DetailRow, Panel, PrimaryButton, StatusBadge } from "@/components/behar/primitives";
 import { RevenueChart } from "@/components/behar/revenue-chart";
 import { formatEuro, formatIsoToDisplay, isTerminalRepairStatus, normalizeAppointmentStatus, type RepairStatus, useBeharStore } from "@/lib/behar-store";
+import { isBuybackDecision, useConditionneStore } from "@/lib/conditionne-store";
+import { paymentDateToIso } from "@/lib/payment-date";
 import type { RepairCard } from "@/mock/repairs";
 
 // Action principale dynamique du panneau détail (même logique que le comptoir).
@@ -25,6 +27,7 @@ const DASHBOARD_NEXT_STATUS: Partial<Record<RepairStatus, { next: RepairStatus; 
 
 export function DashboardWorkspace() {
   const store = useBeharStore();
+  const conditionneRecords = useConditionneStore((s) => s.records);
   const selected = store.repairs.find((repair) => repair.id === store.selectedRepairId) ?? store.repairs[0];
   const customer = selected ? store.customers.find((entry) => entry.id === selected.customerId) : undefined;
   const unpaidInvoices = store.invoices.filter((invoice) => invoice.status !== "Payée");
@@ -54,17 +57,22 @@ export function DashboardWorkspace() {
   const todaysPaidPayments = store.payments.filter(
     (payment) =>
       payment.status === "Payé" &&
-      ((payment.createdAt || "").slice(0, 10) === todayIsoLocal ||
-        payment.date === todayIsoLocal ||
-        payment.date === today ||
-        payment.date?.startsWith("Aujourd'hui")),
+      // Les paiements stockent un libellé humain ("09 juin 2026, 14:32"), pas un ISO :
+      // on normalise via paymentDateToIso (sinon les règlements du jour ne sont jamais comptés).
+      (paymentDateToIso(payment.date) === todayIsoLocal || paymentDateToIso(payment.createdAt) === todayIsoLocal),
   );
   const paidTodayRepairIds = new Set(todaysPaidPayments.map((payment) => payment.repairId).filter(Boolean));
-  // CA encaissé du jour : règlements réparation + ventes comptoir (paySale crée un Payment lié au saleId).
+  // CA réglé du jour : règlements réparation + ventes comptoir (paySale crée un Payment lié au saleId).
   const revenueToday = todaysPaidPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
-  // Ventes comptoir du jour (§3) — accessoires/produits encaissés hors Behar Tech Pro.
+  // Rachats du jour : un téléphone racheté (envoyé en reconditionnement) est une sortie externe.
+  // On déduit le prix de rachat du CA du jour (CA net). Les brouillons/estimations ne comptent pas.
+  const buybacksToday = conditionneRecords
+    .filter((record) => isBuybackDecision(record.decision) && paymentDateToIso(record.createdAt) === todayIsoLocal)
+    .reduce((sum, record) => sum + (record.prixPropose || 0), 0);
+  const netRevenueToday = revenueToday - buybacksToday;
+  // Ventes comptoir du jour (§3) — accessoires/produits réglés hors Behar Tech Pro.
   const todaysSales = store.sales.filter(
-    (sale) => sale.status !== "Annulée" && (sale.createdAt || "").slice(0, 10) === todayIsoLocal,
+    (sale) => sale.status !== "Annulée" && paymentDateToIso(sale.createdAt) === todayIsoLocal,
   );
   const todaysSalesTotal = todaysSales.reduce((sum, sale) => sum + (sale.total || 0), 0);
   const lowStockItems = store.stockItems.filter((item) => item.stock <= item.threshold);
@@ -133,9 +141,9 @@ export function DashboardWorkspace() {
     },
     {
       label: "CA du jour",
-      value: formatEuro(revenueToday),
+      value: formatEuro(netRevenueToday),
       trend: "",
-      helper: "réparations + comptoir",
+      helper: buybacksToday > 0 ? `${formatEuro(revenueToday)} − ${formatEuro(buybacksToday)} rachats` : "réparations + comptoir − rachats",
       icon: TrendingUp,
       href: "/dashboard/paiements",
     },
@@ -406,7 +414,7 @@ export function DashboardWorkspace() {
               <Link
                 aria-label="Ouvrir le dossier réparation"
                 className="rounded-full p-1 text-[#6B6B6B] transition hover:bg-[#FAFAFA] hover:text-[#1A1916]"
-                href={`/dashboard/dossiers/${selected.id}`}
+                href={`/dashboard/dossiers/_/?id=${selected.id}`}
                 onClick={() => store.setSelected("repair", selected.id)}
               >
                 <MoreHorizontal className="size-5" />
@@ -474,7 +482,7 @@ export function DashboardWorkspace() {
                   ) : null}
                   <Link
                     className="flex h-10 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3 font-medium text-[#1A1916] text-[13px] transition hover:border-[#2A9D8F]/40"
-                    href={`/dashboard/dossiers/${selected.id}`}
+                    href={`/dashboard/dossiers/_/?id=${selected.id}`}
                     onClick={() => store.setSelected("repair", selected.id)}
                   >
                     <FolderOpen className="size-4" />

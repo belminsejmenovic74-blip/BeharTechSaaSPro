@@ -45,9 +45,11 @@ import {
 import { toast } from "sonner";
 
 import { BeharLogo } from "@/components/behar/behar-logo";
+import { ConditionneScreen } from "@/components/behar/conditionne-workspace";
 import { getPrintableTarget } from "@/components/behar/local-printable-document";
 import { RealDeviceVisual, RealProductVisual } from "@/components/behar/real-product-visual";
 import { useDocument } from "@/components/behar/print-provider";
+import { TrackingQrModal } from "@/components/behar/tracking-qr-modal";
 import { DeviceSelector } from "@/components/DeviceSelector";
 import { ProblemSelector } from "@/components/ProblemSelector";
 import { deviceCatalog } from "@/data/deviceCatalog";
@@ -60,6 +62,7 @@ import {
 } from "@/lib/documents/document-actions";
 import {
   deviceBrands as catalogDeviceBrands,
+  formatCurrency,
   formatEuro,
   getQuoteDevices,
   getQuoteTotal,
@@ -76,9 +79,11 @@ import {
   type QuoteLine,
   type Repair,
   type RepairIntakeCondition,
+  type WorkshopCountry,
   useBeharStore,
 } from "@/lib/behar-store";
 import { cn, formatDateTimeFr, formatIntakeBonNumber } from "@/lib/utils";
+import { getWorkshopCountryConfig } from "@/lib/workshop-country";
 
 type Tile = {
   id: string;
@@ -106,7 +111,7 @@ async function copyCounterText(value: string) {
       return true;
     }
   } catch {
-    // Certains navigateurs de caisse refusent l'API Clipboard : on utilise le fallback ci-dessous.
+    // Certains navigateurs refusent parfois l'API Clipboard : on utilise le fallback ci-dessous.
   }
   const textarea = document.createElement("textarea");
   textarea.value = value;
@@ -161,13 +166,10 @@ const counterAccessoryProducts = [
   { id: "free_support_voiture", name: "Support voiture", price: 16.9 },
 ] as const;
 
-const counterPaymentMethods: PaymentMethod[] = [
-  "TPE externe",
-  "Espèces hors Behar Tech",
-  "Virement",
-  "Lien externe",
-  "Autre",
-];
+const counterPaymentMethods = (country: "FR" | "CH", twintEnabled = true): PaymentMethod[] =>
+  country === "CH"
+    ? ["Espèces", ...(twintEnabled ? ["TWINT" as const] : []), "Carte externe", "Virement", "Autre"]
+    : ["TPE externe", "Espèces hors Behar Tech", "Virement", "Lien externe", "Autre"];
 
 function parseCounterMoney(value: string) {
   const amount = Number.parseFloat(value.replace(",", "."));
@@ -206,7 +208,27 @@ function buildCounterTimeSlots(dateValue: string) {
   });
 }
 
-export function ComptoirWorkspace() {
+type CounterScreen =
+  | "home"
+  | "intake"
+  | "quote"
+  | "quotes"
+  | "checkout"
+  | "follow"
+  | "sale"
+  | "appointments"
+  | "clients"
+  | "scanner"
+  | "dossiers"
+  | "repair-detail"
+  | "tracking"
+  | "invoices"
+  | "documents"
+  | "reconditionne";
+
+export function ComptoirWorkspace({
+  initialScreen = "home",
+}: Readonly<{ initialScreen?: CounterScreen }>) {
   const router = useRouter();
   const currentUser = useBeharStore((s) => s.currentUser);
   const workshopInfo = useBeharStore((s) => s.workshopInfo);
@@ -214,23 +236,7 @@ export function ComptoirWorkspace() {
   const logout = useBeharStore((s) => s.logout);
   const addAuditLog = useBeharStore((s) => s.addAuditLog);
 
-  const [counterScreen, setCounterScreen] = useState<
-    | "home"
-    | "intake"
-    | "quote"
-    | "quotes"
-    | "checkout"
-    | "follow"
-    | "sale"
-    | "appointments"
-    | "clients"
-    | "scanner"
-    | "dossiers"
-    | "repair-detail"
-    | "tracking"
-    | "invoices"
-    | "documents"
-  >("home");
+  const [counterScreen, setCounterScreen] = useState<CounterScreen>(initialScreen);
   const [counterRepairId, setCounterRepairId] = useState("");
   const [repairPrefill, setRepairPrefill] = useState<Partial<Repair> | undefined>(undefined);
   const [intakeInitialStep, setIntakeInitialStep] = useState(0);
@@ -328,10 +334,18 @@ export function ComptoirWorkspace() {
     {
       id: "sale",
       label: "Vente comptoir",
-      description: "Encaisser une vente simple",
+      description: "Marquer une vente réglée hors Behar Tech",
       icon: ShoppingBag,
       permission: "canViewSales",
       onClick: () => setCounterScreen("sale"),
+    },
+    {
+      id: "reconditionne",
+      label: "Reconditionné",
+      description: "Estimation & reprise téléphone",
+      icon: Smartphone,
+      permission: null,
+      onClick: () => setCounterScreen("reconditionne"),
     },
     {
       id: "quotes",
@@ -531,6 +545,7 @@ export function ComptoirWorkspace() {
         {counterScreen === "documents" && (
           <CounterDocumentsScreen onClose={() => setCounterScreen("home")} repairId={docFilterRepairId || undefined} />
         )}
+        {counterScreen === "reconditionne" && <ConditionneScreen onClose={() => setCounterScreen("home")} />}
         {counterScreen === "tracking" && (
           <CounterTrackingScreen
             initialRepairId={counterRepairId}
@@ -1171,10 +1186,26 @@ function clarifyCounterPrestationLabel(label: string) {
   return clean;
 }
 
+// Interventions fréquentes consoles (PS5, Xbox, Switch…). Le catalogue aide mais
+// ne bloque jamais la saisie libre : « Autre » + le champ prix restent disponibles.
+function consolePrestationLabels(model: string): string[] {
+  const compact = compactText(model);
+  const isPs5 = compact.includes("ps5") || compact.includes("playstation 5");
+  return [
+    isPs5 ? "Remplacement port HDMI PS5" : "Remplacement port HDMI",
+    "Nettoyage console",
+    "Remplacement pâte thermique console",
+    "Diagnostic console",
+    "Remplacement ventilateur console",
+    "Autre",
+  ];
+}
+
 function counterPrestationOptions(
   priceBookItems: ReturnType<typeof useBeharStore.getState>["priceBookItems"],
   brand: string,
   model: string,
+  deviceType?: DeviceType,
 ) {
   const byLabel = new Map<string, { label: string; lookupLabel: string; prixClient: number; source: "catalogue" | "motif" }>();
   for (const entry of cataloguePrestationsForModel(priceBookItems, brand, model)) {
@@ -1184,7 +1215,10 @@ function counterPrestationOptions(
       byLabel.set(key, { label, lookupLabel: entry.label, prixClient: entry.prixClient, source: "catalogue" });
     }
   }
-  for (const entry of intakeProblems) {
+  // Pour les consoles, on propose les interventions dédiées plutôt que la liste
+  // générique smartphone (écran/vitre/caméra) inadaptée.
+  const motifLabels = deviceType === "Console" ? consolePrestationLabels(model) : intakeProblems;
+  for (const entry of motifLabels) {
     const label = clarifyCounterPrestationLabel(entry);
     const key = compactText(label);
     const price = findCataloguePrice(priceBookItems, brand, model, entry);
@@ -1266,8 +1300,21 @@ function ModelTouchSelector({
   const filteredOptions = useMemo(() => {
     const q = compactText(query);
     const filtered = q ? allOptions.filter((entry) => compactText(entry).includes(q)) : allOptions;
-    return filtered.slice(0, expanded ? 48 : 12);
-  }, [allOptions, expanded, query]);
+    // Recherche active : on remonte beaucoup plus de résultats pour ne jamais
+    // « couper » un modèle (ex. Galaxy S22, loin dans la liste Samsung triée).
+    const limit = q ? 48 : expanded ? 48 : 12;
+    const visible = filtered.slice(0, limit);
+    // Le modèle déjà sélectionné reste toujours affiché — même replié et hors des
+    // premiers résultats — pour qu'il ne « disparaisse » jamais après sélection.
+    if (
+      value &&
+      !visible.some((entry) => compactText(entry) === compactText(value)) &&
+      allOptions.some((entry) => compactText(entry) === compactText(value))
+    ) {
+      return [value, ...visible];
+    }
+    return visible;
+  }, [allOptions, expanded, query, value]);
   const canCreate = query.trim().length > 0 && !allOptions.some((entry) => compactText(entry) === compactText(query));
 
   useEffect(() => {
@@ -1369,6 +1416,20 @@ function CounterIntakeScreen({
   const [name, setName] = useState(prefillAppointment?.clientName ?? "");
   const [phone, setPhone] = useState(prefillAppointment?.clientPhone ?? "");
   const [email, setEmail] = useState(prefillAppointment?.clientEmail ?? "");
+  const allowedMarkets = store.workshopSettings.allowedMarkets || [store.workshopInfo.country];
+  const defaultMarket = store.workshopSettings.defaultMarket || store.workshopInfo.country;
+
+  const [billingCountry, setBillingCountry] = useState<WorkshopCountry>(
+    prefill?.billingCountry ?? defaultMarket,
+  );
+  const billingConfig = getWorkshopCountryConfig(billingCountry);
+  const formatDossier = (value: number) => formatCurrency(value, billingConfig.currency);
+
+  useEffect(() => {
+    if (allowedMarkets.length === 1 && billingCountry !== allowedMarkets[0]) {
+      setBillingCountry(allowedMarkets[0]);
+    }
+  }, [allowedMarkets, billingCountry]);
   const [deviceType, setDeviceType] = useState<DeviceType>(prefill?.deviceType ?? "Smartphone");
   const [brand, setBrand] = useState(prefill?.brandName ?? "");
   const [model, setModel] = useState(prefill?.deviceModel ?? "");
@@ -1387,12 +1448,15 @@ function CounterIntakeScreen({
   const [showAllAccessories, setShowAllAccessories] = useState(false);
   const [photos, setPhotos] = useState<Record<CounterPhotoKey, string>>({ avant: "", arriere: "", defaut: "", accessoires: "" });
   const [signature, setSignature] = useState("");
+  // Anti-litige : au moins une photo est requise, sauf décision explicite et
+  // volontaire de continuer sans photo (caméra indisponible sur desktop, etc.).
+  const [noPhotoConfirmed, setNoPhotoConfirmed] = useState(false);
 
   const selectedCustomer = store.customers.find((customer) => customer.id === existingCustomerId);
   const counterCustomer = store.customers.find((customer) => customer.type === "counter" || customer.name.startsWith("Client comptoir"));
   const prestationOptions = useMemo(
-    () => counterPrestationOptions(store.priceBookItems, brand, model),
-    [store.priceBookItems, brand, model],
+    () => counterPrestationOptions(store.priceBookItems, brand, model, deviceType),
+    [store.priceBookItems, brand, model, deviceType],
   );
   const addonSuggestions = useMemo(() => addonSuggestionsFor(prestations, model), [prestations, model]);
   const allAddonOptions = useMemo(() => {
@@ -1469,10 +1533,10 @@ function CounterIntakeScreen({
   };
 
   const selectPrestation = (option: { label: string; lookupLabel: string; prixClient: number }) => {
+    // Aucun accessoire n'est coché automatiquement : le verre trempé (ou toute autre
+    // vente additionnelle) ne s'ajoute au total que si le réparateur le sélectionne
+    // volontairement. On se contente d'enregistrer l'intervention principale.
     togglePrestation(option);
-    if ((compactText(option.label).includes("ecran") || compactText(option.lookupLabel).includes("vitre")) && !selectedAddons.includes("addon_verre_trempe")) {
-      setSelectedAddons((prev) => [...prev, "addon_verre_trempe"]);
-    }
   };
 
   const resolveIntakeCustomerId = () => {
@@ -1506,6 +1570,11 @@ function CounterIntakeScreen({
       toast.error("La signature est obligatoire pour créer une prise en charge validée.");
       return "";
     }
+    const hasIntakePhoto = Object.values(photos).some(Boolean);
+    if (!hasIntakePhoto && !noPhotoConfirmed && !options.draft) {
+      toast.error("Ajoutez au moins une photo ou confirmez « Continuer sans photo ».");
+      return "";
+    }
     const now = new Date().toISOString();
     const isDraft = options.draft === true;
     const signedMetadata = signature
@@ -1519,6 +1588,9 @@ function CounterIntakeScreen({
       : {};
     const repairPayload: Parameters<typeof store.addRepair>[0] = {
       customerId,
+      billingCountry,
+      currency: billingConfig.currency,
+      locale: billingConfig.locale,
       appointmentId: prefill?.appointmentId,
       device: deviceLabel || model,
       issue: prestations.join(", "),
@@ -1532,7 +1604,10 @@ function CounterIntakeScreen({
       brandName: brand,
       deviceModel: model,
       imei: imei.trim(),
-      history: [isDraft ? "Brouillon de prise en charge enregistré au comptoir" : "Dossier créé au comptoir"],
+      history: [
+        isDraft ? "Brouillon de prise en charge enregistré au comptoir" : "Dossier créé au comptoir",
+        ...(!isDraft && !hasIntakePhoto ? ["Prise en charge validée sans photo."] : []),
+      ],
       counterPrestations: [
         ...prestations.map((label) => ({ label, prixClient: prestations.length ? baseAmount / prestations.length : baseAmount })),
         ...allAddonOptions
@@ -1622,6 +1697,18 @@ function CounterIntakeScreen({
       {step === 0 && (
         <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
           <section className="space-y-4 rounded-[20px] border border-[#E8E8E5] bg-white p-5">
+            {allowedMarkets.length > 1 && (
+              <div className="rounded-[16px] border border-[#DDEFEA] bg-[#F6FCFA] p-4">
+                <p className="font-bold text-[14px]">Pays de facturation / marché</p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {allowedMarkets.map((country) => (
+                    <SelectTile key={country} active={billingCountry === country} onClick={() => setBillingCountry(country)}>
+                      {country === "CH" ? "Suisse · CHF" : "France · EUR"}
+                    </SelectTile>
+                  ))}
+                </div>
+              </div>
+            )}
             <h2 className="font-bold">1. Client</h2>
             <div className="grid grid-cols-3 gap-3">
               <SelectTile active={clientMode === "counter"} onClick={() => setClientMode("counter")}><User className="size-5" />Client comptoir</SelectTile>
@@ -1664,7 +1751,7 @@ function CounterIntakeScreen({
                 >
                   <span className="block font-black text-[14px] leading-tight">{entry.label}</span>
                   <span className="mt-2 block font-black text-[#1E7A6E] text-[15px] tabular-nums">
-                    {entry.prixClient > 0 ? formatEuro(entry.prixClient) : "Prix à saisir"}
+                    {entry.prixClient > 0 ? formatDossier(entry.prixClient) : "Prix à saisir"}
                   </span>
                 </button>
               ))}
@@ -1741,6 +1828,9 @@ function CounterIntakeScreen({
                   <p className="mt-1 text-[#6E6E73] text-sm">
                     Si le client parle d'accessoires, propose en priorité la protection adaptée.
                   </p>
+                  <p className="mt-1 text-[#6E6E73] text-[12px] font-medium">
+                    Options proposées — non incluses tant qu'elles ne sont pas sélectionnées.
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -1775,7 +1865,7 @@ function CounterIntakeScreen({
                     )}
                     <span className="block pr-6 font-bold text-[14px]">{addon.label}</span>
                     <span className="mt-2 block text-[#1E7A6E] text-[15px] font-black tabular-nums">
-                      {formatEuro(addon.prixClient)}
+                      {formatDossier(addon.prixClient)}
                     </span>
                     <span className="mt-2 block text-[#6E6E73] text-[11px] font-medium">{addon.reason}</span>
                   </button>
@@ -1803,7 +1893,7 @@ function CounterIntakeScreen({
 
       {step === 2 && (
         <div className="space-y-4">
-          <div className="grid grid-cols-4 gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-4 text-[13px]"><b>Client<br />{customerLabel}</b><b>Appareil<br />{deviceLabel}</b><b>Intervention<br />{prestations.join(", ")}</b><b>Prix client<br />{formatEuro(amount)}</b></div>
+          <div className="grid grid-cols-4 gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-4 text-[13px]"><b>Client<br />{customerLabel}</b><b>Appareil<br />{deviceLabel}</b><b>Intervention<br />{prestations.join(", ")}</b><b>Prix client<br />{formatDossier(amount)}</b></div>
           <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5">
             <h2 className="font-bold">État de l'appareil</h2>
             <div className="mt-4 grid gap-x-7 gap-y-3 lg:grid-cols-2">
@@ -1818,22 +1908,38 @@ function CounterIntakeScreen({
         </div>
       )}
 
-      {step === 3 && (
+      {step === 3 && (() => {
+        const hasIntakePhoto = Object.values(photos).some(Boolean);
+        const photoRequirementMet = hasIntakePhoto || noPhotoConfirmed;
+        const canContinue = Boolean(signature) && photoRequirementMet;
+        return (
         <div className="space-y-5">
-          <div className="grid grid-cols-4 gap-4">{(["avant", "arriere", "defaut", "accessoires"] as CounterPhotoKey[]).map((key) => <PhotoCaptureCard key={key} title={{ avant: "Avant", arriere: "Arrière", defaut: "Défaut visible", accessoires: "Accessoires fournis" }[key]} value={photos[key]} onChange={(value) => setPhotos((prev) => ({ ...prev, [key]: value }))} />)}</div>
+          <div className="grid grid-cols-4 gap-4">{(["avant", "arriere", "defaut", "accessoires"] as CounterPhotoKey[]).map((key) => <PhotoCaptureCard key={key} title={{ avant: "Avant", arriere: "Arrière", defaut: "Défaut visible", accessoires: "Accessoires fournis" }[key]} value={photos[key]} onChange={(value) => { setPhotos((prev) => ({ ...prev, [key]: value })); if (value) setNoPhotoConfirmed(false); }} />)}</div>
+          {!hasIntakePhoto && (
+            <section className="rounded-[16px] border border-[#E8E8E5] bg-white p-5">
+              <p className="font-bold text-[#1D1D1F]">Photo anti-litige requise</p>
+              <p className="mt-1 text-[#6B6B6B] text-sm">Au moins une photo protège l'atelier et le client en cas de litige. Sur mobile ou tablette, privilégiez la prise de photo.</p>
+              {noPhotoConfirmed ? (
+                <p className="mt-3 inline-flex items-center gap-2 rounded-[12px] bg-[#F6FCFA] px-3 py-2 font-semibold text-[#1E7A6E] text-sm"><Check className="size-4" /> Vous continuez sans photo — mention ajoutée au dossier.</p>
+              ) : (
+                <button type="button" onClick={() => setNoPhotoConfirmed(true)} className="mt-3 h-[44px] rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-semibold text-[#6B6B6B] active:scale-[0.98]">Continuer sans photo</button>
+              )}
+            </section>
+          )}
           <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5">
             <h2 className="font-bold">Signature du client</h2>
             <SignaturePad value={signature} onChange={setSignature} />
           </section>
-          <div className="grid grid-cols-[140px_1fr] gap-4"><button type="button" onClick={() => setStep(2)} className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-semibold">Retour</button><button type="button" disabled={!signature} onClick={() => setStep(4)} className={cn("h-[52px] rounded-[14px] font-bold text-white", signature ? "bg-[#2A9D8F]" : "bg-[#D9D6CF]")}>Continuer</button></div>
+          <div className="grid grid-cols-[140px_1fr] gap-4"><button type="button" onClick={() => setStep(2)} className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-semibold">Retour</button><button type="button" disabled={!canContinue} onClick={() => setStep(4)} className={cn("h-[52px] rounded-[14px] font-bold text-white", canContinue ? "bg-[#2A9D8F]" : "bg-[#D9D6CF]")}>Continuer</button></div>
         </div>
-      )}
+        );
+      })()}
 
       {step === 4 && (
         <section className="ml-auto max-w-[720px] rounded-[20px] border border-[#E8E8E5] bg-white p-7 shadow-[0_10px_30px_rgba(29,29,31,0.04)]">
           <div className="flex items-start justify-between"><div><p className="text-[#6E6E73] text-sm">Dossier</p><h2 className="mt-1 font-black text-[26px]">R-{new Date().getFullYear()}-XXXX</h2><StatusPillCounter tone="green">Prête à valider</StatusPillCounter></div><button type="button" onClick={() => setStep(0)} className="h-11 rounded-[14px] border border-[#E8E8E5] px-4 font-semibold">Modifier</button></div>
           <dl className="mt-6 divide-y divide-[#E8E8E5]">{[["Client", `${customerLabel}${phone ? `\n${phone}` : ""}`], ["Appareil", model], ["Intervention", prestations.join(", ")], ["Accessoires", accessories.join(", ") || "Aucun"], ["Vente additionnelle", addonSuggestions.filter((addon) => selectedAddons.includes(addon.id)).map((addon) => addon.label).join(", ") || "Aucune"], ["Accès", `${accessLabel(access)}${accessCode ? ` · ${accessCode}` : patternPoints.length ? ` · schéma ${patternPoints.join("-")}` : ""}`], ["État", conditionRows.filter((row) => condition[row.key] !== "ok").map((row) => `${row.label} : ${conditionLabel(condition[row.key])}`).join(", ") || "OK"], ["Signature", "Signée"]].map(([label, value]) => <div key={label} className="grid grid-cols-[150px_1fr] gap-4 py-4"><dt className="font-bold">{label}</dt><dd className={label === "État" ? "text-[#6B6B6B]" : label === "Signature" ? "text-[#1E7A6E]" : ""}>{value}</dd></div>)}</dl>
-          <div className="mt-5 flex items-end justify-between"><span className="font-bold">Montant total</span><span className="font-black text-[32px] tabular-nums">{formatEuro(amount)} {store.workshopInfo.vatApplicable ? "TTC" : ""}</span></div>
+          <div className="mt-5 flex items-end justify-between"><span className="font-bold">Montant total</span><span className="font-black text-[32px] tabular-nums">{formatDossier(amount)} {store.workshopInfo.vatApplicable ? "TTC" : ""}</span></div>
           <div className="mt-6 grid gap-3 md:grid-cols-2">
             <button type="button" onClick={() => setStep(3)} className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold active:scale-[0.99]">Retour</button>
             <button type="button" onClick={saveAndPrint} className="h-[56px] rounded-[14px] bg-[#2A9D8F] font-bold text-white active:scale-[0.99]">Générer le bon</button>
@@ -1927,11 +2033,13 @@ function AccessoryDrawer({
   selected,
   onToggle,
   onClose,
+  formatValue = formatEuro,
 }: Readonly<{
   options: Array<{ id: string; label: string; prixClient: number; reason: string }>;
   selected: string[];
   onToggle: (id: string) => void;
   onClose: () => void;
+  formatValue?: (value: number) => string;
 }>) {
   return (
     <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/30 p-4">
@@ -1965,7 +2073,7 @@ function AccessoryDrawer({
               )}
               <span className="block pr-6 font-bold text-[14px]">{option.label}</span>
               <span className="mt-2 block font-black text-[#1E7A6E] text-[16px] tabular-nums">
-                {formatEuro(option.prixClient)}
+                {formatValue(option.prixClient)}
               </span>
               <span className="mt-2 block text-[#6E6E73] text-[11px]">{option.reason}</span>
             </button>
@@ -2179,6 +2287,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
   const addSale = useBeharStore((s) => s.addSale);
   const paySale = useBeharStore((s) => s.paySale);
   const addCustomer = useBeharStore((s) => s.addCustomer);
+  const workshopInfo = useBeharStore((s) => s.workshopInfo);
   const [cart, setCart] = useState<CounterCartItem[]>([]);
   const [freeName, setFreeName] = useState("");
   const [freePrice, setFreePrice] = useState("");
@@ -2186,6 +2295,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
   const [confirmingClear, setConfirmingClear] = useState(false);
   // Modes (brief §7 + client) : vente simple, rattachée à un client, ou à un dossier.
   const [mode, setMode] = useState<"simple" | "client" | "repair">("simple");
+  const [billingCountry, setBillingCountry] = useState<WorkshopCountry>(workshopInfo.country);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("TPE externe");
   const [linkedRepairId, setLinkedRepairId] = useState("");
   const [customerId, setCustomerId] = useState("");
@@ -2200,6 +2310,13 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
     [repairs],
   );
   const linkedRepair = openRepairs.find((r) => r.id === linkedRepairId);
+  const saleCountry = mode === "repair" && linkedRepair ? linkedRepair.billingCountry : billingCountry;
+  const saleConfig = getWorkshopCountryConfig(saleCountry);
+  const formatSale = (value: number) => formatCurrency(value, saleConfig.currency);
+  useEffect(() => {
+    const methods = counterPaymentMethods(saleCountry, workshopInfo.twintEnabled !== false);
+    if (!methods.includes(paymentMethod)) setPaymentMethod(methods[0]);
+  }, [paymentMethod, saleCountry, workshopInfo.twintEnabled]);
   // Vrai stock : on ne garde que les accessoires (catégorie/nom) encore disponibles.
   const accessories = useMemo(() => {
     const q = compactText(query);
@@ -2277,6 +2394,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
       customerId: saleCustomerId,
       customerName: saleCustomerName,
       repairId: mode === "repair" && linkedRepair ? linkedRepair.id : undefined,
+      billingCountry: saleCountry,
       status: "Brouillon",
       lines: cart.map((item) => ({
         stockItemId: item.stockItemId ?? item.id,
@@ -2289,20 +2407,20 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
       })),
     });
     if (!saleId) {
-      toast.error("Encaissement impossible : vérifiez le panier et le stock.");
+      toast.error("Règlement externe impossible : vérifiez le panier et le stock.");
       return;
     }
     const paymentId = paySale(saleId, paymentMethod);
     if (!paymentId) {
-      toast.error("Encaissement impossible : stock insuffisant ou permission manquante.");
+      toast.error("Règlement externe impossible : stock insuffisant ou permission manquante.");
       return;
     }
     toast.success(
       mode === "repair" && linkedRepair
-        ? `Paiement externe enregistré pour ${linkedRepair.number} — reçu généré (${formatEuro(total)}).`
+        ? `Paiement externe enregistré pour ${linkedRepair.number} — reçu généré (${formatSale(total)}).`
         : mode === "client" && selectedCustomer
-          ? `Paiement externe enregistré pour ${selectedCustomer.name} — reçu généré (${formatEuro(total)}).`
-          : `Paiement externe enregistré — ${formatEuro(total)}.`,
+          ? `Paiement externe enregistré pour ${selectedCustomer.name} — reçu généré (${formatSale(total)}).`
+          : `Paiement externe enregistré — ${formatSale(total)}.`,
     );
     setCart([]);
   };
@@ -2343,6 +2461,28 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
               {m === "simple" ? "Vente simple" : m === "client" ? "À un client" : "À un dossier"}
             </button>
           ))}
+        </div>
+
+        <div className="rounded-[14px] border border-[#DDEFEA] bg-[#F6FCFA] p-3">
+          <p className="text-xs font-semibold text-[#1A1916]">Pays de facturation de la vente</p>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {(["FR", "CH"] as const).map((country) => (
+              <button
+                key={country}
+                type="button"
+                disabled={mode === "repair" && Boolean(linkedRepair)}
+                onClick={() => setBillingCountry(country)}
+                className={cn(
+                  "h-10 rounded-[10px] border text-xs font-bold disabled:cursor-not-allowed disabled:opacity-70",
+                  saleCountry === country
+                    ? "border-[#2A9D8F] bg-white text-[#167B70]"
+                    : "border-[#E8E8E5] bg-white text-[#6B6B6B]",
+                )}
+              >
+                {country === "CH" ? "Suisse · CHF" : "France · EUR"}
+              </button>
+            ))}
+          </div>
         </div>
 
         {mode === "repair" && (
@@ -2411,7 +2551,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
               <RealProductVisual name={item.name} category={item.categoryName} className="size-[112px] rounded-[12px] p-2" />
               <b className="mt-3 line-clamp-2">{item.name}</b>
               <span className="mt-1 text-[#6B6B6B] text-xs">{item.stockItemId ? `${item.stock} en stock` : "Disponible"}</span>
-              <span className="mt-2 font-black text-[#1E7A6E] tabular-nums">{formatEuro(item.salePrice)}</span>
+              <span className="mt-2 font-black text-[#1E7A6E] tabular-nums">{formatSale(item.salePrice)}</span>
             </button>
           ))}
           <div className="flex min-h-[190px] flex-col items-center justify-center rounded-[18px] border border-dashed border-[#C8C8C2] bg-white p-5 text-center">
@@ -2433,7 +2573,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
               {cart.map((item) => (
                 <li key={item.id} className="grid min-h-[78px] grid-cols-[52px_minmax(0,1fr)_auto_auto] items-center gap-3 py-3">
                   <RealProductVisual name={item.name} className="size-[52px] rounded-[10px] p-1.5" />
-                  <div><b>{item.name}</b>{item.detail && <p className="text-[#6B6B6B] text-sm">{item.detail}</p>}<p className="font-bold tabular-nums">{formatEuro(item.price)}</p></div>
+                  <div><b>{item.name}</b>{item.detail && <p className="text-[#6B6B6B] text-sm">{item.detail}</p>}<p className="font-bold tabular-nums">{formatSale(item.price)}</p></div>
                   <div className="inline-flex h-9 items-center rounded-[10px] border border-[#E8E8E5]">
                     <button type="button" onClick={() => updateQty(item.id, -1)} className="grid size-9 place-items-center">−</button>
                     <span className="w-8 text-center tabular-nums">{item.quantity}</span>
@@ -2444,23 +2584,23 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
               ))}
             </ul>
             <dl className="mt-4 space-y-2 border-[#E8E8E5] border-t pt-4 text-sm">
-              <div className="flex justify-between"><dt>Sous-total</dt><dd>{formatEuro(subtotal)}</dd></div>
+              <div className="flex justify-between"><dt>Sous-total</dt><dd>{formatSale(subtotal)}</dd></div>
               <div className="flex justify-between"><dt>TVA</dt><dd>incluse</dd></div>
-              <div className="flex items-end justify-between pt-2"><dt className="font-black text-lg">Total TTC</dt><dd className="font-black text-[#1E7A6E] text-[34px] tabular-nums">{formatEuro(total)}</dd></div>
+              <div className="flex items-end justify-between pt-2"><dt className="font-black text-lg">Total TTC</dt><dd className="font-black text-[#1E7A6E] text-[34px] tabular-nums">{formatSale(total)}</dd></div>
             </dl>
           </section>
           <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4">
             <h2 className="font-black text-lg">Article libre</h2>
             <div className="mt-3 grid grid-cols-[1fr_90px_90px] gap-2">
               <CounterInput value={freeName} onChange={(e) => setFreeName(e.target.value)} placeholder="Ex : Étui AirPods" />
-              <CounterInput value={freePrice} onChange={(e) => setFreePrice(e.target.value)} placeholder="0,00 €" />
+              <CounterInput value={freePrice} onChange={(e) => setFreePrice(e.target.value)} placeholder={`0,00 ${saleConfig.currency}`} />
               <div className="inline-flex h-[52px] items-center rounded-[14px] border border-[#E8E8E5]">
                 <button type="button" onClick={() => setFreeQty((qty) => Math.max(1, qty - 1))} className="grid size-[52px] place-items-center">−</button>
                 <span className="w-7 text-center">{freeQty}</span>
                 <button type="button" onClick={() => setFreeQty((qty) => qty + 1)} className="grid size-[52px] place-items-center">+</button>
               </div>
             </div>
-            <button type="button" onClick={() => { const amount = parseCounterMoney(freePrice); if (!freeName.trim()) return toast.error("Nom d'article requis."); if (amount <= 0) return toast.error("Indiquez un prix supérieur à 0 €."); setCart((items) => [...items, { id: `free_${Date.now()}`, name: freeName.trim(), price: amount, quantity: freeQty }]); setFreeName(""); setFreePrice(""); setFreeQty(1); setConfirmingClear(false); }} className="mt-3 h-[52px] w-full rounded-[14px] border border-[#E8E8E5] font-bold"><Plus className="mr-2 inline size-4" /> Ajouter au panier</button>
+            <button type="button" onClick={() => { const amount = parseCounterMoney(freePrice); if (!freeName.trim()) return toast.error("Nom d'article requis."); if (amount <= 0) return toast.error(`Indiquez un prix supérieur à 0 ${saleConfig.currency}.`); setCart((items) => [...items, { id: `free_${Date.now()}`, name: freeName.trim(), price: amount, quantity: freeQty }]); setFreeName(""); setFreePrice(""); setFreeQty(1); setConfirmingClear(false); }} className="mt-3 h-[52px] w-full rounded-[14px] border border-[#E8E8E5] font-bold"><Plus className="mr-2 inline size-4" /> Ajouter au panier</button>
           </section>
           <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4">
             <h2 className="font-black text-lg">Paiement externe</h2>
@@ -2472,7 +2612,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
               value={paymentMethod}
               onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}
             >
-              {counterPaymentMethods.map((method) => (
+              {counterPaymentMethods(saleCountry, workshopInfo.twintEnabled !== false).map((method) => (
                 <option key={method} value={method}>{method}</option>
               ))}
             </select>
@@ -2480,7 +2620,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
           <p className="rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA] px-4 py-3 text-[#6B6B6B] text-xs leading-relaxed">
             Le règlement est géré hors Behar Tech Pro via votre prestataire externe.
           </p>
-          <button type="button" disabled={cart.length === 0 || (mode === "repair" && !linkedRepair) || (mode === "client" && !customerId)} onClick={handleCheckout} className="h-[58px] w-full rounded-[14px] bg-[#2A9D8F] font-black text-white disabled:cursor-not-allowed disabled:bg-[#D9D6CF]"><CreditCard className="mr-2 inline size-5" /> Paiement externe enregistré {total > 0 ? `· ${formatEuro(total)}` : ""}</button>
+          <button type="button" disabled={cart.length === 0 || (mode === "repair" && !linkedRepair) || (mode === "client" && !customerId)} onClick={handleCheckout} className="h-[58px] w-full rounded-[14px] bg-[#2A9D8F] font-black text-white disabled:cursor-not-allowed disabled:bg-[#D9D6CF]"><CreditCard className="mr-2 inline size-5" /> Paiement externe enregistré {total > 0 ? `· ${formatSale(total)}` : ""}</button>
           <button
             type="button"
             disabled={cart.length === 0}
@@ -3574,6 +3714,7 @@ function CounterRepairDetailScreen({
 }: Readonly<{ repairId: string; onClose: () => void; onOpenDocuments?: () => void }>) {
   const store = useBeharStore();
   const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
+  const [selectedQrRepairId, setSelectedQrRepairId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
@@ -3619,7 +3760,7 @@ function CounterRepairDetailScreen({
     store.changeRepairStatus(repair.id, nextStep.next);
     toast.success(`Dossier passé en « ${nextStep.next} ».`);
   };
-  // Clôture le DOSSIER ATELIER uniquement — aucun module caisse.
+  // Clôture le DOSSIER ATELIER uniquement.
   const confirmCloseDossier = () => {
     if (isTerminalRepairStatus(repair.status)) return toast.info("Dossier déjà terminé.");
     store.changeRepairStatus(repair.id, "Rendu");
@@ -3701,7 +3842,7 @@ function CounterRepairDetailScreen({
           </DetailBlock>
           <DetailBlock title="Garantie">Selon conditions de l'atelier</DetailBlock>
         </section>
-        <aside className="space-y-4"><section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4"><p>Montant devis</p><p className="font-black text-2xl">{formatEuro(amount)} <span className="text-[#6B6B6B] text-sm">TTC</span></p><div className="mt-4 border-[#E8E8E5] border-t pt-4"><p>Statut de facture</p><b className={paid ? "text-[#1E7A6E]" : "text-[#6B6B6B]"}>{paid ? "Réglée" : "À régler"}</b><p className="mt-3 text-[#6B6B6B] text-sm">Moyen indiqué<br />{repairPayment?.method ?? invoice?.paymentMethod ?? "Non renseigné"}</p><p className="mt-3 text-[#6B6B6B] text-sm">Facture<br /><b className="text-[#1A1916]">{invoice ? `#${invoice.number}` : "Non renseigné"}</b></p><p className="mt-4 rounded-[12px] bg-[#FAFAFA] px-3 py-2.5 text-[#6B6B6B] text-xs leading-relaxed">Le règlement est géré hors Behar Tech Pro via votre TPE, caisse habituelle ou prestataire externe.</p></div></section><section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-center"><h2 className="font-black text-left">QR Code dossier</h2><CounterRepairQr repair={repair} className="mx-auto mt-3 w-28" /><p className="mt-2 text-[#6B6B6B] text-xs">Scannez pour suivre l'avancement</p><button type="button" onClick={openClientTracking} className="mt-3 inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#D7EFEA] bg-[#F0FAF7] font-bold text-[#1E7A6E] active:scale-[0.98]"><Eye className="size-4" /> Ouvrir le suivi client</button></section><section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-sm"><h2 className="font-black">Notes internes</h2><p className="mt-2 whitespace-pre-line">{repair.notes || "Aucune note interne."}</p></section></aside>
+        <aside className="space-y-4"><section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4"><p>Montant devis</p><p className="font-black text-2xl">{formatEuro(amount)} <span className="text-[#6B6B6B] text-sm">TTC</span></p><div className="mt-4 border-[#E8E8E5] border-t pt-4"><p>Statut de facture</p><b className={paid ? "text-[#1E7A6E]" : "text-[#6B6B6B]"}>{paid ? "Réglée" : "À régler"}</b><p className="mt-3 text-[#6B6B6B] text-sm">Moyen indiqué<br />{repairPayment?.method ?? invoice?.paymentMethod ?? "Non renseigné"}</p><p className="mt-3 text-[#6B6B6B] text-sm">Facture<br /><b className="text-[#1A1916]">{invoice ? `#${invoice.number}` : "Non renseigné"}</b></p><p className="mt-4 rounded-[12px] bg-[#FAFAFA] px-3 py-2.5 text-[#6B6B6B] text-xs leading-relaxed">Le règlement est géré hors Behar Tech Pro via votre TPE ou prestataire externe.</p></div></section><section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-center"><h2 className="font-black text-left">QR Code dossier</h2><div className="cursor-pointer" onClick={() => setSelectedQrRepairId(repair.id)}><CounterRepairQr repair={repair} className="mx-auto mt-3 w-28" /></div><p className="mt-2 text-[#6B6B6B] text-xs">Scannez pour suivre l'avancement</p><div className="mt-3 flex flex-col gap-2"><button type="button" onClick={() => setSelectedQrRepairId(repair.id)} className="inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-xs active:scale-[0.98]">Afficher QR Code</button><button type="button" onClick={() => { const access = repair.publicAccess ?? store.ensureRepairPublicAccess(repair.id); if (access) void shareCounterLink(publicAbsoluteUrl(access.url), "Lien de suivi copié pour le client."); }} className="inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-xs active:scale-[0.98]">Copier le lien client</button><button type="button" onClick={openClientTracking} className="mt-3 inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#D7EFEA] bg-[#F0FAF7] font-bold text-[#1E7A6E] active:scale-[0.98]"><Eye className="size-4" /> Ouvrir le suivi client</button></div></section><section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-sm"><h2 className="font-black">Notes internes</h2><p className="mt-2 whitespace-pre-line">{repair.notes || "Aucune note interne."}</p></section></aside>
       </div>
       {/* Actions principales — gros boutons tactiles (min 56px) */}
       {nextStep ? (
@@ -3808,6 +3949,13 @@ function CounterRepairDetailScreen({
         <CloseDossierConfirmModal
           onCancel={() => setCloseConfirmOpen(false)}
           onConfirm={confirmCloseDossier}
+        />
+      )}
+      {selectedQrRepairId && (
+        <TrackingQrModal
+          isOpen={Boolean(selectedQrRepairId)}
+          onClose={() => setSelectedQrRepairId(null)}
+          repairId={selectedQrRepairId}
         />
       )}
     </div>
@@ -4012,6 +4160,7 @@ function CounterTrackingScreen({ initialRepairId, onClose, onOpenRepairDetail }:
   const updateRepair = useBeharStore((s) => s.updateRepair);
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState(initialRepairId || "");
+  const [selectedQrRepairId, setSelectedQrRepairId] = useState<string | null>(null);
   const customerOf = (id: string) => customers.find((c) => c.id === id);
   const recents = useMemo(
     () => [...repairs].sort((a, b) => ((a.createdAt ?? a.droppedAt ?? "") > (b.createdAt ?? b.droppedAt ?? "") ? -1 : 1)),
@@ -4053,10 +4202,31 @@ function CounterTrackingScreen({ initialRepairId, onClose, onOpenRepairDetail }:
           <dl className="mt-5 grid grid-cols-2 gap-x-8 gap-y-3 text-sm"><DetailRowLite label="Client" value={customer?.name ?? "Non renseigné"} /><DetailRowLite label="Téléphone" value={customer?.phone || "Non renseigné"} /><DetailRowLite label="Appareil" value={repairDeviceLabel(selected)} /><DetailRowLite label="Paiement" value={paid ? "Payé" : "À payer"} /><DetailRowLite label="Problème" value={selected.issue || "Non renseigné"} /><DetailRowLite label="Montant" value={`${formatEuro(repairAmount(selected))} TTC`} /></dl>
           <CounterTimeline className="mt-6" activeIndex={counterTimelineIndex(selected.status)} labels={["Reçu", "Diagnostic", "Devis accepté", "En réparation", "Prêt"]} details={["", "", "", "", ""]} />
           <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_250px]"><section className="rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA] p-5"><h3 className="font-black">Message client</h3><p className="mt-2 text-[#6B6B6B]">{counterStatusMessage(selected.status)}</p></section><section className="rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA] p-5"><h3 className="font-black">Estimation</h3><p className="mt-2 text-sm">Temps estimé : {formatCounterDateTime(selected.estimatedDoneAt)}<br />Technicien : {selected.technician || "Non renseigné"}</p></section></div>
-          <section className="mt-5 grid grid-cols-[120px_1fr] gap-4 rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA] p-4"><CounterRepairQr repair={selected} className="size-[112px]" /><div><h3 className="font-black">Lien de suivi client</h3><p className="mt-1 text-[#6B6B6B]">Le client peut suivre son dossier depuis son téléphone en scannant ce QR code.</p>{selected.publicAccess ? <p className="mt-2 break-all text-[#1E7A6E] text-xs">{publicAbsoluteUrl(selected.publicAccess.url)}</p> : null}<button type="button" onClick={openClientTracking} className="mt-3 inline-flex h-[44px] items-center gap-2 rounded-[12px] border border-[#D7EFEA] bg-white px-4 font-bold text-[#1E7A6E] active:scale-[0.98]"><Eye className="size-4" /> Ouvrir le lien client</button></div></section>
+          <section className="mt-5 grid grid-cols-[120px_1fr] gap-4 rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA] p-4">
+            <div className="cursor-pointer shrink-0" onClick={() => setSelectedQrRepairId(selected.id)}>
+              <CounterRepairQr repair={selected} className="size-[112px]" />
+            </div>
+            <div>
+              <h3 className="font-black">Lien de suivi client</h3>
+              <p className="mt-1 text-[#6B6B6B]">Le client peut suivre son dossier depuis son téléphone en scannant ce QR code.</p>
+              {selected.publicAccess ? <p className="mt-2 break-all text-[#1E7A6E] text-xs">{publicAbsoluteUrl(selected.publicAccess.url)}</p> : null}
+              <div className="mt-3 flex gap-2">
+                <button type="button" onClick={() => setSelectedQrRepairId(selected.id)} className="inline-flex h-[44px] items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold text-[#1A1916] text-xs active:scale-[0.98]">Afficher QR Code</button>
+                <button type="button" onClick={copyClientTracking} className="inline-flex h-[44px] items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold text-[#1A1916] text-xs active:scale-[0.98]">Copier le lien</button>
+                <button type="button" onClick={openClientTracking} className="inline-flex h-[44px] items-center gap-2 rounded-[12px] border border-[#D7EFEA] bg-white px-4 font-bold text-[#1E7A6E] active:scale-[0.98]"><Eye className="size-4" /> Ouvrir le suivi client</button>
+              </div>
+            </div>
+          </section>
           <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4"><button type="button" onClick={onClose} className="h-[52px] rounded-[14px] border border-[#E8E8E5] font-bold">Retour accueil</button><button type="button" onClick={() => { if (!printDocument({ id: `doc_intake_${selected.id}`, type: "intake" })) toast.error("Bon de prise en charge introuvable."); }} className="h-[52px] rounded-[14px] border border-[#E8E8E5] font-bold">Imprimer le bon</button><button type="button" onClick={copyClientTracking} className="h-[52px] rounded-[14px] border border-[#E8E8E5] font-bold">Partager lien client</button><button type="button" onClick={() => { updateRepair(selected.id, { counterNotifiedAt: new Date().toISOString() }); toast.success("Client marqué comme notifié."); }} className="h-[52px] rounded-[14px] bg-[#2A9D8F] font-bold text-white">Marquer client notifié</button></div>
         </section>
       </div>
+      {selectedQrRepairId && (
+        <TrackingQrModal
+          isOpen={Boolean(selectedQrRepairId)}
+          onClose={() => setSelectedQrRepairId(null)}
+          repairId={selectedQrRepairId}
+        />
+      )}
     </div>
   );
 }
@@ -4222,7 +4392,7 @@ function CounterCheckoutScreen({ initialRepairId, onClose }: Readonly<{ initialR
     if (!printDocument({ id: `doc_${paymentId}`, type: "payment" })) toast.error("Reçu introuvable.");
   };
   const sendReceipt = () => {
-    if (!resolvePaymentId()) return toast.info("Encaissez d'abord pour générer le reçu.");
+    if (!resolvePaymentId()) return toast.info("Indiquez d'abord le règlement externe pour générer le reçu.");
     toast.success("Reçu marqué comme transmis au client.");
   };
   // Donner la facture au client en un seul geste : retrouve la facture du dossier
@@ -4243,7 +4413,7 @@ function CounterCheckoutScreen({ initialRepairId, onClose }: Readonly<{ initialR
         <aside className="rounded-[20px] border border-[#E8E8E5] bg-white p-4"><h2 className="mb-4 font-bold">À régler <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2">{unpaid.length}</span></h2><ul className="space-y-3">{unpaid.map((entry) => { const c = store.customers.find((customer) => customer.id === entry.customerId); return <li key={entry.id}><button type="button" onClick={() => setSelectedId(entry.id)} className={cn("w-full rounded-[14px] border p-4 text-left", entry.id === repair.id ? "border-[#2A9D8F] bg-[#E6F4F1]" : "border-[#E8E8E5] bg-white")}><div className="flex justify-between"><b>{c?.name ?? "Comptoir"}</b><span className="text-[#6B6B6B]">À régler</span></div><b>{formatEuro(repairAmount(entry))}</b><p>{repairDeviceLabel(entry)}</p><p>Dossier #{displayRepairCode(entry)}</p></button></li>; })}</ul></aside>
         <section className="space-y-5">
           <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5"><div className="grid gap-5 lg:grid-cols-[1fr_350px]"><div><h2 className="font-black text-[20px]">{customer?.name ?? "Client comptoir"}</h2><p className="text-[#6E6E73]">{customer?.phone}<br />{customer?.email}</p><dl className="mt-8 grid grid-cols-[120px_1fr] gap-y-5"><dt>Dossier</dt><dd><b>#{displayRepairCode(repair)}</b></dd><dt>Intervention</dt><dd><b>{repair.issue}</b></dd><dt>Appareil</dt><dd><b>{repairDeviceLabel(repair)}</b></dd><dt>Statut</dt><dd><StatusPillCounter tone="orange">À régler</StatusPillCounter></dd></dl></div><div><p>Total à régler</p><p className="font-black text-[#1E7A6E] text-[42px] tabular-nums">{formatEuro(amount)} <span className="text-[15px] text-[#6E6E73]">{store.workshopInfo.vatApplicable ? "TTC" : ""}</span></p><MiniInvoice repair={repair} lines={lines} vat={vat} /></div></div></div>
-          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5"><h2 className="font-bold">Choisir le moyen de paiement externe</h2><div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">{counterPaymentMethods.map((entry) => <SelectTile key={entry} active={method === entry} onClick={() => setMethod(entry)}>{entry}</SelectTile>)}</div></section>
+          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5"><h2 className="font-bold">Choisir le moyen de paiement externe</h2><div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">{counterPaymentMethods(store.workshopInfo.country, store.workshopInfo.twintEnabled !== false).map((entry) => <SelectTile key={entry} active={method === entry} onClick={() => setMethod(entry)}>{entry}</SelectTile>)}</div></section>
           <div className="flex flex-wrap gap-3 [&>button]:min-w-[150px] [&>button]:flex-1"><button type="button" onClick={pay} className="h-[56px] rounded-[14px] bg-[#2A9D8F] font-bold text-white">Indiquer {formatEuro(amount)}</button><button type="button" onClick={printReceipt} className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold"><Printer className="mr-2 inline size-4" /> Imprimer reçu</button><button type="button" onClick={printInvoice} className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold"><Receipt className="mr-2 inline size-4" /> Imprimer la facture</button><button type="button" onClick={sendReceipt} className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold">Marquer reçu transmis</button><button type="button" onClick={() => setCloseConfirmOpen(true)} className="h-[56px] rounded-[14px] border border-[#F2C8C3] bg-white font-bold text-[#C7493B]">Marquer rendu</button></div>
           {closeConfirmOpen && (
             <CloseDossierConfirmModal
@@ -4638,6 +4808,12 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
     () => cataloguePrestationsForModel(store.priceBookItems, brand, model),
     [store.priceBookItems, brand, model],
   );
+  // Motifs proposés : interventions consoles dédiées pour les consoles, liste
+  // générique sinon. « Autre » reste toujours présent pour la saisie libre.
+  const quoteProblemList = useMemo(
+    () => (deviceType === "Console" ? consolePrestationLabels(model) : quoteProblems),
+    [deviceType, model],
+  );
   const quoteAccessoryOptions = useMemo(() => {
     const stockAccessories = store.stockItems
       .filter((item) => (item.stock ?? item.quantity ?? 0) > 0)
@@ -4945,7 +5121,7 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
             </div>
           )}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {quoteProblems.map((entry) => {
+            {quoteProblemList.map((entry) => {
               const cataloguePrice = findCataloguePrice(store.priceBookItems, brand, model, entry);
               return (
                 <SelectTile

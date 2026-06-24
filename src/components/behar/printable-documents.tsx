@@ -3,7 +3,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import {
   type Customer,
   workshopInfo as defaultWorkshopInfo,
-  formatEuro,
+  formatCurrency,
   getInvoiceTotal,
   getQuoteDevices,
   getQuoteTotal,
@@ -17,6 +17,8 @@ import {
   type Sale,
   type StockItem,
   type WorkshopInfo,
+  type WorkshopCurrency,
+  getWorkshopCountryLabel,
 } from "@/lib/behar-store";
 import { formatBrandModel, formatDeviceLabel } from "@/lib/format-device";
 import { generateQrDataUrl, publicAbsoluteUrl } from "@/lib/public-link";
@@ -90,9 +92,9 @@ function dash(value: unknown): string {
   return text(value, "—");
 }
 
-function money(value: unknown): string {
+function money(value: unknown, currency?: WorkshopCurrency): string {
   const parsed = typeof value === "number" ? value : Number(value);
-  return formatEuro(Number.isFinite(parsed) ? parsed : 0);
+  return formatCurrency(Number.isFinite(parsed) ? parsed : 0, currency ?? defaultWorkshopInfo.currency);
 }
 
 function dateLabel(value: unknown): string {
@@ -251,6 +253,7 @@ function DocumentHeader({
   qrSlot?: ReactNode;
 }>) {
   const atelierName = text(workshop.name, "BEHAR • TECH PRO");
+  const isSwiss = workshop.country === "CH";
   const theme = DOC_THEME[type];
   return (
     <header className="flex flex-col items-start justify-between gap-5 border-b border-[#E8E8E5] pb-6 sm:flex-row sm:gap-8">
@@ -260,9 +263,19 @@ function DocumentHeader({
           <p>{text(workshop.address)}</p>
           <p>
             {text(workshop.postalCity, `${dash(workshop.postalCode)} ${dash(workshop.city)}`)},{" "}
-            {text(workshop.country, "France")}
+            {getWorkshopCountryLabel(workshop.country)}
           </p>
-          <p>SIRET : {text(workshop.siret)}</p>
+          {isSwiss ? (
+            <>
+              {workshop.swissCanton ? <p>Canton : {text(workshop.swissCanton)}</p> : null}
+              {workshop.swissUid ? <p>IDE / CHE : {text(workshop.swissUid)}</p> : null}
+              {workshop.vatApplicable && workshop.swissVatNumber ? (
+                <p>N° TVA suisse : {text(workshop.swissVatNumber)}</p>
+              ) : null}
+            </>
+          ) : (
+            <p>SIRET : {text(workshop.siret)}</p>
+          )}
           <p>{text(workshop.email)}</p>
           <p>{text(workshop.phone)}</p>
         </div>
@@ -298,12 +311,18 @@ function DocumentFooter({
   pageCount,
 }: Readonly<{ workshop: WorkshopInfo; page: number; pageCount: number }>) {
   const methods = workshop.acceptedPaymentMethods?.filter(Boolean) ?? [];
+  const legalIdentity =
+    workshop.country === "CH"
+      ? [workshop.swissUid ? `IDE / CHE ${text(workshop.swissUid)}` : "", workshop.swissCanton || ""]
+          .filter(Boolean)
+          .join(" · ")
+      : `SIRET ${text(workshop.siret)}`;
   return (
     <footer className="mt-auto border-t border-[#E8E8E5] pt-6 text-[#6B6B6B] text-[10px] leading-relaxed">
       {methods.length ? <p>Moyens de paiement acceptés : {methods.join(" · ")}</p> : null}
       {workshop.documentFooter ? <p>{text(workshop.documentFooter)}</p> : null}
       <p>
-        {text(workshop.name, "BEHAR • TECH PRO")} · SIRET {text(workshop.siret)} · {text(workshop.email)} ·{" "}
+        {text(workshop.name, "BEHAR • TECH PRO")} · {legalIdentity} · {text(workshop.email)} ·{" "}
         {text(workshop.phone)} · Page {page}/{pageCount}
       </p>
     </footer>
@@ -361,7 +380,11 @@ function DocumentIntro({
   );
 }
 
-function PremiumTable({ rows, repair }: Readonly<{ rows: QuoteLine[]; repair?: Repair }>) {
+function PremiumTable({
+  rows,
+  repair,
+  currency,
+}: Readonly<{ rows: QuoteLine[]; repair?: Repair; currency?: WorkshopCurrency }>) {
   const safeRows = rows.length
     ? rows
     : [{ id: "empty", description: "Prestation atelier", quantity: 1, unitPrice: 0, total: 0 }];
@@ -378,9 +401,11 @@ function PremiumTable({ rows, repair }: Readonly<{ rows: QuoteLine[]; repair?: R
           <div className="grid grid-cols-[minmax(0,1fr)_42px_90px] items-center px-3 py-4 text-[12px] sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 sm:text-[13px] print:grid-cols-[1fr_70px_112px_112px] print:px-4 print:text-[13px]" key={line.id}>
             <span className="font-medium text-[#1A1916]">{serviceDescription(line, repair)}</span>
             <span className="text-center text-[#6B6B6B]">{text(line.quantity, "1")}</span>
-            <span className="hidden text-right text-[#6B6B6B] sm:block print:block">{money(line.unitPrice)}</span>
+            <span className="hidden text-right text-[#6B6B6B] sm:block print:block">
+              {money(line.unitPrice, currency)}
+            </span>
             <span className="text-right font-semibold">
-              {money(line.total ?? (line.quantity ?? 0) * (line.unitPrice ?? 0))}
+              {money(line.total ?? (line.quantity ?? 0) * (line.unitPrice ?? 0), currency)}
             </span>
           </div>
         ))}
@@ -391,7 +416,7 @@ function PremiumTable({ rows, repair }: Readonly<{ rows: QuoteLine[]; repair?: R
 
 function QuoteDevicesTable({ quote }: Readonly<{ quote: Quote }>) {
   const devices = getQuoteDevices(quote);
-  if (!devices.length) return <PremiumTable rows={quote.lines ?? []} />;
+  if (!devices.length) return <PremiumTable currency={quote.currency} rows={quote.lines ?? []} />;
   return (
     <div className="space-y-4">
       {devices.map((device, index) => (
@@ -410,16 +435,24 @@ function QuoteDevicesTable({ quote }: Readonly<{ quote: Quote }>) {
               <div className="grid grid-cols-[minmax(0,1fr)_42px_90px] items-center px-3 py-3 text-[12px] sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 sm:text-[13px] print:grid-cols-[1fr_70px_112px_112px] print:px-4 print:text-[13px]" key={service.id}>
                 <span className="font-medium text-[#1A1916]">{service.label}</span>
                 <span className="text-center text-[#6B6B6B]">{service.quantity}</span>
-                <span className="hidden text-right text-[#6B6B6B] sm:block print:block">{money(service.priceTtc)}</span>
-                <span className="text-right font-semibold">{money(service.priceTtc * service.quantity)}</span>
+                <span className="hidden text-right text-[#6B6B6B] sm:block print:block">
+                  {money(service.priceTtc, quote.currency)}
+                </span>
+                <span className="text-right font-semibold">
+                  {money(service.priceTtc * service.quantity, quote.currency)}
+                </span>
               </div>
             ))}
             {device.accessories.map((accessory) => (
               <div className="grid grid-cols-[minmax(0,1fr)_42px_90px] items-center px-3 py-3 text-[12px] sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 sm:text-[13px] print:grid-cols-[1fr_70px_112px_112px] print:px-4 print:text-[13px]" key={accessory.id}>
                 <span className="font-medium text-[#1A1916]">{accessory.label}</span>
                 <span className="text-center text-[#6B6B6B]">1</span>
-                <span className="hidden text-right text-[#6B6B6B] sm:block print:block">{accessory.included ? "inclus" : money(accessory.priceTtc ?? 0)}</span>
-                <span className="text-right font-semibold">{accessory.included ? "inclus" : money(accessory.priceTtc ?? 0)}</span>
+                <span className="hidden text-right text-[#6B6B6B] sm:block print:block">
+                  {accessory.included ? "inclus" : money(accessory.priceTtc ?? 0, quote.currency)}
+                </span>
+                <span className="text-right font-semibold">
+                  {accessory.included ? "inclus" : money(accessory.priceTtc ?? 0, quote.currency)}
+                </span>
               </div>
             ))}
           </div>
@@ -435,7 +468,15 @@ function TotalsCard({
   workshop,
   paid = 0,
   showBalance = false,
-}: Readonly<{ lines: QuoteLine[]; total: number; workshop?: WorkshopInfo; paid?: number; showBalance?: boolean }>) {
+  currency,
+}: Readonly<{
+  lines: QuoteLine[];
+  total: number;
+  workshop?: WorkshopInfo;
+  paid?: number;
+  showBalance?: boolean;
+  currency?: WorkshopCurrency;
+}>) {
   const ws = workshop ?? defaultWorkshopInfo;
   const vat = getVatSummary(lines, ws);
   const finalTotal = ws.vatApplicable ? vat.ttc : total;
@@ -444,19 +485,26 @@ function TotalsCard({
     <section className="ml-auto w-full max-w-[360px] rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA] p-4">
       {ws.vatApplicable ? (
         <>
-          <TotalLine label="Sous-total HT" value={money(vat.ht)} />
-          <TotalLine label={`TVA ${Math.round(vat.rate * 100)}%`} value={money(vat.tva)} />
+          <TotalLine label="Sous-total HT" value={money(vat.ht, currency)} />
+          <TotalLine label={`TVA ${String(vat.rate * 100).replace(".", ",")}%`} value={money(vat.tva, currency)} />
         </>
       ) : (
         <p className="mb-3 text-right text-[#6B6B6B] text-[11px]">
-          {text(ws.tvaMention, "TVA non applicable, art. 293 B du CGI")}
+          {text(
+            ws.tvaMention,
+            ws.country === "CH" ? "TVA non applicable / non assujetti" : "TVA non applicable, art. 293 B du CGI",
+          )}
         </p>
       )}
-      <TotalLine emphasize label={showBalance ? "Total facture" : "Total à payer"} value={money(finalTotal)} />
+      <TotalLine
+        emphasize
+        label={showBalance ? "Total facture" : "Total à payer"}
+        value={money(finalTotal, currency)}
+      />
       {showBalance ? (
         <>
-          <TotalLine label="Montant payé" value={money(paid)} />
-          <TotalLine emphasize label="Reste à payer" value={money(balance)} />
+          <TotalLine label="Montant payé" value={money(paid, currency)} />
+          <TotalLine emphasize label="Reste à payer" value={money(balance, currency)} />
         </>
       ) : null}
     </section>
@@ -610,11 +658,16 @@ function IntakeSignatureBlock({ repair }: Readonly<{ repair: Repair }>) {
   );
 }
 
-function PaymentHero({ amount, method, date }: Readonly<{ amount: number; method?: string; date?: string }>) {
+function PaymentHero({
+  amount,
+  method,
+  date,
+  currency,
+}: Readonly<{ amount: number; method?: string; date?: string; currency?: WorkshopCurrency }>) {
   return (
     <section className="rounded-[18px] border border-[#DDEFEA] bg-[#EAF6F2] p-7 text-center">
       <p className="text-[#167B70] text-[12px] uppercase tracking-[0.18em]">Montant reçu</p>
-      <p className="mt-2 font-semibold text-[#1A1916] text-[36px] leading-none">{money(amount)}</p>
+      <p className="mt-2 font-semibold text-[#1A1916] text-[36px] leading-none">{money(amount, currency)}</p>
       <p className="mt-3 text-[#6B6B6B] text-[13px]">
         {dash(method)} · {date ? dateLabel(date) : "Non renseigné"}
       </p>
@@ -694,7 +747,7 @@ export function RepairIntakeDocument({
             </p>
           </div>
           <p className="shrink-0 font-mono font-bold text-[#1A1916] text-[22px] tracking-tight">
-            {formatEuro(repair.total ?? repair.amount ?? 0)}{" "}
+            {money(repair.total ?? repair.amount ?? 0, repair.currency)}{" "}
             <span className="text-[#6B6B6B] text-[12px]">TTC</span>
           </p>
         </section>
@@ -824,16 +877,30 @@ function IntakeLegalMentions({ workshop }: Readonly<{ workshop: WorkshopInfo }>)
           ou après l'intervention.
         </li>
         {customTerms ? <li className="whitespace-pre-line">{customTerms}</li> : null}
-        <li>
-          <strong>Appareils non récupérés.</strong> Passé un délai de 3 mois après notification de fin de réparation,
-          l'appareil pourra être considéré comme abandonné conformément à l'article 1947 du Code civil.
-        </li>
-        <li>
-          <strong>RGPD (art. 13 du règlement UE 2016/679).</strong> Les données collectées (identité, coordonnées,
-          informations appareil) sont utilisées uniquement pour la gestion de la prise en charge, conservées pendant la
-          durée légale de garantie puis 5 ans à titre comptable. Le client dispose d'un droit d'accès, de rectification,
-          d'effacement et d'opposition exerçable auprès de l'atelier.
-        </li>
+        {workshop.country === "FR" ? (
+          <>
+            <li>
+              <strong>Appareils non récupérés.</strong> Passé un délai de 3 mois après notification de fin de réparation,
+              l'appareil pourra être considéré comme abandonné conformément à l'article 1947 du Code civil.
+            </li>
+            <li>
+              <strong>RGPD (art. 13 du règlement UE 2016/679).</strong> Les données collectées sont utilisées uniquement
+              pour la gestion de la prise en charge. Les droits d'accès, de rectification, d'effacement et d'opposition
+              s'exercent auprès de l'atelier.
+            </li>
+          </>
+        ) : (
+          <>
+            <li>
+              <strong>Appareils non récupérés.</strong> Les modalités de conservation et de récupération sont celles
+              communiquées par l'atelier.
+            </li>
+            <li>
+              <strong>Protection des données.</strong> Les données collectées sont utilisées uniquement pour la prise en
+              charge, le suivi et les obligations administratives liées au dossier.
+            </li>
+          </>
+        )}
       </ul>
     </section>
   );
@@ -855,7 +922,7 @@ export function QuoteDocument({
         </PremiumCard>
       ) : null}
       <QuoteDevicesTable quote={quote} />
-      <TotalsCard lines={quote.lines ?? []} total={getQuoteTotal(quote)} workshop={ws} />
+      <TotalsCard currency={quote.currency} lines={quote.lines ?? []} total={getQuoteTotal(quote)} workshop={ws} />
       <NoticeCard title="Validité et accord">
         Devis <strong>gratuit</strong>, valable jusqu'au {dateLabel(quote.expiryDate)}.{" "}
         {text(ws.quoteTerms, "Prix valables sous réserve de disponibilité des pièces.")} Le présent devis n'engage le
@@ -891,8 +958,15 @@ export function InvoiceDocument({
           <KeyValue label="Source" value={dash(invoice.sourceType)} />
         </PremiumCard>
       ) : null}
-      <PremiumTable repair={repair} rows={invoice.lines ?? []} />
-      <TotalsCard lines={invoice.lines ?? []} paid={paidAmount} showBalance total={total} workshop={ws} />
+      <PremiumTable currency={invoice.currency} repair={repair} rows={invoice.lines ?? []} />
+      <TotalsCard
+        currency={invoice.currency}
+        lines={invoice.lines ?? []}
+        paid={paidAmount}
+        showBalance
+        total={total}
+        workshop={ws}
+      />
       <InvoiceLegalMentions invoice={invoice} repair={repair} workshop={ws} />
     </DocumentLayout>
   );
@@ -931,12 +1005,12 @@ function InvoiceLegalMentions({
           <KeyValue label="Mode de règlement" value={dash(invoice.paymentMethod)} />
           {invoice.paidAt ? <KeyValue label="Date de paiement" value={dateLabel(invoice.paidAt)} /> : null}
         </dl>
-        <p className="mt-3 text-[10px] leading-relaxed text-[#6B6B6B]">
-          Pas d'escompte pour règlement anticipé. En cas de retard de paiement, application de pénalités au taux de
-          trois fois le taux d'intérêt légal en vigueur (art. L441-10 Code de commerce), exigibles sans rappel
-          préalable, ainsi qu'une indemnité forfaitaire pour frais de recouvrement de 40 € (art. D441-5 Code de
-          commerce).
-        </p>
+        {ws.country === "FR" ? (
+          <p className="mt-3 text-[10px] leading-relaxed text-[#6B6B6B]">
+            Pas d'escompte pour règlement anticipé. En cas de retard de paiement, application des pénalités et frais
+            prévus par le Code de commerce français.
+          </p>
+        ) : null}
       </div>
 
       <div className="rounded-[14px] border border-[#E8E8E5] bg-white p-5 print:rounded-none">
@@ -949,33 +1023,46 @@ function InvoiceLegalMentions({
             value={[
               text(ws.address),
               text(ws.postalCity, `${dash(ws.postalCode)} ${dash(ws.city)}`),
-              text(ws.country, "France"),
+              getWorkshopCountryLabel(ws.country),
             ]
               .filter(Boolean)
               .join(" — ")}
           />
-          <KeyValue label="SIRET / SIREN" value={text(ws.siret)} />
-          {ws.tvaNumber ? <KeyValue label="N° TVA intracom." value={text(ws.tvaNumber)} /> : null}
+          {ws.country === "CH" ? (
+            <>
+              {ws.swissCanton ? <KeyValue label="Canton" value={text(ws.swissCanton)} /> : null}
+              {ws.swissUid ? <KeyValue label="IDE / CHE" value={text(ws.swissUid)} /> : null}
+              {ws.vatApplicable && ws.swissVatNumber ? (
+                <KeyValue label="N° TVA suisse" value={text(ws.swissVatNumber)} />
+              ) : null}
+            </>
+          ) : (
+            <>
+              <KeyValue label="SIRET / SIREN" value={text(ws.siret)} />
+              {ws.tvaNumber ? <KeyValue label="N° TVA intracom." value={text(ws.tvaNumber)} /> : null}
+            </>
+          )}
           <KeyValue label="Contact" value={`${text(ws.email)} · ${text(ws.phone)}`} />
         </dl>
         {!ws.vatApplicable ? (
           <p className="mt-3 text-[10px] leading-relaxed text-[#6B6B6B]">
-            {text(ws.tvaMention, "TVA non applicable, art. 293 B du CGI")}
+            {text(
+              ws.tvaMention,
+              ws.country === "CH" ? "TVA non applicable / non assujetti" : "TVA non applicable, art. 293 B du CGI",
+            )}
           </p>
         ) : null}
       </div>
 
-      {/* Médiation de la consommation : obligatoire pour les pros qui vendent à des particuliers
-          (art. L612-1 du Code de la consommation). */}
-      <div className="md:col-span-2 rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA] p-5 print:rounded-none">
-        <h3 className="mb-2 font-semibold text-[#1A1916] text-[13px]">Médiation de la consommation</h3>
-        <p className="text-[#6B6B6B] text-[11px] leading-relaxed">
-          Conformément à l'article L612-1 du Code de la consommation, en cas de litige et après avoir contacté notre
-          service client, le consommateur peut recourir gratuitement à un médiateur de la consommation en vue d'une
-          résolution amiable du litige. Les coordonnées du médiateur compétent sont disponibles sur demande auprès de
-          l'atelier.
-        </p>
-      </div>
+      {ws.country === "FR" ? (
+        <div className="md:col-span-2 rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA] p-5 print:rounded-none">
+          <h3 className="mb-2 font-semibold text-[#1A1916] text-[13px]">Médiation de la consommation</h3>
+          <p className="text-[#6B6B6B] text-[11px] leading-relaxed">
+            Les coordonnées du médiateur de la consommation compétent sont disponibles sur demande auprès de
+            l'atelier.
+          </p>
+        </div>
+      ) : null}
 
       {ws.invoiceTerms ? (
         <div className="md:col-span-2 rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA] p-5 print:rounded-none">
@@ -1011,11 +1098,20 @@ export function PaymentReceiptDocument({
       workshop={workshop}
     >
       <DocumentIntro customer={customer} invoice={invoice} repair={repair} />
-      <PaymentHero amount={payment.amount} date={payment.date} method={payment.method} />
+      <PaymentHero
+        amount={payment.amount}
+        currency={payment.currency}
+        date={payment.date}
+        method={payment.method}
+      />
       <PremiumCard title="Détails du règlement">
         <KeyValue label="Facture liée" value={dash(invoice?.number)} />
         <KeyValue label="Référence" value={dash(payment.reference ?? payment.paymentNumber)} />
         <KeyValue label="Mode" value={dash(payment.method ?? payment.mode)} />
+        {payment.method === "TWINT" ? <KeyValue label="Paiement" value="Payé par TWINT" /> : null}
+        {payment.method === "TWINT" && payment.twintReference ? (
+          <KeyValue label="Référence TWINT" value={dash(payment.twintReference)} />
+        ) : null}
         <KeyValue label="Statut" value={dash(payment.status)} />
       </PremiumCard>
       <NoticeCard title={isFullSettlement ? "Acquit pour solde de tout compte" : "Reçu d'acompte"}>
@@ -1027,7 +1123,10 @@ export function PaymentReceiptDocument({
   );
 }
 
-function InternalPartsTable({ parts }: Readonly<{ parts: RepairPart[] }>) {
+function InternalPartsTable({
+  parts,
+  currency,
+}: Readonly<{ parts: RepairPart[]; currency?: WorkshopCurrency }>) {
   const rows = parts.length ? parts : [];
   return (
     <section className="overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-white print:rounded-none">
@@ -1054,9 +1153,11 @@ function InternalPartsTable({ parts }: Readonly<{ parts: RepairPart[] }>) {
                     {dash(part.reference)} · Qté {text(part.quantity, "1")}
                   </span>
                 </span>
-                <span className="text-right">{money(purchase)}</span>
-                <span className="text-right">{money(sale)}</span>
-                <span className="text-right font-semibold text-[#2A9D8F]">{money(sale - purchase)}</span>
+                <span className="text-right">{money(purchase, currency)}</span>
+                <span className="text-right">{money(sale, currency)}</span>
+                <span className="text-right font-semibold text-[#2A9D8F]">
+                  {money(sale - purchase, currency)}
+                </span>
               </div>
             );
           })}
@@ -1085,7 +1186,7 @@ export function InternalRepairDocument({
       <PremiumCard title="Diagnostic atelier">
         <KeyValue label="Technicien" value={dash(repair.technician || workshop?.managerSignature)} />
         <KeyValue label="Diagnostic" value={dash(repair.notes || repair.issue)} />
-        <KeyValue label="Prix client" value={money(repair.total ?? repair.amount)} />
+        <KeyValue label="Prix client" value={money(repair.total ?? repair.amount, repair.currency)} />
         <KeyValue label="Fournisseur" value={dash(repair.selectedPriceSnapshot?.fournisseur)} />
         <KeyValue label="Stock utilisé" value={dash(repair.selectedPriceSnapshot?.stockDisponible)} />
         <KeyValue
@@ -1093,7 +1194,7 @@ export function InternalRepairDocument({
           value={dash(repair.selectedPriceSnapshot?.sku ?? repair.selectedPriceSnapshot?.qualite)}
         />
       </PremiumCard>
-      <InternalPartsTable parts={repair.parts ?? []} />
+      <InternalPartsTable currency={repair.currency} parts={repair.parts ?? []} />
       <NoticeCard title="Checklist technique">
         Contrôle visuel, test fonctionnel, nettoyage zone intervention, validation client avant restitution.
       </NoticeCard>
@@ -1125,7 +1226,6 @@ export function RepairSummaryDocument({
       <PremiumCard title="Intervention réalisée">
         <KeyValue label="Appareil" value={dash(repair.deviceModel || repair.device)} />
         <KeyValue label="Panne signalée" value={dash(repair.issue)} />
-        <KeyValue label="Diagnostic" value={dash(repair.diagnosticNotes || repair.notes)} />
         <KeyValue label="Intervention" value={dash(repair.recommendedIntervention || repair.issueType)} />
         <KeyValue label="Technicien" value={dash(repair.technician)} />
         <KeyValue label="Contrôle final" value={testValidated ? "Validé" : "En cours"} />
@@ -1138,7 +1238,7 @@ export function RepairSummaryDocument({
         </PremiumCard>
       )}
       <PremiumCard title="Montant & garantie">
-        <KeyValue label="Total" value={money(repair.total ?? repair.amount)} />
+        <KeyValue label="Total" value={money(repair.total ?? repair.amount, repair.currency)} />
         <KeyValue label="Garantie" value={dash(repair.diagnosticWarranty || ws.defaultWarranty)} />
       </PremiumCard>
       <NoticeCard title="Garantie">
@@ -1168,6 +1268,7 @@ export function SaleReceiptDocument({
       <DocumentIntro customer={customer} />
       <div className="mt-8">
         <PremiumTable
+          currency={sale.currency}
           rows={sale.lines.map((l) => ({
             id: l.id,
             description: [
@@ -1188,6 +1289,7 @@ export function SaleReceiptDocument({
       <div className="mt-8 flex justify-end">
         <div className="w-64">
           <TotalsCard
+            currency={sale.currency}
             lines={sale.lines.map((l) => ({
               id: l.id,
               description: l.name,
@@ -1201,7 +1303,7 @@ export function SaleReceiptDocument({
       </div>
       {sale.paymentMethod && (
         <NoticeCard title="Paiement">
-          Encaissement effectué par {sale.paymentMethod} le {sale.paidAt ? dateLabel(sale.paidAt) : "Non renseigné"}.
+          Réglé hors Behar Tech par {sale.paymentMethod} le {sale.paidAt ? dateLabel(sale.paidAt) : "Non renseigné"}.
           Ce reçu atteste du règlement de la vente comptoir indiquée ci-dessus.
         </NoticeCard>
       )}

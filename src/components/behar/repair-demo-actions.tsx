@@ -7,10 +7,12 @@ import Link from "next/link";
 import { FileText, Mail, MessageCircle, PackageCheck, WalletCards } from "lucide-react";
 
 import { DetailRow, PrimaryButton, SecondaryButton, StatusBadge, SuccessNote } from "@/components/behar/primitives";
+import { formatCurrency, useBeharStore } from "@/lib/behar-store";
 import { demoScenario } from "@/mock/demo";
 import { initialMessageLogs } from "@/mock/messageLogs";
 
 export function RepairDemoActions() {
+  const currency = useBeharStore((state) => state.workshopInfo.currency);
   const [partSelected, setPartSelected] = useState(false);
   const [paid, setPaid] = useState(false);
   const [message, setMessage] = useState("");
@@ -75,7 +77,7 @@ export function RepairDemoActions() {
         </SecondaryButton>
         <PrimaryButton className="w-full" onClick={cashIn}>
           <WalletCards className="size-4" />
-          Indiquer règlement 189,00 €
+          Indiquer règlement {formatCurrency(189, currency)}
         </PrimaryButton>
       </div>
 

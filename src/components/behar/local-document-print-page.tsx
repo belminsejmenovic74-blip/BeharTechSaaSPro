@@ -29,25 +29,32 @@ export function LocalDocumentPrintPage({
   const store = useBeharStore();
   const hydrated = useBeharStore((state) => state._hasHydrated);
 
-  // En export statique, les query params (`?public=1&print=1`) sont lus côté
+  // En export statique, les query params (`?doc=…&public=1&print=1`) sont lus côté
   // client. Les props (si fournies) restent prioritaires.
-  const [query, setQuery] = useState<{ publicMode: boolean; autoPrint: boolean }>({
+  // `doc` porte l'identifiant réel du document : la route n'est pré-générée que pour
+  // le segment placeholder `_`, donc l'id réel transite par le query param.
+  const [query, setQuery] = useState<{ publicMode: boolean; autoPrint: boolean; docId: string }>({
     publicMode: publicModeProp ?? false,
     autoPrint: autoPrintProp ?? false,
+    docId: documentId,
   });
   useEffect(() => {
-    if (publicModeProp !== undefined && autoPrintProp !== undefined) return;
     const params = new URLSearchParams(window.location.search);
+    const queryDocId = params.get("doc");
     setQuery({
       publicMode: publicModeProp ?? params.get("public") === "1",
       autoPrint: autoPrintProp ?? params.get("print") === "1",
+      // L'id du query param prime ; sinon on retombe sur le segment de route
+      // (compat. anciens liens `/print/document/<id>/` en runtime serveur).
+      docId: queryDocId && queryDocId !== "_" ? queryDocId : documentId,
     });
-  }, [publicModeProp, autoPrintProp]);
+  }, [publicModeProp, autoPrintProp, documentId]);
   const publicMode = query.publicMode;
   const autoPrint = query.autoPrint;
+  const effectiveDocumentId = query.docId;
   const document = useMemo(
-    () => store.documents.find((entry) => entry.id === documentId),
-    [documentId, store.documents],
+    () => store.documents.find((entry) => entry.id === effectiveDocumentId),
+    [effectiveDocumentId, store.documents],
   );
   const documentRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);

@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 
 import { useRouter } from "next/navigation";
 
-import { LogOut, Wrench } from "lucide-react";
+import { LogOut, Sparkles, Wrench } from "lucide-react";
 
 import { AtelierWorkspace } from "@/components/behar/atelier-workspace";
 import { BeharLogo } from "@/components/behar/behar-logo";
+import { ReconditioningWorkspace } from "@/components/behar/reconditioning-workspace";
 import { useBeharStore } from "@/lib/behar-store";
+import { cn } from "@/lib/utils";
 
 export function AtelierModeWorkspace() {
   const router = useRouter();
@@ -17,6 +19,7 @@ export function AtelierModeWorkspace() {
   const logout = useBeharStore((s) => s.logout);
   const addAuditLog = useBeharStore((s) => s.addAuditLog);
   const [now, setNow] = useState(() => new Date());
+  const [mode, setMode] = useState<"reparations" | "reconditionnement">("reparations");
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 30_000);
@@ -67,21 +70,41 @@ export function AtelierModeWorkspace() {
 
       <main className="flex-1 overflow-y-auto px-5 py-6 lg:px-8 lg:py-7">
         <div className="mx-auto w-full max-w-[1680px]">
-          <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h1 className="font-semibold text-[#1A1916] text-[28px] leading-tight tracking-tight lg:text-[34px]">
-                File d'attente atelier
+                {mode === "reparations" ? "File d'attente atelier" : "Reconditionnement"}
               </h1>
               <p className="mt-1 text-[#6B6B6B] text-sm">
-                Reçu, diagnostic, attente, réparation, test final et prêt.
+                {mode === "reparations"
+                  ? "Reçu, diagnostic, attente, réparation, test final et prêt."
+                  : "Rachat, remise en état, contrôle qualité et certificat de reconditionnement."}
               </p>
             </div>
-            <div className="rounded-[12px] border border-[#E8E8E5] bg-white px-4 py-2 text-[#6B6B6B] text-xs shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
-              Poste technicien · dossier central partagé
+            <div className="inline-flex h-11 items-center self-start rounded-[12px] border border-[#E8E8E5] bg-white p-1 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
+              {(
+                [
+                  ["reparations", "Réparations", Wrench],
+                  ["reconditionnement", "Reconditionnement", Sparkles],
+                ] as const
+              ).map(([key, label, Icon]) => (
+                <button
+                  className={cn(
+                    "inline-flex h-9 items-center gap-2 rounded-[9px] px-3.5 font-semibold text-[13px] transition",
+                    mode === key ? "bg-[#2A9D8F] text-white shadow-[0_1px_2px_rgba(42,157,143,0.25)]" : "text-[#6B6B6B] hover:text-[#1A1916]",
+                  )}
+                  key={key}
+                  onClick={() => setMode(key)}
+                  type="button"
+                >
+                  <Icon className="size-4" />
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 
-          <AtelierWorkspace />
+          {mode === "reparations" ? <AtelierWorkspace /> : <ReconditioningWorkspace />}
         </div>
       </main>
 

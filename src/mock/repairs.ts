@@ -204,7 +204,7 @@ export const selectedRepair = {
   droppedAt: "Aujourd'hui, 10:15",
   status: "En réparation",
   estimatedDoneAt: "Demain, 15:00",
-  amount: "189,00 €",
+  amount: "189,00 EUR",
   notes: "Le client souhaite conserver le True Tone.",
   parts: ["Écran OLED iPhone 13"],
   history: ["Prise en charge créée", "Diagnostic terminé", "Dossier passé en réparation"],

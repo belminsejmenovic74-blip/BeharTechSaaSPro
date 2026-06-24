@@ -7,8 +7,11 @@ import { useRouter } from "next/navigation";
 
 import {
   ArrowLeft,
+  Camera,
   Check,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
   Clock,
   Copy,
@@ -17,14 +20,17 @@ import {
   FileText,
   FolderOpen,
   Lock,
+  Menu,
   MessageSquare,
   Pencil,
   Printer,
   QrCode,
   Receipt,
+  Share2,
   ShoppingCart,
   Smartphone,
   Wrench,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -32,6 +38,7 @@ import { getPrintableTarget } from "@/components/behar/local-printable-document"
 import { RealDeviceVisual } from "@/components/behar/real-product-visual";
 import {
   buildInvoiceLinesFromRepair,
+  formatCurrency,
   formatEuro,
   formatIsoToDisplay,
   getInvoiceTotal,
@@ -39,11 +46,15 @@ import {
   isTerminalRepairStatus,
   paymentMethods,
   type Customer,
+  type DeviceModel,
   type PaymentMethod,
   type Repair,
   type RepairStatus,
+  type StockItem,
   useBeharStore,
 } from "@/lib/behar-store";
+import { getInternalDocumentUrl } from "@/lib/documents/document-actions";
+import { isStockItemCompatibleWithRepair } from "./atelier-workspace";
 import { displayCustomerName } from "@/lib/customer-display";
 import { formatDeviceLabel } from "@/lib/format-device";
 import { generateQrDataUrl, publicAbsoluteUrl } from "@/lib/public-link";
@@ -51,6 +62,7 @@ import { cn } from "@/lib/utils";
 
 import { useDocument } from "./print-provider";
 import { PrimaryButton, SecondaryButton, StatusBadge } from "./primitives";
+import { TrackingQrModal } from "./tracking-qr-modal";
 
 const progression: RepairStatus[] = [
   "Reçu",
@@ -140,6 +152,10 @@ function cleanDossierId(value?: string | null) {
 
 function dossierIdFromBrowserUrl() {
   if (typeof window === "undefined") return "";
+  const urlParams = new URLSearchParams(window.location.search);
+  const queryId = urlParams.get("id") || urlParams.get("dossierId");
+  if (queryId) return cleanDossierId(queryId);
+
   const [, rawId] = window.location.pathname.match(/\/dashboard\/dossiers\/([^/?#]+)/) ?? [];
   return cleanDossierId(rawId ? decodeURIComponent(rawId) : "");
 }
@@ -147,10 +163,13 @@ function dossierIdFromBrowserUrl() {
 export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: string }>) {
   const router = useRouter();
   const store = useBeharStore();
-  const { print, download } = useDocument();
+  const { print, download, preview } = useDocument();
   const [browserDossierId, setBrowserDossierId] = useState("");
   const [tab, setTab] = useState<DossierTab>("Vue d'ensemble");
+  const [mobileTab, setMobileTab] = useState<string>("Vue d'ensemble");
   const [notesFocus, setNotesFocus] = useState<"internal" | "client" | null>(null);
+  const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null);
+  const [viewingMobileDoc, setViewingMobileDoc] = useState<any | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("TPE externe");
   const resolvedDossierId = cleanDossierId(dossierId) || browserDossierId;
 
@@ -181,6 +200,7 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
   const quoteTotal = quote ? getQuoteTotal(quote) : 0;
   const dossierTotal = invoiceTotal || quoteTotal || repair?.total || repair?.amount || 0;
   const paidAmount = payments.filter((entry) => entry.status === "Payé").reduce((sum, entry) => sum + entry.amount, 0);
+  const formatDossier = (value: number) => formatEuro(value);
 
   const activity = useMemo(() => {
     if (!repair) return [];
@@ -260,6 +280,8 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
   };
 
   const closeDossier = () => {
+    const ok = window.confirm("Confirmez-vous le retrait de l'appareil et la clôture du dossier ?");
+    if (!ok) return;
     store.changeRepairStatus(repair.id, "Rendu");
     toast.success("Dossier marqué comme rendu.");
   };
@@ -267,119 +289,253 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
   const activeIndex = Math.max(0, progression.indexOf(repair.status));
 
   return (
-    <div className="space-y-5">
-      <Link
-        className="inline-flex items-center gap-2 text-[#6B6B6B] text-sm hover:text-[#1A1916]"
-        href="/dashboard/reparations"
-      >
-        <ArrowLeft className="size-4" />
-        Retour aux réparations
-      </Link>
+    <>
+      {/* Desktop view */}
+      <div className="hidden md:block space-y-5">
+        <Link
+          className="inline-flex items-center gap-2 text-[#6B6B6B] text-sm hover:text-[#1A1916]"
+          href="/dashboard/reparations"
+        >
+          <ArrowLeft className="size-4" />
+          Retour aux réparations
+        </Link>
 
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-semibold text-[#1A1916] text-[28px] tracking-tight">Dossier #{repair.number}</h1>
-          <p className="mt-0.5 text-[#6B6B6B] text-sm">Suivi complet du dossier</p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="font-semibold text-[#1A1916] text-[28px] tracking-tight">Dossier #{repair.number}</h1>
+            <p className="mt-0.5 text-[#6B6B6B] text-sm">Suivi complet du dossier</p>
+          </div>
+          <StatusPill status={repair.status} />
         </div>
-        <StatusPill status={repair.status} />
-      </div>
 
-      {/* En-tête : client / appareil / problème / intervention / montant */}
-      <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-        <div className="flex flex-col gap-5 divide-y divide-[#F7F7F7] lg:flex-row lg:items-center lg:divide-x lg:divide-y-0">
-          <div className="flex min-w-0 items-center gap-3 lg:pr-6">
-            <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#EAF6F2] font-semibold text-[#167B70]">
-              {(displayCustomerName(customer) || "C").slice(0, 2).toUpperCase()}
-            </span>
-            <div className="min-w-0">
-              <p className="truncate font-semibold text-[#1A1916]">{displayCustomerName(customer) || "Client"}</p>
-              <p className="truncate text-[#6B6B6B] text-sm">{customer?.phone || "Téléphone non renseigné"}</p>
-            </div>
-          </div>
-          <div className="flex min-w-0 items-center gap-3 pt-5 lg:px-6 lg:pt-0">
-            <RealDeviceVisual
-              brand={repair.brandName}
-              className="size-20 rounded-[18px] border border-[#E8E8E5] bg-[#FAFAF8] p-2 shadow-[0_10px_24px_rgba(26,25,22,0.045)]"
-              model={repair.deviceModel || repair.model || repair.device}
-              type={repair.deviceType}
-            />
-            <div className="min-w-0">
-              <p className="truncate font-semibold text-[#1A1916]">{formatDeviceLabel(repair, repair.device)}</p>
-              <p className="truncate text-[#6B6B6B] text-xs">{repair.imei ? `IMEI : ${repair.imei}` : "IMEI / S/N non renseigné"}</p>
-            </div>
-          </div>
-          <HeaderCol className="lg:px-6" label="Problème" value={repair.issue || "À préciser"} />
-          <HeaderCol
-            className="lg:px-6"
-            label="Intervention prévue"
-            value={repair.recommendedIntervention || repair.issueType || "À définir"}
-          />
-          <div className="pt-5 lg:pl-6 lg:pt-0">
-            <p className="text-[#6B6B6B] text-xs">Montant dossier</p>
-            <p className="mt-1 font-semibold text-[#167B70] text-2xl tracking-tight">{formatEuro(dossierTotal)}</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Stepper horizontal */}
-      <Stepper activeIndex={activeIndex} />
-
-      {/* Onglets */}
-      <div className="flex gap-1 overflow-x-auto border-[#E8E8E5] border-b pb-px">
-        {tabs.map((entry) => (
-          <button
-            className={cn(
-              "shrink-0 border-b-2 px-3.5 pb-2.5 text-sm font-semibold transition",
-              tab === entry
-                ? "border-[#2A9D8F] text-[#1A1916]"
-                : "border-transparent text-[#6B6B6B] hover:text-[#1A1916]",
-            )}
-            key={entry}
-            onClick={() => setTab(entry)}
-            type="button"
-          >
-            {entry}
-          </button>
-        ))}
-      </div>
-
-      {tab === "Vue d'ensemble" ? (
-        <OverviewTab
-          customer={customer}
-          documents={documents}
-          invoices={invoices}
-          onAdvance={advance}
-          onClose={closeDossier}
-          onCreateInvoice={createInvoice}
-          onCreateQuote={createQuote}
-          onNotes={openNotes}
-          onPrint={() => setTab("Documents")}
-          quotes={quotes}
-          repair={repair}
-          total={dossierTotal}
-        />
-      ) : (
+        {/* En-tête : client / appareil / problème / intervention / montant */}
         <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-          {tab === "Fiche d'entrée" && <FicheEntreeTab customer={customer} documents={documents} repair={repair} />}
-          {tab === "Diagnostic" && <DiagnosticTab repair={repair} />}
-          {tab === "Réparation" && <RepairTab onAdvance={advance} repair={repair} />}
-          {tab === "Devis" && <QuoteTab onCreate={createQuote} quote={quote} quotes={quotes} repair={repair} />}
-          {tab === "Facture" && (
-            <InvoiceTab
-              invoice={invoice}
-              invoices={invoices}
-              onCreate={createInvoice}
-              onPayment={indicatePayment}
-              paymentMethod={paymentMethod}
-              setPaymentMethod={setPaymentMethod}
+          <div className="flex flex-col gap-5 divide-y divide-[#F7F7F7] lg:flex-row lg:items-center lg:divide-x lg:divide-y-0">
+            <div className="flex min-w-0 items-center gap-3 lg:pr-6">
+              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#EAF6F2] font-semibold text-[#167B70]">
+                {(displayCustomerName(customer) || "C").slice(0, 2).toUpperCase()}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-[#1A1916]">{displayCustomerName(customer) || "Client"}</p>
+                <p className="truncate text-[#6B6B6B] text-sm">{customer?.phone || "Téléphone non renseigné"}</p>
+              </div>
+            </div>
+            <div className="flex min-w-0 items-center gap-3 pt-5 lg:px-6 lg:pt-0">
+              <RealDeviceVisual
+                brand={repair.brandName}
+                className="size-20 rounded-[18px] border border-[#E8E8E5] bg-[#FAFAF8] p-2 shadow-[0_10px_24px_rgba(26,25,22,0.045)]"
+                model={repair.deviceModel || repair.model || repair.device}
+                type={repair.deviceType}
+              />
+              <div className="min-w-0">
+                <p className="truncate font-semibold text-[#1A1916]">{formatDeviceLabel(repair, repair.device)}</p>
+                <p className="truncate text-[#6B6B6B] text-xs">{repair.imei ? `IMEI : ${repair.imei}` : "IMEI / S/N non renseigné"}</p>
+              </div>
+            </div>
+            <HeaderCol className="lg:px-6" label="Problème" value={repair.issue || "À préciser"} />
+            <HeaderCol
+              className="lg:px-6"
+              label="Intervention prévue"
+              value={repair.recommendedIntervention || repair.issueType || "À définir"}
+            />
+            <div className="pt-5 lg:pl-6 lg:pt-0">
+              <p className="text-[#6B6B6B] text-xs">Montant dossier</p>
+              <p className="mt-1 font-semibold text-[#167B70] text-2xl tracking-tight">{formatEuro(dossierTotal)}</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Stepper horizontal */}
+        <Stepper activeIndex={activeIndex} />
+
+        {/* Onglets */}
+        <div className="flex gap-1 overflow-x-auto border-[#E8E8E5] border-b pb-px">
+          {tabs.map((entry) => (
+            <button
+              className={cn(
+                "shrink-0 border-b-2 px-3.5 pb-2.5 text-sm font-semibold transition",
+                tab === entry
+                  ? "border-[#2A9D8F] text-[#1A1916]"
+                  : "border-transparent text-[#6B6B6B] hover:text-[#1A1916]",
+              )}
+              key={entry}
+              onClick={() => setTab(entry)}
+              type="button"
+            >
+              {entry}
+            </button>
+          ))}
+        </div>
+
+        {tab === "Vue d'ensemble" ? (
+          <OverviewTab
+            customer={customer}
+            documents={documents}
+            invoices={invoices}
+            onAdvance={advance}
+            onClose={closeDossier}
+            onCreateInvoice={createInvoice}
+            onCreateQuote={createQuote}
+            onNotes={openNotes}
+            onPrint={() => setTab("Documents")}
+            quotes={quotes}
+            repair={repair}
+            total={dossierTotal}
+          />
+        ) : (
+          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+            {tab === "Fiche d'entrée" && <FicheEntreeTab customer={customer} documents={documents} repair={repair} />}
+            {tab === "Diagnostic" && <DiagnosticTab repair={repair} />}
+            {tab === "Réparation" && <RepairTab onAdvance={advance} repair={repair} />}
+            {tab === "Devis" && <QuoteTab onCreate={createQuote} quote={quote} quotes={quotes} repair={repair} />}
+            {tab === "Facture" && (
+              <InvoiceTab
+                invoice={invoice}
+                invoices={invoices}
+                onCreate={createInvoice}
+                onPayment={indicatePayment}
+                paymentMethod={paymentMethod}
+                setPaymentMethod={setPaymentMethod}
+              />
+            )}
+            {tab === "Documents" && <DocumentsTab documents={documents} download={download} print={print} />}
+            {tab === "Notes" && <NotesTab focus={notesFocus} onFocusHandled={() => setNotesFocus(null)} repair={repair} />}
+            {tab === "Historique" && <HistoryTab items={activity} />}
+          </section>
+        )}
+      </div>
+
+      {/* Mobile view */}
+      <div className="block md:hidden space-y-5 px-1 py-1 min-h-screen text-[#1A1916]">
+        <MobileRepairHeader repair={repair} customer={customer} />
+        
+        <MobileRepairSummaryCard 
+          repair={repair} 
+          customer={customer} 
+          dossierTotal={dossierTotal} 
+          formatDossier={formatDossier} 
+        />
+        
+        <MobileRepairStepper status={repair.status} />
+        
+        <MobileRepairTabs activeTab={mobileTab} setActiveTab={setMobileTab} />
+        
+        <div className="space-y-4 pt-1">
+          {mobileTab === "Vue d'ensemble" && (
+            <MobileOverviewSection 
+              repair={repair} 
+              customer={customer} 
+              documents={documents} 
+              invoices={invoices} 
+              quotes={quotes} 
+              total={dossierTotal} 
+              onAdvance={advance} 
+              onClose={closeDossier} 
+              onCreateQuote={createQuote} 
+              onCreateInvoice={createInvoice} 
+              onPrint={() => setMobileTab("Documents")} 
+              onNotes={(t) => {
+                setMobileTab("Notes");
+                if (t) setNotesFocus(t);
+              }} 
+              setViewingMobileDoc={setViewingMobileDoc}
             />
           )}
-          {tab === "Documents" && <DocumentsTab documents={documents} download={download} print={print} />}
-          {tab === "Notes" && <NotesTab focus={notesFocus} onFocusHandled={() => setNotesFocus(null)} repair={repair} />}
-          {tab === "Historique" && <HistoryTab items={activity} />}
-        </section>
-      )}
-    </div>
+          {mobileTab === "Fiche d'entrée" && (
+            <MobileEntrySheetSection 
+              repair={repair} 
+              customer={customer} 
+              documents={documents} 
+              setActivePhotoIndex={setActivePhotoIndex}
+            />
+          )}
+          {mobileTab === "Diagnostic" && (
+            <MobileDiagnosticSection 
+              repair={repair} 
+              onCreateQuote={createQuote} 
+              onNotes={() => setMobileTab("Notes")} 
+            />
+          )}
+          {mobileTab === "Pièces" && (
+            <MobilePartsSection 
+              repair={repair} 
+            />
+          )}
+          {mobileTab === "Devis" && (
+            <MobileQuoteSection 
+              repair={repair} 
+              quote={quote} 
+              quotes={quotes} 
+              onCreate={createQuote} 
+              setViewingMobileDoc={setViewingMobileDoc}
+            />
+          )}
+          {mobileTab === "Facture" && (
+            <MobileInvoiceSection 
+              invoice={invoice} 
+              invoices={invoices} 
+              onCreate={createInvoice} 
+              onPayment={indicatePayment} 
+              paymentMethod={paymentMethod} 
+              setPaymentMethod={setPaymentMethod} 
+              formatDossier={formatDossier} 
+              setViewingMobileDoc={setViewingMobileDoc}
+            />
+          )}
+          {mobileTab === "Documents" && (
+            <MobileDocumentsSection 
+              repair={repair} 
+              documents={documents} 
+              download={download} 
+              print={print} 
+              setViewingMobileDoc={setViewingMobileDoc}
+            />
+          )}
+          {mobileTab === "Notes" && (
+            <MobileNotesHistorySection 
+              repair={repair} 
+              focus={notesFocus} 
+              onFocusHandled={() => setNotesFocus(null)} 
+            />
+          )}
+          {mobileTab === "SAV" && (
+            <MobileFinalTestSection 
+              repair={repair} 
+              onAdvance={advance} 
+              onClose={closeDossier} 
+              invoice={invoice} 
+              setMobileTab={setMobileTab} 
+              setViewingMobileDoc={setViewingMobileDoc}
+            />
+          )}
+        </div>
+
+        {/* Visionneuse de document plein écran sur mobile */}
+        {viewingMobileDoc && (
+          <MobileDocumentViewerModal
+            doc={viewingMobileDoc}
+            repair={repair}
+            customer={customer}
+            quotes={quotes}
+            invoices={invoices}
+            payments={payments}
+            onClose={() => setViewingMobileDoc(null)}
+            download={download}
+            print={print}
+          />
+        )}
+
+        {/* Visionneuse de photos (Lightbox) sur mobile */}
+        {activePhotoIndex !== null && (
+          <MobilePhotoLightbox
+            photos={repair.intakeCondition?.photos ?? repair.workshopPhotos ?? []}
+            activeIndex={activePhotoIndex}
+            onClose={() => setActivePhotoIndex(null)}
+            onChangeIndex={setActivePhotoIndex}
+          />
+        )}
+      </div>
+    </>
   );
 }
 
@@ -650,6 +806,7 @@ function DocumentsLiesCard({
   quotes: any[];
   invoices: any[];
 }>) {
+  const { preview, download } = useDocument();
   const rows = documents.map((doc) => {
     const quote = doc.type === "quote" ? quotes.find((q) => q.id === (doc as any).quoteId) ?? quotes[0] : undefined;
     const invoice = doc.type === "invoice" ? invoices.find((i) => i.id === (doc as any).invoiceId) ?? invoices[0] : undefined;
@@ -696,12 +853,38 @@ function DocumentsLiesCard({
                   {statusLabel}
                 </span>
               ) : null}
-              <Link
-                className="grid size-7 shrink-0 place-items-center rounded-[8px] text-[#6B6B6B] hover:bg-white"
-                href={`/print/document/${doc.id}`}
-              >
-                <ExternalLink className="size-4" />
-              </Link>
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  title="Ouvrir le document"
+                  className="grid size-7 place-items-center rounded-[8px] text-[#6B6B6B] hover:bg-white"
+                  onClick={() => {
+                    const target = getPrintableTarget(doc as any);
+                    if (target) {
+                      preview(target.type, target.id);
+                    } else {
+                      toast.error("Document lié introuvable");
+                    }
+                  }}
+                >
+                  <ExternalLink className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  title="Télécharger le PDF"
+                  className="grid size-7 place-items-center rounded-[8px] text-[#6B6B6B] hover:bg-white"
+                  onClick={() => {
+                    const target = getPrintableTarget(doc as any);
+                    if (target) {
+                      download(target.type, target.id);
+                    } else {
+                      toast.error("Document lié introuvable");
+                    }
+                  }}
+                >
+                  <Download className="size-4" />
+                </button>
+              </div>
             </li>
           ))
         )}
@@ -714,6 +897,7 @@ function SuiviClientCard({ repair }: Readonly<{ repair: Repair }>) {
   const ensureRepairPublicAccess = useBeharStore((s) => s.ensureRepairPublicAccess);
   const [qr, setQr] = useState("");
   const [copied, setCopied] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const trackingUrl = repair.publicAccess?.url ? publicAbsoluteUrl(repair.publicAccess.url) : "";
 
   useEffect(() => {
@@ -742,14 +926,16 @@ function SuiviClientCard({ repair }: Readonly<{ repair: Repair }>) {
       <div className="mt-3 flex items-center gap-4">
         {qr ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img alt="QR de suivi" className="size-24 shrink-0 rounded-[12px] border border-[#F7F7F7] bg-white p-1.5" src={qr} />
+          <div className="cursor-pointer shrink-0" onClick={() => setIsModalOpen(true)}>
+            <img alt="QR de suivi" className="size-24 rounded-[12px] border border-[#F7F7F7] bg-white p-1.5" src={qr} />
+          </div>
         ) : (
           <div className="grid size-24 shrink-0 place-items-center rounded-[12px] bg-[#F7F7F7] text-[#9A9AA0] text-xs">QR…</div>
         )}
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-[#6B6B6B] text-xs">Le client peut suivre l'avancement de son dossier en ligne.</p>
           <div className="mt-2 flex items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-[#FAFAFA] px-2.5 py-1.5">
-            <span className="min-w-0 flex-1 truncate text-[#167B70] text-xs">{trackingUrl || "Lien en cours…"}</span>
+            <span className="min-w-0 flex-1 truncate text-[#1E7A6E] text-xs">{trackingUrl || "Lien en cours…"}</span>
             <button
               className="grid size-6 shrink-0 place-items-center rounded-[7px] text-[#6B6B6B] hover:bg-white"
               onClick={copyLink}
@@ -758,8 +944,26 @@ function SuiviClientCard({ repair }: Readonly<{ repair: Repair }>) {
               {copied ? <Check className="size-3.5 text-[#2A9D8F]" /> : <Copy className="size-3.5" />}
             </button>
           </div>
+          <div className="mt-2.5 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="inline-flex h-7 items-center justify-center rounded-[8px] border border-[#E8E8E5] px-2.5 text-xs font-semibold text-[#1A1916] hover:bg-[#FAFAFA]"
+            >
+              Afficher QR Code
+            </button>
+            <a
+              href={trackingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-7 items-center justify-center rounded-[8px] bg-[#2A9D8F] px-2.5 text-xs font-semibold text-white hover:bg-[#238579]"
+            >
+              Ouvrir le suivi
+            </a>
+          </div>
         </div>
       </div>
+      <TrackingQrModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} repairId={repair.id} />
     </section>
   );
 }
@@ -878,6 +1082,7 @@ function FicheEntreeTab({
   customer?: Pick<Customer, "name" | "phone" | "email" | "type">;
   documents: Array<{ id: string; title: string; type: string }>;
 }>) {
+  const { preview, download } = useDocument();
   const intakeDoc = documents.find((doc) => doc.type === "intake");
   const condition = repair.intakeCondition;
   const accessories = [
@@ -916,13 +1121,24 @@ function FicheEntreeTab({
           </p>
         </div>
         {intakeDoc ? (
-          <Link
-            className="inline-flex h-10 items-center gap-2 rounded-[12px] bg-[#2A9D8F] px-4 text-sm font-semibold text-white"
-            href={`/print/document/${intakeDoc.id}`}
-          >
-            <ExternalLink className="size-4" />
-            Ouvrir / Imprimer
-          </Link>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className="inline-flex h-10 items-center gap-2 rounded-[12px] bg-[#2A9D8F] px-4 text-sm font-semibold text-white hover:bg-[#238579]"
+              onClick={() => preview("intake", repair.id)}
+            >
+              <ExternalLink className="size-4" />
+              Ouvrir
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 text-sm font-semibold text-[#1A1916] hover:bg-[#FAFAFA]"
+              onClick={() => download("intake", repair.id)}
+            >
+              <Download className="size-4" />
+              Télécharger PDF
+            </button>
+          </div>
         ) : null}
       </div>
 
@@ -1112,6 +1328,7 @@ function DocumentsTab({
   print: (type: any, id: string) => void;
   download: (type: any, id: string) => void;
 }>) {
+  const { preview } = useDocument();
   if (!documents.length) return <EmptyLinked action="Retour au dossier" onClick={() => undefined} title="Aucun document lié" />;
   return (
     <div className="space-y-3">
@@ -1127,13 +1344,19 @@ function DocumentsTab({
               <p className="text-[#6B6B6B] text-sm">{document.title}</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link
-                className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-sm font-semibold"
-                href={`/print/document/${document.id}`}
+              <SecondaryButton
+                disabled={!target}
+                onClick={() => {
+                  if (target) {
+                    preview(target.type, target.id);
+                  } else {
+                    toast.error("Document lié introuvable");
+                  }
+                }}
               >
                 <ExternalLink className="size-4" />
                 Ouvrir
-              </Link>
+              </SecondaryButton>
               <SecondaryButton disabled={!target} onClick={() => target && print(target.type, target.id)}>
                 <Printer className="size-4" />
                 Imprimer
@@ -1408,6 +1631,2183 @@ function LinkedRow({
         <SecondaryButton asChild onClick={onOpen}>
           <Link href={href}>Ouvrir</Link>
         </SecondaryButton>
+      </div>
+    </div>
+  );
+}
+
+/* ───────────────────────── COMPOSANTS RESPONSIVE MOBILE ───────────────────────── */
+
+function MobileRepairHeader({
+  repair,
+  customer,
+}: Readonly<{
+  repair: Repair;
+  customer?: Customer;
+}>) {
+  return (
+    <div className="space-y-3">
+      {/* Top bar */}
+      <div className="flex items-center justify-between">
+        <Link
+          href="/dashboard/reparations"
+          className="inline-flex items-center gap-1.5 text-[#6B6B6B] text-xs font-semibold hover:text-[#1A1916] bg-white border border-[#E8E8E5] px-3.5 py-2 rounded-full shadow-[0_1px_2px_rgba(26,25,22,0.02)]"
+        >
+          <ArrowLeft className="size-3.5" />
+          Retour
+        </Link>
+        <div className="flex items-center gap-1.5">
+          <span className="font-black text-[11px] tracking-wider text-[#6B6B6B]">BEHAR • TECH</span>
+          <span className="px-1.5 py-0.5 text-[9px] font-black bg-[#EAF6F2] text-[#167B70] rounded-[6px] tracking-wide shadow-sm">PRO</span>
+        </div>
+        <button
+          type="button"
+          className="p-2 rounded-full bg-white border border-[#E8E8E5] text-[#1A1916] hover:bg-[#FAFAFA] shadow-[0_1px_2px_rgba(26,25,22,0.02)]"
+        >
+          <Menu className="size-4" />
+        </button>
+      </div>
+
+      {/* Titre & Statut */}
+      <div className="flex items-center justify-between pt-1">
+        <h1 className="text-[22px] font-semibold text-[#1A1916] tracking-tight">
+          Dossier #{repair.number}
+        </h1>
+        <StatusPill status={repair.status} />
+      </div>
+
+      {/* Appareil & Client Row (Miniature intégrée) */}
+      <div className="flex items-center gap-3 bg-[#FAFAF8] rounded-[16px] p-3 border border-[#E8E8E5]/60 shadow-[0_2px_6px_rgba(26,25,22,0.015)]">
+        <RealDeviceVisual
+          brand={repair.brandName}
+          className="size-11 shrink-0 rounded-[12px] border border-[#E8E8E5] bg-white p-1.5 shadow-[0_4px_12px_rgba(26,25,22,0.02)]"
+          model={repair.deviceModel || repair.model || repair.device}
+          type={repair.deviceType}
+        />
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] font-bold text-[#1A1916] truncate">
+            {formatDeviceLabel(repair, repair.device)}
+          </p>
+          <p className="text-[11px] text-[#6B6B6B] mt-0.5 truncate">
+            {displayCustomerName(customer) || "Client"}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MobileRepairSummaryCard({
+  repair,
+  customer,
+  dossierTotal,
+  formatDossier,
+}: Readonly<{
+  repair: Repair;
+  customer?: Customer;
+  dossierTotal: number;
+  formatDossier: (val: number) => string;
+}>) {
+  return (
+    <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
+      {/* Device Visual Header */}
+      <div className="flex items-center gap-3.5 pb-3 border-b border-[#F7F7F7]">
+        <RealDeviceVisual
+          brand={repair.brandName}
+          className="size-12 shrink-0 rounded-[12px] border border-[#E8E8E5] bg-[#FAFAF8] p-1.5 shadow-[0_4px_12px_rgba(26,25,22,0.02)]"
+          model={repair.deviceModel || repair.model || repair.device}
+          type={repair.deviceType}
+        />
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-bold text-[#1A1916] truncate">
+            {formatDeviceLabel(repair, repair.device)}
+          </h3>
+          <p className="text-xs text-[#6B6B6B] mt-0.5 truncate">
+            {repair.imei ? `IMEI : ${repair.imei}` : "IMEI : Non renseigné"}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Client</span>
+          <p className="text-sm font-semibold text-[#1A1916] mt-0.5 truncate">
+            {displayCustomerName(customer) || "Client"}
+          </p>
+          <p className="text-xs text-[#6B6B6B] mt-0.5 truncate">
+            {customer?.phone || "Téléphone non renseigné"}
+          </p>
+        </div>
+        <div>
+          <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Problème</span>
+          <p className="text-sm font-semibold text-[#1A1916] mt-0.5 truncate">{repair.issue || "Non renseigné"}</p>
+        </div>
+        <div className="col-span-2">
+          <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Intervention</span>
+          <p className="text-sm font-semibold text-[#1A1916] mt-0.5 truncate">
+            {repair.recommendedIntervention || repair.issueType || "Diagnostic"}
+          </p>
+        </div>
+      </div>
+      <div className="pt-3 border-t border-[#F7F7F7] flex items-center justify-between">
+        <span className="text-xs font-bold text-[#6B6B6B] uppercase tracking-wider">Montant dossier</span>
+        <span className="text-xl font-bold text-[#167B70] tracking-tight">{formatDossier(dossierTotal)}</span>
+      </div>
+    </div>
+  );
+}
+
+function MobileRepairStepper({
+  status,
+}: Readonly<{
+  status: RepairStatus;
+}>) {
+  const steps = ["Reçu", "Diagnostic", "Devis", "Réparation", "Test final", "Prêt", "Rendu"];
+  
+  const getActiveStepIndex = (s: RepairStatus): number => {
+    switch (s) {
+      case "Reçu": return 0;
+      case "Diagnostic": return 1;
+      case "En attente":
+      case "Devis envoyé":
+      case "Devis accepté":
+        return 2;
+      case "En réparation": return 3;
+      case "Test final": return 4;
+      case "Prêt": return 5;
+      case "Rendu":
+      case "Clôturé":
+      default:
+        return 6;
+    }
+  };
+
+  const activeIndex = getActiveStepIndex(status);
+
+  return (
+    <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-4 shadow-[0_4px_12px_rgba(26,25,22,0.02)] overflow-x-auto scrollbar-none">
+      <div className="flex items-center min-w-[560px] py-1">
+        {steps.map((step, index) => {
+          const isCompleted = index < activeIndex;
+          const isCurrent = index === activeIndex;
+
+          return (
+            <div className="flex flex-1 items-center" key={step}>
+              <div className="flex flex-col items-center flex-1">
+                <div className="flex w-full items-center">
+                  <div
+                    className={cn(
+                      "h-0.5 flex-1 rounded-full",
+                      index === 0 ? "opacity-0" : isCompleted || isCurrent ? "bg-[#2A9D8F]" : "bg-[#E8E8E5]",
+                    )}
+                  />
+                  <div
+                    className={cn(
+                      "grid size-8 shrink-0 place-items-center rounded-full border-2 text-xs font-semibold transition-all duration-200",
+                      isCompleted
+                        ? "border-[#2A9D8F] bg-[#2A9D8F] text-white shadow-sm"
+                        : isCurrent
+                          ? "border-[#2A9D8F] bg-white text-[#2A9D8F] shadow-[0_0_0_2px_rgba(42,157,143,0.1)] scale-110"
+                          : "border-[#E8E8E5] bg-white text-[#6B6B6B]"
+                    )}
+                  >
+                    {isCompleted ? <Check className="size-4" /> : index + 1}
+                  </div>
+                  <div
+                    className={cn(
+                      "h-0.5 flex-1 rounded-full",
+                      index === steps.length - 1 ? "opacity-0" : isCompleted ? "bg-[#2A9D8F]" : "bg-[#E8E8E5]",
+                    )}
+                  />
+                </div>
+                <span
+                  className={cn(
+                    "mt-2 text-center text-[11px] font-semibold tracking-tight whitespace-nowrap",
+                    isCurrent ? "text-[#1A1916] font-bold" : isCompleted ? "text-[#2A9D8F]" : "text-[#6B6B6B]"
+                  )}
+                >
+                  {step}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function MobileRepairTabs({
+  activeTab,
+  setActiveTab,
+}: Readonly<{
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+}>) {
+  const tabsList = [
+    "Vue d'ensemble",
+    "Fiche d'entrée",
+    "Diagnostic",
+    "Pièces",
+    "Devis",
+    "Facture",
+    "Documents",
+    "Notes",
+    "SAV",
+  ];
+
+  return (
+    <div className="flex gap-2 overflow-x-auto py-1.5 scrollbar-none border-b border-[#E8E8E5]">
+      {tabsList.map((t) => {
+        const active = activeTab === t;
+        return (
+          <button
+            key={t}
+            onClick={() => setActiveTab(t)}
+            type="button"
+            className={cn(
+              "h-11 shrink-0 px-4 rounded-full text-[13px] font-bold transition-all duration-200 outline-none",
+              active
+                ? "bg-[#2A9D8F] text-white shadow-[0_2px_8px_rgba(42,157,143,0.25)]"
+                : "bg-white border border-[#E8E8E5] text-[#6B6B6B] hover:text-[#1A1916]"
+            )}
+          >
+            {t}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* Helpers for de-duplication */
+const getLatestDocOfTypes = (allDocs: any[], types: string[]) => {
+  const filtered = allDocs.filter((d) => types.includes(d.type));
+  if (filtered.length === 0) return null;
+  return [...filtered].sort((a, b) => {
+    const dateA = new Date(a.createdAt || 0).getTime();
+    const dateB = new Date(b.createdAt || 0).getTime();
+    return dateB - dateA;
+  })[0];
+};
+
+const getDeduplicatedDocuments = (allDocs: any[]) => {
+  const typeMap = new Map<string, any>();
+  const sorted = [...allDocs].sort((a, b) => {
+    const dateA = new Date(a.createdAt || 0).getTime();
+    const dateB = new Date(b.createdAt || 0).getTime();
+    return dateA - dateB;
+  });
+  for (const doc of sorted) {
+    typeMap.set(doc.type, doc);
+  }
+  return Array.from(typeMap.values()).sort((a, b) => (docTypeOrder[a.type] ?? 9) - (docTypeOrder[b.type] ?? 9));
+};
+
+function MobileSuiviClientCard({ repair }: Readonly<{ repair: Repair }>) {
+  const ensureRepairPublicAccess = useBeharStore((s) => s.ensureRepairPublicAccess);
+  const [qr, setQr] = useState("");
+  const [copied, setCopied] = useState(false);
+  const trackingUrl = repair.publicAccess?.url ? publicAbsoluteUrl(repair.publicAccess.url) : "";
+
+  useEffect(() => {
+    if (!repair.publicAccess) ensureRepairPublicAccess(repair.id);
+  }, [repair.id, repair.publicAccess, ensureRepairPublicAccess]);
+
+  useEffect(() => {
+    if (trackingUrl) generateQrDataUrl(trackingUrl).then(setQr).catch(() => setQr(""));
+  }, [trackingUrl]);
+
+  const handleShareOrCopy = async () => {
+    if (!trackingUrl) return;
+    const shareText = `Bonjour, vous pouvez suivre votre réparation ici : ${trackingUrl}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Suivi Réparation #${repair.number}`,
+          text: shareText,
+          url: trackingUrl,
+        });
+        toast.success("Lien de suivi partagé !");
+      } catch (err) {
+        // user cancelled
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareText);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+        toast.success("Lien de suivi copié dans le presse-papiers.");
+      } catch {
+        toast.error("Copie impossible.");
+      }
+    }
+  };
+
+  return (
+    <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
+      <h3 className="text-[15px] font-bold text-[#1A1916]">Suivi client en direct</h3>
+      
+      <div className="flex flex-col items-center gap-3">
+        {qr ? (
+          <img
+            alt="QR Code de suivi"
+            className="size-32 rounded-[16px] border border-[#E8E8E5] bg-white p-2 shadow-sm"
+            src={qr}
+          />
+        ) : (
+          <div className="size-32 rounded-[16px] bg-[#FAFAF8] border border-dashed border-[#E8E8E5] flex items-center justify-center text-xs text-[#6B6B6B]">
+            Génération du QR...
+          </div>
+        )}
+        <p className="text-xs text-[#6B6B6B] text-center max-w-[240px] leading-relaxed">
+          Le client peut suivre sa réparation en scannant ce QR code.
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Partager ou copier le lien</span>
+        <button
+          onClick={handleShareOrCopy}
+          type="button"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#EAF6F2] border border-[#2A9D8F]/20 text-[#167B70] font-bold text-sm hover:bg-[#D7EFEA] transition shadow-sm"
+        >
+          <Share2 className="size-4" />
+          {copied ? "Lien copié !" : "Partager le lien de suivi"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MobileOverviewSection({
+  repair,
+  customer,
+  documents,
+  invoices,
+  quotes,
+  total,
+  onAdvance,
+  onClose,
+  onCreateQuote,
+  onCreateInvoice,
+  onPrint,
+  onNotes,
+  setViewingMobileDoc,
+}: Readonly<{
+  repair: Repair;
+  customer?: Customer;
+  documents: any[];
+  invoices: any[];
+  quotes: any[];
+  total: number;
+  onAdvance: () => void;
+  onClose: () => void;
+  onCreateQuote: () => void;
+  onCreateInvoice: () => void;
+  onPrint: () => void;
+  onNotes: (target?: "internal" | "client") => void;
+  setViewingMobileDoc: (doc: any) => void;
+}>) {
+  const [showAllHistory, setShowAllHistory] = useState(false);
+  const store = useBeharStore();
+  const history = useMemo(() => {
+    return [...(repair.history ?? [])].reverse();
+  }, [repair]);
+
+  const visibleHistory = showAllHistory ? history : history.slice(0, 3);
+
+  const status = repair.status;
+  const targetStatus = nextStatus[status];
+  const canAdvance = Boolean(targetStatus) && !isTerminalRepairStatus(status);
+  
+  const quote = quotes[0];
+  const acceptedQuote = quotes.find((entry) => entry.status === "Accepté" || entry.status === "Facturé");
+  const invoice = invoices[0];
+
+  const quoteDoc = documents.find(d => d.type === "quote");
+  const invoiceDoc = documents.find(d => d.type === "invoice");
+  const paymentDoc = documents.find(d => ["payment", "sale-receipt", "sale-invoice"].includes(d.type));
+
+  const deduplicatedDocs = useMemo(() => getDeduplicatedDocuments(documents), [documents]);
+
+  const isTotalValid = (repair.total ?? 0) > 0 || (repair.amount ?? 0) > 0 || quotes[0]?.lines?.length > 0;
+  const canCreateQuote = isTotalValid;
+
+  const hasAcceptedQuote = !!acceptedQuote;
+  const hasTotal = (repair.total ?? 0) > 0 || (repair.amount ?? 0) > 0;
+  const canCreateInvoice = hasAcceptedQuote || hasTotal;
+
+  const renderStatusActions = () => {
+    switch (status) {
+      case "Reçu":
+        return (
+          <>
+            <button
+              type="button"
+              onClick={onAdvance}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#2A9D8F] text-white font-semibold text-sm hover:bg-[#238579] shadow-sm transition"
+            >
+              <Wrench className="size-4" />
+              Passer en Diagnostic
+            </button>
+            <button
+              type="button"
+              onClick={() => onNotes("internal")}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+            >
+              <Lock className="size-4" />
+              Ajouter diagnostic / note
+            </button>
+            <button
+              type="button"
+              onClick={onPrint}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+            >
+              <Printer className="size-4" />
+              Imprimer documents
+            </button>
+          </>
+        );
+
+      case "Diagnostic":
+        return (
+          <>
+            <button
+              type="button"
+              onClick={() => onNotes("internal")}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+            >
+              <Pencil className="size-4" />
+              Modifier diagnostic
+            </button>
+            {!canCreateQuote ? (
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  disabled
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-gray-100 text-gray-400 font-semibold text-sm cursor-not-allowed border border-gray-200"
+                >
+                  <FileText className="size-4" />
+                  Créer le devis
+                </button>
+                <p className="text-[10px] text-[#B42318] bg-[#FDECEC] rounded-[8px] p-2 border border-[#B42318]/10 leading-normal">
+                  ⚠️ Le montant total doit être supérieur à 0 (ajoutez des pièces / main d'œuvre).
+                </p>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={onCreateQuote}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#2A9D8F] text-white font-semibold text-sm hover:bg-[#238579] shadow-sm transition"
+              >
+                <FileText className="size-4" />
+                Créer le devis
+              </button>
+            )}
+          </>
+        );
+
+      case "Devis envoyé":
+        return (
+          <>
+            {quoteDoc && (
+              <button
+                type="button"
+                onClick={() => setViewingMobileDoc(quoteDoc)}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+              >
+                <FileText className="size-4" />
+                Voir le devis
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => onNotes("client")}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+            >
+              <MessageSquare className="size-4" />
+              Relancer le client
+            </button>
+            {quote && (
+              <button
+                type="button"
+                onClick={() => {
+                  store.updateQuote(quote.id, { status: "Accepté" });
+                  toast.success("Devis accepté.");
+                }}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#2A9D8F] text-white font-semibold text-sm hover:bg-[#238579] shadow-sm transition"
+              >
+                <Check className="size-4" />
+                Marquer comme accepté
+              </button>
+            )}
+          </>
+        );
+
+      case "Devis accepté":
+        return (
+          <>
+            <button
+              type="button"
+              onClick={onAdvance}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#2A9D8F] text-white font-semibold text-sm hover:bg-[#238579] shadow-sm transition"
+            >
+              <Wrench className="size-4" />
+              Passer en Réparation
+            </button>
+            {quoteDoc && (
+              <button
+                type="button"
+                onClick={() => setViewingMobileDoc(quoteDoc)}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+              >
+                <FileText className="size-4" />
+                Voir le devis
+              </button>
+            )}
+          </>
+        );
+
+      case "En réparation":
+        return (
+          <>
+            <button
+              type="button"
+              onClick={() => onNotes("internal")}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+            >
+              <Lock className="size-4" />
+              Ajouter note interne
+            </button>
+            <button
+              type="button"
+              onClick={onAdvance}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#2A9D8F] text-white font-semibold text-sm hover:bg-[#238579] shadow-sm transition"
+            >
+              <Check className="size-4" />
+              Passer en Test Final
+            </button>
+          </>
+        );
+
+      case "Test final":
+        return (
+          <>
+            <button
+              type="button"
+              onClick={onAdvance}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#2A9D8F] text-white font-semibold text-sm hover:bg-[#238579] shadow-sm transition"
+            >
+              <CheckCircle2 className="size-4" />
+              Valider les tests & passer à Prêt
+            </button>
+          </>
+        );
+
+      case "Prêt":
+        return (
+          <>
+            <button
+              type="button"
+              onClick={() => onNotes("client")}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+            >
+              <MessageSquare className="size-4" />
+              Prévenir le client
+            </button>
+            {!canCreateInvoice ? (
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  disabled
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-gray-100 text-gray-400 font-semibold text-sm cursor-not-allowed border border-gray-200"
+                >
+                  <Receipt className="size-4" />
+                  Créer la facture
+                </button>
+                <p className="text-[10px] text-[#B42318] bg-[#FDECEC] rounded-[8px] p-2 border border-[#B42318]/10 leading-normal">
+                  ⚠️ Devis accepté ou montant total &gt; 0 requis.
+                </p>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={onCreateInvoice}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#2A9D8F] text-white font-semibold text-sm hover:bg-[#238579] shadow-sm transition"
+              >
+                <Receipt className="size-4" />
+                {invoice ? "Voir la facture" : "Créer la facture"}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#F3D0CC] bg-white font-semibold text-[#B42318] text-sm hover:bg-[#FDF3F2] transition"
+            >
+              <ClipboardList className="size-4" />
+              Marquer rendu au client
+            </button>
+          </>
+        );
+
+      case "Rendu":
+      case "Clôturé":
+        return (
+          <>
+            {invoiceDoc && (
+              <button
+                type="button"
+                onClick={() => setViewingMobileDoc(invoiceDoc)}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+              >
+                <Receipt className="size-4" />
+                Voir la facture
+              </button>
+            )}
+            {paymentDoc && (
+              <button
+                type="button"
+                onClick={() => setViewingMobileDoc(paymentDoc)}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+              >
+                <Receipt className="size-4" />
+                Voir le reçu de paiement
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onPrint}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+            >
+              <Printer className="size-4" />
+              Imprimer les documents
+            </button>
+          </>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* 1. Carte Activité du dossier */}
+      <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
+        <h3 className="text-[15px] font-bold text-[#1A1916]">Activité du dossier</h3>
+        <ol className="relative border-l border-[#F0F0EE] ml-2 space-y-3.5">
+          {visibleHistory.map((item, idx) => (
+            <li key={`${item}_${idx}`} className="relative pl-5">
+              <span className="absolute left-[-5px] top-1.5 flex size-2 bg-[#2A9D8F] rounded-full ring-4 ring-white" />
+              <p className="text-[13px] font-semibold text-[#1A1916] leading-snug">{item}</p>
+            </li>
+          ))}
+          {history.length === 0 && (
+            <p className="text-xs text-[#6B6B6B] pl-2">Aucun événement enregistré.</p>
+          )}
+        </ol>
+        {history.length > 3 && (
+          <button
+            type="button"
+            onClick={() => setShowAllHistory(!showAllHistory)}
+            className="text-[13px] font-bold text-[#2A9D8F] hover:underline block pt-1 outline-none"
+          >
+            {showAllHistory ? "Réduire l'activité" : "Voir toute l'activité"}
+          </button>
+        )}
+      </div>
+
+      {/* 2. Carte Documents Liés */}
+      <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
+        <h3 className="text-[15px] font-bold text-[#1A1916]">Documents liés</h3>
+        <ul className="space-y-2.5">
+          {deduplicatedDocs.length === 0 ? (
+            <li className="rounded-[12px] border border-dashed border-[#E8E8E5] bg-[#FAFAFA] px-3 py-5 text-center text-[#6B6B6B] text-xs">
+              Aucun document lié.
+            </li>
+          ) : (
+            deduplicatedDocs.map((doc) => {
+              const q = doc.type === "quote" ? quotes.find((entry) => entry.id === doc.quoteId) ?? quotes[0] : undefined;
+              const inv = doc.type === "invoice" ? invoices.find((entry) => entry.id === doc.invoiceId) ?? invoices[0] : undefined;
+              const amount = q ? getQuoteTotal(q) : inv ? getInvoiceTotal(inv) : 0;
+              const number = q?.number || inv?.number || "";
+              const statusLabel = inv
+                ? inv.status === "Payée"
+                  ? "Réglée"
+                  : "À régler"
+                : q
+                  ? q.status
+                  : doc.type === "intake"
+                    ? "Émise"
+                    : "";
+              
+              return (
+                <button
+                  key={doc.id}
+                  type="button"
+                  onClick={() => setViewingMobileDoc(doc)}
+                  className="w-full flex items-center gap-3 rounded-[12px] border border-[#F7F7F7] bg-[#FAFAFA] p-3 text-left transition hover:bg-[#F2F2EF] outline-none"
+                >
+                  <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white text-[#2A9D8F] border border-[#E8E8E5]">
+                    <FileText className="size-4.5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-bold text-[#1A1916]">
+                      {docLabel[doc.type] ?? doc.title}
+                      {number ? ` · ${number}` : ""}
+                    </p>
+                    <p className="truncate text-[#6B6B6B] text-[11px] mt-0.5">{doc.title}</p>
+                  </div>
+                  {amount > 0 && (
+                    <span className="shrink-0 font-semibold text-[#1A1916] text-[12px] mr-1">
+                      {formatCurrency(amount, q?.currency ?? inv?.currency ?? repair.currency)}
+                    </span>
+                  )}
+                  {statusLabel && (
+                    <span className="shrink-0 rounded-full bg-[#EAF6F2] px-2 py-0.5 font-bold text-[#167B70] text-[10px]">
+                      {statusLabel}
+                    </span>
+                  )}
+                  <ChevronRight className="size-4 text-[#8A8A8A] shrink-0" />
+                </button>
+              );
+            })
+          )}
+        </ul>
+      </div>
+
+      {/* 3. Carte Actions Rapides */}
+      <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
+        <h3 className="text-[15px] font-bold text-[#1A1916]">Actions rapides</h3>
+        <div className="space-y-2.5">
+          {renderStatusActions()}
+        </div>
+      </div>
+
+      {/* 4. Suivi client & QR Code */}
+      <MobileSuiviClientCard repair={repair} />
+    </div>
+  );
+}
+
+function MobileEntrySheetSection({
+  repair,
+  customer,
+  documents,
+  setActivePhotoIndex,
+}: Readonly<{
+  repair: Repair;
+  customer?: Customer;
+  documents: any[];
+  setActivePhotoIndex: (index: number) => void;
+}>) {
+  const { preview, download } = useDocument();
+  const condition = repair.intakeCondition;
+  const intakeDoc = documents.find((doc) => doc.type === "intake");
+  const accessories = [
+    ...(condition?.accessories ?? []),
+    ...(condition?.accessoriesOther ? [condition.accessoriesOther] : []),
+  ]
+    .filter(Boolean)
+    .join(", ") || "Aucun";
+
+  const accessLabel = [condition?.accessMethod, condition?.accessCode].filter(Boolean).join(" · ") || "Non communiqué";
+
+  const checklist = [
+    { label: "État général", value: condition?.generalCondition || "Non renseigné" },
+    { label: "Écran", value: condition?.screenState || "Non renseigné" },
+    { label: "Châssis", value: condition?.frameState || "Non renseigné" },
+    { label: "Caméras", value: condition?.camerasState || "OK" },
+    { label: "Boutons", value: condition?.buttonsState || "OK" },
+    { label: "Code appareil", value: accessLabel },
+    { label: "Accessoires fournis", value: accessories },
+    { label: "Défauts visibles", value: condition?.visibleDefects || "Aucun défaut majeur" },
+  ];
+
+  const photos = repair.intakeCondition?.photos ?? repair.workshopPhotos ?? [];
+
+  return (
+    <div className="space-y-4">
+      {intakeDoc && (
+        <div className="flex flex-col gap-3 rounded-[16px] border border-[#2A9D8F]/20 bg-[#EAF6F2] p-4 items-center justify-between sm:flex-row">
+          <div className="min-w-0">
+            <p className="font-bold text-[#167B70] text-sm">Fiche d'entrée active</p>
+            <p className="text-[#167B70]/80 text-xs mt-0.5 truncate">
+              Créée le {formatIsoToDisplay(repair.droppedAt || repair.createdAt || "")}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[#2A9D8F] px-4 text-xs font-bold text-white shadow-sm hover:bg-[#238579]"
+              onClick={() => {
+                const target = getPrintableTarget(intakeDoc);
+                if (target) preview(target.type, target.id);
+              }}
+            >
+              <ExternalLink className="size-3.5" />
+              Ouvrir
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#E8E8E5] bg-white px-4 text-xs font-bold text-[#1A1916] shadow-sm hover:bg-[#FAFAFA]"
+              onClick={() => {
+                const target = getPrintableTarget(intakeDoc);
+                if (target) download(target.type, target.id);
+              }}
+            >
+              <Download className="size-3.5" />
+              Télécharger
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 1. Tableau Checklist */}
+      <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
+        <h3 className="text-[15px] font-bold text-[#1A1916]">État de l'appareil à l'entrée</h3>
+        <dl className="divide-y divide-[#F7F7F7]">
+          {checklist.map(({ label, value }) => (
+            <div className="flex items-center justify-between py-3 text-sm" key={label}>
+              <dt className="text-[#6B6B6B] font-semibold">{label}</dt>
+              <dd className="text-[#1A1916] font-bold text-right truncate max-w-[200px]">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+
+      {/* 2. Photos */}
+      <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-3">
+        <h3 className="text-[15px] font-bold text-[#1A1916]">Photos à l'entrée</h3>
+        {photos.length === 0 ? (
+          <div className="flex flex-col items-center justify-center text-center rounded-[12px] bg-[#FAFAFA] border border-dashed border-[#E8E8E5] px-4 py-8 text-[#6B6B6B]">
+            <Camera className="size-6 text-[#8A8A8A] mb-2" />
+            <p className="text-xs">Aucune photo ajoutée à l'entrée.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-2">
+            {photos.map((photo, index) => (
+              <button
+                key={photo.id}
+                type="button"
+                onClick={() => setActivePhotoIndex(index)}
+                className="h-24 w-full rounded-[12px] overflow-hidden border border-[#E8E8E5] focus:outline-none focus:ring-2 focus:ring-[#2A9D8F] active:scale-95 transition"
+              >
+                <img
+                  src={photo.dataUrl || (photo as any).url}
+                  alt={(photo as any).name || (photo as any).label || photo.id}
+                  className="h-full w-full object-cover transition-transform duration-200 hover:scale-105"
+                />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 3. Signature */}
+      <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-3">
+        <h3 className="text-[15px] font-bold text-[#1A1916]">Signature client</h3>
+        {condition?.signatureDataUrl ? (
+          <div className="space-y-3">
+            <div className="border border-[#E8E8E5] rounded-[14px] bg-[#FAFAF8] p-3 flex justify-center">
+              <img
+                src={condition.signatureDataUrl}
+                alt="Signature client"
+                className="h-20 max-w-full object-contain"
+              />
+            </div>
+            <p className="text-[11px] text-[#6B6B6B] text-center leading-snug">
+              Signé le {formatIsoToDisplay(condition.signatureSignedAt || condition.signedAt || "")} par {condition.signerName || "le client"}.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <p className="text-xs text-[#6B6B6B]">Aucune signature enregistrée.</p>
+            <button
+              type="button"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#E8E8E5] text-[#6B6B6B] font-semibold text-sm cursor-not-allowed"
+              disabled
+            >
+              Signature en attente
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MobileDiagnosticSection({
+  repair,
+  onCreateQuote,
+  onNotes,
+}: Readonly<{
+  repair: Repair;
+  onCreateQuote: () => void;
+  onNotes: () => void;
+}>) {
+  const store = useBeharStore();
+  const [constat, setConstat] = useState(repair.diagnosticNotes ?? "");
+  const [intervention, setIntervention] = useState(repair.recommendedIntervention ?? "");
+  const [isEditing, setIsEditing] = useState(false);
+
+  const quotes = store.quotes.filter((entry) => entry.repairId === repair.id);
+  const isTotalValid = (repair.total ?? 0) > 0 || (repair.amount ?? 0) > 0 || quotes[0]?.lines?.length > 0;
+  const canCreateQuote = isTotalValid;
+
+  const save = () => {
+    store.updateRepair(repair.id, {
+      diagnosticNotes: constat,
+      recommendedIntervention: intervention,
+      history: [...repair.history, "Diagnostic mis à jour"],
+    });
+    setIsEditing(false);
+    toast.success("Diagnostic enregistré.");
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-[15px] font-bold text-[#1A1916]">Constat technique</h3>
+          <button
+            type="button"
+            onClick={() => (isEditing ? save() : setIsEditing(true))}
+            className="inline-flex items-center gap-1 rounded-full border border-[#E8E8E5] px-3 py-1 bg-[#FAFAF8] text-[#6B6B6B] text-xs font-bold hover:bg-[#FAFAFA] outline-none"
+          >
+            <Pencil className="size-3" />
+            {isEditing ? "Enregistrer" : "Modifier"}
+          </button>
+        </div>
+
+        {isEditing ? (
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Constat</label>
+              <textarea
+                value={constat}
+                onChange={(e) => setConstat(e.target.value)}
+                className="w-full rounded-[14px] border border-[#E8E8E5] p-3 text-xs min-h-[90px] outline-none focus:border-[#2A9D8F]"
+                placeholder="Décrire la panne constatée..."
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Intervention prévue</label>
+              <textarea
+                value={intervention}
+                onChange={(e) => setIntervention(e.target.value)}
+                className="w-full rounded-[14px] border border-[#E8E8E5] p-3 text-xs min-h-[70px] outline-none focus:border-[#2A9D8F]"
+                placeholder="Remplacement d'écran, soudure..."
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Constat</span>
+              <p className="text-xs text-[#1A1916] font-medium leading-relaxed bg-[#FAFAF8] rounded-[12px] p-3 border border-[#F0F0EE] whitespace-pre-wrap">
+                {repair.diagnosticNotes || "Aucun constat technique."}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Intervention recommandée</span>
+              <p className="text-xs text-[#1A1916] font-medium leading-relaxed bg-[#FAFAF8] rounded-[12px] p-3 border border-[#F0F0EE] whitespace-pre-wrap">
+                {repair.recommendedIntervention || "Aucune intervention spécifiée."}
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 pt-1">
+              <div>
+                <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Technicien</span>
+                <p className="text-xs font-bold text-[#1A1916] mt-0.5">{repair.technician || "Atelier principal"}</p>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Temps estimé</span>
+                <p className="text-xs font-bold text-[#1A1916] mt-0.5">
+                  {repair.estimatedDoneAt ? formatIsoToDisplay(repair.estimatedDoneAt) : "Non précisé"}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2.5">
+        {canQuoteFromStatus(repair.status) && (
+          <>
+            {!canCreateQuote ? (
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  disabled
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-gray-100 text-gray-400 font-semibold text-sm cursor-not-allowed border border-gray-200"
+                >
+                  <FileText className="size-4" />
+                  Créer le devis
+                </button>
+                <p className="text-[10px] text-[#B42318] bg-[#FDECEC] rounded-[8px] p-2 border border-[#B42318]/10 leading-normal">
+                  ⚠️ Le montant total doit être supérieur à 0 (onglet Diagnostic/Pièces).
+                </p>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={onCreateQuote}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#2A9D8F] text-white font-semibold text-sm hover:bg-[#238579] shadow-sm"
+              >
+                <FileText className="size-4" />
+                Créer le devis
+              </button>
+            )}
+          </>
+        )}
+        <button
+          type="button"
+          onClick={onNotes}
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] shadow-sm"
+        >
+          <Lock className="size-4" />
+          Ajouter une note
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MobilePartsSection({
+  repair,
+}: Readonly<{
+  repair: Repair;
+}>) {
+  const store = useBeharStore();
+  const { stockItems, deviceModels, addPartToRepair } = store;
+  const [showAllStock, setShowAllStock] = useState(false);
+
+  const formatPartsCurrency = (value: number) => {
+    return formatCurrency(value, repair.currency ?? store.workshopInfo.currency);
+  };
+
+  const compatibleItems = useMemo(() => {
+    return stockItems.filter((item) =>
+      isStockItemCompatibleWithRepair(item, repair, deviceModels)
+    );
+  }, [stockItems, repair, deviceModels]);
+
+  const itemsToShow = showAllStock ? stockItems : compatibleItems;
+
+  const reserve = (item: StockItem) => {
+    const isCompatible = isStockItemCompatibleWithRepair(item, repair, deviceModels);
+    if (!isCompatible) {
+      const ok = window.confirm(
+        `Attention : cette pièce (${item.name}) n'est pas compatible avec l'appareil (${repair.brandName} ${repair.deviceModel || repair.model}). Confirmer la réservation ?`
+      );
+      if (!ok) return;
+    }
+    const success = addPartToRepair(repair.id, item.id, 1);
+    if (success) {
+      toast.success(`Pièce réservée : ${item.name}`);
+    } else {
+      toast.error("Stock insuffisant ou pièce inactive.");
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-[14px] font-bold text-[#1A1916]">
+          Pièces compatibles avec {repair.brandName} {repair.deviceModel || repair.model || repair.device}
+        </h3>
+        <p className="text-xs text-[#6B6B6B] mt-0.5">
+          {compatibleItems.length} références compatibles
+        </p>
+      </div>
+
+      <div className="space-y-2.5">
+        {itemsToShow.length === 0 ? (
+          <div className="rounded-[20px] border border-dashed border-[#E8E8E5] bg-white p-6 text-center">
+            <p className="text-xs text-[#6B6B6B]">Aucune pièce compatible trouvée.</p>
+            {!showAllStock && (
+              <button
+                type="button"
+                onClick={() => setShowAllStock(true)}
+                className="mt-3 text-xs font-bold text-[#2A9D8F] bg-[#EAF6F2] px-3.5 py-2 rounded-full hover:bg-[#D7EFEA]"
+              >
+                Voir tout le stock
+              </button>
+            )}
+          </div>
+        ) : (
+          itemsToShow.map((item) => (
+            <div
+              key={item.id}
+              className="rounded-[16px] border border-[#E8E8E5] bg-white p-4 shadow-[0_2px_8px_rgba(26,25,22,0.015)] flex items-center justify-between gap-3"
+            >
+              <div className="min-w-0 flex-1">
+                <h4 className="text-[13px] font-bold text-[#1A1916] truncate">{item.name}</h4>
+                <p className="text-[11px] text-[#6B6B6B] mt-0.5 truncate">
+                  Réf. {item.sku || "N/A"} · Stock : <span className="font-bold text-[#1A1916]">{item.stock}</span>
+                </p>
+                <p className="text-xs font-bold text-[#167B70] mt-1">
+                  {formatPartsCurrency(item.salePrice)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => reserve(item)}
+                className="shrink-0 h-9 rounded-full bg-[#EAF6F2] hover:bg-[#D7EFEA] text-[#167B70] font-bold text-xs px-4"
+              >
+                Réserver
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+
+      {compatibleItems.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowAllStock(!showAllStock)}
+          className="text-xs font-bold text-[#2A9D8F] hover:underline block mx-auto py-1 outline-none"
+        >
+          {showAllStock ? "Afficher uniquement les pièces compatibles" : "Voir tout le stock"}
+        </button>
+      )}
+
+      <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-3.5">
+        <h3 className="text-[15px] font-bold text-[#1A1916]">Pièces réservées sur le dossier</h3>
+        {repair.parts.length === 0 ? (
+          <p className="text-xs text-[#6B6B6B] italic">Aucune pièce réservée pour le moment.</p>
+        ) : (
+          <ul className="divide-y divide-[#F7F7F7]">
+            {repair.parts.map((part) => (
+              <li key={part.stockItemId} className="py-2.5 flex items-center justify-between text-sm">
+                <div>
+                  <p className="font-bold text-[#1A1916]">{part.name}</p>
+                  <p className="text-[11px] text-[#6B6B6B] mt-0.5">
+                    Réf. {part.sku} · Qté : {part.quantity}
+                  </p>
+                </div>
+                <span className="rounded-full bg-[#FFF9EF] px-2.5 py-0.5 font-bold text-[#936100] text-[10px]">
+                  {part.confirmed ? "Utilisée" : "Réservée"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MobileQuoteSection({
+  repair,
+  quote,
+  quotes,
+  onCreate,
+  setViewingMobileDoc,
+}: Readonly<{
+  repair: Repair;
+  quote?: any;
+  quotes: any[];
+  onCreate: () => void;
+  setViewingMobileDoc: (doc: any) => void;
+}>) {
+  const store = useBeharStore();
+  const formatQuoteCurrency = (val: number) => {
+    return formatCurrency(val, quote?.currency ?? repair.currency);
+  };
+
+  const isTotalValid = (repair.total ?? 0) > 0 || (repair.amount ?? 0) > 0 || quotes[0]?.lines?.length > 0;
+  const canCreateQuote = isTotalValid;
+
+  if (!quote) {
+    return (
+      <div className="rounded-[20px] border border-dashed border-[#E8E8E5] bg-white p-8 text-center space-y-4">
+        <p className="font-semibold text-sm text-[#1A1916]">Aucun devis lié à ce dossier</p>
+        {!canCreateQuote ? (
+          <div className="space-y-2">
+            <button
+              type="button"
+              disabled
+              className="inline-flex h-11 items-center justify-center px-6 rounded-[12px] bg-gray-100 text-gray-400 font-semibold text-sm cursor-not-allowed border border-gray-200 w-full"
+            >
+              Créer un devis
+            </button>
+            <p className="text-[10px] text-[#B42318] bg-[#FDECEC] rounded-[8px] p-2 border border-[#B42318]/10 leading-normal text-left max-w-sm mx-auto">
+              ⚠️ Le montant total doit être supérieur à 0 (onglet Diagnostic/Pièces).
+            </p>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onCreate}
+            className="inline-flex h-11 items-center justify-center px-6 rounded-[12px] bg-[#2A9D8F] text-white font-semibold text-sm shadow-sm hover:bg-[#238579] w-full"
+          >
+            Créer un devis
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {quotes.map((q) => {
+        const subtotal = q.lines?.reduce((sum: number, line: any) => sum + line.total, 0) || 0;
+        const total = subtotal;
+
+        // Find doc matching this quote
+        const doc = store.documents.find(d => d.quoteId === q.id && d.type === "quote");
+
+        return (
+          <div key={q.id} className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-bold text-[15px] text-[#1A1916]">Devis {q.number}</h4>
+                <p className="text-xs text-[#6B6B6B] mt-0.5">Statut : {q.status}</p>
+              </div>
+              <span className="text-[15px] font-bold text-[#167B70]">
+                {formatCurrency(getQuoteTotal(q), q.currency ?? repair.currency)}
+              </span>
+            </div>
+
+            <div className="border-t border-[#F7F7F7] pt-3.5 space-y-3">
+              {q.lines?.map((line: any, idx: number) => (
+                <div key={`${line.description}_${idx}`} className="flex justify-between items-start text-xs">
+                  <div className="min-w-0 flex-1 pr-3">
+                    <p className="font-bold text-[#1A1916] leading-tight truncate">{line.description}</p>
+                    <p className="text-[#6B6B6B] mt-0.5">Qté : {line.quantity}</p>
+                  </div>
+                  <span className="font-bold text-[#1A1916] shrink-0">
+                    {formatCurrency(line.total, q.currency ?? repair.currency)}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t border-[#F7F7F7] pt-3.5 space-y-1.5 text-xs text-right">
+              <div className="flex justify-between">
+                <span className="text-[#6B6B6B]">Sous-total :</span>
+                <span className="font-semibold text-[#1A1916]">{formatQuoteCurrency(subtotal)}</span>
+              </div>
+              <div className="flex justify-between pt-1 border-t border-[#F7F7F7]">
+                <span className="font-bold text-[#1A1916]">Total :</span>
+                <span className="font-bold text-[15px] text-[#167B70]">{formatQuoteCurrency(total)}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t border-[#F7F7F7]">
+              {doc && (
+                <button
+                  type="button"
+                  onClick={() => setViewingMobileDoc(doc)}
+                  className="flex-1 h-9 rounded-full border border-[#E8E8E5] bg-[#FAFAF8] text-[#1A1916] text-[12px] font-bold flex items-center justify-center gap-1 shadow-sm hover:bg-[#FAFAFA]"
+                >
+                  <ExternalLink className="size-3.5" />
+                  Aperçu PDF
+                </button>
+              )}
+              {q.status !== "Accepté" && q.status !== "Facturé" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    store.updateQuote(q.id, { status: "Accepté" });
+                    toast.success("Devis accepté.");
+                  }}
+                  className="flex-1 h-9 rounded-full bg-[#2A9D8F] text-white text-[12px] font-semibold flex items-center justify-center gap-1 shadow-sm hover:bg-[#238579]"
+                >
+                  Accepter
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function MobileInvoiceSection({
+  invoice,
+  invoices,
+  onCreate,
+  onPayment,
+  paymentMethod,
+  setPaymentMethod,
+  formatDossier,
+  setViewingMobileDoc,
+}: Readonly<{
+  invoice?: any;
+  invoices: any[];
+  onCreate: () => void;
+  onPayment: () => void;
+  paymentMethod: PaymentMethod;
+  setPaymentMethod: (method: PaymentMethod) => void;
+  formatDossier: (val: number) => string;
+  setViewingMobileDoc: (doc: any) => void;
+}>) {
+  const store = useBeharStore();
+  const repair = store.repairs.find((r) => r.id === invoice?.repairId || invoices[0]?.repairId);
+
+  const quotes = repair ? store.quotes.filter((entry) => entry.repairId === repair.id) : [];
+  const acceptedQuote = quotes.find((entry) => entry.status === "Accepté" || entry.status === "Facturé");
+
+  const hasAcceptedQuote = !!acceptedQuote;
+  const hasTotal = repair ? ((repair.total ?? 0) > 0 || (repair.amount ?? 0) > 0) : false;
+  const canCreateInvoice = hasAcceptedQuote || hasTotal;
+
+  if (!invoice) {
+    return (
+      <div className="rounded-[20px] border border-dashed border-[#E8E8E5] bg-white p-8 text-center space-y-4">
+        <p className="font-semibold text-sm text-[#1A1916]">Aucune facture liée à ce dossier</p>
+        {!canCreateInvoice ? (
+          <div className="space-y-2">
+            <button
+              type="button"
+              disabled
+              className="inline-flex h-11 items-center justify-center px-6 rounded-[12px] bg-gray-100 text-gray-400 font-semibold text-sm cursor-not-allowed border border-gray-200 w-full"
+            >
+              Créer une facture
+            </button>
+            <p className="text-[10px] text-[#B42318] bg-[#FDECEC] rounded-[8px] p-2 border border-[#B42318]/10 leading-normal text-left max-w-sm mx-auto">
+              ⚠️ Un devis accepté ou un montant total &gt; 0 est requis pour générer une facture.
+            </p>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onCreate}
+            className="mt-4 inline-flex h-11 items-center justify-center px-6 rounded-[12px] bg-[#2A9D8F] text-white font-semibold text-sm shadow-sm hover:bg-[#238579] w-full"
+          >
+            Créer une facture
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {invoices.map((inv) => {
+        const doc = store.documents.find(d => d.invoiceId === inv.id && d.type === "invoice");
+        return (
+          <div key={inv.id} className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-bold text-[15px] text-[#1A1916]">Facture {inv.number}</h4>
+                <p className="text-[11px] text-[#6B6B6B] mt-0.5">
+                  Créée le {formatIsoToDisplay(inv.createdAt || "")}
+                </p>
+              </div>
+              <span
+                className={cn(
+                  "rounded-full px-2.5 py-0.5 font-bold text-[10px] uppercase tracking-wide",
+                  inv.status === "Payée" ? "bg-[#EAF6F2] text-[#167B70]" : "bg-[#FFF9EF] text-[#936100]"
+                )}
+              >
+                {inv.status === "Payée" ? "Réglée" : "À régler"}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center bg-[#FAFAF8] rounded-[14px] p-4 border border-[#F0F0EE]">
+              <span className="text-xs font-semibold text-[#6B6B6B] uppercase tracking-wider">Montant total</span>
+              <span className="text-lg font-bold text-[#167B70]">
+                {formatCurrency(getInvoiceTotal(inv), inv.currency)}
+              </span>
+            </div>
+
+            {inv.status !== "Payée" && (
+              <div className="space-y-3 pt-1">
+                <label className="text-xs font-bold text-[#6B6B6B] uppercase tracking-wider block">Moyen de règlement</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {paymentMethods.map((method) => {
+                    const active = paymentMethod === method;
+                    return (
+                      <button
+                        key={method}
+                        type="button"
+                        onClick={() => setPaymentMethod(method)}
+                        className={cn(
+                          "h-10 rounded-full border text-[11px] font-bold flex items-center justify-center px-2.5 transition",
+                          active
+                            ? "border-[#2A9D8F] bg-[#2A9D8F] text-white shadow-sm"
+                            : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:text-[#1A1916]"
+                        )}
+                      >
+                        {method}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  onClick={onPayment}
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#2A9D8F] text-white font-semibold text-sm hover:bg-[#238579] shadow-sm mt-1"
+                >
+                  Indiquer le règlement
+                </button>
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-2 border-t border-[#F7F7F7]">
+              {doc && (
+                <button
+                  type="button"
+                  onClick={() => setViewingMobileDoc(doc)}
+                  className="flex-1 h-9 rounded-full border border-[#E8E8E5] bg-[#FAFAF8] text-[#1A1916] text-[12px] font-bold flex items-center justify-center gap-1 shadow-sm hover:bg-[#FAFAFA]"
+                >
+                  <Printer className="size-3.5" />
+                  Imprimer / PDF
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+      <p className="text-[11px] text-[#6B6B6B] text-center italic">
+        Aucune donnée bancaire n'est stockée dans ce terminal.
+      </p>
+    </div>
+  );
+}
+
+/* ───────────────────────── SECTION DOCUMENTS MOBILE ───────────────────────── */
+
+function MobileDocumentsSection({
+  repair,
+  documents,
+  download,
+  print,
+  setViewingMobileDoc,
+}: Readonly<{
+  repair: Repair;
+  documents: any[];
+  download: (type: any, id: string) => void;
+  print: (type: any, id: string) => void;
+  setViewingMobileDoc: (doc: any) => void;
+}>) {
+  const store = useBeharStore();
+  const quotes = store.quotes.filter((entry) => entry.repairId === repair.id);
+  const invoices = store.invoices.filter((entry) => entry.repairId === repair.id);
+
+  const deduplicatedDocs = useMemo(() => getDeduplicatedDocuments(documents), [documents]);
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-[14px] font-bold text-[#1A1916]">Documents liés au dossier</h3>
+        <p className="text-xs text-[#6B6B6B] mt-0.5">
+          {deduplicatedDocs.length} documents émis
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        {deduplicatedDocs.length === 0 ? (
+          <div className="rounded-[20px] border border-dashed border-[#E8E8E5] bg-white p-8 text-center text-xs text-[#6B6B6B]">
+            Aucun document disponible pour le moment.
+          </div>
+        ) : (
+          deduplicatedDocs.map((doc) => {
+            const q = doc.type === "quote" ? quotes.find((entry) => entry.id === doc.quoteId) ?? quotes[0] : undefined;
+            const inv = doc.type === "invoice" ? invoices.find((entry) => entry.id === doc.invoiceId) ?? invoices[0] : undefined;
+            const amount = q ? getQuoteTotal(q) : inv ? getInvoiceTotal(inv) : 0;
+            const number = q?.number || inv?.number || "";
+            const statusLabel = inv
+              ? inv.status === "Payée"
+                ? "Réglée"
+                : "À régler"
+              : q
+                ? q.status
+                : doc.type === "intake"
+                  ? "Émise"
+                  : "";
+
+            return (
+              <div
+                key={doc.id}
+                className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 shadow-[0_2px_8px_rgba(26,25,22,0.015)] space-y-3"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F] border border-[#E8E8E5]/50">
+                    <FileText className="size-4.5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-bold text-[#1A1916]">
+                      {docLabel[doc.type] ?? doc.title}
+                      {number ? ` · ${number}` : ""}
+                    </p>
+                    <p className="truncate text-[#6B6B6B] text-[11px] mt-0.5">{doc.title}</p>
+                  </div>
+                  {statusLabel && (
+                    <span className="shrink-0 rounded-full bg-[#EAF6F2] px-2.5 py-0.5 font-bold text-[#167B70] text-[10px]">
+                      {statusLabel}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex justify-between items-center bg-[#FAFAF8] rounded-[10px] px-3 py-2 text-xs">
+                  <span className="text-[#6B6B6B]">Montant :</span>
+                  <span className="font-bold text-[#1A1916]">
+                    {amount > 0 ? formatCurrency(amount, q?.currency ?? inv?.currency ?? repair.currency) : "—"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 pt-1 border-t border-[#F7F7F7]">
+                  <button
+                    type="button"
+                    onClick={() => setViewingMobileDoc(doc)}
+                    className="h-9 rounded-full bg-[#FAFAF8] border border-[#E8E8E5] text-[#1A1916] text-[11px] font-bold flex items-center justify-center gap-1 hover:bg-[#FAFAFA] active:scale-95 transition outline-none"
+                  >
+                    <ExternalLink className="size-3.5" />
+                    Voir
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const targetStr = getPrintableTarget(doc);
+                      if (targetStr) download(targetStr.type, targetStr.id);
+                    }}
+                    className="h-9 rounded-full bg-[#FAFAF8] border border-[#E8E8E5] text-[#1A1916] text-[11px] font-bold flex items-center justify-center gap-1 hover:bg-[#FAFAFA] active:scale-95 transition outline-none"
+                  >
+                    <Download className="size-3.5" />
+                    Télécharger
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const targetStr = getPrintableTarget(doc);
+                      if (targetStr) print(targetStr.type, targetStr.id);
+                    }}
+                    className="h-9 rounded-full bg-[#EAF6F2] hover:bg-[#D7EFEA] text-[#167B70] text-[11px] font-bold flex items-center justify-center gap-1 active:scale-95 transition outline-none"
+                  >
+                    <Printer className="size-3.5" />
+                    Imprimer
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ───────────────────────── SECTION NOTES & HISTORIQUE MOBILE ───────────────────────── */
+
+function MobileNotesHistorySection({
+  repair,
+  focus,
+  onFocusHandled,
+}: Readonly<{
+  repair: Repair;
+  focus?: "internal" | "client" | null;
+  onFocusHandled?: () => void;
+}>) {
+  const store = useBeharStore();
+  const [internalDraft, setInternalDraft] = useState("");
+  const [clientDraft, setClientDraft] = useState("");
+  const [activeSegment, setActiveSegment] = useState<"internal" | "client">("internal");
+  
+  const internalRef = useRef<HTMLTextAreaElement>(null);
+  const clientRef = useRef<HTMLTextAreaElement>(null);
+
+  const messages = repair.messages ?? [];
+  const internalNotes = messages.filter((message) => message.visibility === "internal");
+  const clientNotes = messages.filter((message) => message.visibility === "client");
+
+  useEffect(() => {
+    if (!focus) return;
+    setActiveSegment(focus);
+    setTimeout(() => {
+      const target = focus === "client" ? clientRef.current : internalRef.current;
+      target?.scrollIntoView({ behavior: "smooth", block: "center" });
+      target?.focus({ preventScroll: true });
+    }, 100);
+    onFocusHandled?.();
+  }, [focus, onFocusHandled]);
+
+  const addInternal = () => {
+    const body = internalDraft.trim();
+    if (!body) return;
+    store.addRepairMessage(repair.id, { body, visibility: "internal", authorType: "staff" });
+    setInternalDraft("");
+    toast.success("Note interne ajoutée.");
+  };
+
+  const addClient = () => {
+    const body = clientDraft.trim();
+    if (!body) return;
+    store.addRepairMessage(repair.id, { body, visibility: "client", authorType: "staff" });
+    setClientDraft("");
+    toast.success("Note client publiée. Visible sur le suivi client.");
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Segmented Control */}
+      <div className="flex bg-[#FAFAF8] p-1 rounded-full border border-[#E8E8E5]">
+        <button
+          type="button"
+          onClick={() => setActiveSegment("internal")}
+          className={cn(
+            "flex-1 h-9 rounded-full text-xs font-bold transition-all outline-none",
+            activeSegment === "internal"
+              ? "bg-[#2A9D8F] text-white shadow-sm"
+              : "text-[#6B6B6B] hover:text-[#1A1916]"
+          )}
+        >
+          <Lock className="inline size-3.5 mr-1" />
+          Atelier (Interne)
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveSegment("client")}
+          className={cn(
+            "flex-1 h-9 rounded-full text-xs font-bold transition-all outline-none",
+            activeSegment === "client"
+              ? "bg-[#2A9D8F] text-white shadow-sm"
+              : "text-[#6B6B6B] hover:text-[#1A1916]"
+          )}
+        >
+          <MessageSquare className="inline size-3.5 mr-1" />
+          Client (Public)
+        </button>
+      </div>
+
+      {activeSegment === "internal" ? (
+        <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-4 space-y-4">
+          <div>
+            <h4 className="text-[13px] font-bold text-[#1A1916]">Notes internes (Atelier)</h4>
+            <p className="text-[11px] text-[#6B6B6B] mt-0.5">Visibles uniquement par l'équipe.</p>
+          </div>
+
+          <ul className="space-y-2.5">
+            {internalNotes.length === 0 ? (
+              <li className="rounded-[12px] border border-dashed border-[#E8E8E5] bg-[#FAFAF8] px-3 py-4 text-center text-[#6B6B6B] text-xs">
+                Aucune note interne.
+              </li>
+            ) : (
+              [...internalNotes].reverse().map((note) => (
+                <li key={note.id} className="rounded-[12px] border border-[#F7F7F7] bg-[#FAFAF8] p-3 text-xs space-y-1">
+                  <div className="flex justify-between text-[10px] text-[#6B6B6B]">
+                    <span className="font-bold text-[#1A1916]">{note.authorName}</span>
+                    <span>{formatIsoToDisplay(note.createdAt)}</span>
+                  </div>
+                  <p className="text-[#1A1916] whitespace-pre-wrap leading-relaxed">{note.body}</p>
+                </li>
+              ))
+            )}
+          </ul>
+
+          <div className="space-y-2 pt-2 border-t border-[#F7F7F7]">
+            <textarea
+              ref={internalRef}
+              value={internalDraft}
+              onChange={(e) => setInternalDraft(e.target.value)}
+              placeholder="Ajouter une note de diagnostic, défaut constaté..."
+              className="w-full rounded-[12px] border border-[#E8E8E5] p-3 text-xs min-h-[80px] outline-none focus:border-[#2A9D8F] bg-[#FAFAF8]"
+            />
+            <button
+              type="button"
+              onClick={addInternal}
+              disabled={!internalDraft.trim()}
+              className="h-10 w-full rounded-full bg-[#2A9D8F] disabled:bg-gray-100 disabled:text-gray-400 text-white font-bold text-xs shadow-sm hover:bg-[#238579] active:scale-95 transition"
+            >
+              Publier la note interne
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-4 space-y-4">
+          <div>
+            <h4 className="text-[13px] font-bold text-[#1A1916]">Notes client (Suivi)</h4>
+            <p className="text-[11px] text-[#6B6B6B] mt-0.5">Visibles en direct par le client sur son lien de suivi.</p>
+          </div>
+
+          <ul className="space-y-2.5">
+            {clientNotes.length === 0 ? (
+              <li className="rounded-[12px] border border-dashed border-[#E8E8E5] bg-[#FAFAF8] px-3 py-4 text-center text-[#6B6B6B] text-xs">
+                Aucune note client.
+              </li>
+            ) : (
+              [...clientNotes].reverse().map((note) => (
+                <li key={note.id} className="rounded-[12px] border border-[#F7F7F7] bg-[#FAFAF8] p-3 text-xs space-y-1">
+                  <div className="flex justify-between text-[10px] text-[#6B6B6B]">
+                    <span className="font-bold text-[#1A1916]">{note.authorName}</span>
+                    <span>{formatIsoToDisplay(note.createdAt)}</span>
+                  </div>
+                  <p className="text-[#1A1916] whitespace-pre-wrap leading-relaxed">{note.body}</p>
+                </li>
+              ))
+            )}
+          </ul>
+
+          <div className="space-y-2 pt-2 border-t border-[#F7F7F7]">
+            <textarea
+              ref={clientRef}
+              value={clientDraft}
+              onChange={(e) => setClientDraft(e.target.value)}
+              placeholder="Ex: Pièce reçue, réparation commencée..."
+              className="w-full rounded-[12px] border border-[#E8E8E5] p-3 text-xs min-h-[80px] outline-none focus:border-[#2A9D8F] bg-[#FAFAF8]"
+            />
+            <button
+              type="button"
+              onClick={addClient}
+              disabled={!clientDraft.trim()}
+              className="h-10 w-full rounded-full bg-[#2A9D8F] disabled:bg-gray-100 disabled:text-gray-400 text-white font-bold text-xs shadow-sm hover:bg-[#238579] active:scale-95 transition"
+            >
+              Publier la note client
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ───────────────────────── SECTION CONTRÔLE QUALITÉ & TESTS MOBILE ───────────────────────── */
+
+function MobileFinalTestSection({
+  repair,
+  onAdvance,
+  onClose,
+  invoice,
+  setMobileTab,
+  setViewingMobileDoc,
+}: Readonly<{
+  repair: Repair;
+  onAdvance: () => void;
+  onClose: () => void;
+  invoice: any;
+  setMobileTab: (tab: string) => void;
+  setViewingMobileDoc: (doc: any) => void;
+}>) {
+  const [tests, setTests] = useState([
+    { id: "touch", label: "Tactile / Affichage", checked: true },
+    { id: "charge", label: "Charge & Batterie", checked: true },
+    { id: "audio", label: "Micro / Haut-parleurs", checked: true },
+    { id: "wifi", label: "Réseau / Wi-Fi / Bluetooth", checked: true },
+    { id: "cameras", label: "Appareils photo (av/ar)", checked: true },
+    { id: "buttons", label: "Boutons physiques / Capteurs", checked: true },
+  ]);
+
+  const toggleTest = (id: string) => {
+    setTests(tests.map((t) => (t.id === id ? { ...t, checked: !t.checked } : t)));
+  };
+
+  const allPassed = tests.every((t) => t.checked);
+  const isPrêt = repair.status === "Prêt";
+  const isRendu = repair.status === "Rendu" || repair.status === "Clôturé";
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
+        <div>
+          <h3 className="text-[15px] font-bold text-[#1A1916]">Contrôle qualité & Tests finaux</h3>
+          <p className="text-xs text-[#6B6B6B] mt-0.5">
+            Cochez les points vérifiés sur l'appareil avant remise au client.
+          </p>
+        </div>
+
+        <div className="space-y-2.5">
+          {tests.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => toggleTest(t.id)}
+              className="w-full flex items-center justify-between p-3 rounded-[12px] border border-[#F0F0EE] bg-[#FAFAF8] text-left active:scale-[0.99] transition outline-none"
+            >
+              <span className="text-xs font-bold text-[#1A1916]">{t.label}</span>
+              <span
+                className={cn(
+                  "size-5 rounded-full border flex items-center justify-center transition-all",
+                  t.checked
+                    ? "bg-[#2A9D8F] border-[#2A9D8F] text-white"
+                    : "border-[#E8E8E5] bg-white text-transparent"
+                )}
+              >
+                <Check className="size-3" />
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <div className="pt-2 border-t border-[#F7F7F7]">
+          {allPassed ? (
+            <div className="bg-[#EAF6F2] border border-[#2A9D8F]/10 rounded-[12px] p-3 text-xs text-[#167B70] leading-normal font-semibold flex items-center gap-2">
+              <CheckCircle2 className="size-4 shrink-0" />
+              Tous les points de contrôle sont validés. L'appareil est prêt.
+            </div>
+          ) : (
+            <div className="bg-[#FFF9EF] border border-[#936100]/10 rounded-[12px] p-3 text-xs text-[#936100] leading-normal font-semibold">
+              ⚠️ Veuillez vérifier et valider tous les tests.
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-2.5">
+        {repair.status === "Test final" ? (
+          <button
+            type="button"
+            onClick={onAdvance}
+            disabled={!allPassed}
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#2A9D8F] disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed border border-transparent text-white font-semibold text-sm hover:bg-[#238579] shadow-sm transition"
+          >
+            <CheckCircle2 className="size-4" />
+            Valider les tests et passer à "Prêt"
+          </button>
+        ) : isPrêt ? (
+          <div className="bg-white border border-[#E8E8E5] rounded-[20px] p-4 text-center space-y-3">
+            <p className="text-xs text-[#6B6B6B]">L'appareil a passé les tests de contrôle qualité.</p>
+            <button
+              type="button"
+              onClick={() => setMobileTab("Facture")}
+              className="flex h-9 w-full items-center justify-center gap-2 rounded-full border border-[#E8E8E5] text-[#1A1916] text-xs font-bold bg-[#FAFAF8] hover:bg-[#FAFAFA]"
+            >
+              <Receipt className="size-3.5" />
+              Gérer la facture / règlement
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#F3D0CC] bg-white font-semibold text-[#B42318] text-sm hover:bg-[#FDF3F2] transition"
+            >
+              <ClipboardList className="size-4" />
+              Marquer rendu au client
+            </button>
+          </div>
+        ) : isRendu ? (
+          <div className="bg-white border border-[#E8E8E5] rounded-[20px] p-4 text-center text-xs text-[#6B6B6B]">
+            Dossier rendu et archivé. Le contrôle qualité a été validé.
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setMobileTab("Vue d'ensemble")}
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#E8E8E5] text-[#1A1916] font-semibold text-sm"
+          >
+            Retour à la vue d'ensemble
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ───────────────────────── MODALE VISIONNEUSE DE DOCUMENT MOBILE ───────────────────────── */
+
+function MobileDocumentViewerModal({
+  doc,
+  repair,
+  customer,
+  quotes,
+  invoices,
+  payments,
+  onClose,
+  download,
+  print,
+}: Readonly<{
+  doc: any;
+  repair: Repair;
+  customer?: Customer;
+  quotes: any[];
+  invoices: any[];
+  payments: any[];
+  onClose: () => void;
+  download: (type: any, id: string) => void;
+  print: (type: any, id: string) => void;
+}>) {
+  const target = getPrintableTarget(doc);
+
+  const isIntake = doc.type === "intake";
+  const isQuote = doc.type === "quote";
+  const isInvoice = doc.type === "invoice";
+  const isPayment = ["payment", "sale-receipt", "sale-invoice"].includes(doc.type);
+
+  const underlyingQuote = isQuote ? quotes.find((q) => q.id === doc.quoteId) ?? quotes[0] : undefined;
+  const underlyingInvoice = isInvoice ? invoices.find((i) => i.id === doc.invoiceId) ?? invoices[0] : undefined;
+
+  const lines = underlyingQuote?.lines ?? underlyingInvoice?.lines ?? repair.parts.map((p) => ({
+    description: p.name,
+    quantity: p.quantity,
+    total: p.quantity * p.salePrice,
+  }));
+
+  const subtotal = lines?.reduce((sum: number, line: any) => sum + (line.total || 0), 0) || 0;
+  const total = subtotal;
+
+  const handleShare = async () => {
+    if (!target) return;
+    const documentUrl = publicAbsoluteUrl(`/print/document/${doc.id}`);
+    const shareText = `Bonjour, voici votre ${docLabel[doc.type] ?? doc.title} pour votre réparation chez Behar Tech : ${documentUrl}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${docLabel[doc.type] ?? doc.title} #${repair.number}`,
+          text: shareText,
+          url: documentUrl,
+        });
+        toast.success("Document partagé !");
+      } catch (err) {}
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareText);
+        toast.success("Lien de document copié !");
+      } catch (err) {
+        toast.error("Copie impossible.");
+      }
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-[#1A1916]/40 backdrop-blur-md flex flex-col justify-end sm:justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+      <div className="bg-[#FAFAF8] rounded-t-[28px] sm:rounded-[24px] max-h-[92vh] flex flex-col shadow-[0_-8px_32px_rgba(26,25,22,0.12)] sm:max-w-md sm:w-full sm:mx-auto overflow-hidden animate-in slide-in-from-bottom duration-300">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E8E5] bg-white">
+          <div className="min-w-0">
+            <h2 className="text-[15px] font-bold text-[#1A1916] truncate">
+              {docLabel[doc.type] ?? doc.title}
+            </h2>
+            <p className="text-[11px] text-[#6B6B6B] mt-0.5 truncate">
+              Dossier #{repair.number}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-full bg-[#FAFAF8] border border-[#E8E8E5] text-[#6B6B6B] hover:text-[#1A1916] outline-none"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6">
+          <div className="bg-white rounded-[20px] border border-[#E8E8E5] p-4 shadow-[0_4px_12px_rgba(26,25,22,0.015)] space-y-4">
+            <div className="flex justify-between items-start">
+              <div>
+                <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Appareil</span>
+                <h4 className="text-[13px] font-bold text-[#1A1916] mt-0.5">
+                  {formatDeviceLabel(repair, repair.device)}
+                </h4>
+                {repair.imei && (
+                  <p className="text-[11px] text-[#6B6B6B] mt-0.5">IMEI: {repair.imei}</p>
+                )}
+              </div>
+              <RealDeviceVisual
+                brand={repair.brandName}
+                className="size-11 rounded-[10px] border border-[#E8E8E5] bg-[#FAFAF8] p-1 shadow-sm"
+                model={repair.deviceModel || repair.model || repair.device}
+                type={repair.deviceType}
+              />
+            </div>
+            
+            <div className="border-t border-[#F7F7F7] pt-3.5 grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Client</span>
+                <p className="font-bold text-[#1A1916] mt-0.5 truncate">
+                  {displayCustomerName(customer) || "Client"}
+                </p>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Date</span>
+                <p className="font-bold text-[#1A1916] mt-0.5 truncate">
+                  {formatIsoToDisplay(doc.createdAt || repair.droppedAt || repair.createdAt || "")}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {isIntake && (
+            <div className="bg-white rounded-[20px] border border-[#E8E8E5] p-5 shadow-[0_4px_12px_rgba(26,25,22,0.015)] space-y-4">
+              <h3 className="text-[13px] font-bold text-[#1A1916] border-b border-[#F7F7F7] pb-2">Contenu Bon de Prise en Charge</h3>
+              
+              <div className="space-y-3.5 text-xs">
+                <div>
+                  <span className="text-[#6B6B6B] font-bold block mb-1">Panne déclarée</span>
+                  <p className="bg-[#FAFAF8] rounded-[10px] p-2.5 border border-[#F0F0EE] text-[#1A1916] leading-relaxed">
+                    {repair.issue || "Non renseigné"}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-[#6B6B6B] font-bold block mb-1">Défauts constatés</span>
+                  <p className="bg-[#FAFAF8] rounded-[10px] p-2.5 border border-[#F0F0EE] text-[#1A1916] leading-relaxed">
+                    {repair.intakeCondition?.visibleDefects || "Aucun défaut majeur"}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-[#6B6B6B] font-bold block mb-1">Accessoires déposés</span>
+                  <p className="bg-[#FAFAF8] rounded-[10px] p-2.5 border border-[#F0F0EE] text-[#1A1916] leading-relaxed">
+                    {repair.intakeCondition?.accessories?.join(", ") || "Aucun accessoire"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {(isQuote || isInvoice || isPayment) && (
+            <div className="bg-white rounded-[20px] border border-[#E8E8E5] p-5 shadow-[0_4px_12px_rgba(26,25,22,0.015)] space-y-4">
+              <h3 className="text-[13px] font-bold text-[#1A1916] border-b border-[#F7F7F7] pb-2">Détail des prestations</h3>
+              
+              <div className="space-y-3.5">
+                {lines?.length === 0 ? (
+                  <p className="text-xs text-[#6B6B6B] italic">Aucune ligne de facture/devis.</p>
+                ) : (
+                  lines?.map((line: any, index: number) => (
+                    <div key={`${line.description}_${index}`} className="flex justify-between items-start text-xs border-b border-[#F7F7F7] pb-3 last:border-b-0 last:pb-0">
+                      <div className="min-w-0 flex-1 pr-3">
+                        <p className="font-bold text-[#1A1916] truncate">{line.description}</p>
+                        <p className="text-[#6B6B6B] text-[10px] mt-0.5">Quantité : {line.quantity}</p>
+                      </div>
+                      <span className="font-bold text-[#1A1916] shrink-0">
+                        {formatCurrency(line.total, doc.currency ?? repair.currency)}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="pt-4 border-t border-[#F0F0EE] space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-[#6B6B6B] font-semibold">Sous-total :</span>
+                  <span className="font-bold text-[#1A1916]">{formatCurrency(subtotal, doc.currency ?? repair.currency)}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-[#F0F0EE]">
+                  <span className="text-sm font-bold text-[#1A1916]">Total TTC :</span>
+                  <span className="text-lg font-black text-[#167B70]">{formatCurrency(total, doc.currency ?? repair.currency)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer actions */}
+        <div className="px-5 py-4 border-t border-[#E8E8E5] bg-white flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleShare}
+            className="flex-1 h-11 rounded-[12px] bg-[#EAF6F2] text-[#167B70] font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition outline-none"
+          >
+            <Share2 className="size-4" />
+            Partager
+          </button>
+          <button
+            type="button"
+            disabled={!target}
+            onClick={() => target && download(target.type, target.id)}
+            className="h-11 w-12 rounded-[12px] border border-[#E8E8E5] bg-[#FAFAF8] text-[#1A1916] flex items-center justify-center hover:bg-[#FAFAFA] active:scale-95 transition shrink-0"
+            title="Télécharger PDF"
+          >
+            <Download className="size-4" />
+          </button>
+          <button
+            type="button"
+            disabled={!target}
+            onClick={() => target && print(target.type, target.id)}
+            className="flex-1 h-11 rounded-[12px] bg-[#2A9D8F] text-white font-bold text-xs flex items-center justify-center gap-1.5 hover:bg-[#238579] active:scale-95 transition shadow-sm outline-none"
+          >
+            <Printer className="size-4" />
+            Imprimer
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+/* ───────────────────────── MODALE LIGHTBOX PHOTO MOBILE ───────────────────────── */
+
+function MobilePhotoLightbox({
+  photos,
+  activeIndex,
+  onClose,
+  onChangeIndex,
+}: Readonly<{
+  photos: any[];
+  activeIndex: number;
+  onClose: () => void;
+  onChangeIndex: (index: number) => void;
+}>) {
+  const currentPhoto = photos[activeIndex];
+  const totalPhotos = photos.length;
+
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (activeIndex > 0) {
+      onChangeIndex(activeIndex - 1);
+    }
+  };
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (activeIndex < totalPhotos - 1) {
+      onChangeIndex(activeIndex + 1);
+    }
+  };
+
+  if (!currentPhoto) return null;
+
+  return (
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 bg-[#1A1916]/95 backdrop-blur-md flex flex-col justify-between animate-in fade-in duration-200"
+    >
+      {/* Top Header */}
+      <div className="flex items-center justify-between px-5 py-4 text-white z-10">
+        <span className="text-xs font-bold bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm">
+          {activeIndex + 1} / {totalPhotos}
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          className="p-2 rounded-full bg-white/10 text-white hover:bg-white/20 active:scale-95 transition outline-none"
+        >
+          <X className="size-5" />
+        </button>
+      </div>
+
+      {/* Main image content area */}
+      <div className="relative flex-1 flex items-center justify-center p-4">
+        {/* Left Arrow Button */}
+        {activeIndex > 0 && (
+          <button
+            type="button"
+            onClick={handlePrev}
+            className="absolute left-4 p-3 rounded-full bg-white/15 text-white hover:bg-white/25 active:scale-90 transition z-10 outline-none"
+          >
+            <ChevronLeft className="size-6" />
+          </button>
+        )}
+
+        <img
+          src={currentPhoto.dataUrl || currentPhoto.url}
+          alt={currentPhoto.name || currentPhoto.label || `Photo ${activeIndex + 1}`}
+          className="max-w-full max-h-[72vh] object-contain rounded-lg shadow-2xl pointer-events-none"
+        />
+
+        {/* Right Arrow Button */}
+        {activeIndex < totalPhotos - 1 && (
+          <button
+            type="button"
+            onClick={handleNext}
+            className="absolute right-4 p-3 rounded-full bg-white/15 text-white hover:bg-white/25 active:scale-90 transition z-10 outline-none"
+          >
+            <ChevronRight className="size-6" />
+          </button>
+        )}
+      </div>
+
+      {/* Footer Info */}
+      <div className="p-6 text-center text-white/80 text-xs bg-gradient-to-t from-black/60 to-transparent">
+        <p className="font-semibold tracking-wide">
+          {currentPhoto.name || currentPhoto.label || "Photo d'entrée"}
+        </p>
       </div>
     </div>
   );

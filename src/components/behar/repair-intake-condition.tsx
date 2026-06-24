@@ -906,7 +906,7 @@ function PatternPicker({ value, onChange }: Readonly<{ value: number[]; onChange
   );
 }
 
-function SignaturePad({
+export function SignaturePad({
   value,
   signerName,
   signedAt,

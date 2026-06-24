@@ -28,8 +28,10 @@ import {
 import { toast } from "sonner";
 
 import {
+  formatCurrency,
   formatEuro,
   formatIsoToDisplay,
+  getBillingWorkshopInfo,
   getQuoteDeviceListLabel,
   getQuoteDevices,
   getQuoteTotal,
@@ -37,6 +39,7 @@ import {
   isTerminalRepairStatus,
   Quote,
   type QuoteStatus,
+  type WorkshopCountry,
   useBeharStore,
 } from "@/lib/behar-store";
 import { displayCustomerName } from "@/lib/customer-display";
@@ -113,6 +116,7 @@ export function QuotesWorkspace() {
   const selected = store.quotes.find((q) => q.id === store.selectedQuoteId) ?? store.quotes[0];
   const customer = selected ? store.customers.find((c) => c.id === selected.customerId) : undefined;
   const selectedDevices = selected ? getQuoteDevices(selected) : [];
+  const selectedCurrency = selected?.currency ?? store.workshopInfo.currency;
   const transformSelectedQuote = () => {
     if (!selected) return;
     const devices = getQuoteDevices(selected);
@@ -151,7 +155,12 @@ export function QuotesWorkspace() {
   const acceptedCount = store.quotes.filter((q) => q.status === "Accepté").length;
   const sentCount = store.quotes.filter((q) => q.status === "Envoyé").length;
   const totalPending = store.quotes
-    .filter((q) => q.status !== "Refusé" && q.status !== "Facturé")
+    .filter(
+      (q) =>
+        q.status !== "Refusé" &&
+        q.status !== "Facturé" &&
+        (q.currency ?? store.workshopInfo.currency) === store.workshopInfo.currency,
+    )
     .reduce((sum, q) => sum + getQuoteTotal(q), 0);
 
   return (
@@ -246,7 +255,7 @@ export function QuotesWorkspace() {
                             {displayCustomerName(entryCustomer)}
                           </p>
                           <p className="shrink-0 font-bold text-[#1A1916] text-[15px] tabular-nums">
-                            {formatEuro(getQuoteTotal(quote))}
+                            {formatCurrency(getQuoteTotal(quote), quote.currency ?? store.workshopInfo.currency)}
                           </p>
                         </div>
                         <p className="mt-0.5 font-mono text-[#2A9D8F] text-[11px]">{quote.number}</p>
@@ -299,7 +308,7 @@ export function QuotesWorkspace() {
                       <StatusBadge status={quote.status} />
                     </td>
                     <td className="border-[#E8E8E5] border-b px-5 py-4 font-semibold">
-                      {formatEuro(getQuoteTotal(quote))}
+                      {formatCurrency(getQuoteTotal(quote), quote.currency ?? store.workshopInfo.currency)}
                     </td>
                     <td className="border-[#E8E8E5] border-b px-5 py-4 text-right">
                       <MoreHorizontal className="size-4 text-[#8A8A8A]" />
@@ -347,7 +356,7 @@ export function QuotesWorkspace() {
                     className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#EAF6F2] px-2.5 py-1 font-semibold text-[#167B70] text-[11px] transition hover:bg-[#DCF0EA]"
                     onClick={() => {
                       store.setSelected("repair", linkedRepair.id);
-                      router.push(`/dashboard/dossiers/${linkedRepair.id}`);
+                      router.push(`/dashboard/dossiers/_/?id=${linkedRepair.id}`);
                     }}
                     type="button"
                   >
@@ -378,7 +387,9 @@ export function QuotesWorkspace() {
                         {formatBrandModel(device.brand, device.model, `Appareil ${index + 1}`)}
                       </p>
                     </div>
-                    <p className="font-black text-[#1D1D1F] tabular-nums">{formatEuro(device.subtotalTtc)}</p>
+                    <p className="font-black text-[#1D1D1F] tabular-nums">
+                      {formatCurrency(device.subtotalTtc, selectedCurrency)}
+                    </p>
                   </div>
                   <ul className="mt-3 space-y-1 text-sm text-[#1D1D1F]">
                     {device.services.map((service) => <li key={service.id}>• {service.label}</li>)}
@@ -394,26 +405,28 @@ export function QuotesWorkspace() {
                   <div className="flex justify-between text-xs text-[#6B6B6B]">
                     <span>Total HT</span>
                     <span className="font-medium">
-                      {formatEuro(getVatSummary(selected.lines, store.workshopInfo).ht)}
+                      {formatCurrency(getVatSummary(selected.lines, store.workshopInfo).ht, selectedCurrency)}
                     </span>
                   </div>
                   <div className="flex justify-between text-xs text-[#6B6B6B]">
                     <span>TVA ({Math.round(getVatSummary(selected.lines, store.workshopInfo).rate * 1000) / 10}%)</span>
                     <span className="font-medium">
-                      {formatEuro(getVatSummary(selected.lines, store.workshopInfo).tva)}
+                      {formatCurrency(getVatSummary(selected.lines, store.workshopInfo).tva, selectedCurrency)}
                     </span>
                   </div>
                   <div className="flex justify-between items-end pt-2">
                     <span className="text-sm font-bold text-[#1A1916]">TOTAL TTC</span>
                     <span className="text-2xl font-bold text-[#2A9D8F]">
-                      {formatEuro(getVatSummary(selected.lines, store.workshopInfo).ttc)}
+                      {formatCurrency(getVatSummary(selected.lines, store.workshopInfo).ttc, selectedCurrency)}
                     </span>
                   </div>
                 </>
               ) : (
                 <div className="flex justify-between items-end pt-2">
                   <span className="text-sm font-bold text-[#1A1916]">TOTAL</span>
-                  <span className="text-2xl font-bold text-[#2A9D8F]">{formatEuro(getQuoteTotal(selected))}</span>
+                  <span className="text-2xl font-bold text-[#2A9D8F]">
+                    {formatCurrency(getQuoteTotal(selected), selectedCurrency)}
+                  </span>
                 </div>
               )}
             </div>
@@ -424,7 +437,7 @@ export function QuotesWorkspace() {
               <button
                 onClick={() => {
                   store.setSelected("repair", selected.repairId as string);
-                  router.push(`/dashboard/dossiers/${selected.repairId}`);
+                  router.push(`/dashboard/dossiers/_/?id=${selected.repairId}`);
                 }}
                 className="w-full h-12 rounded-xl bg-[#2A9D8F] text-white font-bold text-sm hover:bg-[#238b7e] transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
                 type="button"
@@ -456,7 +469,7 @@ export function QuotesWorkspace() {
                   customerId: selected.customerId,
                   channel: customer?.email ? "Email" : "SMS",
                   subject: `Devis ${selected.number}`,
-                  body: `Bonjour, voici votre devis ${selected.number} d'un montant de ${formatEuro(getQuoteTotal(selected))}.`,
+                  body: `Bonjour, voici votre devis ${selected.number} d'un montant de ${formatCurrency(getQuoteTotal(selected), selectedCurrency)}.`,
                 });
                 toast.success("Message ajouté à l'historique client.");
               }}
@@ -531,6 +544,7 @@ export function CreateQuoteModal({
   });
 
   const [deviceState, setDeviceState] = useState<DeviceState>(makeDeviceSeed(""));
+  const [billingCountry, setBillingCountry] = useState<WorkshopCountry>(workshopInfo.country);
 
   // Sync prefill or selection
   useEffect(() => {
@@ -556,6 +570,7 @@ export function CreateQuoteModal({
         validityDays: 30,
       });
       setDeviceState(makeDeviceSeed(r?.device || r?.deviceModel || "", r?.deviceType));
+      setBillingCountry(r?.billingCountry ?? prefill.billingCountry ?? workshopInfo.country);
     }
   }, [isOpen, prefill, repairs, customers]);
 
@@ -587,6 +602,7 @@ export function CreateQuoteModal({
               : f.lines,
         }));
         setDeviceState(makeDeviceSeed(r.device || r.deviceModel || "", r.deviceType));
+        setBillingCountry(r.billingCountry);
       }
     } else if (form.origin === "client" && form.customerId) {
       const c = customers.find((cust) => cust.id === form.customerId);
@@ -606,9 +622,11 @@ export function CreateQuoteModal({
   if (!isOpen) return null;
 
   const subtotal = form.lines.reduce((acc, line) => acc + line.quantity * line.unitPrice, 0);
+  const billingWorkshop = getBillingWorkshopInfo(workshopInfo, billingCountry);
+  const quoteCurrency = billingWorkshop.currency;
   const previewVat = getVatSummary(
     form.lines.map((line) => ({ ...line, total: line.quantity * line.unitPrice })),
-    store.workshopInfo,
+    billingWorkshop,
   );
   const isFormValid = form.customerName.trim() !== "" && form.lines.some((l) => l.description.trim() !== "");
 
@@ -670,6 +688,9 @@ export function CreateQuoteModal({
     if (!repairIdForQuote) {
       repairIdForQuote = store.addRepair({
         customerId: finalCustomerId,
+        billingCountry,
+        currency: quoteCurrency,
+        locale: billingCountry === "CH" ? "fr-CH" : "fr-FR",
         device: form.device || deviceState.deviceLabel || "Appareil à renseigner",
         model: form.device || deviceState.deviceLabel || "Appareil à renseigner",
         deviceType: deviceState.deviceType as Quote["deviceType"],
@@ -693,6 +714,9 @@ export function CreateQuoteModal({
     const quoteId = addQuote({
       customerId: finalCustomerId,
       repairId: repairIdForQuote,
+      billingCountry,
+      currency: quoteCurrency,
+      locale: billingCountry === "CH" ? "fr-CH" : "fr-FR",
       status,
       deviceType: deviceState.deviceType as Quote["deviceType"],
       deviceModel: form.device,
@@ -770,6 +794,27 @@ export function CreateQuoteModal({
                         <Check className="size-3 text-white" />
                       </div>
                     )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-[14px] border border-[#DDEFEA] bg-[#F6FCFA] p-4">
+              <p className="text-xs font-semibold text-[#1A1916]">Pays de facturation du dossier</p>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {(["FR", "CH"] as const).map((country) => (
+                  <button
+                    key={country}
+                    type="button"
+                    disabled={form.origin === "repair" && Boolean(form.repairId)}
+                    onClick={() => setBillingCountry(country)}
+                    className={`h-10 rounded-[10px] border text-xs font-semibold ${
+                      billingCountry === country
+                        ? "border-[#2A9D8F] bg-white text-[#167B70]"
+                        : "border-[#E8E8E5] bg-white text-[#6B6B6B]"
+                    } disabled:cursor-not-allowed disabled:opacity-70`}
+                  >
+                    {country === "CH" ? "Suisse · CHF" : "France · EUR"}
                   </button>
                 ))}
               </div>
@@ -1021,34 +1066,40 @@ export function CreateQuoteModal({
                             <div className="flex-1">
                               <p className="font-semibold text-[#1A1916]">{l.description}</p>
                               <p className="text-[10px] text-[#6B6B6B]">
-                                Qté : {l.quantity} x {formatEuro(l.unitPrice)}
+                                Qté : {l.quantity} x {formatCurrency(l.unitPrice, quoteCurrency)}
                               </p>
                             </div>
-                            <p className="font-bold text-[#1A1916]">{formatEuro(l.quantity * l.unitPrice)}</p>
+                            <p className="font-bold text-[#1A1916]">
+                              {formatCurrency(l.quantity * l.unitPrice, quoteCurrency)}
+                            </p>
                           </div>
                         ))}
                     </div>
 
                     <div className="mt-auto pt-8 border-t border-[#F7F7F7] space-y-2">
-                      {store.workshopInfo.vatApplicable ? (
+                      {billingWorkshop.vatApplicable ? (
                         <div className="space-y-1">
                           <div className="flex justify-between text-[10px] text-[#6B6B6B]">
                             <span>Sous-total HT</span>
-                            <span className="font-medium">{formatEuro(previewVat.ht)}</span>
+                            <span className="font-medium">{formatCurrency(previewVat.ht, quoteCurrency)}</span>
                           </div>
                           <div className="flex justify-between text-[10px] text-[#6B6B6B]">
                             <span>TVA ({Math.round(previewVat.rate * 1000) / 10}%)</span>
-                            <span className="font-medium">{formatEuro(previewVat.tva)}</span>
+                            <span className="font-medium">{formatCurrency(previewVat.tva, quoteCurrency)}</span>
                           </div>
                           <div className="flex justify-between items-end pt-2">
                             <span className="text-xs font-bold text-[#1A1916]">TOTAL TTC</span>
-                            <span className="text-xl font-bold text-[#2A9D8F]">{formatEuro(previewVat.ttc)}</span>
+                            <span className="text-xl font-bold text-[#2A9D8F]">
+                              {formatCurrency(previewVat.ttc, quoteCurrency)}
+                            </span>
                           </div>
                         </div>
                       ) : (
                         <div className="flex justify-between items-end pt-2">
                           <span className="text-xs font-bold text-[#1A1916]">TOTAL ESTIMÉ</span>
-                          <span className="text-xl font-bold text-[#2A9D8F]">{formatEuro(subtotal)}</span>
+                          <span className="text-xl font-bold text-[#2A9D8F]">
+                            {formatCurrency(subtotal, quoteCurrency)}
+                          </span>
                         </div>
                       )}
                     </div>

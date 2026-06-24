@@ -8,8 +8,15 @@ import { Download, ExternalLink, Eye, Mail, Printer, Search, Trash2 } from "luci
 import { toast } from "sonner";
 
 import { PrimaryButton, SecondaryButton, StatusBadge } from "@/components/behar/primitives";
-import { type BeharDocument, type DocumentType, formatEuro, getQuoteDeviceListLabel, useBeharStore } from "@/lib/behar-store";
+import {
+  type BeharDocument,
+  type DocumentType,
+  formatCurrency,
+  getQuoteDeviceListLabel,
+  useBeharStore,
+} from "@/lib/behar-store";
 import { formatDeviceLabel } from "@/lib/format-device";
+import { getInternalDocumentUrl } from "@/lib/documents/document-actions";
 import { formatIntakeBonNumber } from "@/lib/utils";
 
 import { getPrintableTarget, LocalPrintableDocument } from "./local-printable-document";
@@ -57,7 +64,7 @@ const STATUS_FILTERS = ["Tous", "Brouillon", "Envoyé", "Accepté", "Non payé",
 type StatusFilter = (typeof STATUS_FILTERS)[number];
 
 const sourceHref = (document: BeharDocument): string | null => {
-  if (document.repairId) return `/dashboard/dossiers/${document.repairId}`;
+  if (document.repairId) return `/dashboard/dossiers/_/?id=${document.repairId}`;
   if (document.quoteId) return `/dashboard/devis`;
   if (document.invoiceId) return `/dashboard/factures`;
   if (document.paymentId) return `/dashboard/paiements`;
@@ -73,7 +80,7 @@ const documentSortValue = (createdAt: string, index: number) => {
 
 export function DocumentPreview() {
   const store = useBeharStore();
-  const { print, download } = useDocument();
+  const { print, download, preview } = useDocument();
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [filterStatus, setFilterStatus] = useState<StatusFilter>("Tous");
   const [search, setSearch] = useState("");
@@ -113,6 +120,13 @@ export function DocumentPreview() {
         repair?.total ??
         repair?.amount ??
         0;
+      const currency =
+        sale?.currency ??
+        invoice?.currency ??
+        quote?.currency ??
+        payment?.currency ??
+        repair?.currency ??
+        store.workshopInfo.currency;
 
       const titleLabel =
         document.type === "intake" && repair
@@ -171,7 +185,7 @@ export function DocumentPreview() {
         // Montants searchables (réparateur peut taper "29" ou "29,00")
         amount > 0 ? String(amount) : "",
         amount > 0 ? amount.toFixed(2).replace(".", ",") : "",
-        amount > 0 ? formatEuro(amount) : "",
+        amount > 0 ? formatCurrency(amount, currency) : "",
       ]
         .join(" ")
         .toLowerCase();
@@ -189,6 +203,7 @@ export function DocumentPreview() {
         interventionLabel,
         numberLabel,
         amount,
+        currency,
         titleLabel,
         listTitle,
         contextLabel,
@@ -281,7 +296,7 @@ export function DocumentPreview() {
         <div className="mt-2 line-clamp-2 text-[#6B6B6B] text-xs">{row.contextLabel}</div>
         <div className="mt-1 text-[#6B6B6B] text-[11px]">{row.document.createdAt}</div>
         <div className="mt-2 flex items-center justify-between text-xs">
-          <span className="font-semibold text-[#1A1916]">{formatEuro(row.amount)}</span>
+          <span className="font-semibold text-[#1A1916]">{formatCurrency(row.amount, row.currency)}</span>
           <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 text-[#6B6B6B]">{row.statusLabel}</span>
         </div>
       </button>
@@ -429,13 +444,21 @@ export function DocumentPreview() {
                       <span>Dossier</span>
                     </Link>
                   )}
-                  <Link
-                    className="inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-[14px] border border-[#E8E8E5] bg-white px-3 text-center text-[#1A1916] text-xs leading-tight hover:border-[#2A9D8F]/50"
-                    href={`/print/document/${selected.id}`}
+                  <button
+                    type="button"
+                    className="inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-[14px] border border-[#E8E8E5] bg-white px-3 text-center text-[#1A1916] text-xs leading-tight hover:border-[#2A9D8F]/50 font-semibold"
+                    onClick={() => {
+                      const target = getPrintableTarget(selected);
+                      if (target) {
+                        preview(target.type, target.id);
+                      } else {
+                        toast.error("Document lié introuvable");
+                      }
+                    }}
                   >
                     <Eye className="size-4 shrink-0" />
                     <span>Ouvrir</span>
-                  </Link>
+                  </button>
                   <SecondaryButton
                     className="min-w-0 justify-center gap-2 whitespace-normal px-3 text-center text-xs leading-tight"
                     onClick={() => {

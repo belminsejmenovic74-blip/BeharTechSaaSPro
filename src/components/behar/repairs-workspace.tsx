@@ -53,7 +53,7 @@ import {
   type Appointment,
   buildInvoiceLinesFromRepair,
   type Customer,
-  formatEuro,
+  formatCurrency,
   formatIsoToDisplay,
   type Invoice,
   isTerminalRepairStatus,
@@ -75,6 +75,9 @@ import { DeviceThumb, Panel, PrimaryButton, SecondaryButton, StatusBadge } from 
 import { useDocument } from "./print-provider";
 
 const statuses: RepairStatus[] = ["Reçu", "Diagnostic", "En attente", "Devis envoyé", "Devis accepté", "En réparation", "Test final", "Prêt"];
+
+const formatRepairAmount = (repair: Pick<Repair, "currency">, value: number) =>
+  formatCurrency(value, repair.currency);
 
 function compactStockText(value: string) {
   return value
@@ -315,8 +318,8 @@ export function RepairsWorkspace() {
               customer: displayCustomerName(customer),
               time: formatIsoToDisplay(repair.droppedAt),
               status: repair.status,
-              totalLabel: formatEuro(total),
-              paidLabel: formatEuro(paid),
+              totalLabel: formatRepairAmount(repair, total),
+              paidLabel: formatRepairAmount(repair, paid),
               paymentPaid: total > 0 && paid >= total,
               showCounterBadge: isCounterCustomer(customer),
               showInvoiceBadge: total > 0 && !hasInvoice,
@@ -486,20 +489,20 @@ export function RepairsWorkspace() {
       }
       const pid = markInvoicePaid(id, method, paymentNote);
       if (pid) {
-        toast.success("Paiement enregistré.");
+        toast.success("Règlement externe enregistré.");
         setPaymentNote("");
-      } else toast.error("Encaissement impossible pour le moment.");
+      } else toast.error("Règlement externe impossible pour le moment.");
       return;
     }
     if (primaryInvoice.status === "Payée") {
-      toast.info("Cette réparation est déjà payée.");
+      toast.info("Cette réparation est déjà réglée.");
       return;
     }
     const pid = markInvoicePaid(primaryInvoice.id, method, paymentNote);
     if (pid) {
-      toast.success("Paiement enregistré.");
+      toast.success("Règlement externe enregistré.");
       setPaymentNote("");
-    } else toast.error("Encaissement impossible pour le moment.");
+    } else toast.error("Règlement externe impossible pour le moment.");
   };
 
   const normalizePartQuantity = (value: number) => {
@@ -636,7 +639,7 @@ export function RepairsWorkspace() {
 
       if (primaryInvoice.status !== "Payée" && resteAPayer > 0) {
         return {
-          label: `Marquer payée (${formatEuro(resteAPayer)})`,
+          label: `Marquer payée (${formatRepairAmount(selectedRepair, resteAPayer)})`,
           onClick: () => markPaidAction(repairPayMethod),
         };
       }
@@ -851,7 +854,7 @@ export function RepairsWorkspace() {
                             fullyPaid ? "bg-[#EAF6F2] text-[#2A9D8F]" : "bg-[#FDECEC] text-[#B42318]",
                           )}
                         >
-                          {fullyPaid ? "Payé" : formatEuro(Math.max(0, total - paid))}
+                          {fullyPaid ? "Payé" : formatRepairAmount(repair, Math.max(0, total - paid))}
                         </span>
                       </div>
                     </div>
@@ -935,7 +938,10 @@ export function RepairsWorkspace() {
                           <p className="text-xs text-[#6B6B6B]">{q.lines[0]?.description || "Sans description"}</p>
                         </div>
                         <span className="text-xs font-bold text-[#2A9D8F]">
-                          {formatEuro(q.lines.reduce((acc, l) => acc + l.quantity * l.unitPrice, 0))}
+                          {formatCurrency(
+                            q.lines.reduce((acc, l) => acc + l.quantity * l.unitPrice, 0),
+                            q.currency ?? selectedRepair?.currency,
+                          )}
                         </span>
                       </button>
                     );
@@ -1168,14 +1174,13 @@ export function RepairsWorkspace() {
                     )}
                   </div>
 
-                  <button
+                  <Link
                     className="flex h-11 w-full items-center justify-center gap-2 rounded-[14px] border border-[#2A9D8F]/35 bg-white px-4 font-semibold text-[#167B70] text-sm transition hover:bg-[#F3FBF8]"
-                    onClick={() => router.push(`/dashboard/dossiers/${selectedRepair.id}`)}
-                    type="button"
+                    href={`/dashboard/dossiers/_/?id=${selectedRepair.id}`}
                   >
                     <FolderOpen className="size-4" />
                     Ouvrir le dossier complet
-                  </button>
+                  </Link>
 
                   <section className="rounded-[16px] border border-[#E8E8E5]/90 bg-white px-[18px] py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
                     <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Client</h3>
@@ -1232,7 +1237,7 @@ export function RepairsWorkspace() {
                       <div>
                         <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Total client</h3>
                         <p className="mt-2 font-semibold text-[#1A1916] text-[26px] leading-none tabular-nums">
-                          {formatEuro(totalClientAmount)}
+                          {formatRepairAmount(selectedRepair, totalClientAmount)}
                           {workshopInfo.vatApplicable ? (
                             <span className="ml-1.5 text-xs font-medium text-[#6B6B6B]">TTC</span>
                           ) : null}
@@ -1244,7 +1249,10 @@ export function RepairsWorkspace() {
                     </div>
                     {resteAPayer > 0 ? (
                       <p className="mt-3 text-[#6B6B6B] text-[13px]">
-                        Reste à payer <span className="font-semibold text-[#2A9D8F]">{formatEuro(resteAPayer)}</span>
+                        Reste à payer{" "}
+                        <span className="font-semibold text-[#2A9D8F]">
+                          {formatRepairAmount(selectedRepair, resteAPayer)}
+                        </span>
                       </p>
                     ) : null}
                   </section>
@@ -1278,7 +1286,7 @@ export function RepairsWorkspace() {
                             <optgroup label="Compatibles">
                               {compatibleStockItems.map((item) => (
                                 <option disabled={item.stock <= 0} key={item.id} value={item.id}>
-                                  {item.name} · {formatEuro(item.salePrice)} · ×{item.stock}
+                                  {item.name} · {formatRepairAmount(selectedRepair, item.salePrice)} · ×{item.stock}
                                 </option>
                               ))}
                             </optgroup>
@@ -1286,7 +1294,7 @@ export function RepairsWorkspace() {
                           <optgroup label="Accessoires généraux">
                             {genericStockItems.map((item) => (
                               <option disabled={item.stock <= 0} key={item.id} value={item.id}>
-                                {item.name} · {formatEuro(item.salePrice)} · ×{item.stock}
+                                {item.name} · {formatRepairAmount(selectedRepair, item.salePrice)} · ×{item.stock}
                               </option>
                             ))}
                           </optgroup>
@@ -1330,8 +1338,9 @@ export function RepairsWorkspace() {
                             <div className="min-w-0">
                               <p className="font-medium text-[#1A1916]">{line.name}</p>
                               <p className="text-[#6B6B6B] text-xs">
-                                {line.sku ? `SKU ${line.sku} · ` : ""}Qté {line.quantity} · {formatEuro(line.unitPrice)}{" "}
-                                / u · ligne {formatEuro(line.total)}
+                                {line.sku ? `SKU ${line.sku} · ` : ""}Qté {line.quantity} ·{" "}
+                                {formatRepairAmount(selectedRepair, line.unitPrice)} / u · ligne{" "}
+                                {formatRepairAmount(selectedRepair, line.total)}
                               </p>
                             </div>
                             <div className="flex items-center gap-2">

@@ -1,7 +1,9 @@
 "use client";
 
 import type { Customer, Invoice, Payment, Quote, Repair, WorkshopInfo } from "@/lib/behar-store";
-import { formatEuro, getInvoiceTotal, getQuoteTotal } from "@/lib/behar-store";
+import { formatCurrency, getInvoiceTotal, getQuoteTotal, getWorkshopCountryLabel } from "@/lib/behar-store";
+import { downloadPdfFile } from "@/lib/download-file.client";
+import { getDocumentFilename } from "@/lib/workshop-country";
 
 type PdfSection = {
   title?: string;
@@ -12,7 +14,7 @@ const clean = (value: string | number | undefined) =>
   String(value ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/€/g, "EUR")
+    .replace(/\u20AC/g, "EUR")
     .replace(/[•]/g, "-")
     .replace(/[^\x20-\x7E]/g, " ")
     .trim();
@@ -60,15 +62,7 @@ export function downloadSimplePdf(filename: string, title: string, sections: Pdf
   }
   pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefAt}\n%%EOF`;
 
-  const blob = new Blob([pdf], { type: "application/pdf" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename.endsWith(".pdf") ? filename : `${filename}.pdf`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(url);
+  downloadPdfFile(new Blob([pdf], { type: "application/pdf" }), filename);
 }
 
 function workshopLines(workshop: WorkshopInfo) {
@@ -76,10 +70,14 @@ function workshopLines(workshop: WorkshopInfo) {
     workshop.brand,
     workshop.name,
     workshop.address,
-    `${workshop.postalCity}, ${workshop.country}`,
+    `${workshop.postalCity}, ${getWorkshopCountryLabel(workshop.country)}`,
     workshop.email,
     workshop.phone,
-    `SIRET : ${workshop.siret}`,
+    workshop.country === "CH" ? (workshop.swissUid ? `IDE / CHE : ${workshop.swissUid}` : "") : `SIRET : ${workshop.siret}`,
+    workshop.country === "CH" && workshop.swissCanton ? `Canton : ${workshop.swissCanton}` : "",
+    workshop.country === "CH" && workshop.vatApplicable && workshop.swissVatNumber
+      ? `N TVA suisse : ${workshop.swissVatNumber}`
+      : "",
     workshop.isMicroEnterprise
       ? workshop.tvaMention || "TVA non applicable — art. 293 B du CGI"
       : workshop.tvaMention || "",
@@ -88,9 +86,9 @@ function workshopLines(workshop: WorkshopInfo) {
 
 export function downloadQuotePdf(workshop: WorkshopInfo, quote: Quote, customer: Customer, repair?: Repair) {
   const lines = quote.lines.map(
-    (line) => `${line.description} | qte ${line.quantity} | ${formatEuro(line.quantity * line.unitPrice)}`,
+    (line) => `${line.description} | qte ${line.quantity} | ${formatCurrency(line.quantity * line.unitPrice, quote.currency ?? workshop.currency)}`,
   );
-  downloadSimplePdf(`devis-${quote.number}.pdf`, `Devis ${quote.number}`, [
+  downloadSimplePdf(getDocumentFilename("quote", quote.number), `Devis ${quote.number}`, [
     { title: "Atelier", lines: workshopLines(workshop) },
     {
       title: "Client",
@@ -100,7 +98,7 @@ export function downloadQuotePdf(workshop: WorkshopInfo, quote: Quote, customer:
     {
       title: "Total",
       lines: [
-        `Total TTC : ${formatEuro(getQuoteTotal(quote))}`,
+        `${workshop.vatApplicable ? "Total a payer" : "Total"} : ${formatCurrency(getQuoteTotal(quote), quote.currency ?? workshop.currency)}`,
         quote.notes || "",
         workshop.quoteTerms || "",
         workshop.defaultWarranty || "",
@@ -111,9 +109,9 @@ export function downloadQuotePdf(workshop: WorkshopInfo, quote: Quote, customer:
 
 export function downloadInvoicePdf(workshop: WorkshopInfo, invoice: Invoice, customer: Customer, repair?: Repair) {
   const lines = invoice.lines.map(
-    (line) => `${line.description} | qte ${line.quantity} | ${formatEuro(line.quantity * line.unitPrice)}`,
+    (line) => `${line.description} | qte ${line.quantity} | ${formatCurrency(line.quantity * line.unitPrice, invoice.currency ?? workshop.currency)}`,
   );
-  downloadSimplePdf(`facture-${invoice.number}.pdf`, `Facture ${invoice.number}`, [
+  downloadSimplePdf(getDocumentFilename("invoice", invoice.number), `Facture ${invoice.number}`, [
     { title: "Atelier", lines: workshopLines(workshop) },
     {
       title: "Client",
@@ -125,7 +123,7 @@ export function downloadInvoicePdf(workshop: WorkshopInfo, invoice: Invoice, cus
       lines: [
         invoice.status,
         invoice.paymentMethod,
-        `Total TTC : ${formatEuro(getInvoiceTotal(invoice))}`,
+        `Total a payer : ${formatCurrency(getInvoiceTotal(invoice), invoice.currency ?? workshop.currency)}`,
         workshop.invoiceTerms || "",
       ],
     },
@@ -133,18 +131,24 @@ export function downloadInvoicePdf(workshop: WorkshopInfo, invoice: Invoice, cus
 }
 
 export function downloadReceiptPdf(workshop: WorkshopInfo, payment: Payment, customer: Customer) {
-  downloadSimplePdf(`recu-${payment.reference}.pdf`, `Recu ${payment.reference}`, [
+  downloadSimplePdf(getDocumentFilename("payment", payment.paymentNumber || payment.reference), `Recu ${payment.reference}`, [
     { title: "Atelier", lines: workshopLines(workshop) },
     { title: "Client", lines: [customer.name, customer.phone, customer.email] },
     {
       title: "Paiement",
-      lines: [payment.date, payment.mode, payment.status, `Montant : ${formatEuro(payment.amount)}`],
+      lines: [
+        payment.date,
+        payment.method === "TWINT" ? "Paye par TWINT" : payment.mode,
+        payment.twintReference ? `Reference TWINT : ${payment.twintReference}` : "",
+        payment.status,
+        `Montant : ${formatCurrency(payment.amount, payment.currency ?? workshop.currency)}`,
+      ],
     },
   ]);
 }
 
 export function downloadRepairIntakePdf(workshop: WorkshopInfo, repair: Repair, customer?: Customer) {
-  downloadSimplePdf(`prise-en-charge-${repair.number}.pdf`, `Bon de prise en charge ${repair.number}`, [
+  downloadSimplePdf(getDocumentFilename("intake", repair.number), `Bon de prise en charge ${repair.number}`, [
     { title: "Atelier", lines: workshopLines(workshop) },
     { title: "Client", lines: [customer?.name ?? "Client a renseigner", customer?.phone ?? "", customer?.email ?? ""] },
     {
@@ -155,7 +159,7 @@ export function downloadRepairIntakePdf(workshop: WorkshopInfo, repair: Repair, 
 }
 
 export function downloadInternalRepairPdf(workshop: WorkshopInfo, repair: Repair, customer?: Customer) {
-  downloadSimplePdf(`fiche-interne-${repair.number}.pdf`, `Fiche intervention interne ${repair.number}`, [
+  downloadSimplePdf(getDocumentFilename("internal", repair.number), `Fiche intervention interne ${repair.number}`, [
     { title: "Atelier", lines: workshopLines(workshop) },
     { title: "Client", lines: [customer?.name ?? "Client a renseigner", repair.device, repair.issue] },
     {
@@ -163,9 +167,10 @@ export function downloadInternalRepairPdf(workshop: WorkshopInfo, repair: Repair
       lines: repair.parts.length
         ? repair.parts.map(
             (part) =>
-              `${part.name} ${part.reference} | achat ${formatEuro(part.purchasePrice)} | vente ${formatEuro(
+              `${part.name} ${part.reference} | achat ${formatCurrency(part.purchasePrice, repair.currency ?? workshop.currency)} | vente ${formatCurrency(
                 part.salePrice,
-              )} | marge ${formatEuro(part.salePrice - part.purchasePrice)}`,
+                repair.currency ?? workshop.currency,
+              )} | marge ${formatCurrency(part.salePrice - part.purchasePrice, repair.currency ?? workshop.currency)}`,
           )
         : ["Aucune piece utilisee"],
     },
