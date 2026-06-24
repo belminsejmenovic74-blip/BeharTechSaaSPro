@@ -41,7 +41,7 @@ jobs:
         run: npm ci
 
       - name: Build Next.js (out/)
-        run: npm run build
+        run: npm run build:static
 
       - name: Sync Capacitor → Android
         run: npx cap sync android
