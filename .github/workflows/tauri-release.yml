@@ -84,6 +84,6 @@ jobs:
 
             #### macOS
             Ouvrez le `.dmg` et glissez l'icône dans Applications. Première ouverture : clic droit → Ouvrir.
-          releaseDraft: false
+          releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
