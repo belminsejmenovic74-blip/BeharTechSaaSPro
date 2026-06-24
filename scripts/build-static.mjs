@@ -28,6 +28,7 @@ try {
     cwd: root,
     stdio: "inherit",
     env: { ...process.env, STATIC_EXPORT: "true" },
+    shell: true,
   });
 
   process.exitCode = res.status ?? 1;
