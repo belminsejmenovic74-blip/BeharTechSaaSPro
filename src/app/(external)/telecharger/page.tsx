@@ -9,7 +9,7 @@ import { BeharLogo } from "@/components/behar/behar-logo";
 // Pour mettre à jour : dépose les nouveaux fichiers dans public/downloads/
 // (ou via FileZilla dans htdocs/downloads/ sur IONOS) puis change la
 // version ci-dessous.
-const APP_VERSION = "1.0.19";
+const APP_VERSION = "1.0.20";
 
 const downloads = [
   {
