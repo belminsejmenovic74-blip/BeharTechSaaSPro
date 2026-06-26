@@ -26,6 +26,8 @@
     "test:qa:local": "playwright test tests/e2e/behar-full-atelier.spec.ts --headed",
     "test:qa:local:headless": "playwright test tests/e2e/behar-full-atelier.spec.ts",
     "test:qa:report": "playwright show-report",
+    "test:visual": "BEHAR_QA_FAST_LICENSE=1 percy exec -- playwright test tests/e2e/behar-visual.spec.ts",
+    "test:visual:headed": "BEHAR_QA_FAST_LICENSE=1 percy exec -- playwright test tests/e2e/behar-visual.spec.ts --headed",
     "prepare": "husky",
     "generate:presets": "ts-node -P tsconfig.scripts.json src/scripts/generate-theme-presets.ts",
     "tauri": "tauri",
@@ -86,6 +88,8 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.13",
     "@netlify/plugin-nextjs": "^5.15.9",
+    "@percy/cli": "^1.32.2",
+    "@percy/playwright": "^1.1.0",
     "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4.2.4",
     "@tauri-apps/cli": "^2.11.1",
