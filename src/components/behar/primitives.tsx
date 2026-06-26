@@ -105,7 +105,7 @@ export function SecondaryButton({
   return (
     <Button
       className={cn(
-        "h-11 rounded-[12px] border-[#E8E8E5] bg-white px-5 font-medium text-[#1A1916] transition-colors duration-200 hover:bg-[#FAFAFA]",
+        "h-11 rounded-[12px] border-[#E8E8E5] bg-white px-5 font-medium text-[#1A1916] transition-colors duration-200 hover:bg-[#FFFFFF]",
         className,
       )}
       type="button"
@@ -135,7 +135,7 @@ export function MetricCard({
   return (
     <Panel className="p-5">
       <div className="flex items-center gap-4">
-        <div className="grid size-10 shrink-0 place-items-center rounded-[10px] bg-[#FAFAFA] text-[#6B6B6B]">
+        <div className="grid size-10 shrink-0 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#6B6B6B]">
           <Icon className="size-4" />
         </div>
         <div className="min-w-0 flex-1">
@@ -150,38 +150,38 @@ export function MetricCard({
 }
 
 const statusStyles: Record<string, string> = {
-  Reçu: "border-[#D7EFEA] bg-[#F6FCFA] text-[#1E7D72]",
-  Diagnostic: "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]",
-  "En attente": "border-[#FFE6C7] bg-[#FFF9EF] text-[#936100]",
-  "En attente pièce": "border-[#FFE6C7] bg-[#FFF9EF] text-[#936100]",
-  "Pièce commandée": "border-[#FFE6C7] bg-[#FFF9EF] text-[#936100]",
-  "Pièce reçue": "border-[#D7EFEA] bg-[#F6FCFA] text-[#167B70]",
-  "En attente validation client": "border-[#E5DEFF] bg-[#F8F6FF] text-[#5D4BA8]",
-  "Devis envoyé": "border-[#FFE6C7] bg-[#FFF9EF] text-[#936100]",
-  "Devis accepté": "border-[#D7EFEA] bg-[#F6FCFA] text-[#1E7D72]",
-  "En réparation": "border-[#D7EFEA] bg-[#F6FCFA] text-[#167B70]",
-  "Test final": "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]",
-  Test: "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]",
-  Prêt: "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]",
-  Rendu: "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]",
-  Irréparable: "border-[#F2D4D1] bg-[#FFF8F7] text-[#B42318]",
-  SAV: "border-[#FFE6C7] bg-[#FFF9EF] text-[#936100]",
-  Clôturé: "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]",
-  Actif: "border-[#D7EFEA] bg-[#F6FCFA] text-[#167B70]",
-  "Client fidèle": "border-[#D7EFEA] bg-[#F6FCFA] text-[#147065]",
-  Payée: "border-[#D7EFEA] bg-[#F6FCFA] text-[#167B70]",
-  Envoyée: "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]",
-  Payé: "border-[#D7EFEA] bg-[#F6FCFA] text-[#167B70]",
-  Annulé: "border-[#F2D4D1] bg-[#FFF8F7] text-[#B42318]",
-  Réussi: "border-[#D7EFEA] bg-[#F6FCFA] text-[#167B70]",
-  "En retard": "border-[#F2D4D1] bg-[#FFF8F7] text-[#B42318]",
-  Remboursé: "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]",
-  Brouillon: "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]",
-  Envoyé: "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]",
-  Accepté: "border-[#D7EFEA] bg-[#F6FCFA] text-[#167B70]",
-  Refusé: "border-[#F2D4D1] bg-[#FFF8F7] text-[#B42318]",
-  "En stock": "border-[#D7EFEA] bg-[#F6FCFA] text-[#167B70]",
-  ActifWidget: "border-[#D7EFEA] bg-[#F6FCFA] text-[#167B70]",
+  Reçu: "border-[#D7EFEA] bg-[#FFFFFF] text-[#1E7D72]",
+  Diagnostic: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
+  "En attente": "border-[#FFE6C7] bg-[#FFFFFF] text-[#936100]",
+  "En attente pièce": "border-[#FFE6C7] bg-[#FFFFFF] text-[#936100]",
+  "Pièce commandée": "border-[#FFE6C7] bg-[#FFFFFF] text-[#936100]",
+  "Pièce reçue": "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
+  "En attente validation client": "border-[#E5DEFF] bg-[#FFFFFF] text-[#5D4BA8]",
+  "Devis envoyé": "border-[#FFE6C7] bg-[#FFFFFF] text-[#936100]",
+  "Devis accepté": "border-[#D7EFEA] bg-[#FFFFFF] text-[#1E7D72]",
+  "En réparation": "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
+  "Test final": "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
+  Test: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
+  Prêt: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
+  Rendu: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
+  Irréparable: "border-[#F2D4D1] bg-[#FFFFFF] text-[#B42318]",
+  SAV: "border-[#FFE6C7] bg-[#FFFFFF] text-[#936100]",
+  Clôturé: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
+  Actif: "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
+  "Client fidèle": "border-[#D7EFEA] bg-[#FFFFFF] text-[#147065]",
+  Payée: "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
+  Envoyée: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
+  Payé: "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
+  Annulé: "border-[#F2D4D1] bg-[#FFFFFF] text-[#B42318]",
+  Réussi: "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
+  "En retard": "border-[#F2D4D1] bg-[#FFFFFF] text-[#B42318]",
+  Remboursé: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
+  Brouillon: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
+  Envoyé: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
+  Accepté: "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
+  Refusé: "border-[#F2D4D1] bg-[#FFFFFF] text-[#B42318]",
+  "En stock": "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
+  ActifWidget: "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
 };
 
 export function StatusBadge({ status, className }: Readonly<{ status: string; className?: string }>) {
@@ -189,7 +189,7 @@ export function StatusBadge({ status, className }: Readonly<{ status: string; cl
     <span
       className={cn(
         "inline-flex min-h-6 items-center rounded-[7px] border px-2 py-0.5 font-semibold text-[11px] leading-none",
-        statusStyles[status] ?? "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]",
+        statusStyles[status] ?? "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
         className,
       )}
     >
@@ -212,7 +212,7 @@ export function DetailRow({
   return (
     <div
       className={cn(
-        "flex items-start justify-between gap-6 py-3 text-sm border-b border-[#F7F7F7] last:border-0",
+        "flex items-start justify-between gap-6 py-3 text-sm border-b border-[#FFFFFF] last:border-0",
         className,
       )}
     >
@@ -231,7 +231,7 @@ export function TableShell({ children, className }: Readonly<{ children: ReactNo
 }
 
 export const tableClassName = "w-full min-w-[720px] border-collapse text-sm";
-export const tableHeadClassName = "border-b border-[#E8E8E5] bg-[#FAFAFA] text-left text-xs font-semibold text-[#6B6B6B]";
+export const tableHeadClassName = "border-b border-[#E8E8E5] bg-[#FFFFFF] text-left text-xs font-semibold text-[#6B6B6B]";
 export const tableCellClassName = "border-b border-[#E8E8E5] px-4 py-3 text-[#1A1916]";
 
 export type TimelineItem = {
@@ -265,7 +265,7 @@ export function Timeline({ items }: Readonly<{ items: readonly (string | Timelin
               >
                 {Icon ? <Icon className="size-3" /> : <span className="size-1.5 rounded-full bg-current" />}
               </span>
-              {index < items.length - 1 && <div className="absolute top-5 h-full w-[1px] bg-[#E8E8E5]" />}
+              {index < items.length - 1 && <div className="absolute top-5 h-full w-[1px] bg-[#FFFFFF]" />}
             </div>
             <div className="flex-1 pb-2">
               <p className="font-semibold text-[#1A1916]">{text}</p>
@@ -281,7 +281,7 @@ export function Timeline({ items }: Readonly<{ items: readonly (string | Timelin
 
 export function SuccessNote({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <div className="flex items-center gap-3 rounded-[16px] border border-[#2A9D8F]/15 bg-[#E7F7F2] p-4 text-[#167B70] text-sm">
+    <div className="flex items-center gap-3 rounded-[16px] border border-[#2A9D8F]/15 bg-[#FFFFFF] p-4 text-[#167B70] text-sm">
       <span className="grid size-7 shrink-0 place-items-center rounded-[9px] bg-[#2A9D8F] text-white">
         <Check className="size-4" />
       </span>
@@ -294,23 +294,23 @@ export function DeviceThumb({ className }: Readonly<{ className?: string }>) {
   return (
     <div
       className={cn(
-        "relative h-16 w-12 overflow-hidden rounded-[13px] border border-[#DADADA] bg-[#F7F7F7] shadow-[0_1px_2px_rgba(26,25,22,0.06)]",
+        "relative h-16 w-12 overflow-hidden rounded-[13px] border border-[#DADADA] bg-[#FFFFFF] shadow-[0_1px_2px_rgba(26,25,22,0.06)]",
         className,
       )}
     >
       <div className="absolute inset-1 rounded-[9px] border border-[#E8E8E5] bg-white" />
-      <div className="absolute top-1.5 left-1/2 h-1 w-4 -translate-x-1/2 rounded-full bg-[#DADADA]" />
+      <div className="absolute top-1.5 left-1/2 h-1 w-4 -translate-x-1/2 rounded-full bg-[#FFFFFF]" />
     </div>
   );
 }
 
 export function PartPlaceholder({ className }: Readonly<{ className?: string }>) {
   return (
-    <div className={cn("grid h-56 place-items-center rounded-[18px] bg-[#F7F7F7]", className)}>
+    <div className={cn("grid h-56 place-items-center rounded-[18px] bg-[#FFFFFF]", className)}>
       <div className="relative h-40 w-24 rounded-[14px] border border-[#DADADA] bg-white shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-        <div className="absolute inset-x-4 top-3 h-1.5 rounded-full bg-[#E8E8E5]" />
-        <div className="absolute inset-x-3 top-9 h-24 rounded-lg border border-[#E8E8E5] bg-[#FAFAFA]" />
-        <div className="absolute bottom-3 left-1/2 h-2 w-9 -translate-x-1/2 rounded-full bg-[#E8E8E5]" />
+        <div className="absolute inset-x-4 top-3 h-1.5 rounded-full bg-[#FFFFFF]" />
+        <div className="absolute inset-x-3 top-9 h-24 rounded-lg border border-[#E8E8E5] bg-[#FFFFFF]" />
+        <div className="absolute bottom-3 left-1/2 h-2 w-9 -translate-x-1/2 rounded-full bg-[#FFFFFF]" />
       </div>
     </div>
   );
@@ -368,7 +368,7 @@ export function ChoiceCard({
       className={cn(
         "flex flex-col items-center gap-3 rounded-[14px] border p-5 text-center transition-colors duration-200",
         selected
-          ? "border-[#2A9D8F] bg-[#F6FCFA]"
+          ? "border-[#2A9D8F] bg-[#FFFFFF]"
           : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/35",
         disabled && "cursor-not-allowed opacity-50",
       )}
@@ -379,7 +379,7 @@ export function ChoiceCard({
       <div
         className={cn(
           "grid size-10 place-items-center rounded-[10px]",
-          selected ? "bg-[#2A9D8F] text-white" : "bg-[#FAFAFA] text-[#6B6B6B]",
+          selected ? "bg-[#2A9D8F] text-white" : "bg-[#FFFFFF] text-[#6B6B6B]",
         )}
       >
         <Icon className="size-5" />
@@ -457,10 +457,10 @@ export function Modal({
           maxWidth,
         )}
       >
-        <div className="flex items-center justify-between border-b border-[#F7F7F7] px-5 py-4 md:px-7 md:py-5">
+        <div className="flex items-center justify-between border-b border-[#FFFFFF] px-5 py-4 md:px-7 md:py-5">
           <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">{title}</h2>
           <button
-            className="grid size-9 place-items-center rounded-[10px] bg-[#FAFAFA] text-[#6B6B6B] transition hover:bg-[#F7F7F7] hover:text-[#1A1916] md:size-8 md:bg-transparent"
+            className="grid size-9 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#6B6B6B] transition hover:bg-[#FFFFFF] hover:text-[#1A1916] md:size-8 md:bg-transparent"
             onClick={onClose}
             type="button"
             aria-label="Fermer"

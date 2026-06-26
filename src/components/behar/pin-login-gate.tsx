@@ -119,7 +119,7 @@ function roleSubtitle(role: string, displayName: string) {
 function avatarColor(role: string): string {
   if (role === "admin") return "bg-[#2A9D8F] text-white";
   if (role === "technician") return "bg-[#6366F1] text-white";
-  return "bg-[#F59E0B] text-white";
+  return "bg-[#FFFFFF] text-white";
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
@@ -151,7 +151,7 @@ function UserSelectorScreen({
                 key={user.id}
                 type="button"
                 onClick={() => onSelect(user)}
-                className="group flex items-center gap-4 rounded-[20px] border border-[#F7F7F7] bg-white px-4 py-4 text-left shadow-[0_1px_4px_rgba(26,25,22,0.04)] transition active:scale-[0.98] hover:border-[#DADADA] hover:shadow-[0_4px_16px_rgba(26,25,22,0.08)]"
+                className="group flex items-center gap-4 rounded-[20px] border border-[#FFFFFF] bg-white px-4 py-4 text-left shadow-[0_1px_4px_rgba(26,25,22,0.04)] transition active:scale-[0.98] hover:border-[#DADADA] hover:shadow-[0_4px_16px_rgba(26,25,22,0.08)]"
               >
                 {/* Avatar */}
                 <span
@@ -279,7 +279,7 @@ function PinEntryScreen({
           )}
         </div>
 
-        <div className="rounded-[24px] border border-[#F7F7F7] bg-white p-6 shadow-[0_2px_8px_rgba(26,25,22,0.04)]">
+        <div className="rounded-[24px] border border-[#FFFFFF] bg-white p-6 shadow-[0_2px_8px_rgba(26,25,22,0.04)]">
           {/* PIN dots */}
           <div className="flex justify-center gap-3">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -288,9 +288,9 @@ function PinEntryScreen({
                 className={cn(
                   "grid h-12 w-10 place-items-center rounded-[12px] border text-[20px] font-semibold transition-all duration-150",
                   pin[i]
-                    ? "border-[#2A9D8F]/50 bg-[#EAF6F2] text-[#1A1916] scale-105"
-                    : "border-[#E8E8E5] bg-[#FAFAFA] text-[#A3A3A3]",
-                  error && "border-[#DC3545]/40 bg-[#FDF2F2]",
+                    ? "border-[#2A9D8F]/50 bg-[#FFFFFF] text-[#1A1916] scale-105"
+                    : "border-[#E8E8E5] bg-[#FFFFFF] text-[#A3A3A3]",
+                  error && "border-[#DC3545]/40 bg-[#FFFFFF]",
                 )}
               >
                 {pin[i] ? "•" : ""}
@@ -310,7 +310,7 @@ function PinEntryScreen({
                 key={digit}
                 type="button"
                 onClick={() => onDigit(digit)}
-                className="h-14 rounded-[16px] bg-[#FAFAFA] font-semibold text-[#1A1916] text-[22px] transition active:scale-95 active:bg-[#F7F7F7] hover:bg-[#F7F7F7]"
+                className="h-14 rounded-[16px] bg-[#FFFFFF] font-semibold text-[#1A1916] text-[22px] transition active:scale-95 active:bg-[#FFFFFF] hover:bg-[#FFFFFF]"
               >
                 {digit}
               </button>
@@ -318,14 +318,14 @@ function PinEntryScreen({
             <button
               type="button"
               onClick={onBackspace}
-              className="h-14 rounded-[16px] bg-[#FAFAFA] font-medium text-[#6B6B6B] text-[13px] transition active:scale-95 active:bg-[#F7F7F7] hover:bg-[#F7F7F7]"
+              className="h-14 rounded-[16px] bg-[#FFFFFF] font-medium text-[#6B6B6B] text-[13px] transition active:scale-95 active:bg-[#FFFFFF] hover:bg-[#FFFFFF]"
             >
               ⌫
             </button>
             <button
               type="button"
               onClick={() => onDigit("0")}
-              className="h-14 rounded-[16px] bg-[#FAFAFA] font-semibold text-[#1A1916] text-[22px] transition active:scale-95 active:bg-[#F7F7F7] hover:bg-[#F7F7F7]"
+              className="h-14 rounded-[16px] bg-[#FFFFFF] font-semibold text-[#1A1916] text-[22px] transition active:scale-95 active:bg-[#FFFFFF] hover:bg-[#FFFFFF]"
             >
               0
             </button>
@@ -337,7 +337,7 @@ function PinEntryScreen({
                 "h-14 rounded-[16px] font-semibold text-[14px] transition active:scale-95",
                 pin
                   ? "bg-[#2A9D8F] text-white shadow-[0_2px_8px_rgba(42,157,143,0.25)]"
-                  : "bg-[#F7F7F7] text-[#A3A3A3]",
+                  : "bg-[#FFFFFF] text-[#A3A3A3]",
               )}
             >
               <LogIn className="mx-auto size-5" />
@@ -369,7 +369,7 @@ function PinEntryScreen({
                 setPin("");
                 setError("");
               }}
-              className="grid size-10 place-items-center rounded-[12px] text-[#6B6B6B] hover:bg-[#FAFAFA]"
+              className="grid size-10 place-items-center rounded-[12px] text-[#6B6B6B] hover:bg-[#FFFFFF]"
               title="Effacer"
             >
               <RefreshCw className="size-4" />

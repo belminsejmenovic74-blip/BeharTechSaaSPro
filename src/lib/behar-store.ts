@@ -79,7 +79,8 @@ export type DocumentType =
   | "internal"
   | "summary"
   | "sale-receipt"
-  | "sale-invoice";
+  | "sale-invoice"
+  | "diagnostic_report";
 export type DeviceType = "Smartphone" | "Tablette" | "Ordinateur" | "Console" | "Autre";
 export type UserRole = "admin" | "technician" | "frontdesk";
 export type PermissionKey =
@@ -297,7 +298,7 @@ export type RepairSubStatus =
   | "Irréparable"
   | "Annulé"
   | "SAV / retour";
-export type RepairTestResult = "OK" | "KO" | "Non testé" | "Non applicable";
+export type RepairTestResult = "OK" | "KO" | "Non testé" | "Non testable" | "Test repoussé" | "Non applicable";
 export type RepairChecklistItem = {
   id: string;
   label: string;
@@ -791,6 +792,10 @@ export type WorkshopInfo = {
   showLogo?: boolean;
   commercialName?: string;
   billingProfiles?: BillingProfiles;
+  counterPrintFormat?: "A4" | "A6" | "80mm" | "58mm";
+  counterQrFormat?: "A6" | "80mm" | "58mm";
+  counterDefaultAction?: "none" | "download" | "print_doc" | "print_qr";
+  counterShowCopyLink?: boolean;
 };
 
 export type WorkshopSettings = WorkshopInfo & {
@@ -1621,6 +1626,10 @@ const defaultWorkshopInfo: WorkshopInfo = {
   acceptedPaymentMethods: ["Espèces hors Behar Tech", "TPE externe", "Virement"],
   businessHours: "Lun-Ven 09:00-18:00 · Sam 09:00-13:00",
   allowCounterClient: true,
+  counterPrintFormat: "A4",
+  counterQrFormat: "80mm",
+  counterDefaultAction: "none",
+  counterShowCopyLink: true,
   repairPrefix: "REP",
   quotePrefix: "DEV",
   invoicePrefix: "FAC",
@@ -1784,6 +1793,12 @@ export const isWorkshopBillingProfileComplete = (
   workshop: WorkshopInfo,
   country: WorkshopCountry,
 ): boolean => {
+  if (country === "FR" && workshop.country !== "FR") {
+    return true;
+  }
+  if (country === "CH" && workshop.country !== "CH") {
+    return true;
+  }
   const resolved = getBillingWorkshopInfo(workshop, country);
   return isBillingProfileComplete(
     createBillingProfile(
@@ -2019,7 +2034,7 @@ const repairSubStatuses: RepairSubStatus[] = [
   "Annulé",
   "SAV / retour",
 ];
-const repairTestResults: RepairTestResult[] = ["OK", "KO", "Non testé", "Non applicable"];
+const repairTestResults: RepairTestResult[] = ["OK", "KO", "Non testé", "Non testable", "Test repoussé", "Non applicable"];
 const normalizeRepairPriority = (priority: unknown): RepairPriority =>
   repairPriorities.includes(priority as RepairPriority) ? (priority as RepairPriority) : "Normale";
 const normalizeRepairSubStatus = (subStatus: unknown): RepairSubStatus | undefined =>
@@ -2902,11 +2917,12 @@ const normalizeQuote = (quote: Partial<Quote>, customers: Customer[], repairs: R
   const billingConfig = getWorkshopCountryConfig(
     quote.billingCountry ?? repair?.billingCountry ?? (quote.currency === "CHF" ? "CH" : activeWorkshopCountry),
   );
+  const currency = (quote.currency === "CHF" || quote.currency === "EUR") ? quote.currency : billingConfig.currency;
   return {
     id,
     billingCountry: billingConfig.country,
-    currency: billingConfig.currency,
-    locale: billingConfig.locale,
+    currency,
+    locale: (currency === "CHF" ? "fr-CH" : "fr-FR") as WorkshopLocale,
     shopId: normalizeText(quote.shopId, shopId),
     number: normalizeText(quote.number, `DV-${id.slice(-4).padStart(4, "0")}`),
     customerId: getValidCustomerId(quote.customerId, customers, repair?.customerId),
@@ -3001,11 +3017,12 @@ const normalizeInvoice = (invoice: Partial<Invoice>, customers: Customer[], repa
       repair?.billingCountry ??
       (invoice.currency === "CHF" ? "CH" : activeWorkshopCountry),
   );
+  const currency = (invoice.currency === "CHF" || invoice.currency === "EUR") ? invoice.currency : billingConfig.currency;
   return {
     id,
     billingCountry: billingConfig.country,
-    currency: billingConfig.currency,
-    locale: billingConfig.locale,
+    currency,
+    locale: (currency === "CHF" ? "fr-CH" : "fr-FR") as WorkshopLocale,
     shopId: normalizeText(invoice.shopId, shopId),
     number: normalizeText(invoice.number, `FA-2026-${id.slice(-4).padStart(4, "0")}`),
     customerId: getValidCustomerId(invoice.customerId, customers, quote?.customerId ?? repair?.customerId),
@@ -3049,11 +3066,12 @@ const normalizePayment = (
       sale?.billingCountry ??
       (payment.currency === "CHF" ? "CH" : activeWorkshopCountry),
   );
+  const currency = (payment.currency === "CHF" || payment.currency === "EUR") ? payment.currency : (invoice?.currency ?? sale?.currency ?? billingConfig.currency);
   return {
     id,
     billingCountry: billingConfig.country,
-    currency: billingConfig.currency,
-    locale: billingConfig.locale,
+    currency,
+    locale: (currency === "CHF" ? "fr-CH" : "fr-FR") as WorkshopLocale,
     shopId: normalizeText(payment.shopId, shopId),
     invoiceId: invoice?.id,
     saleId: sale?.id ?? payment.saleId,
@@ -3122,11 +3140,12 @@ const normalizeSale = (sale: Partial<Sale>, customers: Customer[], repairs: Repa
   const billingConfig = getWorkshopCountryConfig(
     sale.billingCountry ?? repair?.billingCountry ?? (sale.currency === "CHF" ? "CH" : activeWorkshopCountry),
   );
+  const currency = (sale.currency === "CHF" || sale.currency === "EUR") ? sale.currency : billingConfig.currency;
   return {
     id,
     billingCountry: billingConfig.country,
-    currency: billingConfig.currency,
-    locale: billingConfig.locale,
+    currency,
+    locale: (currency === "CHF" ? "fr-CH" : "fr-FR") as WorkshopLocale,
     shopId: normalizeText(sale.shopId, shopId),
     number: normalizeText(sale.number, `VTE-${id.slice(-4).padStart(4, "0")}`),
     customerId,
@@ -4400,6 +4419,12 @@ export const useBeharStore = create<StoreState>()(
         // Format : BHT-2026-XXXX-YYYY (4 chars + 4 chars) pour qu'elles
         // soient faciles à dicter au téléphone mais imprévisibles.
         const validKeys = [
+          // Licences de test / QA
+          "BHT-2026-PRO-001",
+          "BHT-2026-PRO-002",
+          "BHT-PILOT-ANNEMASSE",
+          "BHT-BEHAR-TECH-PRO",
+          "BHT-PILOT-EXCLUSIF",
           // Toi (gérant Behar Tech, accès personnel)
           "BHT-2026-BEHAR-TECH",
           // 5 clés client prêtes à distribuer
@@ -5678,13 +5703,14 @@ export const useBeharStore = create<StoreState>()(
         const quoteBillingConfig = getWorkshopCountryConfig(
           input.billingCountry ?? repairForQuote?.billingCountry ?? ws.country,
         );
+        const currency = input.currency ?? repairForQuote?.currency ?? quoteBillingConfig.currency;
         const quote = normalizeQuote(
           {
             ...input,
             id,
             billingCountry: quoteBillingConfig.country,
-            currency: quoteBillingConfig.currency,
-            locale: quoteBillingConfig.locale,
+            currency,
+            locale: (currency === "CHF" ? "fr-CH" : "fr-FR") as WorkshopLocale,
             number: docNumber(ws.quotePrefix, ws.nextQuoteNumber ?? 1, "DEV"),
             customerId: candidateCustomerId,
             ...actorFields(actor),
@@ -5953,11 +5979,12 @@ export const useBeharStore = create<StoreState>()(
         const invoiceBillingConfig = getWorkshopCountryConfig(
           input.billingCountry ?? quote?.billingCountry ?? repair?.billingCountry ?? ws.country,
         );
+        const currency = input.currency ?? quote?.currency ?? repair?.currency ?? invoiceBillingConfig.currency;
         const invoice: Invoice = {
           id,
           billingCountry: invoiceBillingConfig.country,
-          currency: invoiceBillingConfig.currency,
-          locale: invoiceBillingConfig.locale,
+          currency,
+          locale: (currency === "CHF" ? "fr-CH" : "fr-FR") as WorkshopLocale,
           shopId,
           number: docNumber(ws.invoicePrefix, ws.nextInvoiceNumber ?? 1, "FAC"),
           customerId,

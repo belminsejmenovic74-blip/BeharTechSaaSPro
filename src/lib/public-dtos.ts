@@ -6,7 +6,7 @@ export type PublicWorkshopDto = {
   address?: string;
   postalCode?: string;
   city?: string;
-  country: "FR" | "CH";
+  country: "FR" | "CH" | "autre";
   currency: "EUR" | "CHF";
   locale: "fr-FR" | "fr-CH";
   canton?: string;

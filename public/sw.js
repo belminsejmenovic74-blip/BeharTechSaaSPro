@@ -64,7 +64,7 @@ self.addEventListener("fetch", (event) => {
           if (fallback) return fallback;
           return new Response(
             "<!doctype html><meta charset='utf-8'><title>Hors ligne</title>" +
-              "<body style='font-family:system-ui;padding:40px;background:#FAFAF8;color:#1A1916'>" +
+              "<body style='font-family:system-ui;padding:40px;background:#FFFFFF;color:#1A1916'>" +
               "<h1 style='color:#2A9D8F'>Behar Tech Pro</h1>" +
               "<p>Vous êtes hors ligne. Reconnectez-vous pour synchroniser.</p>",
             { headers: { "content-type": "text/html; charset=utf-8" } },

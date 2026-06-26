@@ -19,9 +19,9 @@ import { cn } from "@/lib/utils";
 import { BeharLogo } from "./behar-logo";
 
 const STATUS_UI: Record<ControlStatus, { cls: string; icon: typeof CheckCircle2; label: string }> = {
-  validé: { cls: "bg-[#EAF6F2] text-[#167B70]", icon: CheckCircle2, label: "Validé" },
-  "à signaler": { cls: "bg-[#FBF3E2] text-[#9A6B1B]", icon: AlertTriangle, label: "À signaler" },
-  "non testé": { cls: "bg-[#F4F4F2] text-[#8A8A85]", icon: Minus, label: "Non testé" },
+  validé: { cls: "bg-[#FFFFFF] text-[#167B70]", icon: CheckCircle2, label: "Validé" },
+  "à signaler": { cls: "bg-[#FFFFFF] text-[#9A6B1B]", icon: AlertTriangle, label: "À signaler" },
+  "non testé": { cls: "bg-[#FFFFFF] text-[#8A8A85]", icon: Minus, label: "Non testé" },
 };
 
 const dateFr = (iso: string) => {
@@ -50,12 +50,12 @@ export function PublicCertificateView({ encoded, id }: Readonly<{ encoded?: stri
   }, [encoded, id, files]);
 
   if (encoded === undefined && id === undefined && !mounted) {
-    return <div className="min-h-svh bg-[#FAFAF8]" />;
+    return <div className="min-h-svh bg-[#FFFFFF]" />;
   }
 
   if (!data) {
     return (
-      <div className="grid min-h-svh place-items-center bg-[#FAFAF8] px-6 text-center">
+      <div className="grid min-h-svh place-items-center bg-[#FFFFFF] px-6 text-center">
         <div className="max-w-sm">
           <div className="mx-auto grid size-12 place-items-center rounded-[14px] bg-white text-[#6B6B6B] shadow-[0_1px_3px_rgba(26,25,22,0.06)]">
             <AlertTriangle className="size-6" />
@@ -71,12 +71,12 @@ export function PublicCertificateView({ encoded, id }: Readonly<{ encoded?: stri
   const detail = [data.storage, data.color].filter(Boolean).join(" · ");
 
   return (
-    <div className="min-h-svh bg-[#FAFAF8] px-4 py-8 text-[#1A1916] sm:py-12">
+    <div className="min-h-svh bg-[#FFFFFF] px-4 py-8 text-[#1A1916] sm:py-12">
       <div className="mx-auto w-full max-w-[760px] space-y-5">
         {/* En-tête */}
         <div className="flex items-center justify-between">
           <BeharLogo size="md" />
-          <span className="inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-[#CDEBE4] bg-[#EAF6F2] px-3 font-semibold text-[#147065] text-[13px]">
+          <span className="inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-[#CDEBE4] bg-[#FFFFFF] px-3 font-semibold text-[#147065] text-[13px]">
             <BadgeCheck className="size-4" />
             Certificat vérifié
           </span>
@@ -89,15 +89,15 @@ export function PublicCertificateView({ encoded, id }: Readonly<{ encoded?: stri
           {detail && <p className="mt-1 text-[#6B6B6B] text-sm">{detail}</p>}
 
           <div className="mt-5 flex flex-wrap items-center gap-2.5">
-            <span className="inline-flex items-center gap-1.5 rounded-[9px] bg-[#EAF6F2] px-3 py-1.5 font-semibold text-[#147065] text-sm">
+            <span className="inline-flex items-center gap-1.5 rounded-[9px] bg-[#FFFFFF] px-3 py-1.5 font-semibold text-[#147065] text-sm">
               <ShieldCheck className="size-4" />
               Grade {data.grade} · {data.gradeLabel}
             </span>
-            <span className="rounded-[9px] bg-[#FAFAFA] px-3 py-1.5 font-medium text-[#1A1916] text-sm">
+            <span className="rounded-[9px] bg-[#FFFFFF] px-3 py-1.5 font-medium text-[#1A1916] text-sm">
               {data.validatedPoints} / {data.protocolPoints} points validés
             </span>
             {data.batteryHealth != null && (
-              <span className="rounded-[9px] bg-[#FAFAFA] px-3 py-1.5 font-medium text-[#1A1916] text-sm">Batterie {data.batteryHealth} %</span>
+              <span className="rounded-[9px] bg-[#FFFFFF] px-3 py-1.5 font-medium text-[#1A1916] text-sm">Batterie {data.batteryHealth} %</span>
             )}
           </div>
         </section>
@@ -117,7 +117,7 @@ export function PublicCertificateView({ encoded, id }: Readonly<{ encoded?: stri
         </section>
 
         {/* Résultat global */}
-        <section className="rounded-[20px] border border-[#CDEBE4] bg-[#F6FCFA] p-6">
+        <section className="rounded-[20px] border border-[#CDEBE4] bg-[#FFFFFF] p-6">
           <div className="flex items-start gap-3">
             <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-white text-[#147065] shadow-[0_1px_2px_rgba(26,25,22,0.05)]">
               <ShieldCheck className="size-5" />
@@ -140,7 +140,7 @@ export function PublicCertificateView({ encoded, id }: Readonly<{ encoded?: stri
               const ui = STATUS_UI[c.status];
               const Icon = ui.icon;
               return (
-                <div className="flex items-center justify-between gap-3 border-[#F1F1EF] border-b py-2.5" key={c.label}>
+                <div className="flex items-center justify-between gap-3 border-[#FFFFFF] border-b py-2.5" key={c.label}>
                   <span className="text-[#1A1916] text-sm">{c.label}</span>
                   <span className={cn("inline-flex items-center gap-1.5 rounded-[7px] px-2.5 py-1 font-semibold text-[11px]", ui.cls)}>
                     <Icon className="size-3.5" />
@@ -154,7 +154,7 @@ export function PublicCertificateView({ encoded, id }: Readonly<{ encoded?: stri
 
         {/* Défauts restants */}
         {data.defects.length > 0 && (
-          <section className="rounded-[20px] border border-[#F0E0BC] bg-[#FDFAF2] p-6">
+          <section className="rounded-[20px] border border-[#F0E0BC] bg-[#FFFFFF] p-6">
             <h2 className="flex items-center gap-2 font-semibold text-[#1A1916]">
               <AlertTriangle className="size-4 text-[#9A6B1B]" />
               Défauts restants signalés
@@ -185,7 +185,7 @@ export function PublicCertificateView({ encoded, id }: Readonly<{ encoded?: stri
 
 function Row({ label, value, mono }: Readonly<{ label: string; value: string; mono?: boolean }>) {
   return (
-    <div className="flex items-center justify-between gap-3 border-[#F1F1EF] border-b py-3 last:border-0">
+    <div className="flex items-center justify-between gap-3 border-[#FFFFFF] border-b py-3 last:border-0">
       <span className="text-[#6B6B6B] text-sm">{label}</span>
       <span className={cn("text-right font-semibold text-[#1A1916] text-sm", mono && "font-mono text-[13px]")}>{value}</span>
     </div>

@@ -76,8 +76,8 @@ export function DashboardSidebar() {
               <Link
                 className={cn(
                   "flex h-[42px] items-center gap-3 rounded-[12px] px-3 font-medium text-[#6B6B6B] text-[13.5px] transition",
-                  "hover:bg-[#FAFAFA] hover:text-[#1A1916]",
-                  active && "bg-[#F3FBFA] font-semibold text-[#167B70]",
+                  "hover:bg-[#FFFFFF] hover:text-[#1A1916]",
+                  active && "bg-[#FFFFFF] font-semibold text-[#167B70]",
                 )}
                 href={item.href}
                 key={item.href}
@@ -94,7 +94,7 @@ export function DashboardSidebar() {
           <Link
             href="/comptoir"
             prefetch={false}
-            className="flex h-[44px] items-center gap-3 rounded-[12px] border border-[#2A9D8F]/30 bg-[#E8F7F3] px-3.5 font-semibold text-[#167B70] text-[13.5px] transition hover:bg-[#DCF1EC]"
+            className="flex h-[44px] items-center gap-3 rounded-[12px] border border-[#2A9D8F]/30 bg-[#FFFFFF] px-3.5 font-semibold text-[#167B70] text-[13.5px] transition hover:bg-[#FFFFFF]"
           >
             <Store className="size-[18px]" />
             <span>Mode comptoir</span>
@@ -102,7 +102,7 @@ export function DashboardSidebar() {
           <Link
             href="/atelier"
             prefetch={false}
-            className="flex h-[44px] items-center gap-3 rounded-[12px] border border-[#2A9D8F]/30 bg-[#E8F7F3] px-3.5 font-semibold text-[#167B70] text-[13.5px] transition hover:bg-[#DCF1EC]"
+            className="flex h-[44px] items-center gap-3 rounded-[12px] border border-[#2A9D8F]/30 bg-[#FFFFFF] px-3.5 font-semibold text-[#167B70] text-[13.5px] transition hover:bg-[#FFFFFF]"
           >
             <Wrench className="size-[18px]" />
             <span>Atelier</span>
@@ -112,7 +112,7 @@ export function DashboardSidebar() {
 
       <div className="space-y-2">
         <div className="flex items-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white px-3 py-2.5">
-          <span className="grid size-9 place-items-center rounded-[10px] bg-[#F3FBFA] font-semibold text-[#2A9D8F] text-[13px]">
+          <span className="grid size-9 place-items-center rounded-[10px] bg-[#FFFFFF] font-semibold text-[#2A9D8F] text-[13px]">
             {currentUser.name.charAt(0).toUpperCase()}
           </span>
           <div className="flex-1 leading-tight min-w-0">
@@ -122,7 +122,7 @@ export function DashboardSidebar() {
           <button
             type="button"
             onClick={() => logout()}
-            className="grid size-8 place-items-center rounded-[10px] text-[#B42318] transition hover:bg-[#FDF2F2]"
+            className="grid size-8 place-items-center rounded-[10px] text-[#B42318] transition hover:bg-[#FFFFFF]"
             title="Changer d'utilisateur"
             aria-label="Déconnexion"
           >
@@ -131,7 +131,7 @@ export function DashboardSidebar() {
         </div>
         <Link
           href={canViewSettings ? "/dashboard/parametres" : "/dashboard"}
-          className="flex items-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white px-3 py-3 text-left transition-colors duration-200 hover:bg-[#FAFAFA]"
+          className="flex items-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white px-3 py-3 text-left transition-colors duration-200 hover:bg-[#FFFFFF]"
         >
           {workshopLogo ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -141,7 +141,7 @@ export function DashboardSidebar() {
               src={workshopLogo}
             />
           ) : (
-            <span className="grid size-9 place-items-center rounded-[10px] border border-[#E8E8E5] bg-[#FAFAFA] font-semibold text-[#1A1916] text-[11px] tracking-wide">
+            <span className="grid size-9 place-items-center rounded-[10px] border border-[#E8E8E5] bg-[#FFFFFF] font-semibold text-[#1A1916] text-[11px] tracking-wide">
               {workshopInitials || "AT"}
             </span>
           )}
@@ -207,7 +207,7 @@ function SidebarInstallButton() {
       onClick={handleInstall}
       className={cn(
         "flex h-[42px] items-center gap-3 rounded-[12px] px-3 font-medium text-[#2A9D8F] text-[13.5px] transition mt-2",
-        "bg-[#E7F5F1] hover:bg-[#D8EDEA]",
+        "bg-[#FFFFFF] hover:bg-[#FFFFFF]",
       )}
     >
       <Monitor className="size-[18px]" />

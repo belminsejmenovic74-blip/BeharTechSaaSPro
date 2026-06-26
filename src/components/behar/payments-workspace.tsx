@@ -85,11 +85,11 @@ function formatPaymentMethodLabel(method: PaymentMethod): string {
 }
 
 const KPI_TONES: Record<KpiTone, { bg: string; text: string }> = {
-  teal: { bg: "bg-[#E7F5F1]", text: "text-[#2A9D8F]" },
-  amber: { bg: "bg-[#FAFAFA]", text: "text-[#6B6B6B]" },
-  blue: { bg: "bg-[#FAFAFA]", text: "text-[#6B6B6B]" },
-  violet: { bg: "bg-[#FAFAFA]", text: "text-[#6B6B6B]" },
-  rose: { bg: "bg-[#FCEAEC]", text: "text-[#C7494E]" },
+  teal: { bg: "bg-[#FFFFFF]", text: "text-[#2A9D8F]" },
+  amber: { bg: "bg-[#FFFFFF]", text: "text-[#6B6B6B]" },
+  blue: { bg: "bg-[#FFFFFF]", text: "text-[#6B6B6B]" },
+  violet: { bg: "bg-[#FFFFFF]", text: "text-[#6B6B6B]" },
+  rose: { bg: "bg-[#FFFFFF]", text: "text-[#C7494E]" },
 };
 
 function KpiCard({
@@ -263,7 +263,7 @@ export function PaymentsWorkspace() {
               </label>
             </div>
             <SecondaryButton
-              className={cn("w-full sm:w-auto", filterOverdue ? "border-[#B42318] bg-[#FFF1F0] text-[#B42318]" : "")}
+              className={cn("w-full sm:w-auto", filterOverdue ? "border-[#B42318] bg-[#FFFFFF] text-[#B42318]" : "")}
               onClick={() => setFilterOverdue(!filterOverdue)}
             >
               <SlidersHorizontal className="size-4" />
@@ -274,7 +274,7 @@ export function PaymentsWorkspace() {
           <div className="overflow-hidden rounded-[18px] border border-[#EAE7DF] bg-white shadow-[0_4px_14px_rgba(26,25,22,0.025)]">
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full min-w-[820px] border-collapse text-sm">
-                <thead className="bg-[#FAFAFA] text-[#6B6B6B] text-xs uppercase tracking-wide">
+                <thead className="bg-[#FFFFFF] text-[#6B6B6B] text-xs uppercase tracking-wide">
                   <tr>
                     <th className="px-4 py-3 text-left font-medium">Référence</th>
                     <th className="px-4 py-3 text-left font-medium">Client</th>
@@ -308,8 +308,8 @@ export function PaymentsWorkspace() {
                       return (
                         <tr
                           className={cn(
-                            "cursor-pointer border-[#E8E8E5] border-t transition hover:bg-[#FAFAFA]",
-                            active && "bg-[#E7F5F1]",
+                            "cursor-pointer border-[#E8E8E5] border-t transition hover:bg-[#FFFFFF]",
+                            active && "bg-[#FFFFFF]",
                           )}
                           key={payment.id}
                           onClick={() => store.setSelected("payment", payment.id)}
@@ -335,7 +335,7 @@ export function PaymentsWorkspace() {
                           <td className="px-4 py-3 text-right">
                             <button
                               type="button"
-                              className="grid size-7 place-items-center rounded-md text-[#6B6B6B] hover:bg-[#F7F7F7] hover:text-[#1A1916]"
+                              className="grid size-7 place-items-center rounded-md text-[#6B6B6B] hover:bg-[#FFFFFF] hover:text-[#1A1916]"
                               onClick={(event) => event.stopPropagation()}
                               aria-label="Plus d'options"
                             >
@@ -350,7 +350,7 @@ export function PaymentsWorkspace() {
               </table>
             </div>
             {/* Vue cartes mobile premium */}
-            <div className="md:hidden space-y-2.5 bg-[#FAFAFA] p-3">
+            <div className="md:hidden space-y-2.5 bg-[#FFFFFF] p-3">
               {filteredPayments.length === 0 ? (
                 <p className="rounded-[16px] bg-white px-4 py-10 text-center text-[#6B6B6B] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
                   Aucun paiement.
@@ -409,7 +409,7 @@ export function PaymentsWorkspace() {
               </div>
             </div>
 
-            <div className="mb-5 rounded-[14px] bg-[#FAFAFA] p-4">
+            <div className="mb-5 rounded-[14px] bg-[#FFFFFF] p-4">
               <div className="flex items-center gap-3">
                 <span className="grid size-11 place-items-center text-[#2A9D8F]">
                   <CreditCard className="size-5" />
@@ -526,7 +526,7 @@ export function PaymentsWorkspace() {
                 Annuler le paiement
               </SecondaryButton>
               {confirmCancelId === selected.id && (
-                <div className="rounded-[12px] border border-[#F2C8C3] bg-[#FFF7F6] p-3 text-sm">
+                <div className="rounded-[12px] border border-[#F2C8C3] bg-[#FFFFFF] p-3 text-sm">
                   <p className="font-semibold text-[#7A271A]">Annuler ce paiement ?</p>
                   <p className="mt-1 text-[#7A271A]/75">La facture liée sera recalculée automatiquement.</p>
                   <div className="mt-3 grid grid-cols-2 gap-2">
@@ -688,7 +688,7 @@ function CreatePaymentModal({
           <button
             className={cn(
               "flex flex-col items-center gap-2 rounded-xl border p-4 transition-all",
-              sourceType === "invoice" ? "border-[#2A9D8F] bg-[#F1FAF8]" : "border-[#E8E8E5] bg-white",
+              sourceType === "invoice" ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white",
             )}
             onClick={() => {
               setSourceType("invoice");
@@ -701,7 +701,7 @@ function CreatePaymentModal({
           <button
             className={cn(
               "flex flex-col items-center gap-2 rounded-xl border p-4 transition-all",
-              sourceType === "repair" ? "border-[#2A9D8F] bg-[#F1FAF8]" : "border-[#E8E8E5] bg-white",
+              sourceType === "repair" ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white",
             )}
             onClick={() => {
               setSourceType("repair");
@@ -793,7 +793,7 @@ function MobileKpi({
   tone,
 }: Readonly<{ label: string; value: string; helper?: string; tone: "teal" | "amber" }>) {
   const t =
-    tone === "teal" ? { bg: "bg-[#EAF6F2]", text: "text-[#2A9D8F]" } : { bg: "bg-[#FAFAFA]", text: "text-[#6B6B6B]" };
+    tone === "teal" ? { bg: "bg-[#FFFFFF]", text: "text-[#2A9D8F]" } : { bg: "bg-[#FFFFFF]", text: "text-[#6B6B6B]" };
   return (
     <div className="w-full shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)] min-[360px]:w-[44%]">
       <span className={cn("grid size-9 place-items-center rounded-[10px]", t.bg, t.text)}>
@@ -808,13 +808,13 @@ function MobileKpi({
 
 function PaymentMethodTile({ method }: Readonly<{ method: PaymentMethod }>) {
   const config = (() => {
-    if (method === "Carte" || method === "TPE externe") return { Icon: CreditCard, bg: "bg-[#EAF6F2]", color: "text-[#2A9D8F]", label: "TPE externe" };
-    if (method === "Espèces" || method === "Espèces hors Behar Tech") return { Icon: Banknote, bg: "bg-[#FAFAFA]", color: "text-[#6B6B6B]", label: "Espèces ext." };
+    if (method === "Carte" || method === "TPE externe") return { Icon: CreditCard, bg: "bg-[#FFFFFF]", color: "text-[#2A9D8F]", label: "TPE externe" };
+    if (method === "Espèces" || method === "Espèces hors Behar Tech") return { Icon: Banknote, bg: "bg-[#FFFFFF]", color: "text-[#6B6B6B]", label: "Espèces ext." };
     if (method === "Virement")
-      return { Icon: Landmark, bg: "bg-[#FAFAFA]", color: "text-[#6B6B6B]", label: "Virement" };
+      return { Icon: Landmark, bg: "bg-[#FFFFFF]", color: "text-[#6B6B6B]", label: "Virement" };
     if (method === "TWINT")
-      return { Icon: Wallet, bg: "bg-[#EAF6F2]", color: "text-[#2A9D8F]", label: "TWINT" };
-    return { Icon: Link2, bg: "bg-[#FAFAFA]", color: "text-[#6B6B6B]", label: "Lien externe" };
+      return { Icon: Wallet, bg: "bg-[#FFFFFF]", color: "text-[#2A9D8F]", label: "TWINT" };
+    return { Icon: Link2, bg: "bg-[#FFFFFF]", color: "text-[#6B6B6B]", label: "Lien externe" };
   })();
   const { Icon, bg, color, label } = config;
   return (

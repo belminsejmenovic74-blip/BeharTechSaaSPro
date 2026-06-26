@@ -62,7 +62,7 @@ export function LicenseCard() {
         <div className="flex-1">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-[#1A1916] text-lg">Licence</h2>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#EAF6F2] text-[#167B70] text-[11px] font-bold uppercase tracking-wider">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FFFFFF] text-[#167B70] text-[11px] font-bold uppercase tracking-wider">
               <CheckCircle2 className="size-3" />
               Active
             </div>
@@ -76,7 +76,7 @@ export function LicenseCard() {
           </div>
 
           {/* Options de gestion de licence */}
-          <div className="mt-6 pt-5 border-t border-[#F7F7F7] space-y-4">
+          <div className="mt-6 pt-5 border-t border-[#FFFFFF] space-y-4">
             <div className="flex flex-wrap gap-2.5">
               <SecondaryButton
                 className="h-10 px-4 text-xs font-semibold gap-2 border-[#E8E8E5] hover:border-[#2A9D8F] hover:text-[#2A9D8F] active:scale-[0.98] transition-all duration-200"
@@ -86,7 +86,7 @@ export function LicenseCard() {
                 Changer de clé
               </SecondaryButton>
               <SecondaryButton
-                className="h-10 px-4 text-xs font-semibold gap-2 text-[#E63946] border-[#F3D1CC] hover:bg-[#FFF7F6] active:scale-[0.98] transition-all duration-200"
+                className="h-10 px-4 text-xs font-semibold gap-2 text-[#E63946] border-[#F3D1CC] hover:bg-[#FFFFFF] active:scale-[0.98] transition-all duration-200"
                 onClick={handleDeactivate}
               >
                 <ShieldOff className="size-3.5" />

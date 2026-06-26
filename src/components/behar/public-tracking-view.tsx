@@ -287,7 +287,7 @@ function notFound(shopName?: string) {
       >
         <span
           className="mx-auto grid size-12 place-items-center rounded-full"
-          style={{ background: "#F7F7F7", color: COLORS.sub }}
+          style={{ background: "#FFFFFF", color: COLORS.sub }}
         >
           <ShieldCheck className="size-6" />
         </span>
@@ -673,7 +673,7 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
                 <span className="font-bold text-[20px] tracking-tight">{data.repair.number}</span>
                 <span
                   className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-semibold text-[12px]"
-                  style={{ background: "#E6F4F1", color: "#1E7A6E" }}
+                  style={{ background: "#FFFFFF", color: "#1E7A6E" }}
                 >
                   <span className="size-2 rounded-full" style={{ background: COLORS.accent }} /> {data.repair.statusLabel}
                 </span>
@@ -681,7 +681,7 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
               <div className="mt-4 grid gap-4 sm:grid-cols-[104px_1fr] sm:items-center">
                 <RealDeviceVisual
                   brand={data.repair.deviceBrand}
-                  className="size-[104px] rounded-[18px] border border-[#E8E8E5] bg-[#FAFAF8] p-2 shadow-[0_10px_24px_rgba(26,25,22,0.045)]"
+                  className="size-[104px] rounded-[18px] border border-[#E8E8E5] bg-[#FFFFFF] p-2 shadow-[0_10px_24px_rgba(26,25,22,0.045)]"
                   model={data.repair.deviceModel}
                   type={data.repair.deviceType}
                 />
@@ -761,7 +761,7 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
             {/* Carte statut actuel */}
             <section
               className="mt-4 flex items-start gap-3 rounded-[20px] border p-4"
-              style={{ borderColor: "#D7EFEA", background: "#F0FAF7" }}
+              style={{ borderColor: "#D7EFEA", background: "#FFFFFF" }}
             >
               <span
                 className="grid size-9 shrink-0 place-items-center rounded-full text-white"
@@ -795,7 +795,7 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
                   <li key={doc.key} className="flex items-center gap-3 py-3">
                     <span
                       className="grid size-9 shrink-0 place-items-center rounded-[11px]"
-                      style={{ background: "#F7F7F7", color: COLORS.accent }}
+                      style={{ background: "#FFFFFF", color: COLORS.accent }}
                     >
                       <FileText className="size-4" />
                     </span>
@@ -824,7 +824,7 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
                               }
                             }}
                             className="rounded-full px-3 py-1 font-semibold text-[12.5px]"
-                            style={{ background: "#E6F4F1", color: "#1E7A6E" }}
+                            style={{ background: "#FFFFFF", color: "#1E7A6E" }}
                           >
                             Ouvrir
                           </button>
@@ -856,7 +856,7 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
                     ) : (
                       <span
                         className="shrink-0 rounded-full px-3 py-1 font-semibold text-[12.5px]"
-                        style={{ background: "#F7F7F7", color: "#8A8A8A" }}
+                        style={{ background: "#FFFFFF", color: "#8A8A8A" }}
                       >
                         À venir
                       </span>
@@ -885,7 +885,7 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
                     <li key={`${message.createdAt}-${index}`} className="flex items-start gap-3">
                       <span
                         className="grid size-8 shrink-0 place-items-center rounded-full font-bold text-[12px]"
-                        style={isClient ? { background: "#EEF2FF", color: "#4F46E5" } : { background: "#E6F4F1", color: "#1E7A6E" }}
+                        style={isClient ? { background: "#EEF2FF", color: "#4F46E5" } : { background: "#FFFFFF", color: "#1E7A6E" }}
                       >
                         {isClient ? "V" : initials.slice(0, 1)}
                       </span>
@@ -949,7 +949,7 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
             >
               <span
                 className="mx-auto grid size-11 place-items-center rounded-full"
-                style={{ background: "#EAF6F2", color: COLORS.accent }}
+                style={{ background: "#FFFFFF", color: COLORS.accent }}
               >
                 <Link2 className="size-5" />
               </span>

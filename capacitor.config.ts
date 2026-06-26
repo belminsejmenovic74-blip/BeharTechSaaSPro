@@ -16,8 +16,8 @@ const config: CapacitorConfig = {
     androidScheme: "https",
   },
   android: {
-    // Couleur de l'écran de démarrage pour rester cohérent avec la DA (#FAFAF8).
-    backgroundColor: "#FAFAF8",
+    // Couleur de l'écran de démarrage pour rester cohérent avec la DA (#FFFFFF).
+    backgroundColor: "#FFFFFF",
   },
 };
 

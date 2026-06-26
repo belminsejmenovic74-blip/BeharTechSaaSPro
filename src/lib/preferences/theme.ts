@@ -19,7 +19,7 @@ export const THEME_PRESET_OPTIONS = [
     label: "Brutalist",
     value: "brutalist",
     primary: {
-      light: "#000000",
+      light: "#1A1916",
       dark: "#ffffff",
     },
   },
@@ -27,8 +27,8 @@ export const THEME_PRESET_OPTIONS = [
     label: "Soft Pop",
     value: "soft-pop",
     primary: {
-      light: "#888888",
-      dark: "#888888",
+      light: "#ffffff",
+      dark: "#ffffff",
     },
   },
   {

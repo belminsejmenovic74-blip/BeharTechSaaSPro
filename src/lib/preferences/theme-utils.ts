@@ -19,7 +19,8 @@ export function applyThemeMode(mode: ThemeMode): ResolvedThemeMode {
 }
 
 export function applyThemePreset(value: string) {
-  document.documentElement.setAttribute("data-theme-preset", value);
+  void value;
+  document.documentElement.setAttribute("data-theme-preset", "default");
 }
 
 export function subscribeToSystemTheme(onChange: (mode: ResolvedThemeMode) => void): () => void {

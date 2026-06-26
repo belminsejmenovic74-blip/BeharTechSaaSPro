@@ -66,18 +66,18 @@ export function TrackingQrModal({ isOpen, onClose, repairId }: TrackingQrModalPr
             className="size-48 rounded-[16px] border border-[#E8E8E5] p-3 shadow-md bg-white"
           />
         ) : (
-          <div className="size-48 rounded-[16px] border border-dashed border-[#E8E8E5] bg-[#FAFAF8] flex items-center justify-center text-[#6B6B6B]">
+          <div className="size-48 rounded-[16px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] flex items-center justify-center text-[#6B6B6B]">
             Génération du QR...
           </div>
         )}
 
-        <div className="mt-6 w-full space-y-4 text-left border-t border-[#F7F7F7] pt-4">
-          <div className="flex justify-between py-1.5 border-b border-[#F7F7F7]/60">
+        <div className="mt-6 w-full space-y-4 text-left border-t border-[#FFFFFF] pt-4">
+          <div className="flex justify-between py-1.5 border-b border-[#FFFFFF]/60">
             <span className="text-xs text-[#6B6B6B] font-medium">Numéro de dossier</span>
             <span className="font-bold text-[#1A1916] text-sm">#{repair.number}</span>
           </div>
 
-          <div className="flex justify-between py-1.5 border-b border-[#F7F7F7]/60">
+          <div className="flex justify-between py-1.5 border-b border-[#FFFFFF]/60">
             <span className="text-xs text-[#6B6B6B] font-medium">Client</span>
             <span className="font-semibold text-[#1A1916] text-sm">{customer?.name ?? "Client de passage"}</span>
           </div>
@@ -94,7 +94,7 @@ export function TrackingQrModal({ isOpen, onClose, repairId }: TrackingQrModalPr
           <button
             type="button"
             onClick={copyLink}
-            className="flex-1 inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-semibold text-[#1A1916] text-sm transition hover:bg-[#FAFAFA]"
+            className="flex-1 inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-semibold text-[#1A1916] text-sm transition hover:bg-[#FFFFFF]"
           >
             {copied ? <Check className="size-4 text-[#2A9D8F]" /> : <Copy className="size-4" />}
             <span>{copied ? "Copié !" : "Copier le lien"}</span>

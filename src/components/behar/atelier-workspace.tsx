@@ -213,10 +213,10 @@ function priorityForRepair(repair: Repair): RepairPriority {
 function priorityBadge(priority: RepairPriority) {
   return cn(
     "inline-flex items-center gap-1.5 rounded-[8px] border px-2 py-1 font-semibold text-[11px]",
-    priority === "Urgent" && "border-[#F2D4D1] bg-[#FFF8F7] text-[#B42318]",
-    priority === "Haute" && "border-[#FFE6C7] bg-[#FFF9EF] text-[#936100]",
-    priority === "Normale" && "border-[#D8E9FF] bg-[#F5FAFF] text-[#2563A9]",
-    priority === "Basse" && "border-[#D7EFEA] bg-[#F6FCFA] text-[#167B70]",
+    priority === "Urgent" && "border-[#F2D4D1] bg-[#FFFFFF] text-[#B42318]",
+    priority === "Haute" && "border-[#FFE6C7] bg-[#FFFFFF] text-[#936100]",
+    priority === "Normale" && "border-[#D8E9FF] bg-[#FFFFFF] text-[#2563A9]",
+    priority === "Basse" && "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
   );
 }
 
@@ -245,9 +245,11 @@ function isOverdue(repair: Repair) {
 }
 
 function resultTone(result: RepairTestResult) {
-  if (result === "OK") return "border-[#D7EFEA] bg-[#F6FCFA] text-[#167B70]";
-  if (result === "KO") return "border-[#F2D4D1] bg-[#FFF8F7] text-[#B42318]";
-  if (result === "Non applicable") return "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]";
+  if (result === "OK") return "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]";
+  if (result === "KO") return "border-[#F2D4D1] bg-[#FFFFFF] text-[#B42318]";
+  if (result === "Non testable") return "border-[#E8E8E5] bg-[#FFFFFF] text-[#71717A]";
+  if (result === "Test repoussé") return "border-[#FEF0C7] bg-[#FFFFFF] text-[#B54708]";
+  if (result === "Non applicable") return "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]";
   return "border-[#E8E8E5] bg-white text-[#6B6B6B]";
 }
 
@@ -515,10 +517,10 @@ export function AtelierWorkspace() {
 
   if (!repairs.length) {
     return (
-      <Panel className="overflow-hidden bg-[#FAFAF8] p-8">
+      <Panel className="overflow-hidden bg-[#FFFFFF] p-8">
         <div className="grid gap-8 lg:grid-cols-[1fr_420px]">
           <div className="max-w-2xl">
-            <span className="inline-flex size-11 items-center justify-center rounded-[14px] bg-[#E7F5F1] text-[#2A9D8F]">
+            <span className="inline-flex size-11 items-center justify-center rounded-[14px] bg-[#FFFFFF] text-[#2A9D8F]">
               <Wrench className="size-5" />
             </span>
             <h2 className="mt-5 font-semibold text-[#1A1916] text-[30px] leading-tight tracking-tight">
@@ -578,7 +580,7 @@ export function AtelierWorkspace() {
               const columnRepairs = filteredRepairs.filter((repair) => column.statuses.includes(repair.status));
               return (
                 <section
-                  className="min-h-[620px] rounded-[18px] border border-[#E8E8E5] bg-white/78 p-3 shadow-[0_1px_2px_rgba(26,25,22,0.035)] backdrop-blur"
+                  className="min-h-[620px] rounded-[18px] border border-[#E8E8E5] bg-white p-3 shadow-[0_1px_2px_rgba(26,25,22,0.035)] backdrop-blur"
                   key={column.title}
                 >
                   <div className="mb-3 flex items-start justify-between">
@@ -591,7 +593,7 @@ export function AtelierWorkspace() {
                         <p className="text-[#6B6B6B] text-[11px]">{column.caption}</p>
                       </div>
                     </div>
-                    <span className="rounded-full bg-[#F1F1EF] px-2 py-0.5 font-semibold text-[#6B6B6B] text-[11px]">
+                    <span className="rounded-full bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#6B6B6B] text-[11px]">
                       {columnRepairs.length}
                     </span>
                   </div>
@@ -845,14 +847,34 @@ export function AtelierWorkspace() {
     if (docId) uploadDocumentToCloud("summary", selectedRepair.id, docId);
   };
 
+  const createDiagnosticReport = () => {
+    const existing = relatedDocuments.find((document) => document.type === "diagnostic_report");
+    if (existing) {
+      toast.info("Le rapport diagnostic existe déjà.");
+      return;
+    }
+    const docId = addDocument({
+      type: "diagnostic_report",
+      title: `Rapport diagnostic - ${selectedRepair.number}`,
+      customerId: selectedRepair.customerId,
+      repairId: selectedRepair.id,
+    });
+    appendRepairHistory(selectedRepair.id, "Document généré : rapport diagnostic", { source: "atelier.documents" });
+    toast.success("Rapport diagnostic généré.");
+    // Génère le PDF + upload Storage pour que le client le télécharge depuis n'importe quel appareil.
+    if (docId) uploadDocumentToCloud("diagnostic_report", selectedRepair.id, docId);
+  };
+
   // Mappe un document du dossier vers la cible du moteur d'impression (type + id entité).
-  type DocPrintTarget = { type: "intake" | "quote" | "invoice" | "payment" | "internal" | "summary" | "sale-receipt"; id: string };
+  type DocPrintTarget = { type: "intake" | "quote" | "invoice" | "payment" | "internal" | "summary" | "sale-receipt" | "diagnostic_report"; id: string };
   const docPrintTarget = (doc: BeharDocument): DocPrintTarget | null => {
     switch (doc.type) {
       case "intake":
         return { type: "intake", id: doc.repairId ?? selectedRepair.id };
       case "summary":
         return { type: "summary", id: doc.repairId ?? selectedRepair.id };
+      case "diagnostic_report":
+        return { type: "diagnostic_report", id: doc.repairId ?? selectedRepair.id };
       case "internal":
         return { type: "internal", id: doc.repairId ?? selectedRepair.id };
       case "quote":
@@ -1070,7 +1092,7 @@ export function AtelierWorkspace() {
               <button
                 className={cn(
                   "inline-flex h-9 shrink-0 items-center gap-2 rounded-[10px] px-3 font-semibold text-[12px] transition",
-                  active ? "bg-[#E7F5F1] text-[#167B70]" : "text-[#6B6B6B] hover:bg-[#FAFAFA] hover:text-[#1A1916]",
+                  active ? "bg-[#FFFFFF] text-[#167B70]" : "text-[#6B6B6B] hover:bg-[#FFFFFF] hover:text-[#1A1916]",
                 )}
                 key={tab.id}
                 onClick={() => setView(tab.id)}
@@ -1141,7 +1163,7 @@ export function AtelierWorkspace() {
 
           <Panel className="p-5">
             <SectionTitle title="Prochaine action" />
-            <div className="mt-4 rounded-[16px] bg-[#F6FCFA] p-4">
+            <div className="mt-4 rounded-[16px] bg-[#FFFFFF] p-4">
               <p className="font-semibold text-[#1A1916] text-sm">{nextActionLabel(selectedRepair)}</p>
               <p className="mt-1 text-[#6B6B6B] text-xs leading-5">
                 Le statut, le stock, le suivi client et l'historique seront mis à jour depuis ce dossier central.
@@ -1173,7 +1195,7 @@ export function AtelierWorkspace() {
             </div>
             <div className="mt-5 overflow-hidden rounded-[16px] border border-[#E8E8E5]">
               <table className="w-full text-sm">
-                <thead className="bg-[#FAFAF8] text-left text-[#6B6B6B] text-xs">
+                <thead className="bg-[#FFFFFF] text-left text-[#6B6B6B] text-xs">
                   <tr>
                     <th className="px-4 py-3">Test</th>
                     <th className="px-4 py-3">Résultat</th>
@@ -1196,11 +1218,11 @@ export function AtelierWorkspace() {
             <SectionTitle title="Décision" />
             <div className="mt-4 space-y-3">
               <PrimaryButton className="w-full" onClick={createQuote}>Créer devis</PrimaryButton>
-              <button className="w-full rounded-[12px] bg-[#EAF7EA] px-4 py-3 font-semibold text-[#167B70] text-sm" onClick={askClientValidation} type="button">
+              <button className="w-full rounded-[12px] bg-[#FFFFFF] px-4 py-3 font-semibold text-[#167B70] text-sm" onClick={askClientValidation} type="button">
                 Demander validation client
               </button>
               <button
-                className="w-full rounded-[12px] bg-[#FFF9EF] px-4 py-3 font-semibold text-[#936100] text-sm"
+                className="w-full rounded-[12px] bg-[#FFFFFF] px-4 py-3 font-semibold text-[#936100] text-sm"
                 onClick={() => {
                   updateRepair(selectedRepair.id, { subStatus: "Pièce commandée", blockReason: "En attente pièce" });
                   if (selectedRepair.status !== "En attente") changeRepairStatus(selectedRepair.id, "En attente");
@@ -1244,7 +1266,7 @@ export function AtelierWorkspace() {
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[840px] text-sm">
-                <thead className="bg-[#FAFAF8] text-left text-[#6B6B6B] text-xs">
+                <thead className="bg-[#FFFFFF] text-left text-[#6B6B6B] text-xs">
                   <tr>
                     <th className="px-4 py-3">Pièce</th>
                     <th className="px-4 py-3">Référence</th>
@@ -1357,7 +1379,7 @@ export function AtelierWorkspace() {
               {!selectedRepair.parts.length && <p className="text-[#6B6B6B] text-sm">Aucune pièce réservée pour ce dossier.</p>}
             </div>
             {canViewMoney && (
-              <div className="mt-5 rounded-[16px] bg-[#F6FCFA] p-4">
+              <div className="mt-5 rounded-[16px] bg-[#FFFFFF] p-4">
                 <p className="text-[#6B6B6B] text-xs">Marge brute pièces</p>
                 <p className="mt-1 font-semibold text-[#167B70] text-[24px]">
                   {formatEuro(selectedRepair.parts.reduce((sum, part) => sum + (part.salePrice - part.purchasePrice) * part.quantity, 0))}
@@ -1372,7 +1394,7 @@ export function AtelierWorkspace() {
         <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
           <Panel className="p-5">
             <SectionTitle title="Mode intervention" />
-            <div className="mt-5 rounded-[18px] border border-[#E8E8E5] bg-[#FAFAF8] p-5">
+            <div className="mt-5 rounded-[18px] border border-[#E8E8E5] bg-[#FFFFFF] p-5">
               <p className="text-[#6B6B6B] text-sm">Temps de main-d'oeuvre réel optionnel</p>
               <div className="mt-2 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                 <div>
@@ -1399,7 +1421,7 @@ export function AtelierWorkspace() {
               </Panel>
               <Panel className="p-4">
                 <SectionTitle title="Notes techniques" small />
-                <p className="mt-3 rounded-[12px] bg-[#FAFAF8] p-3 text-[#6B6B6B] text-sm">
+                <p className="mt-3 rounded-[12px] bg-[#FFFFFF] p-3 text-[#6B6B6B] text-sm">
                   {selectedRepair.intervention?.notes || selectedRepair.repairNotes || "Connecteurs à manipuler avec précaution."}
                 </p>
               </Panel>
@@ -1464,7 +1486,7 @@ export function AtelierWorkspace() {
                             src={photo.dataUrl}
                           />
                         ) : (
-                          <div className="grid size-24 shrink-0 place-items-center rounded-[12px] border border-[#E8E8E5] bg-[#FAFAF8] text-center text-[#6B6B6B] text-[11px]" key={photo.id}>
+                          <div className="grid size-24 shrink-0 place-items-center rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] text-center text-[#6B6B6B] text-[11px]" key={photo.id}>
                             <Camera className="mb-1 size-5 text-[#2A9D8F]" />
                             {photo.label}
                           </div>
@@ -1486,7 +1508,7 @@ export function AtelierWorkspace() {
               <InfoLine label="Oxydation" value={selectedRepair.intakeCondition?.visibleDefects?.toLowerCase().includes("oxyd") ? "À signaler" : "Non signalée"} />
               <InfoLine label="Accessoires" value={selectedRepair.intakeCondition?.accessories?.join(", ") || "Aucun"} />
             </div>
-            <div className="mt-5 rounded-[16px] bg-[#F6FCFA] p-4">
+            <div className="mt-5 rounded-[16px] bg-[#FFFFFF] p-4">
               <p className="font-semibold text-[#167B70] text-sm">Accord client enregistré</p>
               <p className="mt-1 text-[#6B6B6B] text-xs">Photos horodatées, signature et document de prise en charge liés au dossier.</p>
             </div>
@@ -1500,7 +1522,7 @@ export function AtelierWorkspace() {
             <SectionTitle title="Test final" />
             <div className="mt-4 overflow-hidden rounded-[16px] border border-[#E8E8E5]">
               <table className="w-full text-sm">
-                <thead className="bg-[#FAFAF8] text-left text-[#6B6B6B] text-xs">
+                <thead className="bg-[#FFFFFF] text-left text-[#6B6B6B] text-xs">
                   <tr>
                     <th className="px-4 py-3">Point</th>
                     <th className="px-4 py-3">Résultat</th>
@@ -1526,7 +1548,7 @@ export function AtelierWorkspace() {
           <Panel className="overflow-hidden">
             <div className="p-5">
               <SectionTitle title="Validation qualité" />
-              <div className="mt-5 rounded-[18px] bg-[#F6FCFA] p-5 text-center">
+              <div className="mt-5 rounded-[18px] bg-[#FFFFFF] p-5 text-center">
                 <span className="mx-auto grid size-16 place-items-center rounded-full bg-[#2A9D8F] text-white">
                   <ShieldCheck className="size-8" />
                 </span>
@@ -1584,7 +1606,7 @@ export function AtelierWorkspace() {
                 {(selectedRepair.messages ?? [])
                   .filter((message) => message.visibility === "internal")
                   .map((message) => (
-                    <div className="rounded-[14px] bg-[#FAFAF8] p-3" key={message.id}>
+                    <div className="rounded-[14px] bg-[#FFFFFF] p-3" key={message.id}>
                       <div className="flex items-center justify-between">
                         <p className="font-semibold text-[#1A1916] text-sm">{message.authorName}</p>
                         <p className="text-[#8A8A8A] text-xs">{formatIsoToDisplay(message.createdAt)}</p>
@@ -1602,7 +1624,7 @@ export function AtelierWorkspace() {
                     <button
                       className={cn(
                         "rounded-full px-2.5 py-1 font-semibold text-[11px] transition",
-                        noteTag === tag ? "bg-[#E7F5F1] text-[#167B70]" : "bg-[#F1F1EF] text-[#6B6B6B] hover:text-[#1A1916]",
+                        noteTag === tag ? "bg-[#FFFFFF] text-[#167B70]" : "bg-[#FFFFFF] text-[#6B6B6B] hover:text-[#1A1916]",
                       )}
                       key={tag}
                       onClick={() => setNoteTag(tag)}
@@ -1636,10 +1658,10 @@ export function AtelierWorkspace() {
                   .filter((message) => message.visibility === "client")
                   .slice(-5)
                   .map((message) => (
-                    <div className="rounded-[14px] bg-[#F6FCFA] p-3" key={message.id}>
+                    <div className="rounded-[14px] bg-[#FFFFFF] p-3" key={message.id}>
                       <div className="flex items-center justify-between">
                         <p className="font-semibold text-[#1A1916] text-sm">{message.authorName}</p>
-                        <span className="rounded-full bg-[#E7F5F1] px-2 py-0.5 font-semibold text-[#167B70] text-[10px]">Suivi client</span>
+                        <span className="rounded-full bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#167B70] text-[10px]">Suivi client</span>
                       </div>
                       <p className="mt-1 text-[#6B6B6B] text-sm">{message.body}</p>
                       <p className="mt-1 text-[#8A8A8A] text-[10px]">{formatIsoToDisplay(message.createdAt)}</p>
@@ -1653,7 +1675,7 @@ export function AtelierWorkspace() {
                 <div className="flex flex-wrap gap-1.5">
                   {clientMessageTemplates.map((template) => (
                     <button
-                      className="rounded-full bg-[#F1F1EF] px-2.5 py-1 text-[#6B6B6B] text-[11px] transition hover:text-[#1A1916]"
+                      className="rounded-full bg-[#FFFFFF] px-2.5 py-1 text-[#6B6B6B] text-[11px] transition hover:text-[#1A1916]"
                       key={template}
                       onClick={() => setClientDraft(template)}
                       type="button"
@@ -1691,7 +1713,7 @@ export function AtelierWorkspace() {
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-semibold text-[#1A1916] text-sm">{document.title}</p>
                     {document.fileUrl && (
-                      <span className="shrink-0 rounded-full bg-[#E7F5F1] px-2 py-0.5 font-semibold text-[#167B70] text-[10px]">
+                      <span className="shrink-0 rounded-full bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#167B70] text-[10px]">
                         Client
                       </span>
                     )}
@@ -1699,7 +1721,7 @@ export function AtelierWorkspace() {
                   <p className="mt-1 text-[#6B6B6B] text-xs">{document.type} · {document.createdAt}</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <button
-                      className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#E8E8E5] px-2.5 py-1 font-semibold text-[#167B70] text-xs hover:bg-[#FAFAFA]"
+                      className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#E8E8E5] px-2.5 py-1 font-semibold text-[#167B70] text-xs hover:bg-[#FFFFFF]"
                       onClick={() => downloadDoc(document)}
                       type="button"
                     >
@@ -1708,7 +1730,7 @@ export function AtelierWorkspace() {
                     </button>
                     {isClientPublishable(document) && (
                       <button
-                        className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#E8E8E5] px-2.5 py-1 font-semibold text-[#6B6B6B] text-xs hover:bg-[#FAFAFA]"
+                        className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#E8E8E5] px-2.5 py-1 font-semibold text-[#6B6B6B] text-xs hover:bg-[#FFFFFF]"
                         onClick={() => void publishDocToClient(document)}
                         type="button"
                       >
@@ -1726,6 +1748,7 @@ export function AtelierWorkspace() {
                 </SecondaryButton>
               )}
               <PrimaryButton className="mt-2 w-full" onClick={createRepairReport}>Générer rapport réparation</PrimaryButton>
+              <SecondaryButton className="mt-2 w-full text-xs font-semibold" onClick={createDiagnosticReport}>Générer rapport diagnostic</SecondaryButton>
             </div>
           </Panel>
           <Panel className="overflow-hidden">
@@ -1770,11 +1793,11 @@ export function AtelierWorkspace() {
                     <p className="truncate text-[#6B6B6B] text-xs">{publicUrl || "Générer le lien"}</p>
                   </div>
                 </div>
-                <div className="mt-3 flex gap-2 border-t border-[#F7F7F7] pt-3">
+                <div className="mt-3 flex gap-2 border-t border-[#FFFFFF] pt-3">
                   <button
                     type="button"
                     onClick={() => setSelectedQrRepairId(selectedRepair.id)}
-                    className="flex-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white font-semibold text-[#1A1916] text-xs transition hover:bg-[#FAFAFA]"
+                    className="flex-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white font-semibold text-[#1A1916] text-xs transition hover:bg-[#FFFFFF]"
                   >
                     Afficher QR
                   </button>
@@ -1789,7 +1812,7 @@ export function AtelierWorkspace() {
                         toast.error("Impossible de copier");
                       }
                     }}
-                    className="flex-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white font-semibold text-[#1A1916] text-xs transition hover:bg-[#FAFAFA]"
+                    className="flex-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white font-semibold text-[#1A1916] text-xs transition hover:bg-[#FFFFFF]"
                   >
                     Copier lien
                   </button>
@@ -1891,7 +1914,7 @@ function RepairQueueCard({ repair, customer, onOpen }: Readonly<{ repair: Repair
           {relativeSince(repair.droppedAt)}
         </span>
       </div>
-      <div className="mt-3 rounded-[10px] bg-[#F6FCFA] px-3 py-2 font-semibold text-[#167B70] text-xs">
+      <div className="mt-3 rounded-[10px] bg-[#FFFFFF] px-3 py-2 font-semibold text-[#167B70] text-xs">
         Promis : {formatIsoToDisplay(repair.estimatedDoneAt)}
       </div>
       {repair.blockReason && <p className="mt-2 text-[#B42318] text-xs">{repair.blockReason}</p>}
@@ -1920,7 +1943,7 @@ function SummaryCell({ label, value }: Readonly<{ label: string; value: string }
 
 function InfoLine({ label, value }: Readonly<{ label: string; value: React.ReactNode }>) {
   return (
-    <div className="flex items-start justify-between gap-4 border-[#F0F0ED] border-b py-2.5 last:border-b-0">
+    <div className="flex items-start justify-between gap-4 border-[#E8E8E5] border-b py-2.5 last:border-b-0">
       <dt className="text-[#6B6B6B] text-sm">{label}</dt>
       <dd className="max-w-[60%] text-right font-medium text-[#1A1916] text-sm">{value}</dd>
     </div>
@@ -1936,7 +1959,7 @@ function ActionButton({ label, onClick, danger }: Readonly<{ label: string; onCl
     <button
       className={cn(
         "flex h-10 w-full items-center justify-between rounded-[12px] border px-3 font-semibold text-sm transition",
-        danger ? "border-[#F2D4D1] text-[#B42318] hover:bg-[#FFF8F7]" : "border-[#E8E8E5] text-[#1A1916] hover:bg-[#FAFAFA]",
+        danger ? "border-[#F2D4D1] text-[#B42318] hover:bg-[#FFFFFF]" : "border-[#E8E8E5] text-[#1A1916] hover:bg-[#FFFFFF]",
       )}
       onClick={onClick}
       type="button"
@@ -1949,7 +1972,7 @@ function ActionButton({ label, onClick, danger }: Readonly<{ label: string; onCl
 
 function DiagnosticCard({ title, value, tone = "neutral" }: Readonly<{ title: string; value: string; tone?: "neutral" | "green" }>) {
   return (
-    <div className={cn("rounded-[16px] border p-4", tone === "green" ? "border-[#D7EFEA] bg-[#F6FCFA]" : "border-[#E8E8E5] bg-white")}>
+    <div className={cn("rounded-[16px] border p-4", tone === "green" ? "border-[#D7EFEA] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white")}>
       <p className="font-semibold text-[#1A1916] text-sm">{title}</p>
       <p className="mt-3 text-[#6B6B6B] text-sm leading-6">{value}</p>
     </div>
@@ -1967,7 +1990,7 @@ function ChecklistRow({ item, onChange, compact }: Readonly<{ item: RepairCheckl
       </td>
       <td className="px-4 py-3">
         <div className="flex flex-wrap gap-1.5">
-          {(["OK", "KO", "Non testé", "Non applicable"] as RepairTestResult[]).map((result) => (
+          {(["OK", "KO", "Non testé", "Non testable", "Test repoussé", "Non applicable"] as RepairTestResult[]).map((result) => (
             <button
               className={cn("rounded-[8px] border px-2 py-1 font-semibold text-[11px]", item.result === result ? resultTone(result) : "border-[#E8E8E5] bg-white text-[#6B6B6B]")}
               key={result}
@@ -2007,7 +2030,7 @@ function ProgressPanel({ repair }: Readonly<{ repair: Repair }>) {
           </div>
         ))}
       </div>
-      <div className="mt-5 h-2 rounded-full bg-[#E8E8E5]">
+      <div className="mt-5 h-2 rounded-full bg-[#FFFFFF]">
         <div className="h-full rounded-full bg-[#2A9D8F]" style={{ width: `${Math.min(100, progress)}%` }} />
       </div>
     </Panel>
@@ -2015,11 +2038,11 @@ function ProgressPanel({ repair }: Readonly<{ repair: Repair }>) {
 }
 
 function columnTone(tone: QueueColumn["tone"]) {
-  if (tone === "blue") return "bg-[#F5FAFF] text-[#2563A9]";
-  if (tone === "amber") return "bg-[#FFF9EF] text-[#936100]";
-  if (tone === "green") return "bg-[#F6FCFA] text-[#167B70]";
-  if (tone === "purple") return "bg-[#F8F6FF] text-[#5D4BA8]";
-  return "bg-[#FAFAFA] text-[#6B6B6B]";
+  if (tone === "blue") return "bg-[#FFFFFF] text-[#2563A9]";
+  if (tone === "amber") return "bg-[#FFFFFF] text-[#936100]";
+  if (tone === "green") return "bg-[#FFFFFF] text-[#167B70]";
+  if (tone === "purple") return "bg-[#FFFFFF] text-[#5D4BA8]";
+  return "bg-[#FFFFFF] text-[#6B6B6B]";
 }
 
 function nextActionLabel(repair: Repair) {

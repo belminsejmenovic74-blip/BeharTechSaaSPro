@@ -137,7 +137,7 @@ export function UpdateChecker() {
 
           {status === "downloading" && (
             <div className="mt-3">
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#F7F7F7]">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#FFFFFF]">
                 <div className="h-full rounded-full bg-[#2A9D8F] transition-all" style={{ width: `${progress}%` }} />
               </div>
               <p className="mt-1.5 text-[#6B6B6B] text-[11.5px]">Téléchargement {progress}%…</p>

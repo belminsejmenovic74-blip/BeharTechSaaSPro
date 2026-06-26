@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Plus } from "lucide-react";
 
@@ -39,9 +39,12 @@ export function KanbanBoard({
     return element?.closest<HTMLElement>("[data-kanban-column]")?.dataset.kanbanColumn ?? null;
   };
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+
   return (
     <div
-      className={cn("grid h-full min-h-0 gap-2.5 overflow-x-auto pb-1")}
+      ref={scrollRef}
+      className={cn("grid h-full min-h-0 gap-2.5 overflow-x-auto pb-1 kanban-scroll")}
       style={{
         // Une piste par colonne réelle (corrige l'ancien repeat(5) qui faisait passer
         // la 6e colonne « Prêt » à la ligne) + colonnes plus larges pour aérer le board.
@@ -154,7 +157,7 @@ export function KanbanBoard({
             </div>
             {!compact && (
               <button
-                className="mt-3 flex shrink-0 items-center gap-2 rounded-xl px-2 py-2.5 text-[#6B6B6B] text-sm transition hover:bg-[#FAFAFA] hover:text-[#1A1916]"
+                className="mt-3 flex shrink-0 items-center gap-2 rounded-xl px-2 py-2.5 text-[#6B6B6B] text-sm transition hover:bg-[#FFFFFF] hover:text-[#1A1916]"
                 onClick={() => onAdd?.(column.title)}
                 type="button"
               >
@@ -198,7 +201,7 @@ function RepairCardView({
     <button
       className={cn(
         "w-full rounded-[14px] border border-[#E8E8E5] bg-white p-[14px] text-left shadow-[0_1px_2px_rgba(26,25,22,0.035)] transition hover:border-[#2A9D8F]/40",
-        selected && "border-[#2A9D8F] bg-[#F3FBFA] shadow-[0_1px_3px_rgba(42,157,143,0.10)]",
+        selected && "border-[#2A9D8F] bg-[#FFFFFF] shadow-[0_1px_3px_rgba(42,157,143,0.10)]",
         draggable && "cursor-grab touch-none active:cursor-grabbing",
         isDragging && "opacity-50",
       )}

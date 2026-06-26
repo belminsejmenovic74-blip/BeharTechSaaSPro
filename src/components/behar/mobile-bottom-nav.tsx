@@ -111,7 +111,7 @@ export function MobileBottomNav() {
                 <p className="font-semibold text-[#1A1916] text-[22px] leading-tight tracking-tight">Modules</p>
               </div>
               <button
-                className="grid size-9 place-items-center rounded-[12px] bg-[#F7F7F7] text-[#6B6B6B] transition active:scale-90"
+                className="grid size-9 place-items-center rounded-[12px] bg-[#FFFFFF] text-[#6B6B6B] transition active:scale-90"
                 onClick={() => setOpen(false)}
                 type="button"
                 aria-label="Fermer"
@@ -119,9 +119,9 @@ export function MobileBottomNav() {
                 <X className="size-4" />
               </button>
             </div>
-            <div className="mx-4 mb-4 mt-1 flex items-center justify-between gap-3 rounded-[16px] bg-[#FAFAFA] px-4 py-3">
+            <div className="mx-4 mb-4 mt-1 flex items-center justify-between gap-3 rounded-[16px] bg-[#FFFFFF] px-4 py-3">
               <div className="flex items-center gap-3 min-w-0">
-                <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-[#F3FBFA] font-semibold text-[#2A9D8F]">
+                <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-[#FFFFFF] font-semibold text-[#2A9D8F]">
                   {currentUser.name.charAt(0).toUpperCase()}
                 </span>
                 <div className="min-w-0">
@@ -153,13 +153,13 @@ export function MobileBottomNav() {
                     prefetch={false}
                     onClick={() => setOpen(false)}
                     className={cn(
-                      "flex items-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white px-4 py-3.5 text-left transition active:scale-[0.98] active:bg-[#F7F7F7]",
-                      active && "border-[#D7EFEA] bg-[#F3FBFA]",
+                      "flex items-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white px-4 py-3.5 text-left transition active:scale-[0.98] active:bg-[#FFFFFF]",
+                      active && "border-[#D7EFEA] bg-[#FFFFFF]",
                     )}
                   >
                     <span
                       className={cn(
-                        "grid size-10 shrink-0 place-items-center rounded-[12px] bg-[#FAFAFA] text-[#2A9D8F]",
+                        "grid size-10 shrink-0 place-items-center rounded-[12px] bg-[#FFFFFF] text-[#2A9D8F]",
                         active && "bg-[#2A9D8F] text-white",
                       )}
                     >

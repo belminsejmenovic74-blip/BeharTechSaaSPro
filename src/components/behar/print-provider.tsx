@@ -9,21 +9,24 @@ import {
   getBillingWorkshopInfo,
   isWorkshopBillingProfileComplete,
   useBeharStore,
+  type WorkshopCountry,
 } from "@/lib/behar-store";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 import { getDocumentFilename } from "@/lib/workshop-country";
-
+import { downloadPdfFile } from "@/lib/download-file.client";
+import { Modal, PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
 import {
-  InternalRepairDocument,
+  RepairIntakeDocument,
+  QuoteDocument,
   InvoiceDocument,
   PaymentReceiptDocument,
-  QuoteDocument,
-  RepairIntakeDocument,
+  InternalRepairDocument,
   RepairSummaryDocument,
   SaleReceiptDocument,
+  DiagnosticReportDocument,
 } from "./printable-documents";
 
-type DocumentType = "intake" | "quote" | "invoice" | "payment" | "internal" | "summary" | "sale-receipt";
+type DocumentType = "intake" | "quote" | "invoice" | "payment" | "internal" | "summary" | "sale-receipt" | "diagnostic_report";
 
 interface DocumentContextType {
   print: (type: DocumentType, id: string) => void;
@@ -40,6 +43,8 @@ function clientDocTarget(doc: BeharDocument): { type: DocumentType; id: string }
       return doc.repairId ? { type: "intake", id: doc.repairId } : null;
     case "summary":
       return doc.repairId ? { type: "summary", id: doc.repairId } : null;
+    case "diagnostic_report":
+      return doc.repairId ? { type: "diagnostic_report", id: doc.repairId } : null;
     case "quote":
       return doc.quoteId ? { type: "quote", id: doc.quoteId } : null;
     case "invoice":
@@ -62,7 +67,6 @@ export function useDocument() {
   return context;
 }
 
-// Keeping the old name for backward compatibility if needed, but exporting useDocument
 export const usePrint = useDocument;
 
 export function PrintProvider({ children }: { children: ReactNode }) {
@@ -78,12 +82,121 @@ export function PrintProvider({ children }: { children: ReactNode }) {
     /** Identifiant unique de la requête, pour rejeter les callbacks périmés. */
     reqId: number;
   } | null>(null);
+
+  const [warningModal, setWarningModal] = useState<{
+    type: DocumentType;
+    id: string;
+    action: "download" | "upload";
+    documentId?: string;
+    resolve?: (ok: boolean) => void;
+  } | null>(null);
+
   const hiddenContainerRef = useRef<HTMLDivElement>(null);
   /** Empêche les double-clics : tant qu'un download est en cours, on ignore. */
   const inFlightRef = useRef(false);
   /** Compteur pour générer des IDs de requête uniques. */
   const reqCounterRef = useRef(0);
   const pendingPreviewsRef = useRef<Map<number, Window | null>>(new Map());
+
+  const getMissingIndispensableFields = useCallback((type: DocumentType, id: string): string[] => {
+    const state = useBeharStore.getState();
+    const missing: string[] = [];
+
+    // 1. Nom de l'atelier
+    if (!state.workshopInfo.name?.trim()) {
+      missing.push("Nom de l'atelier");
+    }
+    // 2. Adresse minimale
+    if (!state.workshopInfo.address?.trim()) {
+      missing.push("Adresse de l'atelier");
+    }
+
+    let docLines: any[] = [];
+    let docNumberValue = "";
+    let docCurrency = "";
+    let hasCustomer = false;
+    let totalCalculable = false;
+
+    if (type === "quote") {
+      const quote = state.quotes.find((q) => q.id === id);
+      if (quote) {
+        docLines = quote.lines || [];
+        docNumberValue = quote.number || "";
+        docCurrency = quote.currency || "";
+        hasCustomer = Boolean(quote.customerId || quote.clientSnapshot?.name);
+        const total = quote.totalTtc ?? quote.totalAmount ?? 0;
+        totalCalculable = Number.isFinite(total);
+      } else {
+        missing.push("Devis introuvable");
+      }
+    } else if (type === "invoice") {
+      const invoice = state.invoices.find((inv) => inv.id === id);
+      if (invoice) {
+        docLines = invoice.lines || [];
+        docNumberValue = invoice.number || "";
+        docCurrency = invoice.currency || "";
+        hasCustomer = Boolean(invoice.customerId);
+        const total = invoice.lines?.reduce((acc, l) => acc + (l.quantity * l.unitPrice), 0) ?? 0;
+        totalCalculable = Number.isFinite(total);
+      } else {
+        missing.push("Facture introuvable");
+      }
+    } else if (type === "payment") {
+      const payment = state.payments.find((p) => p.id === id);
+      if (payment) {
+        docNumberValue = payment.paymentNumber || "";
+        docCurrency = payment.currency || "";
+        hasCustomer = Boolean(payment.customerId);
+        totalCalculable = Number.isFinite(payment.amount);
+        docLines = [1];
+      } else {
+        missing.push("Paiement introuvable");
+      }
+    } else if (type === "sale-receipt") {
+      const sale = state.sales.find((s) => s.id === id);
+      if (sale) {
+        docLines = sale.lines || [];
+        docNumberValue = sale.number || "";
+        docCurrency = sale.currency || "";
+        hasCustomer = Boolean(sale.customerId);
+        totalCalculable = Number.isFinite(sale.total);
+      } else {
+        missing.push("Vente introuvable");
+      }
+    } else if (type === "intake" || type === "internal" || type === "summary" || type === "diagnostic_report") {
+      const repair = state.repairs.find((r) => r.id === id);
+      if (repair) {
+        docNumberValue = repair.number || "";
+        docCurrency = repair.currency || "";
+        hasCustomer = Boolean(repair.customerId);
+        totalCalculable = Number.isFinite(repair.total ?? repair.amount);
+        docLines = [1];
+      } else {
+        missing.push("Réparation introuvable");
+      }
+    }
+
+    if (!docNumberValue?.trim()) {
+      missing.push("Numéro de document");
+    }
+    
+    // Fallback to workshop currency if document currency is not set
+    const finalCurrency = docCurrency?.trim() || state.workshopInfo?.currency || "EUR";
+    if (!finalCurrency) {
+      missing.push("Devise du document");
+    }
+    if (!hasCustomer) {
+      missing.push("Client");
+    }
+    if (docLines.length === 0) {
+      missing.push("Au moins une ligne de document");
+    }
+    if (!totalCalculable) {
+      missing.push("Total calculable");
+    }
+
+    return missing;
+  }, []);
 
   const print = useCallback((type: DocumentType, id: string) => {
     setActiveDoc({ type, id, action: "print", reqId: ++reqCounterRef.current });
@@ -94,7 +207,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
     if (newWin) {
       newWin.document.title = "Génération du PDF...";
       newWin.document.body.innerHTML = `
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; background-color: #FAFAF8; color: #1A1916; margin: 0;">
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; background-color: #FFFFFF; color: #1A1916; margin: 0;">
           <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Génération de l'aperçu PDF...</div>
           <div style="font-size: 14px; color: #6B6B6B;">Veuillez patienter quelques instants.</div>
         </div>
@@ -107,25 +220,39 @@ export function PrintProvider({ children }: { children: ReactNode }) {
 
   const download = useCallback((type: DocumentType, id: string) => {
     if (inFlightRef.current) {
-      // Un download est déjà en cours — on ne relance pas.
       toast.info("Un téléchargement est déjà en cours…");
       return;
     }
-    if (type === "quote" || type === "invoice") {
-      const state = useBeharStore.getState();
-      const billingCountry =
-        type === "quote"
-          ? state.quotes.find((quote) => quote.id === id)?.billingCountry
-          : state.invoices.find((invoice) => invoice.id === id)?.billingCountry;
-      if (billingCountry && !isWorkshopBillingProfileComplete(state.workshopInfo, billingCountry)) {
-        toast.error(
-          `Complétez le profil de facturation ${billingCountry === "CH" ? "Suisse" : "France"} avant de générer ce document.`,
-        );
-        return;
-      }
+
+    const missingFields = getMissingIndispensableFields(type, id);
+    if (missingFields.length > 0) {
+      toast.error(
+        `Impossible de générer le document. Les informations indispensables suivantes sont manquantes : ${missingFields.join(", ")}`,
+      );
+      return;
     }
+
+    const state = useBeharStore.getState();
+    const billingCountry =
+      type === "quote"
+        ? state.quotes.find((quote) => quote.id === id)?.billingCountry
+        : type === "invoice"
+          ? state.invoices.find((invoice) => invoice.id === id)?.billingCountry
+          : undefined;
+
+    const isComplete = billingCountry ? isWorkshopBillingProfileComplete(state.workshopInfo, billingCountry) : true;
+
+    if (!isComplete) {
+      setWarningModal({
+        type,
+        id,
+        action: "download",
+      });
+      return;
+    }
+
     setActiveDoc({ type, id, action: "download", reqId: ++reqCounterRef.current });
-  }, []);
+  }, [getMissingIndispensableFields]);
 
   const uploadResolveRef = useRef<((ok: boolean) => void) | null>(null);
 
@@ -136,39 +263,55 @@ export function PrintProvider({ children }: { children: ReactNode }) {
           resolve(false);
           return;
         }
-        if (type === "quote" || type === "invoice") {
-          const state = useBeharStore.getState();
-          const billingCountry =
-            type === "quote"
-              ? state.quotes.find((quote) => quote.id === id)?.billingCountry
-              : state.invoices.find((invoice) => invoice.id === id)?.billingCountry;
-          if (billingCountry && !isWorkshopBillingProfileComplete(state.workshopInfo, billingCountry)) {
-            resolve(false);
-            return;
+
+        const missingFields = getMissingIndispensableFields(type, id);
+        if (missingFields.length > 0) {
+          if (!opts?.silent) {
+            toast.error(
+              `Impossible de générer le document. Les informations indispensables suivantes sont manquantes : ${missingFields.join(", ")}`,
+            );
           }
+          resolve(false);
+          return;
         }
+
+        const state = useBeharStore.getState();
+        const billingCountry =
+          type === "quote"
+            ? state.quotes.find((quote) => quote.id === id)?.billingCountry
+            : type === "invoice"
+              ? state.invoices.find((invoice) => invoice.id === id)?.billingCountry
+              : undefined;
+
+        const isComplete = billingCountry ? isWorkshopBillingProfileComplete(state.workshopInfo, billingCountry) : true;
+
+        if (!isComplete && !opts?.silent) {
+          setWarningModal({
+            type,
+            id,
+            action: "upload",
+            documentId,
+            resolve,
+          });
+          return;
+        }
+
         uploadResolveRef.current = resolve;
         setActiveDoc({ type, id, action: "upload", documentId, silent: opts?.silent, reqId: ++reqCounterRef.current });
       });
     },
-    [],
+    [getMissingIndispensableFields],
   );
 
   // ── Auto-publication des documents client ────────────────────────────────
-  // Dès qu'un dossier a un suivi client actif, ses documents (facture, devis, reçu,
-  // rapport, bon de dépôt) sont générés en PDF + uploadés dans Supabase Storage en
-  // arrière-plan, pour que le client les télécharge directement (jamais la web app).
   const autoAttemptedRef = useRef<Set<string>>(new Set());
   const autoRunningRef = useRef(false);
-  // Signature : un document est « à publier » tant qu'il n'a pas de fileUrl.
   const pendingDocsSignature = store.documents
     .filter((d) => !d.fileUrl && clientDocTarget(d))
     .map((d) => d.id)
     .join(",");
   useEffect(() => {
     if (autoRunningRef.current) return;
-    // On publie TOUS les documents client (facture, devis, reçu, rapport, bon de dépôt),
-    // pas seulement ceux des dossiers partagés, pour garantir que « tout marche ».
     const pick = () =>
       useBeharStore
         .getState()
@@ -191,8 +334,6 @@ export function PrintProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingDocsSignature, uploadToCloud]);
 
-  // Refs pour découpler les fonctions de résolution du store : on évite que
-  // chaque mutation du store ne ré-exécute l'effet de génération PDF.
   const storeRef = useRef(store);
   useEffect(() => {
     storeRef.current = store;
@@ -221,7 +362,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
       const repair = s.repairs.find((repair) => repair.id === id);
       return getDocumentFilename(type, repair?.number || id);
     }
-    if (type === "summary") {
+    if (type === "summary" || type === "diagnostic_report") {
       const repair = s.repairs.find((repair) => repair.id === id);
       return getDocumentFilename(type, repair?.number || id);
     }
@@ -244,7 +385,6 @@ export function PrintProvider({ children }: { children: ReactNode }) {
           console.error("Print error:", error);
           toast.error("Erreur d'impression");
         } finally {
-          // Toujours libérer, même si window.print échoue
           setTimeout(() => {
             setActiveDoc((current) => (current?.reqId === currentReqId ? null : current));
           }, 1500);
@@ -271,7 +411,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
         
         if (kind !== "ok" && newWin) {
           newWin.document.body.innerHTML = `
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; background-color: #FAFAF8; color: #1A1916; margin: 0; padding: 20px; text-align: center;">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; background-color: #FFFFFF; color: #1A1916; margin: 0; padding: 20px; text-align: center;">
               <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #D9383A;">Erreur de génération</div>
               <div style="font-size: 14px; color: #6B6B6B; margin-bottom: 16px;">${payload || "Impossible de prévisualiser ce document."}</div>
               <button onclick="window.close()" style="height: 36px; padding: 0 16px; border: none; border-radius: 8px; background-color: #1A1916; color: white; font-weight: 600; cursor: pointer; border: 1px solid #1A1916;">Fermer l'onglet</button>
@@ -362,16 +502,13 @@ export function PrintProvider({ children }: { children: ReactNode }) {
         }
       }
       inFlightRef.current = false;
-      // Résout la promesse d'upload (true seulement si succès), pour les batchs séquentiels.
       if (uploadResolveRef.current) {
         uploadResolveRef.current(kind === "ok");
         uploadResolveRef.current = null;
       }
-      // Libère le state pour permettre une nouvelle génération
       setActiveDoc((current) => (current?.reqId === currentReqId ? null : current));
     };
 
-    // Safety net : si la génération met plus de 45 sec, on libère tout
     const safetyTimer = setTimeout(() => {
       if (cancelled) return;
       finish("timeout");
@@ -396,7 +533,6 @@ export function PrintProvider({ children }: { children: ReactNode }) {
         const filename = getFilename(activeDoc.type, activeDoc.id);
 
         if (activeDoc.action === "upload") {
-          // Génère le PDF en data URL puis l'envoie vers Supabase Storage.
           if (!silent) toast.loading("Préparation du document client…", { id: processingToast });
           const dataUrl = await generatePdfFromElement(docElement, filename, "dataurl");
           if (!dataUrl) {
@@ -414,7 +550,6 @@ export function PrintProvider({ children }: { children: ReactNode }) {
             }),
           }).catch(() => null);
           if (!response?.ok) {
-            // Échec/non configuré : on ne bloque pas, le document reste consultable en local.
             if (!cancelled) {
               if (!silent) {
                 toast.message("Document enregistré en local.", {
@@ -445,9 +580,43 @@ export function PrintProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        toast.loading("2/3 : Création du PDF…", { id: processingToast });
-        await generatePdfFromElement(docElement, filename);
-        if (!cancelled) finish("ok", filename);
+        if (!silent) toast.loading("2/3 : Création du PDF…", { id: processingToast });
+        const blob = await generatePdfFromElement(docElement, filename, "blob");
+        if (!cancelled && blob) {
+          if (activeDoc.action === "download") {
+            downloadPdfFile(blob, filename);
+            if (!silent) toast.success("Document téléchargé !", { id: processingToast });
+            finish("ok");
+            return;
+          }
+
+          downloadPdfFile(blob, filename);
+          const blobUrl = URL.createObjectURL(blob);
+          const newWin = window.open(blobUrl, "_blank");
+          if (!newWin || newWin.closed || typeof newWin.closed === "undefined") {
+            if (!silent) {
+              toast.success("Document généré ! Cliquez ici si le fichier ne s'est pas ouvert :", {
+                id: processingToast,
+                action: {
+                  label: "Ouvrir",
+                  onClick: () => {
+                    window.open(blobUrl, "_blank");
+                  }
+                },
+                duration: 15000,
+              });
+            }
+            window.setTimeout(() => URL.revokeObjectURL(blobUrl), 30_000);
+          } else {
+            if (!silent) {
+              toast.success("Document téléchargé et ouvert dans un nouvel onglet.", { id: processingToast });
+            }
+            window.setTimeout(() => URL.revokeObjectURL(blobUrl), 5_000);
+          }
+          finish("ok", filename);
+        } else {
+          finish("error", "Aucun PDF généré.");
+        }
       } catch (error) {
         console.error("Download error:", error);
         if (!cancelled) finish("error");
@@ -458,8 +627,6 @@ export function PrintProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       clearTimeout(startTimer);
       clearTimeout(safetyTimer);
-      // Si l'effet est démonté avant la fin (changement d'activeDoc, unmount),
-      // on dismiss le toast de chargement pour ne jamais le laisser pendre.
       if (!settled) {
         toast.dismiss(processingToast);
         inFlightRef.current = false;
@@ -469,9 +636,6 @@ export function PrintProvider({ children }: { children: ReactNode }) {
         }
       }
     };
-    // ⚠️ Volontairement, on ne met PAS getFilename en deps : on a déjà découplé
-    // via storeRef pour que les mutations du store ne ré-exécutent pas l'effet
-    // pendant qu'un PDF est en cours.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeDoc]);
 
@@ -568,6 +732,19 @@ export function PrintProvider({ children }: { children: ReactNode }) {
       );
     }
 
+    if (type === "diagnostic_report") {
+      const repair = store.repairs.find((repair) => repair.id === id);
+      const customer = store.customers.find((customer) => customer.id === repair?.customerId);
+      if (!repair || !customer) return null;
+      return (
+        <DiagnosticReportDocument
+          repair={repair}
+          customer={customer}
+          workshop={getBillingWorkshopInfo(store.workshopInfo, repair.billingCountry)}
+        />
+      );
+    }
+
     if (type === "sale-receipt") {
       const sale = store.sales.find((s) => s.id === id);
       const customer = store.customers.find((c) => c.id === sale?.customerId) || store.customers[0];
@@ -587,12 +764,10 @@ export function PrintProvider({ children }: { children: ReactNode }) {
   return (
     <DocumentContext.Provider value={{ print, download, preview, uploadToCloud }}>
       {children}
-      {/* Container for printing - visible only during print media query */}
       <div className="hidden print:block">
         <div className="print-document">{activeDoc?.action === "print" && renderDocument()}</div>
       </div>
 
-      {/* Hidden container for PDF capture - must stay in DOM and be somewhat visible for html2canvas */}
       <div
         ref={hiddenContainerRef}
         style={{
@@ -607,6 +782,51 @@ export function PrintProvider({ children }: { children: ReactNode }) {
       >
         {(activeDoc?.action === "download" || activeDoc?.action === "upload" || activeDoc?.action === "preview") && renderDocument()}
       </div>
+
+      <Modal
+        isOpen={warningModal !== null}
+        onClose={() => {
+          if (warningModal?.resolve) warningModal.resolve(false);
+          setWarningModal(null);
+        }}
+        title="Paramètres légaux incomplets"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-[#6B6B6B] leading-relaxed">
+            Certaines informations légales sont incomplètes. Le document peut être généré, mais vérifiez vos paramètres avec votre comptable.
+          </p>
+          <div className="flex flex-col gap-2 pt-2">
+            <PrimaryButton
+              className="w-full justify-center text-center"
+              onClick={() => {
+                if (warningModal) {
+                  const { type, id, action, documentId, resolve } = warningModal;
+                  if (action === "download") {
+                    setActiveDoc({ type, id, action: "download", reqId: ++reqCounterRef.current });
+                  } else if (action === "upload") {
+                    uploadResolveRef.current = resolve ?? null;
+                    setActiveDoc({ type, id, action: "upload", documentId, reqId: ++reqCounterRef.current });
+                  }
+                }
+                setWarningModal(null);
+              }}
+            >
+              Télécharger quand même
+            </PrimaryButton>
+            <SecondaryButton
+              className="w-full justify-center text-center"
+              onClick={() => {
+                if (warningModal?.resolve) warningModal.resolve(false);
+                setWarningModal(null);
+                window.location.href = "/dashboard/parametres";
+              }}
+            >
+              Compléter les paramètres
+            </SecondaryButton>
+          </div>
+        </div>
+      </Modal>
     </DocumentContext.Provider>
   );
 }

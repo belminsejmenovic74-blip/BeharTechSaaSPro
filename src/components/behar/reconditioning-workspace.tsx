@@ -57,12 +57,12 @@ import { PhotoSlot } from "./photo-slot";
 import { PrimaryButton, SecondaryButton } from "./primitives";
 
 const STATUS_TONE: Record<ReconditioningStatus, string> = {
-  Brouillon: "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]",
-  Évaluation: "border-[#D7EFEA] bg-[#F6FCFA] text-[#167B70]",
-  Tests: "border-[#D7EFEA] bg-[#F6FCFA] text-[#167B70]",
-  Reconditionnement: "border-[#D7EFEA] bg-[#F6FCFA] text-[#167B70]",
-  "Prêt à vendre": "border-[#CDEBE4] bg-[#EAF8F4] text-[#147065]",
-  "En stock": "border-[#1F2937]/12 bg-[#1F2937]/[0.04] text-[#1F2937]",
+  Brouillon: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
+  Évaluation: "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
+  Tests: "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
+  Reconditionnement: "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
+  "Prêt à vendre": "border-[#CDEBE4] bg-[#FFFFFF] text-[#147065]",
+  "En stock": "border-[#1F2937]/12 bg-[#FFFFFF] text-[#1F2937]",
 };
 
 function StatusPill({ status }: Readonly<{ status: ReconditioningStatus }>) {
@@ -136,7 +136,7 @@ function ReconditioningBoard({
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="inline-flex h-9 items-center gap-2 self-start rounded-[10px] border border-[#D7EFEA] bg-[#F6FCFA] px-3 font-semibold text-[#167B70] text-[13px]">
+        <div className="inline-flex h-9 items-center gap-2 self-start rounded-[10px] border border-[#D7EFEA] bg-[#FFFFFF] px-3 font-semibold text-[#167B70] text-[13px]">
           <Sparkles className="size-4" />
           Reconditionnement — flux dédié
         </div>
@@ -155,7 +155,7 @@ function ReconditioningBoard({
 
       {files.length === 0 ? (
         <div className="grid place-items-center rounded-[18px] border border-dashed border-[#E8E8E5] bg-white px-6 py-16 text-center">
-          <span className="grid size-12 place-items-center rounded-[14px] bg-[#F6FCFA] text-[#2A9D8F]">
+          <span className="grid size-12 place-items-center rounded-[14px] bg-[#FFFFFF] text-[#2A9D8F]">
             <Sparkles className="size-6" />
           </span>
           <p className="mt-4 font-semibold text-[#1A1916]">Aucun dossier de reconditionnement</p>
@@ -219,7 +219,7 @@ function FileCard({ file, onOpen }: Readonly<{ file: ReconditioningFile; onOpen:
         />
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-2 border-[#F7F7F7] border-t pt-3">
+      <div className="mt-4 flex items-center justify-between gap-2 border-[#FFFFFF] border-t pt-3">
         <StepDots step={file.step} />
         <span className="text-[#6B6B6B] text-[11px]">Étape {Math.min(file.step, 5)}/5</span>
       </div>
@@ -229,7 +229,7 @@ function FileCard({ file, onOpen }: Readonly<{ file: ReconditioningFile; onOpen:
 
 function Mini({ label, value, tone }: Readonly<{ label: string; value: string; tone?: "good" | "muted" }>) {
   return (
-    <div className="rounded-[10px] bg-[#FAFAFA] px-2 py-1.5">
+    <div className="rounded-[10px] bg-[#FFFFFF] px-2 py-1.5">
       <p className="text-[#6B6B6B] text-[10px]">{label}</p>
       <p className={cn("truncate font-semibold text-xs", tone === "good" ? "text-[#147065]" : "text-[#1A1916]")}>{value}</p>
     </div>
@@ -242,7 +242,7 @@ function StepDots({ step }: Readonly<{ step: number }>) {
       {RECONDITIONING_STEPS.map((s) => (
         <span
           key={s.id}
-          className={cn("size-2 rounded-full", s.id <= step ? "bg-[#2A9D8F]" : "bg-[#E8E8E5]")}
+          className={cn("size-2 rounded-full", s.id <= step ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]")}
         />
       ))}
     </div>
@@ -276,7 +276,7 @@ function ReconditioningWizard({ file, onExit }: Readonly<{ file: ReconditioningF
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <button
-            className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-3.5 font-medium text-[#1A1916] text-sm transition hover:bg-[#FAFAFA]"
+            className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-3.5 font-medium text-[#1A1916] text-sm transition hover:bg-[#FFFFFF]"
             onClick={onExit}
             type="button"
           >
@@ -302,7 +302,7 @@ function ReconditioningWizard({ file, onExit }: Readonly<{ file: ReconditioningF
       {view === 5 && <StepCertificate file={file} onExit={onExit} />}
 
       {/* Footer nav */}
-      <div className="flex items-center justify-between gap-3 border-[#F7F7F7] border-t pt-4">
+      <div className="flex items-center justify-between gap-3 border-[#FFFFFF] border-t pt-4">
         <SecondaryButton className="h-11 px-5" onClick={() => (view === 1 ? onExit() : goTo(view - 1))}>
           <ArrowLeft className="size-4" />
           Retour
@@ -333,7 +333,7 @@ function Stepper({
         return (
           <div className="flex min-w-0 flex-1 items-center" key={step.id}>
             <button
-              className={cn("flex min-w-0 items-center gap-2.5 rounded-[10px] px-2 py-1 text-left transition", reachable && "hover:bg-[#FAFAFA]")}
+              className={cn("flex min-w-0 items-center gap-2.5 rounded-[10px] px-2 py-1 text-left transition", reachable && "hover:bg-[#FFFFFF]")}
               disabled={!reachable}
               onClick={() => onJump(step.id)}
               type="button"
@@ -342,8 +342,8 @@ function Stepper({
                 className={cn(
                   "grid size-7 shrink-0 place-items-center rounded-full font-semibold text-xs transition",
                   state === "active" && "bg-[#2A9D8F] text-white",
-                  state === "done" && "bg-[#EAF8F4] text-[#147065]",
-                  state === "todo" && "bg-[#FAFAFA] text-[#6B6B6B]",
+                  state === "done" && "bg-[#FFFFFF] text-[#147065]",
+                  state === "todo" && "bg-[#FFFFFF] text-[#6B6B6B]",
                 )}
               >
                 {state === "done" ? <CheckCircle2 className="size-4" /> : step.id}
@@ -355,7 +355,7 @@ function Stepper({
                 <span className="block truncate text-[#6B6B6B] text-[11px]">{step.caption}</span>
               </span>
             </button>
-            {index < RECONDITIONING_STEPS.length - 1 && <span className="mx-1 h-px flex-1 bg-[#E8E8E5]" />}
+            {index < RECONDITIONING_STEPS.length - 1 && <span className="mx-1 h-px flex-1 bg-[#FFFFFF]" />}
           </div>
         );
       })}
@@ -429,7 +429,7 @@ function StepDevice({ file }: Readonly<{ file: ReconditioningFile }>) {
           <AsideRow icon={Store} label="Source" value={file.source} />
           <AsideRow icon={Calendar} label="Date de réception" value={new Date(file.receivedAt).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })} />
           <AsideRow icon={Sparkles} label="Statut" value={<StatusPill status={file.status} />} />
-          <p className="rounded-[12px] bg-[#FAFAFA] px-3 py-2.5 text-[#6B6B6B] text-xs">
+          <p className="rounded-[12px] bg-[#FFFFFF] px-3 py-2.5 text-[#6B6B6B] text-xs">
             Le dossier se complète au fil des étapes.
           </p>
         </AsideCard>
@@ -490,7 +490,7 @@ function StepDevice({ file }: Readonly<{ file: ReconditioningFile }>) {
       <div className="mt-6 mb-2 flex flex-wrap items-center justify-between gap-2">
         <p className="font-semibold text-[#1A1916] text-sm">Photos de l'appareil</p>
         <button
-          className="inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-[#D7EFEA] bg-[#F6FCFA] px-3 font-semibold text-[#167B70] text-xs transition hover:bg-[#EAF8F4]"
+          className="inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-[#D7EFEA] bg-[#FFFFFF] px-3 font-semibold text-[#167B70] text-xs transition hover:bg-[#FFFFFF]"
           onClick={openCapture}
           type="button"
         >
@@ -605,15 +605,15 @@ function StepMargin({ file }: Readonly<{ file: ReconditioningFile }>) {
         <AsideCard title="Calcul de marge">
           <AsideRow icon={Wallet} label="Coût total" value={formatEuro(margin.coutTotal)} />
           <AsideRow icon={Tag} label="Prix de vente prévu" value={formatEuro(file.prixVentePrevu)} />
-          <div className="my-1 h-px bg-[#F1F1EF]" />
+          <div className="my-1 h-px bg-[#FFFFFF]" />
           <AsideRow icon={TrendingUp} label="Marge brute" value={<span className={margin.margeBrute >= 0 ? "text-[#147065]" : "text-[#C0564D]"}>{formatEuro(margin.margeBrute)}</span>} />
           <AsideRow icon={TrendingUp} label="Marge %" value={`${margin.margePct.toFixed(1)} %`} />
           <AsideRow icon={Calendar} label="Temps estimé de vente" value={file.delaiVenteEstime ? `${file.delaiVenteEstime} jours` : "—"} />
           <div className="pt-1">
             <p className="mb-1.5 text-[#6B6B6B] text-xs">Indicateur de rentabilité</p>
-            <div className="h-2 overflow-hidden rounded-full bg-[#F1F1EF]">
+            <div className="h-2 overflow-hidden rounded-full bg-[#FFFFFF]">
               <div
-                className={cn("h-full rounded-full transition-all", margin.margePct >= 22 ? "bg-[#2A9D8F]" : margin.margePct >= 12 ? "bg-[#E2A23B]" : "bg-[#C0564D]")}
+                className={cn("h-full rounded-full transition-all", margin.margePct >= 22 ? "bg-[#2A9D8F]" : margin.margePct >= 12 ? "bg-[#FFFFFF]" : "bg-[#C0564D]")}
                 style={{ width: `${Math.round(margin.rentabiliteScore * 100)}%` }}
               />
             </div>
@@ -653,7 +653,7 @@ function StepMargin({ file }: Readonly<{ file: ReconditioningFile }>) {
         <p className="font-semibold text-[#1A1916] text-sm">Achat & revente</p>
         {market && (
           <button
-            className="inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-[#D7EFEA] bg-[#F6FCFA] px-3 font-semibold text-[#167B70] text-xs transition hover:bg-[#EAF8F4]"
+            className="inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-[#D7EFEA] bg-[#FFFFFF] px-3 font-semibold text-[#167B70] text-xs transition hover:bg-[#FFFFFF]"
             onClick={() => prefill(file.id)}
             type="button"
           >
@@ -663,7 +663,7 @@ function StepMargin({ file }: Readonly<{ file: ReconditioningFile }>) {
         )}
       </div>
       {market && (
-        <p className="mb-3 rounded-[10px] bg-[#FAFAFA] px-3 py-2 text-[#6B6B6B] text-xs">
+        <p className="mb-3 rounded-[10px] bg-[#FFFFFF] px-3 py-2 text-[#6B6B6B] text-xs">
           Marché {market.source === "reel" ? "(données réelles)" : "(estimé)"} : revente ≈ {formatEuro(market.prixInternet ?? market.prixMoyen)} ·
           délai ≈ {Math.round(market.joursMoyenVente)} j · demande {market.scoreDemande}/100
         </p>
@@ -700,12 +700,12 @@ function StepMargin({ file }: Readonly<{ file: ReconditioningFile }>) {
         </button>
       </div>
       {!model && (
-        <p className="mb-2 rounded-[10px] bg-[#FBF3E2] px-3 py-2 text-[#9A6B1B] text-xs">
+        <p className="mb-2 rounded-[10px] bg-[#FFFFFF] px-3 py-2 text-[#9A6B1B] text-xs">
           Renseignez d'abord le modèle ci-dessus pour afficher en priorité les pièces compatibles.
         </p>
       )}
       <div className="overflow-hidden rounded-[12px] border border-[#E8E8E5]">
-        <div className="grid grid-cols-[minmax(0,1fr)_104px_60px_84px_32px] gap-2 bg-[#FAFAFA] px-3 py-2 font-semibold text-[#6B6B6B] text-[11px]">
+        <div className="grid grid-cols-[minmax(0,1fr)_104px_60px_84px_32px] gap-2 bg-[#FFFFFF] px-3 py-2 font-semibold text-[#6B6B6B] text-[11px]">
           <span>Pièce (depuis le stock)</span>
           <span className="text-right">Coût</span>
           <span className="text-right">Qté</span>
@@ -723,7 +723,7 @@ function StepMargin({ file }: Readonly<{ file: ReconditioningFile }>) {
             const mode = part.priceMode ?? "achat";
             const selected = stockItems.find((it) => it.id === part.stockItemId);
             return (
-              <div className="grid grid-cols-[minmax(0,1fr)_104px_60px_84px_32px] items-start gap-2 border-[#F1F1EF] border-t px-3 py-2.5" key={part.id}>
+              <div className="grid grid-cols-[minmax(0,1fr)_104px_60px_84px_32px] items-start gap-2 border-[#FFFFFF] border-t px-3 py-2.5" key={part.id}>
                 <div className="space-y-1.5">
                   <select
                     className="h-9 w-full rounded-[8px] border border-[#E8E8E5] bg-white px-2 text-sm outline-none focus:border-[#2A9D8F]"
@@ -775,7 +775,7 @@ function StepMargin({ file }: Readonly<{ file: ReconditioningFile }>) {
                 <input className="h-9 rounded-[8px] border border-[#E8E8E5] px-2 text-right text-sm outline-none focus:border-[#2A9D8F]" onChange={(e) => updatePart(file.id, part.id, { quantity: Number(e.target.value) || 1 })} type="number" value={part.quantity} />
                 <span className="flex h-9 items-center justify-end text-right font-semibold text-[#1A1916] text-sm tabular-nums">{formatEuro(part.cost * part.quantity)}</span>
                 <span className="flex h-9 items-center justify-end">
-                  <button className="grid size-8 place-items-center rounded-[8px] text-[#C0564D] transition hover:bg-[#FBEEEC]" onClick={() => removePart(file.id, part.id)} type="button">
+                  <button className="grid size-8 place-items-center rounded-[8px] text-[#C0564D] transition hover:bg-[#FFFFFF]" onClick={() => removePart(file.id, part.id)} type="button">
                     <Trash2 className="size-4" />
                   </button>
                 </span>
@@ -791,14 +791,14 @@ function StepMargin({ file }: Readonly<{ file: ReconditioningFile }>) {
 /* ════════════════════════════ Étape 3 — Tests & état ════════════════════════════ */
 
 const TEST_OPTIONS: { value: TestState; tone: string }[] = [
-  { value: "OK", tone: "data-[on=true]:bg-[#EAF8F4] data-[on=true]:text-[#147065] data-[on=true]:border-[#CDEBE4]" },
-  { value: "À vérifier", tone: "data-[on=true]:bg-[#FBF3E2] data-[on=true]:text-[#9A6B1B] data-[on=true]:border-[#F0E0BC]" },
-  { value: "Défaut", tone: "data-[on=true]:bg-[#FBEEEC] data-[on=true]:text-[#C0564D] data-[on=true]:border-[#F0D2CD]" },
+  { value: "OK", tone: "data-[on=true]:bg-[#FFFFFF] data-[on=true]:text-[#147065] data-[on=true]:border-[#CDEBE4]" },
+  { value: "À vérifier", tone: "data-[on=true]:bg-[#FFFFFF] data-[on=true]:text-[#9A6B1B] data-[on=true]:border-[#F0E0BC]" },
+  { value: "Défaut", tone: "data-[on=true]:bg-[#FFFFFF] data-[on=true]:text-[#C0564D] data-[on=true]:border-[#F0D2CD]" },
 ];
 const PHYSICAL_OPTIONS: { value: PhysicalState; tone: string }[] = [
-  { value: "OK", tone: "data-[on=true]:bg-[#EAF8F4] data-[on=true]:text-[#147065] data-[on=true]:border-[#CDEBE4]" },
-  { value: "Léger", tone: "data-[on=true]:bg-[#FBF3E2] data-[on=true]:text-[#9A6B1B] data-[on=true]:border-[#F0E0BC]" },
-  { value: "Important", tone: "data-[on=true]:bg-[#FBEEEC] data-[on=true]:text-[#C0564D] data-[on=true]:border-[#F0D2CD]" },
+  { value: "OK", tone: "data-[on=true]:bg-[#FFFFFF] data-[on=true]:text-[#147065] data-[on=true]:border-[#CDEBE4]" },
+  { value: "Léger", tone: "data-[on=true]:bg-[#FFFFFF] data-[on=true]:text-[#9A6B1B] data-[on=true]:border-[#F0E0BC]" },
+  { value: "Important", tone: "data-[on=true]:bg-[#FFFFFF] data-[on=true]:text-[#C0564D] data-[on=true]:border-[#F0D2CD]" },
 ];
 
 function Segmented<T extends string>({
@@ -846,7 +846,7 @@ function StepTests({ file }: Readonly<{ file: ReconditioningFile }>) {
           <SummaryStat icon={CheckCircle2} label="Tests validés" tone="good" value={`${summary.okCount} / ${summary.totalTests}`} />
           <SummaryStat icon={AlertTriangle} label="Défauts détectés" tone={summary.defautCount + summary.importantCount > 0 ? "bad" : "muted"} value={String(summary.defautCount + summary.importantCount)} />
           <SummaryStat icon={HelpCircle} label="Points à vérifier" tone="warn" value={String(summary.aVerifierCount)} />
-          <div className="rounded-[12px] bg-[#FAFAFA] px-3 py-2.5">
+          <div className="rounded-[12px] bg-[#FFFFFF] px-3 py-2.5">
             <p className="text-[#6B6B6B] text-xs">Grade estimé</p>
             <p className="mt-0.5 font-semibold text-[#1A1916]">
               {summary.grade} — {gradeLabel(summary.grade)}
@@ -862,7 +862,7 @@ function StepTests({ file }: Readonly<{ file: ReconditioningFile }>) {
         {[fnLeft, fnRight].map((group, gi) => (
           <div key={gi}>
             {group.map((key) => (
-              <div className="flex items-center justify-between gap-2 border-[#F4F4F2] border-b py-2" key={key}>
+              <div className="flex items-center justify-between gap-2 border-[#E8E8E5] border-b py-2" key={key}>
                 <span className="truncate text-[#1A1916] text-[13px]">{key}</span>
                 <Segmented<TestState> onChange={(v) => setTest(file.id, key as FunctionalTestKey, v)} options={TEST_OPTIONS} value={file.functionalTests[key as FunctionalTestKey]} />
               </div>
@@ -876,7 +876,7 @@ function StepTests({ file }: Readonly<{ file: ReconditioningFile }>) {
         {[phLeft, phRight].map((group, gi) => (
           <div key={gi}>
             {group.map((key) => (
-              <div className="flex items-center justify-between gap-2 border-[#F4F4F2] border-b py-2" key={key}>
+              <div className="flex items-center justify-between gap-2 border-[#E8E8E5] border-b py-2" key={key}>
                 <span className="truncate text-[#1A1916] text-[13px]">{key}</span>
                 <Segmented<PhysicalState> onChange={(v) => setPhysical(file.id, key as PhysicalCheckKey, v)} options={PHYSICAL_OPTIONS} value={file.physicalChecks[key as PhysicalCheckKey]} />
               </div>
@@ -903,7 +903,7 @@ function SummaryStat({
   const toneCls =
     tone === "good" ? "text-[#147065]" : tone === "bad" ? "text-[#C0564D]" : tone === "warn" ? "text-[#9A6B1B]" : "text-[#6B6B6B]";
   return (
-    <div className="flex items-center gap-3 rounded-[12px] border border-[#F1F1EF] px-3 py-2.5">
+    <div className="flex items-center gap-3 rounded-[12px] border border-[#FFFFFF] px-3 py-2.5">
       <Icon className={cn("size-5", toneCls)} />
       <div className="min-w-0 flex-1">
         <p className="text-[#6B6B6B] text-xs">{label}</p>
@@ -932,7 +932,7 @@ function StepM360({ file }: Readonly<{ file: ReconditioningFile }>) {
           <div
             className={cn(
               "flex items-center gap-2 rounded-[12px] border px-3 py-2.5 text-sm font-semibold",
-              summary.riskDetected ? "border-[#F0D2CD] bg-[#FBEEEC] text-[#C0564D]" : "border-[#CDEBE4] bg-[#EAF8F4] text-[#147065]",
+              summary.riskDetected ? "border-[#F0D2CD] bg-[#FFFFFF] text-[#C0564D]" : "border-[#CDEBE4] bg-[#FFFFFF] text-[#147065]",
             )}
           >
             {summary.riskDetected ? <AlertTriangle className="size-4" /> : <CheckCircle2 className="size-4" />}
@@ -948,14 +948,14 @@ function StepM360({ file }: Readonly<{ file: ReconditioningFile }>) {
           <input className={inputCls} max={100} min={0} onChange={(e) => update(file.id, { batteryHealth: e.target.value === "" ? null : Number(e.target.value) })} type="number" value={file.batteryHealth ?? ""} />
         </Field>
         <div className="flex items-end">
-          <div className={cn("flex w-full items-center gap-2 rounded-[12px] border px-3 py-3 text-sm font-semibold", summary.riskDetected ? "border-[#F0D2CD] bg-[#FBEEEC] text-[#C0564D]" : "border-[#CDEBE4] bg-[#EAF8F4] text-[#147065]")}>
+          <div className={cn("flex w-full items-center gap-2 rounded-[12px] border px-3 py-3 text-sm font-semibold", summary.riskDetected ? "border-[#F0D2CD] bg-[#FFFFFF] text-[#C0564D]" : "border-[#CDEBE4] bg-[#FFFFFF] text-[#147065]")}>
             {summary.riskDetected ? <AlertTriangle className="size-4" /> : <CheckCircle2 className="size-4" />}
             {summary.riskDetected ? "Vérifications recommandées avant remise en vente" : "Conforme — aucun risque détecté"}
           </div>
         </div>
       </div>
 
-      <div className="mt-5 rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA] p-4">
+      <div className="mt-5 rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
         <p className="mb-2 font-semibold text-[#1A1916] text-sm">Points de vigilance</p>
         {risks.length === 0 ? (
           <p className="text-[#6B6B6B] text-sm">Aucun défaut bloquant relevé pendant les tests. L'appareil peut suivre le reconditionnement standard.</p>
@@ -1021,7 +1021,7 @@ function StepCertificate({ file, onExit }: Readonly<{ file: ReconditioningFile; 
     <StepLayout
       aside={
         <AsideCard title="Sortie">
-          <div className={cn("flex items-center gap-2 rounded-[12px] border px-3 py-2.5 font-semibold text-sm", file.publishedToStock ? "border-[#1F2937]/12 bg-[#1F2937]/[0.04] text-[#1F2937]" : "border-[#CDEBE4] bg-[#EAF8F4] text-[#147065]")}>
+          <div className={cn("flex items-center gap-2 rounded-[12px] border px-3 py-2.5 font-semibold text-sm", file.publishedToStock ? "border-[#1F2937]/12 bg-[#FFFFFF] text-[#1F2937]" : "border-[#CDEBE4] bg-[#FFFFFF] text-[#147065]")}>
             <CheckCircle2 className="size-4" />
             {file.publishedToStock ? "En stock boutique" : "Prêt à vendre"}
           </div>
@@ -1031,7 +1031,7 @@ function StepCertificate({ file, onExit }: Readonly<{ file: ReconditioningFile; 
           <AsideRow icon={Calendar} label="Mise en vente" value={new Date().toLocaleDateString("fr-FR", { dateStyle: "medium" })} />
           <AsideRow icon={ShieldCheck} label="Garantie" value={`${file.warrantyMonths} mois`} />
           <AsideRow icon={Tag} label="Étiquette stock" value={file.number} />
-          <div className="rounded-[12px] border border-[#CDEBE4] bg-[#EAF8F4] px-3 py-2.5 text-[#147065] text-xs">
+          <div className="rounded-[12px] border border-[#CDEBE4] bg-[#FFFFFF] px-3 py-2.5 text-[#147065] text-xs">
             Dossier complet et conforme. Vous pouvez générer le certificat.
           </div>
           {!file.certificateGenerated ? (
@@ -1087,14 +1087,14 @@ function StepCertificate({ file, onExit }: Readonly<{ file: ReconditioningFile; 
             {qr ? (
               <img alt="QR certificat" className="size-24 shrink-0 rounded-[10px] border border-[#E8E8E5]" src={qr} />
             ) : (
-              <div className="size-24 shrink-0 animate-pulse rounded-[10px] border border-[#E8E8E5] bg-[#FAFAFA]" />
+              <div className="size-24 shrink-0 animate-pulse rounded-[10px] border border-[#E8E8E5] bg-[#FFFFFF]" />
             )}
             <div className="min-w-0">
               <p className="font-semibold text-[#1A1916] text-sm">Page certificat client</p>
               <p className="mt-0.5 text-[#6B6B6B] text-xs">Le client scanne ce QR pour consulter le détail du contrôle.</p>
               <div className="mt-2.5 flex flex-wrap gap-2">
                 <button
-                  className="inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-[#E8E8E5] bg-white px-2.5 font-semibold text-[#1A1916] text-xs transition hover:bg-[#FAFAFA]"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-[#E8E8E5] bg-white px-2.5 font-semibold text-[#1A1916] text-xs transition hover:bg-[#FFFFFF]"
                   onClick={copyLink}
                   type="button"
                 >
@@ -1102,7 +1102,7 @@ function StepCertificate({ file, onExit }: Readonly<{ file: ReconditioningFile; 
                   {copied ? "Lien copié" : "Copier le lien"}
                 </button>
                 <a
-                  className="inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-[#E8E8E5] bg-white px-2.5 font-semibold text-[#1A1916] text-xs transition hover:bg-[#FAFAFA]"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-[#E8E8E5] bg-white px-2.5 font-semibold text-[#1A1916] text-xs transition hover:bg-[#FFFFFF]"
                   href={clientUrl}
                   rel="noopener noreferrer"
                   target="_blank"
@@ -1121,7 +1121,7 @@ function StepCertificate({ file, onExit }: Readonly<{ file: ReconditioningFile; 
           </div>
 
           {file.certificateGenerated && (
-            <div className="mt-3 inline-flex items-center gap-1.5 rounded-[8px] bg-[#EAF8F4] px-2.5 py-1 font-semibold text-[#147065] text-[11px]">
+            <div className="mt-3 inline-flex items-center gap-1.5 rounded-[8px] bg-[#FFFFFF] px-2.5 py-1 font-semibold text-[#147065] text-[11px]">
               <CheckCircle2 className="size-3.5" />
               Certificat généré
             </div>
@@ -1134,7 +1134,7 @@ function StepCertificate({ file, onExit }: Readonly<{ file: ReconditioningFile; 
 
 function SummaryLine({ label, value, valueClass }: Readonly<{ label: string; value: string; valueClass?: string }>) {
   return (
-    <div className="flex items-center justify-between gap-3 border-[#F4F4F2] border-b py-1 last:border-0">
+    <div className="flex items-center justify-between gap-3 border-[#E8E8E5] border-b py-1 last:border-0">
       <span className="text-[#6B6B6B]">{label}</span>
       <span className={cn("text-right font-semibold text-[#1A1916]", valueClass)}>{value}</span>
     </div>
@@ -1144,7 +1144,7 @@ function SummaryLine({ label, value, valueClass }: Readonly<{ label: string; val
 function DocButton({ icon: Icon, label, onClick }: Readonly<{ icon: typeof FileText; label: string; onClick: () => void }>) {
   return (
     <button
-      className="flex flex-col items-center gap-1.5 rounded-[11px] border border-[#E8E8E5] bg-white px-2 py-3 font-semibold text-[#1A1916] text-xs transition hover:border-[#2A9D8F]/45 hover:bg-[#FAFAFA]"
+      className="flex flex-col items-center gap-1.5 rounded-[11px] border border-[#E8E8E5] bg-white px-2 py-3 font-semibold text-[#1A1916] text-xs transition hover:border-[#2A9D8F]/45 hover:bg-[#FFFFFF]"
       onClick={onClick}
       type="button"
     >

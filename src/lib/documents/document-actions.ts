@@ -39,6 +39,11 @@ type OpenOptions = {
   print?: boolean;
 };
 
+type QrPrintOptions = {
+  print?: boolean;
+  format?: "A4" | "A6" | "80mm" | "58mm";
+};
+
 function buildUrl(document: DocumentLike, options?: OpenOptions): string {
   const params = new URLSearchParams();
   // L'identifiant réel est passé en query param pour rester compatible avec
@@ -49,6 +54,47 @@ function buildUrl(document: DocumentLike, options?: OpenOptions): string {
   return `/print/document/${DOCUMENT_ROUTE_PLACEHOLDER}/?${params.toString()}`;
 }
 
+function buildQrUrl(repairId: string, options?: QrPrintOptions): string {
+  const params = new URLSearchParams();
+  params.set("repair", repairId);
+  if (options?.print) params.set("print", "1");
+  if (options?.format) params.set("format", options.format);
+  return `/print/qr/${DOCUMENT_ROUTE_PLACEHOLDER}/?${params.toString()}`;
+}
+
+function printUrlInHiddenFrame(url: string): boolean {
+  if (typeof window === "undefined" || typeof document === "undefined") return false;
+
+  // Chrome/Edge/Firefox bloquent souvent window.print() lancé depuis un iframe
+  // chargé après coup. Une page dédiée ouverte par le clic utilisateur garde le
+  // Comptoir en place tout en déclenchant l'impression de manière fiable.
+  const printWindow = window.open(url, "_blank", "popup=yes,width=920,height=1200,noopener,noreferrer");
+  if (printWindow) {
+    try {
+      printWindow.focus();
+    } catch {
+      // Certains navigateurs ignorent focus() sur une fenêtre ouverte avec noopener.
+    }
+    return true;
+  }
+
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "1px";
+  iframe.style.height = "1px";
+  iframe.style.border = "0";
+  iframe.style.opacity = "0";
+  iframe.style.pointerEvents = "none";
+  iframe.src = url;
+  document.body.appendChild(iframe);
+
+  window.setTimeout(() => iframe.remove(), 90_000);
+  return true;
+}
+
 /** URL interne (atelier) du document — données complètes. */
 export function getInternalDocumentUrl(document: DocumentLike): string {
   return buildUrl(document);
@@ -57,6 +103,11 @@ export function getInternalDocumentUrl(document: DocumentLike): string {
 /** URL publique (client) du document — fiches internes bloquées par la route. */
 export function getPublicDocumentUrl(document: DocumentLike): string {
   return buildUrl(document, { public: true });
+}
+
+/** URL interne dédiée à l'impression du document. */
+export function getDocumentPrintUrl(document: DocumentLike, options?: Omit<OpenOptions, "print">): string {
+  return buildUrl(document, { ...options, print: true });
 }
 
 /**
@@ -75,7 +126,8 @@ export function openDocument(document?: DocumentLike | null, options?: OpenOptio
  * Réutilise exactement le même rendu que le Dashboard.
  */
 export function printDocument(document?: DocumentLike | null, options?: Omit<OpenOptions, "print">): boolean {
-  return openDocument(document, { ...options, print: true });
+  if (!document?.id) return false;
+  return printUrlInHiddenFrame(getDocumentPrintUrl(document, options));
 }
 
 /** URL absolue partageable (copie de lien, QR). */
@@ -85,4 +137,13 @@ export function getShareableDocumentUrl(document: DocumentLike, options?: OpenOp
     process.env.NEXT_PUBLIC_PUBLIC_BASE_URL?.replace(/\/$/, "") ||
     (typeof window !== "undefined" ? window.location.origin : "");
   return `${origin}${relative}`;
+}
+
+export function getRepairQrPrintUrl(repairId: string, options?: QrPrintOptions): string {
+  return buildQrUrl(repairId, options);
+}
+
+export function printRepairQr(repairId?: string | null, options?: Omit<QrPrintOptions, "print">): boolean {
+  if (!repairId) return false;
+  return printUrlInHiddenFrame(getRepairQrPrintUrl(repairId, { ...options, print: true }));
 }

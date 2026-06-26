@@ -14,6 +14,7 @@ import {
   ChevronRight,
   ClipboardCheck,
   Clock,
+  Copy,
   CreditCard,
   Download,
   Eye,
@@ -59,6 +60,7 @@ import {
   getShareableDocumentUrl,
   openDocument,
   printDocument,
+  printRepairQr,
 } from "@/lib/documents/document-actions";
 import {
   deviceBrands as catalogDeviceBrands,
@@ -166,7 +168,7 @@ const counterAccessoryProducts = [
   { id: "free_support_voiture", name: "Support voiture", price: 16.9 },
 ] as const;
 
-const counterPaymentMethods = (country: "FR" | "CH", twintEnabled = true): PaymentMethod[] =>
+const counterPaymentMethods = (country: WorkshopCountry, twintEnabled = true): PaymentMethod[] =>
   country === "CH"
     ? ["Espèces", ...(twintEnabled ? ["TWINT" as const] : []), "Carte externe", "Virement", "Autre"]
     : ["TPE externe", "Espèces hors Behar Tech", "Virement", "Lien externe", "Autre"];
@@ -635,7 +637,7 @@ export function ComptoirWorkspace({
           </div>
 
           {visiblePrimary.length === 0 && (
-            <div className="mx-auto mt-12 max-w-md rounded-[20px] border border-[#F7F7F7] bg-white p-8 text-center shadow-[0_1px_4px_rgba(26,25,22,0.04)]">
+            <div className="mx-auto mt-12 max-w-md rounded-[20px] border border-[#FFFFFF] bg-white p-8 text-center shadow-[0_1px_4px_rgba(26,25,22,0.04)]">
               <p className="font-semibold text-[#1A1916] text-[16px]">Aucune action disponible</p>
               <p className="mt-2 text-[#6B6B6B] text-[13.5px]">
                 Ce compte n'a pas les permissions nécessaires pour les actions Comptoir. Contactez le gérant.
@@ -764,7 +766,7 @@ function SignaturePad({ value, onChange }: Readonly<{ value: string; onChange: (
       <button
         type="button"
         onClick={clear}
-        className="absolute right-2 top-2 rounded-full border border-[#E8E8E5] bg-white px-2.5 py-1 font-medium text-[#6B6B6B] text-[11px] hover:bg-[#FAFAFA]"
+        className="absolute right-2 top-2 rounded-full border border-[#E8E8E5] bg-white px-2.5 py-1 font-medium text-[#6B6B6B] text-[11px] hover:bg-[#FFFFFF]"
       >
         Effacer
       </button>
@@ -912,7 +914,7 @@ function CounterStepper({
               </span>
               <span className="hidden lg:inline">{label}</span>
             </button>
-            {index < steps.length - 1 && <span className={cn("h-px flex-1", done ? "bg-[#2A9D8F]" : "bg-[#D9D6CF]")} />}
+            {index < steps.length - 1 && <span className={cn("h-px flex-1", done ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]")} />}
           </div>
         );
       })}
@@ -927,7 +929,7 @@ function SelectTile({ active, children, onClick, className = "" }: Readonly<{ ac
       onClick={onClick}
       className={cn(
         "relative flex min-h-[68px] items-center justify-center gap-2 rounded-[14px] border bg-white px-4 py-3 text-center font-semibold text-[14px] transition active:scale-[0.97]",
-        active ? "border-[#2A9D8F] bg-[#E6F4F1] text-[#1E7A6E]" : "border-[#E8E8E5] text-[#1D1D1F] hover:border-[#D9D6CF]",
+        active ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] text-[#1D1D1F] hover:border-[#D9D6CF]",
         className,
       )}
     >
@@ -1013,7 +1015,7 @@ function ExistingCustomerSearch({
         onChange={(event) => setQuery(event.target.value)}
       />
       {selected && (
-        <div className="flex min-h-[52px] items-center justify-between rounded-[14px] border border-[#2A9D8F] bg-[#E6F4F1] px-4 text-[#1E7A6E]">
+        <div className="flex min-h-[52px] items-center justify-between rounded-[14px] border border-[#2A9D8F] bg-[#FFFFFF] px-4 text-[#1E7A6E]">
           <span>
             <b>{selected.name}</b>
             <span className="ml-2 text-[#6E6E73]">{selected.phone || selected.email || ""}</span>
@@ -1037,7 +1039,7 @@ function ExistingCustomerSearch({
               }}
               className={cn(
                 "grid min-h-[56px] grid-cols-[1fr_auto] items-center gap-3 rounded-[14px] border px-4 text-left transition active:scale-[0.98]",
-                customer.id === value ? "border-[#2A9D8F] bg-[#E6F4F1] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
+                customer.id === value ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
               )}
             >
               <span>
@@ -1343,7 +1345,7 @@ function ModelTouchSelector({
                 className={cn(
                   "relative min-h-[52px] rounded-[14px] border px-3 text-center font-bold text-[13px] transition active:scale-[0.97]",
                   compactText(value) === compactText(entry)
-                    ? "border-[#2A9D8F] bg-[#E6F4F1] text-[#1E7A6E]"
+                    ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
                     : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
                 )}
               >
@@ -1355,7 +1357,7 @@ function ModelTouchSelector({
               <button
                 type="button"
                 onClick={() => onChange(query.trim())}
-                className="min-h-[52px] rounded-[14px] border border-dashed border-[#2A9D8F] bg-[#F6FCFA] px-3 font-bold text-[#1E7A6E] text-[13px] transition active:scale-[0.97]"
+                className="min-h-[52px] rounded-[14px] border border-dashed border-[#2A9D8F] bg-[#FFFFFF] px-3 font-bold text-[#1E7A6E] text-[13px] transition active:scale-[0.97]"
               >
                 Utiliser « {query.trim()} »
               </button>
@@ -1698,7 +1700,7 @@ function CounterIntakeScreen({
         <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
           <section className="space-y-4 rounded-[20px] border border-[#E8E8E5] bg-white p-5">
             {allowedMarkets.length > 1 && (
-              <div className="rounded-[16px] border border-[#DDEFEA] bg-[#F6FCFA] p-4">
+              <div className="rounded-[16px] border border-[#DDEFEA] bg-[#FFFFFF] p-4">
                 <p className="font-bold text-[14px]">Pays de facturation / marché</p>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   {allowedMarkets.map((country) => (
@@ -1716,7 +1718,7 @@ function CounterIntakeScreen({
               <SelectTile active={clientMode === "existing"} onClick={() => setClientMode("existing")}><Users className="size-5" />Client existant</SelectTile>
             </div>
             {clientMode === "counter" && (
-              <div className="rounded-[14px] border border-[#DDEFEA] bg-[#F6FCFA] px-4 py-3 text-sm font-semibold text-[#1E7A6E]">
+              <div className="rounded-[14px] border border-[#DDEFEA] bg-[#FFFFFF] px-4 py-3 text-sm font-semibold text-[#1E7A6E]">
                 Client comptoir sélectionné pour une prise en charge rapide.
               </div>
             )}
@@ -1745,7 +1747,7 @@ function CounterIntakeScreen({
                   className={cn(
                     "min-h-[82px] rounded-[16px] border px-4 py-3 text-left transition active:scale-[0.97]",
                     prestations.includes(entry.label)
-                      ? "border-[#2A9D8F] bg-[#E6F4F1] text-[#1E7A6E]"
+                      ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
                       : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
                   )}
                 >
@@ -1771,7 +1773,7 @@ function CounterIntakeScreen({
                   "inline-flex h-[54px] w-full items-center justify-center gap-2 rounded-[14px] font-black transition active:scale-[0.98]",
                   canCreateAppointmentFromIntake
                     ? "border border-[#2A9D8F] bg-[#2A9D8F] text-white shadow-[0_12px_22px_rgba(42,157,143,0.18)]"
-                    : "cursor-not-allowed bg-[#D8D1C7] text-white",
+                    : "cursor-not-allowed bg-[#FFFFFF] text-white",
                 )}
               >
                 <CalendarPlus className="size-5" /> Créer rendez-vous
@@ -1780,7 +1782,7 @@ function CounterIntakeScreen({
           />
           <div className="lg:col-span-2 grid grid-cols-[160px_1fr] gap-4">
             <button type="button" onClick={onClose} className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-semibold">Retour</button>
-            <button type="button" disabled={!canNext1} onClick={() => setStep(1)} className={cn("h-[52px] rounded-[14px] font-bold text-white", canNext1 ? "bg-[#2A9D8F]" : "bg-[#D9D6CF]")}>Suivant</button>
+            <button type="button" disabled={!canNext1} onClick={() => setStep(1)} className={cn("h-[52px] rounded-[14px] font-bold text-white", canNext1 ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]")}>Suivant</button>
           </div>
         </div>
       )}
@@ -1796,7 +1798,7 @@ function CounterIntakeScreen({
                 {(["non_communique", "aucun", "pin", "mot_de_passe", "schema", "biometrie"] as CounterAccessValue[]).map((entry) => <SelectTile key={entry} active={access === entry} onClick={() => { setAccess(entry); if (entry !== "schema") setPatternPoints([]); if (entry !== "pin" && entry !== "mot_de_passe") setAccessCode(""); }}>{accessLabel(entry)}</SelectTile>)}
               </div>
               {(access === "pin" || access === "mot_de_passe") && (
-                <div className="mt-4 grid grid-cols-[180px_1fr] items-center gap-4 rounded-[16px] bg-[#FAFAFA] p-4">
+                <div className="mt-4 grid grid-cols-[180px_1fr] items-center gap-4 rounded-[16px] bg-[#FFFFFF] p-4">
                   <span className="font-semibold">{access === "pin" ? "Code PIN" : "Mot de passe"}</span>
                   {access === "pin" ? (
                     <PinPad value={accessCode} onChange={setAccessCode} />
@@ -1810,7 +1812,7 @@ function CounterIntakeScreen({
                 </div>
               )}
               {access === "schema" && (
-                <div className="mt-4 rounded-[16px] bg-[#FAFAFA] p-4">
+                <div className="mt-4 rounded-[16px] bg-[#FFFFFF] p-4">
                   <div className="mb-3 flex items-center justify-between">
                     <span className="font-semibold">Dessiner le schéma</span>
                     <button type="button" onClick={() => setPatternPoints([])} className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3 font-semibold text-[#C7493B]">
@@ -1821,7 +1823,7 @@ function CounterIntakeScreen({
                 </div>
               )}
             </section>
-            <div className="mt-5 rounded-[16px] border border-[#DDEFEA] bg-[#F6FCFA] p-4">
+            <div className="mt-5 rounded-[16px] border border-[#DDEFEA] bg-[#FFFFFF] p-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="font-bold text-[#1D1D1F]">Vente additionnelle à proposer</h3>
@@ -1854,7 +1856,7 @@ function CounterIntakeScreen({
                     className={cn(
                       "relative min-h-[112px] w-[180px] shrink-0 rounded-[14px] border bg-white p-4 text-left transition active:scale-[0.97]",
                       selectedAddons.includes(addon.id)
-                        ? "border-[#2A9D8F] bg-[#E6F4F1] text-[#1E7A6E]"
+                        ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
                         : "border-[#E8E8E5] text-[#1D1D1F]",
                     )}
                   >
@@ -1920,7 +1922,7 @@ function CounterIntakeScreen({
               <p className="font-bold text-[#1D1D1F]">Photo anti-litige requise</p>
               <p className="mt-1 text-[#6B6B6B] text-sm">Au moins une photo protège l'atelier et le client en cas de litige. Sur mobile ou tablette, privilégiez la prise de photo.</p>
               {noPhotoConfirmed ? (
-                <p className="mt-3 inline-flex items-center gap-2 rounded-[12px] bg-[#F6FCFA] px-3 py-2 font-semibold text-[#1E7A6E] text-sm"><Check className="size-4" /> Vous continuez sans photo — mention ajoutée au dossier.</p>
+                <p className="mt-3 inline-flex items-center gap-2 rounded-[12px] bg-[#FFFFFF] px-3 py-2 font-semibold text-[#1E7A6E] text-sm"><Check className="size-4" /> Vous continuez sans photo — mention ajoutée au dossier.</p>
               ) : (
                 <button type="button" onClick={() => setNoPhotoConfirmed(true)} className="mt-3 h-[44px] rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-semibold text-[#6B6B6B] active:scale-[0.98]">Continuer sans photo</button>
               )}
@@ -1930,7 +1932,7 @@ function CounterIntakeScreen({
             <h2 className="font-bold">Signature du client</h2>
             <SignaturePad value={signature} onChange={setSignature} />
           </section>
-          <div className="grid grid-cols-[140px_1fr] gap-4"><button type="button" onClick={() => setStep(2)} className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-semibold">Retour</button><button type="button" disabled={!canContinue} onClick={() => setStep(4)} className={cn("h-[52px] rounded-[14px] font-bold text-white", canContinue ? "bg-[#2A9D8F]" : "bg-[#D9D6CF]")}>Continuer</button></div>
+          <div className="grid grid-cols-[140px_1fr] gap-4"><button type="button" onClick={() => setStep(2)} className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-semibold">Retour</button><button type="button" disabled={!canContinue} onClick={() => setStep(4)} className={cn("h-[52px] rounded-[14px] font-bold text-white", canContinue ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]")}>Continuer</button></div>
         </div>
         );
       })()}
@@ -1962,7 +1964,7 @@ function ConditionRow({ label, value, onChange }: Readonly<{ label: string; valu
     <div className="grid grid-cols-[150px_1fr] items-center gap-3">
       <span className="font-semibold text-sm">{label}</span>
       <div className="grid grid-cols-4 rounded-[10px] border border-[#E8E8E5]">
-        {options.map((option) => <button key={option.value} type="button" onClick={() => onChange(option.value)} className={cn("flex h-10 items-center justify-center gap-1 border-[#E8E8E5] border-r text-[12px] font-semibold last:border-r-0", option.className, value === option.value && "bg-[#E6F4F1] ring-1 ring-[#2A9D8F]")}>{option.icon}{option.label}</button>)}
+        {options.map((option) => <button key={option.value} type="button" onClick={() => onChange(option.value)} className={cn("flex h-10 items-center justify-center gap-1 border-[#E8E8E5] border-r text-[12px] font-semibold last:border-r-0", option.className, value === option.value && "bg-[#FFFFFF] ring-1 ring-[#2A9D8F]")}>{option.icon}{option.label}</button>)}
       </div>
     </div>
   );
@@ -2062,7 +2064,7 @@ function AccessoryDrawer({
               className={cn(
                 "relative min-h-[116px] rounded-[14px] border p-4 text-left transition active:scale-[0.97]",
                 selected.includes(option.id)
-                  ? "border-[#2A9D8F] bg-[#E6F4F1] text-[#1E7A6E]"
+                  ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
                   : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
               )}
             >
@@ -2110,12 +2112,12 @@ function PhotoCaptureCard({ title, value, onChange }: Readonly<{ title: string; 
         className="hidden"
         onChange={(event) => addPhoto(event.target.files?.[0])}
       />
-      <button type="button" onClick={() => inputRef.current?.click()} className={cn("mt-4 flex min-h-[190px] w-full flex-col items-center justify-center overflow-hidden rounded-[14px] border-2 border-dashed border-[#CFE2DF] transition active:scale-[0.98]", value ? "bg-[#E6F4F1]" : "bg-white")}>
+      <button type="button" onClick={() => inputRef.current?.click()} className={cn("mt-4 flex min-h-[190px] w-full flex-col items-center justify-center overflow-hidden rounded-[14px] border-2 border-dashed border-[#CFE2DF] transition active:scale-[0.98]", value ? "bg-[#FFFFFF]" : "bg-white")}>
         {value ? (
           <img src={value} alt={title} className="aspect-[4/3] size-full object-cover" />
         ) : (
           <>
-            <span className="grid size-14 place-items-center rounded-full bg-[#E6F4F1] text-[#1E7A6E]"><Camera className="size-7" /></span>
+            <span className="grid size-14 place-items-center rounded-full bg-[#FFFFFF] text-[#1E7A6E]"><Camera className="size-7" /></span>
             <span className="mt-4 font-bold">Prendre ou ajouter une photo</span>
             <span className="mt-2 text-[#6E6E73] text-sm">Caméra ou photothèque</span>
           </>
@@ -2131,7 +2133,7 @@ function DetailLine({ label, value }: Readonly<{ label: string; value: string }>
 }
 
 function StatusPillCounter({ tone, children }: Readonly<{ tone: "green" | "orange"; children: React.ReactNode }>) {
-  return <span className={cn("mt-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[12px] font-bold", tone === "green" ? "bg-[#E6F4F1] text-[#1E7A6E]" : "bg-[#FAFAFA] text-[#6B6B6B]")}><span className={cn("size-2 rounded-full", tone === "green" ? "bg-[#1E7A6E]" : "bg-[#6B6B6B]")} />{children}</span>;
+  return <span className={cn("mt-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[12px] font-bold", tone === "green" ? "bg-[#FFFFFF] text-[#1E7A6E]" : "bg-[#FFFFFF] text-[#6B6B6B]")}><span className={cn("size-2 rounded-full", tone === "green" ? "bg-[#1E7A6E]" : "bg-[#6B6B6B]")} />{children}</span>;
 }
 
 function CounterFollowScreen({ repairId, onClose, onCheckout }: Readonly<{ repairId: string; onClose: () => void; onCheckout: (repairId: string) => void }>) {
@@ -2155,13 +2157,13 @@ function CounterFollowScreen({ repairId, onClose, onCheckout }: Readonly<{ repai
     <div className="mx-auto max-w-[1180px]">
       <button type="button" onClick={onClose} className="mb-4 inline-flex h-[52px] items-center gap-2 rounded-full bg-white px-4 shadow-sm"><ArrowLeft className="size-5" /> Suivi du dossier</button>
       <div className="mb-5"><p className="font-bold text-[#1E7A6E]">{displayRepairCode(repair)} <StatusPillCounter tone={repair.status === "Prêt" ? "green" : "orange"}>{currentStatus}</StatusPillCounter></p><h1 className="font-black text-[34px]">{repair.deviceModel || repair.device}</h1><p className="text-[#6E6E73]">{customer?.name ?? "Comptoir"} · entré il y a {Math.max(1, Math.round((Date.now() - new Date(repair.droppedAt || repair.createdAt || Date.now()).getTime()) / 36e5))} h</p></div>
-      <div className="mb-6 grid grid-cols-4 rounded-[14px] border border-[#E8E8E5] bg-white p-1">{(["À faire", "En cours", "En attente pièce", "Prêt à rendre"] as const).map((status) => <button type="button" key={status} onClick={() => setStatus(status)} className={cn("h-[52px] rounded-[12px] font-semibold", currentStatus === status && "bg-[#E6F4F1] text-[#1E7A6E]")}>{status}</button>)}</div>
+      <div className="mb-6 grid grid-cols-4 rounded-[14px] border border-[#E8E8E5] bg-white p-1">{(["À faire", "En cours", "En attente pièce", "Prêt à rendre"] as const).map((status) => <button type="button" key={status} onClick={() => setStatus(status)} className={cn("h-[52px] rounded-[12px] font-semibold", currentStatus === status && "bg-[#FFFFFF] text-[#1E7A6E]")}>{status}</button>)}</div>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-5">
-          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5"><div className="flex justify-between"><h2 className="font-bold text-xl">Tâches atelier</h2><b>{done}/{tasks.length}</b></div><div className="mt-3 h-2 rounded-full bg-[#E8E8E5]"><div className="h-full rounded-full bg-[#2A9D8F]" style={{ width: `${tasks.length ? (done / tasks.length) * 100 : 0}%` }} /></div><ul className="mt-4 divide-y divide-[#E8E8E5]">{tasks.map((task) => <li key={task.id} className="flex min-h-[52px] items-center gap-3"><button type="button" onClick={() => store.updateRepair(repair.id, { counterTasks: tasks.map((entry) => entry.id === task.id ? { ...entry, fait: !entry.fait } : entry) })} className={cn("grid size-7 place-items-center rounded-full border", task.fait ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : "border-[#9A9AA0]")} >{task.fait && <Check className="size-4" />}</button><span className={cn("flex-1", task.fait && "text-[#6E6E73] line-through")}>{task.label}</span><GripVertical className="size-4 text-[#9A9AA0]" /></li>)}</ul></section>
+          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5"><div className="flex justify-between"><h2 className="font-bold text-xl">Tâches atelier</h2><b>{done}/{tasks.length}</b></div><div className="mt-3 h-2 rounded-full bg-[#FFFFFF]"><div className="h-full rounded-full bg-[#2A9D8F]" style={{ width: `${tasks.length ? (done / tasks.length) * 100 : 0}%` }} /></div><ul className="mt-4 divide-y divide-[#E8E8E5]">{tasks.map((task) => <li key={task.id} className="flex min-h-[52px] items-center gap-3"><button type="button" onClick={() => store.updateRepair(repair.id, { counterTasks: tasks.map((entry) => entry.id === task.id ? { ...entry, fait: !entry.fait } : entry) })} className={cn("grid size-7 place-items-center rounded-full border", task.fait ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : "border-[#9A9AA0]")} >{task.fait && <Check className="size-4" />}</button><span className={cn("flex-1", task.fait && "text-[#6E6E73] line-through")}>{task.label}</span><GripVertical className="size-4 text-[#9A9AA0]" /></li>)}</ul></section>
           <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5"><h2 className="font-bold text-xl">Pièces utilisées</h2><ul className="mt-4 space-y-2">{pieces.map((piece) => <li key={piece.id} className="flex h-[52px] items-center justify-between rounded-[12px] border border-[#E8E8E5] px-4"><span>{piece.nom}</span><b>{formatEuro(piece.prix)}</b></li>)}</ul><div className="mt-3 grid grid-cols-[1fr_120px_140px] gap-2"><CounterInput placeholder="Ajouter une pièce" value={pieceName} onChange={(e) => setPieceName(e.target.value)} /><CounterInput placeholder="Prix" value={piecePrice} onChange={(e) => setPiecePrice(e.target.value)} /><button type="button" className="rounded-[14px] border border-dashed border-[#D9D6CF] font-semibold" onClick={() => { if (!pieceName.trim()) return; store.updateRepair(repair.id, { counterPieces: [...pieces, { id: `piece_${Date.now()}`, nom: pieceName.trim(), prix: toMoney(piecePrice) }] }); setPieceName(""); setPiecePrice(""); }}>Ajouter</button></div></section>
         </div>
-        <aside className="space-y-4"><section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5"><h2 className="font-bold text-xl">Récap dossier</h2><dl className="mt-4 divide-y divide-[#E8E8E5]"><DetailRowLite label="Intervention" value={repair.issue} /><DetailRowLite label="Prix client" value={formatEuro(repairAmount(repair))} /><DetailRowLite label="Coût pièces" value={formatEuro(pieceCost)} /><DetailRowLite label="Marge" value={formatEuro(margin)} green /></dl></section><button type="button" onClick={() => { store.updateRepair(repair.id, { counterNotifiedAt: new Date().toISOString() }); toast.success("Client marqué comme prévenu."); }} className="h-[64px] w-full rounded-[14px] border border-[#1D1D1F] bg-white font-bold"><MessageCircle className="mr-2 inline size-5" /> Marquer client prévenu</button><button type="button" disabled={repair.status !== "Prêt"} onClick={() => onCheckout(repair.id)} className={cn("h-[64px] w-full rounded-[14px] font-bold text-white", repair.status === "Prêt" ? "bg-[#2A9D8F]" : "bg-[#D9D6CF]")}>Indiquer règlement <ChevronRight className="ml-2 inline size-5" /></button></aside>
+        <aside className="space-y-4"><section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5"><h2 className="font-bold text-xl">Récap dossier</h2><dl className="mt-4 divide-y divide-[#E8E8E5]"><DetailRowLite label="Intervention" value={repair.issue} /><DetailRowLite label="Prix client" value={formatEuro(repairAmount(repair))} /><DetailRowLite label="Coût pièces" value={formatEuro(pieceCost)} /><DetailRowLite label="Marge" value={formatEuro(margin)} green /></dl></section><button type="button" onClick={() => { store.updateRepair(repair.id, { counterNotifiedAt: new Date().toISOString() }); toast.success("Client marqué comme prévenu."); }} className="h-[64px] w-full rounded-[14px] border border-[#1D1D1F] bg-white font-bold"><MessageCircle className="mr-2 inline size-5" /> Marquer client prévenu</button><button type="button" disabled={repair.status !== "Prêt"} onClick={() => onCheckout(repair.id)} className={cn("h-[64px] w-full rounded-[14px] font-bold text-white", repair.status === "Prêt" ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]")}>Indiquer règlement <ChevronRight className="ml-2 inline size-5" /></button></aside>
       </div>
     </div>
   );
@@ -2218,9 +2220,9 @@ function CounterMockPill({ children, tone = "green" }: Readonly<{ children: Reac
     <span
       className={cn(
         "inline-flex min-h-8 items-center gap-1.5 rounded-[9px] px-3 font-bold text-[12px]",
-        tone === "green" && "bg-[#E6F4F1] text-[#1E7A6E]",
-        tone === "orange" && "bg-[#FAFAFA] text-[#6B6B6B]",
-        tone === "gray" && "bg-[#F7F7F7] text-[#6B6B6B]",
+        tone === "green" && "bg-[#FFFFFF] text-[#1E7A6E]",
+        tone === "orange" && "bg-[#FFFFFF] text-[#6B6B6B]",
+        tone === "gray" && "bg-[#FFFFFF] text-[#6B6B6B]",
       )}
     >
       <span className={cn("size-2 rounded-full", tone === "orange" ? "bg-[#6B6B6B]" : tone === "gray" ? "bg-[#9A9AA0]" : "bg-[#2A9D8F]")} />
@@ -2239,7 +2241,7 @@ function CounterMockQr({ className = "" }: Readonly<{ className?: string }>) {
             "aspect-square rounded-[1px]",
             [0, 1, 2, 7, 14, 42, 43, 44, 35, 28, 4, 5, 6, 13, 20, 46, 47, 48, 41, 34, 16, 18, 22, 24, 27, 31, 33, 36, 38].includes(index)
               ? "bg-[#1A1916]"
-              : "bg-[#E8E8E5]",
+              : "bg-[#FFFFFF]",
           )}
         />
       ))}
@@ -2463,7 +2465,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
           ))}
         </div>
 
-        <div className="rounded-[14px] border border-[#DDEFEA] bg-[#F6FCFA] p-3">
+        <div className="rounded-[14px] border border-[#DDEFEA] bg-[#FFFFFF] p-3">
           <p className="text-xs font-semibold text-[#1A1916]">Pays de facturation de la vente</p>
           <div className="mt-2 grid grid-cols-2 gap-2">
             {(["FR", "CH"] as const).map((country) => (
@@ -2617,10 +2619,10 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
               ))}
             </select>
           </section>
-          <p className="rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA] px-4 py-3 text-[#6B6B6B] text-xs leading-relaxed">
+          <p className="rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] px-4 py-3 text-[#6B6B6B] text-xs leading-relaxed">
             Le règlement est géré hors Behar Tech Pro via votre prestataire externe.
           </p>
-          <button type="button" disabled={cart.length === 0 || (mode === "repair" && !linkedRepair) || (mode === "client" && !customerId)} onClick={handleCheckout} className="h-[58px] w-full rounded-[14px] bg-[#2A9D8F] font-black text-white disabled:cursor-not-allowed disabled:bg-[#D9D6CF]"><CreditCard className="mr-2 inline size-5" /> Paiement externe enregistré {total > 0 ? `· ${formatSale(total)}` : ""}</button>
+          <button type="button" disabled={cart.length === 0 || (mode === "repair" && !linkedRepair) || (mode === "client" && !customerId)} onClick={handleCheckout} className="h-[58px] w-full rounded-[14px] bg-[#2A9D8F] font-black text-white disabled:cursor-not-allowed disabled:bg-[#FFFFFF]"><CreditCard className="mr-2 inline size-5" /> Paiement externe enregistré {total > 0 ? `· ${formatSale(total)}` : ""}</button>
           <button
             type="button"
             disabled={cart.length === 0}
@@ -2761,7 +2763,7 @@ function CounterAppointmentsScreen({
           </div>
           <div className="mt-4 grid grid-cols-[42px_1fr_42px_260px] gap-2">
             <button type="button" onClick={() => setSelectedDay((d) => isoAddDays(d, -1))} className="grid h-11 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white active:scale-95" aria-label="Jour précédent"><ChevronLeft className="size-5" /></button>
-            <button type="button" onClick={() => setSelectedDay(today)} className={cn("h-11 rounded-[12px] border font-bold", selectedDay === today ? "border-[#2A9D8F] bg-[#E6F4F1] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white")}>Aujourd'hui</button>
+            <button type="button" onClick={() => setSelectedDay(today)} className={cn("h-11 rounded-[12px] border font-bold", selectedDay === today ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white")}>Aujourd'hui</button>
             <button type="button" onClick={() => setSelectedDay((d) => isoAddDays(d, 1))} className="grid h-11 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white active:scale-95" aria-label="Jour suivant"><ChevronRight className="size-5" /></button>
             <div className="relative">
               <Search className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3 size-4 text-[#6B6B6B]" />
@@ -2807,8 +2809,8 @@ function CounterAppointmentsScreen({
                         <span className="block truncate text-[#6B6B6B] text-[12.5px]">{customerPhone(apt)}</span>
                         <span className="block truncate text-[#6B6B6B] text-[13px]">{appointmentDeviceLabel(apt)}</span>
                         <span className="block truncate text-[#6B6B6B] text-[13px]">{apt.interventionLabel || apt.issueDescription || apt.issue}</span>
-                        <span className={cn("mt-1 inline-flex rounded-full px-2 py-0.5 font-bold text-[11.5px]", appointmentPriceLabel(apt) === "Prix à confirmer" ? "bg-[#FAFAFA] text-[#6B6B6B]" : "bg-[#E6F4F1] text-[#1E7A6E]")}>{appointmentPriceLabel(apt)}</span>
-                        {linked && <span className="ml-2 inline-flex rounded-full bg-[#E6F4F1] px-2 py-0.5 font-bold text-[#1E7A6E] text-[11.5px]">{linked.number}</span>}
+                        <span className={cn("mt-1 inline-flex rounded-full px-2 py-0.5 font-bold text-[11.5px]", appointmentPriceLabel(apt) === "Prix à confirmer" ? "bg-[#FFFFFF] text-[#6B6B6B]" : "bg-[#FFFFFF] text-[#1E7A6E]")}>{appointmentPriceLabel(apt)}</span>
+                        {linked && <span className="ml-2 inline-flex rounded-full bg-[#FFFFFF] px-2 py-0.5 font-bold text-[#1E7A6E] text-[11.5px]">{linked.number}</span>}
                       </span>
                       <span className="flex items-center gap-2">
                         <CounterApptStatusPill apt={apt} converted={Boolean(linked)} />
@@ -2852,7 +2854,7 @@ function CounterAppointmentsScreen({
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA] p-4">
+            <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
               <p className="font-bold text-[#6B6B6B] text-[12px] uppercase tracking-[0.06em]">
                 {frLongDate(appointmentDay(selected))} · {selected.appointmentTime || selected.time}
               </p>
@@ -2910,7 +2912,7 @@ function CounterApptStatusPill({ apt, converted }: Readonly<{ apt: Appointment; 
 function CounterApptInfoRow({ icon, label, value }: Readonly<{ icon: React.ReactNode; label: string; value: string }>) {
   return (
     <div className="flex items-start gap-3">
-      <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-[10px] bg-[#FAFAFA] text-[#6B6B6B]">{icon}</span>
+      <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#6B6B6B]">{icon}</span>
       <div className="min-w-0">
         <p className="text-[#6B6B6B] text-[12px]">{label}</p>
         <p className="font-semibold text-[#1A1916] text-[14px] leading-snug">{value}</p>
@@ -2945,7 +2947,7 @@ function CounterWeekStrip({
         <button
           type="button"
           onClick={() => onSelect(isoAddDays(selectedDay, -7))}
-          className="grid size-9 place-items-center rounded-full bg-[#FAFAFA] text-[#1A1916] transition active:scale-90"
+          className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#1A1916] transition active:scale-90"
           aria-label="Semaine précédente"
         >
           <ChevronLeft className="size-4" />
@@ -2954,7 +2956,7 @@ function CounterWeekStrip({
         <button
           type="button"
           onClick={() => onSelect(isoAddDays(selectedDay, 7))}
-          className="grid size-9 place-items-center rounded-full bg-[#FAFAFA] text-[#1A1916] transition active:scale-90"
+          className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#1A1916] transition active:scale-90"
           aria-label="Semaine suivante"
         >
           <ChevronRight className="size-4" />
@@ -2973,7 +2975,7 @@ function CounterWeekStrip({
               onClick={() => onSelect(iso)}
               className={cn(
                 "flex flex-col items-center gap-1 rounded-[12px] py-2 transition active:scale-[0.97]",
-                disabled ? "cursor-not-allowed opacity-40" : "hover:bg-[#FAFAFA]",
+                disabled ? "cursor-not-allowed opacity-40" : "hover:bg-[#FFFFFF]",
               )}
             >
               <span className="font-bold text-[#6B6B6B] text-[11px] uppercase tracking-wide">{FR_DAY_SHORT[idx]}</span>
@@ -2983,7 +2985,7 @@ function CounterWeekStrip({
                   isSel
                     ? "bg-[#2A9D8F] text-white shadow-[0_4px_12px_rgba(42,157,143,0.3)]"
                     : isToday
-                      ? "bg-[#E6F4F1] text-[#1E7A6E]"
+                      ? "bg-[#FFFFFF] text-[#1E7A6E]"
                       : "text-[#1A1916]",
                 )}
               >
@@ -3196,7 +3198,7 @@ function CounterAppointmentForm({
               <section className="rounded-[16px] border border-[#E8E8E5] bg-white p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <h3 className="font-black text-[15px]">Client</h3>
-                  <div className="grid grid-cols-3 rounded-[10px] border border-[#E8E8E5] bg-[#FAFAFA] p-0.5">
+                  <div className="grid grid-cols-3 rounded-[10px] border border-[#E8E8E5] bg-[#FFFFFF] p-0.5">
                     {(["counter", "existing", "new"] as const).map((value) => (
                       <button
                         key={value}
@@ -3210,7 +3212,7 @@ function CounterAppointmentForm({
                   </div>
                 </div>
                 {mode === "counter" ? (
-                  <div className="rounded-[14px] border border-[#DDEFEA] bg-[#F6FCFA] px-4 py-3 text-sm font-semibold text-[#1E7A6E]">
+                  <div className="rounded-[14px] border border-[#DDEFEA] bg-[#FFFFFF] px-4 py-3 text-sm font-semibold text-[#1E7A6E]">
                     {prefill?.clientName || "Client comptoir"}
                     {prefill?.clientPhone ? <span className="ml-2 text-[#6B6B6B]">{prefill.clientPhone}</span> : null}
                   </div>
@@ -3263,7 +3265,7 @@ function CounterAppointmentForm({
                       onClick={() => setIssue(motif === "Autre" ? "" : motif)}
                       className={cn(
                         "h-10 rounded-[12px] border px-3.5 font-semibold text-[13.5px] transition active:scale-[0.97]",
-                        issue === motif ? "border-[#2A9D8F] bg-[#E6F4F1] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#1A1916]",
+                        issue === motif ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#1A1916]",
                       )}
                     >
                       {motif}
@@ -3289,7 +3291,7 @@ function CounterAppointmentForm({
             />
             <span className="mb-2 block font-bold text-[14px]">Créneau — {frLongDate(dateValue)}</span>
             {slots.length === 0 ? (
-              <p className="rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA] px-4 py-5 text-center text-[#6B6B6B] text-sm">Aucun créneau disponible pour cette date.</p>
+              <p className="rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] px-4 py-5 text-center text-[#6B6B6B] text-sm">Aucun créneau disponible pour cette date.</p>
             ) : (
               <div className="grid max-h-[176px] grid-cols-4 gap-2 overflow-y-auto">
                 {slots.map((slot) => (
@@ -3299,7 +3301,7 @@ function CounterAppointmentForm({
                     onClick={() => setTime(slot)}
                     className={cn(
                       "h-11 rounded-[12px] border font-semibold tabular-nums transition active:scale-[0.97]",
-                      time === slot ? "border-[#2A9D8F] bg-[#E6F4F1] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#1A1916] hover:bg-[#FAFAFA]",
+                      time === slot ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#1A1916] hover:bg-[#FFFFFF]",
                     )}
                   >
                     {slot}
@@ -3422,14 +3424,14 @@ function CounterClientsScreen({
         <p className="mt-4 text-[#6B6B6B] text-sm">{filtered.length} clients trouvés</p>
         <ul className="mt-3 space-y-2">
           {filtered.map((client) => (
-            <li key={client.id}><button type="button" onClick={() => setSelectedId(client.id)} className={cn("grid min-h-[62px] w-full grid-cols-[42px_1fr_auto] items-center gap-3 rounded-[13px] border px-3 text-left transition active:scale-[0.99]", client.id === selected?.id ? "border-[#2A9D8F] bg-[#E6F4F1]" : "border-[#E8E8E5] bg-white")}><span className="grid size-9 place-items-center rounded-full bg-[#E6F4F1] font-bold text-[#1E7A6E]">{counterInitials(client.name)}</span><span><b>{client.name}</b><span className="block text-[#6B6B6B] text-sm">{client.phone || "Non renseigné"}</span></span><ChevronRight className="size-4 text-[#6B6B6B]" /></button></li>
+            <li key={client.id}><button type="button" onClick={() => setSelectedId(client.id)} className={cn("grid min-h-[62px] w-full grid-cols-[42px_1fr_auto] items-center gap-3 rounded-[13px] border px-3 text-left transition active:scale-[0.99]", client.id === selected?.id ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white")}><span className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] font-bold text-[#1E7A6E]">{counterInitials(client.name)}</span><span><b>{client.name}</b><span className="block text-[#6B6B6B] text-sm">{client.phone || "Non renseigné"}</span></span><ChevronRight className="size-4 text-[#6B6B6B]" /></button></li>
           ))}
         </ul>
         <button type="button" onClick={() => onCreateRepair({})} className="mt-3 h-[52px] w-full rounded-[14px] border border-[#E8E8E5] font-bold"><Plus className="mr-2 inline size-4" /> Ajouter un client</button>
       </aside>
       <section className="p-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-5"><span className="grid size-16 place-items-center rounded-full bg-[#E6F4F1] font-black text-[#1E7A6E] text-2xl">{counterInitials(selected?.name ?? "")}</span><div><div className="flex items-center gap-3"><h1 className="font-black text-[26px]">{selected?.name}</h1><CounterMockPill>Client actif</CounterMockPill></div><p className="mt-1 text-[#6B6B6B]"><span className="mr-4">{selected?.phone || "Non renseigné"}</span>{selected?.email || ""}</p></div></div>
+          <div className="flex items-center gap-5"><span className="grid size-16 place-items-center rounded-full bg-[#FFFFFF] font-black text-[#1E7A6E] text-2xl">{counterInitials(selected?.name ?? "")}</span><div><div className="flex items-center gap-3"><h1 className="font-black text-[26px]">{selected?.name}</h1><CounterMockPill>Client actif</CounterMockPill></div><p className="mt-1 text-[#6B6B6B]"><span className="mr-4">{selected?.phone || "Non renseigné"}</span>{selected?.email || ""}</p></div></div>
         </div>
         <div className="mt-8 grid grid-cols-4 gap-4">
           <ClientQuickAction icon={<Plus className="size-8" />} label="Nouvelle prise en charge" onClick={() => onCreateRepair({ customerId: selected?.id, notes: `Client : ${selected?.name}${selected?.phone ? ` — ${selected.phone}` : ""}` })} primary />
@@ -3443,10 +3445,10 @@ function CounterClientsScreen({
         ) : (
           <ul className="mt-4 space-y-3">
             {customerRepairs.map((r) => (
-              <li key={r.id}><button type="button" onClick={() => onOpenRepairDetail(r.id)} className="grid min-h-[74px] w-full grid-cols-[52px_1fr_110px_90px] items-center rounded-[14px] border border-[#E8E8E5] bg-white px-4 text-left shadow-sm"><span className="grid size-10 place-items-center rounded-full bg-[#E6F4F1] text-[#1E7A6E]"><Wrench className="size-5" /></span><span><b>Réparation — {r.deviceModel || r.device}</b><span className="block text-[#6B6B6B] text-sm">{r.issue || "Non renseigné"}</span></span><CounterMockPill tone={counterDossierTone(r.status)}>{r.status}</CounterMockPill><b className="text-right">{formatEuro(repairAmount(r))}</b></button></li>
+              <li key={r.id}><button type="button" onClick={() => onOpenRepairDetail(r.id)} className="grid min-h-[74px] w-full grid-cols-[52px_1fr_110px_90px] items-center rounded-[14px] border border-[#E8E8E5] bg-white px-4 text-left shadow-sm"><span className="grid size-10 place-items-center rounded-full bg-[#FFFFFF] text-[#1E7A6E]"><Wrench className="size-5" /></span><span><b>Réparation — {r.deviceModel || r.device}</b><span className="block text-[#6B6B6B] text-sm">{r.issue || "Non renseigné"}</span></span><CounterMockPill tone={counterDossierTone(r.status)}>{r.status}</CounterMockPill><b className="text-right">{formatEuro(repairAmount(r))}</b></button></li>
             ))}
             {customerQuotes.map((q) => (
-              <li key={q.id}><button type="button" onClick={onCreateQuote} className="grid min-h-[74px] w-full grid-cols-[52px_1fr_110px_90px] items-center rounded-[14px] border border-[#E8E8E5] bg-white px-4 text-left shadow-sm"><span className="grid size-10 place-items-center rounded-full bg-[#E6F4F1] text-[#1E7A6E]"><FileText className="size-5" /></span><span><b>Devis — {q.deviceModel || q.device || "Appareil"}</b><span className="block text-[#6B6B6B] text-sm">{q.issue || q.number}</span></span><CounterMockPill tone={q.status === "Accepté" || q.status === "Facturé" ? "green" : "orange"}>{q.status}</CounterMockPill><b className="text-right">{formatEuro(q.totalTtc ?? q.totalAmount ?? 0)}</b></button></li>
+              <li key={q.id}><button type="button" onClick={onCreateQuote} className="grid min-h-[74px] w-full grid-cols-[52px_1fr_110px_90px] items-center rounded-[14px] border border-[#E8E8E5] bg-white px-4 text-left shadow-sm"><span className="grid size-10 place-items-center rounded-full bg-[#FFFFFF] text-[#1E7A6E]"><FileText className="size-5" /></span><span><b>Devis — {q.deviceModel || q.device || "Appareil"}</b><span className="block text-[#6B6B6B] text-sm">{q.issue || q.number}</span></span><CounterMockPill tone={q.status === "Accepté" || q.status === "Facturé" ? "green" : "orange"}>{q.status}</CounterMockPill><b className="text-right">{formatEuro(q.totalTtc ?? q.totalAmount ?? 0)}</b></button></li>
             ))}
           </ul>
         )}
@@ -3456,7 +3458,7 @@ function CounterClientsScreen({
 }
 
 function ClientQuickAction({ icon, label, onClick, primary }: Readonly<{ icon: React.ReactNode; label: string; onClick: () => void; primary?: boolean }>) {
-  return <button type="button" onClick={onClick} className="flex min-h-[142px] flex-col items-center justify-center rounded-[16px] border border-[#E8E8E5] bg-white p-4 text-center font-black shadow-[0_10px_26px_rgba(26,25,22,0.04)] active:scale-[0.98]"><span className={cn("grid size-14 place-items-center rounded-full", primary ? "bg-[#2A9D8F] text-white" : "bg-[#E6F4F1] text-[#1E7A6E]")}>{icon}</span><span className="mt-4 leading-tight">{label}</span></button>;
+  return <button type="button" onClick={onClick} className="flex min-h-[142px] flex-col items-center justify-center rounded-[16px] border border-[#E8E8E5] bg-white p-4 text-center font-black shadow-[0_10px_26px_rgba(26,25,22,0.04)] active:scale-[0.98]"><span className={cn("grid size-14 place-items-center rounded-full", primary ? "bg-[#2A9D8F] text-white" : "bg-[#FFFFFF] text-[#1E7A6E]")}>{icon}</span><span className="mt-4 leading-tight">{label}</span></button>;
 }
 
 const COUNTER_DOSSIER_FILTERS: Array<Repair["status"] | "all"> = [
@@ -3590,7 +3592,7 @@ function CounterDossiersScreen({
           onClick={() => onScanModeChange?.(false)}
           className={cn(
             "h-[52px] rounded-[14px] border font-black active:scale-[0.98]",
-            !scanMode ? "border-[#2A9D8F] bg-[#E6F4F1] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
+            !scanMode ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
           )}
         >
           <Search className="mr-2 inline size-5" /> Recherche
@@ -3600,7 +3602,7 @@ function CounterDossiersScreen({
           onClick={() => onScanModeChange?.(true)}
           className={cn(
             "h-[52px] rounded-[14px] border font-black active:scale-[0.98]",
-            scanMode ? "border-[#2A9D8F] bg-[#E6F4F1] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
+            scanMode ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
           )}
         >
           <ScanLine className="mr-2 inline size-5" /> Scan QR
@@ -3636,7 +3638,7 @@ function CounterDossiersScreen({
             <span
               className={cn(
                 "rounded-full px-2 py-0.5 text-[12px]",
-                filter === entry ? "bg-white/25" : "bg-[#F7F7F7] text-[#6B6B6B]",
+                filter === entry ? "bg-white" : "bg-[#FFFFFF] text-[#6B6B6B]",
               )}
             >
               {counts.get(entry) ?? 0}
@@ -3662,12 +3664,12 @@ function CounterDossiersScreen({
                 className="flex w-full items-center gap-4 rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition hover:border-[#2A9D8F]/40 hover:shadow-[0_10px_28px_rgba(26,25,22,0.06)] active:scale-[0.995]"
               >
                 <RealDeviceVisual brand={repair.brandName} model={repairDeviceLabel(repair, repair.device)} type={repair.deviceType} className="size-[66px] rounded-[12px] border border-[#E8E8E5] p-1.5" />
-                <span className="grid size-12 shrink-0 place-items-center rounded-[14px] bg-[#E6F4F1] font-black text-[#1E7A6E]">
+                <span className="grid size-12 shrink-0 place-items-center rounded-[14px] bg-[#FFFFFF] font-black text-[#1E7A6E]">
                   {counterInitials(name)}
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-[8px] bg-[#F7F7F7] px-2 py-0.5 font-black text-[#1A1916] text-[13px]">
+                    <span className="rounded-[8px] bg-[#FFFFFF] px-2 py-0.5 font-black text-[#1A1916] text-[13px]">
                       #{repair.number}
                     </span>
                     <CounterMockPill tone={tone}>{repair.status}</CounterMockPill>
@@ -3680,12 +3682,12 @@ function CounterDossiersScreen({
                   <p className="mt-0.5 truncate text-[#6B6B6B] text-sm">{repair.issue || "Intervention à préciser"}</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {quote ? (
-                      <span className="inline-flex items-center gap-1 rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 font-semibold text-[#6B6B6B] text-[11px]">
+                      <span className="inline-flex items-center gap-1 rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#6B6B6B] text-[11px]">
                         <FileText className="size-3" /> {quote.number}
                       </span>
                     ) : null}
                     {invoice ? (
-                      <span className="inline-flex items-center gap-1 rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 font-semibold text-[#6B6B6B] text-[11px]">
+                      <span className="inline-flex items-center gap-1 rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#6B6B6B] text-[11px]">
                         <Receipt className="size-3" /> {invoice.number}
                       </span>
                     ) : null}
@@ -3814,7 +3816,7 @@ function CounterRepairDetailScreen({
   return (
     <div className="mx-auto max-w-[1160px]">
       <div className="mb-5 flex items-start justify-between"><CounterScreenTitle title="Dossier réparation" subtitle={repairDeviceLabel(repair)} onClose={onClose} /><div className="pt-4"><CounterMockPill tone={counterDossierTone(repair.status)}>{repair.status}</CounterMockPill></div></div>
-      <div className="mb-5 flex items-center gap-3"><span className="rounded-[9px] bg-[#E6F4F1] px-4 py-2 font-black text-[#1E7A6E]">#{repair.number}</span></div>
+      <div className="mb-5 flex items-center gap-3"><span className="rounded-[9px] bg-[#FFFFFF] px-4 py-2 font-black text-[#1E7A6E]">#{repair.number}</span></div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <TopInfoCard label="Client" title={customerLabel} detail={customerPhone} icon={<span className="grid size-10 place-items-center rounded-full bg-[#2A9D8F] font-bold text-white">{counterInitials(customerLabel)}</span>} />
         <TopInfoCard label="Appareil" title={repairDeviceLabel(repair)} detail={repair.imei ? `IMEI ${repair.imei}` : repair.model || ""} icon={<RealDeviceVisual brand={repair.brandName} model={repairDeviceLabel(repair, repair.device)} type={repair.deviceType} className="size-12 rounded-[10px] border border-[#E8E8E5] p-1" />} />
@@ -3822,7 +3824,7 @@ function CounterRepairDetailScreen({
       </div>
       <CounterTimeline className="mt-5" activeIndex={counterTimelineIndex(repair.status)} labels={["Reçu", "Diagnostic", "Devis", "Réparation", "Prêt"]} details={[formatCounterDateTime(repair.droppedAt || repair.createdAt, ""), "", "", "", ""]} />
       {repair.status === "Reçu" && (
-        <section className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[#D7EFEA] bg-[#F0FAF7] p-5">
+        <section className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[#D7EFEA] bg-[#FFFFFF] p-5">
           <div>
             <p className="font-black text-[#1A1916]">Valider la prise en charge</p>
             <p className="text-[#6B6B6B] text-sm">{displayIntakeBonCode(repair, store.repairs)} · {intakeDoc ? "Bon déjà généré — vous pouvez le régénérer si besoin." : "Génère le bon de prise en charge et l'ajoute aux Documents."}</p>
@@ -3831,7 +3833,7 @@ function CounterRepairDetailScreen({
         </section>
       )}
       <div className="mt-5 grid gap-4 lg:grid-cols-[310px_1fr_240px]">
-        <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4"><h2 className="font-black">Photos</h2>{photos.length === 0 ? (<p className="mt-4 rounded-[12px] bg-[#FAFAFA] px-3 py-6 text-center text-[#6B6B6B] text-sm">Aucune photo ajoutée</p>) : (<div className="mt-4 grid grid-cols-3 gap-2">{photos.slice(0, 6).map((photo) => <img key={photo.id} src={photo.dataUrl} alt={photo.name} className="aspect-square rounded-[12px] object-cover" />)}</div>)}</section>
+        <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4"><h2 className="font-black">Photos</h2>{photos.length === 0 ? (<p className="mt-4 rounded-[12px] bg-[#FFFFFF] px-3 py-6 text-center text-[#6B6B6B] text-sm">Aucune photo ajoutée</p>) : (<div className="mt-4 grid grid-cols-3 gap-2">{photos.slice(0, 6).map((photo) => <img key={photo.id} src={photo.dataUrl} alt={photo.name} className="aspect-square rounded-[12px] object-cover" />)}</div>)}</section>
         <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5">
           <DetailBlock title="Problème signalé">{repair.issue || "Non renseigné"}</DetailBlock>
           <DetailBlock title="Intervention prévue">{prestations.length ? prestations.map((p) => <span key={p.label} className="block">{p.label}</span>) : "Non renseigné"}</DetailBlock>
@@ -3842,7 +3844,7 @@ function CounterRepairDetailScreen({
           </DetailBlock>
           <DetailBlock title="Garantie">Selon conditions de l'atelier</DetailBlock>
         </section>
-        <aside className="space-y-4"><section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4"><p>Montant devis</p><p className="font-black text-2xl">{formatEuro(amount)} <span className="text-[#6B6B6B] text-sm">TTC</span></p><div className="mt-4 border-[#E8E8E5] border-t pt-4"><p>Statut de facture</p><b className={paid ? "text-[#1E7A6E]" : "text-[#6B6B6B]"}>{paid ? "Réglée" : "À régler"}</b><p className="mt-3 text-[#6B6B6B] text-sm">Moyen indiqué<br />{repairPayment?.method ?? invoice?.paymentMethod ?? "Non renseigné"}</p><p className="mt-3 text-[#6B6B6B] text-sm">Facture<br /><b className="text-[#1A1916]">{invoice ? `#${invoice.number}` : "Non renseigné"}</b></p><p className="mt-4 rounded-[12px] bg-[#FAFAFA] px-3 py-2.5 text-[#6B6B6B] text-xs leading-relaxed">Le règlement est géré hors Behar Tech Pro via votre TPE ou prestataire externe.</p></div></section><section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-center"><h2 className="font-black text-left">QR Code dossier</h2><div className="cursor-pointer" onClick={() => setSelectedQrRepairId(repair.id)}><CounterRepairQr repair={repair} className="mx-auto mt-3 w-28" /></div><p className="mt-2 text-[#6B6B6B] text-xs">Scannez pour suivre l'avancement</p><div className="mt-3 flex flex-col gap-2"><button type="button" onClick={() => setSelectedQrRepairId(repair.id)} className="inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-xs active:scale-[0.98]">Afficher QR Code</button><button type="button" onClick={() => { const access = repair.publicAccess ?? store.ensureRepairPublicAccess(repair.id); if (access) void shareCounterLink(publicAbsoluteUrl(access.url), "Lien de suivi copié pour le client."); }} className="inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-xs active:scale-[0.98]">Copier le lien client</button><button type="button" onClick={openClientTracking} className="mt-3 inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#D7EFEA] bg-[#F0FAF7] font-bold text-[#1E7A6E] active:scale-[0.98]"><Eye className="size-4" /> Ouvrir le suivi client</button></div></section><section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-sm"><h2 className="font-black">Notes internes</h2><p className="mt-2 whitespace-pre-line">{repair.notes || "Aucune note interne."}</p></section></aside>
+        <aside className="space-y-4"><section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4"><p>Montant devis</p><p className="font-black text-2xl">{formatEuro(amount)} <span className="text-[#6B6B6B] text-sm">TTC</span></p><div className="mt-4 border-[#E8E8E5] border-t pt-4"><p>Statut de facture</p><b className={paid ? "text-[#1E7A6E]" : "text-[#6B6B6B]"}>{paid ? "Réglée" : "À régler"}</b><p className="mt-3 text-[#6B6B6B] text-sm">Moyen indiqué<br />{repairPayment?.method ?? invoice?.paymentMethod ?? "Non renseigné"}</p><p className="mt-3 text-[#6B6B6B] text-sm">Facture<br /><b className="text-[#1A1916]">{invoice ? `#${invoice.number}` : "Non renseigné"}</b></p><p className="mt-4 rounded-[12px] bg-[#FFFFFF] px-3 py-2.5 text-[#6B6B6B] text-xs leading-relaxed">Le règlement est géré hors Behar Tech Pro via votre TPE ou prestataire externe.</p></div></section><section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-center"><h2 className="font-black text-left">QR Code dossier</h2><div className="cursor-pointer" onClick={() => setSelectedQrRepairId(repair.id)}><CounterRepairQr repair={repair} className="mx-auto mt-3 w-28" /></div><p className="mt-2 text-[#6B6B6B] text-xs">Scannez pour suivre l'avancement</p><div className="mt-3 flex flex-col gap-2"><button type="button" onClick={() => setSelectedQrRepairId(repair.id)} className="inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-xs active:scale-[0.98]">Afficher QR Code</button><button type="button" onClick={() => { const access = repair.publicAccess ?? store.ensureRepairPublicAccess(repair.id); if (access) void shareCounterLink(publicAbsoluteUrl(access.url), "Lien de suivi copié pour le client."); }} className="inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-xs active:scale-[0.98]">Copier le lien client</button><button type="button" onClick={openClientTracking} className="mt-3 inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#D7EFEA] bg-[#FFFFFF] font-bold text-[#1E7A6E] active:scale-[0.98]"><Eye className="size-4" /> Ouvrir le suivi client</button></div></section><section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-sm"><h2 className="font-black">Notes internes</h2><p className="mt-2 whitespace-pre-line">{repair.notes || "Aucune note interne."}</p></section></aside>
       </div>
       {/* Actions principales — gros boutons tactiles (min 56px) */}
       {nextStep ? (
@@ -3858,7 +3860,7 @@ function CounterRepairDetailScreen({
         <h2 className="font-black">Ajouter une note interne</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_190px]">
           <CounterInput value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} placeholder="Information utile pour l'équipe" />
-          <button type="button" onClick={addInternalNote} disabled={!noteDraft.trim()} className="h-[52px] rounded-[14px] bg-[#1A1916] px-4 font-bold text-white disabled:cursor-not-allowed disabled:bg-[#D9D6CF]">
+          <button type="button" onClick={addInternalNote} disabled={!noteDraft.trim()} className="h-[52px] rounded-[14px] bg-[#1A1916] px-4 font-bold text-white disabled:cursor-not-allowed disabled:bg-[#FFFFFF]">
             Ajouter la note
           </button>
         </div>
@@ -3903,7 +3905,7 @@ function CounterRepairDetailScreen({
                   setActionsMenuOpen(false);
                   if (!printDocument(intakeDoc ?? { id: `doc_intake_${repair.id}`, type: "intake" })) toast.error("Bon de prise en charge introuvable.");
                 }}
-                className="flex h-12 w-full items-center gap-3 rounded-[12px] px-3 font-bold hover:bg-[#FAFAFA]"
+                className="flex h-12 w-full items-center gap-3 rounded-[12px] px-3 font-bold hover:bg-[#FFFFFF]"
               >
                 <Printer className="size-4" /> Imprimer le bon
               </button>
@@ -3913,7 +3915,7 @@ function CounterRepairDetailScreen({
                   setActionsMenuOpen(false);
                   markPaid();
                 }}
-                className="flex h-12 w-full items-center gap-3 rounded-[12px] px-3 font-bold hover:bg-[#FAFAFA]"
+                className="flex h-12 w-full items-center gap-3 rounded-[12px] px-3 font-bold hover:bg-[#FFFFFF]"
               >
                 <Receipt className="size-4" /> Indiquer règlement
               </button>
@@ -3924,7 +3926,7 @@ function CounterRepairDetailScreen({
                   setCloseConfirmOpen(true);
                 }}
                 disabled={isTerminalRepairStatus(repair.status)}
-                className="flex h-12 w-full items-center gap-3 rounded-[12px] px-3 font-bold text-[#B42318] hover:bg-[#FFF7F6] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-12 w-full items-center gap-3 rounded-[12px] px-3 font-bold text-[#B42318] hover:bg-[#FFFFFF] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <X className="size-4" /> Marquer comme rendu
               </button>
@@ -4055,7 +4057,7 @@ function RepairAppointmentModal({
             <h2 className="font-black text-[22px] tracking-tight">Nouveau rendez-vous</h2>
             <p className="mt-1 text-[#6B6B6B] text-sm">{displayRepairCode(repair)} · {repairDeviceLabel(repair)}</p>
           </div>
-          <button type="button" onClick={onClose} className="grid size-10 place-items-center rounded-full bg-[#F7F7F7]" aria-label="Fermer">
+          <button type="button" onClick={onClose} className="grid size-10 place-items-center rounded-full bg-[#FFFFFF]" aria-label="Fermer">
             <X className="size-5" />
           </button>
         </div>
@@ -4068,7 +4070,7 @@ function RepairAppointmentModal({
             <p className="mb-2 font-bold text-sm">Heure</p>
             <div className="grid max-h-[132px] grid-cols-4 gap-2 overflow-y-auto">
               {slots.map((slot) => (
-                <button key={slot} type="button" onClick={() => setTime(slot)} className={cn("h-11 rounded-[12px] border font-semibold tabular-nums active:scale-[0.98]", time === slot ? "border-[#2A9D8F] bg-[#E6F4F1] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white")}>{slot}</button>
+                <button key={slot} type="button" onClick={() => setTime(slot)} className={cn("h-11 rounded-[12px] border font-semibold tabular-nums active:scale-[0.98]", time === slot ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white")}>{slot}</button>
               ))}
             </div>
           </section>
@@ -4126,7 +4128,7 @@ function TopInfoCard({ label, title, detail, icon }: Readonly<{ label: string; t
 }
 
 function CounterTimeline({ labels, details, activeIndex, className = "" }: Readonly<{ labels: string[]; details: string[]; activeIndex: number; className?: string }>) {
-  return <section className={cn("rounded-[18px] border border-[#E8E8E5] bg-white p-5", className)}><div className="grid grid-cols-5">{labels.map((label, index) => <div key={label} className="relative text-center"><div className={cn("absolute left-0 right-0 top-4 h-px", index === 0 ? "left-1/2" : "", index === labels.length - 1 ? "right-1/2" : "", index <= activeIndex ? "bg-[#2A9D8F]" : "bg-[#D9D6CF]")} /><span className={cn("relative z-10 mx-auto grid size-8 place-items-center rounded-full border bg-white", index < activeIndex ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : index === activeIndex ? "border-[#2A9D8F] text-[#2A9D8F]" : "border-[#C9C9C4] text-[#9A9AA0]")}>{index < activeIndex ? <Check className="size-4" /> : ""}</span><b className="mt-3 block">{label}</b><span className="text-[#6B6B6B] text-xs">{details[index]}</span></div>)}</div></section>;
+  return <section className={cn("rounded-[18px] border border-[#E8E8E5] bg-white p-5", className)}><div className="grid grid-cols-5">{labels.map((label, index) => <div key={label} className="relative text-center"><div className={cn("absolute left-0 right-0 top-4 h-px", index === 0 ? "left-1/2" : "", index === labels.length - 1 ? "right-1/2" : "", index <= activeIndex ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]")} /><span className={cn("relative z-10 mx-auto grid size-8 place-items-center rounded-full border bg-white", index < activeIndex ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : index === activeIndex ? "border-[#2A9D8F] text-[#2A9D8F]" : "border-[#C9C9C4] text-[#9A9AA0]")}>{index < activeIndex ? <Check className="size-4" /> : ""}</span><b className="mt-3 block">{label}</b><span className="text-[#6B6B6B] text-xs">{details[index]}</span></div>)}</div></section>;
 }
 
 function DetailBlock({ title, children }: Readonly<{ title: string; children: React.ReactNode }>) {
@@ -4161,6 +4163,9 @@ function CounterTrackingScreen({ initialRepairId, onClose, onOpenRepairDetail }:
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState(initialRepairId || "");
   const [selectedQrRepairId, setSelectedQrRepairId] = useState<string | null>(null);
+  const { download } = useDocument();
+  const workshopSettings = useBeharStore((s) => s.workshopSettings);
+  const [defaultActionFired, setDefaultActionFired] = useState(false);
   const customerOf = (id: string) => customers.find((c) => c.id === id);
   const recents = useMemo(
     () => [...repairs].sort((a, b) => ((a.createdAt ?? a.droppedAt ?? "") > (b.createdAt ?? b.droppedAt ?? "") ? -1 : 1)),
@@ -4189,20 +4194,37 @@ function CounterTrackingScreen({ initialRepairId, onClose, onOpenRepairDetail }:
     if (!access) return toast.error("Lien de suivi indisponible.");
     await shareCounterLink(publicAbsoluteUrl(access.url), "Lien de suivi copié pour le client.");
   };
+
+  useEffect(() => {
+    if (initialRepairId === selected.id && !defaultActionFired) {
+      setDefaultActionFired(true);
+      const action = workshopSettings.counterDefaultAction || "none";
+      if (action === "download") {
+        download("intake", selected.id);
+      } else if (action === "print_doc") {
+        printDocument({ id: `doc_intake_${selected.id}`, type: "intake" });
+      } else if (action === "print_qr") {
+        if (!printRepairQr(selected.id, { format: workshopSettings.counterQrFormat })) {
+          toast.error("Erreur d'impression du QR code.");
+        }
+      }
+    }
+  }, [initialRepairId, selected, defaultActionFired, workshopSettings, download, print]);
+
   return (
     <div className="mx-auto max-w-[1180px]">
       <CounterScreenTitle title="Suivi du dossier" subtitle="Retrouvez rapidement l'état d'une réparation pour informer le client." onClose={onClose} />
       <div className="grid gap-6 lg:grid-cols-[430px_1fr]">
         <aside className="space-y-4">
           <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5"><CounterInput value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher par nom, téléphone, numéro de dossier ou appareil" /><p className="mt-3 text-[#6B6B6B] text-sm">La liste est filtrée automatiquement pendant la saisie.</p></section>
-          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4"><h2 className="font-black">Dossiers récents</h2>{filtered.length === 0 ? (<p className="mt-3 rounded-[12px] bg-[#FAFAFA] px-3 py-6 text-center text-[#6B6B6B] text-sm">Aucun dossier trouvé.</p>) : (<ul className="mt-3 space-y-2">{filtered.slice(0, 12).map((r) => { const c = customers.find((entry) => entry.id === r.customerId); return <li key={r.id}><button type="button" onClick={() => setSelectedId(r.id)} className={cn("w-full rounded-[14px] border p-4 text-left", selected.id === r.id ? "border-[#2A9D8F] bg-[#E6F4F1]" : "border-[#E8E8E5] bg-white")}><div className="flex justify-between"><b>#{displayRepairCode(r)}</b><CounterMockPill tone={counterDossierTone(r.status)}>{r.status}</CounterMockPill></div><p className="mt-1 font-bold">{c?.name ?? "Non renseigné"}</p><p className="text-[#6B6B6B] text-sm">{repairDeviceLabel(r)} — {r.issue || "Non renseigné"}</p></button></li>; })}</ul>)}</section>
+          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4"><h2 className="font-black">Dossiers récents</h2>{filtered.length === 0 ? (<p className="mt-3 rounded-[12px] bg-[#FFFFFF] px-3 py-6 text-center text-[#6B6B6B] text-sm">Aucun dossier trouvé.</p>) : (<ul className="mt-3 space-y-2">{filtered.slice(0, 12).map((r) => { const c = customers.find((entry) => entry.id === r.customerId); return <li key={r.id}><button type="button" onClick={() => setSelectedId(r.id)} className={cn("w-full rounded-[14px] border p-4 text-left", selected.id === r.id ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white")}><div className="flex justify-between"><b>#{displayRepairCode(r)}</b><CounterMockPill tone={counterDossierTone(r.status)}>{r.status}</CounterMockPill></div><p className="mt-1 font-bold">{c?.name ?? "Non renseigné"}</p><p className="text-[#6B6B6B] text-sm">{repairDeviceLabel(r)} — {r.issue || "Non renseigné"}</p></button></li>; })}</ul>)}</section>
         </aside>
         <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-6 shadow-[0_10px_30px_rgba(26,25,22,0.04)]">
           <div className="flex items-start justify-between"><div><h2 className="font-black text-2xl">Dossier #{selected.number}</h2><CounterMockPill tone={counterDossierTone(selected.status)}>{selected.status}</CounterMockPill></div><button type="button" onClick={() => onOpenRepairDetail(selected.id)} className="h-[44px] rounded-[12px] border border-[#E8E8E5] px-4 font-bold">Ouvrir dossier</button></div>
           <dl className="mt-5 grid grid-cols-2 gap-x-8 gap-y-3 text-sm"><DetailRowLite label="Client" value={customer?.name ?? "Non renseigné"} /><DetailRowLite label="Téléphone" value={customer?.phone || "Non renseigné"} /><DetailRowLite label="Appareil" value={repairDeviceLabel(selected)} /><DetailRowLite label="Paiement" value={paid ? "Payé" : "À payer"} /><DetailRowLite label="Problème" value={selected.issue || "Non renseigné"} /><DetailRowLite label="Montant" value={`${formatEuro(repairAmount(selected))} TTC`} /></dl>
           <CounterTimeline className="mt-6" activeIndex={counterTimelineIndex(selected.status)} labels={["Reçu", "Diagnostic", "Devis accepté", "En réparation", "Prêt"]} details={["", "", "", "", ""]} />
-          <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_250px]"><section className="rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA] p-5"><h3 className="font-black">Message client</h3><p className="mt-2 text-[#6B6B6B]">{counterStatusMessage(selected.status)}</p></section><section className="rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA] p-5"><h3 className="font-black">Estimation</h3><p className="mt-2 text-sm">Temps estimé : {formatCounterDateTime(selected.estimatedDoneAt)}<br />Technicien : {selected.technician || "Non renseigné"}</p></section></div>
-          <section className="mt-5 grid grid-cols-[120px_1fr] gap-4 rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA] p-4">
+          <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_250px]"><section className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-5"><h3 className="font-black">Message client</h3><p className="mt-2 text-[#6B6B6B]">{counterStatusMessage(selected.status)}</p></section><section className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-5"><h3 className="font-black">Estimation</h3><p className="mt-2 text-sm">Temps estimé : {formatCounterDateTime(selected.estimatedDoneAt)}<br />Technicien : {selected.technician || "Non renseigné"}</p></section></div>
+          <section className="mt-5 grid grid-cols-[120px_1fr] gap-4 rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
             <div className="cursor-pointer shrink-0" onClick={() => setSelectedQrRepairId(selected.id)}>
               <CounterRepairQr repair={selected} className="size-[112px]" />
             </div>
@@ -4217,7 +4239,39 @@ function CounterTrackingScreen({ initialRepairId, onClose, onOpenRepairDetail }:
               </div>
             </div>
           </section>
-          <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4"><button type="button" onClick={onClose} className="h-[52px] rounded-[14px] border border-[#E8E8E5] font-bold">Retour accueil</button><button type="button" onClick={() => { if (!printDocument({ id: `doc_intake_${selected.id}`, type: "intake" })) toast.error("Bon de prise en charge introuvable."); }} className="h-[52px] rounded-[14px] border border-[#E8E8E5] font-bold">Imprimer le bon</button><button type="button" onClick={copyClientTracking} className="h-[52px] rounded-[14px] border border-[#E8E8E5] font-bold">Partager lien client</button><button type="button" onClick={() => { updateRepair(selected.id, { counterNotifiedAt: new Date().toISOString() }); toast.success("Client marqué comme notifié."); }} className="h-[52px] rounded-[14px] bg-[#2A9D8F] font-bold text-white">Marquer client notifié</button></div>
+          <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
+            <button type="button" onClick={() => download("intake", selected.id)} className="h-[52px] rounded-[14px] border border-[#E8E8E5] font-bold active:scale-[0.98]">
+              <Download className="mr-2 inline size-4" /> Télécharger le bon
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (!printDocument({ id: `doc_intake_${selected.id}`, type: "intake" })) toast.error("Bon de prise en charge introuvable.");
+              }}
+              className="h-[52px] rounded-[14px] border border-[#E8E8E5] font-bold active:scale-[0.98]"
+            >
+              <Printer className="mr-2 inline size-4" /> Imprimer le bon
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                toast.loading("Impression du QR...", { id: "print-qr" });
+                if (printRepairQr(selected.id, { format: workshopSettings.counterQrFormat })) {
+                  toast.success("Impression lancée.", { id: "print-qr" });
+                } else {
+                  toast.error("Erreur d'impression.", { id: "print-qr" });
+                }
+              }}
+              className="h-[52px] rounded-[14px] bg-[#1A1916] font-bold text-white active:scale-[0.98]"
+            >
+              <QrCode className="mr-2 inline size-4" /> Imprimer QR Code
+            </button>
+            {workshopSettings.counterShowCopyLink !== false && (
+              <button type="button" onClick={copyClientTracking} className="h-[52px] rounded-[14px] border border-[#E8E8E5] font-bold active:scale-[0.98]">
+                <Copy className="mr-2 inline size-4" /> Copier lien suivi
+              </button>
+            )}
+          </div>
         </section>
       </div>
       {selectedQrRepairId && (
@@ -4339,7 +4393,7 @@ function CounterScannerScreen({ onClose, onCreateNew, onOpenTracking }: Readonly
             <p className="mt-1 text-[#6B6B6B] text-sm">Saisissez un numéro de dossier, un IMEI ou un téléphone client si la caméra n'est pas disponible.</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_180px]">
               <CounterInput value={manualCode} onChange={(event) => setManualCode(event.target.value)} placeholder="N° de dossier, IMEI ou téléphone" />
-              <button type="button" onClick={() => handleQrResult(manualCode)} disabled={!manualCode.trim()} className="h-[52px] rounded-[14px] bg-[#2A9D8F] px-5 font-black text-white disabled:cursor-not-allowed disabled:bg-[#D9D6CF]">
+              <button type="button" onClick={() => handleQrResult(manualCode)} disabled={!manualCode.trim()} className="h-[52px] rounded-[14px] bg-[#2A9D8F] px-5 font-black text-white disabled:cursor-not-allowed disabled:bg-[#FFFFFF]">
                 Ouvrir le dossier
               </button>
             </div>
@@ -4349,12 +4403,12 @@ function CounterScannerScreen({ onClose, onCreateNew, onOpenTracking }: Readonly
           <button
             type="button"
             onClick={onCreateNew}
-            className="flex min-h-[64px] w-full items-center gap-3 rounded-[18px] border border-[#2A9D8F]/30 bg-[#F6FCFA] px-5 text-left font-black text-[#1E7A6E] transition active:scale-[0.99]"
+            className="flex min-h-[64px] w-full items-center gap-3 rounded-[18px] border border-[#2A9D8F]/30 bg-[#FFFFFF] px-5 text-left font-black text-[#1E7A6E] transition active:scale-[0.99]"
           >
             <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#2A9D8F] text-white"><Plus className="size-5" /></span>
             Créer un nouveau dossier
           </button>
-          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5"><div className="flex justify-between"><h2 className="font-black">Dossiers récents</h2><button type="button" onClick={() => onOpenTracking()} className="font-bold text-[#1E7A6E] text-sm">Voir tout</button></div>{recents.length === 0 ? (<p className="mt-3 rounded-[12px] bg-[#FAFAFA] px-3 py-6 text-center text-[#6B6B6B] text-sm">Aucun dossier.</p>) : (<ul className="mt-3 divide-y divide-[#E8E8E5]">{recents.map((r) => <li key={r.id}><button type="button" onClick={() => onOpenTracking(r.id)} className="grid min-h-[72px] w-full grid-cols-[46px_1fr_auto] items-center gap-2 text-left"><RealDeviceVisual brand={r.brandName} model={r.deviceModel || r.device} type={r.deviceType} className="size-11 rounded-[9px] border border-[#E8E8E5] p-1" /><span><b>#{r.number}</b><span className="block text-[#6B6B6B] text-sm">{r.deviceModel || r.device}</span></span><CounterMockPill tone={counterDossierTone(r.status)}>{r.status}</CounterMockPill></button></li>)}</ul>)}</section>
+          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5"><div className="flex justify-between"><h2 className="font-black">Dossiers récents</h2><button type="button" onClick={() => onOpenTracking()} className="font-bold text-[#1E7A6E] text-sm">Voir tout</button></div>{recents.length === 0 ? (<p className="mt-3 rounded-[12px] bg-[#FFFFFF] px-3 py-6 text-center text-[#6B6B6B] text-sm">Aucun dossier.</p>) : (<ul className="mt-3 divide-y divide-[#E8E8E5]">{recents.map((r) => <li key={r.id}><button type="button" onClick={() => onOpenTracking(r.id)} className="grid min-h-[72px] w-full grid-cols-[46px_1fr_auto] items-center gap-2 text-left"><RealDeviceVisual brand={r.brandName} model={r.deviceModel || r.device} type={r.deviceType} className="size-11 rounded-[9px] border border-[#E8E8E5] p-1" /><span><b>#{r.number}</b><span className="block text-[#6B6B6B] text-sm">{r.deviceModel || r.device}</span></span><CounterMockPill tone={counterDossierTone(r.status)}>{r.status}</CounterMockPill></button></li>)}</ul>)}</section>
         </aside>
       </div>
     </div>
@@ -4410,7 +4464,7 @@ function CounterCheckoutScreen({ initialRepairId, onClose }: Readonly<{ initialR
       <button type="button" onClick={onClose} className="mb-4 inline-flex h-[52px] items-center gap-2 rounded-full bg-white px-4 shadow-sm"><ArrowLeft className="size-5" /> Retour</button>
       <h1 className="mb-5 text-center font-black text-[32px]">Indiquer règlement</h1>
       <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
-        <aside className="rounded-[20px] border border-[#E8E8E5] bg-white p-4"><h2 className="mb-4 font-bold">À régler <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2">{unpaid.length}</span></h2><ul className="space-y-3">{unpaid.map((entry) => { const c = store.customers.find((customer) => customer.id === entry.customerId); return <li key={entry.id}><button type="button" onClick={() => setSelectedId(entry.id)} className={cn("w-full rounded-[14px] border p-4 text-left", entry.id === repair.id ? "border-[#2A9D8F] bg-[#E6F4F1]" : "border-[#E8E8E5] bg-white")}><div className="flex justify-between"><b>{c?.name ?? "Comptoir"}</b><span className="text-[#6B6B6B]">À régler</span></div><b>{formatEuro(repairAmount(entry))}</b><p>{repairDeviceLabel(entry)}</p><p>Dossier #{displayRepairCode(entry)}</p></button></li>; })}</ul></aside>
+        <aside className="rounded-[20px] border border-[#E8E8E5] bg-white p-4"><h2 className="mb-4 font-bold">À régler <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2">{unpaid.length}</span></h2><ul className="space-y-3">{unpaid.map((entry) => { const c = store.customers.find((customer) => customer.id === entry.customerId); return <li key={entry.id}><button type="button" onClick={() => setSelectedId(entry.id)} className={cn("w-full rounded-[14px] border p-4 text-left", entry.id === repair.id ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white")}><div className="flex justify-between"><b>{c?.name ?? "Comptoir"}</b><span className="text-[#6B6B6B]">À régler</span></div><b>{formatEuro(repairAmount(entry))}</b><p>{repairDeviceLabel(entry)}</p><p>Dossier #{displayRepairCode(entry)}</p></button></li>; })}</ul></aside>
         <section className="space-y-5">
           <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5"><div className="grid gap-5 lg:grid-cols-[1fr_350px]"><div><h2 className="font-black text-[20px]">{customer?.name ?? "Client comptoir"}</h2><p className="text-[#6E6E73]">{customer?.phone}<br />{customer?.email}</p><dl className="mt-8 grid grid-cols-[120px_1fr] gap-y-5"><dt>Dossier</dt><dd><b>#{displayRepairCode(repair)}</b></dd><dt>Intervention</dt><dd><b>{repair.issue}</b></dd><dt>Appareil</dt><dd><b>{repairDeviceLabel(repair)}</b></dd><dt>Statut</dt><dd><StatusPillCounter tone="orange">À régler</StatusPillCounter></dd></dl></div><div><p>Total à régler</p><p className="font-black text-[#1E7A6E] text-[42px] tabular-nums">{formatEuro(amount)} <span className="text-[15px] text-[#6E6E73]">{store.workshopInfo.vatApplicable ? "TTC" : ""}</span></p><MiniInvoice repair={repair} lines={lines} vat={vat} /></div></div></div>
           <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5"><h2 className="font-bold">Choisir le moyen de paiement externe</h2><div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">{counterPaymentMethods(store.workshopInfo.country, store.workshopInfo.twintEnabled !== false).map((entry) => <SelectTile key={entry} active={method === entry} onClick={() => setMethod(entry)}>{entry}</SelectTile>)}</div></section>
@@ -4668,7 +4722,7 @@ function CounterQuotesScreen({
             key={entry}
             type="button"
             onClick={() => setStatusFilter(entry)}
-            className={cn("h-[40px] rounded-full border px-4 font-semibold text-sm", statusFilter === entry ? "border-[#2A9D8F] bg-[#E6F4F1] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#6B6B6B]")}
+            className={cn("h-[40px] rounded-full border px-4 font-semibold text-sm", statusFilter === entry ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#6B6B6B]")}
           >
             {entry === "all" ? "Tous" : entry}
           </button>
@@ -5040,7 +5094,7 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
             <SelectTile active={clientMode === "existing"} onClick={() => setClientMode("existing")}><Users className="size-5" />Client existant</SelectTile>
           </div>
           {clientMode === "counter" && (
-            <div className="rounded-[14px] border border-[#DDEFEA] bg-[#F6FCFA] px-4 py-3 text-sm font-semibold text-[#1E7A6E]">
+            <div className="rounded-[14px] border border-[#DDEFEA] bg-[#FFFFFF] px-4 py-3 text-sm font-semibold text-[#1E7A6E]">
               Client comptoir sélectionné pour un devis rapide.
             </div>
           )}
@@ -5064,7 +5118,7 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
                   key={page.id}
                   type="button"
                   onClick={() => setActiveDeviceId(page.id)}
-                  className={cn("min-h-[52px] shrink-0 rounded-[14px] border px-4 text-left transition active:scale-[0.97]", page.id === activeDevice.id ? "border-[#2A9D8F] bg-[#E6F4F1] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white")}
+                  className={cn("min-h-[52px] shrink-0 rounded-[14px] border px-4 text-left transition active:scale-[0.97]", page.id === activeDevice.id ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white")}
                 >
                   <b>{page.label}</b>
                   <span className="ml-2 text-[#6E6E73] text-[12px]">{page.model || "À choisir"}</span>
@@ -5112,7 +5166,7 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
                   key={entry.label}
                   type="button"
                   onClick={() => selectQuoteCataloguePrestation(entry)}
-                  className={cn("min-h-[62px] rounded-[14px] border px-3 text-left transition active:scale-[0.97]", prestations.includes(entry.label) ? "border-[#2A9D8F] bg-[#E6F4F1]" : "border-[#DDEFEA] bg-[#F6FCFA]")}
+                  className={cn("min-h-[62px] rounded-[14px] border px-3 text-left transition active:scale-[0.97]", prestations.includes(entry.label) ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#DDEFEA] bg-[#FFFFFF]")}
                 >
                   <span className="block font-bold text-[13px]">{entry.label}</span>
                   <span className="block text-[#1E7A6E] text-[12px] font-black">{entry.prixClient > 0 ? formatEuro(entry.prixClient) : "Prix à saisir"}</span>
@@ -5146,11 +5200,11 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
           )}
           <div className="grid gap-3 md:grid-cols-[1fr_180px]">
             <CounterInput placeholder="Prix client" value={price} onChange={(event) => updateActiveDevice({ price: event.target.value })} />
-            <div className="flex min-h-[52px] items-center justify-end rounded-[14px] bg-[#E6F4F1] px-4 font-black text-[#1E7A6E] tabular-nums">
+            <div className="flex min-h-[52px] items-center justify-end rounded-[14px] bg-[#FFFFFF] px-4 font-black text-[#1E7A6E] tabular-nums">
               {formatEuro(pageTotal(activeDevice))}
             </div>
           </div>
-          <section className="rounded-[16px] border border-[#DDEFEA] bg-[#F6FCFA] p-4">
+          <section className="rounded-[16px] border border-[#DDEFEA] bg-[#FFFFFF] p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h3 className="font-bold">Vente additionnelle</h3>
@@ -5166,7 +5220,7 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
                     key={option.id}
                     type="button"
                     onClick={() => togglePageAccessory(activeDevice, option)}
-                    className={cn("min-h-[52px] shrink-0 rounded-[14px] border px-4 font-semibold transition active:scale-[0.97]", selected ? "border-[#2A9D8F] bg-[#E6F4F1] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#1D1D1F]")}
+                    className={cn("min-h-[52px] shrink-0 rounded-[14px] border px-4 font-semibold transition active:scale-[0.97]", selected ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#1D1D1F]")}
                   >
                     {selected && <Check className="mr-2 inline size-4" />}
                     {quoteAccessoryLabelForDevice(option.label, model)}
@@ -5198,7 +5252,7 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
               </div>
             )}
           </section>
-          <section className="rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA] p-4">
+          <section className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
             <div className="flex items-center justify-between gap-3">
               <div><h3 className="font-bold">Ajouter une ligne</h3><p className="text-[#6E6E73] text-sm">Champ libre, accessoire ou autre téléphone.</p></div>
               <button type="button" onClick={() => setAddLineMode(addLineMode ? null : "libre")} className="grid size-[52px] place-items-center rounded-[14px] bg-[#2A9D8F] text-white active:scale-[0.96]"><Plus className="size-6" /></button>
@@ -5291,7 +5345,7 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
             >
               Transformer en prise en charge
             </button>
-            <div className="mt-3 rounded-[12px] bg-[#FAFAFA] py-3 text-center font-bold text-[#6B6B6B]">En attente</div>
+            <div className="mt-3 rounded-[12px] bg-[#FFFFFF] py-3 text-center font-bold text-[#6B6B6B]">En attente</div>
           </section>
         </aside>
         <div className="lg:col-span-2 grid grid-cols-[180px_1fr] gap-4"><button type="button" onClick={onClose} className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-semibold">Annuler</button><button type="button" onClick={generate} className="h-[52px] rounded-[14px] bg-[#2A9D8F] font-bold text-white">Générer le devis</button></div>
@@ -5411,6 +5465,8 @@ const COUNTER_DOC_FILTERS: Array<{ key: string; label: string }> = [
   { key: "quote", label: "Devis" },
   { key: "invoice", label: "Factures" },
   { key: "payment", label: "Reçus" },
+  { key: "diagnostic_report", label: "Diagnostics" },
+  { key: "summary", label: "Rapports finaux" },
   { key: "sale-receipt", label: "Ventes" },
 ];
 const COUNTER_DOC_ACTION_LABEL: Record<string, string> = {
@@ -5422,6 +5478,7 @@ const COUNTER_DOC_ACTION_LABEL: Record<string, string> = {
   "sale-invoice": "la facture de vente",
   internal: "la fiche interne",
   summary: "le résumé",
+  diagnostic_report: "le rapport diagnostic",
 };
 
 function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () => void; repairId?: string }>) {
@@ -5429,7 +5486,6 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
   const { download } = useDocument();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
-  const [openActionsDocId, setOpenActionsDocId] = useState("");
   const scopedRepair = repairId ? store.repairs.find((r) => r.id === repairId) : undefined;
   const docNumberLabel = (doc: BeharDocument) => {
     const invoice = doc.invoiceId ? store.invoices.find((entry) => entry.id === doc.invoiceId) : undefined;
@@ -5440,10 +5496,17 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
     if (doc.type === "intake" && repair) return displayIntakeBonCode(repair, store.repairs);
     return sale?.number ?? invoice?.number ?? quote?.number ?? payment?.paymentNumber ?? repair?.number ?? doc.id.slice(-6).toUpperCase();
   };
+  const repairIdForDocument = (doc: BeharDocument) => {
+    if (doc.repairId) return doc.repairId;
+    const quote = doc.quoteId ? store.quotes.find((entry) => entry.id === doc.quoteId) : undefined;
+    const invoice = doc.invoiceId ? store.invoices.find((entry) => entry.id === doc.invoiceId) : undefined;
+    const payment = doc.paymentId ? store.payments.find((entry) => entry.id === doc.paymentId) : undefined;
+    return quote?.repairId ?? invoice?.repairId ?? payment?.repairId ?? "";
+  };
   const documents = useMemo(() => {
     const q = compactText(search);
     return store.documents.filter((doc) => {
-      if (repairId && doc.repairId !== repairId) return false;
+      if (repairId && repairIdForDocument(doc) !== repairId) return false;
       if (filter !== "all" && doc.type !== filter) return false;
       if (!q) return true;
       const customer = store.customers.find((entry) => entry.id === doc.customerId);
@@ -5467,7 +5530,7 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
       <div className="mb-4"><CounterInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher un document (type, n°, client…)" /></div>
       <div className="mb-5 flex flex-wrap gap-2">
         {COUNTER_DOC_FILTERS.map((entry) => (
-          <button key={entry.key} type="button" onClick={() => setFilter(entry.key)} className={cn("h-[40px] rounded-full border px-4 font-semibold text-sm", filter === entry.key ? "border-[#2A9D8F] bg-[#E6F4F1] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#6B6B6B]")}>{entry.label}</button>
+          <button key={entry.key} type="button" onClick={() => setFilter(entry.key)} className={cn("h-[40px] rounded-full border px-4 font-semibold text-sm", filter === entry.key ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#6B6B6B]")}>{entry.label}</button>
         ))}
       </div>
       {documents.length === 0 ? (
@@ -5477,52 +5540,54 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
           {documents.map((doc) => {
             const customer = store.customers.find((entry) => entry.id === doc.customerId);
             const target = getPrintableTarget(doc);
+            const linkedRepairId = repairIdForDocument(doc);
             const actionLabel = COUNTER_DOC_ACTION_LABEL[doc.type] ?? "le document";
+            const documentUnavailable = !target;
             return (
               <li key={doc.id} className="grid grid-cols-1 gap-3 rounded-[16px] border border-[#E8E8E5] bg-white p-4 md:grid-cols-[1fr_auto] md:items-center">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-3"><span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2.5 py-0.5 text-[#6B6B6B] text-[11px] font-semibold uppercase tracking-wide">{COUNTER_DOC_LABEL[doc.type] ?? "Document"}</span><b className="font-mono text-[13px]">{docNumberLabel(doc)}</b></div>
+                  <div className="flex items-center gap-3"><span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2.5 py-0.5 text-[#6B6B6B] text-[11px] font-semibold uppercase tracking-wide">{COUNTER_DOC_LABEL[doc.type] ?? "Document"}</span><b className="font-mono text-[13px]">{docNumberLabel(doc)}</b></div>
                   <p className="mt-1 truncate text-[#6B6B6B] text-sm">{customer?.name ?? "Client"} · {formatCounterDateTime(doc.createdAt)}</p>
                 </div>
-                <div className="flex flex-wrap items-center justify-end gap-3">
-                  <button type="button" onClick={() => { if (!openDocument(doc)) toast.error("Document introuvable."); }} className="h-[48px] rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold"><FileText className="mr-2 inline size-4" /> Ouvrir {actionLabel}</button>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setOpenActionsDocId((current) => current === doc.id ? "" : doc.id)}
-                      className="grid size-[48px] place-items-center rounded-[12px] border border-[#E8E8E5] bg-white active:scale-[0.98]"
-                      aria-label="Actions document"
-                    >
-                      <MoreHorizontal className="size-5" />
-                    </button>
-                    {openActionsDocId === doc.id ? (
-                      <div className="absolute right-0 top-[56px] z-20 w-[230px] rounded-[16px] border border-[#E8E8E5] bg-white p-2 shadow-[0_18px_48px_rgba(26,25,22,0.16)]">
-                        {store.hasPermission("canDownloadDocuments") && (
-                          <button
-                            type="button"
-                            disabled={!target}
-                            onClick={() => {
-                              if (target) download(target.type, target.id);
-                              setOpenActionsDocId("");
-                            }}
-                            className="flex h-12 w-full items-center gap-3 rounded-[12px] px-3 font-bold text-[#1E7A6E] hover:bg-[#F0FAF7] disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            <Download className="size-4" /> Télécharger
-                          </button>
-                        )}
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  {documentUnavailable ? (
+                    <span className="inline-flex h-[44px] items-center rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] px-4 font-bold text-[#8A8A8A] text-sm">
+                      Document non disponible
+                    </span>
+                  ) : (
+                    <>
+                      {store.hasPermission("canDownloadDocuments") && (
                         <button
                           type="button"
-                          onClick={() => {
-                            setOpenActionsDocId("");
-                            if (!printDocument(doc)) toast.error("Document introuvable.");
-                          }}
-                          className="flex h-12 w-full items-center gap-3 rounded-[12px] px-3 font-bold hover:bg-[#FAFAFA]"
+                          onClick={() => download(target.type, target.id)}
+                          className="inline-flex h-[44px] items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold text-[#1A1916] text-sm active:scale-[0.98]"
                         >
-                          <Printer className="size-4" /> Imprimer
+                          <Download className="size-4" /> Télécharger {actionLabel}
                         </button>
-                      </div>
-                    ) : null}
-                  </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!printDocument(doc)) toast.error("Document introuvable.");
+                        }}
+                        className="inline-flex h-[44px] items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold text-[#1A1916] text-sm active:scale-[0.98]"
+                      >
+                        <Printer className="size-4" /> Imprimer {actionLabel}
+                      </button>
+                    </>
+                  )}
+                  <button
+                    type="button"
+                    disabled={!linkedRepairId}
+                    onClick={() => {
+                      if (!printRepairQr(linkedRepairId, { format: store.workshopSettings.counterQrFormat })) {
+                        toast.error("QR Code non disponible.");
+                      }
+                    }}
+                    className="inline-flex h-[44px] items-center justify-center gap-2 rounded-[12px] bg-[#1A1916] px-4 font-bold text-sm text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-[#D7D7D2] disabled:text-[#777]"
+                  >
+                    <QrCode className="size-4" /> Imprimer QR Code
+                  </button>
                 </div>
               </li>
             );
@@ -5554,7 +5619,7 @@ function TodayStat({
 }>) {
   return (
     <div className="flex min-h-[92px] items-center gap-4 rounded-[16px] border border-[#EDEAE2] bg-white px-5 py-4 shadow-[0_10px_24px_rgba(26,25,22,0.035)]">
-      <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#E6F4F1] text-[#1E7A6E]">
+      <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#FFFFFF] text-[#1E7A6E]">
         {icon}
       </span>
       <div className="min-w-0">

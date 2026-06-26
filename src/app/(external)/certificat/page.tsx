@@ -4,7 +4,7 @@ import { PublicCertificateScreen } from "@/components/behar/public-certificate-v
 
 export default function CertificatPage() {
   return (
-    <Suspense fallback={<div className="min-h-svh bg-[#FAFAF8]" />}>
+    <Suspense fallback={<div className="min-h-svh bg-[#FFFFFF]" />}>
       <PublicCertificateScreen />
     </Suspense>
   );

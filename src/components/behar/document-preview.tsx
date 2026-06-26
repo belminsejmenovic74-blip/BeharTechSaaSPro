@@ -40,11 +40,12 @@ const TYPE_LABEL: Record<DocumentType, string> = {
   intake: "Bon de prise en charge",
   quote: "Devis",
   invoice: "Facture",
-  payment: "Reçu / justificatif",
-  "sale-receipt": "Reçu",
-  "sale-invoice": "Reçu",
+  payment: "Reçu de paiement",
+  "sale-receipt": "Reçu de paiement",
+  "sale-invoice": "Reçu de paiement",
   internal: "Fiche interne",
-  summary: "Résumé dossier",
+  summary: "Rapport final",
+  diagnostic_report: "Rapport diagnostic",
 };
 
 const TYPE_SHORT_LABEL: Record<DocumentType, string> = {
@@ -55,7 +56,8 @@ const TYPE_SHORT_LABEL: Record<DocumentType, string> = {
   "sale-receipt": "Reçu",
   "sale-invoice": "Reçu",
   internal: "Interne",
-  summary: "Résumé",
+  summary: "Rapport final",
+  diagnostic_report: "Diagnostic",
 };
 
 const PREVIEW_DOCUMENT_WIDTH = 794;
@@ -274,7 +276,7 @@ export function DocumentPreview() {
       <button
         className={`w-full rounded-2xl border p-4 text-left transition ${
           active
-            ? "border-[#2A9D8F] bg-[#EAF6F2] shadow-[0_14px_34px_rgba(42,157,143,0.10)]"
+            ? "border-[#2A9D8F] bg-[#FFFFFF] shadow-[0_14px_34px_rgba(42,157,143,0.10)]"
             : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/40"
         }`}
         data-document-id={row.document.id}
@@ -286,7 +288,7 @@ export function DocumentPreview() {
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 text-[#6B6B6B] text-[10px] uppercase tracking-wide">
+            <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[#6B6B6B] text-[10px] uppercase tracking-wide">
               {TYPE_SHORT_LABEL[row.document.type]}
             </span>
             <div className="mt-1 truncate font-semibold text-[#1A1916] text-sm">{row.listTitle}</div>
@@ -297,7 +299,7 @@ export function DocumentPreview() {
         <div className="mt-1 text-[#6B6B6B] text-[11px]">{row.document.createdAt}</div>
         <div className="mt-2 flex items-center justify-between text-xs">
           <span className="font-semibold text-[#1A1916]">{formatCurrency(row.amount, row.currency)}</span>
-          <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 text-[#6B6B6B]">{row.statusLabel}</span>
+          <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[#6B6B6B]">{row.statusLabel}</span>
         </div>
       </button>
     );
@@ -310,7 +312,7 @@ export function DocumentPreview() {
           <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#6B6B6B]" />
             <input
-              className="h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-[#FAFAFA] pl-10 pr-3 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+              className="h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] pl-10 pr-3 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
               data-testid="documents-search"
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher : client, numéro, appareil, dossier..."
@@ -387,7 +389,7 @@ export function DocumentPreview() {
       <div className="grid gap-5 xl:grid-cols-[420px_minmax(0,1fr)]">
         <aside className="space-y-2">
           {filtered.length === 0 && (
-            <div className="rounded-[16px] border border-dashed border-[#E8E8E5] bg-[#FAFAFA] py-10 text-center">
+            <div className="rounded-[16px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] py-10 text-center">
               <p className="text-[13px] font-medium text-[#6B6B6B]">Aucun document ne correspond aux filtres.</p>
               <p className="mt-1 text-[12px] text-[#A3A3A3]">Les bons, devis, factures et reçus apparaîtront ici.</p>
             </div>
@@ -397,7 +399,7 @@ export function DocumentPreview() {
           {(viewMode === "byRepair" || viewMode === "byClient") &&
             groups.map((group) => (
               <div className="space-y-2" key={group.key}>
-                <div className="sticky top-0 z-[1] flex items-center justify-between gap-2 rounded-[12px] border border-[#E8E8E5] bg-[#FAFAFA]/95 px-3 py-2">
+                <div className="sticky top-0 z-[1] flex items-center justify-between gap-2 rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] px-3 py-2">
                   <div className="min-w-0">
                     <p className="truncate font-semibold text-[#1A1916] text-[13px]">{group.title}</p>
                     {group.subtitle ? <p className="truncate text-[#6B6B6B] text-[11px]">{group.subtitle}</p> : null}
@@ -562,7 +564,7 @@ function ResponsivePreviewFrame({ children }: Readonly<{ children: ReactNode }>)
         <ExternalLink className="size-4 shrink-0 text-[#6B6B6B]" aria-hidden />
       </div>
       <div
-        className="relative w-full overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA]"
+        className="relative w-full overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF]"
         ref={viewportRef}
         style={{ height: metrics.height || undefined, minHeight: metrics.height ? undefined : 420 }}
       >

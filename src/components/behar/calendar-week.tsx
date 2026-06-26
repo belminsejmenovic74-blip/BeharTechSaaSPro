@@ -4,21 +4,21 @@ import { appointments, weekDays } from "@/mock/appointments";
 const hours = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
 
 const eventStyles: Record<string, string> = {
-  mint: "border-[#B8E8DC] bg-[#E7F7F2]",
-  blue: "border-[#C9DEF9] bg-[#EEF6FF]",
-  purple: "border-[#E4D7F6] bg-[#F5EEFF]",
-  sand: "border-[#F1DFC0] bg-[#FFF5E7]",
-  selected: "border-[#2A9D8F] bg-[#E4F7F0] shadow-[0_12px_26px_rgba(42,157,143,0.16)]",
+  mint: "border-[#B8E8DC] bg-[#FFFFFF]",
+  blue: "border-[#C9DEF9] bg-[#FFFFFF]",
+  purple: "border-[#E4D7F6] bg-[#FFFFFF]",
+  sand: "border-[#F1DFC0] bg-[#FFFFFF]",
+  selected: "border-[#2A9D8F] bg-[#FFFFFF] shadow-[0_12px_26px_rgba(42,157,143,0.16)]",
 };
 
 export function CalendarWeek() {
   return (
     <div className="overflow-x-auto">
       <div
-        className="grid min-w-[980px] rounded-[22px] border border-black/[0.07] bg-white/82"
+        className="grid min-w-[980px] rounded-[22px] border border-black/[0.07] bg-white"
         style={{ gridTemplateColumns: "72px repeat(7, minmax(118px, 1fr))" }}
       >
-        <div className="border-black/[0.06] border-r border-b bg-white/50" />
+        <div className="border-black/[0.06] border-r border-b bg-white" />
         {weekDays.map((day) => (
           <div
             className="flex h-[88px] flex-col items-center justify-center border-black/[0.06] border-r border-b last:border-r-0"
@@ -41,7 +41,7 @@ export function CalendarWeek() {
           <div className="contents" key={hour}>
             <div className="relative h-20 border-black/[0.06] border-r border-b px-3 pt-3 text-[#6B6B6B] text-xs">
               {hour}
-              {hour === "14:00" && <span className="absolute top-10 left-0 h-px w-[980px] bg-[#E25B5B]/55" />}
+              {hour === "14:00" && <span className="absolute top-10 left-0 h-px w-[980px] bg-[#FFFFFF]" />}
             </div>
             {weekDays.map((day, dayIndex) => (
               <div

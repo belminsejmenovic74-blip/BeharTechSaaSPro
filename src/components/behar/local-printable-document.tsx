@@ -18,12 +18,13 @@ import {
   RepairIntakeDocument,
   RepairSummaryDocument,
   SaleReceiptDocument,
+  DiagnosticReportDocument,
 } from "./printable-documents";
 
 type BeharStoreSnapshot = ReturnType<typeof useBeharStore.getState>;
 
 export type PrintableDocumentTarget = {
-  type: "intake" | "quote" | "invoice" | "payment" | "internal" | "summary" | "sale-receipt";
+  type: "intake" | "quote" | "invoice" | "payment" | "internal" | "summary" | "sale-receipt" | "diagnostic_report";
   id: string;
 };
 
@@ -36,6 +37,7 @@ const TYPE_LABEL: Record<DocumentType, string> = {
   "sale-invoice": "Reçu de vente comptoir",
   internal: "Fiche intervention interne",
   summary: "Résumé dossier",
+  diagnostic_report: "Rapport diagnostic & tests",
 };
 
 export function getPrintableTarget(document: BeharDocument): PrintableDocumentTarget | null {
@@ -45,6 +47,7 @@ export function getPrintableTarget(document: BeharDocument): PrintableDocumentTa
   if (document.type === "payment" && document.paymentId) return { type: "payment", id: document.paymentId };
   if (document.type === "internal" && document.repairId) return { type: "internal", id: document.repairId };
   if (document.type === "summary" && document.repairId) return { type: "summary", id: document.repairId };
+  if (document.type === "diagnostic_report" && document.repairId) return { type: "diagnostic_report", id: document.repairId };
   if ((document.type === "sale-receipt" || document.type === "sale-invoice") && document.saleId) {
     return { type: "sale-receipt", id: document.saleId };
   }
@@ -158,6 +161,9 @@ export function LocalPrintableDocument({
       // Rapport de réparation côté client : version propre, sans données sensibles.
       if (!repair || !customer) return <MissingDocument>Rapport de réparation incomplet.</MissingDocument>;
       return <RepairSummaryDocument customer={customer} repair={repair} workshop={billingWorkshop} />;
+    case "diagnostic_report":
+      if (!repair || !customer) return <MissingDocument>Rapport diagnostic incomplet.</MissingDocument>;
+      return <DiagnosticReportDocument customer={customer} repair={repair} workshop={billingWorkshop} />;
     case "sale-receipt":
     case "sale-invoice":
       if (!sale) return <MissingDocument>Reçu de vente incomplet.</MissingDocument>;

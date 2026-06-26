@@ -940,7 +940,7 @@ export function RepairModal({
                 Dossier {created.repairNumber} · {created.clientLabel}
               </p>
               {created.quoteId ? (
-                <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[#D7EFEA] bg-[#F6FCFA] px-3 py-1 font-medium text-[#167B70] text-xs">
+                <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[#D7EFEA] bg-[#FFFFFF] px-3 py-1 font-medium text-[#167B70] text-xs">
                   <FileText className="size-3.5" />
                   Devis créé
                 </span>
@@ -990,7 +990,7 @@ export function RepairModal({
               ) : null}
             </div>
 
-            <div className="mt-auto flex justify-center border-t border-[#F7F7F7] pt-5">
+            <div className="mt-auto flex justify-center border-t border-[#FFFFFF] pt-5">
               <SecondaryButton className="h-11 px-8" onClick={onClose} type="button">
                 Terminer
               </SecondaryButton>
@@ -1047,7 +1047,7 @@ export function RepairModal({
               }}
             />
             {created ? (
-              <div className="mt-4 flex flex-col gap-2 border-t border-[#F7F7F7] pt-4 sm:flex-row sm:justify-between">
+              <div className="mt-4 flex flex-col gap-2 border-t border-[#FFFFFF] pt-4 sm:flex-row sm:justify-between">
                 <SecondaryButton className="h-11 justify-center" onClick={() => setView("done")} type="button">
                   Retour aux options
                 </SecondaryButton>
@@ -1057,7 +1057,7 @@ export function RepairModal({
                 </PrimaryButton>
               </div>
             ) : (
-              <div className="mt-4 flex flex-col gap-2 border-t border-[#F7F7F7] pt-4 sm:flex-row sm:justify-between">
+              <div className="mt-4 flex flex-col gap-2 border-t border-[#FFFFFF] pt-4 sm:flex-row sm:justify-between">
                 <SecondaryButton className="h-11 justify-center" onClick={() => setView("accessories")} type="button">
                   Retour aux accessoires
                 </SecondaryButton>
@@ -1095,7 +1095,7 @@ export function RepairModal({
                     onClick={() => toggleAccessory(label)}
                     className={`flex items-center justify-between rounded-xl border px-3 py-3 text-left text-sm transition ${
                       active
-                        ? "border-[#2A9D8F] bg-[#F1FAF8] text-[#167B70]"
+                        ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]"
                         : "border-[#E8E8E5] bg-white text-[#1A1916] hover:border-[#2A9D8F]/40"
                     }`}
                   >
@@ -1119,7 +1119,7 @@ export function RepairModal({
             <p className="mt-3 text-[#6B6B6B] text-[12px]">
               Aucun accessoire ? Continuez, vous pourrez l'indiquer sur la fiche anti-litige.
             </p>
-            <div className="mt-auto flex flex-col gap-2 border-t border-[#F7F7F7] pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mt-auto flex flex-col gap-2 border-t border-[#FFFFFF] pt-4 sm:flex-row sm:items-center sm:justify-between">
               <SecondaryButton className="h-11 justify-center" onClick={() => setView("form")} type="button">
                 Retour
               </SecondaryButton>
@@ -1153,7 +1153,7 @@ export function RepairModal({
                   </p>
                 </div>
                 <button
-                  className="grid size-9 place-items-center rounded-full text-[#6B6B6B] transition hover:bg-[#FAFAFA] hover:text-[#6B6B6B]"
+                  className="grid size-9 place-items-center rounded-full text-[#6B6B6B] transition hover:bg-[#FFFFFF] hover:text-[#6B6B6B]"
                   onClick={onClose}
                   type="button"
                   aria-label="Fermer"
@@ -1164,7 +1164,7 @@ export function RepairModal({
 
               <form className="space-y-6" id="repair-quick-form" onSubmit={handleSubmit}>
                 {allowedMarkets.length > 1 && (
-                  <section className="rounded-[16px] border border-[#D7EFEA] bg-[#F6FCFA] p-4">
+                  <section className="rounded-[16px] border border-[#D7EFEA] bg-[#FFFFFF] p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <h3 className="text-[14px] font-semibold text-[#1A1916]">Pays de facturation / marché</h3>
@@ -1219,7 +1219,7 @@ export function RepairModal({
                   </div>
 
                   {clientType === "anonyme" && (
-                    <p className="rounded-lg border border-[#E8E8E5] bg-[#FAFAFA] px-3 py-2 text-[#6B6B6B] text-sm">
+                    <p className="rounded-lg border border-[#E8E8E5] bg-[#FFFFFF] px-3 py-2 text-[#6B6B6B] text-sm">
                       Client comptoir — informations à compléter plus tard.
                     </p>
                   )}
@@ -1361,7 +1361,7 @@ export function RepairModal({
                 </section>
 
                 {/* 2 Appareil */}
-                <section className="space-y-4 border-[#F7F7F7] border-t pt-5">
+                <section className="space-y-4 border-[#FFFFFF] border-t pt-5">
                   <h3 className="text-[14px] text-[#1A1916] font-medium">
                     <span className="text-[#2A9D8F]">2.</span> Appareil
                   </h3>
@@ -1370,7 +1370,7 @@ export function RepairModal({
                       <button
                         className={`rounded-full border px-3 py-1.5 text-xs transition ${
                           deviceType === t
-                            ? "border-[#2A9D8F] bg-[#E8F7F3] text-[#1A1916]"
+                            ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1A1916]"
                             : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:border-[#2A9D8F]/50"
                         }`}
                         key={t}
@@ -1485,13 +1485,13 @@ export function RepairModal({
                 </section>
 
                 {/* 3 Intervention */}
-                <section className="space-y-4 border-[#F7F7F7] border-t pt-5">
+                <section className="space-y-4 border-[#FFFFFF] border-t pt-5">
                   <h3 className="text-[14px] text-[#1A1916] font-medium">
                     <span className="text-[#2A9D8F]">3.</span> Intervention
                   </h3>
 
                   {!modele ? (
-                    <div className="rounded-xl border border-dashed border-[#E8E8E5] bg-[#FAFAFA] py-8 text-center">
+                    <div className="rounded-xl border border-dashed border-[#E8E8E5] bg-[#FFFFFF] py-8 text-center">
                       <p className="text-[#6B6B6B] text-sm">
                         Sélectionnez un modèle pour voir les interventions disponibles.
                       </p>
@@ -1512,7 +1512,7 @@ export function RepairModal({
                             <button
                               className={`group relative flex min-w-[120px] flex-col rounded-xl border p-3 text-left transition ${
                                 isSelected
-                                  ? "border-[#2A9D8F] bg-[#E8F7F3]"
+                                  ? "border-[#2A9D8F] bg-[#FFFFFF]"
                                   : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/50"
                               }`}
                               key={entry.label}
@@ -1556,7 +1556,7 @@ export function RepairModal({
                         })}
 
                         <button
-                          className="flex min-w-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-[#E8E8E5] bg-[#FAFAFA] p-3 text-[#6B6B6B] transition hover:border-[#2A9D8F]/50 hover:bg-white"
+                          className="flex min-w-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-[#E8E8E5] bg-[#FFFFFF] p-3 text-[#6B6B6B] transition hover:border-[#2A9D8F]/50 hover:bg-white"
                           onClick={() => setCustomInterventionOpen((prev) => !prev)}
                           type="button"
                         >
@@ -1573,7 +1573,7 @@ export function RepairModal({
                     </>
                   )}
                   {customInterventionOpen && (
-                    <div className="grid gap-2 rounded-xl border border-[#E8E8E5] bg-[#FAFAFA] p-3 sm:grid-cols-2">
+                    <div className="grid gap-2 rounded-xl border border-[#E8E8E5] bg-[#FFFFFF] p-3 sm:grid-cols-2">
                       <input
                         className="h-10 rounded-lg border border-[#E8E8E5] bg-white px-3 text-sm sm:col-span-2"
                         onChange={(e) => setCustomInterventionName(e.target.value)}
@@ -1673,7 +1673,7 @@ export function RepairModal({
 
                 {/* Catalogue (aide) */}
                 {catalogPool.length > 0 && marque.trim() && modele.trim() && (
-                  <div className="rounded-xl border border-[#E8F7F3] bg-[#F8FCFA] p-4">
+                  <div className="rounded-xl border border-[#E8F7F3] bg-[#FFFFFF] p-4">
                     <p className="mb-2 font-semibold text-[#167B70] text-sm">Catalogue atelier</p>
 
                     {selectedInterventionKey && qualityOptionsForIntervention.length > 0 ? (
@@ -1781,7 +1781,7 @@ export function RepairModal({
 
                 {/* 4 Tarif */}
                 {intervention && (
-                  <section className="space-y-4 border-[#F7F7F7] border-t pt-5">
+                  <section className="space-y-4 border-[#FFFFFF] border-t pt-5">
                     <h3 className="text-[14px] text-[#1A1916] font-medium">
                       <span className="text-[#2A9D8F]">4.</span> Tarif client
                     </h3>
@@ -1831,7 +1831,7 @@ export function RepairModal({
                   </section>
                 )}
 
-                <div className="rounded-xl border border-[#E8E8E5] bg-[#FAFAFA] p-3">
+                <div className="rounded-xl border border-[#E8E8E5] bg-[#FFFFFF] p-3">
                   <button
                     className="flex w-full cursor-pointer items-center justify-between font-medium text-[#1A1916] text-sm"
                     onClick={() => setAdvancedOpen((o) => !o)}
@@ -1934,7 +1934,7 @@ export function RepairModal({
                     </label>
                   </div>
                   {rdvOui && (
-                    <div className="grid gap-2 rounded-xl bg-[#FAFAFA] p-3 sm:grid-cols-2">
+                    <div className="grid gap-2 rounded-xl bg-[#FFFFFF] p-3 sm:grid-cols-2">
                       <label className="text-xs">
                         Date *
                         <input
@@ -1978,7 +1978,7 @@ export function RepairModal({
 
                 {/* §5 — l'étape 1 reste "infos simples". L'état d'entrée / anti-litige
                     (écran, tactile, oxydation, signature…) se remplit à l'étape 2, jamais ici. */}
-                <section className="flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA] p-4">
+                <section className="flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
                   <div className="flex items-start gap-3">
                     <span className="grid size-9 shrink-0 place-items-center text-[#2A9D8F]">
                       <ClipboardCheck className="size-[18px]" />
@@ -2001,7 +2001,7 @@ export function RepairModal({
 
             {/* Mobile : barre d'action sticky en bas */}
             <div
-              className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 border-t border-[#F7F7F7] bg-white px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden"
+              className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 border-t border-[#FFFFFF] bg-white px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden"
               style={{ boxShadow: "0 -10px 24px rgba(26,25,22,0.06)" }}
             >
               <div className="min-w-0">
@@ -2036,7 +2036,7 @@ export function RepairModal({
             </div>
 
             {/* Résumé desktop */}
-            <aside className="hidden md:flex w-full flex-col border-[#F7F7F7] border-t bg-[#FAFAFA] p-6 md:w-[320px] md:border-t-0 md:border-l">
+            <aside className="hidden md:flex w-full flex-col border-[#FFFFFF] border-t bg-[#FFFFFF] p-6 md:w-[320px] md:border-t-0 md:border-l">
               <div className="mb-5">
                 <h3 className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Résumé</h3>
               </div>
@@ -2082,7 +2082,7 @@ export function RepairModal({
               </dl>
 
               {!canSubmitQuote && (
-                <p className="mt-4 rounded-lg border border-[#E8E8E5] bg-[#FAFAFA] px-3 py-2 text-[#6B6B6B] text-xs">
+                <p className="mt-4 rounded-lg border border-[#E8E8E5] bg-[#FFFFFF] px-3 py-2 text-[#6B6B6B] text-xs">
                   Ajoutez un tarif pour créer un devis.
                 </p>
               )}
@@ -2138,15 +2138,15 @@ function DoneAction({
     <button
       className={`group flex items-center gap-3 rounded-2xl border p-3.5 text-left transition ${
         primary
-          ? "border-[#2A9D8F] bg-[#F1FAF8] hover:bg-[#E8F7F3]"
-          : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/40 hover:bg-[#FAFAFA]"
+          ? "border-[#2A9D8F] bg-[#FFFFFF] hover:bg-[#FFFFFF]"
+          : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/40 hover:bg-[#FFFFFF]"
       }`}
       onClick={onClick}
       type="button"
     >
       <span
         className={`grid size-9 shrink-0 place-items-center rounded-xl ${
-          primary ? "bg-[#2A9D8F] text-white" : "bg-[#F4F4F2] text-[#167B70]"
+          primary ? "bg-[#2A9D8F] text-white" : "bg-[#FFFFFF] text-[#167B70]"
         }`}
       >
         {icon}

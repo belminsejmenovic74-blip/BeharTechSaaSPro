@@ -14,11 +14,11 @@ const C = {
   accent: "#2A9D8F",
   accentDark: "#167B70",
   line: "#E8E8E5",
-  hair: "#F1F1EF",
-  soft: "#FAFAFA",
-  accentSoft: "#EAF6F2",
+  hair: "#FFFFFF",
+  soft: "#FFFFFF",
+  accentSoft: "#FFFFFF",
   amber: "#9A6B1B",
-  amberSoft: "#FBF3E2",
+  amberSoft: "#FFFFFF",
 };
 
 const dateFr = (iso: string) => {
@@ -37,7 +37,7 @@ const val = (v: string | number | null | undefined, fallback = "—") => {
 const STATUS_STYLE: Record<ControlStatus, { bg: string; fg: string; label: string }> = {
   validé: { bg: C.accentSoft, fg: C.accentDark, label: "Validé" },
   "à signaler": { bg: C.amberSoft, fg: C.amber, label: "À signaler" },
-  "non testé": { bg: "#F4F4F2", fg: C.faint, label: "Non testé" },
+  "non testé": { bg: "#FFFFFF", fg: C.faint, label: "Non testé" },
 };
 
 function StatusPill({ status }: Readonly<{ status: ControlStatus }>) {

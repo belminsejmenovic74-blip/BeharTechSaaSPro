@@ -112,7 +112,8 @@ export function CustomersWorkspace() {
 
   // Documents du client regroupés par dossier atelier (le reste dans « Autres »).
   const clientDocGroups = useMemo(() => {
-    if (!selectedCustomer) return [] as Array<{ key: string; title: string; subtitle: string; docs: typeof store.documents }>;
+    if (!selectedCustomer)
+      return [] as Array<{ key: string; title: string; subtitle: string; docs: typeof store.documents }>;
     const docs = store.documents.filter((doc) => doc.customerId === selectedCustomer.id);
     const map = new Map<string, { key: string; title: string; subtitle: string; docs: typeof store.documents }>();
     for (const doc of docs) {
@@ -222,7 +223,7 @@ export function CustomersWorkspace() {
       <ToolbarSelect>Tous les appareils</ToolbarSelect>
       <ToolbarSelect>Source</ToolbarSelect>
       <SecondaryButton
-        className={filterVip ? "border-[#2A9D8F] bg-[#EAF6F2] text-[#1A1916]" : ""}
+        className={filterVip ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1A1916]" : ""}
         onClick={() => setFilterVip(!filterVip)}
       >
         VIP uniquement
@@ -297,7 +298,7 @@ export function CustomersWorkspace() {
                   }}
                   className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
                 >
-                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#EAF6F2] font-semibold text-[#2A9D8F] text-[12px] uppercase">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#FFFFFF] font-semibold text-[#2A9D8F] text-[12px] uppercase">
                     {customer.initials}
                   </span>
                   <div className="min-w-0 flex-1">
@@ -340,13 +341,13 @@ export function CustomersWorkspace() {
             <tbody>
               {filteredCustomers.map((customer) => (
                 <tr
-                  className={`cursor-pointer transition-colors ${customer.id === selectedCustomer?.id ? "bg-[#F1FAF8]" : "hover:bg-[#FAFAFA]"}`}
+                  className={`cursor-pointer transition-colors ${customer.id === selectedCustomer?.id ? "bg-[#FFFFFF]" : "hover:bg-[#FFFFFF]"}`}
                   key={customer.id}
                   onClick={() => store.setSelected("customer", customer.id)}
                 >
                   <td className="border-[#E8E8E5] border-b px-4 py-3 text-[#1A1916]">
                     <div className="flex items-center gap-3">
-                      <span className="grid size-9 place-items-center rounded-full bg-[#F7F7F7] font-semibold text-[#1A1916] text-[11px] uppercase">
+                      <span className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] font-semibold text-[#1A1916] text-[11px] uppercase">
                         {customer.initials}
                       </span>
                       <span className="font-semibold text-sm">{displayCustomerName(customer)}</span>
@@ -379,7 +380,7 @@ export function CustomersWorkspace() {
             )}
           >
             {/* Mobile back button */}
-            <div className="md:hidden -mx-5 -mt-5 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#F7F7F7] bg-white px-4 py-3">
+            <div className="md:hidden -mx-5 -mt-5 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#FFFFFF] bg-white px-4 py-3">
               <button
                 type="button"
                 onClick={() => setMobileDetailOpen(false)}
@@ -391,7 +392,7 @@ export function CustomersWorkspace() {
               <span className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Détail client</span>
             </div>
             <div className="mb-5 flex shrink-0 items-start gap-4">
-              <span className="grid size-14 place-items-center rounded-2xl bg-[#FAFAFA] font-semibold text-[#1A1916] text-xl">
+              <span className="grid size-14 place-items-center rounded-2xl bg-[#FFFFFF] font-semibold text-[#1A1916] text-xl">
                 {selectedCustomer.initials}
               </span>
               <div className="min-w-0 flex-1">
@@ -411,7 +412,7 @@ export function CustomersWorkspace() {
               </div>
               <button
                 aria-label="Options client"
-                className="rounded-xl p-2 hover:bg-[#F7F7F7] transition-colors"
+                className="rounded-xl p-2 hover:bg-[#FFFFFF] transition-colors"
                 onClick={() => setEditing(selectedCustomer)}
                 type="button"
               >
@@ -420,7 +421,7 @@ export function CustomersWorkspace() {
             </div>
 
             {/* Tab Switcher */}
-            <div className="mb-5 flex rounded-xl bg-[#F7F7F7] p-1 shadow-inner">
+            <div className="mb-5 flex rounded-xl bg-[#FFFFFF] p-1 shadow-inner">
               <button
                 onClick={() => setTab("resume")}
                 className={`flex-1 rounded-[10px] py-2 text-center text-xs font-medium transition-all ${
@@ -488,7 +489,7 @@ export function CustomersWorkspace() {
                       }
                     />
                   </div>
-                  <div className="mt-4 rounded-[16px] bg-[#FAFAFA] p-4 border border-[#F7F7F7]">
+                  <div className="mt-4 rounded-[16px] bg-[#FFFFFF] p-4 border border-[#FFFFFF]">
                     <h3 className="mb-2 font-medium text-[#6B6B6B] text-[12px] uppercase tracking-wider">
                       Notes internes
                     </h3>
@@ -504,7 +505,9 @@ export function CustomersWorkspace() {
                     <div className="flex flex-col items-center justify-center py-10 text-center">
                       <ReceiptText className="size-8 mb-3 text-[#A3A3A3]" />
                       <p className="text-[13px] font-medium text-[#6B6B6B]">Aucun document pour ce client</p>
-                      <p className="mt-1 text-[12px] text-[#A3A3A3]">Bons, devis, factures et reçus apparaîtront ici.</p>
+                      <p className="mt-1 text-[12px] text-[#A3A3A3]">
+                        Bons, devis, factures et reçus apparaîtront ici.
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -517,7 +520,7 @@ export function CustomersWorkspace() {
                                 <p className="truncate text-[#6B6B6B] text-[11px]">{group.subtitle}</p>
                               ) : null}
                             </div>
-                            <span className="shrink-0 rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 text-[#6B6B6B] text-[11px]">
+                            <span className="shrink-0 rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[#6B6B6B] text-[11px]">
                               {group.docs.length}
                             </span>
                           </div>
@@ -548,7 +551,7 @@ export function CustomersWorkspace() {
                 <div className="overflow-y-auto pr-2 custom-scrollbar flex-1">
                   <div className="space-y-2">
                     {historyItems.length > 0 ? (
-                      historyItems.map(({ title, detail, time, icon: Icon, type, id }, idx) => (
+                      historyItems.map(({ title, detail, time, icon: Icon, type, id }) => (
                         <Link
                           href={
                             type
@@ -560,11 +563,10 @@ export function CustomersWorkspace() {
                           onClick={() => {
                             if (type && id) store.setSelected(type, id);
                           }}
-                          className="group flex items-start gap-4 p-3.5 rounded-2xl bg-[#FAFAFA] border border-transparent hover:border-[#2A9D8F]/30 hover:bg-white hover:shadow-md transition-all animate-in fade-in slide-in-from-right-2 duration-300"
-                          style={{ animationDelay: `${idx * 40}ms` }}
+                          className="group flex items-start gap-4 rounded-2xl border border-transparent bg-[#FFFFFF] p-3.5 transition-colors hover:border-[#2A9D8F]/30 hover:bg-white"
                           key={`${title}-${detail}-${time}`}
                         >
-                          <span className="grid size-10 place-items-center rounded-2xl bg-white border border-[#E8E8E5] text-[#2A9D8F] shadow-sm shrink-0 group-hover:scale-110 transition-transform">
+                          <span className="grid size-10 shrink-0 place-items-center rounded-2xl border border-[#E8E8E5] bg-white text-[#2A9D8F] shadow-sm">
                             <Icon className="size-4" />
                           </span>
                           <div className="min-w-0 flex-1">
@@ -759,7 +761,7 @@ function CustomerModal({ onClose, initial }: Readonly<{ onClose: () => void; ini
             onClose();
           }}
         >
-          <label className="flex items-center gap-3 rounded-2xl bg-[#FAFAFA] p-3 text-sm">
+          <label className="flex items-center gap-3 rounded-2xl bg-[#FFFFFF] p-3 text-sm">
             <input name="anonymous" type="checkbox" />
             Le client souhaite rester anonyme
           </label>

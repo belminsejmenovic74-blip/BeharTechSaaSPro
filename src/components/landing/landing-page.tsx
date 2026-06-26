@@ -27,11 +27,9 @@ import {
   Phone,
   ReceiptText,
   ShieldCheck,
-  Sparkles,
   Store,
   Truck,
   Users,
-  WandSparkles,
   X,
 } from "lucide-react";
 
@@ -53,9 +51,13 @@ const benefits = [
     image: "/mockups/mockup-moins-appels.png",
   },
   {
-    title: "Stock intelligent via partenaires IA",
+    title: "Stock intelligent",
     subtitle: "Le bon produit, au bon moment, au bon prix.",
-    bullets: ["Import fournisseurs via PDF ou photo", "Mise à jour automatique des stocks", "Achats suggérés par IA"],
+    bullets: [
+      "Import fournisseurs via PDF ou photo",
+      "Mise à jour automatique des stocks",
+      "Achats suggérés selon vos rotations",
+    ],
     icon: PackageCheck,
     image: "/mockups/mockup-stock-intelligent.png",
   },
@@ -115,14 +117,14 @@ const tools = [
     image: "/mockups/mockup-rendez-vous.png",
   },
   {
-    title: "Prix de référence avec IA",
+    title: "Prix de référence",
     subtitle: "Achat / revente / marge.",
     bullets: [
       "Estimez vos prix d’achat et de revente à partir de millions de références.",
-      "IA intégrée pour des suggestions fiables et à jour.",
+      "Suggestions structurées pour décider plus vite.",
       "Marge estimée pour décider en confiance.",
     ],
-    icon: WandSparkles,
+    icon: BarChart3,
     image: "/mockups/mockup-prix-ia.png",
   },
   {
@@ -301,9 +303,7 @@ function _StockMockup() {
           <span className={styles.mockupEyebrow}>Stock intelligent</span>
           <strong>Suggestions d’achat</strong>
         </div>
-        <span className={styles.aiScore}>
-          <Sparkles size={13} /> IA active
-        </span>
+        <span className={styles.aiScore}>Automatisé</span>
       </div>
       {[
         ["Écran iPhone 13", "Stock faible", "Commander 6"],
@@ -1304,7 +1304,7 @@ export function LandingPage() {
             <span className={styles.cardKicker}>Pourquoi nous contacter ?</span>
             <h3>Une réponse claire, adaptée à votre façon de travailler.</h3>
             {[
-              [Sparkles, "Démo personnalisée", "Découvrez Behar Tech Pro adapté à votre atelier."],
+              [Store, "Démo personnalisée", "Découvrez Behar Tech Pro adapté à votre atelier."],
               [Clock3, "Réponse rapide", "Notre équipe vous répond sous 24 h ouvrées."],
               [Headphones, "Accompagnement atelier", "Un support dédié pour vous à chaque étape."],
             ].map(([Icon, title, text]) => (

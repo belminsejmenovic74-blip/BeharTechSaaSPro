@@ -82,7 +82,7 @@ export function StockImportModal() {
 
         <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
           <div className="space-y-4">
-            <label className="flex min-h-64 cursor-pointer flex-col items-center justify-center rounded-[24px] border border-[#2A9D8F]/35 border-dashed bg-[#EAF6F2]/60 p-8 text-center">
+            <label className="flex min-h-64 cursor-pointer flex-col items-center justify-center rounded-[24px] border border-[#2A9D8F]/35 border-dashed bg-[#FFFFFF] p-8 text-center">
               <FileSpreadsheet className="mb-4 size-12 text-[#2A9D8F]" />
               <span className="font-semibold text-[#1A1916]">Glisser-déposer un fichier ici</span>
               <span className="mt-2 text-[#6B6B6B] text-sm">
@@ -120,7 +120,7 @@ export function StockImportModal() {
               </div>
             </div>
 
-            <div className="mb-4 rounded-2xl border border-black/[0.07] bg-white/76 p-4">
+            <div className="mb-4 rounded-2xl border border-black/[0.07] bg-white p-4">
               <h3 className="mb-3 font-semibold text-[#1A1916]">Mapping colonnes Behar Tech</h3>
               <div className="grid gap-2 text-sm md:grid-cols-2">
                 {[
@@ -133,7 +133,7 @@ export function StockImportModal() {
                   "Seuil → threshold",
                   "Fournisseur → supplier",
                 ].map((item) => (
-                  <span className="rounded-xl bg-[#FAFAFA] px-3 py-2" key={item}>
+                  <span className="rounded-xl bg-[#FFFFFF] px-3 py-2" key={item}>
                     {item}
                   </span>
                 ))}

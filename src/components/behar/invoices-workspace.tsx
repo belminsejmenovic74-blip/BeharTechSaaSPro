@@ -56,6 +56,7 @@ import {
   type PaymentMethod,
   type QuoteLine,
   type WorkshopCountry,
+  type WorkshopCurrency,
   useBeharStore,
 } from "@/lib/behar-store";
 import { displayCustomerName, isCounterCustomer } from "@/lib/customer-display";
@@ -64,7 +65,13 @@ import { cn } from "@/lib/utils";
 import { useDocument } from "./print-provider";
 
 const invoiceStatuses: InvoiceStatus[] = ["Brouillon", "Envoyée", "Payée", "Annulée"];
-const francePaymentMethods: PaymentMethod[] = ["TPE externe", "Espèces hors Behar Tech", "Virement", "Lien externe", "Autre"];
+const francePaymentMethods: PaymentMethod[] = [
+  "TPE externe",
+  "Espèces hors Behar Tech",
+  "Virement",
+  "Lien externe",
+  "Autre",
+];
 const swissPaymentMethods: PaymentMethod[] = ["Espèces", "TWINT", "Carte externe", "Virement", "Autre"];
 
 function invoicePaymentBadge(invoice: { status: string }): string {
@@ -119,7 +126,14 @@ export function InvoicesWorkspace() {
   const invoiceMeta = useMemo(() => {
     const map = new Map<
       string,
-      { repairNumber?: string; quoteNumber?: string; receiptNumber?: string; deviceLabel: string; refs: string[]; haystack: string }
+      {
+        repairNumber?: string;
+        quoteNumber?: string;
+        receiptNumber?: string;
+        deviceLabel: string;
+        refs: string[];
+        haystack: string;
+      }
     >();
     for (const invoice of store.invoices) {
       const entryCustomer = store.customers.find((entry) => entry.id === invoice.customerId);
@@ -133,7 +147,8 @@ export function InvoicesWorkspace() {
         quote?.number ? `Devis ${quote.number}` : "",
         receipt?.paymentNumber ? `Reçu ${receipt.paymentNumber}` : "",
       ].filter(Boolean);
-      const haystack = `${invoice.number} ${displayCustomerName(entryCustomer)} ${entryCustomer?.phone ?? ""} ${invoice.sourceNumber ?? ""} ${repair?.number ?? ""} ${deviceLabel} ${quote?.number ?? ""} ${receipt?.paymentNumber ?? ""}`.toLowerCase();
+      const haystack =
+        `${invoice.number} ${displayCustomerName(entryCustomer)} ${entryCustomer?.phone ?? ""} ${invoice.sourceNumber ?? ""} ${repair?.number ?? ""} ${deviceLabel} ${quote?.number ?? ""} ${receipt?.paymentNumber ?? ""}`.toLowerCase();
       map.set(invoice.id, {
         repairNumber: dossierNumber,
         quoteNumber: quote?.number,
@@ -235,7 +250,8 @@ export function InvoicesWorkspace() {
             const allInvoices = store.invoices;
             const paid = allInvoices
               .filter(
-                (i) => i.status === "Payée" && (i.currency ?? store.workshopInfo.currency) === store.workshopInfo.currency,
+                (i) =>
+                  i.status === "Payée" && (i.currency ?? store.workshopInfo.currency) === store.workshopInfo.currency,
               )
               .reduce((s, i) => s + getInvoiceTotal(i), 0);
             const pending = allInvoices
@@ -266,7 +282,7 @@ export function InvoicesWorkspace() {
                   </p>
                 </div>
                 <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-                  <span className="grid size-9 place-items-center rounded-[10px] bg-[#FAFAFA] text-[#6B6B6B]">
+                  <span className="grid size-9 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#6B6B6B]">
                     <Receipt className="size-[18px]" />
                   </span>
                   <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium">En attente</p>
@@ -334,7 +350,7 @@ export function InvoicesWorkspace() {
                       }}
                       className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
                     >
-                      <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FAFAFA] text-[#1A1916]">
+                      <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FFFFFF] text-[#1A1916]">
                         <Receipt className="size-[18px]" strokeWidth={1.8} />
                       </span>
                       <div className="min-w-0 flex-1">
@@ -388,8 +404,8 @@ export function InvoicesWorkspace() {
                 const active = invoice.id === selected?.id;
                 return (
                   <tr
-                    className={`cursor-pointer transition hover:bg-[#FAFAFA] ${
-                      active ? "border-[#2A9D8F]/30 border-y bg-[#E7F5F1] text-[#167B70]" : ""
+                    className={`cursor-pointer transition hover:bg-[#FFFFFF] ${
+                      active ? "border-[#2A9D8F]/30 border-y bg-[#FFFFFF] text-[#167B70]" : ""
                     }`}
                     key={invoice.id}
                     onClick={() => store.setSelected("invoice", invoice.id)}
@@ -440,7 +456,7 @@ export function InvoicesWorkspace() {
           )}
         >
           {/* Mobile back button */}
-          <div className="md:hidden -mx-5 -mt-5 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#F7F7F7] bg-white px-4 py-3">
+          <div className="md:hidden -mx-5 -mt-5 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#FFFFFF] bg-white px-4 py-3">
             <button
               type="button"
               onClick={() => setMobileDetailOpen(false)}
@@ -465,7 +481,7 @@ export function InvoicesWorkspace() {
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto pr-1 custom-scrollbar space-y-6">
-            <div className="rounded-xl border border-[#F7F7F7] p-4">
+            <div className="rounded-xl border border-[#FFFFFF] p-4">
               <p className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider mb-2">Destinataire</p>
               <p className="font-bold text-[#1A1916]">{displayCustomerName(customer)}</p>
               <div className="mt-2 space-y-1 text-xs text-[#6B6B6B]">
@@ -475,7 +491,7 @@ export function InvoicesWorkspace() {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-[#F7F7F7] pb-2">
+              <div className="flex items-center justify-between border-b border-[#FFFFFF] pb-2">
                 <p className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider">Détails de facturation</p>
                 {!paidLocked && (
                   <button
@@ -491,7 +507,7 @@ export function InvoicesWorkspace() {
                 {selected.lines.map((line) => (
                   <div
                     key={line.id}
-                    className="flex flex-col gap-2 rounded-xl border border-[#F7F7F7] bg-white p-3 transition-shadow hover:shadow-sm"
+                    className="flex flex-col gap-2 rounded-xl border border-[#FFFFFF] bg-white p-3 transition-shadow hover:shadow-sm"
                   >
                     <div className="flex justify-between gap-3">
                       {linesEditing ? (
@@ -576,7 +592,9 @@ export function InvoicesWorkspace() {
                       </span>
                     </div>
                     <div className="flex justify-between text-xs text-[#6B6B6B]">
-                      <span>TVA ({Math.round(getVatSummary(selected.lines, store.workshopInfo).rate * 1000) / 10}%)</span>
+                      <span>
+                        TVA ({Math.round(getVatSummary(selected.lines, store.workshopInfo).rate * 1000) / 10}%)
+                      </span>
                       <span className="font-medium">
                         {formatCurrency(getVatSummary(selected.lines, store.workshopInfo).tva, selectedCurrency)}
                       </span>
@@ -600,7 +618,7 @@ export function InvoicesWorkspace() {
                 )}
               </div>
 
-              <div className="flex items-center justify-between pt-2 border-t border-[#F7F7F7]">
+              <div className="flex items-center justify-between pt-2 border-t border-[#FFFFFF]">
                 <span className="font-bold text-[#1A1916] text-sm uppercase">
                   {store.workshopInfo.vatApplicable ? "Total TTC" : "Total Net"}
                 </span>
@@ -615,9 +633,7 @@ export function InvoicesWorkspace() {
               </div>
 
               <p className="text-center text-[9px] text-[#8A8A8A] uppercase tracking-widest pt-4">
-                {store.workshopInfo.vatApplicable
-                  ? "TVA incluse au taux légal"
-                  : store.workshopInfo.tvaMention}
+                {store.workshopInfo.vatApplicable ? "TVA incluse au taux légal" : store.workshopInfo.tvaMention}
               </p>
             </div>
 
@@ -628,7 +644,7 @@ export function InvoicesWorkspace() {
                   {invoicePayments.map((p) => (
                     <div
                       key={p.id}
-                      className="flex items-center justify-between p-3 rounded-xl border border-[#F7F7F7] text-sm"
+                      className="flex items-center justify-between p-3 rounded-xl border border-[#FFFFFF] text-sm"
                     >
                       <div>
                         <p className="font-semibold text-[#1A1916]">{p.method}</p>
@@ -644,7 +660,7 @@ export function InvoicesWorkspace() {
             )}
           </div>
 
-          <div className="mt-8 pt-6 border-t border-[#F7F7F7] space-y-3">
+          <div className="mt-8 pt-6 border-t border-[#FFFFFF] space-y-3">
             {remainingAmount > 0 ? (
               <button
                 onClick={() => setPaymentOpen(true)}
@@ -654,7 +670,7 @@ export function InvoicesWorkspace() {
                 Enregistrer un paiement
               </button>
             ) : (
-              <div className="w-full py-2.5 rounded-xl border border-[#F7F7F7] text-[#6B6B6B] text-xs font-bold text-center">
+              <div className="w-full py-2.5 rounded-xl border border-[#FFFFFF] text-[#6B6B6B] text-xs font-bold text-center">
                 Facture soldée
               </div>
             )}
@@ -662,14 +678,14 @@ export function InvoicesWorkspace() {
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => download("invoice", selected.id)}
-                className="h-10 rounded-xl border border-[#E8E8E5] bg-white text-[#1A1916] font-bold text-xs hover:bg-[#FAFAFA] transition-all flex items-center justify-center gap-2"
+                className="h-10 rounded-xl border border-[#E8E8E5] bg-white text-[#1A1916] font-bold text-xs hover:bg-[#FFFFFF] transition-all flex items-center justify-center gap-2"
               >
                 <Download className="size-3.5" />
                 PDF
               </button>
               <button
                 onClick={() => print("invoice", selected.id)}
-                className="h-10 rounded-xl border border-[#E8E8E5] bg-white text-[#1A1916] font-bold text-xs hover:bg-[#FAFAFA] transition-all flex items-center justify-center gap-2"
+                className="h-10 rounded-xl border border-[#E8E8E5] bg-white text-[#1A1916] font-bold text-xs hover:bg-[#FFFFFF] transition-all flex items-center justify-center gap-2"
               >
                 <Printer className="size-3.5" />
                 Imprimer
@@ -683,7 +699,7 @@ export function InvoicesWorkspace() {
                   toast.success("SMS envoyé");
                 }
               }}
-              className="w-full h-10 rounded-xl border border-[#F7F7F7] text-[#8A8A8A] font-bold text-xs hover:text-[#6B6B6B] transition-all flex items-center justify-center gap-2"
+              className="w-full h-10 rounded-xl border border-[#FFFFFF] text-[#8A8A8A] font-bold text-xs hover:text-[#6B6B6B] transition-all flex items-center justify-center gap-2"
             >
               <Mail className="size-3.5" />
               Notifier par SMS
@@ -739,7 +755,7 @@ export function InvoicesWorkspace() {
                       onClick={() => setPaymentMethod(m)}
                       className={`h-10 rounded-xl border font-bold text-xs transition-all ${
                         paymentMethod === m
-                          ? "border-[#1A1916] bg-[#F7F7F7] text-[#1A1916]"
+                          ? "border-[#1A1916] bg-[#FFFFFF] text-[#1A1916]"
                           : "border-[#E8E8E5] text-[#6B6B6B] hover:border-[#8A8A8A]"
                       }`}
                     >
@@ -805,6 +821,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
   });
   const [customerInfo, setCustomerInfo] = useState({ name: "", phone: "", email: "", device: "", issue: "" });
   const [billingCountry, setBillingCountry] = useState<WorkshopCountry>(store.workshopInfo.country);
+  const [docCurrency, setDocCurrency] = useState<WorkshopCurrency>(store.workshopInfo.country === "CH" ? "CHF" : "EUR");
 
   const availableQuotes = store.quotes.filter((q) => q.status === "Accepté" && !q.invoiceId);
   const availableRepairs = store.repairs.filter((r) => !r.invoiceId);
@@ -817,6 +834,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
       const r = q?.repairId ? store.repairs.find((item) => item.id === q.repairId) : undefined;
       if (q && c) {
         setBillingCountry(q.billingCountry);
+        setDocCurrency(q.currency ?? (q.billingCountry === "CH" ? "CHF" : "EUR"));
         setLines(q.lines.map((l) => ({ ...l })));
         setCustomerInfo({
           name: c.name,
@@ -831,6 +849,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
       const c = store.customers.find((item) => item.id === r?.customerId);
       if (r && c) {
         setBillingCountry(r.billingCountry);
+        setDocCurrency(r.currency ?? (r.billingCountry === "CH" ? "CHF" : "EUR"));
         const built = buildInvoiceLinesFromRepair(r);
         if (built.ok) {
           setLines(built.lines.map((l) => ({ ...l, total: l.quantity * l.unitPrice })));
@@ -866,7 +885,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
 
   const subtotal = lines.reduce((acc, line) => acc + line.quantity * line.unitPrice, 0);
   const billingWorkshop = getBillingWorkshopInfo(store.workshopInfo, billingCountry);
-  const invoiceCurrency = billingWorkshop.currency;
+  const invoiceCurrency = docCurrency;
   const isMicro = billingWorkshop.isMicroEnterprise === true;
   const tva = isMicro ? 0 : subtotal * ((billingWorkshop.vatRate ?? 0) / 100);
   const total = subtotal + tva;
@@ -880,9 +899,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
     }
 
     if (total <= 0 && status !== "Brouillon") {
-      const confirmZero = window.confirm(
-        `Cette facture est à 0 ${invoiceCurrency}. Voulez-vous vraiment la créer ?`,
-      );
+      const confirmZero = window.confirm(`Cette facture est à 0 ${invoiceCurrency}. Voulez-vous vraiment la créer ?`);
       if (!confirmZero) return;
     }
 
@@ -984,14 +1001,14 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
     <div className="fixed inset-0 z-50 flex items-stretch justify-stretch bg-black/40 p-0 md:items-center md:justify-center md:p-4">
       <div className="relative flex min-h-svh w-full max-w-none flex-col overflow-hidden rounded-none border border-[#E8E8E5] bg-white shadow-2xl animate-in fade-in zoom-in duration-200 md:h-[90vh] md:min-h-0 md:max-w-[1200px] md:rounded-[16px]">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#F7F7F7] bg-white md:px-8 md:py-6">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#FFFFFF] bg-white md:px-8 md:py-6">
           <div>
             <h2 className="text-[18px] font-bold text-[#1A1916] md:text-[22px]">Nouvelle facture</h2>
             <p className="mt-0.5 text-[12.5px] text-[#6B6B6B] md:mt-1 md:text-sm">Facturation rapide</p>
           </div>
           <button
             onClick={onClose}
-            className="grid size-9 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white text-[#1A1916] transition hover:bg-[#E8E8E5] md:size-auto md:bg-transparent md:p-0"
+            className="grid size-9 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white text-[#1A1916] transition hover:bg-[#FFFFFF] md:size-auto md:bg-transparent md:p-0"
             aria-label="Fermer"
           >
             <X className="size-5 md:size-6" />
@@ -1019,7 +1036,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                     }}
                     className={`relative flex flex-col items-center justify-center gap-3 rounded-[12px] border h-[110px] transition-all ${
                       sourceType === opt.id
-                        ? "border-[#2A9D8F] bg-[#F1FAF8] shadow-sm"
+                        ? "border-[#2A9D8F] bg-[#FFFFFF] shadow-sm"
                         : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/30"
                     }`}
                   >
@@ -1041,7 +1058,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
               </div>
             </div>
 
-            <div className="mt-5 rounded-[14px] border border-[#DDEFEA] bg-[#F6FCFA] p-4">
+            <div className="mt-5 rounded-[14px] border border-[#DDEFEA] bg-[#FFFFFF] p-4">
               <p className="text-xs font-semibold text-[#1A1916]">Pays de facturation du dossier</p>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 {(["FR", "CH"] as const).map((country) => (
@@ -1049,7 +1066,10 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                     key={country}
                     type="button"
                     disabled={(sourceType === "quote" || sourceType === "repair") && Boolean(selectedId)}
-                    onClick={() => setBillingCountry(country)}
+                    onClick={() => {
+                      setBillingCountry(country);
+                      setDocCurrency(country === "CH" ? "CHF" : "EUR");
+                    }}
                     className={`h-10 rounded-[10px] border text-xs font-semibold ${
                       billingCountry === country
                         ? "border-[#2A9D8F] bg-white text-[#167B70]"
@@ -1057,6 +1077,26 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                     } disabled:cursor-not-allowed disabled:opacity-70`}
                   >
                     {country === "CH" ? "Suisse · CHF" : "France · EUR"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <p className="text-xs font-semibold text-[#1A1916]">Devise du document</p>
+              <div className="mt-2 flex gap-2">
+                {(["EUR", "CHF"] as const).map((curr) => (
+                  <button
+                    key={curr}
+                    type="button"
+                    onClick={() => setDocCurrency(curr)}
+                    className={`h-9 px-4 rounded-[10px] border text-xs font-semibold transition ${
+                      docCurrency === curr
+                        ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
+                        : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:border-[#DADADA]"
+                    }`}
+                  >
+                    {curr === "EUR" ? "EUR (€)" : "CHF (CHF)"}
                   </button>
                 ))}
               </div>
@@ -1190,7 +1230,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
               </div>
               <div className="rounded-[12px] border border-[#E8E8E5] overflow-hidden bg-white">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-[#FAFAFA] text-[#6B6B6B] border-b border-[#E8E8E5] font-bold uppercase tracking-wider">
+                  <thead className="bg-[#FFFFFF] text-[#6B6B6B] border-b border-[#E8E8E5] font-bold uppercase tracking-wider">
                     <tr>
                       <th className="px-4 py-3">Description</th>
                       <th className="px-4 py-3 w-16 text-center">Qté</th>
@@ -1202,7 +1242,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                   </thead>
                   <tbody className="divide-y divide-[#E8E8E5]">
                     {lines.map((line, idx) => (
-                      <tr key={line.id} className="hover:bg-[#FAFAFA]/50 transition-colors">
+                      <tr key={line.id} className="hover:bg-[#FFFFFF] transition-colors">
                         <td className="p-2">
                           <input
                             className="w-full h-9 px-2 rounded-lg border border-transparent focus:border-[#E8E8E5] bg-transparent outline-none text-[#1A1916]"
@@ -1274,20 +1314,20 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
           </div>
 
           {/* Right Column (Aperçu) — hidden on mobile */}
-          <div className="hidden lg:flex w-[440px] border-l border-[#F7F7F7] bg-white p-0 flex-col overflow-hidden">
-            <div className="flex items-center justify-between p-6 border-b border-[#F7F7F7]">
+          <div className="hidden lg:flex w-[440px] border-l border-[#FFFFFF] bg-white p-0 flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b border-[#FFFFFF]">
               <h3 className="text-sm font-bold text-[#1A1916]">Aperçu en direct</h3>
-              <div className="flex items-center gap-2 rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-3 py-1 text-[10px] font-bold text-[#6B6B6B]">
+              <div className="flex items-center gap-2 rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-3 py-1 text-[10px] font-bold text-[#6B6B6B]">
                 <div className="size-1.5 rounded-full bg-[#6B6B6B]" />
                 BROUILLON
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-8 bg-[#FAFAFA]/30">
+            <div className="flex-1 overflow-y-auto p-8 bg-[#FFFFFF]">
               {/* Document Simulé */}
               <div className="bg-white shadow-sm border border-[#E8E8E5] rounded-xl p-8 min-h-[500px] flex flex-col">
                 {/* Header Atelier */}
-                <div className="flex items-center gap-4 border-b border-[#F7F7F7] pb-8 mb-8">
+                <div className="flex items-center gap-4 border-b border-[#FFFFFF] pb-8 mb-8">
                   <div />
                   <div>
                     <h4 className="font-bold text-[#1A1916] text-sm">{store.workshopInfo?.name || "Atelier"}</h4>
@@ -1337,7 +1377,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between border-b border-[#F7F7F7] pb-2 text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider">
+                      <div className="flex items-center justify-between border-b border-[#FFFFFF] pb-2 text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider">
                         <span>Description</span>
                         <span>Total</span>
                       </div>
@@ -1358,12 +1398,10 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                         ))}
                     </div>
 
-                    <div className="mt-auto pt-8 border-t border-[#F7F7F7] space-y-2">
+                    <div className="mt-auto pt-8 border-t border-[#FFFFFF] space-y-2">
                       <div className="flex justify-between text-[11px] text-[#6B6B6B]">
                         <span>Total HT</span>
-                        <span className="font-bold text-[#1A1916]">
-                          {formatCurrency(subtotal, invoiceCurrency)}
-                        </span>
+                        <span className="font-bold text-[#1A1916]">{formatCurrency(subtotal, invoiceCurrency)}</span>
                       </div>
                       {!isMicro && (
                         <div className="flex justify-between text-[11px] text-[#6B6B6B]">
@@ -1386,7 +1424,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                   </div>
                 ) : (
                   <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
-                    <div className="size-12 rounded-[12px] border border-[#E8E8E5] bg-[#FAFAFA] flex items-center justify-center mb-4">
+                    <div className="size-12 rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] flex items-center justify-center mb-4">
                       <FileText className="size-6 text-[#8A8A8A]" />
                     </div>
                     <p className="text-sm font-bold text-[#1A1916] mb-1">Facture en cours de saisie</p>
@@ -1398,7 +1436,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
           </div>
 
           {/* Footer Sticky */}
-          <div className="absolute bottom-0 left-0 right-0 border-t border-[#F7F7F7] bg-white px-8 py-5 flex items-center justify-between z-20">
+          <div className="absolute bottom-0 left-0 right-0 border-t border-[#FFFFFF] bg-white px-8 py-5 flex items-center justify-between z-20">
             <div className="flex items-center gap-6">
               <button
                 onClick={onClose}
@@ -1418,7 +1456,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
               <button
                 onClick={() => handleCreate("Envoyée", false)}
                 disabled={!isFormValid}
-                className="h-11 px-8 rounded-[12px] bg-[#E7F5F1] text-sm font-bold text-[#167B70] border border-[#2A9D8F]/20 hover:bg-[#D8EDE7] transition-all disabled:opacity-50 active:scale-[0.98]"
+                className="h-11 px-8 rounded-[12px] bg-[#FFFFFF] text-sm font-bold text-[#167B70] border border-[#2A9D8F]/20 hover:bg-[#FFFFFF] transition-all disabled:opacity-50 active:scale-[0.98]"
               >
                 Créer la facture
               </button>
@@ -1447,16 +1485,14 @@ function ChoiceCard({
 }: Readonly<{ title: string; subtitle?: string; description: string; icon: React.ReactNode; onClick: () => void }>) {
   return (
     <button
-      className="group flex flex-col items-start gap-4 rounded-xl border border-[#E8E8E5] bg-white p-6 text-left transition-all hover:bg-[#F1FAF8] hover:border-[#2A9D8F]/40"
+      className="group flex flex-col items-start gap-4 rounded-xl border border-[#E8E8E5] bg-white p-6 text-left transition-all hover:bg-[#FFFFFF] hover:border-[#2A9D8F]/40"
       onClick={onClick}
     >
-      <div className="rounded-xl bg-[#F1FAF8] p-4 transition-all group-hover:scale-110 group-hover:rotate-3 shadow-sm">
-        {icon}
-      </div>
+      <div className="rounded-xl bg-[#FFFFFF] p-4 shadow-sm transition-colors group-hover:bg-[#FFFFFF]">{icon}</div>
       <div>
         <h3 className="font-bold text-[#1A1916] tracking-tight">{title}</h3>
         {subtitle && (
-          <div className="mt-1 inline-flex items-center rounded-full bg-[#E7F5F1] px-2 py-0.5 text-[#167B70] text-[10px] font-bold uppercase">
+          <div className="mt-1 inline-flex items-center rounded-full bg-[#FFFFFF] px-2 py-0.5 text-[#167B70] text-[10px] font-bold uppercase">
             {subtitle}
           </div>
         )}

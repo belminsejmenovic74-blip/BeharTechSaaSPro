@@ -259,7 +259,7 @@ export function OnboardingWizard() {
       tvaMention: draft.vatApplicable
         ? ""
         : draft.country === "CH"
-          ? "TVA non applicable / non assujetti"
+          ? "Non assujetti à la TVA"
           : normalizeSpaces(draft.tvaMention),
       quoteTerms: String(draft.quoteTerms || "").trim(),
       invoiceTerms: String(draft.invoiceTerms || "").trim(),
@@ -296,7 +296,7 @@ export function OnboardingWizard() {
             {step === 4 && <StepSummary draft={draft} team={teamDraft} />}
 
             {/* Navigation Buttons */}
-            <div className="mt-14 pt-8 border-t border-[#F7F7F7] flex items-center justify-between">
+            <div className="mt-14 pt-8 border-t border-[#FFFFFF] flex items-center justify-between">
               {step > 1 ? (
                 <SecondaryButton onClick={prevStep} className="h-12 px-6 rounded-[14px] gap-2 text-[#6B6B6B]">
                   <ChevronLeft className="size-4" /> Retour
@@ -344,7 +344,7 @@ export function OnboardingWizard() {
                 {draft.logoUrl ? (
                   <img src={draft.logoUrl} className="size-10 rounded-[10px] object-cover" />
                 ) : (
-                  <div className="size-10 rounded-[10px] bg-[#FAFAFA] flex items-center justify-center text-[#8A8A8A]">
+                  <div className="size-10 rounded-[10px] bg-[#FFFFFF] flex items-center justify-center text-[#8A8A8A]">
                     <Building2 className="size-5" />
                   </div>
                 )}
@@ -393,7 +393,7 @@ function StepAtelier({ draft, setField }: any) {
     setField("vatRate", 0);
     setField(
       "tvaMention",
-      country === "CH" ? "TVA non applicable / non assujetti" : "TVA non applicable, art. 293 B du CGI",
+      country === "CH" ? "Non assujetti à la TVA" : "TVA non applicable, art. 293 B du CGI",
     );
   };
 
@@ -416,7 +416,7 @@ function StepAtelier({ draft, setField }: any) {
           </select>
         </Field>
         <Field label="Devise">
-          <input className={cn(inputCls, "bg-[#FAFAFA] text-[#6B6B6B]")} value={isSwiss ? "CHF" : "EUR"} readOnly />
+          <input className={cn(inputCls, "bg-[#FFFFFF] text-[#6B6B6B]")} value={isSwiss ? "CHF" : "EUR"} readOnly />
         </Field>
         <Field label="Nom de l'atelier *" placeholder="Ex: Phone Repair Expert">
           <input className={inputCls} value={draft.name} onChange={(e) => setField("name", e.target.value)} />
@@ -527,7 +527,7 @@ function StepAtelier({ draft, setField }: any) {
 
         <div className="md:col-span-2 mt-4">
           <p className="text-sm font-medium text-[#1A1916] mb-3">Logo de l'atelier</p>
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#E8E8E5] rounded-2xl bg-[#FAFAFA] cursor-pointer hover:bg-[#FAFAFA] transition group">
+          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#E8E8E5] rounded-2xl bg-[#FFFFFF] cursor-pointer hover:bg-[#FFFFFF] transition group">
             {draft.logoUrl ? (
               <div className="flex items-center gap-4 px-6 w-full">
                 <img src={draft.logoUrl} className="size-16 rounded-xl object-cover shadow-sm" />
@@ -577,7 +577,7 @@ function StepSettings({ draft, setField }: any) {
       applicable
         ? ""
         : isSwiss
-          ? "TVA non applicable / non assujetti"
+          ? "Non assujetti à la TVA"
           : "TVA non applicable, art. 293 B du CGI",
     );
   };
@@ -599,7 +599,7 @@ function StepSettings({ draft, setField }: any) {
               className={cn(
                 "p-5 rounded-2xl border-2 text-left transition",
                 !draft.vatApplicable
-                  ? "border-[#2A9D8F] bg-[#EAF6F2]"
+                  ? "border-[#2A9D8F] bg-[#FFFFFF]"
                   : "border-[#E8E8E5] bg-white hover:border-[#8A8A8A]",
               )}
             >
@@ -621,7 +621,7 @@ function StepSettings({ draft, setField }: any) {
               className={cn(
                 "p-5 rounded-2xl border-2 text-left transition",
                 draft.vatApplicable
-                  ? "border-[#2A9D8F] bg-[#EAF6F2]"
+                  ? "border-[#2A9D8F] bg-[#FFFFFF]"
                   : "border-[#E8E8E5] bg-white hover:border-[#8A8A8A]",
               )}
             >
@@ -757,7 +757,7 @@ function StepTeam({ team, setTeam }: { team: Omit<TeamMember, "id">[]; setTeam: 
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {team.map((member, index) => (
-          <div key={index} className="p-6 rounded-[24px] border border-[#E8E8E5] bg-[#FAFAFA]/50 relative group">
+          <div key={index} className="p-6 rounded-[24px] border border-[#E8E8E5] bg-[#FFFFFF] relative group">
             <button
               onClick={() => removeMember(index)}
               className="absolute top-4 right-4 p-2 text-[#8A8A8A] hover:text-[#E63946] transition opacity-0 group-hover:opacity-100"
@@ -834,7 +834,7 @@ function StepSummary({ draft, team }: { draft: WorkshopSettings; team: any[] }) 
             {draft.logoUrl ? (
               <img src={draft.logoUrl} className="size-12 rounded-xl object-cover" />
             ) : (
-              <div className="size-12 rounded-xl bg-[#FAFAFA] border border-[#E8E8E5] flex items-center justify-center text-[#8A8A8A]">
+              <div className="size-12 rounded-xl bg-[#FFFFFF] border border-[#E8E8E5] flex items-center justify-center text-[#8A8A8A]">
                 <Building2 className="size-6" />
               </div>
             )}
@@ -845,7 +845,7 @@ function StepSummary({ draft, team }: { draft: WorkshopSettings; team: any[] }) 
               </p>
             </div>
           </div>
-          <div className="space-y-1.5 pt-2 border-t border-[#F7F7F7]">
+          <div className="space-y-1.5 pt-2 border-t border-[#FFFFFF]">
             <SummaryItem icon={<Phone className="size-3" />} label={draft.phone} />
             <SummaryItem icon={<Mail className="size-3" />} label={draft.email} />
             <SummaryItem
@@ -863,17 +863,17 @@ function StepSummary({ draft, team }: { draft: WorkshopSettings; team: any[] }) 
                 {draft.vatApplicable
                   ? `TVA applicable (${String(draft.vatRate || (draft.country === "CH" ? 8.1 : 20)).replace(".", ",")} %)`
                   : draft.country === "CH"
-                    ? "TVA non applicable / non assujetti"
+                    ? "Non assujetti à la TVA"
                     : "TVA non applicable (franchise en base)"}
               </p>
             </div>
             <div>
               <p className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider mb-1">Préfixes</p>
               <div className="flex gap-3">
-                <span className="text-xs bg-[#FAFAFA] px-2 py-1 rounded-md text-[#6B6B6B] font-mono">
+                <span className="text-xs bg-[#FFFFFF] px-2 py-1 rounded-md text-[#6B6B6B] font-mono">
                   {draft.repairPrefix}
                 </span>
-                <span className="text-xs bg-[#FAFAFA] px-2 py-1 rounded-md text-[#6B6B6B] font-mono">
+                <span className="text-xs bg-[#FFFFFF] px-2 py-1 rounded-md text-[#6B6B6B] font-mono">
                   {draft.invoicePrefix}
                 </span>
               </div>
@@ -886,7 +886,7 @@ function StepSummary({ draft, team }: { draft: WorkshopSettings; team: any[] }) 
                 {team.map((m: any, i: number) => (
                   <div
                     key={i}
-                    className="size-8 rounded-full border-2 border-white bg-[#EAF6F2] flex items-center justify-center text-[#2A9D8F] text-[10px] font-bold shadow-sm ring-1 ring-[#E8E8E5]/20"
+                    className="size-8 rounded-full border-2 border-white bg-[#FFFFFF] flex items-center justify-center text-[#2A9D8F] text-[10px] font-bold shadow-sm ring-1 ring-[#E8E8E5]/20"
                   >
                     {m.firstName[0]}
                   </div>
@@ -928,7 +928,7 @@ function StepperItem({
       <div
         className={cn(
           "size-8 rounded-full flex items-center justify-center text-[13px] font-semibold transition-all duration-500",
-          current ? "bg-[#1A1916] text-white" : active ? "bg-[#E7F5F1] text-[#2A9D8F]" : "bg-[#FAFAFA] text-[#A3A3A3]",
+          current ? "bg-[#1A1916] text-white" : active ? "bg-[#FFFFFF] text-[#2A9D8F]" : "bg-[#FFFFFF] text-[#A3A3A3]",
         )}
       >
         {active && !current ? <Check className="size-3.5" /> : step}
@@ -947,7 +947,7 @@ function StepperItem({
 
 function StepperDivider({ active }: { active: boolean }) {
   return (
-    <div className="flex-1 h-px mx-4 bg-[#E8E8E5] relative overflow-hidden">
+    <div className="flex-1 h-px mx-4 bg-[#FFFFFF] relative overflow-hidden">
       <div
         className={cn(
           "absolute inset-0 bg-[#2A9D8F] transition-all duration-700 ease-in-out",

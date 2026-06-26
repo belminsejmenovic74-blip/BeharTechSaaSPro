@@ -155,7 +155,7 @@ function ChoiceButton({
       className={cn(
         "flex min-h-12 items-center justify-center gap-2 rounded-[14px] border px-3 text-center font-semibold text-[13px] transition active:scale-[0.98]",
         active
-          ? "border-[#2A9D8F] bg-[#EAF6F2] text-[#167B70] shadow-[0_0_0_1px_rgba(42,157,143,0.12)]"
+          ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70] shadow-[0_0_0_1px_rgba(42,157,143,0.12)]"
           : "border-[#E8E8E5] bg-white text-[#1A1916]",
       )}
     >
@@ -346,7 +346,7 @@ function MobileModelTouchSelector({
               }}
               className={cn(
                 "min-h-[50px] rounded-[14px] border px-3 text-center font-bold text-[12.5px] leading-tight transition active:scale-[0.97]",
-                active ? "border-[#2A9D8F] bg-[#EAF6F2] text-[#167B70]" : "border-[#E8E8E5] bg-white text-[#1A1916]",
+                active ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]" : "border-[#E8E8E5] bg-white text-[#1A1916]",
               )}
             >
               {active ? <Check className="mr-1 inline size-3.5" /> : null}
@@ -358,7 +358,7 @@ function MobileModelTouchSelector({
           <button
             type="button"
             onClick={() => onChange(query.trim())}
-            className="min-h-[50px] rounded-[14px] border border-dashed border-[#2A9D8F] bg-[#F6FCFA] px-3 font-bold text-[#167B70] text-[12.5px] leading-tight transition active:scale-[0.97]"
+            className="min-h-[50px] rounded-[14px] border border-dashed border-[#2A9D8F] bg-[#FFFFFF] px-3 font-bold text-[#167B70] text-[12.5px] leading-tight transition active:scale-[0.97]"
           >
             Utiliser « {query.trim()} »
           </button>
@@ -746,10 +746,10 @@ export function MobileRepairIntakeWizard({
   return (
     <div
       ref={wizardRef}
-      className="flex min-h-svh w-full flex-col overflow-x-hidden bg-[#FAFAF8] text-[#1A1916]"
+      className="flex min-h-svh w-full flex-col overflow-x-hidden bg-[#FFFFFF] text-[#1A1916]"
       data-mobile-repair-wizard
     >
-      <header className="sticky top-0 z-20 border-[#E8E8E5] border-b bg-[#FAFAF8]/95 px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
+      <header className="sticky top-0 z-20 border-[#E8E8E5] border-b bg-[#FFFFFF] px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="font-bold text-[#2A9D8F] text-[11px] uppercase tracking-[0.12em]">Étape {step} sur 6</p>
@@ -775,7 +775,7 @@ export function MobileRepairIntakeWizard({
           {steps.map((label, index) => (
             <div
               key={label}
-              className={cn("h-1.5 rounded-full transition", index + 1 <= step ? "bg-[#2A9D8F]" : "bg-[#DEDCD7]")}
+              className={cn("h-1.5 rounded-full transition", index + 1 <= step ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]")}
             />
           ))}
         </div>
@@ -785,7 +785,7 @@ export function MobileRepairIntakeWizard({
         {step === 1 ? (
           <div className="space-y-5">
             {allowedMarkets.length > 1 && (
-              <section className="rounded-[18px] border border-[#D7EFEA] bg-[#F6FCFA] p-4">
+              <section className="rounded-[18px] border border-[#D7EFEA] bg-[#FFFFFF] p-4">
                 <p className="font-semibold text-[14px]">Pays de facturation / marché</p>
                 <p className="mt-1 text-[#6B6B6B] text-[12px]">
                   France en euros, Suisse en francs suisses.
@@ -849,7 +849,7 @@ export function MobileRepairIntakeWizard({
                     <span
                       className={cn(
                         "grid size-11 shrink-0 place-items-center rounded-[13px]",
-                        active ? "bg-[#EAF6F2] text-[#167B70]" : "bg-[#FAFAF8] text-[#6B6B6B]",
+                        active ? "bg-[#FFFFFF] text-[#167B70]" : "bg-[#FFFFFF] text-[#6B6B6B]",
                       )}
                     >
                       <Icon className="size-5" />
@@ -1059,7 +1059,7 @@ export function MobileRepairIntakeWizard({
                       className={cn(
                         "min-h-[64px] rounded-[14px] border px-3 py-2 text-left transition active:scale-[0.98]",
                         active
-                          ? "border-[#2A9D8F] bg-[#EAF6F2] text-[#167B70] shadow-[0_0_0_1px_rgba(42,157,143,0.12)]"
+                          ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70] shadow-[0_0_0_1px_rgba(42,157,143,0.12)]"
                           : "border-[#E8E8E5] bg-white text-[#1A1916]",
                       )}
                     >
@@ -1124,7 +1124,7 @@ export function MobileRepairIntakeWizard({
                   onClick={() => setAddMeeting((current) => !current)}
                   className={cn(
                     "h-10 min-w-[74px] rounded-full px-4 font-bold text-[13px]",
-                    addMeeting ? "bg-[#2A9D8F] text-white" : "bg-[#F0EFEC] text-[#6B6B6B]",
+                    addMeeting ? "bg-[#2A9D8F] text-white" : "bg-[#FFFFFF] text-[#6B6B6B]",
                   )}
                 >
                   {addMeeting ? "Oui" : "Non"}
@@ -1196,9 +1196,9 @@ export function MobileRepairIntakeWizard({
                           "min-h-10 rounded-[10px] border px-1 font-bold text-[10.5px] transition active:scale-95",
                           conditions[row.key] === choice
                             ? choice === "OK"
-                              ? "border-[#2A9D8F] bg-[#EAF6F2] text-[#167B70]"
-                              : "border-[#C9A45D] bg-[#FBF3E2] text-[#805C17]"
-                            : "border-[#E8E8E5] bg-[#FAFAF8] text-[#6B6B6B]",
+                              ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]"
+                              : "border-[#C9A45D] bg-[#FFFFFF] text-[#805C17]"
+                            : "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
                         )}
                       >
                         {choice}
@@ -1275,7 +1275,7 @@ export function MobileRepairIntakeWizard({
               <div className="mt-4">
                 <SignaturePad signerName={signerName} value={signature} onChange={setSignature} />
               </div>
-              <p className="mt-3 rounded-[12px] bg-[#FAFAF8] px-3 py-2.5 text-[#6B6B6B] text-[12px] leading-relaxed">
+              <p className="mt-3 rounded-[12px] bg-[#FFFFFF] px-3 py-2.5 text-[#6B6B6B] text-[12px] leading-relaxed">
                 La signature reste optionnelle lorsque le client n’est pas présent.
               </p>
             </section>
@@ -1391,7 +1391,7 @@ export function MobileRepairIntakeWizard({
                 type="button"
                 disabled={creating}
                 onClick={() => create(false)}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-[13px] border border-[#B9DED6] bg-[#F4FBF9] font-bold text-[#167B70] text-[13px] disabled:opacity-60"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-[13px] border border-[#B9DED6] bg-[#FFFFFF] font-bold text-[#167B70] text-[13px] disabled:opacity-60"
               >
                 <ClipboardCheck className="size-4" />
                 Créer la prise en charge

@@ -37,10 +37,10 @@ export function AtelierModeWorkspace() {
 
   return (
     <div className="fixed inset-0 z-50 flex h-svh w-svw flex-col bg-white text-[#1A1916]">
-      <header className="flex shrink-0 items-center justify-between gap-3 border-[#E8E8E5] border-b bg-white/92 px-6 py-4 shadow-[0_1px_2px_rgba(26,25,22,0.035)] backdrop-blur lg:px-10">
+      <header className="flex shrink-0 items-center justify-between gap-3 border-[#E8E8E5] border-b bg-white px-6 py-4 shadow-[0_1px_2px_rgba(26,25,22,0.035)] backdrop-blur lg:px-10">
         <div className="flex items-center gap-5">
           <BeharLogo size="sm" />
-          <span className="hidden h-8 items-center gap-2 rounded-[10px] border border-[#D7EFEA] bg-[#F6FCFA] px-3 font-semibold text-[#167B70] text-[13px] md:inline-flex">
+          <span className="hidden h-8 items-center gap-2 rounded-[10px] border border-[#D7EFEA] bg-[#FFFFFF] px-3 font-semibold text-[#167B70] text-[13px] md:inline-flex">
             <Wrench className="size-4" />
             Mode atelier
           </span>
@@ -108,7 +108,7 @@ export function AtelierModeWorkspace() {
         </div>
       </main>
 
-      <footer className="shrink-0 border-[#E8E8E5] border-t bg-white/92 px-6 py-3 text-center text-[#6B6B6B] text-[11px] backdrop-blur lg:px-10">
+      <footer className="shrink-0 border-[#E8E8E5] border-t bg-white px-6 py-3 text-center text-[#6B6B6B] text-[11px] backdrop-blur lg:px-10">
         {workshopInfo.name} · Behar Tech Pro
       </footer>
     </div>

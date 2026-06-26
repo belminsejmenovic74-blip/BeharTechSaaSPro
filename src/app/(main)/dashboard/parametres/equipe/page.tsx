@@ -332,12 +332,12 @@ function TeamList({
             key={user.id}
             className={cn(
               "rounded-[18px] border bg-white p-4 transition shadow-[0_1px_2px_rgba(26,25,22,0.03)]",
-              user.active ? "border-[#F7F7F7]" : "border-[#F7F7F7] bg-[#FAFAFA] opacity-80",
+              user.active ? "border-[#FFFFFF]" : "border-[#FFFFFF] bg-[#FFFFFF] opacity-80",
             )}
           >
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3.5">
-                <span className="grid size-11 shrink-0 place-items-center rounded-[14px] bg-[#EAF6F2] font-semibold text-[#2A9D8F] text-[15px]">
+                <span className="grid size-11 shrink-0 place-items-center rounded-[14px] bg-[#FFFFFF] font-semibold text-[#2A9D8F] text-[15px]">
                   {user.name.charAt(0).toUpperCase()}
                 </span>
                 <div className="min-w-0">
@@ -346,15 +346,15 @@ function TeamList({
                     {isSelf && <span className="ml-2 text-[#6B6B6B] text-[12px]">(vous)</span>}
                   </p>
                   <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                    <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 font-medium text-[#1A1916] text-[11px]">
+                    <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 font-medium text-[#1A1916] text-[11px]">
                       {roleLabel(user.role)}
                     </span>
                     {user.active ? (
-                      <span className="rounded-full bg-[#EAF6F2] px-2 py-0.5 font-medium text-[#147065] text-[11px]">
+                      <span className="rounded-full bg-[#FFFFFF] px-2 py-0.5 font-medium text-[#147065] text-[11px]">
                         Actif
                       </span>
                     ) : (
-                      <span className="rounded-full bg-[#FDF2F2] px-2 py-0.5 font-medium text-[#B42318] text-[11px]">
+                      <span className="rounded-full bg-[#FFFFFF] px-2 py-0.5 font-medium text-[#B42318] text-[11px]">
                         Désactivé
                       </span>
                     )}
@@ -368,7 +368,7 @@ function TeamList({
                 <button
                   type="button"
                   onClick={() => onResetPin(user.id)}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-[12.5px] hover:bg-[#FAFAFA]"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-[12.5px] hover:bg-[#FFFFFF]"
                 >
                   <KeyRound className="size-3.5" /> PIN
                 </button>
@@ -376,7 +376,7 @@ function TeamList({
                   <button
                     type="button"
                     onClick={() => onPermissions(user.id)}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-[12.5px] hover:bg-[#FAFAFA]"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-[12.5px] hover:bg-[#FFFFFF]"
                   >
                     <ShieldCheck className="size-3.5" /> Permissions
                   </button>
@@ -384,7 +384,7 @@ function TeamList({
                 <button
                   type="button"
                   onClick={() => onEdit(user.id)}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-[12.5px] hover:bg-[#FAFAFA]"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-[12.5px] hover:bg-[#FFFFFF]"
                 >
                   <Pencil className="size-3.5" /> Modifier
                 </button>
@@ -394,8 +394,8 @@ function TeamList({
                   className={cn(
                     "inline-flex h-9 items-center gap-1.5 rounded-[10px] border px-3 text-[12.5px]",
                     user.active
-                      ? "border-[#E8E8E5] bg-white text-[#1A1916] hover:bg-[#FAFAFA]"
-                      : "border-[#2A9D8F]/40 bg-[#EAF6F2] text-[#147065] hover:bg-[#DFF1EB]",
+                      ? "border-[#E8E8E5] bg-white text-[#1A1916] hover:bg-[#FFFFFF]"
+                      : "border-[#2A9D8F]/40 bg-[#FFFFFF] text-[#147065] hover:bg-[#FFFFFF]",
                   )}
                 >
                   {user.active ? "Désactiver" : "Réactiver"}
@@ -404,7 +404,7 @@ function TeamList({
                   <button
                     type="button"
                     onClick={() => onDelete(user.id)}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#FDD8D8] bg-white px-3 text-[#B42318] text-[12.5px] hover:bg-[#FDF2F2]"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#FDD8D8] bg-white px-3 text-[#B42318] text-[12.5px] hover:bg-[#FFFFFF]"
                   >
                     <Trash2 className="size-3.5" /> Supprimer
                   </button>
@@ -434,7 +434,7 @@ function MemberForm({
   const [pin, setPin] = useState("");
 
   return (
-    <div className="mx-auto max-w-[640px] space-y-4 rounded-[20px] border border-[#F7F7F7] bg-white p-6 shadow-[0_2px_8px_rgba(26,25,22,0.04)]">
+    <div className="mx-auto max-w-[640px] space-y-4 rounded-[20px] border border-[#FFFFFF] bg-white p-6 shadow-[0_2px_8px_rgba(26,25,22,0.04)]">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold text-[#1A1916] text-[18px] tracking-tight">
           {mode === "create" ? "Nouveau membre" : "Modifier le membre"}
@@ -442,7 +442,7 @@ function MemberForm({
         <button
           type="button"
           onClick={onCancel}
-          className="grid size-9 place-items-center rounded-full text-[#6B6B6B] hover:bg-[#FAFAFA]"
+          className="grid size-9 place-items-center rounded-full text-[#6B6B6B] hover:bg-[#FFFFFF]"
         >
           <X className="size-4" />
         </button>
@@ -469,7 +469,7 @@ function MemberForm({
                 onClick={() => setRole(r)}
                 className={cn(
                   "flex flex-col items-start gap-1 rounded-[14px] border bg-white px-3.5 py-3 text-left transition",
-                  role === r ? "border-[#2A9D8F] bg-[#F7FCFA]" : "border-[#E8E8E5] hover:bg-[#FAFAFA]",
+                  role === r ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E8E8E5] hover:bg-[#FFFFFF]",
                 )}
               >
                 <span className="font-semibold text-[#1A1916] text-[14px]">{roleLabel(r)}</span>
@@ -536,7 +536,7 @@ function PermissionsEditor({
   const effective = user.permissions;
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-[#F7F7F7] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.03)]">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-[#FFFFFF] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.03)]">
         <div className="flex items-center gap-3.5">
           <span className="grid size-11 place-items-center text-[#2A9D8F]">
             <UserCog className="size-5" />
@@ -557,7 +557,7 @@ function PermissionsEditor({
       </div>
 
       {!canEdit && (
-        <div className="rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA] px-4 py-3 text-[#6B6B6B] text-[13px]">
+        <div className="rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] px-4 py-3 text-[#6B6B6B] text-[13px]">
           Vous n'avez pas la permission `canManageRoles`. Les permissions ci-dessous sont en lecture seule.
         </div>
       )}
@@ -566,7 +566,7 @@ function PermissionsEditor({
         {permissionGroups.map((group) => (
           <div
             key={group.title}
-            className="rounded-[20px] border border-[#F7F7F7] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.03)]"
+            className="rounded-[20px] border border-[#FFFFFF] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.03)]"
           >
             <h3 className="font-semibold text-[#1A1916] text-[14px] tracking-tight">{group.title}</h3>
             <div className="mt-3 space-y-1">
@@ -578,7 +578,7 @@ function PermissionsEditor({
                     key={key}
                     className={cn(
                       "flex cursor-pointer items-center justify-between gap-3 rounded-[12px] px-3 py-2 transition",
-                      canEdit ? "hover:bg-[#FAFAFA]" : "cursor-default",
+                      canEdit ? "hover:bg-[#FFFFFF]" : "cursor-default",
                     )}
                   >
                     <span className="text-[#1A1916] text-[13.5px]">{PERMISSION_LABELS[key] ?? key}</span>
@@ -624,11 +624,11 @@ function AuditLogView({
           Retour
         </SecondaryButton>
       </div>
-      <div className="rounded-[20px] border border-[#F7F7F7] bg-white shadow-[0_1px_2px_rgba(26,25,22,0.03)] overflow-hidden">
+      <div className="rounded-[20px] border border-[#FFFFFF] bg-white shadow-[0_1px_2px_rgba(26,25,22,0.03)] overflow-hidden">
         {logs.length === 0 ? (
           <p className="px-5 py-10 text-center text-[#6B6B6B] text-sm">Aucune action enregistrée pour le moment.</p>
         ) : (
-          <ul className="divide-y divide-[#F7F7F7]">
+          <ul className="divide-y divide-[#FFFFFF]">
             {[...logs]
               .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
               .slice(0, 200)
@@ -638,7 +638,7 @@ function AuditLogView({
                   <div className="min-w-0 flex-1">
                     <p className="text-[#1A1916] text-[13.5px]">
                       <span className="font-semibold">{log.actorName}</span>
-                      <span className="ml-1.5 rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-1.5 py-0.5 font-medium text-[#6B6B6B] text-[10.5px]">
+                      <span className="ml-1.5 rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-1.5 py-0.5 font-medium text-[#6B6B6B] text-[10.5px]">
                         {roleLabel(log.actorRole)}
                       </span>
                       <span className="ml-2 text-[#6B6B6B]">{log.message}</span>
@@ -703,7 +703,7 @@ function GreetingsEditor({ onClose }: Readonly<{ onClose: () => void }>) {
     <div className="mx-auto max-w-[720px]">
       <div className="rounded-[20px] border border-[#E8E8E5] bg-white shadow-[0_2px_8px_rgba(26,25,22,0.04)]">
         {/* Header */}
-        <div className="flex items-start justify-between gap-3 border-b border-[#F7F7F7] p-5">
+        <div className="flex items-start justify-between gap-3 border-b border-[#FFFFFF] p-5">
           <div>
             <div className="flex items-center gap-2">
               <MessageCircle className="size-5 text-[#2A9D8F]" />
@@ -716,7 +716,7 @@ function GreetingsEditor({ onClose }: Readonly<{ onClose: () => void }>) {
           <button
             type="button"
             onClick={onClose}
-            className="grid size-9 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white text-[#6B6B6B] transition hover:bg-[#E8E8E5]"
+            className="grid size-9 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white text-[#6B6B6B] transition hover:bg-[#FFFFFF]"
             aria-label="Fermer"
           >
             <X className="size-4" strokeWidth={2.2} />
@@ -724,7 +724,7 @@ function GreetingsEditor({ onClose }: Readonly<{ onClose: () => void }>) {
         </div>
 
         {/* Role tabs */}
-        <div className="flex gap-1.5 border-b border-[#F7F7F7] px-5 pt-3">
+        <div className="flex gap-1.5 border-b border-[#FFFFFF] px-5 pt-3">
           {tabs.map((t) => (
             <button
               key={t.role}

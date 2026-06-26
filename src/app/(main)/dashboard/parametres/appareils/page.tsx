@@ -237,7 +237,7 @@ export default function CatalogueAppareilsPage() {
                             className="rounded-xl border border-[#E8E8E5] bg-white overflow-hidden shadow-sm mb-2"
                           >
                             <div
-                              className="flex w-full items-center justify-between px-4 py-3 hover:bg-[#FAFAFA] transition cursor-pointer"
+                              className="flex w-full items-center justify-between px-4 py-3 hover:bg-[#FFFFFF] transition cursor-pointer"
                               onClick={() => setOpenBrands((p) => ({ ...p, [brandKey]: !isOpen }))}
                             >
                               <div className="flex items-center gap-3">
@@ -253,7 +253,7 @@ export default function CatalogueAppareilsPage() {
                                   {count} modèles
                                 </span>
                                 <button
-                                  className="p-1 hover:bg-[#FAFAFA] rounded-md transition"
+                                  className="p-1 hover:bg-[#FFFFFF] rounded-md transition"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     createModelForBrand(type, brandId);
@@ -266,12 +266,12 @@ export default function CatalogueAppareilsPage() {
                             </div>
 
                             {isOpen && (
-                              <div className="border-t border-[#E8E8E5] bg-[#FAFAFA]/40 p-3 space-y-3">
+                              <div className="border-t border-[#E8E8E5] bg-[#FFFFFF] p-3 space-y-3">
                                 {[...bySeries.entries()]
                                   .sort((a, b) => a[0].localeCompare(b[0], "fr"))
                                   .map(([series, list]) => (
                                     <div key={series} className="space-y-1">
-                                      <div className="px-2 py-1 text-[10px] font-bold text-[#6B6B6B] uppercase tracking-widest bg-[#FAFAFA]/50 rounded-md inline-block mb-1">
+                                      <div className="px-2 py-1 text-[10px] font-bold text-[#6B6B6B] uppercase tracking-widest bg-[#FFFFFF] rounded-md inline-block mb-1">
                                         {series}
                                       </div>
                                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -290,7 +290,7 @@ export default function CatalogueAppareilsPage() {
                                             </div>
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
                                               <button
-                                                className="p-1.5 hover:bg-[#FAFAFA] rounded-lg transition"
+                                                className="p-1.5 hover:bg-[#FFFFFF] rounded-lg transition"
                                                 onClick={() => {
                                                   const newName = window.prompt("Nouveau nom du modèle ?", m.name);
                                                   if (newName && newName !== m.name) {

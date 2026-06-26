@@ -118,7 +118,7 @@ export function ConditionneScreen({ onClose }: Readonly<{ onClose: () => void }>
         </div>
         <div className="flex items-center gap-2">
           <button
-            className="inline-flex h-11 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-semibold text-[#1A1916] text-sm transition hover:bg-[#FAFAFA]"
+            className="inline-flex h-11 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-semibold text-[#1A1916] text-sm transition hover:bg-[#FFFFFF]"
             onClick={() => setView("history")}
             type="button"
           >
@@ -126,7 +126,7 @@ export function ConditionneScreen({ onClose }: Readonly<{ onClose: () => void }>
             Historique
           </button>
           <button
-            className="inline-flex h-11 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-semibold text-[#1A1916] text-sm transition hover:bg-[#FAFAFA]"
+            className="inline-flex h-11 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-semibold text-[#1A1916] text-sm transition hover:bg-[#FFFFFF]"
             onClick={onClose}
             type="button"
           >
@@ -153,9 +153,9 @@ export function ConditionneScreen({ onClose }: Readonly<{ onClose: () => void }>
           )}
           {step === 5 && <StepDecision onFinalize={finalize} />}
 
-          <div className="mt-7 flex items-center justify-between gap-3 border-[#F1F1EF] border-t pt-5">
+          <div className="mt-7 flex items-center justify-between gap-3 border-[#FFFFFF] border-t pt-5">
             <button
-              className="inline-flex h-14 items-center gap-2 rounded-[14px] border border-[#E8E8E5] bg-white px-6 font-semibold text-[#1A1916] text-base transition hover:bg-[#FAFAFA] disabled:opacity-40"
+              className="inline-flex h-14 items-center gap-2 rounded-[14px] border border-[#E8E8E5] bg-white px-6 font-semibold text-[#1A1916] text-base transition hover:bg-[#FFFFFF] disabled:opacity-40"
               disabled={step === 1}
               onClick={() => setStep((s) => Math.max(1, s - 1))}
               type="button"
@@ -204,8 +204,8 @@ function StepBar({ step, onJump }: Readonly<{ step: number; onJump: (s: number) 
                 className={cn(
                   "grid size-9 shrink-0 place-items-center rounded-full font-semibold text-sm transition",
                   state === "active" && "bg-[#2A9D8F] text-white",
-                  state === "done" && "bg-[#EAF6F2] text-[#147065]",
-                  state === "todo" && "bg-[#FAFAFA] text-[#6B6B6B]",
+                  state === "done" && "bg-[#FFFFFF] text-[#147065]",
+                  state === "todo" && "bg-[#FFFFFF] text-[#6B6B6B]",
                 )}
               >
                 {state === "done" ? <Check className="size-4" /> : s.id}
@@ -214,7 +214,7 @@ function StepBar({ step, onJump }: Readonly<{ step: number; onJump: (s: number) 
                 {s.label}
               </span>
             </button>
-            {i < STEPS.length - 1 && <span className="mx-2 h-px flex-1 bg-[#E8E8E5]" />}
+            {i < STEPS.length - 1 && <span className="mx-2 h-px flex-1 bg-[#FFFFFF]" />}
           </div>
         );
       })}
@@ -231,7 +231,7 @@ function StepAppareil({ input, patch }: Readonly<{ input: ConditionneInput; patc
       <SectionTitle subtitle="Identifiez le téléphone repris." title="Appareil" />
 
       <div className="grid gap-5 md:grid-cols-[180px_minmax(0,1fr)]">
-        <div className="grid place-items-center rounded-[18px] border border-[#E8E8E5] bg-[#FAFAF8] p-4">
+        <div className="grid place-items-center rounded-[18px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
           <RealDeviceVisual brand={input.brand} className="size-32" model={input.model} type="Smartphone" />
         </div>
         <div>
@@ -241,7 +241,7 @@ function StepAppareil({ input, patch }: Readonly<{ input: ConditionneInput; patc
               <button
                 className={cn(
                   "flex h-16 items-center justify-center rounded-[14px] border px-2 text-center font-semibold text-sm transition",
-                  input.brand === brand ? "border-[#2A9D8F] bg-[#F6FCFA] text-[#167B70]" : "border-[#E8E8E5] bg-white text-[#1A1916] hover:border-[#2A9D8F]/40",
+                  input.brand === brand ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]" : "border-[#E8E8E5] bg-white text-[#1A1916] hover:border-[#2A9D8F]/40",
                 )}
                 key={brand}
                 onClick={() => patch({ brand, model: "" })}
@@ -402,7 +402,7 @@ function StepEstimation({
       <SectionTitle subtitle="Résultat basé sur vos paramètres de reprise." title="Estimation de reprise" />
 
       {!estimation.hasModel ? (
-        <div className="rounded-[16px] border border-[#F0E0BC] bg-[#FDFAF2] px-4 py-5 text-[#9A6B1B] text-sm">
+        <div className="rounded-[16px] border border-[#F0E0BC] bg-[#FFFFFF] px-4 py-5 text-[#9A6B1B] text-sm">
           Sélectionnez un modèle connu à l'étape 1 pour obtenir la cote et le prix de revente.
         </div>
       ) : (
@@ -412,10 +412,10 @@ function StepEstimation({
             <BigLine key={d.label} label={d.label} muted value={`- ${formatEuro(d.amount)}`} />
           ))}
           <BigLine bold label="Total déductions" value={`- ${formatEuro(estimation.totalDeductions)}`} />
-          <div className="my-2 h-px bg-[#F1F1EF]" />
+          <div className="my-2 h-px bg-[#FFFFFF]" />
           <BigLine highlight label="Prix maximum d'achat" value={formatEuro(estimation.prixMaxAchat)} />
           <BigLine label="Prix conseillé de reprise" value={formatEuro(estimation.prixConseille)} />
-          <div className="flex items-center justify-between gap-3 rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] px-4 py-3">
+          <div className="flex items-center justify-between gap-3 rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] px-4 py-3">
             <span className="font-semibold text-[#1A1916]">Prix proposé au client</span>
             <div className="flex items-center gap-2">
               <span className="text-[#6B6B6B] text-sm">{currency}</span>
@@ -425,7 +425,7 @@ function StepEstimation({
                 type="number"
                 value={propose || ""}
               />
-              <button className="grid size-9 place-items-center rounded-[9px] text-[#6B6B6B] transition hover:bg-[#F1F1EF]" onClick={() => onEdit(null)} title="Revenir au prix conseillé" type="button">
+              <button className="grid size-9 place-items-center rounded-[9px] text-[#6B6B6B] transition hover:bg-[#FFFFFF]" onClick={() => onEdit(null)} title="Revenir au prix conseillé" type="button">
                 <RotateCcw className="size-4" />
               </button>
             </div>
@@ -440,7 +440,7 @@ function StepEstimation({
         </div>
       )}
 
-      <p className="mt-5 flex items-start gap-2 rounded-[12px] bg-[#FAFAFA] px-4 py-3 text-[#6B6B6B] text-xs">
+      <p className="mt-5 flex items-start gap-2 rounded-[12px] bg-[#FFFFFF] px-4 py-3 text-[#6B6B6B] text-xs">
         <Settings2 className="mt-0.5 size-4 shrink-0" />
         Estimation basée sur vos paramètres de reprise. Vous pouvez ajuster les règles dans Paramètres → Conditionné.
       </p>
@@ -490,12 +490,12 @@ function DecisionTile({
     <button
       className={cn(
         "flex items-center gap-4 rounded-[16px] border p-5 text-left transition active:scale-[0.99]",
-        primary ? "border-[#2A9D8F] bg-[#F6FCFA] hover:bg-[#EFF9F6]" : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/40",
+        primary ? "border-[#2A9D8F] bg-[#FFFFFF] hover:bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/40",
       )}
       onClick={onClick}
       type="button"
     >
-      <span className={cn("grid size-12 shrink-0 place-items-center rounded-[13px]", primary ? "bg-[#2A9D8F] text-white" : "bg-[#FAFAFA] text-[#2A9D8F]")}>
+      <span className={cn("grid size-12 shrink-0 place-items-center rounded-[13px]", primary ? "bg-[#2A9D8F] text-white" : "bg-[#FFFFFF] text-[#2A9D8F]")}>
         <Icon className="size-6" />
       </span>
       <span className="min-w-0">
@@ -525,7 +525,7 @@ function EstimationSummary({
         <p className="mt-0.5 truncate text-[#6B6B6B] text-xs">{device}</p>
 
         {!estimation.hasModel ? (
-          <p className="mt-4 rounded-[12px] bg-[#FAFAFA] px-3 py-4 text-center text-[#6B6B6B] text-xs">
+          <p className="mt-4 rounded-[12px] bg-[#FFFFFF] px-3 py-4 text-center text-[#6B6B6B] text-xs">
             Sélectionnez un modèle pour calculer la reprise.
           </p>
         ) : (
@@ -535,8 +535,8 @@ function EstimationSummary({
               <SumLine key={d.label} label={d.label} muted value={`- ${formatEuro(d.amount)}`} />
             ))}
             <SumLine bold label="Total déductions" value={`- ${formatEuro(estimation.totalDeductions)}`} />
-            <div className="my-1.5 h-px bg-[#F1F1EF]" />
-            <div className="flex items-center justify-between rounded-[12px] bg-[#F6FCFA] px-3 py-2">
+            <div className="my-1.5 h-px bg-[#FFFFFF]" />
+            <div className="flex items-center justify-between rounded-[12px] bg-[#FFFFFF] px-3 py-2">
               <span className="font-semibold text-[#167B70]">Prix maximum d'achat</span>
               <span className="font-bold text-[#147065] text-lg">{formatEuro(estimation.prixMaxAchat)}</span>
             </div>
@@ -554,11 +554,11 @@ function EstimationSummary({
               />
             </div>
             <SumLine label="Prix de revente estimé" value={formatEuro(estimation.prixReventeEstime)} />
-            <div className="mt-1 flex items-center justify-between rounded-[12px] bg-[#FAFAF8] px-3 py-2">
+            <div className="mt-1 flex items-center justify-between rounded-[12px] bg-[#FFFFFF] px-3 py-2">
               <span className="font-semibold text-[#1A1916]">Marge potentielle</span>
               <span className="inline-flex items-center gap-2">
                 <span className={cn("font-bold", marge >= 0 ? "text-[#147065]" : "text-[#C0564D]")}>{formatEuro(marge)}</span>
-                <span className="rounded-[6px] bg-[#EAF6F2] px-1.5 py-0.5 font-semibold text-[#147065] text-[11px]">{margePct.toFixed(1)} %</span>
+                <span className="rounded-[6px] bg-[#FFFFFF] px-1.5 py-0.5 font-semibold text-[#147065] text-[11px]">{margePct.toFixed(1)} %</span>
               </span>
             </div>
           </div>
@@ -575,11 +575,11 @@ function EstimationSummary({
 /* ════════════════════════════ Historique ════════════════════════════ */
 
 const DECISION_TONE: Record<string, string> = {
-  "Estimation enregistrée": "bg-[#FAFAFA] text-[#6B6B6B]",
-  Brouillon: "bg-[#FFF7E8] text-[#9A6B00]",
-  "Achat créé": "bg-[#EAF6F2] text-[#147065]",
-  "Envoyé en reconditionnement": "bg-[#F6FCFA] text-[#167B70]",
-  "Refus client": "bg-[#FBEEEC] text-[#C0564D]",
+  "Estimation enregistrée": "bg-[#FFFFFF] text-[#6B6B6B]",
+  Brouillon: "bg-[#FFFFFF] text-[#9A6B00]",
+  "Achat créé": "bg-[#FFFFFF] text-[#147065]",
+  "Envoyé en reconditionnement": "bg-[#FFFFFF] text-[#167B70]",
+  "Refus client": "bg-[#FFFFFF] text-[#C0564D]",
 };
 
 function ConditionneHistory({
@@ -594,7 +594,7 @@ function ConditionneHistory({
           <p className="text-[#6B6B6B] text-sm">Reprises estimées au comptoir.</p>
         </div>
         <button
-          className="inline-flex h-11 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-semibold text-[#1A1916] text-sm transition hover:bg-[#FAFAFA]"
+          className="inline-flex h-11 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-semibold text-[#1A1916] text-sm transition hover:bg-[#FFFFFF]"
           onClick={onBack}
           type="button"
         >
@@ -609,7 +609,7 @@ function ConditionneHistory({
         <div className="space-y-2.5">
           {records.map((r) => (
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-[16px] border border-[#E8E8E5] bg-white px-5 py-4" key={r.id}>
-              <RealDeviceVisual brand={r.brand} className="size-12 rounded-[12px] border border-[#E8E8E5] bg-[#FAFAF8] p-1" model={r.model} type="Smartphone" />
+              <RealDeviceVisual brand={r.brand} className="size-12 rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] p-1" model={r.model} type="Smartphone" />
               <div className="min-w-[160px] flex-1">
                 <p className="font-semibold text-[#1A1916]">{[r.brand, r.model, r.storage].filter(Boolean).join(" ")}</p>
                 <p className="text-[#6B6B6B] text-xs">
@@ -625,7 +625,7 @@ function ConditionneHistory({
                 <p className="text-[#6B6B6B] text-[11px]">Marge</p>
                 <p className="font-semibold text-[#147065]">{formatEuro(r.marge)}</p>
               </div>
-              <span className={cn("rounded-[8px] px-2.5 py-1 font-semibold text-[12px]", DECISION_TONE[r.decision] ?? "bg-[#FAFAFA] text-[#6B6B6B]")}>
+              <span className={cn("rounded-[8px] px-2.5 py-1 font-semibold text-[12px]", DECISION_TONE[r.decision] ?? "bg-[#FFFFFF] text-[#6B6B6B]")}>
                 {r.decision}
               </span>
             </div>
@@ -647,7 +647,7 @@ function DoneCard({
   return (
     <div className="mx-auto grid min-h-[60vh] w-full max-w-[560px] place-items-center">
       <div className="w-full rounded-[22px] border border-[#E8E8E5] bg-white p-8 text-center shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
-        <span className="mx-auto grid size-16 place-items-center rounded-full bg-[#EAF6F2] text-[#147065]">
+        <span className="mx-auto grid size-16 place-items-center rounded-full bg-[#FFFFFF] text-[#147065]">
           <BadgeCheck className="size-8" />
         </span>
         <h2 className="mt-5 font-semibold text-[#1A1916] text-xl">{decision}</h2>
@@ -668,7 +668,7 @@ function DoneCard({
             Nouvelle estimation
           </button>
           <button
-            className="inline-flex h-13 items-center justify-center gap-2 rounded-[14px] border border-[#E8E8E5] bg-white px-6 py-3.5 font-semibold text-base text-[#1A1916] transition hover:bg-[#FAFAFA]"
+            className="inline-flex h-13 items-center justify-center gap-2 rounded-[14px] border border-[#E8E8E5] bg-white px-6 py-3.5 font-semibold text-base text-[#1A1916] transition hover:bg-[#FFFFFF]"
             onClick={onClose}
             type="button"
           >
@@ -705,7 +705,7 @@ function BigToggle({ active, label, onClick }: Readonly<{ active: boolean; label
     <button
       className={cn(
         "h-14 flex-1 rounded-[14px] border font-semibold text-base transition",
-        active ? "border-[#2A9D8F] bg-[#F6FCFA] text-[#167B70]" : "border-[#E8E8E5] bg-white text-[#1A1916] hover:border-[#2A9D8F]/40",
+        active ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]" : "border-[#E8E8E5] bg-white text-[#1A1916] hover:border-[#2A9D8F]/40",
       )}
       onClick={onClick}
       type="button"
@@ -753,12 +753,12 @@ function FunctionRow({
     value !== opt
       ? "border-[#E8E8E5] bg-white text-[#6B6B6B]"
       : opt === "OK"
-        ? "border-[#CDEBE4] bg-[#EAF6F2] text-[#147065]"
+        ? "border-[#CDEBE4] bg-[#FFFFFF] text-[#147065]"
         : opt === "Non testé"
-          ? "border-[#E8E8E5] bg-[#FAFAFA] text-[#1A1916]"
-          : "border-[#F0D2CD] bg-[#FBEEEC] text-[#C0564D]";
+          ? "border-[#E8E8E5] bg-[#FFFFFF] text-[#1A1916]"
+          : "border-[#F0D2CD] bg-[#FFFFFF] text-[#C0564D]";
   return (
-    <div className="flex items-center justify-between gap-2 rounded-[12px] border border-[#F1F1EF] px-3 py-2">
+    <div className="flex items-center justify-between gap-2 rounded-[12px] border border-[#FFFFFF] px-3 py-2">
       <span className="truncate font-medium text-[#1A1916] text-sm">{label}</span>
       <div className="flex shrink-0 gap-1.5">
         {okDefautLabels.map((opt) => (
@@ -786,7 +786,7 @@ function BigLine({
 }: Readonly<{ label: string; value: string; muted?: boolean; bold?: boolean; highlight?: boolean; valueClass?: string }>) {
   if (highlight) {
     return (
-      <div className="flex items-center justify-between rounded-[14px] bg-[#F6FCFA] px-4 py-3">
+      <div className="flex items-center justify-between rounded-[14px] bg-[#FFFFFF] px-4 py-3">
         <span className="font-semibold text-[#167B70] text-base">{label}</span>
         <span className="font-bold text-[#147065] text-2xl">{value}</span>
       </div>

@@ -421,12 +421,26 @@ test("QA-03 P0 financier : réparation 119 € → devis → facture → paiemen
     return null;
   }, createdId);
 
+  // Sélectionner la réparation dans le store via localStorage
+  await page.evaluate(
+    ({ key, id }) => {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      const state = parsed.state ?? parsed;
+      state.selectedRepairId = id;
+      window.localStorage.setItem(key, JSON.stringify(parsed.state ? parsed : { state, version: 1 }));
+    },
+    { key: "behar-tech-local-demo-v3", id: createdId }
+  );
+
   // Tentative UI : cliquer "Créer facture" sur la fiche réparation si visible.
   await gotoSection(page, "reparations");
   const invoiceBtn = await findFirstVisible(
     page,
     [
       'button:has-text("Créer une facture")',
+      'button:has-text("Créer facture")',
       'button:has-text("Facturer")',
       '[data-testid="create-invoice-from-repair"]',
     ],

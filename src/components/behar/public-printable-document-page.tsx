@@ -12,7 +12,7 @@ import { formatMoney, getDocumentFilename } from "@/lib/workshop-country";
 
 const COLORS = {
   bg: "#FFFFFF",
-  soft: "#FAFAFA",
+  soft: "#FFFFFF",
   text: "#1A1916",
   sub: "#6B6B6B",
   accent: "#2A9D8F",
@@ -150,7 +150,7 @@ export function PublicPrintableDocumentPage({ token }: { token: string }) {
               </div>
             </div>
             <div className="text-right">
-              <p className="inline-flex rounded-[8px] border px-3 py-1 font-bold text-[11px] uppercase tracking-[0.12em]" style={{ borderColor: "#D7EFEA", background: "#F6FCFA", color: "#167B70" }}>{label(data.documentType)}</p>
+              <p className="inline-flex rounded-[8px] border px-3 py-1 font-bold text-[11px] uppercase tracking-[0.12em]" style={{ borderColor: "#D7EFEA", background: "#FFFFFF", color: "#167B70" }}>{label(data.documentType)}</p>
               <p className="mt-4 font-mono font-bold text-[22px]">{data.document.number || data.repair?.number || "Document"}</p>
               <p className="mt-1 text-[12px]" style={{ color: COLORS.sub }}>Émis le {dateLabel(data.document.createdAt)}</p>
             </div>

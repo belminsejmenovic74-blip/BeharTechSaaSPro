@@ -25,6 +25,9 @@ export async function generatePdfFromElement(
       const targets = pages.length ? pages : [element];
 
       for (let index = 0; index < targets.length; index += 1) {
+        // Pause pour laisser le navigateur mettre à jour l'interface (éviter le lag)
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        
         const page = targets[index];
         const canvas = await html2canvas(page, {
           scale: 2,
@@ -69,6 +72,9 @@ export async function generatePdfFromElement(
       return;
     }
 
+    // Pause pour laisser le navigateur mettre à jour l'interface
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
     const canvas = await html2canvas(element, {
       scale: 2,
       useCORS: true,
@@ -109,6 +115,9 @@ export async function generatePdfFromElement(
         }
       },
     });
+
+    // Pause avant le traitement PDF lourd
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     const imgData = canvas.toDataURL("image/jpeg", 1.0);
     const pdf = new jsPDF({

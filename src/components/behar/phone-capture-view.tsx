@@ -66,14 +66,14 @@ export function PhoneCaptureView({ token }: Readonly<{ token: string }>) {
   }
 
   return (
-    <div className="min-h-svh bg-[#FAFAF8] px-4 py-6 text-[#1A1916]">
+    <div className="min-h-svh bg-[#FFFFFF] px-4 py-6 text-[#1A1916]">
       <div className="mx-auto w-full max-w-[460px]">
         <div className="flex items-center justify-between">
           <BeharLogo size="sm" />
           <span
             className={cn(
               "inline-flex h-7 items-center gap-1.5 rounded-[8px] px-2.5 font-semibold text-[12px]",
-              connected ? "bg-[#EAF6F2] text-[#147065]" : "bg-[#FBF3E2] text-[#9A6B1B]",
+              connected ? "bg-[#FFFFFF] text-[#147065]" : "bg-[#FFFFFF] text-[#9A6B1B]",
             )}
           >
             {connected ? <Wifi className="size-3.5" /> : <Loader2 className="size-3.5 animate-spin" />}
@@ -97,7 +97,7 @@ export function PhoneCaptureView({ token }: Readonly<{ token: string }>) {
                 key={slot.key}
               >
                 <input accept="image/*" capture="environment" className="hidden" onChange={(e) => onFile(slot.key, e)} type="file" />
-                <span className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-[12px] border border-[#E8E8E5] bg-[#FAFAFA]">
+                <span className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF]">
                   {thumb ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img alt={slot.label} className="size-full object-cover" src={thumb} />
@@ -112,7 +112,7 @@ export function PhoneCaptureView({ token }: Readonly<{ token: string }>) {
                   <span className="block text-[#6B6B6B] text-xs">{thumb ? "Envoyée — touchez pour reprendre" : isBusy ? "Envoi…" : "Toucher pour photographier"}</span>
                 </span>
                 {thumb && (
-                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#EAF6F2] text-[#147065]">
+                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#FFFFFF] text-[#147065]">
                     <Check className="size-4" />
                   </span>
                 )}
@@ -131,7 +131,7 @@ export function PhoneCaptureView({ token }: Readonly<{ token: string }>) {
 
 function CenterMessage({ icon: Icon, title, text }: Readonly<{ icon: typeof AlertTriangle; title: string; text: string }>) {
   return (
-    <div className="grid min-h-svh place-items-center bg-[#FAFAF8] px-6 text-center">
+    <div className="grid min-h-svh place-items-center bg-[#FFFFFF] px-6 text-center">
       <div className="max-w-xs">
         <div className="mx-auto grid size-12 place-items-center rounded-[14px] bg-white text-[#6B6B6B] shadow-[0_1px_3px_rgba(26,25,22,0.06)]">
           <Icon className="size-6" />

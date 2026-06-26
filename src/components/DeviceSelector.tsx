@@ -159,7 +159,7 @@ export function DeviceSelector({ deviceType, brand, model, customModel, onChange
       <div className="grid gap-1.5">
         <label className="text-sm font-medium text-[#1A1916]">Appareil final</label>
         <Input
-          className="h-10 rounded-xl border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]"
+          className="h-10 rounded-xl border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]"
           value={calculateLabel(brand, model, customModel)}
           readOnly
           disabled

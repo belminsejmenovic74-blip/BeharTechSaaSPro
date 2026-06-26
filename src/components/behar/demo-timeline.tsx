@@ -10,7 +10,7 @@ export function DemoTimeline({ items, compact }: Readonly<{ items: readonly stri
               "mt-0.5 grid size-6 shrink-0 place-items-center rounded-full border text-xs",
               index === items.length - 1
                 ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
-                : "border-[#CFE7E1] bg-[#EAF6F2] text-[#167B70]",
+                : "border-[#CFE7E1] bg-[#FFFFFF] text-[#167B70]",
             )}
           >
             {index + 1}

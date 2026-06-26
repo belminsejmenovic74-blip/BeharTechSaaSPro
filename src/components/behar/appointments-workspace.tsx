@@ -202,7 +202,7 @@ export function AppointmentsWorkspace() {
             <button
               type="button"
               onClick={() => setMobileWeekOffset((o) => o - 1)}
-              className="grid size-9 place-items-center rounded-full bg-[#FAFAFA] text-[#1A1916] transition active:scale-90"
+              className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#1A1916] transition active:scale-90"
               aria-label="Semaine précédente"
             >
               <ChevronLeft className="size-4" strokeWidth={2.2} />
@@ -217,7 +217,7 @@ export function AppointmentsWorkspace() {
             <button
               type="button"
               onClick={() => setMobileWeekOffset((o) => o + 1)}
-              className="grid size-9 place-items-center rounded-full bg-[#FAFAFA] text-[#1A1916] transition active:scale-90"
+              className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#1A1916] transition active:scale-90"
               aria-label="Semaine suivante"
             >
               <ChevronRight className="size-4" strokeWidth={2.2} />
@@ -245,8 +245,8 @@ export function AppointmentsWorkspace() {
                       isSelected
                         ? "bg-[#2A9D8F] text-white shadow-[0_4px_12px_rgba(42,157,143,0.3)]"
                         : isToday
-                          ? "bg-[#EAF6F2] text-[#2A9D8F]"
-                          : "text-[#1A1916] hover:bg-[#FAFAFA]",
+                          ? "bg-[#FFFFFF] text-[#2A9D8F]"
+                          : "text-[#1A1916] hover:bg-[#FFFFFF]",
                     )}
                   >
                     {date.getDate()}
@@ -286,7 +286,7 @@ export function AppointmentsWorkspace() {
           </div>
 
           {appointmentsForSelectedDay.length === 0 ? (
-            <div className="flex items-center gap-3 rounded-[14px] bg-[#FAFAFA] px-4 py-3.5">
+            <div className="flex items-center gap-3 rounded-[14px] bg-[#FFFFFF] px-4 py-3.5">
               <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white text-[#6B6B6B]">
                 <CalendarDays className="size-[16px]" strokeWidth={1.8} />
               </span>
@@ -314,7 +314,7 @@ export function AppointmentsWorkspace() {
               </button>
             </div>
           ) : (
-            <ul className="divide-y divide-[#F7F7F7]">
+            <ul className="divide-y divide-[#FFFFFF]">
               {appointmentsForSelectedDay.map((appt) => {
                 const apptCustomer = store.customers.find((c) => c.id === appt.customerId);
                 const linked = findLinkedRepair(appt, store.repairs);
@@ -406,7 +406,7 @@ export function AppointmentsWorkspace() {
               )}
             </div>
             <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-              <div className="flex shrink-0 items-center rounded-[10px] border border-[#E8E8E5] bg-[#FAFAFA] p-0.5">
+              <div className="flex shrink-0 items-center rounded-[10px] border border-[#E8E8E5] bg-[#FFFFFF] p-0.5">
                 <button
                   type="button"
                   onClick={() => setViewMode("week")}
@@ -477,22 +477,22 @@ export function AppointmentsWorkspace() {
               "md:relative md:inset-auto md:z-auto md:block md:rounded-[22px] md:border-[#E8E8E5] md:bg-white md:p-5 md:shadow-[0_18px_45px_rgba(26,25,22,0.07)] md:overflow-visible",
             )}
           >
-            <div className="md:hidden -mx-5 -mt-5 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#F7F7F7] bg-white px-4 py-3">
+            <div className="md:hidden -mx-5 -mt-5 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#FFFFFF] bg-white px-4 py-3">
               <span
-                className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-[#DADADA]"
+                className="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-full bg-[#FFFFFF]"
                 aria-hidden
               />
               <button
                 type="button"
                 onClick={() => setMobileDetailOpen(false)}
-                className="grid size-9 place-items-center rounded-full bg-[#F7F7F7] text-[#1A1916] transition active:scale-90"
+                className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#1A1916] transition active:scale-90"
                 aria-label="Retour"
               >
                 <ArrowLeft className="size-4" />
               </button>
               <span className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Détail rendez-vous</span>
             </div>
-            <div className="mb-5 rounded-[20px] border border-[#E8E8E5] bg-[#FAFAFA] p-4">
+            <div className="mb-5 rounded-[20px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-[#6B6B6B]">
@@ -506,7 +506,7 @@ export function AppointmentsWorkspace() {
                 <StatusBadge status={selected.status} />
               </div>
               {selectedRepair ? (
-                <div className="mt-4 inline-flex rounded-full bg-[#EAF6F2] px-3 py-1 text-[12px] font-semibold text-[#167B70]">
+                <div className="mt-4 inline-flex rounded-full bg-[#FFFFFF] px-3 py-1 text-[12px] font-semibold text-[#167B70]">
                   Réparation liée · {selectedRepair.number}
                 </div>
               ) : null}
@@ -945,12 +945,12 @@ function AppointmentModal({
               </div>
             ) : null}
             {form.customerType === "counter" ? (
-              <p className="rounded-[13px] border border-[#E8E8E5] bg-[#FAFAFA] px-4 py-3 text-[#6B6B6B]">
+              <p className="rounded-[13px] border border-[#E8E8E5] bg-[#FFFFFF] px-4 py-3 text-[#6B6B6B]">
                 Un client comptoir séparé sera créé pour ce rendez-vous.
               </p>
             ) : null}
           </div>
-          <div className="rounded-2xl bg-[#F7F7F7]/50 p-4 border border-[#E8E8E5]/50 shadow-sm">
+          <div className="rounded-2xl bg-[#FFFFFF] p-4 border border-[#E8E8E5]/50 shadow-sm">
             <div className="mb-4 text-[#1A1916] font-semibold text-sm">Appareil &amp; problème</div>
             <div className="grid gap-4">
               <DeviceSelector
@@ -967,7 +967,7 @@ function AppointmentModal({
               />
             </div>
           </div>
-          <div className="rounded-2xl bg-[#F7F7F7]/50 p-4 border border-[#E8E8E5]/50 shadow-sm">
+          <div className="rounded-2xl bg-[#FFFFFF] p-4 border border-[#E8E8E5]/50 shadow-sm">
             <div className="mb-4 text-[#1A1916] font-semibold text-sm">Détails du créneau</div>
             <div className="grid gap-4">
               <label className="grid gap-2 text-[#1A1916] text-sm">
@@ -1114,8 +1114,8 @@ function CalendarGrid({
       >
         {nowLineTop !== null && (
           <div className="pointer-events-none absolute right-0 left-0 z-20" style={{ top: nowLineTop }}>
-            <span className="absolute left-0 size-2.5 -translate-y-1/2 rounded-full bg-[#E95E5E]" />
-            <span className="block h-px bg-[#E95E5E]/55" />
+            <span className="absolute left-0 size-2.5 -translate-y-1/2 rounded-full bg-[#FFFFFF]" />
+            <span className="block h-px bg-[#FFFFFF]" />
           </div>
         )}
         <div className="border-[#E8E8E5] border-r border-b bg-white" />
@@ -1343,8 +1343,8 @@ function AgendaList({
           if (event.key === "Enter" || event.key === " ") onSelect(appt.id);
         }}
         className={cn(
-          "flex w-full cursor-pointer items-center gap-4 border-[#F7F7F7] border-b px-5 py-3.5 text-left transition last:border-b-0",
-          active ? "bg-[#EAF6F2]" : "hover:bg-[#FAFAFA]",
+          "flex w-full cursor-pointer items-center gap-4 border-[#FFFFFF] border-b px-5 py-3.5 text-left transition last:border-b-0",
+          active ? "bg-[#FFFFFF]" : "hover:bg-[#FFFFFF]",
           dimmed && !active ? "opacity-70" : "",
         )}
       >
@@ -1545,9 +1545,9 @@ function MobileKpiTile({
   tone: "teal" | "amber" | "success";
 }>) {
   const palette = {
-    teal: { bg: "bg-[#EAF6F2]", text: "text-[#2A9D8F]" },
-    amber: { bg: "bg-[#FAFAFA]", text: "text-[#6B6B6B]" },
-    success: { bg: "bg-[#E7F8F0]", text: "text-[#0B7A56]" },
+    teal: { bg: "bg-[#FFFFFF]", text: "text-[#2A9D8F]" },
+    amber: { bg: "bg-[#FFFFFF]", text: "text-[#6B6B6B]" },
+    success: { bg: "bg-[#FFFFFF]", text: "text-[#0B7A56]" },
   }[tone];
   return (
     <div className="rounded-[16px] border border-[#E8E8E5] bg-white p-3 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
@@ -1563,10 +1563,10 @@ function MobileKpiTile({
 function AppointmentStatusPill({ status, confirmed }: Readonly<{ status: string; confirmed?: boolean }>) {
   const label = normalizeAppointmentStatus(status, confirmed);
   const tone = (() => {
-    if (label === "Arrivé" || label === "Réparation créée") return "bg-[#E7F8F0] text-[#0B7A56]";
-    if (label === "Annulé" || label === "Non venu") return "bg-[#FDECEC] text-[#B42318]";
-    if (label === "Confirmé") return "bg-[#EAF6F2] text-[#167B70]";
-    return "bg-[#FAFAFA] text-[#6B6B6B]";
+    if (label === "Arrivé" || label === "Réparation créée") return "bg-[#FFFFFF] text-[#0B7A56]";
+    if (label === "Annulé" || label === "Non venu") return "bg-[#FFFFFF] text-[#B42318]";
+    if (label === "Confirmé") return "bg-[#FFFFFF] text-[#167B70]";
+    return "bg-[#FFFFFF] text-[#6B6B6B]";
   })();
   return (
     <span

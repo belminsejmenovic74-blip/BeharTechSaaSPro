@@ -44,12 +44,17 @@ function browserOrigin(): string {
 function publicBaseUrl(): string {
   const envBase = process.env.NEXT_PUBLIC_PUBLIC_BASE_URL?.replace(/\/$/, "") || "";
   const origin = browserOrigin();
-  const isLocalOrigin = !origin || origin.startsWith("tauri:") || isLocalPublicBase(origin);
-  const isLocalEnv = !envBase || isLocalPublicBase(envBase);
-  if (isLocalOrigin || isLocalEnv) {
-    return "https://behartechpro.fr";
+  
+  // Si l'application tourne dans Tauri (app de bureau), l'origine n'est pas partageable au client.
+  // Dans ce cas précis, on utilise l'URL de production par défaut.
+  const isTauri = !origin || origin.startsWith("tauri:");
+  if (isTauri) {
+    return envBase || "https://behartechpro.fr";
   }
-  return envBase || origin;
+  
+  // Sinon (web local ou production), on utilise l'URL de l'environnement ou l'origine actuelle.
+  // Cela permet aux liens "localhost" de rester "localhost" pour les tests en développement.
+  return envBase || origin || "http://localhost:3000";
 }
 
 export function publicAbsoluteUrl(relativeUrl: string): string {

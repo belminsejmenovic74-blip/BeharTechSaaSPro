@@ -7,12 +7,12 @@ import { cn } from "@/lib/utils";
 export type PillTone = "ok" | "warn" | "info" | "muted" | "danger" | "violet";
 
 const TONE_STYLES: Record<PillTone, string> = {
-  ok: "border-[#D7EFEA] bg-[#F6FCFA] text-[#1d6f65]",
-  warn: "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]",
-  info: "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]",
-  muted: "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]",
-  danger: "border-[#F2D4D1] bg-[#FFF8F7] text-[#A23A40]",
-  violet: "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]",
+  ok: "border-[#D7EFEA] bg-[#FFFFFF] text-[#1d6f65]",
+  warn: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
+  info: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
+  muted: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
+  danger: "border-[#F2D4D1] bg-[#FFFFFF] text-[#A23A40]",
+  violet: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
 };
 
 export function StatusPill({
@@ -92,7 +92,7 @@ export function TabBar<T extends string>({
             onClick={() => onChange(tab.value)}
             className={cn(
               "h-8 shrink-0 rounded-[9px] px-3 font-medium text-[13px] transition",
-              active ? "bg-[#E7F5F1] text-[#1d6f65]" : "text-[#6B6B6B] hover:bg-[#FAFAFA] hover:text-[#1A1916]",
+              active ? "bg-[#FFFFFF] text-[#1d6f65]" : "text-[#6B6B6B] hover:bg-[#FFFFFF] hover:text-[#1A1916]",
             )}
           >
             {tab.label}

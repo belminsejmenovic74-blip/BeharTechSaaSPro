@@ -135,7 +135,7 @@ export function DossiersWorkspace() {
             <label className="relative block">
               <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6B6B6B]" />
               <input
-                className="h-11 w-full rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA] pr-3 pl-10 text-sm outline-none transition placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+                className="h-11 w-full rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] pr-3 pl-10 text-sm outline-none transition placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Rechercher dossier, client, appareil, téléphone..."
                 type="search"
@@ -172,7 +172,7 @@ export function DossiersWorkspace() {
             type="button"
           >
             Tous
-            <span className="rounded-[6px] bg-white/25 px-1.5 py-px text-[10px]">{store.repairs.length}</span>
+            <span className="rounded-[6px] bg-white px-1.5 py-px text-[10px]">{store.repairs.length}</span>
           </button>
           {dossierStatuses.map((entry) => (
             <button
@@ -185,7 +185,7 @@ export function DossiersWorkspace() {
               type="button"
             >
               {entry}
-              <span className={cn("rounded-[6px] px-1.5 py-px text-[10px]", status === entry ? "bg-white/25" : "bg-[#F7F7F7] text-[#6B6B6B]")}>
+              <span className={cn("rounded-[6px] px-1.5 py-px text-[10px]", status === entry ? "bg-white" : "bg-[#FFFFFF] text-[#6B6B6B]")}>
                 {counts.get(entry) ?? 0}
               </span>
             </button>
@@ -208,11 +208,11 @@ export function DossiersWorkspace() {
               <div className="min-w-0 rounded-[16px] border border-[#E8E8E5] bg-white p-3 shadow-[0_1px_2px_rgba(26,25,22,0.035)]" key={entry}>
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <h2 className="truncate font-semibold text-[#1A1916] text-sm">{entry}</h2>
-                  <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 text-[#6B6B6B] text-xs">{columnRows.length}</span>
+                  <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[#6B6B6B] text-xs">{columnRows.length}</span>
                 </div>
                 <div className="space-y-2">
                   {columnRows.length === 0 ? (
-                    <div className="rounded-[14px] border border-dashed border-[#E8E8E5] bg-[#FAFAFA] px-3 py-6 text-center text-[#6B6B6B] text-xs">
+                    <div className="rounded-[14px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] px-3 py-6 text-center text-[#6B6B6B] text-xs">
                       Aucun dossier.
                     </div>
                   ) : (
@@ -228,7 +228,7 @@ export function DossiersWorkspace() {
           {rows.length === 0 ? (
             <div className="px-4 py-12 text-center text-[#6B6B6B] text-sm">Aucun dossier ne correspond à la recherche.</div>
           ) : (
-            <ul className="divide-y divide-[#F7F7F7]">
+            <ul className="divide-y divide-[#FFFFFF]">
               {rows.map((row) => (
                 <DossierRow key={row.repair.id} row={row} />
               ))}
@@ -261,13 +261,13 @@ function DossierRow({
   return (
     <li>
       <Link
-        className="flex items-center gap-4 px-4 py-3 transition hover:bg-[#FAFAFA]"
+        className="flex items-center gap-4 px-4 py-3 transition hover:bg-[#FFFFFF]"
         href={`/dashboard/dossiers/_/?id=${repair.id}`}
       >
         <span className="w-[88px] shrink-0 font-mono font-semibold text-[#167B70] text-xs">#{repair.number}</span>
         <RealDeviceVisual
           brand={repair.brandName}
-          className="size-12 rounded-[12px] border border-[#E8E8E5] bg-[#FAFAF8] p-1 shadow-[0_6px_14px_rgba(26,25,22,0.04)]"
+          className="size-12 rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] p-1 shadow-[0_6px_14px_rgba(26,25,22,0.04)]"
           model={repair.deviceModel || repair.model || repair.device}
           type={repair.deviceType}
         />
@@ -338,7 +338,7 @@ function DossierCard({
       <div className="mt-3 flex items-start gap-2">
         <RealDeviceVisual
           brand={repair.brandName}
-          className="size-10 rounded-[12px] border border-[#E8E8E5] bg-[#FAFAF8] p-1 shadow-[0_4px_12px_rgba(26,25,22,0.035)]"
+          className="size-10 rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] p-1 shadow-[0_4px_12px_rgba(26,25,22,0.035)]"
           model={repair.deviceModel || repair.model || repair.device}
           type={repair.deviceType}
         />
@@ -351,7 +351,7 @@ function DossierCard({
         <MiniRef label="Devis" value={quote ? `${quote.number} · ${quote.status}` : "Aucun"} />
         <MiniRef label="Facture" value={invoice ? `${invoice.number} · ${invoice.status}` : "Aucune"} />
       </div>
-      <div className="mt-3 flex items-center justify-between gap-2 border-[#F7F7F7] border-t pt-3 text-xs">
+      <div className="mt-3 flex items-center justify-between gap-2 border-[#FFFFFF] border-t pt-3 text-xs">
         <span className="font-semibold text-[#1A1916]">{formatCurrency(amount, repair.currency)}</span>
         <span className="inline-flex items-center gap-1 text-[#6B6B6B]">
           <CalendarDays className="size-3.5" />
@@ -364,7 +364,7 @@ function DossierCard({
 
 function MiniRef({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
-    <div className="min-w-0 rounded-[10px] bg-[#FAFAFA] px-2 py-1.5">
+    <div className="min-w-0 rounded-[10px] bg-[#FFFFFF] px-2 py-1.5">
       <p className="text-[#6B6B6B]">{label}</p>
       <p className="truncate font-medium text-[#1A1916]">{value}</p>
     </div>

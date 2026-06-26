@@ -92,15 +92,15 @@ export function MobileTopbar() {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Fermer le menu"
-                className="grid size-9 shrink-0 place-items-center rounded-[12px] bg-[#F7F7F7] text-[#1A1916] transition active:scale-90"
+                className="grid size-9 shrink-0 place-items-center rounded-[12px] bg-[#FFFFFF] text-[#1A1916] transition active:scale-90"
               >
                 <X className="size-4" />
               </button>
             </div>
 
-            <div className="mt-2 ml-5 mr-8 flex items-center justify-between gap-3 rounded-[16px] bg-[#FAFAFA] px-4 py-3">
+            <div className="mt-2 ml-5 mr-8 flex items-center justify-between gap-3 rounded-[16px] bg-[#FFFFFF] px-4 py-3">
               <div className="flex min-w-0 items-center gap-3">
-                <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-[#F3FBFA] font-semibold text-[#2A9D8F]">
+                <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-[#FFFFFF] font-semibold text-[#2A9D8F]">
                   {currentUser.name.charAt(0).toUpperCase()}
                 </span>
                 <div className="min-w-0">
@@ -132,14 +132,14 @@ export function MobileTopbar() {
                     prefetch={false}
                     onClick={() => setOpen(false)}
                     className={cn(
-                      "group flex items-center gap-3.5 rounded-[14px] px-3 py-3 transition active:scale-[0.98] active:bg-[#F7F7F7]",
-                      active && "bg-[#F3FBFA]",
+                      "group flex items-center gap-3.5 rounded-[14px] px-3 py-3 transition active:scale-[0.98] active:bg-[#FFFFFF]",
+                      active && "bg-[#FFFFFF]",
                     )}
                   >
                     <span
                       className={cn(
                         "grid size-9 shrink-0 place-items-center rounded-[10px] text-[#2A9D8F]",
-                        active ? "bg-[#2A9D8F] text-white" : "bg-[#FAFAFA]",
+                        active ? "bg-[#2A9D8F] text-white" : "bg-[#FFFFFF]",
                       )}
                     >
                       <Icon className="size-[18px]" />

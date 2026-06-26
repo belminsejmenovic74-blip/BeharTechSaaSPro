@@ -107,7 +107,7 @@ export function InstallButton({ className }: Readonly<{ className?: string }>) {
         type="button"
         onClick={handleClick}
         className={cn(
-          "inline-flex h-9 items-center gap-1.5 rounded-full border border-[#2A9D8F]/30 bg-[#EAF6F2] px-3 font-semibold text-[#147065] text-[12.5px] transition active:scale-95 hover:bg-[#DFF1EB]",
+          "inline-flex h-9 items-center gap-1.5 rounded-full border border-[#2A9D8F]/30 bg-[#FFFFFF] px-3 font-semibold text-[#147065] text-[12.5px] transition active:scale-95 hover:bg-[#FFFFFF]",
           className,
         )}
         aria-label="Installer l'application"
@@ -126,7 +126,7 @@ export function InstallButton({ className }: Readonly<{ className?: string }>) {
           />
           <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-[28px] bg-white pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_-20px_60px_rgba(26,25,22,0.18)]">
             <div className="flex justify-center pt-2 pb-1">
-              <span className="h-1 w-9 rounded-full bg-[#DADADA]" aria-hidden />
+              <span className="h-1 w-9 rounded-full bg-[#FFFFFF]" aria-hidden />
             </div>
             <div className="flex items-start justify-between gap-3 px-6 pt-3 pb-4">
               <div>
@@ -140,14 +140,14 @@ export function InstallButton({ className }: Readonly<{ className?: string }>) {
               <button
                 type="button"
                 onClick={() => setIosOpen(false)}
-                className="grid size-9 place-items-center rounded-full bg-[#F7F7F7] text-[#6B6B6B] active:scale-90"
+                className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#6B6B6B] active:scale-90"
                 aria-label="Fermer"
               >
                 <X className="size-4" strokeWidth={2.2} />
               </button>
             </div>
             <ol className="space-y-3 px-5 pb-6">
-              <li className="flex items-start gap-3 rounded-[16px] bg-[#FAFAFA] p-4">
+              <li className="flex items-start gap-3 rounded-[16px] bg-[#FFFFFF] p-4">
                 <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#2A9D8F] font-semibold text-white text-[14px]">
                   1
                 </span>
@@ -155,7 +155,7 @@ export function InstallButton({ className }: Readonly<{ className?: string }>) {
                   Ouvrez ce site dans <strong>Safari</strong> (pas dans une autre app).
                 </div>
               </li>
-              <li className="flex items-start gap-3 rounded-[16px] bg-[#FAFAFA] p-4">
+              <li className="flex items-start gap-3 rounded-[16px] bg-[#FFFFFF] p-4">
                 <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#2A9D8F] font-semibold text-white text-[14px]">
                   2
                 </span>
@@ -167,7 +167,7 @@ export function InstallButton({ className }: Readonly<{ className?: string }>) {
                   en bas de l'écran.
                 </div>
               </li>
-              <li className="flex items-start gap-3 rounded-[16px] bg-[#FAFAFA] p-4">
+              <li className="flex items-start gap-3 rounded-[16px] bg-[#FFFFFF] p-4">
                 <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#2A9D8F] font-semibold text-white text-[14px]">
                   3
                 </span>
@@ -175,7 +175,7 @@ export function InstallButton({ className }: Readonly<{ className?: string }>) {
                   Faites défiler puis touchez <strong>« Sur l'écran d'accueil »</strong>.
                 </div>
               </li>
-              <li className="flex items-start gap-3 rounded-[16px] bg-[#FAFAFA] p-4">
+              <li className="flex items-start gap-3 rounded-[16px] bg-[#FFFFFF] p-4">
                 <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#2A9D8F] font-semibold text-white text-[14px]">
                   4
                 </span>
@@ -184,7 +184,7 @@ export function InstallButton({ className }: Readonly<{ className?: string }>) {
                   application.
                 </div>
               </li>
-              <li className="flex items-start gap-3 rounded-[16px] border border-[#EAF6F2] bg-[#F7FCFA] p-4">
+              <li className="flex items-start gap-3 rounded-[16px] border border-[#FFFFFF] bg-[#FFFFFF] p-4">
                 <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-[#2A9D8F]" />
                 <div className="text-[#1A1916] text-[13px] leading-snug">
                   L'application fonctionne ensuite en plein écran avec sauvegarde cloud.

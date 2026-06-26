@@ -67,7 +67,7 @@ export function LicenseActivation() {
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-white p-4 md:p-8">
       <div className="flex w-full max-w-[1060px] overflow-hidden rounded-[28px] bg-white shadow-[0_1px_3px_rgba(26,25,22,0.04),0_20px_60px_rgba(26,25,22,0.08)] animate-in fade-in zoom-in-95 duration-700">
         {/* Left Panel — Marketing / Welcome */}
-        <div className="hidden md:flex md:w-[480px] flex-col justify-between bg-[#FAFAFA] p-10 lg:p-12 border-r border-[#F7F7F7]">
+        <div className="hidden md:flex md:w-[480px] flex-col justify-between bg-[#FFFFFF] p-10 lg:p-12 border-r border-[#FFFFFF]">
           <div>
             {/* Logo */}
             <div className="mb-10">
@@ -95,15 +95,15 @@ export function LicenseActivation() {
                 <span className="text-[11px] font-semibold text-[#1A1916]">Tableau de bord</span>
               </div>
               <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-[12px] bg-[#FAFAFA] border border-[#F7F7F7] p-3">
+                <div className="rounded-[12px] bg-[#FFFFFF] border border-[#FFFFFF] p-3">
                   <p className="text-[9px] text-[#6B6B6B]">Réparations</p>
                   <p className="text-[18px] font-semibold text-[#1A1916] mt-0.5">12</p>
                 </div>
-                <div className="rounded-[12px] bg-[#FAFAFA] border border-[#F7F7F7] p-3">
+                <div className="rounded-[12px] bg-[#FFFFFF] border border-[#FFFFFF] p-3">
                   <p className="text-[9px] text-[#6B6B6B]">Devis en attente</p>
                   <p className="text-[18px] font-semibold text-[#1A1916] mt-0.5">7</p>
                 </div>
-                <div className="rounded-[12px] bg-[#FAFAFA] border border-[#F7F7F7] p-3">
+                <div className="rounded-[12px] bg-[#FFFFFF] border border-[#FFFFFF] p-3">
                   <p className="text-[9px] text-[#6B6B6B]">Factures</p>
                   <p className="text-[18px] font-semibold text-[#1A1916] mt-0.5">3</p>
                 </div>
@@ -121,7 +121,7 @@ export function LicenseActivation() {
           {/* Trust features */}
           <div className="flex items-start gap-6">
             <div className="flex items-center gap-2">
-              <div className="size-7 rounded-full bg-[#E7F5F1] flex items-center justify-center">
+              <div className="size-7 rounded-full bg-[#FFFFFF] flex items-center justify-center">
                 <Shield className="size-3.5 text-[#2A9D8F]" />
               </div>
               <div>
@@ -130,7 +130,7 @@ export function LicenseActivation() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className="size-7 rounded-full bg-[#E7F5F1] flex items-center justify-center">
+              <div className="size-7 rounded-full bg-[#FFFFFF] flex items-center justify-center">
                 <Zap className="size-3.5 text-[#2A9D8F]" />
               </div>
               <div>
@@ -139,7 +139,7 @@ export function LicenseActivation() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className="size-7 rounded-full bg-[#E7F5F1] flex items-center justify-center">
+              <div className="size-7 rounded-full bg-[#FFFFFF] flex items-center justify-center">
                 <Layers className="size-3.5 text-[#2A9D8F]" />
               </div>
               <div>
@@ -153,7 +153,7 @@ export function LicenseActivation() {
         {/* Right Panel — Activation Form */}
         <div className="flex flex-1 flex-col items-center justify-center px-8 py-12 md:px-12 lg:px-16">
           {/* Lock icon */}
-          <div className="size-16 rounded-full bg-[#E7F5F1] flex items-center justify-center mb-8">
+          <div className="size-16 rounded-full bg-[#FFFFFF] flex items-center justify-center mb-8">
             <Lock className="size-7 text-[#2A9D8F]" />
           </div>
 
@@ -179,7 +179,7 @@ export function LicenseActivation() {
                     error
                       ? "border-[#DC3545]/40 focus:border-[#DC3545]"
                       : success
-                        ? "border-[#2A9D8F]/40 bg-[#F8FCFA]"
+                        ? "border-[#2A9D8F]/40 bg-[#FFFFFF]"
                         : "border-[#E8E8E5] hover:border-[#DADADA] focus:border-[#2A9D8F]",
                   )}
                   value={key}
@@ -241,14 +241,14 @@ export function LicenseActivation() {
 
             {/* Separator */}
             <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-[#F7F7F7]" />
+              <div className="flex-1 h-px bg-[#FFFFFF]" />
               <span className="text-[#A3A3A3] text-[12px]">ou</span>
-              <div className="flex-1 h-px bg-[#F7F7F7]" />
+              <div className="flex-1 h-px bg-[#FFFFFF]" />
             </div>
 
             {/* Help box */}
-            <div className="flex items-start gap-3 rounded-[14px] border border-[#F7F7F7] bg-[#FAFAFA] px-4 py-4">
-              <div className="size-6 rounded-full bg-[#E7F5F1] flex items-center justify-center shrink-0 mt-0.5">
+            <div className="flex items-start gap-3 rounded-[14px] border border-[#FFFFFF] bg-[#FFFFFF] px-4 py-4">
+              <div className="size-6 rounded-full bg-[#FFFFFF] flex items-center justify-center shrink-0 mt-0.5">
                 <AlertCircle className="size-3.5 text-[#2A9D8F]" />
               </div>
               <div>

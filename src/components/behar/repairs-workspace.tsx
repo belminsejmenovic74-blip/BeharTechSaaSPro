@@ -703,7 +703,7 @@ export function RepairsWorkspace() {
                 <span
                   className={cn(
                     "rounded-full px-1.5 py-px text-[10px] font-bold",
-                    active ? "bg-white/25 text-white" : "bg-[#F7F7F7] text-[#6B6B6B]",
+                    active ? "bg-white text-white" : "bg-[#FFFFFF] text-[#6B6B6B]",
                   )}
                 >
                   {count}
@@ -827,7 +827,7 @@ export function RepairsWorkspace() {
                     }}
                     className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
                   >
-                    <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FAFAFA] text-[#1A1916]">
+                    <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FFFFFF] text-[#1A1916]">
                       <Wrench className="size-[18px]" strokeWidth={1.8} />
                     </span>
                     <div className="min-w-0 flex-1">
@@ -851,7 +851,7 @@ export function RepairsWorkspace() {
                         <span
                           className={cn(
                             "rounded-full px-2 py-0.5 text-[10.5px] font-semibold tabular-nums",
-                            fullyPaid ? "bg-[#EAF6F2] text-[#2A9D8F]" : "bg-[#FDECEC] text-[#B42318]",
+                            fullyPaid ? "bg-[#FFFFFF] text-[#2A9D8F]" : "bg-[#FFFFFF] text-[#B42318]",
                           )}
                         >
                           {fullyPaid ? "Payé" : formatRepairAmount(repair, Math.max(0, total - paid))}
@@ -929,7 +929,7 @@ export function RepairsWorkspace() {
                           setModal("create");
                           setImportOpen(false);
                         }}
-                        className="w-full flex items-center justify-between p-3 rounded-xl border border-[#E8E8E5] hover:border-[#2A9D8F] hover:bg-[#F1FAF8] transition-all text-left"
+                        className="w-full flex items-center justify-between p-3 rounded-xl border border-[#E8E8E5] hover:border-[#2A9D8F] hover:bg-[#FFFFFF] transition-all text-left"
                       >
                         <div>
                           <p className="font-bold text-sm text-[#1A1916]">
@@ -953,7 +953,7 @@ export function RepairsWorkspace() {
 
         <Panel className="flex min-h-0 flex-col overflow-hidden rounded-none md:rounded-[20px] border-0 md:border md:border-[#E8E8E5] bg-white p-4 md:p-[18px] shadow-none md:shadow-[0_12px_40px_rgba(26,25,22,0.045)] xl:max-h-[calc(100svh-168px)]">
           {/* Mobile back button */}
-          <div className="md:hidden -mx-4 -mt-4 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#F7F7F7] bg-white px-4 py-3">
+          <div className="md:hidden -mx-4 -mt-4 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#FFFFFF] bg-white px-4 py-3">
             <button
               type="button"
               onClick={() => setMobileDetailOpen(false)}
@@ -976,7 +976,7 @@ export function RepairsWorkspace() {
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <StatusBadge status={selectedRepair.status} />
                       {selectedLinkedAppointment ? (
-                        <span className="inline-flex rounded-[7px] border border-[#D7EFEA] bg-[#F6FCFA] px-2 py-0.5 font-semibold text-[#167B70] text-[11px]">
+                        <span className="inline-flex rounded-[7px] border border-[#D7EFEA] bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#167B70] text-[11px]">
                           Depuis RDV
                         </span>
                       ) : null}
@@ -986,7 +986,7 @@ export function RepairsWorkspace() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
-                          className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3.5 font-medium text-[#1A1916] text-sm hover:bg-[#FAFAFA]"
+                          className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3.5 font-medium text-[#1A1916] text-sm hover:bg-[#FFFFFF]"
                           type="button"
                         >
                           Actions
@@ -1099,7 +1099,7 @@ export function RepairsWorkspace() {
 
                     <button
                       aria-label="Fermer le panneau"
-                      className="grid size-10 place-items-center rounded-[12px] text-[#6B6B6B] hover:bg-[#FAFAFA]"
+                      className="grid size-10 place-items-center rounded-[12px] text-[#6B6B6B] hover:bg-[#FFFFFF]"
                       onClick={() => setSelected("repair", "")}
                       type="button"
                     >
@@ -1126,7 +1126,7 @@ export function RepairsWorkspace() {
                 />
               ) : (
                 <div className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1 pb-4">
-                  <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA]/80 px-5 py-4">
+                  <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] px-5 py-4">
                     {primaryAction ? (
                       <>
                         {selectedRepair.status === "Prêt" && primaryInvoice?.status !== "Payée" && resteAPayer > 0 && (
@@ -1175,7 +1175,7 @@ export function RepairsWorkspace() {
                   </div>
 
                   <Link
-                    className="flex h-11 w-full items-center justify-center gap-2 rounded-[14px] border border-[#2A9D8F]/35 bg-white px-4 font-semibold text-[#167B70] text-sm transition hover:bg-[#F3FBF8]"
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-[14px] border border-[#2A9D8F]/35 bg-white px-4 font-semibold text-[#167B70] text-sm transition hover:bg-[#FFFFFF]"
                     href={`/dashboard/dossiers/_/?id=${selectedRepair.id}`}
                   >
                     <FolderOpen className="size-4" />
@@ -1243,7 +1243,7 @@ export function RepairsWorkspace() {
                           ) : null}
                         </p>
                       </div>
-                      <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 font-semibold text-[#6B6B6B] text-[11px]">
+                      <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#6B6B6B] text-[11px]">
                         {paymentLabel}
                       </span>
                     </div>
@@ -1261,13 +1261,13 @@ export function RepairsWorkspace() {
                     <div className="flex items-center justify-between gap-3">
                       <h3 className="font-semibold text-[#1A1916] text-sm">Produits et accessoires</h3>
                       {(selectedRepair.repairSaleLines?.length ?? 0) > 0 ? (
-                        <span className="rounded-[7px] border border-[#D7EFEA] bg-[#F6FCFA] px-2 py-0.5 font-semibold text-[#147065] text-xs">
+                        <span className="rounded-[7px] border border-[#D7EFEA] bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#147065] text-xs">
                           {selectedRepair.repairSaleLines?.length ?? 0}
                         </span>
                       ) : null}
                     </div>
                     {primaryInvoice || repairPaidAmount > 0 ? (
-                      <p className="mt-3 rounded-[12px] border border-[#F2C8C3] bg-[#FFF7F6] p-3 text-[#7A271A] text-xs">
+                      <p className="mt-3 rounded-[12px] border border-[#F2C8C3] bg-[#FFFFFF] p-3 text-[#7A271A] text-xs">
                         Cette réparation est déjà facturée. Créez une vente séparée.
                       </p>
                     ) : (
@@ -1321,7 +1321,7 @@ export function RepairsWorkspace() {
                       </div>
                     )}
                     {!primaryInvoice && repairPaidAmount <= 0 && accessoryStockItems.length === 0 ? (
-                      <p className="mt-3 rounded-[12px] border border-[#E8E8E5] bg-[#FAFAFA] p-3 text-[#6B6B6B] text-xs">
+                      <p className="mt-3 rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] p-3 text-[#6B6B6B] text-xs">
                         Aucun accessoire de comptoir disponible dans le stock. Les pièces techniques restent dans la
                         zone stock/réparation.
                       </p>
@@ -1344,7 +1344,7 @@ export function RepairsWorkspace() {
                               </p>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 text-[10px] font-semibold text-[#6B6B6B]">
+                              <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[10px] font-semibold text-[#6B6B6B]">
                                 {line.status === "draft"
                                   ? "À remettre"
                                   : line.status === "confirmed"
@@ -1355,7 +1355,7 @@ export function RepairsWorkspace() {
                               </span>
                               {!line.stockDecremented && line.status === "draft" ? (
                                 <button
-                                  className="h-8 rounded-lg bg-[#E8F7F3] px-2 text-[#167B70] text-[11px] font-bold hover:bg-[#D7F0E9] transition"
+                                  className="h-8 rounded-lg bg-[#FFFFFF] px-2 text-[#167B70] text-[11px] font-bold hover:bg-[#FFFFFF] transition"
                                   onClick={() => {
                                     if (
                                       window.confirm(`Marquer ${line.name} comme remis ? Le stock sera décrémenté.`)
@@ -1375,7 +1375,7 @@ export function RepairsWorkspace() {
                               {line.status === "draft" ? (
                                 <button
                                   aria-label={`Retirer`}
-                                  className="grid size-8 place-items-center rounded-lg text-[#B42318] hover:bg-[#FFF5F5]"
+                                  className="grid size-8 place-items-center rounded-lg text-[#B42318] hover:bg-[#FFFFFF]"
                                   onClick={() => {
                                     updateRepair(selectedRepair.id, {
                                       repairSaleLines: (selectedRepair.repairSaleLines ?? []).filter(
@@ -1473,12 +1473,12 @@ function PlannedEntriesPanel({
             Rendez-vous confirmés ou en attente, pas encore dans le pipeline atelier.
           </p>
         </div>
-        <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 font-semibold text-[#6B6B6B] text-xs">
+        <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#6B6B6B] text-xs">
           {appointments.length}
         </span>
       </div>
       {appointments.length === 0 ? (
-        <div className="rounded-[14px] border border-dashed border-[#E8E8E5] bg-[#FAFAFA] px-4 py-5 text-center text-[#6B6B6B] text-sm">
+        <div className="rounded-[14px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] px-4 py-5 text-center text-[#6B6B6B] text-sm">
           Aucun rendez-vous à transformer pour le moment.
         </div>
       ) : (
@@ -1488,7 +1488,7 @@ function PlannedEntriesPanel({
             const status = normalizeAppointmentStatus(appointment.status, appointment.confirmed);
             const arrived = status === "Arrivé";
             return (
-              <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA] p-4" key={appointment.id}>
+              <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4" key={appointment.id}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-mono font-semibold text-[#1A1916] text-xs">

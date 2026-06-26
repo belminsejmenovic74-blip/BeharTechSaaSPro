@@ -14,23 +14,26 @@ const APP_VERSION = "1.0.21";
 const downloads = [
   {
     platform: "windows" as const,
-    label: "Télécharger pour Windows",
-    detail: "Installateur .exe — Windows 10/11",
-    href: `/downloads/BeharTechPro-${APP_VERSION}-windows.exe`,
+    label: "Windows",
+    detail: "Désactivé localement — Installateur .exe",
     icon: MonitorSmartphone,
   },
   {
     platform: "mac" as const,
-    label: "Télécharger pour Mac",
-    detail: "Image disque .dmg — macOS 10.15+",
-    href: `/downloads/BeharTechPro-${APP_VERSION}-mac.dmg`,
+    label: "Mac",
+    detail: "Désactivé localement — Image disque .dmg",
     icon: Apple,
   },
   {
+    platform: "linux" as const,
+    label: "Linux",
+    detail: "Désactivé localement — Paquet .deb / .rpm",
+    icon: MonitorSmartphone,
+  },
+  {
     platform: "android" as const,
-    label: "Télécharger pour Android",
-    detail: "Fichier APK — Android 8.0+",
-    href: `/downloads/BeharTechPro-${APP_VERSION}-android.apk`,
+    label: "Android",
+    detail: "Désactivé localement — Fichier APK",
     icon: Smartphone,
   },
 ];
@@ -58,30 +61,30 @@ export default function DownloadPage() {
           {downloads.map((item) => {
             const Icon = item.icon;
             return (
-              <a
-                key={item.href}
-                href={item.href}
-                className="group inline-flex min-h-16 items-center justify-between gap-4 rounded-[14px] bg-[#1A1916] px-5 text-left text-white shadow-[0_4px_16px_rgba(26,25,22,0.15)] transition hover:bg-[#2A2922] active:scale-[0.98]"
-                download
+              <button
+                key={item.label}
+                disabled
+                type="button"
+                className="group inline-flex min-h-16 items-center justify-between gap-4 rounded-[14px] bg-[#FFFFFF] border border-[#E8E8E5] px-5 text-left text-gray-400 cursor-not-allowed w-full shadow-sm"
               >
                 <span className="inline-flex min-w-0 items-center gap-3">
-                  <Icon className="size-5 shrink-0" strokeWidth={1.8} />
+                  <Icon className="size-5 shrink-0 text-gray-400" strokeWidth={1.8} />
                   <span className="min-w-0">
-                    <span className="block text-[15px] font-semibold leading-5">{item.label}</span>
-                    <span className="block text-[12px] leading-5 text-white/68">{item.detail}</span>
+                    <span className="block text-[15px] font-semibold leading-5 text-[#1A1916]/40">{item.label}</span>
+                    <span className="block text-[12px] leading-5 text-gray-400">{item.detail}</span>
                   </span>
                 </span>
                 <Download
-                  className="size-4 shrink-0 transition-transform group-hover:translate-y-0.5"
+                  className="size-4 shrink-0 text-gray-400"
                   strokeWidth={2}
                 />
-              </a>
+              </button>
             );
           })}
 
           <a
             href="/dashboard"
-            className="group inline-flex h-14 items-center justify-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white text-[15px] font-semibold text-[#1A1916] shadow-[0_4px_16px_rgba(26,25,22,0.06)] transition hover:border-[#DADADA] hover:bg-[#FAFAFA] active:scale-[0.98]"
+            className="group inline-flex h-14 items-center justify-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white text-[15px] font-semibold text-[#1A1916] shadow-[0_4px_16px_rgba(26,25,22,0.06)] transition hover:border-[#DADADA] hover:bg-[#FFFFFF] active:scale-[0.98]"
           >
             <span>Ouvrir Behar Tech Pro dans le navigateur</span>
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
@@ -146,7 +149,7 @@ function InstallCard({
     <section className="rounded-[16px] border border-[#E8E8E5] bg-white p-5 shadow-[0_2px_10px_rgba(26,25,22,0.04)]">
       <h2 className="font-semibold text-[#1A1916] text-[15px] tracking-tight">{title}</h2>
       {warning && (
-        <div className="mt-3 flex items-start gap-2 rounded-[10px] bg-[#FAFAFA] px-3 py-2">
+        <div className="mt-3 flex items-start gap-2 rounded-[10px] bg-[#FFFFFF] px-3 py-2">
           <ShieldAlert className="size-4 shrink-0 text-[#6B6B6B] mt-0.5" strokeWidth={2} />
           <p className="text-[12px] leading-5 text-[#8C5B0E]">{warning}</p>
         </div>
@@ -154,7 +157,7 @@ function InstallCard({
       <ol className="mt-3 space-y-1.5 text-[12.5px] text-[#1A1916]">
         {steps.map((step, idx) => (
           <li key={idx} className="flex gap-2">
-            <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-[#EAF6F2] text-[10px] font-bold text-[#167B70]">
+            <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-[#FFFFFF] text-[10px] font-bold text-[#167B70]">
               {idx + 1}
             </span>
             <span className="leading-5">{step}</span>
@@ -163,7 +166,7 @@ function InstallCard({
       </ol>
       {command && (
         <div className="mt-3 overflow-x-auto rounded-[10px] bg-[#1A1916] px-3 py-2.5">
-          <code className="block whitespace-nowrap font-mono text-[11.5px] text-[#EAF6F2]">{command}</code>
+          <code className="block whitespace-nowrap font-mono text-[11.5px] text-[#FFFFFF]">{command}</code>
         </div>
       )}
       {commandHint && <p className="mt-2 text-[11.5px] leading-5 text-[#6B6B6B]">{commandHint}</p>}

@@ -35,7 +35,7 @@ export function RepairDemoActions() {
     <div className="space-y-5">
       {message && <SuccessNote>{message}</SuccessNote>}
 
-      <div className="rounded-2xl border border-black/[0.06] bg-white/75 p-4">
+      <div className="rounded-2xl border border-black/[0.06] bg-white p-4">
         <div className="mb-3 flex items-center justify-between gap-3">
           <h3 className="font-semibold text-[#1A1916]">Pièce sélectionnée depuis le stock</h3>
           <StatusBadge status={partSelected ? "En stock" : "En attente"} />
@@ -82,7 +82,7 @@ export function RepairDemoActions() {
       </div>
 
       {paid && (
-        <div className="rounded-2xl border border-[#2A9D8F]/20 bg-[#EAF6F2] p-4">
+        <div className="rounded-2xl border border-[#2A9D8F]/20 bg-[#FFFFFF] p-4">
           <p className="font-semibold text-[#1A1916]">Règlement indiqué</p>
           <p className="mt-1 text-[#6B6B6B] text-sm">
             Le réparateur peut s’arrêter ici, imprimer le reçu, ou l’envoyer plus tard.
@@ -101,7 +101,7 @@ export function RepairDemoActions() {
       )}
 
       {logs.length > 0 && (
-        <div className="rounded-2xl border border-black/[0.06] bg-white/75 p-4">
+        <div className="rounded-2xl border border-black/[0.06] bg-white p-4">
           <h3 className="mb-3 font-semibold text-[#1A1916]">message_logs</h3>
           <div className="space-y-3">
             {logs.map((log) => (

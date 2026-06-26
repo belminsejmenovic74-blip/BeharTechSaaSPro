@@ -2,11 +2,6 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Theme preset styles: these override CSS variables based on the selected data-theme-preset */
-@import "../styles/presets/brutalist.css";
-@import "../styles/presets/soft-pop.css";
-@import "../styles/presets/tangerine.css";
-
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -58,8 +53,8 @@ These serve as the fallback; there is no separate default.css file. */
   --radius: 0.875rem;
   --behar-bg: #ffffff;
   --behar-surface: #ffffff;
-  --behar-subtle: #fafafa;
-  --behar-subtle-strong: #f7f7f7;
+  --behar-subtle: #ffffff;
+  --behar-subtle-strong: #ffffff;
   --behar-text: #1a1916;
   --behar-muted: #6b6b6b;
   --behar-border: #e8e8e5;
@@ -70,9 +65,9 @@ These serve as the fallback; there is no separate default.css file. */
   --popover-foreground: #1a1916;
   --primary: #2a9d8f;
   --primary-foreground: #ffffff;
-  --secondary: #fafafa;
+  --secondary: #ffffff;
   --secondary-foreground: #1a1916;
-  --muted: #f7f7f7;
+  --muted: #ffffff;
   --muted-foreground: #6b6b6b;
   --accent: #e8f7f3;
   --accent-foreground: #167b70;
@@ -111,9 +106,9 @@ These serve as the fallback; there is no separate default.css file. */
   --popover-foreground: #1a1916;
   --primary: #2a9d8f;
   --primary-foreground: #ffffff;
-  --secondary: #fafafa;
+  --secondary: #ffffff;
   --secondary-foreground: #1a1916;
-  --muted: #f7f7f7;
+  --muted: #ffffff;
   --muted-foreground: #6b6b6b;
   --accent: #e8f7f3;
   --accent-foreground: #167b70;
@@ -147,6 +142,14 @@ These serve as the fallback; there is no separate default.css file. */
     font-family: var(--font-sans), system-ui, sans-serif;
     color-scheme: light;
     background: #ffffff;
+  }
+
+  html {
+    background: #ffffff;
+  }
+
+  html.dark {
+    color-scheme: light;
   }
 
   .lucide {
@@ -209,56 +212,14 @@ These serve as the fallback; there is no separate default.css file. */
   html[data-font="inter"] body {
     --font-sans: var(--font-inter);
   }
-  html[data-font="notoSans"] body {
-    --font-sans: var(--font-noto-sans);
-  }
-  html[data-font="nunitoSans"] body {
-    --font-sans: var(--font-nunito-sans);
-  }
-  html[data-font="figtree"] body {
-    --font-sans: var(--font-figtree);
-  }
-  html[data-font="roboto"] body {
-    --font-sans: var(--font-roboto);
-  }
   html[data-font="geist"] body {
     --font-sans: var(--font-geist);
-  }
-  html[data-font="raleway"] body {
-    --font-sans: var(--font-raleway);
   }
   html[data-font="dmSans"] body {
     --font-sans: var(--font-dm-sans);
   }
   html[data-font="publicSans"] body {
     --font-sans: var(--font-public-sans);
-  }
-  html[data-font="outfit"] body {
-    --font-sans: var(--font-outfit);
-  }
-  html[data-font="geistMono"] body {
-    --font-sans: var(--font-geist-mono);
-  }
-  html[data-font="geistPixelSquare"] body {
-    --font-sans: var(--font-geist-pixel-square);
-  }
-  html[data-font="jetBrainsMono"] body {
-    --font-sans: var(--font-jetbrains-mono);
-  }
-  html[data-font="notoSerif"] body {
-    --font-sans: var(--font-noto-serif);
-  }
-  html[data-font="robotoSlab"] body {
-    --font-sans: var(--font-roboto-slab);
-  }
-  html[data-font="merriweather"] body {
-    --font-sans: var(--font-merriweather);
-  }
-  html[data-font="lora"] body {
-    --font-sans: var(--font-lora);
-  }
-  html[data-font="playfairDisplay"] body {
-    --font-sans: var(--font-playfair-display);
   }
 }
 
@@ -268,6 +229,46 @@ html {
 
 .disable-transitions * {
   transition: none !important;
+}
+
+/* Behar Tech Pro visual cleanup: keep product screens premium, white,
+   and prevent old theme presets or decorative utilities from reintroducing noisy UI. */
+.behar-app,
+.behar-app main {
+  background: #ffffff;
+}
+
+.behar-app [class*="bg-gradient-"],
+.behar-app [class*="bg-[radial"],
+.behar-app [class*="bg-[linear"] {
+  background-image: none !important;
+}
+
+.behar-app [class*="backdrop-blur"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+.behar-app [class*="shadow-"] {
+  box-shadow:
+    0 1px 2px rgba(26, 25, 22, 0.035),
+    0 10px 28px rgba(26, 25, 22, 0.035) !important;
+}
+
+.behar-app button[class*="shadow-"],
+.behar-app a[class*="shadow-"],
+.behar-app [role="button"][class*="shadow-"] {
+  box-shadow: 0 1px 2px rgba(26, 25, 22, 0.04) !important;
+}
+
+.behar-app [class*="bg-black/"] {
+  background-color: rgba(26, 25, 22, 0.24) !important;
+}
+
+.behar-app [class*="blur-2xl"],
+.behar-app [class*="blur-3xl"],
+.behar-app [class*="blur-["] {
+  filter: none !important;
 }
 
 /* Scroll horizontal du kanban : barre fine */

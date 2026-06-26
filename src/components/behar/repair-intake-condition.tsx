@@ -175,7 +175,7 @@ export function RepairIntakeSummaryCard({
           )}
         </div>
         <span
-          className={`rounded-full px-3 py-1 font-semibold text-[11px] ${validated ? "bg-[#E4F3DA] text-[#477A23]" : "bg-[#FAFAFA] text-[#6B6B6B]"}`}
+          className={`rounded-full px-3 py-1 font-semibold text-[11px] ${validated ? "bg-[#FFFFFF] text-[#477A23]" : "bg-[#FFFFFF] text-[#6B6B6B]"}`}
         >
           {validated ? "État d'entrée validé" : "État d'entrée incomplet"}
         </span>
@@ -414,7 +414,7 @@ export function RepairIntakeScreen({
                 const checked = (draft.accessories ?? []).includes(name);
                 return (
                   <label
-                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[12px] font-medium transition md:gap-2 md:px-3 md:py-2 md:text-sm ${checked ? "border-[#2A9D8F] bg-[#E8F7F3] text-[#167B70]" : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:border-[#2A9D8F]/40"}`}
+                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[12px] font-medium transition md:gap-2 md:px-3 md:py-2 md:text-sm ${checked ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]" : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:border-[#2A9D8F]/40"}`}
                     key={name}
                   >
                     <input
@@ -548,7 +548,7 @@ export function RepairIntakeScreen({
           </Accordion>
         </div>
 
-        <aside className="hidden xl:flex flex-col border-[#E8E8E5] border-t bg-white/80 p-5 xl:border-l xl:border-t-0">
+        <aside className="hidden xl:flex flex-col border-[#E8E8E5] border-t bg-white p-5 xl:border-l xl:border-t-0">
           <h3 className="font-semibold text-[#1A1916] text-lg">Résumé</h3>
           <dl className="mt-5 space-y-3 text-sm">
             {summaryRows.map(([label, value]) => (
@@ -629,7 +629,7 @@ export function RepairIntakeQuickPanel({
   };
 
   return (
-    <section className="space-y-4 rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA] p-4">
+    <section className="space-y-4 rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="flex items-center gap-2 font-medium text-[#1A1916] text-sm">
@@ -684,7 +684,7 @@ export function RepairIntakeQuickPanel({
             const checked = (draft.accessories ?? []).includes(name);
             return (
               <label
-                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[12px] font-medium transition ${checked ? "border-[#2A9D8F] bg-[#E8F7F3] text-[#167B70]" : "border-[#E8E8E5] bg-white text-[#6B6B6B]"}`}
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[12px] font-medium transition ${checked ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]" : "border-[#E8E8E5] bg-white text-[#6B6B6B]"}`}
                 key={name}
               >
                 <input
@@ -795,7 +795,7 @@ function AccessDevicePanel({
     >
       <div className="flex items-center justify-between gap-3">
         <h3 className="font-semibold text-[#1A1916] text-[13px] md:text-sm">6. Accès appareil</h3>
-        <span className="rounded-full bg-[#EAF6F2] px-2.5 py-1 font-semibold text-[#167B70] text-[10.5px]">
+        <span className="rounded-full bg-[#FFFFFF] px-2.5 py-1 font-semibold text-[#167B70] text-[10.5px]">
           Sécurisé
         </span>
       </div>
@@ -875,7 +875,7 @@ function PatternPicker({ value, onChange }: Readonly<{ value: number[]; onChange
               aria-label={`Point ${point}`}
               className={`grid size-9 place-items-center rounded-full border text-[12px] font-semibold transition ${
                 order
-                  ? "border-[#2A9D8F] bg-[#E8F7F3] text-[#167B70]"
+                  ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]"
                   : "border-[#DADADA] bg-white text-[#6B6B6B] hover:border-[#2A9D8F]"
               }`}
               key={point}
@@ -892,7 +892,7 @@ function PatternPicker({ value, onChange }: Readonly<{ value: number[]; onChange
           Touchez les points dans l'ordre du schéma. La séquence visuelle est enregistrée avec la réparation.
         </p>
         <div className="mt-2 flex gap-2">
-          <span className="rounded-full bg-[#FAFAFA] px-3 py-1 text-[#1A1916] text-[12px]">
+          <span className="rounded-full bg-[#FFFFFF] px-3 py-1 text-[#1A1916] text-[12px]">
             {value.length ? value.join(" → ") : "Aucun schéma"}
           </span>
           {value.length ? (
@@ -1008,7 +1008,7 @@ export function SignaturePad({
       <canvas
         ref={canvasRef}
         aria-label="Signature client"
-        className="h-[118px] w-full rounded-[10px] border border-dashed border-[#DADADA] bg-[#FAFAFA]"
+        className="h-[118px] w-full rounded-[10px] border border-dashed border-[#DADADA] bg-[#FFFFFF]"
         height={180}
         onPointerCancel={finish}
         onPointerDown={start}
@@ -1053,12 +1053,12 @@ function Accordion({
         <span className="flex items-center gap-2">
           {title}
           {typeof count === "number" && count > 0 && (
-            <span className="rounded-full bg-[#EAF6F2] px-2 py-0.5 text-[10.5px] font-bold text-[#2A9D8F]">
+            <span className="rounded-full bg-[#FFFFFF] px-2 py-0.5 text-[10.5px] font-bold text-[#2A9D8F]">
               {count}
             </span>
           )}
         </span>
-        <span className="grid size-6 place-items-center rounded-full bg-[#FAFAFA] text-[#6B6B6B] transition group-open:rotate-45 md:hidden">
+        <span className="grid size-6 place-items-center rounded-full bg-[#FFFFFF] text-[#6B6B6B] transition group-open:rotate-45 md:hidden">
           +
         </span>
       </summary>

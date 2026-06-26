@@ -56,11 +56,11 @@ export function ReconditioningPrintPage() {
     await generatePdfFromElement(printRef.current, `${name}_${data.ref}.pdf`);
   };
 
-  if (!mounted) return <div className="min-h-svh bg-[#FAFAF8]" />;
+  if (!mounted) return <div className="min-h-svh bg-[#FFFFFF]" />;
 
   if (!data) {
     return (
-      <div className="grid min-h-svh place-items-center bg-[#FAFAF8] px-6 text-center">
+      <div className="grid min-h-svh place-items-center bg-[#FFFFFF] px-6 text-center">
         <div>
           <p className="font-semibold text-[#1A1916] text-lg">Dossier introuvable</p>
           <p className="mt-1 text-[#6B6B6B] text-sm">Ouvrez ce document depuis l'étape « Certificat & sortie » d'un dossier de reconditionnement.</p>
@@ -70,12 +70,12 @@ export function ReconditioningPrintPage() {
   }
 
   return (
-    <div className="min-h-svh bg-[#FAFAF8] print:bg-white">
+    <div className="min-h-svh bg-[#FFFFFF] print:bg-white">
       {/* Toolbar (cachée à l'impression) */}
-      <div className="sticky top-0 z-10 border-[#E8E8E5] border-b bg-white/90 backdrop-blur print:hidden">
+      <div className="sticky top-0 z-10 border-[#E8E8E5] border-b bg-white backdrop-blur print:hidden">
         <div className="mx-auto flex max-w-[860px] flex-wrap items-center justify-between gap-3 px-4 py-3">
           <button
-            className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-3 font-medium text-[#1A1916] text-sm transition hover:bg-[#FAFAFA]"
+            className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-3 font-medium text-[#1A1916] text-sm transition hover:bg-[#FFFFFF]"
             onClick={() => window.close()}
             type="button"
           >
@@ -101,7 +101,7 @@ export function ReconditioningPrintPage() {
 
           <div className="flex items-center gap-2">
             <button
-              className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-3 font-medium text-[#1A1916] text-sm transition hover:bg-[#FAFAFA]"
+              className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-3 font-medium text-[#1A1916] text-sm transition hover:bg-[#FFFFFF]"
               onClick={download}
               type="button"
             >

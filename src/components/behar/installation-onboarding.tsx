@@ -152,7 +152,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
       tvaMention: draft.vatApplicable
         ? ""
         : countryConfig.country === "CH"
-          ? "TVA non applicable / non assujetti"
+          ? "Non assujetti à la TVA"
           : String(draft.tvaMention || "").trim(),
       isMicroEnterprise: !draft.vatApplicable,
       repairPrefix: String(draft.repairPrefix || "REP")
@@ -189,14 +189,14 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
         </p>
 
         {errors.length > 0 ? (
-          <div className="mt-5 rounded-[14px] border border-[#F3D1CC] bg-[#FFF7F6] px-4 py-3 text-[#7A271A] text-sm">
+          <div className="mt-5 rounded-[14px] border border-[#F3D1CC] bg-[#FFFFFF] px-4 py-3 text-[#7A271A] text-sm">
             {errors.map((e) => (
               <p key={e}>{e}</p>
             ))}
           </div>
         ) : null}
 
-        <section className="mt-7 grid gap-4 rounded-[18px] border border-[#E8E8E5] bg-[#FAFAFA]/70 p-4 md:grid-cols-2">
+        <section className="mt-7 grid gap-4 rounded-[18px] border border-[#E8E8E5] bg-[#FFFFFF] p-4 md:grid-cols-2">
           <h2 className="md:col-span-2 font-semibold text-[#1A1916] text-lg">Identité atelier</h2>
           <Field label="Nom de l’atelier">
             <input className={inputCls} value={draft.name || ""} onChange={(e) => setField("name", e.target.value)} />
@@ -222,7 +222,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
                 {draft.logoUrl ? (
                   <img src={draft.logoUrl} alt="Logo atelier" className="h-10 w-10 rounded-[10px] object-cover" />
                 ) : (
-                  <span className="grid h-10 w-10 place-items-center rounded-[10px] bg-[#E7F5F1] font-semibold text-[#2A9D8F] text-xs">
+                  <span className="grid h-10 w-10 place-items-center rounded-[10px] bg-[#FFFFFF] font-semibold text-[#2A9D8F] text-xs">
                     {initials || "AT"}
                   </span>
                 )}
@@ -247,7 +247,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
           </Field>
         </section>
 
-        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E8E8E5] bg-[#FAFAFA]/70 p-4 md:grid-cols-2">
+        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E8E8E5] bg-[#FFFFFF] p-4 md:grid-cols-2">
           <h2 className="md:col-span-2 font-semibold text-[#1A1916] text-lg">Adresse</h2>
           <Field label="Adresse">
             <input
@@ -292,7 +292,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
                   vatRate: 0,
                   tvaMention:
                     country === "CH"
-                      ? "TVA non applicable / non assujetti"
+                      ? "Non assujetti à la TVA"
                       : "TVA non applicable, art. 293 B du CGI",
                   acceptedPaymentMethods:
                     country === "CH" ? [...SWISS_PAYMENT_OPTIONS] : ["Espèces hors Behar Tech", "TPE externe", "Virement"],
@@ -305,7 +305,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
           </Field>
         </section>
 
-        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E8E8E5] bg-[#FAFAFA]/70 p-4 md:grid-cols-2">
+        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E8E8E5] bg-[#FFFFFF] p-4 md:grid-cols-2">
           <h2 className="md:col-span-2 font-semibold text-[#1A1916] text-lg">Informations légales</h2>
           {draft.country === "CH" ? (
             <>
@@ -360,7 +360,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
           ) : null}
         </section>
 
-        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E8E8E5] bg-[#FAFAFA]/70 p-4 md:grid-cols-4">
+        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E8E8E5] bg-[#FFFFFF] p-4 md:grid-cols-4">
           <h2 className="md:col-span-4 font-semibold text-[#1A1916] text-lg">Numérotation documents</h2>
           <Field label="Préfixe réparation">
             <input
@@ -428,7 +428,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
           </Field>
         </section>
 
-        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E8E8E5] bg-[#FAFAFA]/70 p-4 md:grid-cols-2">
+        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E8E8E5] bg-[#FFFFFF] p-4 md:grid-cols-2">
           <h2 className="md:col-span-2 font-semibold text-[#1A1916] text-lg">Paiements / horaires / conditions</h2>
           <Field label="Paiements acceptés">
             <div className="grid grid-cols-2 gap-2 text-sm">

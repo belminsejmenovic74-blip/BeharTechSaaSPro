@@ -162,7 +162,7 @@ const CH_PAYMENT_OPTIONS: Array<{ key: PaymentMethod; label: string; icon: typeo
   { key: "Virement", label: "Virement", icon: Landmark },
   { key: "Autre", label: "Autre", icon: Shuffle },
 ];
-const getPaymentOptions = (country: "FR" | "CH", twintEnabled = true) =>
+const getPaymentOptions = (country: WorkshopCountry, twintEnabled = true) =>
   country === "CH"
     ? CH_PAYMENT_OPTIONS.filter((option) => option.key !== "TWINT" || twintEnabled)
     : FR_PAYMENT_OPTIONS;
@@ -503,7 +503,7 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
     <div className="flex h-full min-h-0 flex-col">
       {step === "cashier" ? (
         <div className="flex min-h-0 flex-1 flex-col gap-4">
-          <div className="inline-flex shrink-0 self-start rounded-[10px] border border-[#E8E8E5] bg-[#FAFAFA] p-1">
+          <div className="inline-flex shrink-0 self-start rounded-[10px] border border-[#E8E8E5] bg-[#FFFFFF] p-1">
             {(
               [
                 ["products", "Vente produits"],
@@ -687,7 +687,7 @@ function RepairCashStep({
 
         <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
           {filtered.length === 0 ? (
-            <div className="grid place-items-center rounded-[12px] border border-dashed border-[#E8E8E5] bg-[#FAFAFA] p-10 text-center">
+            <div className="grid place-items-center rounded-[12px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] p-10 text-center">
               <Wrench className="mb-3 size-8 text-[#C9C7C0]" />
               <p className="text-sm font-medium text-[#1A1916]">Aucun dossier à régler</p>
               <p className="mt-1 text-xs text-[#6B6B6B]">
@@ -704,7 +704,7 @@ function RepairCashStep({
                   type="button"
                   onClick={() => setSelectedRepairId(r.id)}
                   className={`flex w-full items-center justify-between gap-3 rounded-[12px] border px-4 py-3 text-left transition ${
-                    active ? "border-[#11998E] bg-[#F1FAF8]" : "border-[#E8E8E5] bg-white hover:border-[#11998E]/40"
+                    active ? "border-[#11998E] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white hover:border-[#11998E]/40"
                   }`}
                 >
                   <div className="min-w-0">
@@ -731,7 +731,7 @@ function RepairCashStep({
 
         {selected ? (
           <>
-            <div className="rounded-[10px] bg-[#FAFAFA] p-4">
+            <div className="rounded-[10px] bg-[#FFFFFF] p-4">
               <p className="text-xs text-[#6B6B6B]">Client</p>
               <p className="text-sm font-semibold text-[#1A1916]">{customerName(selected.customerId)}</p>
               <p className="mt-2 text-xs text-[#6B6B6B]">Appareil</p>
@@ -752,7 +752,7 @@ function RepairCashStep({
                     onClick={() => setPaymentMethod(value)}
                     className={`flex flex-col items-center gap-1 rounded-[10px] border px-2 py-3 text-xs font-semibold transition ${
                       paymentMethod === value
-                        ? "border-[#11998E] bg-[#F1FAF8] text-[#11998E]"
+                        ? "border-[#11998E] bg-[#FFFFFF] text-[#11998E]"
                         : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:border-[#11998E]/40"
                     }`}
                   >
@@ -764,7 +764,7 @@ function RepairCashStep({
             </div>
 
             <div className="mt-auto space-y-3">
-              <div className="flex items-center justify-between border-t border-[#F7F7F7] pt-3">
+              <div className="flex items-center justify-between border-t border-[#FFFFFF] pt-3">
               <span className="text-sm text-[#6B6B6B]">Total à régler</span>
                 <span className="text-[22px] font-bold tabular-nums text-[#1A1916]">
                   {amount > 0 ? formatEuro(amount) : "À définir"}
@@ -936,7 +936,7 @@ function CashierStep(props: CashierStepProps) {
               <button
                 type="button"
                 onClick={() => setQuickAddOpen(true)}
-                className="mt-4 inline-flex h-10 items-center gap-2 rounded-full border border-[#2A9D8F]/40 bg-[#EAF6F2] px-4 text-[12.5px] font-medium text-[#147065] transition hover:bg-[#D8EEE9]"
+                className="mt-4 inline-flex h-10 items-center gap-2 rounded-full border border-[#2A9D8F]/40 bg-[#FFFFFF] px-4 text-[12.5px] font-medium text-[#147065] transition hover:bg-[#FFFFFF]"
               >
                 <PackagePlus className="size-3.5" />
                 Ajouter une pièce à la volée
@@ -952,7 +952,7 @@ function CashierStep(props: CashierStepProps) {
 
           {frequent.length > 0 ? <FrequentProducts items={frequent} onAdd={addToCart} /> : null}
 
-          <div className="flex items-center justify-between gap-3 rounded-[8px] border border-[#CFEFEB] bg-[#F5FFFD] px-4 py-3 text-[12.5px] text-[#6B6B6B]">
+          <div className="flex items-center justify-between gap-3 rounded-[8px] border border-[#CFEFEB] bg-[#FFFFFF] px-4 py-3 text-[12.5px] text-[#6B6B6B]">
             <span className="inline-flex items-center gap-2">
               <Info className="size-4 shrink-0 text-[#2A9D8F]" />
               Les champs IMEI, État et Garantie apparaissent uniquement lors de la vente d'un téléphone reconditionné.
@@ -978,7 +978,7 @@ function CashierStep(props: CashierStepProps) {
           <div className="flex shrink-0 items-center justify-between border-b border-[#E8E8E5] px-5 py-5">
             <div className="flex items-center gap-2">
               <h3 className="font-semibold text-[#1A1916] text-[20px] tracking-tight">Panier</h3>
-              <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 text-[#6B6B6B] text-[11px] font-medium">
+              <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[#6B6B6B] text-[11px] font-medium">
                 {cart.length} {cart.length > 1 ? "articles" : "article"}
               </span>
             </div>
@@ -986,7 +986,7 @@ function CashierStep(props: CashierStepProps) {
               <button
                 type="button"
                 onClick={clearCart}
-                className="grid size-8 place-items-center rounded-full text-[#8A8A8A] transition hover:bg-[#F7F7F7] hover:text-[#B42318]"
+                className="grid size-8 place-items-center rounded-full text-[#8A8A8A] transition hover:bg-[#FFFFFF] hover:text-[#B42318]"
                 aria-label="Vider le panier"
               >
                 <Trash2 className="size-4" />
@@ -1045,7 +1045,7 @@ function CashierStep(props: CashierStepProps) {
               onClick={() => setAttachRepair(!attachRepair)}
               className={`mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[8px] border text-[13px] font-medium transition ${
                 attachRepair
-                  ? "border-[#2A9D8F]/40 bg-[#EAF6F2] text-[#147065]"
+                  ? "border-[#2A9D8F]/40 bg-[#FFFFFF] text-[#147065]"
                   : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:border-[#2A9D8F]/40 hover:text-[#1A1916]"
               }`}
             >
@@ -1057,7 +1057,7 @@ function CashierStep(props: CashierStepProps) {
               type="button"
               disabled={cart.length === 0}
               onClick={goCheckout}
-              className="mt-4 inline-flex h-14 w-full items-center justify-center gap-2 rounded-[8px] bg-[#11998E] font-semibold text-[15px] text-white shadow-[0_10px_22px_rgba(17,153,142,0.24)] transition hover:bg-[#0F8C82] disabled:cursor-not-allowed disabled:bg-[#C7D9D5] disabled:shadow-none"
+              className="mt-4 inline-flex h-14 w-full items-center justify-center gap-2 rounded-[8px] bg-[#11998E] font-semibold text-[15px] text-white shadow-[0_10px_22px_rgba(17,153,142,0.24)] transition hover:bg-[#0F8C82] disabled:cursor-not-allowed disabled:bg-[#FFFFFF] disabled:shadow-none"
             >
               Valider la vente
               <ArrowRight className="size-4" />
@@ -1120,7 +1120,7 @@ function ProductThumb({ item, size = 64 }: Readonly<{ item: StockItem; size?: nu
   }
   return (
     <div
-      className="grid place-items-center rounded-[12px] bg-[#FAFAFA] text-[#2A9D8F] shadow-[inset_0_0_0_1px_rgba(42,157,143,0.08)]"
+      className="grid place-items-center rounded-[12px] bg-[#FFFFFF] text-[#2A9D8F] shadow-[inset_0_0_0_1px_rgba(42,157,143,0.08)]"
       style={{ width: size, height: size }}
       aria-hidden
     >
@@ -1155,9 +1155,9 @@ function FrequentProducts({
             key={item.id}
             type="button"
             onClick={() => onAdd(item)}
-            className="flex min-w-0 items-center gap-3 rounded-[8px] border border-[#E8E8E5] bg-white p-2.5 text-left transition hover:border-[#2A9D8F]/50 hover:bg-[#F7FCFA]"
+            className="flex min-w-0 items-center gap-3 rounded-[8px] border border-[#E8E8E5] bg-white p-2.5 text-left transition hover:border-[#2A9D8F]/50 hover:bg-[#FFFFFF]"
           >
-            <span className="grid size-14 shrink-0 place-items-center rounded-[8px] border border-[#E8E8E5] bg-[#FAFAFA]">
+            <span className="grid size-14 shrink-0 place-items-center rounded-[8px] border border-[#E8E8E5] bg-[#FFFFFF]">
               <ProductThumb item={item} size={46} />
             </span>
             <span className="min-w-0">
@@ -1189,7 +1189,7 @@ function CartLineRow({
   return (
     <li className="border-[#E8E8E5] border-b py-4 last:border-b-0">
       <div className="flex items-start gap-3">
-        <div className="grid size-[72px] shrink-0 place-items-center rounded-[8px] border border-[#E8E8E5] bg-[#FAFAFA] text-[#2A9D8F]">
+        <div className="grid size-[72px] shrink-0 place-items-center rounded-[8px] border border-[#E8E8E5] bg-[#FFFFFF] text-[#2A9D8F]">
           <LineThumb name={line.name} />
         </div>
         <div className="min-w-0 flex-1">
@@ -1201,7 +1201,7 @@ function CartLineRow({
             <button
               type="button"
               onClick={onRemove}
-              className="-mt-0.5 grid size-7 shrink-0 place-items-center rounded-full text-[#8A8A8A] transition hover:bg-[#F7F7F7] hover:text-[#B42318]"
+              className="-mt-0.5 grid size-7 shrink-0 place-items-center rounded-full text-[#8A8A8A] transition hover:bg-[#FFFFFF] hover:text-[#B42318]"
               aria-label="Supprimer"
             >
               <X className="size-4" />
@@ -1212,7 +1212,7 @@ function CartLineRow({
               <button
                 type="button"
                 onClick={onDecrement}
-                className="grid size-7 place-items-center rounded-[6px] text-[#1A1916] transition hover:bg-[#FAFAFA]"
+                className="grid size-7 place-items-center rounded-[6px] text-[#1A1916] transition hover:bg-[#FFFFFF]"
                 aria-label="Diminuer"
               >
                 <Minus className="size-3.5" />
@@ -1221,7 +1221,7 @@ function CartLineRow({
               <button
                 type="button"
                 onClick={onIncrement}
-                className="grid size-7 place-items-center rounded-[6px] text-[#1A1916] transition hover:bg-[#FAFAFA]"
+                className="grid size-7 place-items-center rounded-[6px] text-[#1A1916] transition hover:bg-[#FFFFFF]"
                 aria-label="Augmenter"
               >
                 <Plus className="size-3.5" />
@@ -1255,7 +1255,7 @@ function PaymentButton({
       onClick={onClick}
       className={`flex h-[58px] flex-row items-center justify-center gap-3 rounded-[8px] border text-[14px] font-semibold transition ${
         active
-          ? "border-[#11998E] bg-[#EAF6F2] text-[#147065]"
+          ? "border-[#11998E] bg-[#FFFFFF] text-[#147065]"
           : "border-[#E8E8E5] bg-white text-[#1A1916] hover:border-[#2A9D8F]/40 hover:text-[#1A1916]"
       }`}
     >
@@ -1392,7 +1392,7 @@ function CheckoutStep(props: CheckoutStepProps) {
             </div>
             {attachRepair ? (
               eligibleRepairs.length === 0 ? (
-                <p className="rounded-[12px] bg-[#FAFAFA] px-3 py-2 text-[#6B6B6B] text-sm">
+                <p className="rounded-[12px] bg-[#FFFFFF] px-3 py-2 text-[#6B6B6B] text-sm">
                   Aucune réparation non facturée disponible.
                 </p>
               ) : (
@@ -1417,7 +1417,7 @@ function CheckoutStep(props: CheckoutStepProps) {
             )}
           </div>
 
-          <div className="rounded-[18px] border border-[#DDEFEA] bg-[#F6FCFA] p-5">
+          <div className="rounded-[18px] border border-[#DDEFEA] bg-[#FFFFFF] p-5">
             <h3 className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Pays de facturation</h3>
             <div className="mt-3 grid grid-cols-2 gap-2">
               {(["FR", "CH"] as const).map((country) => (
@@ -1472,7 +1472,7 @@ function CheckoutStep(props: CheckoutStepProps) {
                   />
                   <div className="grid gap-2">
                     {customerMatches.length === 0 ? (
-                      <p className="rounded-[12px] bg-[#FAFAFA] px-3 py-2 text-[#6B6B6B] text-sm">Aucun client correspondant.</p>
+                      <p className="rounded-[12px] bg-[#FFFFFF] px-3 py-2 text-[#6B6B6B] text-sm">Aucun client correspondant.</p>
                     ) : (
                       customerMatches.map((customer) => (
                         <button
@@ -1481,7 +1481,7 @@ function CheckoutStep(props: CheckoutStepProps) {
                           onClick={() => setSelectedCustomerId(customer.id)}
                           className={`flex items-center justify-between gap-3 rounded-[12px] border px-3 py-2.5 text-left transition ${
                             selectedCustomerId === customer.id
-                              ? "border-[#2A9D8F] bg-[#EAF6F2]"
+                              ? "border-[#2A9D8F] bg-[#FFFFFF]"
                               : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/40"
                           }`}
                         >
@@ -1533,7 +1533,7 @@ function CheckoutStep(props: CheckoutStepProps) {
               <p className="mb-3 text-[#6B6B6B] text-[12.5px]">IMEI, état et garantie ne sont demandés que pour ces lignes.</p>
               <div className="space-y-3">
                 {refurbishedLines.map((line) => (
-                  <div key={line.stockItemId} className="rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA] p-3">
+                  <div key={line.stockItemId} className="rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] p-3">
                     <p className="mb-2 font-medium text-[#1A1916] text-[13.5px]">{line.name}</p>
                     <div className="grid gap-2 sm:grid-cols-3">
                       <input
@@ -1602,7 +1602,7 @@ function CheckoutStep(props: CheckoutStepProps) {
                 ))}
               </ul>
             </div>
-            <div className="shrink-0 border-t border-[#E8E8E5] bg-[#FAFAFA] px-5 py-4">
+            <div className="shrink-0 border-t border-[#E8E8E5] bg-[#FFFFFF] px-5 py-4">
               <div className="space-y-1.5 text-[13px]">
                 <Row label="Sous-total" value={formatSale(preTax)} />
                 <Row label="TVA" value={formatSale(extractedTax)} />
@@ -1655,7 +1655,7 @@ function ClientChip({
       type="button"
       onClick={onClick}
       className={`flex flex-col gap-1 rounded-[14px] border p-3 text-left transition ${
-        active ? "border-[#2A9D8F] bg-[#EAF6F2]" : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/40"
+        active ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/40"
       }`}
     >
       <span className="font-medium text-[#1A1916] text-[13px]">{label}</span>
@@ -1757,7 +1757,7 @@ function QuickAddStockModal({
           <button
             type="button"
             onClick={onClose}
-            className="grid size-8 place-items-center rounded-full text-[#6B6B6B] transition hover:bg-[#F7F7F7] hover:text-[#1A1916]"
+            className="grid size-8 place-items-center rounded-full text-[#6B6B6B] transition hover:bg-[#FFFFFF] hover:text-[#1A1916]"
             aria-label="Fermer"
           >
             <X className="size-4" />
@@ -1836,11 +1836,11 @@ function QuickAddStockModal({
           </p>
         </div>
 
-        <div className="flex items-center justify-end gap-2 border-t border-[#E8E8E5] bg-[#FAFAFA] px-5 py-3">
+        <div className="flex items-center justify-end gap-2 border-t border-[#E8E8E5] bg-[#FFFFFF] px-5 py-3">
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-10 items-center justify-center rounded-full border border-[#E8E8E5] bg-white px-4 text-[13px] font-medium text-[#1A1916] transition hover:bg-[#F7F7F7]"
+            className="inline-flex h-10 items-center justify-center rounded-full border border-[#E8E8E5] bg-white px-4 text-[13px] font-medium text-[#1A1916] transition hover:bg-[#FFFFFF]"
           >
             Annuler
           </button>
@@ -1886,7 +1886,7 @@ function SuccessStep({
         <h2 className="text-center font-semibold text-[#1A1916] text-[20px] tracking-tight">Vente validée</h2>
         <p className="mt-1 text-center font-mono text-[#2A9D8F] text-[13px]">{sale.number}</p>
 
-        <div className="mt-5 space-y-2 rounded-[14px] bg-[#FAFAFA] p-4 text-[13px]">
+        <div className="mt-5 space-y-2 rounded-[14px] bg-[#FFFFFF] p-4 text-[13px]">
           <Row label="Total TTC" value={formatEuro(sale.total)} />
           <Row label="Paiement" value={formatPaymentLabel(sale.paymentMethod)} />
           <Row label="Client" value={sale.customerName || "Vente comptoir"} />
@@ -1906,7 +1906,7 @@ function SuccessStep({
               <button
                 type="button"
                 onClick={onOpenReceipt}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-medium text-[13px] text-[#1A1916] transition hover:bg-[#FAFAFA]"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-medium text-[13px] text-[#1A1916] transition hover:bg-[#FFFFFF]"
               >
                 <FileText className="size-4" />
                 Ouvrir le reçu
@@ -1914,7 +1914,7 @@ function SuccessStep({
               <button
                 type="button"
                 onClick={onPrint}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-medium text-[13px] text-[#1A1916] transition hover:bg-[#FAFAFA]"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-medium text-[13px] text-[#1A1916] transition hover:bg-[#FFFFFF]"
               >
                 <Printer className="size-4" />
                 Imprimer reçu
@@ -1922,7 +1922,7 @@ function SuccessStep({
               <button
                 type="button"
                 onClick={onDownload}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-medium text-[13px] text-[#1A1916] transition hover:bg-[#FAFAFA]"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-medium text-[13px] text-[#1A1916] transition hover:bg-[#FFFFFF]"
               >
                 <Download className="size-4" />
                 Télécharger reçu PDF
@@ -1937,7 +1937,7 @@ function SuccessStep({
             <button
               type="button"
               onClick={onOpenRepair}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-medium text-[13px] text-[#1A1916] transition hover:bg-[#FAFAFA]"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-medium text-[13px] text-[#1A1916] transition hover:bg-[#FFFFFF]"
             >
               <Wrench className="size-4" />
               Ouvrir la réparation liée

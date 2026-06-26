@@ -49,10 +49,10 @@ export function PhotoSlot({
         <div className="group relative size-full overflow-hidden rounded-[14px] border border-[#E8E8E5]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img alt={label} className="size-full object-cover" src={value} />
-          <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-gradient-to-t from-black/55 to-transparent px-2 py-1.5">
-            <span className="truncate font-medium text-[11px] text-white">{label}</span>
+          <div className="absolute inset-x-2 bottom-2 flex items-center justify-between gap-1 rounded-[10px] border border-[#E8E8E5] bg-white px-2 py-1.5">
+            <span className="truncate font-medium text-[#1A1916] text-[11px]">{label}</span>
             <button
-              className="inline-flex items-center gap-1 rounded-[6px] bg-white/90 px-1.5 py-0.5 font-semibold text-[#1A1916] text-[10px] transition hover:bg-white"
+              className="inline-flex items-center gap-1 rounded-[6px] bg-[#FFFFFF] px-1.5 py-0.5 font-semibold text-[#1A1916] text-[10px] transition hover:bg-[#FFFFFF]"
               onClick={pick}
               type="button"
             >
@@ -62,7 +62,7 @@ export function PhotoSlot({
           </div>
           <button
             aria-label="Supprimer la photo"
-            className="absolute top-1.5 right-1.5 grid size-6 place-items-center rounded-full bg-white/90 text-[#C0564D] shadow-sm transition hover:bg-white"
+            className="absolute top-1.5 right-1.5 grid size-6 place-items-center rounded-full bg-white text-[#C0564D] shadow-sm transition hover:bg-white"
             onClick={() => onChange(undefined)}
             type="button"
           >
@@ -71,12 +71,16 @@ export function PhotoSlot({
         </div>
       ) : (
         <button
-          className="flex size-full flex-col items-center justify-center gap-2 rounded-[14px] border border-[#E8E8E5] border-dashed bg-[#FAFAFA] text-center transition hover:border-[#2A9D8F]/45 disabled:opacity-70"
+          className="flex size-full flex-col items-center justify-center gap-2 rounded-[14px] border border-[#E8E8E5] border-dashed bg-[#FFFFFF] text-center transition hover:border-[#2A9D8F]/45 disabled:opacity-70"
           disabled={busy}
           onClick={pick}
           type="button"
         >
-          {busy ? <Loader2 className="size-5 animate-spin text-[#2A9D8F]" /> : <Camera className="size-5 text-[#6B6B6B]" />}
+          {busy ? (
+            <Loader2 className="size-5 animate-spin text-[#2A9D8F]" />
+          ) : (
+            <Camera className="size-5 text-[#6B6B6B]" />
+          )}
           <span className="font-medium text-[#1A1916] text-xs">{label}</span>
           <span className="text-[#6B6B6B] text-[11px]">{busy ? "Traitement…" : "Ajouter une photo"}</span>
         </button>

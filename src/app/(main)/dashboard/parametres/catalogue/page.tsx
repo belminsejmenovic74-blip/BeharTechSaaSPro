@@ -611,7 +611,7 @@ export default function CataloguePrixPage() {
                   type="button"
                   onClick={() => setMarketCountry(country)}
                   className={`rounded-[9px] px-3 py-1 font-semibold transition ${
-                    marketCountry === country ? "bg-[#E8F7F3] text-[#167B70]" : "text-[#6B6B6B]"
+                    marketCountry === country ? "bg-[#FFFFFF] text-[#167B70]" : "text-[#6B6B6B]"
                   }`}
                 >
                   {country === "CH" ? "Suisse · CHF" : "France · EUR"}
@@ -620,14 +620,14 @@ export default function CataloguePrixPage() {
             </div>
             <div className="ml-auto inline-flex rounded-[12px] border border-[#E8E8E5] bg-white p-1 text-xs">
               <button
-                className={`rounded-[9px] px-3 py-1 transition ${view === "tree" ? "bg-[#F3FBFA] text-[#167B70]" : "text-[#6B6B6B] hover:text-[#1A1916]"}`}
+                className={`rounded-[9px] px-3 py-1 transition ${view === "tree" ? "bg-[#FFFFFF] text-[#167B70]" : "text-[#6B6B6B] hover:text-[#1A1916]"}`}
                 onClick={() => setView("tree")}
                 type="button"
               >
                 Arborescence
               </button>
               <button
-                className={`rounded-[9px] px-3 py-1 transition ${view === "table" ? "bg-[#F3FBFA] text-[#167B70]" : "text-[#6B6B6B] hover:text-[#1A1916]"}`}
+                className={`rounded-[9px] px-3 py-1 transition ${view === "table" ? "bg-[#FFFFFF] text-[#167B70]" : "text-[#6B6B6B] hover:text-[#1A1916]"}`}
                 onClick={() => setView("table")}
                 type="button"
               >
@@ -657,7 +657,7 @@ export default function CataloguePrixPage() {
           <Panel className="overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1200px] border-collapse text-sm">
-                <thead className="bg-[#FAFAFA] text-[#6B6B6B] text-xs uppercase tracking-wide">
+                <thead className="bg-[#FFFFFF] text-[#6B6B6B] text-xs uppercase tracking-wide">
                   <tr>
                     <Th>Marque</Th>
                     <Th>Modèle</Th>
@@ -687,7 +687,7 @@ export default function CataloguePrixPage() {
                     visible.map((item) => {
                       const marketPrice = getPriceBookMarketPrice(item, marketCountry);
                       return (
-                      <tr key={item.id} className="border-[#E8E8E5] border-t hover:bg-[#FAFAFA]/60">
+                      <tr key={item.id} className="border-[#E8E8E5] border-t hover:bg-[#FFFFFF]">
                         <Td>{item.marque}</Td>
                         <Td>{item.modele}</Td>
                         <Td>{item.reparation}</Td>
@@ -740,7 +740,7 @@ export default function CataloguePrixPage() {
                           </div>
                         </Td>
                         <Td>
-                          <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 text-[#6B6B6B] text-xs">
+                          <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[#6B6B6B] text-xs">
                             {PRICE_BOOK_SOURCE_LABELS[item.source]}
                           </span>
                         </Td>
@@ -750,8 +750,8 @@ export default function CataloguePrixPage() {
                             onClick={() => toggleItem(item.id, !item.isActive)}
                             className={`rounded-[7px] border px-2 py-0.5 text-xs ${
                               item.isActive
-                                ? "border-[#D7EFEA] bg-[#F6FCFA] text-[#1d6f65]"
-                                : "border-[#E8E8E5] bg-[#FAFAFA] text-[#6B6B6B]"
+                                ? "border-[#D7EFEA] bg-[#FFFFFF] text-[#1d6f65]"
+                                : "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]"
                             }`}
                           >
                             {item.isActive ? "Actif" : "Inactif"}
@@ -762,7 +762,7 @@ export default function CataloguePrixPage() {
                             <button
                               type="button"
                               onClick={() => openEdit(item)}
-                              className="grid size-8 place-items-center rounded-lg text-[#6B6B6B] hover:bg-[#FAFAFA] hover:text-[#1A1916]"
+                              className="grid size-8 place-items-center rounded-lg text-[#6B6B6B] hover:bg-[#FFFFFF] hover:text-[#1A1916]"
                               aria-label="Modifier"
                             >
                               <Pencil className="size-4" />
@@ -996,7 +996,7 @@ function FormDialog({
               className={inputClass}
             />
           </Field>
-          <div className="md:col-span-2 mt-2 rounded-[10px] bg-[#F7F7F5] px-3 py-2 font-semibold text-[#1A1916] text-sm">
+          <div className="md:col-span-2 mt-2 rounded-[10px] bg-[#FFFFFF] px-3 py-2 font-semibold text-[#1A1916] text-sm">
             Tarif France · EUR
           </div>
           <Field label="Prix achat (EUR)">
@@ -1033,7 +1033,7 @@ function FormDialog({
               data-testid="price-modal-client-price"
             />
           </Field>
-          <div className="md:col-span-2 mt-2 rounded-[10px] bg-[#F3FBFA] px-3 py-2 font-semibold text-[#167B70] text-sm">
+          <div className="md:col-span-2 mt-2 rounded-[10px] bg-[#FFFFFF] px-3 py-2 font-semibold text-[#167B70] text-sm">
             Tarif Suisse · CHF — aucune conversion automatique
           </div>
           <Field label="Prix achat (CHF)">
@@ -1094,7 +1094,7 @@ function FormDialog({
             />
           </Field>
         </div>
-        <div className="mt-5 grid gap-3 rounded-[14px] bg-[#FAFAFA] p-4 text-sm md:grid-cols-2">
+        <div className="mt-5 grid gap-3 rounded-[14px] bg-[#FFFFFF] p-4 text-sm md:grid-cols-2">
           <div className="grid grid-cols-3 gap-3">
             <Stat label="Total FR" value={formatEuroPriceBook(totalsFr.prixClientTotal, "EUR")} highlight />
             <Stat
@@ -1236,7 +1236,7 @@ function ImportPreviewDialog({
           <h3 className="mb-2 font-medium text-[#1A1916] text-sm">Aperçu des premières lignes</h3>
           <div className="overflow-x-auto rounded-xl border border-[#E8E8E5]">
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#FAFAFA] text-[#6B6B6B]">
+              <thead className="bg-[#FFFFFF] text-[#6B6B6B]">
                 <tr>
                   <th className="px-3 py-2 font-medium">Modèle</th>
                   <th className="px-3 py-2 font-medium">Réparation</th>

@@ -65,7 +65,7 @@ export function PhonePhotoCapture({
           <BeharLogo size="sm" />
           <button
             aria-label="Fermer"
-            className="grid size-8 place-items-center rounded-[9px] bg-[#FAFAFA] text-[#6B6B6B] transition hover:bg-[#F1F1EF] hover:text-[#1A1916]"
+            className="grid size-8 place-items-center rounded-[9px] bg-[#FFFFFF] text-[#6B6B6B] transition hover:bg-[#FFFFFF] hover:text-[#1A1916]"
             onClick={onClose}
             type="button"
           >
@@ -86,13 +86,13 @@ export function PhonePhotoCapture({
                   // eslint-disable-next-line @next/next/no-img-element
                   <img alt="QR capture" className="size-44" src={qr} />
                 ) : (
-                  <div className="size-44 animate-pulse rounded-[8px] bg-[#FAFAFA]" />
+                  <div className="size-44 animate-pulse rounded-[8px] bg-[#FFFFFF]" />
                 )}
               </div>
               <span
                 className={cn(
                   "mt-3 inline-flex h-7 items-center gap-1.5 rounded-[8px] px-2.5 font-semibold text-[12px]",
-                  connected ? "bg-[#EAF6F2] text-[#147065]" : "bg-[#FBF3E2] text-[#9A6B1B]",
+                  connected ? "bg-[#FFFFFF] text-[#147065]" : "bg-[#FFFFFF] text-[#9A6B1B]",
                 )}
               >
                 {connected ? <Wifi className="size-3.5" /> : <Smartphone className="size-3.5" />}
@@ -107,7 +107,7 @@ export function PhonePhotoCapture({
                   <div
                     className={cn(
                       "flex flex-col items-center gap-1 rounded-[12px] border px-1 py-2.5 text-center",
-                      done ? "border-[#CDEBE4] bg-[#F6FCFA]" : "border-[#E8E8E5] bg-[#FAFAFA]",
+                      done ? "border-[#CDEBE4] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-[#FFFFFF]",
                     )}
                     key={slot}
                   >
@@ -125,10 +125,10 @@ export function PhonePhotoCapture({
               })}
             </div>
 
-            <p className="mt-4 break-all rounded-[10px] bg-[#FAFAFA] px-3 py-2 text-center text-[#6B6B6B] text-[11px]">{url}</p>
+            <p className="mt-4 break-all rounded-[10px] bg-[#FFFFFF] px-3 py-2 text-center text-[#6B6B6B] text-[11px]">{url}</p>
           </>
         ) : (
-          <div className="mt-5 flex items-start gap-3 rounded-[14px] border border-[#F0D2CD] bg-[#FBEEEC] p-4 text-[#C0564D]">
+          <div className="mt-5 flex items-start gap-3 rounded-[14px] border border-[#F0D2CD] bg-[#FFFFFF] p-4 text-[#C0564D]">
             <WifiOff className="mt-0.5 size-5 shrink-0" />
             <p className="text-sm">
               Le relais photo nécessite la connexion serveur (Supabase). Sur ce poste, importez les photos directement depuis l'ordinateur.

@@ -243,7 +243,7 @@ export function DashboardWorkspace() {
           </PrimaryButton>
         </Link>
         <Link
-          className="inline-flex h-11 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-medium text-[#1A1916] text-sm transition hover:border-[#2A9D8F]/40 hover:bg-[#FAFAFA]"
+          className="inline-flex h-11 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-medium text-[#1A1916] text-sm transition hover:border-[#2A9D8F]/40 hover:bg-[#FFFFFF]"
           href="/dashboard/ventes"
         >
           <ShoppingCart className="size-4 text-[#167B70]" />
@@ -304,7 +304,7 @@ export function DashboardWorkspace() {
           </Link>
         </div>
         {todaysAppointmentRows.length === 0 ? (
-          <div className="rounded-[14px] border border-dashed border-[#E8E8E5] bg-[#FAFAFA] px-4 py-6 text-center text-[#6B6B6B] text-sm">
+          <div className="rounded-[14px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] px-4 py-6 text-center text-[#6B6B6B] text-sm">
             Aucun appareil prévu aujourd'hui.
           </div>
         ) : (
@@ -323,7 +323,7 @@ export function DashboardWorkspace() {
                 !linkedRepair && status !== "Arrivé" && status !== "Annulé" && status !== "Non venu";
               const canCreateRepair = !linkedRepair && status === "Arrivé";
               return (
-                <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA] p-4" key={appointment.id}>
+                <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4" key={appointment.id}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="font-mono font-semibold text-[#1A1916] text-sm">{appointment.time || "—"}</p>
@@ -413,7 +413,7 @@ export function DashboardWorkspace() {
               <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">{selected.device}</h2>
               <Link
                 aria-label="Ouvrir le dossier réparation"
-                className="rounded-full p-1 text-[#6B6B6B] transition hover:bg-[#FAFAFA] hover:text-[#1A1916]"
+                className="rounded-full p-1 text-[#6B6B6B] transition hover:bg-[#FFFFFF] hover:text-[#1A1916]"
                 href={`/dashboard/dossiers/_/?id=${selected.id}`}
                 onClick={() => store.setSelected("repair", selected.id)}
               >
@@ -530,7 +530,7 @@ export function DashboardWorkspace() {
             <span className="text-[#6B6B6B] text-[12px]">{recentAuditLogs.length} actions</span>
           </div>
           {recentAuditLogs.length === 0 ? (
-            <p className="rounded-[12px] bg-[#FAFAFA] px-4 py-5 text-center text-[#6B6B6B] text-sm">
+            <p className="rounded-[12px] bg-[#FFFFFF] px-4 py-5 text-center text-[#6B6B6B] text-sm">
               Aucune activité tracée pour le moment.
             </p>
           ) : (
@@ -636,12 +636,12 @@ function dashboardTestId(label: string): string {
 function AppointmentBadge({ status }: Readonly<{ status: string }>) {
   const tone =
     status === "Arrivé" || status === "Réparation créée"
-      ? "bg-[#E7F8F0] text-[#0B7A56]"
+      ? "bg-[#FFFFFF] text-[#0B7A56]"
       : status === "Annulé" || status === "Non venu"
-        ? "bg-[#FDECEC] text-[#B42318]"
+        ? "bg-[#FFFFFF] text-[#B42318]"
         : status === "Confirmé"
-          ? "bg-[#EAF6F2] text-[#167B70]"
-          : "bg-[#FAFAFA] text-[#6B6B6B]";
+          ? "bg-[#FFFFFF] text-[#167B70]"
+          : "bg-[#FFFFFF] text-[#6B6B6B]";
   return <span className={`shrink-0 rounded-full px-2.5 py-1 font-semibold text-[11px] ${tone}`}>{status}</span>;
 }
 
@@ -729,36 +729,17 @@ function DashboardKanban({
 }>) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Molette verticale → défilement horizontal (souris sans axe X).
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const onWheel = (e: WheelEvent) => {
-      if (el.scrollWidth <= el.clientWidth) return;
-      // Trackpad déjà horizontal : on laisse le navigateur gérer.
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-      const atStart = el.scrollLeft <= 0;
-      const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
-      // Aux extrémités on rend la main au scroll vertical de la page.
-      if ((e.deltaY < 0 && atStart) || (e.deltaY > 0 && atEnd)) return;
-      el.scrollLeft += e.deltaY;
-      e.preventDefault();
-    };
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-  }, []);
-
   return (
     <div className="kanban-scroll h-full overflow-x-auto pb-2" ref={scrollRef}>
       <div className="flex h-full min-h-[320px] gap-3">
         {columns.map((column) => (
           <div
-            className="flex h-full w-[210px] shrink-0 flex-col rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA]/60 p-3"
+            className="flex h-full w-[210px] shrink-0 flex-col rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] p-3"
             key={column.title}
           >
             <div className="mb-3 flex shrink-0 items-center gap-2">
               <h3 className="font-semibold text-[#1A1916] text-[13px]">{column.title}</h3>
-              <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 text-[#6B6B6B] text-[11px] font-medium">
+              <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[#6B6B6B] text-[11px] font-medium">
                 {column.count}
               </span>
             </div>
@@ -772,7 +753,7 @@ function DashboardKanban({
                   <button
                     className={`w-full rounded-[12px] border p-3 text-left transition ${
                       card.id === selectedId
-                        ? "border-[#2A9D8F] bg-[#F8FFFC] shadow-[0_8px_20px_rgba(42,157,143,0.10)]"
+                        ? "border-[#2A9D8F] bg-[#FFFFFF] shadow-[0_8px_20px_rgba(42,157,143,0.10)]"
                         : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/40"
                     }`}
                     key={card.id}

@@ -120,7 +120,7 @@ function ModelSelector({
           {selected.map((model) => (
             <span
               key={model}
-              className="inline-flex items-center gap-1 rounded-full bg-[#EAF6F2] px-2.5 py-1 text-[12px] font-medium text-[#147065]"
+              className="inline-flex items-center gap-1 rounded-full bg-[#FFFFFF] px-2.5 py-1 text-[12px] font-medium text-[#147065]"
             >
               {model}
               {!disabled && (
@@ -166,7 +166,7 @@ function ModelSelector({
               type="button"
               onClick={() => add(input)}
               disabled={!input.trim()}
-              className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F] transition hover:bg-[#2A9D8F] hover:text-white disabled:opacity-40"
+              className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#2A9D8F] transition hover:bg-[#2A9D8F] hover:text-white disabled:opacity-40"
             >
               <Plus className="size-4" strokeWidth={2.2} />
             </button>
@@ -235,7 +235,7 @@ export function StockWorkspace() {
               <span
                 className={cn(
                   "grid size-9 place-items-center rounded-[10px]",
-                  kpi.negative ? "bg-[#FDECEC] text-[#B42318]" : "bg-[#EAF6F2] text-[#2A9D8F]",
+                  kpi.negative ? "bg-[#FFFFFF] text-[#B42318]" : "bg-[#FFFFFF] text-[#2A9D8F]",
                 )}
               >
                 <Package className="size-[18px]" strokeWidth={2} />
@@ -277,7 +277,7 @@ export function StockWorkspace() {
                 <StockImportModal />
               </span>
               <SecondaryButton
-                className={filterLowStock ? "border-[#2A9D8F] bg-[#EAF6F2] text-[#1A1916]" : ""}
+                className={filterLowStock ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1A1916]" : ""}
                 onClick={() => setFilterLowStock(!filterLowStock)}
               >
                 <Filter className="size-4" />
@@ -305,13 +305,13 @@ export function StockWorkspace() {
                   const tariff = findLinkedTariff(item, store.priceBookItems);
                   return (
                     <tr
-                      className={`cursor-pointer transition hover:bg-[#FAFAFA] ${item.id === selected?.id ? "bg-[#EAF6F2]" : ""}`}
+                      className={`cursor-pointer transition hover:bg-[#FFFFFF] ${item.id === selected?.id ? "bg-[#FFFFFF]" : ""}`}
                       key={item.id}
                       onClick={() => store.setSelected("stockItem", item.id)}
                     >
                       <td className={`${tableCellClassName} py-2.5 font-semibold`}>
                         <div className="flex items-center gap-3">
-                          <span className="grid size-9 place-items-center rounded-[10px] bg-[#F7F7F7] text-[#2A9D8F]">
+                          <span className="grid size-9 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#2A9D8F]">
                             <span className="block h-6 w-3 rounded-sm bg-[#1A1916]/80" />
                           </span>
                           {item.name}
@@ -371,7 +371,7 @@ export function StockWorkspace() {
               </tbody>
             </table>
             {/* Vue cartes mobile premium */}
-            <div className="md:hidden space-y-2.5 p-3 bg-[#FAFAFA]">
+            <div className="md:hidden space-y-2.5 p-3 bg-[#FFFFFF]">
               {filteredItems.length === 0 ? (
                 <p className="rounded-[16px] bg-white px-4 py-10 text-center text-[#6B6B6B] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
                   Aucune pièce.
@@ -395,7 +395,7 @@ export function StockWorkspace() {
                         <span
                           className={cn(
                             "grid size-12 shrink-0 place-items-center rounded-[14px]",
-                            isOut ? "bg-[#FDECEC] text-[#B42318]" : "bg-[#FAFAFA] text-[#1A1916]",
+                            isOut ? "bg-[#FFFFFF] text-[#B42318]" : "bg-[#FFFFFF] text-[#1A1916]",
                           )}
                         >
                           <Package className="size-[20px]" strokeWidth={1.8} />
@@ -409,7 +409,7 @@ export function StockWorkspace() {
                               <span
                                 className={cn(
                                   "shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
-                                  isOut ? "bg-[#FDECEC] text-[#B42318]" : "bg-[#FAFAFA] text-[#6B6B6B]",
+                                  isOut ? "bg-[#FFFFFF] text-[#B42318]" : "bg-[#FFFFFF] text-[#6B6B6B]",
                                 )}
                               >
                                 {isOut ? <AlertTriangle className="size-3" /> : null}
@@ -491,15 +491,15 @@ export function StockWorkspace() {
           <div className="absolute inset-x-0 bottom-0 max-h-[92vh] flex flex-col rounded-t-[28px] bg-white shadow-[0_-20px_60px_rgba(26,25,22,0.18)] animate-in slide-in-from-bottom duration-300">
             {/* Handle */}
             <div className="flex justify-center pt-2.5 pb-1 shrink-0">
-              <span className="h-1 w-9 rounded-full bg-[#DADADA]" aria-hidden />
+              <span className="h-1 w-9 rounded-full bg-[#FFFFFF]" aria-hidden />
             </div>
             {/* Header */}
-            <div className="flex items-center justify-between gap-3 px-5 pt-2 pb-3 shrink-0 border-b border-[#F7F7F7]">
+            <div className="flex items-center justify-between gap-3 px-5 pt-2 pb-3 shrink-0 border-b border-[#FFFFFF]">
               <p className="font-semibold text-[#1A1916] text-[17px] truncate">{selected.name}</p>
               <button
                 type="button"
                 onClick={() => setMobileDetailOpen(false)}
-                className="grid size-9 place-items-center rounded-full bg-[#F7F7F7] text-[#6B6B6B] active:scale-90 shrink-0"
+                className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#6B6B6B] active:scale-90 shrink-0"
                 aria-label="Fermer"
               >
                 <X className="size-4" strokeWidth={2.2} />
@@ -541,7 +541,7 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
     "h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-right text-[15px] text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
   const textInputClass =
     "h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[15px] text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
-  const rowClass = "flex items-start justify-between gap-3 py-3 border-b border-[#F7F7F7] last:border-0";
+  const rowClass = "flex items-start justify-between gap-3 py-3 border-b border-[#FFFFFF] last:border-0";
   const labelClass = "shrink-0 w-[110px] text-[#6B6B6B] text-[13px] pt-2.5 font-medium";
 
   return (
@@ -551,7 +551,7 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
         status={item.stock === 0 ? "Rupture" : item.stock <= item.threshold ? "Stock faible" : "En stock"}
       />
       {item.stock <= item.threshold && (
-        <p className="mb-3 rounded-[12px] bg-[#FAFAFA] px-3 py-2 text-[#6B6B6B] text-sm">
+        <p className="mb-3 rounded-[12px] bg-[#FFFFFF] px-3 py-2 text-[#6B6B6B] text-sm">
           Alerte stock bas : réapprovisionnement conseillé.
         </p>
       )}
@@ -559,7 +559,7 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
       <PartPlaceholder className="h-36 rounded-[16px] mb-4" />
 
       {/* Fields */}
-      <div className="rounded-[16px] border border-[#F7F7F7] bg-[#FAFAFA] px-4 divide-y divide-[#F7F7F7] mb-4">
+      <div className="rounded-[16px] border border-[#FFFFFF] bg-[#FFFFFF] px-4 divide-y divide-[#FFFFFF] mb-4">
         <div className={rowClass}>
           <span className={labelClass}>Référence</span>
           <input
@@ -675,7 +675,7 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
             className={cn(
               "flex flex-1 items-center justify-between rounded-[12px] border px-3 py-2 text-left text-sm transition",
               item.counterSaleEnabled
-                ? "border-[#2A9D8F] bg-[#F1FAF8] text-[#167B70]"
+                ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]"
                 : "border-[#E8E8E5] bg-white text-[#6B6B6B]",
               !canManageStock && "cursor-not-allowed opacity-60",
             )}
@@ -882,7 +882,7 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
           status={item.stock === 0 ? "Rupture" : item.stock <= item.threshold ? "Stock faible" : "En stock"}
         />
         {item.stock <= item.threshold && (
-          <p className="mt-2 rounded-[10px] bg-[#FAFAFA] px-3 py-2 text-[#6B6B6B] text-sm">
+          <p className="mt-2 rounded-[10px] bg-[#FFFFFF] px-3 py-2 text-[#6B6B6B] text-sm">
             Alerte stock bas : réapprovisionnement conseillé.
           </p>
         )}
@@ -1022,7 +1022,7 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
               className={cn(
                 "flex w-full items-center justify-between rounded-[12px] border px-3 py-2 text-left text-sm transition",
                 item.counterSaleEnabled
-                  ? "border-[#2A9D8F] bg-[#F1FAF8] text-[#167B70]"
+                  ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]"
                   : "border-[#E8E8E5] bg-white text-[#6B6B6B]",
                 !canManageStock && "cursor-not-allowed opacity-60",
               )}
@@ -1199,7 +1199,7 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
           </p>
         ) : null}
         {item.priceBookItemId && (
-          <div className="rounded-[10px] bg-[#E8F7F3] px-3 py-2 text-[#167B70] text-sm flex items-center gap-2">
+          <div className="rounded-[10px] bg-[#FFFFFF] px-3 py-2 text-[#167B70] text-sm flex items-center gap-2">
             <span className="size-2 rounded-full bg-[#167B70] shrink-0" />
             <span className="font-medium">Prix catalogue lié</span>
           </div>
@@ -1466,7 +1466,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
           <button
             type="button"
             onClick={onClose}
-            className="grid size-9 place-items-center rounded-full bg-[#F7F7F7] text-[#1A1916] active:scale-90"
+            className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#1A1916] active:scale-90"
             aria-label="Fermer"
           >
             <X className="size-4" strokeWidth={2.2} />
@@ -1634,7 +1634,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
           )}
 
           {/* Aperçu auto-rempli (nom / SKU) avec override possible */}
-          <div className="rounded-xl border border-[#E8E8E5] bg-[#FAFAFA] p-3 md:col-span-2">
+          <div className="rounded-xl border border-[#E8E8E5] bg-[#FFFFFF] p-3 md:col-span-2">
             <p className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Auto-rempli</p>
             <div className="mt-2 grid gap-2 md:grid-cols-2">
               <label className="block">
@@ -1671,7 +1671,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
 
           {/* §4 — article comptoir : saisie directe nom + prix de vente, sans modèle. */}
           {!isPart && (
-            <div className="rounded-xl border border-[#E8E8E5] bg-[#FAFAFA] p-3 md:col-span-2">
+            <div className="rounded-xl border border-[#E8E8E5] bg-[#FFFFFF] p-3 md:col-span-2">
               <p className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Article comptoir</p>
               <div className="mt-2 grid gap-2 md:grid-cols-2">
                 <label className="block">
@@ -1720,7 +1720,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
               aria-checked={counterVisible}
               className={cn(
                 "relative h-6 w-11 shrink-0 rounded-full transition",
-                counterVisible ? "bg-[#2A9D8F]" : "bg-[#D8D5CC]",
+                counterVisible ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]",
               )}
               onClick={() => setCounterVisible((v) => !v)}
               role="switch"
@@ -1781,7 +1781,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
             />
           </label>
 
-          <div className="rounded-xl border border-[#E8E8E5] bg-[#FAFAFA] px-3 py-2.5 text-[12.5px] text-[#6B6B6B] md:col-span-2">
+          <div className="rounded-xl border border-[#E8E8E5] bg-[#FFFFFF] px-3 py-2.5 text-[12.5px] text-[#6B6B6B] md:col-span-2">
             Le prix client est défini dans <strong>Paramètres → Tarifs / Prestations</strong>. Stock = inventaire
             interne, Catalogue = tarifs client.
           </div>

@@ -196,7 +196,7 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
         type="button"
         aria-label="Menu"
         onClick={onMenuClick}
-        className="grid size-10 place-items-center rounded-[10px] text-[#6B6B6B] transition hover:bg-[#F7F7F7] hover:text-[#1A1916] md:hidden"
+        className="grid size-10 place-items-center rounded-[10px] text-[#6B6B6B] transition hover:bg-[#FFFFFF] hover:text-[#1A1916] md:hidden"
       >
         <Menu className="size-5" />
       </button>
@@ -215,7 +215,7 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
           placeholder="Rechercher (client, réparation, facture…)"
           className="h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white pr-14 pl-10 text-[#1A1916] text-sm outline-none placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
         />
-        <kbd className="-translate-y-1/2 pointer-events-none absolute top-1/2 right-3 hidden h-6 items-center gap-0.5 rounded-md border border-[#E8E8E5] bg-[#FAFAFA] px-1.5 font-medium text-[#6B6B6B] text-[10px] sm:flex">
+        <kbd className="-translate-y-1/2 pointer-events-none absolute top-1/2 right-3 hidden h-6 items-center gap-0.5 rounded-md border border-[#E8E8E5] bg-[#FFFFFF] px-1.5 font-medium text-[#6B6B6B] text-[10px] sm:flex">
           ⌘ K
         </kbd>
 
@@ -238,16 +238,16 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
                         if (res.type === "customer") useBeharStore.getState().setSelected("customer", res.id);
                         if (res.type === "invoice") useBeharStore.getState().setSelected("invoice", res.id);
                       }}
-                      className="flex items-center gap-3 border-[#E8E8E5] border-b px-4 py-3 transition hover:bg-[#FAFAFA] last:border-0"
+                      className="flex items-center gap-3 border-[#E8E8E5] border-b px-4 py-3 transition hover:bg-[#FFFFFF] last:border-0"
                     >
-                      <div className="grid size-8 place-items-center rounded-lg bg-[#FAFAFA] text-[#6B6B6B]">
+                      <div className="grid size-8 place-items-center rounded-lg bg-[#FFFFFF] text-[#6B6B6B]">
                         <Search className="size-4" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <span className="block font-medium text-[#1A1916] text-sm">{res.title}</span>
                         <span className="block truncate text-[#6B6B6B] text-xs">{res.subtitle}</span>
                       </div>
-                      <span className="rounded-md bg-[#F7F7F7] px-1.5 py-0.5 font-medium text-[#6B6B6B] text-[10px] uppercase">
+                      <span className="rounded-md bg-[#FFFFFF] px-1.5 py-0.5 font-medium text-[#6B6B6B] text-[10px] uppercase">
                         {res.type}
                       </span>
                     </Link>
@@ -267,11 +267,11 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
             aria-label="Compte utilisateur"
             onClick={() => setUserMenuOpen((v) => !v)}
             className={cn(
-              "flex h-10 items-center gap-2.5 rounded-[12px] border border-[#E8E8E5] bg-white px-2.5 text-[#1A1916] text-sm transition hover:bg-[#FAFAFA]",
-              userMenuOpen && "bg-[#FAFAFA]",
+              "flex h-10 items-center gap-2.5 rounded-[12px] border border-[#E8E8E5] bg-white px-2.5 text-[#1A1916] text-sm transition hover:bg-[#FFFFFF]",
+              userMenuOpen && "bg-[#FFFFFF]",
             )}
           >
-            <span className="grid size-7 place-items-center rounded-[8px] bg-[#F3FBFA] font-semibold text-[#2A9D8F] text-[12px]">
+            <span className="grid size-7 place-items-center rounded-[8px] bg-[#FFFFFF] font-semibold text-[#2A9D8F] text-[12px]">
               {currentUser.name.charAt(0).toUpperCase()}
             </span>
             <span className="hidden xl:flex flex-col items-start leading-tight">
@@ -288,7 +288,7 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
                 onClick={() => setUserMenuOpen(false)}
               />
               <div className="absolute top-12 right-0 z-20 w-[240px] overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-white p-1 shadow-[0_12px_28px_rgba(26,25,22,0.08)]">
-                <div className="px-3 py-2.5 border-b border-[#F7F7F7]">
+                <div className="px-3 py-2.5 border-b border-[#FFFFFF]">
                   <p className="font-semibold text-[#1A1916] text-sm leading-tight">{currentUser.name}</p>
                   <p className="mt-0.5 text-[#6B6B6B] text-[11px]">{roleLabel}</p>
                 </div>
@@ -296,7 +296,7 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
                   href="/dashboard/parametres"
                   prefetch={false}
                   onClick={() => setUserMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-[8px] px-3 py-2 text-[#1A1916] text-sm hover:bg-[#FAFAFA]"
+                  className="flex items-center gap-2 rounded-[8px] px-3 py-2 text-[#1A1916] text-sm hover:bg-[#FFFFFF]"
                 >
                   <UserRound className="size-4 text-[#6B6B6B]" /> Mon compte
                 </Link>
@@ -306,7 +306,7 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
                     setUserMenuOpen(false);
                     logout();
                   }}
-                  className="flex w-full items-center gap-2 rounded-[8px] px-3 py-2 text-[#B42318] text-sm hover:bg-[#FDF2F2]"
+                  className="flex w-full items-center gap-2 rounded-[8px] px-3 py-2 text-[#B42318] text-sm hover:bg-[#FFFFFF]"
                 >
                   <LogOut className="size-4" /> Changer d'utilisateur
                 </button>
@@ -324,8 +324,8 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
           <button
             aria-label="Notifications"
             className={cn(
-              "relative grid size-10 place-items-center rounded-[10px] text-[#6B6B6B] transition hover:bg-[#F7F7F7] hover:text-[#1A1916]",
-              notifOpen && "bg-[#F7F7F7] text-[#1A1916]",
+              "relative grid size-10 place-items-center rounded-[10px] text-[#6B6B6B] transition hover:bg-[#FFFFFF] hover:text-[#1A1916]",
+              notifOpen && "bg-[#FFFFFF] text-[#1A1916]",
             )}
             onClick={() => setNotifOpen((v) => !v)}
             type="button"
@@ -348,7 +348,7 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
                   </span>
                   {unreadCount > 0 && (
                     <button
-                      className="rounded-[8px] px-2 py-1 font-medium text-[#2A9D8F] text-xs hover:bg-[#F3FBFA]"
+                      className="rounded-[8px] px-2 py-1 font-medium text-[#2A9D8F] text-xs hover:bg-[#FFFFFF]"
                       onClick={markAllNotificationsRead}
                       type="button"
                     >
@@ -357,7 +357,7 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
                   )}
                   <button
                     aria-label="Fermer"
-                    className="grid size-7 place-items-center rounded-[8px] text-[#6B6B6B] hover:bg-[#FAFAFA]"
+                    className="grid size-7 place-items-center rounded-[8px] text-[#6B6B6B] hover:bg-[#FFFFFF]"
                     onClick={() => setNotifOpen(false)}
                     type="button"
                   >
@@ -371,8 +371,8 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
                     notifications.map((notif) => (
                       <Link
                         className={cn(
-                          "flex items-start gap-3 border-[#E8E8E5] border-b px-4 py-3 transition hover:bg-[#FAFAFA]",
-                          notif.read === false && "bg-[#F8FFFC]",
+                          "flex items-start gap-3 border-[#E8E8E5] border-b px-4 py-3 transition hover:bg-[#FFFFFF]",
+                          notif.read === false && "bg-[#FFFFFF]",
                         )}
                         href={notif.href}
                         key={notif.id}
@@ -385,7 +385,7 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
                         <span
                           className={cn(
                             "mt-1.5 size-2 shrink-0 rounded-full",
-                            notif.tone === "warn" && "bg-[#E2A336]",
+                            notif.tone === "warn" && "bg-[#FFFFFF]",
                             notif.tone === "ok" && "bg-[#2A9D8F]",
                             notif.tone === "info" && "bg-[#6B6B6B]",
                           )}
@@ -408,8 +408,8 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
             aria-label="Documents"
             onClick={() => setDocOpen((v) => !v)}
             className={cn(
-              "flex h-10 items-center gap-1 rounded-[10px] px-2 text-[#6B6B6B] transition hover:bg-[#F7F7F7] hover:text-[#1A1916]",
-              docOpen && "bg-[#F7F7F7] text-[#1A1916]",
+              "flex h-10 items-center gap-1 rounded-[10px] px-2 text-[#6B6B6B] transition hover:bg-[#FFFFFF] hover:text-[#1A1916]",
+              docOpen && "bg-[#FFFFFF] text-[#1A1916]",
             )}
           >
             <FileText className="size-[18px]" />
@@ -428,7 +428,7 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
                   href="/dashboard/documents"
                   prefetch={false}
                   onClick={() => setDocOpen(false)}
-                  className="flex items-center gap-2 rounded-[8px] px-3 py-2 text-[#1A1916] text-sm hover:bg-[#FAFAFA]"
+                  className="flex items-center gap-2 rounded-[8px] px-3 py-2 text-[#1A1916] text-sm hover:bg-[#FFFFFF]"
                 >
                   <FileText className="size-4 text-[#6B6B6B]" /> Tous les documents
                 </Link>
@@ -436,7 +436,7 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
                   href="/dashboard/devis"
                   prefetch={false}
                   onClick={() => setDocOpen(false)}
-                  className="flex items-center gap-2 rounded-[8px] px-3 py-2 text-[#1A1916] text-sm hover:bg-[#FAFAFA]"
+                  className="flex items-center gap-2 rounded-[8px] px-3 py-2 text-[#1A1916] text-sm hover:bg-[#FFFFFF]"
                 >
                   <FileText className="size-4 text-[#6B6B6B]" /> Devis
                 </Link>
@@ -444,7 +444,7 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
                   href="/dashboard/factures"
                   prefetch={false}
                   onClick={() => setDocOpen(false)}
-                  className="flex items-center gap-2 rounded-[8px] px-3 py-2 text-[#1A1916] text-sm hover:bg-[#FAFAFA]"
+                  className="flex items-center gap-2 rounded-[8px] px-3 py-2 text-[#1A1916] text-sm hover:bg-[#FFFFFF]"
                 >
                   <FileText className="size-4 text-[#6B6B6B]" /> Factures
                 </Link>
@@ -464,7 +464,7 @@ export function CloseButton({ onClick, className }: Readonly<{ onClick?: () => v
       aria-label="Fermer"
       onClick={onClick}
       className={cn(
-        "grid size-9 place-items-center rounded-[10px] text-[#6B6B6B] transition hover:bg-[#F7F7F7] hover:text-[#1A1916]",
+        "grid size-9 place-items-center rounded-[10px] text-[#6B6B6B] transition hover:bg-[#FFFFFF] hover:text-[#1A1916]",
         className,
       )}
     >

@@ -62,7 +62,7 @@ export function PwaInstaller() {
   return (
     <Panel className="p-5 overflow-hidden relative">
       <div className="flex items-start gap-4">
-        <div className="size-10 rounded-xl bg-[#EAF6F2] flex items-center justify-center text-[#2A9D8F] shrink-0">
+        <div className="size-10 rounded-xl bg-[#FFFFFF] flex items-center justify-center text-[#2A9D8F] shrink-0">
           {isInstalled ? <CheckCircle2 className="size-5" /> : <Monitor className="size-5" />}
         </div>
         <div className="flex-1">
@@ -80,7 +80,7 @@ export function PwaInstaller() {
                   Installer sur ce PC
                 </PrimaryButton>
               ) : (
-                <div className="p-4 rounded-xl bg-[#FAFAFA] border border-[#E8E8E5]">
+                <div className="p-4 rounded-xl bg-[#FFFFFF] border border-[#E8E8E5]">
                   <p className="text-[#1A1916] text-sm font-medium">Si le bouton n’apparaît pas :</p>
                   <p className="mt-1 text-[#6B6B6B] text-xs leading-relaxed">
                     Ouvrez Chrome ou Edge puis cliquez sur l’icône <strong>Installer</strong> dans la barre d’adresse.
@@ -96,7 +96,7 @@ export function PwaInstaller() {
           )}
 
           {isInstalled && (
-            <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EAF6F2] text-[#167B70] text-xs font-semibold">
+            <div className="mt-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FFFFFF] text-[#167B70] text-xs font-semibold">
               <CheckCircle2 className="size-3" />
               Application active
             </div>

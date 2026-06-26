@@ -34,6 +34,7 @@ public/assets/_review/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+/scratch/
 
 # local env files
 .env*.local

@@ -4,7 +4,7 @@ import { ReconditioningPrintPage } from "@/components/behar/reconditioning-print
 
 export default function PrintReconditionnementPage() {
   return (
-    <Suspense fallback={<div className="min-h-svh bg-[#FAFAF8]" />}>
+    <Suspense fallback={<div className="min-h-svh bg-[#FFFFFF]" />}>
       <ReconditioningPrintPage />
     </Suspense>
   );

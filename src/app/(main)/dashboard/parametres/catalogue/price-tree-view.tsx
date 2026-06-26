@@ -116,19 +116,19 @@ export function PriceTreeView({
         return (
           <div className="rounded-[16px] border border-[#E8E8E5] bg-white shadow-[0_1px_2px_rgba(26,25,22,0.035)] overflow-hidden" key={typeKey}>
             <button
-              className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left transition hover:bg-[#FAFAFA]"
+              className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left transition hover:bg-[#FFFFFF]"
               onClick={() => setOpenTypes((prev) => ({ ...prev, [typeKey]: !typeOpen }))}
               type="button"
             >
               <span className="flex items-center gap-3">
                 <div
-                  className={`flex size-8 items-center justify-center rounded-[9px] transition ${typeOpen ? "bg-[#F3FBFA] text-[#167B70]" : "bg-[#FAFAFA] text-[#6B6B6B]"}`}
+                  className={`flex size-8 items-center justify-center rounded-[9px] transition ${typeOpen ? "bg-[#FFFFFF] text-[#167B70]" : "bg-[#FFFFFF] text-[#6B6B6B]"}`}
                 >
                   {typeOpen ? <ChevronDown className="size-5" /> : <ChevronRight className="size-5" />}
                 </div>
                 <span className="font-bold text-[#1A1916] text-base">{PRICE_BOOK_DEVICE_LABELS[type]}</span>
               </span>
-              <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 text-[#6B6B6B] text-[11px] font-semibold uppercase tracking-wide">
+              <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[#6B6B6B] text-[11px] font-semibold uppercase tracking-wide">
                 {brandCount} marques · {itemCount} prix
               </span>
             </button>
@@ -140,9 +140,9 @@ export function PriceTreeView({
                     const brandKey = `${typeKey}::${brand}`;
                     const brandOpen = openBrands[brandKey] ?? false;
                     return (
-                      <div className="rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA]/50" key={brandKey}>
+                      <div className="rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF]" key={brandKey}>
                         <button
-                          className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-[#FAFAFA]"
+                          className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-[#FFFFFF]"
                           onClick={() => setOpenBrands((prev) => ({ ...prev, [brandKey]: !brandOpen }))}
                           type="button"
                         >
@@ -169,7 +169,7 @@ export function PriceTreeView({
                                     className="rounded-[12px] border border-[#E8E8E5] bg-white shadow-[0_1px_2px_rgba(26,25,22,0.025)] overflow-hidden"
                                   >
                                     <button
-                                      className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left bg-[#FAFAFA] hover:bg-[#F7F7F7] transition"
+                                      className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left bg-[#FFFFFF] hover:bg-[#FFFFFF] transition"
                                       onClick={() => setOpenSeries((p) => ({ ...p, [seriesKey]: !seriesOpen }))}
                                       type="button"
                                     >
@@ -210,7 +210,7 @@ export function PriceTreeView({
                                                 key={modelKey}
                                               >
                                                 <button
-                                                  className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition hover:bg-[#FAFAFA]"
+                                                  className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition hover:bg-[#FFFFFF]"
                                                   onClick={() =>
                                                     setOpenModels((p) => ({ ...p, [modelKey]: !modelOpen }))
                                                   }
@@ -224,7 +224,7 @@ export function PriceTreeView({
                                                     )}
                                                     <span className="font-bold text-[#1A1916] text-sm">{model}</span>
                                                   </span>
-                                                  <span className="text-[#6B6B6B] text-[11px] bg-[#F8F7F2] px-2 py-0.5 rounded-md">
+                                                  <span className="text-[#6B6B6B] text-[11px] bg-[#FFFFFF] px-2 py-0.5 rounded-md">
                                                     {interventions.size} prix configurés
                                                   </span>
                                                 </button>
@@ -262,7 +262,7 @@ export function PriceTreeView({
                                                         return (
                                                           <div key={interventionKey} className="group">
                                                             <button
-                                                              className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition hover:bg-[#FAFAFA] ${!hasPrice ? "opacity-60" : ""}`}
+                                                              className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition hover:bg-[#FFFFFF] ${!hasPrice ? "opacity-60" : ""}`}
                                                               onClick={() =>
                                                                 setOpenInterventions((prev) => ({
                                                                   ...prev,
@@ -273,7 +273,7 @@ export function PriceTreeView({
                                                             >
                                                               <div className="flex items-center gap-2">
                                                                 <div
-                                                                  className={`flex size-5 items-center justify-center rounded-md transition ${interventionOpen ? "bg-[#E8F7F3] text-[#167B70]" : "text-[#6B6B6B]"}`}
+                                                                  className={`flex size-5 items-center justify-center rounded-md transition ${interventionOpen ? "bg-[#FFFFFF] text-[#167B70]" : "text-[#6B6B6B]"}`}
                                                                 >
                                                                   {interventionOpen ? (
                                                                     <ChevronDown className="size-3.5" />
@@ -300,10 +300,10 @@ export function PriceTreeView({
                                                             </button>
 
                                                             {interventionOpen && (
-                                                              <div className="bg-[#FAFAFA]/40 overflow-x-auto">
+                                                              <div className="bg-[#FFFFFF] overflow-x-auto">
                                                                 {hasRows ? (
                                                                   <table className="w-full min-w-[820px] text-sm">
-                                                                    <thead className="bg-[#FAFAFA]/80 text-[#6B6B6B] text-[10px] uppercase tracking-wider font-bold">
+                                                                    <thead className="bg-[#FFFFFF] text-[#6B6B6B] text-[10px] uppercase tracking-wider font-bold">
                                                                       <tr>
                                                                         <th className="px-5 py-2 text-left">
                                                                           Variante / Pièce
@@ -461,13 +461,13 @@ function PriceTreeRow({
     "h-9 w-24 rounded-[10px] border border-[#E8E8E5] bg-white px-2 text-right text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-2 focus:ring-[#2A9D8F]/10";
 
   return (
-    <tr className="border-[#E8E8E5] border-t hover:bg-[#FAFAFA]/60">
+    <tr className="border-[#E8E8E5] border-t hover:bg-[#FFFFFF]">
       <td className="px-3 py-2">
         <div className="font-medium text-[#1A1916]">{item.reparation}</div>
         <div className="text-[#6B6B6B] text-xs">{item.piece}</div>
       </td>
       <td className="px-3 py-2 text-[#1A1916] text-sm">
-        <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAFA] px-2 py-0.5 text-[#6B6B6B] text-xs">
+        <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[#6B6B6B] text-xs">
           {qualityLabel || "Standard"}
         </span>
       </td>
@@ -533,7 +533,7 @@ function PriceTreeRow({
           )}
           <button
             aria-label="Modifier détaillé"
-            className="grid size-8 place-items-center rounded-lg text-[#6B6B6B] hover:bg-[#FAFAFA] hover:text-[#1A1916]"
+            className="grid size-8 place-items-center rounded-lg text-[#6B6B6B] hover:bg-[#FFFFFF] hover:text-[#1A1916]"
             onClick={() => onEdit(item)}
             type="button"
           >

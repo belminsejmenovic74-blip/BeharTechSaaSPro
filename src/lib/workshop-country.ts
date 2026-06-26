@@ -1,4 +1,4 @@
-export type WorkshopCountry = "FR" | "CH";
+export type WorkshopCountry = "FR" | "CH" | "autre";
 export type WorkshopCurrency = "EUR" | "CHF";
 export type WorkshopLocale = "fr-FR" | "fr-CH";
 
@@ -55,10 +55,23 @@ const COUNTRY_CONFIG: Record<WorkshopCountry, WorkshopCountryConfig> = {
     postalCodePattern: /^\d{4}$/,
     defaultVatRate: 8.1,
   },
+  autre: {
+    country: "autre",
+    label: "Autre",
+    currency: "EUR",
+    locale: "fr-FR",
+    phonePrefix: "+33",
+    postalCodeLabel: "Code postal",
+    postalCodePattern: /^[a-zA-Z0-9\s-]{3,10}$/,
+    defaultVatRate: 20,
+  },
 };
 
 export function normalizeWorkshopCountry(value: unknown): WorkshopCountry {
-  return value === "CH" || String(value ?? "").trim().toLowerCase() === "suisse" ? "CH" : "FR";
+  const normalized = String(value ?? "").trim().toLowerCase();
+  if (normalized === "ch" || normalized === "suisse") return "CH";
+  if (normalized === "autre") return "autre";
+  return "FR";
 }
 
 export function getWorkshopCountryConfig(value: unknown): WorkshopCountryConfig {
@@ -70,7 +83,7 @@ export function getLegalFieldsByCountry(value: unknown) {
   if (config.country === "CH") {
     return {
       country: config.country,
-      businessIdLabel: "IDE / UID",
+      businessIdLabel: "Identifiant entreprise / IDE / UID",
       vatNumberLabel: "Numéro TVA suisse",
       postalCodeLabel: config.postalCodeLabel,
       showSiren: false,
@@ -79,6 +92,20 @@ export function getLegalFieldsByCountry(value: unknown) {
       showSwissUid: true,
       showSwissVatNumber: true,
       showCanton: true,
+    } as const;
+  }
+  if (config.country === "autre") {
+    return {
+      country: config.country,
+      businessIdLabel: "Identifiant entreprise",
+      vatNumberLabel: "Numéro TVA",
+      postalCodeLabel: "Code postal",
+      showSiren: false,
+      showSiret: false,
+      showEuVatNumber: false,
+      showSwissUid: false,
+      showSwissVatNumber: false,
+      showCanton: false,
     } as const;
   }
   return {
@@ -121,7 +148,7 @@ export function createBillingProfile(
     tvaMention: vatApplicable
       ? ""
       : isSwiss
-        ? settings.tvaMention || "TVA non applicable / non assujetti"
+        ? settings.tvaMention || "Non assujetti à la TVA"
         : settings.tvaMention || "TVA non applicable, art. 293 B du CGI",
   };
 }
@@ -137,8 +164,7 @@ export function isBillingProfileComplete(profile: BillingProfile): boolean {
     /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(profile.email?.trim() ?? "");
   if (!baseComplete) return false;
   if (profile.country === "FR") return /^\d{14}$/.test((profile.siret ?? "").replace(/\D/g, ""));
-  if (!profile.canton?.trim()) return false;
-  return !profile.vatApplicable || Boolean(profile.swissVatNumber?.trim());
+  return true;
 }
 
 type MoneySettings =
@@ -214,7 +240,8 @@ export type DocumentFilenameType =
   | "internal"
   | "summary"
   | "sale-receipt"
-  | "sale-invoice";
+  | "sale-invoice"
+  | "diagnostic_report";
 
 const DOCUMENT_FILE_PREFIX: Record<DocumentFilenameType, string> = {
   intake: "bon-prise-en-charge",
@@ -225,6 +252,7 @@ const DOCUMENT_FILE_PREFIX: Record<DocumentFilenameType, string> = {
   summary: "resume-dossier",
   "sale-receipt": "recu-vente",
   "sale-invoice": "facture-vente",
+  diagnostic_report: "rapport-diagnostic",
 };
 
 export function getDocumentFilename(type: DocumentFilenameType, documentNumber: string): string {

@@ -53,7 +53,7 @@ import {
   type StockItem,
   useBeharStore,
 } from "@/lib/behar-store";
-import { getInternalDocumentUrl } from "@/lib/documents/document-actions";
+import { getInternalDocumentUrl, getShareableDocumentUrl } from "@/lib/documents/document-actions";
 import { isStockItemCompatibleWithRepair } from "./atelier-workspace";
 import { displayCustomerName } from "@/lib/customer-display";
 import { formatDeviceLabel } from "@/lib/format-device";
@@ -125,24 +125,26 @@ const canQuoteFromStatus = (status: RepairStatus): boolean =>
 // Ordre d'affichage des documents liés : la fiche d'entrée toujours en premier.
 const docTypeOrder: Record<string, number> = {
   intake: 0,
-  quote: 1,
-  invoice: 2,
-  payment: 3,
-  "sale-receipt": 4,
-  "sale-invoice": 5,
-  summary: 6,
-  internal: 7,
+  diagnostic_report: 1,
+  quote: 2,
+  invoice: 3,
+  payment: 4,
+  "sale-receipt": 5,
+  "sale-invoice": 6,
+  summary: 7,
+  internal: 8,
 };
 
 const docLabel: Record<string, string> = {
-  intake: "Fiche d'entrée",
+  intake: "Bon de prise en charge",
   quote: "Devis",
   invoice: "Facture",
-  payment: "Reçu / justificatif",
+  payment: "Reçu de paiement",
   internal: "Fiche intervention interne",
-  summary: "Fiche interne",
-  "sale-receipt": "Reçu",
-  "sale-invoice": "Reçu",
+  summary: "Rapport final",
+  "sale-receipt": "Reçu de paiement",
+  "sale-invoice": "Reçu de paiement",
+  diagnostic_report: "Rapport diagnostic",
 };
 
 function cleanDossierId(value?: string | null) {
@@ -257,6 +259,31 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
       router.push("/dashboard/factures");
       return;
     }
+
+    if (!repair.customerId || !customer) {
+      return toast.error("Ajoutez un client ou sélectionnez un client comptoir avant de générer la facture.");
+    }
+
+    if (!repair.currency) {
+      return toast.error("Sélectionnez une devise pour le dossier avant de générer la facture.");
+    }
+
+    let hasLines = false;
+    let totalAmount = 0;
+
+    if (acceptedQuote) {
+      hasLines = Boolean(acceptedQuote.lines && acceptedQuote.lines.length > 0);
+      totalAmount = acceptedQuote.totalTtc ?? acceptedQuote.totalAmount ?? 0;
+    } else {
+      const partsCount = repair.parts?.length ?? 0;
+      hasLines = partsCount > 0 || (repair.total !== undefined && repair.total > 0) || (repair.amount !== undefined && repair.amount > 0);
+      totalAmount = repair.total ?? repair.amount ?? 0;
+    }
+
+    if (totalAmount <= 0 && !hasLines) {
+      return toast.error("Ajoutez au moins une ligne avec un montant avant de générer la facture.");
+    }
+
     const id = acceptedQuote ? store.convertQuoteToInvoice(acceptedQuote.id) : store.createInvoiceFromRepair(repair.id);
     if (!id) return toast.error("Création de facture impossible : vérifiez le devis accepté ou le total du dossier.");
     store.setSelected("invoice", id);
@@ -310,9 +337,9 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
 
         {/* En-tête : client / appareil / problème / intervention / montant */}
         <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-          <div className="flex flex-col gap-5 divide-y divide-[#F7F7F7] lg:flex-row lg:items-center lg:divide-x lg:divide-y-0">
+          <div className="flex flex-col gap-5 divide-y divide-[#FFFFFF] lg:flex-row lg:items-center lg:divide-x lg:divide-y-0">
             <div className="flex min-w-0 items-center gap-3 lg:pr-6">
-              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#EAF6F2] font-semibold text-[#167B70]">
+              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#FFFFFF] font-semibold text-[#167B70]">
                 {(displayCustomerName(customer) || "C").slice(0, 2).toUpperCase()}
               </span>
               <div className="min-w-0">
@@ -323,7 +350,7 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
             <div className="flex min-w-0 items-center gap-3 pt-5 lg:px-6 lg:pt-0">
               <RealDeviceVisual
                 brand={repair.brandName}
-                className="size-20 rounded-[18px] border border-[#E8E8E5] bg-[#FAFAF8] p-2 shadow-[0_10px_24px_rgba(26,25,22,0.045)]"
+                className="size-20 rounded-[18px] border border-[#E8E8E5] bg-[#FFFFFF] p-2 shadow-[0_10px_24px_rgba(26,25,22,0.045)]"
                 model={repair.deviceModel || repair.model || repair.device}
                 type={repair.deviceType}
               />
@@ -553,14 +580,14 @@ function HeaderCol({ className, label, value }: Readonly<{ label: string; value:
 function StatusPill({ status }: Readonly<{ status: RepairStatus }>) {
   const tone =
     status === "Rendu" || status === "Clôturé"
-      ? "bg-[#F7F7F7] text-[#6B6B6B]"
+      ? "bg-[#FFFFFF] text-[#6B6B6B]"
       : status === "Prêt"
-        ? "bg-[#E7F8F0] text-[#0B7A56]"
+        ? "bg-[#FFFFFF] text-[#0B7A56]"
         : status === "Annulé" || status === "Irréparable"
-          ? "bg-[#FDECEC] text-[#B42318]"
+          ? "bg-[#FFFFFF] text-[#B42318]"
           : status === "Devis envoyé" || status === "SAV"
-            ? "bg-[#FFF9EF] text-[#936100]"
-          : "bg-[#EAF6F2] text-[#167B70]";
+            ? "bg-[#FFFFFF] text-[#936100]"
+          : "bg-[#FFFFFF] text-[#167B70]";
   return (
     <span className={cn("inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-semibold text-sm", tone)}>
       <span className="size-1.5 rounded-full bg-current" />
@@ -585,7 +612,7 @@ function Stepper({ activeIndex }: Readonly<{ activeIndex: number }>) {
                 <span
                   className={cn(
                     "h-0.5 flex-1 rounded-full",
-                    index === 0 ? "opacity-0" : index <= activeIndex ? "bg-[#2A9D8F]" : "bg-[#E8E8E5]",
+                    index === 0 ? "opacity-0" : index <= activeIndex ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]",
                   )}
                 />
                 <span
@@ -603,7 +630,7 @@ function Stepper({ activeIndex }: Readonly<{ activeIndex: number }>) {
                 <span
                   className={cn(
                     "h-0.5 flex-1 rounded-full",
-                    index === progression.length - 1 ? "opacity-0" : index < activeIndex ? "bg-[#2A9D8F]" : "bg-[#E8E8E5]",
+                    index === progression.length - 1 ? "opacity-0" : index < activeIndex ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]",
                   )}
                 />
               </div>
@@ -706,15 +733,15 @@ function ActivityCard({ repair }: Readonly<{ repair: Repair }>) {
                   className={cn(
                     "grid size-7 shrink-0 place-items-center rounded-full",
                     done
-                      ? "bg-[#EAF6F2] text-[#2A9D8F]"
+                      ? "bg-[#FFFFFF] text-[#2A9D8F]"
                       : current
                         ? "bg-[#2A9D8F] text-white"
-                        : "bg-[#F7F7F7] text-[#8A8A8A]",
+                        : "bg-[#FFFFFF] text-[#8A8A8A]",
                   )}
                 >
                   {done ? <Check className="size-3.5" /> : current ? <Clock className="size-3.5" /> : index + 1}
                 </span>
-                {!isLast ? <span className={cn("my-0.5 w-0.5 flex-1", done ? "bg-[#CDEAE3]" : "bg-[#F7F7F7]")} /> : null}
+                {!isLast ? <span className={cn("my-0.5 w-0.5 flex-1", done ? "bg-[#FFFFFF]" : "bg-[#FFFFFF]")} /> : null}
               </div>
               <div className={cn("pb-3", pending && "opacity-60")}>
                 <p className="font-semibold text-[#1A1916] text-sm leading-tight">{step.title}</p>
@@ -747,7 +774,7 @@ function DiagnosticNotesCard({ repair }: Readonly<{ repair: Repair }>) {
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-[#1A1916]">Diagnostic / Notes</h3>
         <button
-          className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#E8E8E5] px-2.5 py-1 text-[#6B6B6B] text-xs font-medium hover:bg-[#FAFAFA]"
+          className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#E8E8E5] px-2.5 py-1 text-[#6B6B6B] text-xs font-medium hover:bg-[#FFFFFF]"
           onClick={() => (editing ? save() : setEditing(true))}
           type="button"
         >
@@ -828,13 +855,13 @@ function DocumentsLiesCard({
       <h3 className="font-semibold text-[#1A1916]">Documents liés</h3>
       <ul className="mt-3 space-y-2">
         {rows.length === 0 ? (
-          <li className="rounded-[12px] border border-dashed border-[#E8E8E5] bg-[#FAFAFA] px-3 py-4 text-center text-[#6B6B6B] text-xs">
+          <li className="rounded-[12px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] px-3 py-4 text-center text-[#6B6B6B] text-xs">
             Aucun document lié.
           </li>
         ) : (
           rows.map(({ doc, amount, number, statusLabel }) => (
             <li
-              className="flex items-center gap-3 rounded-[12px] border border-[#F7F7F7] bg-[#FAFAFA] px-3 py-2.5"
+              className="flex items-center gap-3 rounded-[12px] border border-[#FFFFFF] bg-[#FFFFFF] px-3 py-2.5"
               key={doc.id}
             >
               <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-white text-[#2A9D8F]">
@@ -849,7 +876,7 @@ function DocumentsLiesCard({
               </div>
               {amount ? <span className="shrink-0 font-semibold text-[#1A1916] text-sm">{formatEuro(amount)}</span> : null}
               {statusLabel ? (
-                <span className="shrink-0 rounded-full bg-[#EAF6F2] px-2 py-0.5 font-semibold text-[#167B70] text-[11px]">
+                <span className="shrink-0 rounded-full bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#167B70] text-[11px]">
                   {statusLabel}
                 </span>
               ) : null}
@@ -883,6 +910,26 @@ function DocumentsLiesCard({
                   }}
                 >
                   <Download className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  title="Copier le lien du document"
+                  className="grid size-7 place-items-center rounded-[8px] text-[#6B6B6B] hover:bg-white"
+                  onClick={async () => {
+                    try {
+                      const url = getShareableDocumentUrl(doc as any);
+                      if (url) {
+                        await navigator.clipboard.writeText(url);
+                        toast.success("Lien du document copié.");
+                      } else {
+                        toast.error("Lien non disponible.");
+                      }
+                    } catch {
+                      toast.error("Erreur lors de la copie.");
+                    }
+                  }}
+                >
+                  <Share2 className="size-4" />
                 </button>
               </div>
             </li>
@@ -927,14 +974,14 @@ function SuiviClientCard({ repair }: Readonly<{ repair: Repair }>) {
         {qr ? (
           // eslint-disable-next-line @next/next/no-img-element
           <div className="cursor-pointer shrink-0" onClick={() => setIsModalOpen(true)}>
-            <img alt="QR de suivi" className="size-24 rounded-[12px] border border-[#F7F7F7] bg-white p-1.5" src={qr} />
+            <img alt="QR de suivi" className="size-24 rounded-[12px] border border-[#FFFFFF] bg-white p-1.5" src={qr} />
           </div>
         ) : (
-          <div className="grid size-24 shrink-0 place-items-center rounded-[12px] bg-[#F7F7F7] text-[#9A9AA0] text-xs">QR…</div>
+          <div className="grid size-24 shrink-0 place-items-center rounded-[12px] bg-[#FFFFFF] text-[#9A9AA0] text-xs">QR…</div>
         )}
         <div className="min-w-0 flex-1">
           <p className="text-[#6B6B6B] text-xs">Le client peut suivre l'avancement de son dossier en ligne.</p>
-          <div className="mt-2 flex items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-[#FAFAFA] px-2.5 py-1.5">
+          <div className="mt-2 flex items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-[#FFFFFF] px-2.5 py-1.5">
             <span className="min-w-0 flex-1 truncate text-[#1E7A6E] text-xs">{trackingUrl || "Lien en cours…"}</span>
             <button
               className="grid size-6 shrink-0 place-items-center rounded-[7px] text-[#6B6B6B] hover:bg-white"
@@ -948,7 +995,7 @@ function SuiviClientCard({ repair }: Readonly<{ repair: Repair }>) {
             <button
               type="button"
               onClick={() => setIsModalOpen(true)}
-              className="inline-flex h-7 items-center justify-center rounded-[8px] border border-[#E8E8E5] px-2.5 text-xs font-semibold text-[#1A1916] hover:bg-[#FAFAFA]"
+              className="inline-flex h-7 items-center justify-center rounded-[8px] border border-[#E8E8E5] px-2.5 text-xs font-semibold text-[#1A1916] hover:bg-[#FFFFFF]"
             >
               Afficher QR Code
             </button>
@@ -1004,7 +1051,7 @@ function ActionsCard({
         <ActionRow icon={<Receipt className="size-4" />} label="Créer la facture" onClick={onCreateInvoice} />
         <ActionRow icon={<Printer className="size-4" />} label="Imprimer documents" onClick={onPrint} />
         <Link
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-medium text-[#1A1916] text-sm hover:bg-[#FAFAFA]"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-medium text-[#1A1916] text-sm hover:bg-[#FFFFFF]"
           href="/dashboard/ventes"
         >
           <ShoppingCart className="size-4" />
@@ -1014,7 +1061,7 @@ function ActionsCard({
         <ActionRow icon={<MessageSquare className="size-4" />} label="Ajouter une note client" onClick={() => onNotes("client")} />
         {(canMarkReturned || !isTerminalRepairStatus(repair.status)) && (
           <button
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#F3D0CC] bg-white font-semibold text-[#B42318] text-sm hover:bg-[#FDF3F2]"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#F3D0CC] bg-white font-semibold text-[#B42318] text-sm hover:bg-[#FFFFFF]"
             onClick={onClose}
             type="button"
           >
@@ -1030,7 +1077,7 @@ function ActionsCard({
 function ActionRow({ icon, label, onClick }: Readonly<{ icon: React.ReactNode; label: string; onClick: () => void }>) {
   return (
     <button
-      className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-medium text-[#1A1916] text-sm hover:bg-[#FAFAFA]"
+      className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-medium text-[#1A1916] text-sm hover:bg-[#FFFFFF]"
       onClick={onClick}
       type="button"
     >
@@ -1059,7 +1106,7 @@ function InfosDossierCard({
   return (
     <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
       <h3 className="font-semibold text-[#1A1916]">Informations dossier</h3>
-      <dl className="mt-3 divide-y divide-[#F7F7F7]">
+      <dl className="mt-3 divide-y divide-[#FFFFFF]">
         {rows.map(([label, value]) => (
           <div className="flex items-center justify-between gap-3 py-2" key={label}>
             <dt className="text-[#6B6B6B] text-xs">{label}</dt>
@@ -1113,7 +1160,7 @@ function FicheEntreeTab({
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-3 rounded-[16px] border border-[#2A9D8F]/25 bg-[#EAF6F2] p-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 rounded-[16px] border border-[#2A9D8F]/25 bg-[#FFFFFF] p-4 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="font-semibold text-[#167B70]">Fiche d'entrée · Bon de prise en charge</p>
           <p className="text-[#167B70]/80 text-sm">
@@ -1132,11 +1179,31 @@ function FicheEntreeTab({
             </button>
             <button
               type="button"
-              className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 text-sm font-semibold text-[#1A1916] hover:bg-[#FAFAFA]"
+              className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 text-sm font-semibold text-[#1A1916] hover:bg-[#FFFFFF]"
               onClick={() => download("intake", repair.id)}
             >
               <Download className="size-4" />
               Télécharger PDF
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 text-sm font-semibold text-[#1A1916] hover:bg-[#FFFFFF]"
+              onClick={async () => {
+                try {
+                  const url = getShareableDocumentUrl(intakeDoc);
+                  if (url) {
+                    await navigator.clipboard.writeText(url);
+                    toast.success("Lien de prise en charge copié.");
+                  } else {
+                    toast.error("Lien non disponible.");
+                  }
+                } catch {
+                  toast.error("Erreur lors de la copie.");
+                }
+              }}
+            >
+              <Share2 className="size-4" />
+              Copier le lien
             </button>
           </div>
         ) : null}
@@ -1167,31 +1234,67 @@ function FicheEntreeTab({
 
 function DiagnosticTab({ repair }: Readonly<{ repair: Repair }>) {
   const store = useBeharStore();
+  const { uploadToCloud } = useDocument();
   const [diagnosticNotes, setDiagnosticNotes] = useState(repair.diagnosticNotes ?? "");
   const [recommended, setRecommended] = useState(repair.recommendedIntervention ?? "");
+
   const save = () => {
     store.updateRepair(repair.id, {
       diagnosticNotes,
       recommendedIntervention: recommended,
-      history: [...repair.history, "Diagnostic ajouté"],
+      history: [...repair.history, "Diagnostic enregistré"],
     });
     toast.success("Diagnostic enregistré.");
   };
+
+  const createDiagnosticReport = () => {
+    const existing = store.documents.find((d) => d.repairId === repair.id && d.type === "diagnostic_report");
+    if (existing) {
+      toast.info("Le rapport diagnostic existe déjà.");
+      return;
+    }
+
+    const docId = store.addDocument({
+      type: "diagnostic_report",
+      title: `Rapport diagnostic - ${repair.number}`,
+      customerId: repair.customerId,
+      repairId: repair.id,
+    });
+
+    store.updateRepair(repair.id, {
+      history: [...repair.history, "Document généré : rapport diagnostic"],
+    });
+
+    toast.success("Rapport diagnostic généré.");
+    if (docId) uploadToCloud("diagnostic_report", repair.id, docId);
+  };
+
   return (
-    <EditorGrid
-      actionLabel="Enregistrer le diagnostic"
-      fields={[
-        { label: "Diagnostic interne", value: diagnosticNotes, onChange: setDiagnosticNotes },
-        { label: "Intervention recommandée", value: recommended, onChange: setRecommended },
-        { label: "Observations", value: repair.intakeCondition?.internalIntakeNotes || "", readOnly: true },
-        {
-          label: "Pièces nécessaires",
-          value: repair.parts.map((part) => `${part.name} x${part.quantity}`).join("\n") || "Aucune pièce réservée.",
-          readOnly: true,
-        },
-      ]}
-      onSave={save}
-    />
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <EditorGrid
+        actionLabel="Enregistrer le diagnostic"
+        fields={[
+          { label: "Diagnostic interne", value: diagnosticNotes, onChange: setDiagnosticNotes },
+          { label: "Intervention recommandée", value: recommended, onChange: setRecommended },
+          { label: "Observations", value: repair.intakeCondition?.internalIntakeNotes || "", readOnly: true },
+          {
+            label: "Pièces nécessaires",
+            value: repair.parts.map((part) => `${part.name} x${part.quantity}`).join("\n") || "Aucune pièce réservée.",
+            readOnly: true,
+          },
+        ]}
+        onSave={save}
+      />
+      <aside className="space-y-3">
+        <div className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+          <h4 className="font-semibold text-sm text-[#1A1916]">Actions diagnostic</h4>
+          <p className="text-xs text-[#6B6B6B] mt-1 mb-4">Générez le rapport de diagnostic officiel et de tests de l'appareil.</p>
+          <SecondaryButton className="w-full" onClick={createDiagnosticReport}>
+            Générer rapport diagnostic
+          </SecondaryButton>
+        </div>
+      </aside>
+    </div>
   );
 }
 
@@ -1296,7 +1399,7 @@ function InvoiceTab({
           title={`Facture ${entry.number}`}
         />
       ))}
-      <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA] p-4">
+      <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
         <p className="font-semibold text-[#1A1916]">Moyen de règlement indiqué</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {paymentMethods.map((method) => (
@@ -1336,7 +1439,7 @@ function DocumentsTab({
         const target = getPrintableTarget(document as any);
         return (
           <div
-            className="flex flex-col gap-3 rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA] p-4 md:flex-row md:items-center md:justify-between"
+            className="flex flex-col gap-3 rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4 md:flex-row md:items-center md:justify-between"
             key={document.id}
           >
             <div>
@@ -1364,6 +1467,25 @@ function DocumentsTab({
               <SecondaryButton disabled={!target} onClick={() => target && download(target.type, target.id)}>
                 <Download className="size-4" />
                 Télécharger
+              </SecondaryButton>
+              <SecondaryButton
+                disabled={!target}
+                onClick={async () => {
+                  try {
+                    const url = getShareableDocumentUrl(document as any);
+                    if (url) {
+                      await navigator.clipboard.writeText(url);
+                      toast.success("Lien du document copié.");
+                    } else {
+                      toast.error("Lien non disponible.");
+                    }
+                  } catch {
+                    toast.error("Erreur lors de la copie.");
+                  }
+                }}
+              >
+                <Share2 className="size-4" />
+                Copier le lien
               </SecondaryButton>
             </div>
           </div>
@@ -1453,7 +1575,7 @@ function NoteBadge({ label, tone }: Readonly<{ label: string; tone: "internal" |
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold text-[10px] uppercase tracking-wide",
-        internal ? "bg-[#F7F7F7] text-[#6B6B6B]" : "bg-[#EAF6F2] text-[#167B70]",
+        internal ? "bg-[#FFFFFF] text-[#6B6B6B]" : "bg-[#FFFFFF] text-[#167B70]",
       )}
     >
       {internal ? <Lock className="size-3" /> : <MessageSquare className="size-3" />}
@@ -1492,7 +1614,7 @@ function NoteColumn({
   emptyLabel: string;
 }>) {
   return (
-    <div className="rounded-[18px] border border-[#E8E8E5] bg-[#FAFAFA] p-4">
+    <div className="rounded-[18px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2" style={{ color: accent }}>
           {icon}
@@ -1511,7 +1633,7 @@ function NoteColumn({
             .slice()
             .reverse()
             .map((note) => (
-              <li className="rounded-[12px] border border-[#F7F7F7] bg-white px-3 py-2.5" key={note.id}>
+              <li className="rounded-[12px] border border-[#FFFFFF] bg-white px-3 py-2.5" key={note.id}>
                 <div className="mb-1.5 flex items-center justify-between gap-2">
                   <span className="truncate font-medium text-[#1A1916] text-[11px]">
                     {note.authorName} · {formatIsoToDisplay(note.createdAt)}
@@ -1557,7 +1679,7 @@ function InfoGrid({ items }: Readonly<{ items: Array<[string, string]> }>) {
   return (
     <div className="grid gap-3 md:grid-cols-2">
       {items.map(([label, value]) => (
-        <div className="min-w-0 rounded-[14px] border border-[#F7F7F7] bg-[#FAFAFA] p-3" key={label}>
+        <div className="min-w-0 rounded-[14px] border border-[#FFFFFF] bg-[#FFFFFF] p-3" key={label}>
           <p className="text-[#6B6B6B] text-[11px] uppercase tracking-wide">{label}</p>
           <p className="mt-1 truncate font-semibold text-[#1A1916] text-sm">{value}</p>
         </div>
@@ -1568,7 +1690,7 @@ function InfoGrid({ items }: Readonly<{ items: Array<[string, string]> }>) {
 
 function TextBlock({ label, value }: Readonly<{ label: string; value?: string }>) {
   return (
-    <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA] p-4">
+    <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
       <p className="font-semibold text-[#1A1916] text-sm">{label}</p>
       <p className="mt-2 whitespace-pre-line text-[#6B6B6B] text-sm">{value || "Non renseigné"}</p>
     </div>
@@ -1604,7 +1726,7 @@ function EditorGrid({
 
 function EmptyLinked({ action, onClick, title }: Readonly<{ title: string; action: string; onClick: () => void }>) {
   return (
-    <div className="rounded-[18px] border border-dashed border-[#E8E8E5] bg-[#FAFAFA] p-8 text-center">
+    <div className="rounded-[18px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] p-8 text-center">
       <p className="font-semibold text-[#1A1916]">{title}</p>
       <PrimaryButton className="mt-4" onClick={onClick}>
         {action}
@@ -1621,7 +1743,7 @@ function LinkedRow({
   title,
 }: Readonly<{ title: string; subtitle: string; status: string; href: string; onOpen: () => void }>) {
   return (
-    <div className="flex flex-col gap-3 rounded-[16px] border border-[#E8E8E5] bg-[#FAFAFA] p-4 md:flex-row md:items-center md:justify-between">
+    <div className="flex flex-col gap-3 rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4 md:flex-row md:items-center md:justify-between">
       <div>
         <p className="font-semibold text-[#1A1916]">{title}</p>
         <p className="text-[#6B6B6B] text-sm">{subtitle}</p>
@@ -1658,11 +1780,11 @@ function MobileRepairHeader({
         </Link>
         <div className="flex items-center gap-1.5">
           <span className="font-black text-[11px] tracking-wider text-[#6B6B6B]">BEHAR • TECH</span>
-          <span className="px-1.5 py-0.5 text-[9px] font-black bg-[#EAF6F2] text-[#167B70] rounded-[6px] tracking-wide shadow-sm">PRO</span>
+          <span className="px-1.5 py-0.5 text-[9px] font-black bg-[#FFFFFF] text-[#167B70] rounded-[6px] tracking-wide shadow-sm">PRO</span>
         </div>
         <button
           type="button"
-          className="p-2 rounded-full bg-white border border-[#E8E8E5] text-[#1A1916] hover:bg-[#FAFAFA] shadow-[0_1px_2px_rgba(26,25,22,0.02)]"
+          className="p-2 rounded-full bg-white border border-[#E8E8E5] text-[#1A1916] hover:bg-[#FFFFFF] shadow-[0_1px_2px_rgba(26,25,22,0.02)]"
         >
           <Menu className="size-4" />
         </button>
@@ -1677,7 +1799,7 @@ function MobileRepairHeader({
       </div>
 
       {/* Appareil & Client Row (Miniature intégrée) */}
-      <div className="flex items-center gap-3 bg-[#FAFAF8] rounded-[16px] p-3 border border-[#E8E8E5]/60 shadow-[0_2px_6px_rgba(26,25,22,0.015)]">
+      <div className="flex items-center gap-3 bg-[#FFFFFF] rounded-[16px] p-3 border border-[#E8E8E5]/60 shadow-[0_2px_6px_rgba(26,25,22,0.015)]">
         <RealDeviceVisual
           brand={repair.brandName}
           className="size-11 shrink-0 rounded-[12px] border border-[#E8E8E5] bg-white p-1.5 shadow-[0_4px_12px_rgba(26,25,22,0.02)]"
@@ -1711,10 +1833,10 @@ function MobileRepairSummaryCard({
   return (
     <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
       {/* Device Visual Header */}
-      <div className="flex items-center gap-3.5 pb-3 border-b border-[#F7F7F7]">
+      <div className="flex items-center gap-3.5 pb-3 border-b border-[#FFFFFF]">
         <RealDeviceVisual
           brand={repair.brandName}
-          className="size-12 shrink-0 rounded-[12px] border border-[#E8E8E5] bg-[#FAFAF8] p-1.5 shadow-[0_4px_12px_rgba(26,25,22,0.02)]"
+          className="size-12 shrink-0 rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] p-1.5 shadow-[0_4px_12px_rgba(26,25,22,0.02)]"
           model={repair.deviceModel || repair.model || repair.device}
           type={repair.deviceType}
         />
@@ -1749,7 +1871,7 @@ function MobileRepairSummaryCard({
           </p>
         </div>
       </div>
-      <div className="pt-3 border-t border-[#F7F7F7] flex items-center justify-between">
+      <div className="pt-3 border-t border-[#FFFFFF] flex items-center justify-between">
         <span className="text-xs font-bold text-[#6B6B6B] uppercase tracking-wider">Montant dossier</span>
         <span className="text-xl font-bold text-[#167B70] tracking-tight">{formatDossier(dossierTotal)}</span>
       </div>
@@ -1798,7 +1920,7 @@ function MobileRepairStepper({
                   <div
                     className={cn(
                       "h-0.5 flex-1 rounded-full",
-                      index === 0 ? "opacity-0" : isCompleted || isCurrent ? "bg-[#2A9D8F]" : "bg-[#E8E8E5]",
+                      index === 0 ? "opacity-0" : isCompleted || isCurrent ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]",
                     )}
                   />
                   <div
@@ -1816,7 +1938,7 @@ function MobileRepairStepper({
                   <div
                     className={cn(
                       "h-0.5 flex-1 rounded-full",
-                      index === steps.length - 1 ? "opacity-0" : isCompleted ? "bg-[#2A9D8F]" : "bg-[#E8E8E5]",
+                      index === steps.length - 1 ? "opacity-0" : isCompleted ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]",
                     )}
                   />
                 </div>
@@ -1956,7 +2078,7 @@ function MobileSuiviClientCard({ repair }: Readonly<{ repair: Repair }>) {
             src={qr}
           />
         ) : (
-          <div className="size-32 rounded-[16px] bg-[#FAFAF8] border border-dashed border-[#E8E8E5] flex items-center justify-center text-xs text-[#6B6B6B]">
+          <div className="size-32 rounded-[16px] bg-[#FFFFFF] border border-dashed border-[#E8E8E5] flex items-center justify-center text-xs text-[#6B6B6B]">
             Génération du QR...
           </div>
         )}
@@ -1970,7 +2092,7 @@ function MobileSuiviClientCard({ repair }: Readonly<{ repair: Repair }>) {
         <button
           onClick={handleShareOrCopy}
           type="button"
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#EAF6F2] border border-[#2A9D8F]/20 text-[#167B70] font-bold text-sm hover:bg-[#D7EFEA] transition shadow-sm"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#FFFFFF] border border-[#2A9D8F]/20 text-[#167B70] font-bold text-sm hover:bg-[#FFFFFF] transition shadow-sm"
         >
           <Share2 className="size-4" />
           {copied ? "Lien copié !" : "Partager le lien de suivi"}
@@ -2054,7 +2176,7 @@ function MobileOverviewSection({
             <button
               type="button"
               onClick={() => onNotes("internal")}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
             >
               <Lock className="size-4" />
               Ajouter diagnostic / note
@@ -2062,7 +2184,7 @@ function MobileOverviewSection({
             <button
               type="button"
               onClick={onPrint}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
             >
               <Printer className="size-4" />
               Imprimer documents
@@ -2076,7 +2198,7 @@ function MobileOverviewSection({
             <button
               type="button"
               onClick={() => onNotes("internal")}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
             >
               <Pencil className="size-4" />
               Modifier diagnostic
@@ -2091,7 +2213,7 @@ function MobileOverviewSection({
                   <FileText className="size-4" />
                   Créer le devis
                 </button>
-                <p className="text-[10px] text-[#B42318] bg-[#FDECEC] rounded-[8px] p-2 border border-[#B42318]/10 leading-normal">
+                <p className="text-[10px] text-[#B42318] bg-[#FFFFFF] rounded-[8px] p-2 border border-[#B42318]/10 leading-normal">
                   ⚠️ Le montant total doit être supérieur à 0 (ajoutez des pièces / main d'œuvre).
                 </p>
               </div>
@@ -2115,7 +2237,7 @@ function MobileOverviewSection({
               <button
                 type="button"
                 onClick={() => setViewingMobileDoc(quoteDoc)}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
               >
                 <FileText className="size-4" />
                 Voir le devis
@@ -2124,7 +2246,7 @@ function MobileOverviewSection({
             <button
               type="button"
               onClick={() => onNotes("client")}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
             >
               <MessageSquare className="size-4" />
               Relancer le client
@@ -2160,7 +2282,7 @@ function MobileOverviewSection({
               <button
                 type="button"
                 onClick={() => setViewingMobileDoc(quoteDoc)}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
               >
                 <FileText className="size-4" />
                 Voir le devis
@@ -2175,7 +2297,7 @@ function MobileOverviewSection({
             <button
               type="button"
               onClick={() => onNotes("internal")}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
             >
               <Lock className="size-4" />
               Ajouter note interne
@@ -2211,7 +2333,7 @@ function MobileOverviewSection({
             <button
               type="button"
               onClick={() => onNotes("client")}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
             >
               <MessageSquare className="size-4" />
               Prévenir le client
@@ -2226,7 +2348,7 @@ function MobileOverviewSection({
                   <Receipt className="size-4" />
                   Créer la facture
                 </button>
-                <p className="text-[10px] text-[#B42318] bg-[#FDECEC] rounded-[8px] p-2 border border-[#B42318]/10 leading-normal">
+                <p className="text-[10px] text-[#B42318] bg-[#FFFFFF] rounded-[8px] p-2 border border-[#B42318]/10 leading-normal">
                   ⚠️ Devis accepté ou montant total &gt; 0 requis.
                 </p>
               </div>
@@ -2243,7 +2365,7 @@ function MobileOverviewSection({
             <button
               type="button"
               onClick={onClose}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#F3D0CC] bg-white font-semibold text-[#B42318] text-sm hover:bg-[#FDF3F2] transition"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#F3D0CC] bg-white font-semibold text-[#B42318] text-sm hover:bg-[#FFFFFF] transition"
             >
               <ClipboardList className="size-4" />
               Marquer rendu au client
@@ -2259,7 +2381,7 @@ function MobileOverviewSection({
               <button
                 type="button"
                 onClick={() => setViewingMobileDoc(invoiceDoc)}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
               >
                 <Receipt className="size-4" />
                 Voir la facture
@@ -2269,7 +2391,7 @@ function MobileOverviewSection({
               <button
                 type="button"
                 onClick={() => setViewingMobileDoc(paymentDoc)}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
               >
                 <Receipt className="size-4" />
                 Voir le reçu de paiement
@@ -2278,7 +2400,7 @@ function MobileOverviewSection({
             <button
               type="button"
               onClick={onPrint}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] transition"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
             >
               <Printer className="size-4" />
               Imprimer les documents
@@ -2296,7 +2418,7 @@ function MobileOverviewSection({
       {/* 1. Carte Activité du dossier */}
       <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
         <h3 className="text-[15px] font-bold text-[#1A1916]">Activité du dossier</h3>
-        <ol className="relative border-l border-[#F0F0EE] ml-2 space-y-3.5">
+        <ol className="relative border-l border-[#E8E8E5] ml-2 space-y-3.5">
           {visibleHistory.map((item, idx) => (
             <li key={`${item}_${idx}`} className="relative pl-5">
               <span className="absolute left-[-5px] top-1.5 flex size-2 bg-[#2A9D8F] rounded-full ring-4 ring-white" />
@@ -2323,7 +2445,7 @@ function MobileOverviewSection({
         <h3 className="text-[15px] font-bold text-[#1A1916]">Documents liés</h3>
         <ul className="space-y-2.5">
           {deduplicatedDocs.length === 0 ? (
-            <li className="rounded-[12px] border border-dashed border-[#E8E8E5] bg-[#FAFAFA] px-3 py-5 text-center text-[#6B6B6B] text-xs">
+            <li className="rounded-[12px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] px-3 py-5 text-center text-[#6B6B6B] text-xs">
               Aucun document lié.
             </li>
           ) : (
@@ -2347,7 +2469,7 @@ function MobileOverviewSection({
                   key={doc.id}
                   type="button"
                   onClick={() => setViewingMobileDoc(doc)}
-                  className="w-full flex items-center gap-3 rounded-[12px] border border-[#F7F7F7] bg-[#FAFAFA] p-3 text-left transition hover:bg-[#F2F2EF] outline-none"
+                  className="w-full flex items-center gap-3 rounded-[12px] border border-[#FFFFFF] bg-[#FFFFFF] p-3 text-left transition hover:bg-[#FFFFFF] outline-none"
                 >
                   <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white text-[#2A9D8F] border border-[#E8E8E5]">
                     <FileText className="size-4.5" />
@@ -2365,7 +2487,7 @@ function MobileOverviewSection({
                     </span>
                   )}
                   {statusLabel && (
-                    <span className="shrink-0 rounded-full bg-[#EAF6F2] px-2 py-0.5 font-bold text-[#167B70] text-[10px]">
+                    <span className="shrink-0 rounded-full bg-[#FFFFFF] px-2 py-0.5 font-bold text-[#167B70] text-[10px]">
                       {statusLabel}
                     </span>
                   )}
@@ -2430,7 +2552,7 @@ function MobileEntrySheetSection({
   return (
     <div className="space-y-4">
       {intakeDoc && (
-        <div className="flex flex-col gap-3 rounded-[16px] border border-[#2A9D8F]/20 bg-[#EAF6F2] p-4 items-center justify-between sm:flex-row">
+        <div className="flex flex-col gap-3 rounded-[16px] border border-[#2A9D8F]/20 bg-[#FFFFFF] p-4 items-center justify-between sm:flex-row">
           <div className="min-w-0">
             <p className="font-bold text-[#167B70] text-sm">Fiche d'entrée active</p>
             <p className="text-[#167B70]/80 text-xs mt-0.5 truncate">
@@ -2451,7 +2573,7 @@ function MobileEntrySheetSection({
             </button>
             <button
               type="button"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#E8E8E5] bg-white px-4 text-xs font-bold text-[#1A1916] shadow-sm hover:bg-[#FAFAFA]"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#E8E8E5] bg-white px-4 text-xs font-bold text-[#1A1916] shadow-sm hover:bg-[#FFFFFF]"
               onClick={() => {
                 const target = getPrintableTarget(intakeDoc);
                 if (target) download(target.type, target.id);
@@ -2467,7 +2589,7 @@ function MobileEntrySheetSection({
       {/* 1. Tableau Checklist */}
       <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
         <h3 className="text-[15px] font-bold text-[#1A1916]">État de l'appareil à l'entrée</h3>
-        <dl className="divide-y divide-[#F7F7F7]">
+        <dl className="divide-y divide-[#FFFFFF]">
           {checklist.map(({ label, value }) => (
             <div className="flex items-center justify-between py-3 text-sm" key={label}>
               <dt className="text-[#6B6B6B] font-semibold">{label}</dt>
@@ -2481,7 +2603,7 @@ function MobileEntrySheetSection({
       <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-3">
         <h3 className="text-[15px] font-bold text-[#1A1916]">Photos à l'entrée</h3>
         {photos.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center rounded-[12px] bg-[#FAFAFA] border border-dashed border-[#E8E8E5] px-4 py-8 text-[#6B6B6B]">
+          <div className="flex flex-col items-center justify-center text-center rounded-[12px] bg-[#FFFFFF] border border-dashed border-[#E8E8E5] px-4 py-8 text-[#6B6B6B]">
             <Camera className="size-6 text-[#8A8A8A] mb-2" />
             <p className="text-xs">Aucune photo ajoutée à l'entrée.</p>
           </div>
@@ -2510,7 +2632,7 @@ function MobileEntrySheetSection({
         <h3 className="text-[15px] font-bold text-[#1A1916]">Signature client</h3>
         {condition?.signatureDataUrl ? (
           <div className="space-y-3">
-            <div className="border border-[#E8E8E5] rounded-[14px] bg-[#FAFAF8] p-3 flex justify-center">
+            <div className="border border-[#E8E8E5] rounded-[14px] bg-[#FFFFFF] p-3 flex justify-center">
               <img
                 src={condition.signatureDataUrl}
                 alt="Signature client"
@@ -2526,7 +2648,7 @@ function MobileEntrySheetSection({
             <p className="text-xs text-[#6B6B6B]">Aucune signature enregistrée.</p>
             <button
               type="button"
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#E8E8E5] text-[#6B6B6B] font-semibold text-sm cursor-not-allowed"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#FFFFFF] text-[#6B6B6B] font-semibold text-sm cursor-not-allowed"
               disabled
             >
               Signature en attente
@@ -2574,7 +2696,7 @@ function MobileDiagnosticSection({
           <button
             type="button"
             onClick={() => (isEditing ? save() : setIsEditing(true))}
-            className="inline-flex items-center gap-1 rounded-full border border-[#E8E8E5] px-3 py-1 bg-[#FAFAF8] text-[#6B6B6B] text-xs font-bold hover:bg-[#FAFAFA] outline-none"
+            className="inline-flex items-center gap-1 rounded-full border border-[#E8E8E5] px-3 py-1 bg-[#FFFFFF] text-[#6B6B6B] text-xs font-bold hover:bg-[#FFFFFF] outline-none"
           >
             <Pencil className="size-3" />
             {isEditing ? "Enregistrer" : "Modifier"}
@@ -2606,13 +2728,13 @@ function MobileDiagnosticSection({
           <div className="space-y-4">
             <div className="space-y-1">
               <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Constat</span>
-              <p className="text-xs text-[#1A1916] font-medium leading-relaxed bg-[#FAFAF8] rounded-[12px] p-3 border border-[#F0F0EE] whitespace-pre-wrap">
+              <p className="text-xs text-[#1A1916] font-medium leading-relaxed bg-[#FFFFFF] rounded-[12px] p-3 border border-[#E8E8E5] whitespace-pre-wrap">
                 {repair.diagnosticNotes || "Aucun constat technique."}
               </p>
             </div>
             <div className="space-y-1">
               <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Intervention recommandée</span>
-              <p className="text-xs text-[#1A1916] font-medium leading-relaxed bg-[#FAFAF8] rounded-[12px] p-3 border border-[#F0F0EE] whitespace-pre-wrap">
+              <p className="text-xs text-[#1A1916] font-medium leading-relaxed bg-[#FFFFFF] rounded-[12px] p-3 border border-[#E8E8E5] whitespace-pre-wrap">
                 {repair.recommendedIntervention || "Aucune intervention spécifiée."}
               </p>
             </div>
@@ -2646,7 +2768,7 @@ function MobileDiagnosticSection({
                   <FileText className="size-4" />
                   Créer le devis
                 </button>
-                <p className="text-[10px] text-[#B42318] bg-[#FDECEC] rounded-[8px] p-2 border border-[#B42318]/10 leading-normal">
+                <p className="text-[10px] text-[#B42318] bg-[#FFFFFF] rounded-[8px] p-2 border border-[#B42318]/10 leading-normal">
                   ⚠️ Le montant total doit être supérieur à 0 (onglet Diagnostic/Pièces).
                 </p>
               </div>
@@ -2665,7 +2787,7 @@ function MobileDiagnosticSection({
         <button
           type="button"
           onClick={onNotes}
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FAFAFA] shadow-sm"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] shadow-sm"
         >
           <Lock className="size-4" />
           Ajouter une note
@@ -2731,7 +2853,7 @@ function MobilePartsSection({
               <button
                 type="button"
                 onClick={() => setShowAllStock(true)}
-                className="mt-3 text-xs font-bold text-[#2A9D8F] bg-[#EAF6F2] px-3.5 py-2 rounded-full hover:bg-[#D7EFEA]"
+                className="mt-3 text-xs font-bold text-[#2A9D8F] bg-[#FFFFFF] px-3.5 py-2 rounded-full hover:bg-[#FFFFFF]"
               >
                 Voir tout le stock
               </button>
@@ -2755,7 +2877,7 @@ function MobilePartsSection({
               <button
                 type="button"
                 onClick={() => reserve(item)}
-                className="shrink-0 h-9 rounded-full bg-[#EAF6F2] hover:bg-[#D7EFEA] text-[#167B70] font-bold text-xs px-4"
+                className="shrink-0 h-9 rounded-full bg-[#FFFFFF] hover:bg-[#FFFFFF] text-[#167B70] font-bold text-xs px-4"
               >
                 Réserver
               </button>
@@ -2779,7 +2901,7 @@ function MobilePartsSection({
         {repair.parts.length === 0 ? (
           <p className="text-xs text-[#6B6B6B] italic">Aucune pièce réservée pour le moment.</p>
         ) : (
-          <ul className="divide-y divide-[#F7F7F7]">
+          <ul className="divide-y divide-[#FFFFFF]">
             {repair.parts.map((part) => (
               <li key={part.stockItemId} className="py-2.5 flex items-center justify-between text-sm">
                 <div>
@@ -2788,7 +2910,7 @@ function MobilePartsSection({
                     Réf. {part.sku} · Qté : {part.quantity}
                   </p>
                 </div>
-                <span className="rounded-full bg-[#FFF9EF] px-2.5 py-0.5 font-bold text-[#936100] text-[10px]">
+                <span className="rounded-full bg-[#FFFFFF] px-2.5 py-0.5 font-bold text-[#936100] text-[10px]">
                   {part.confirmed ? "Utilisée" : "Réservée"}
                 </span>
               </li>
@@ -2834,7 +2956,7 @@ function MobileQuoteSection({
             >
               Créer un devis
             </button>
-            <p className="text-[10px] text-[#B42318] bg-[#FDECEC] rounded-[8px] p-2 border border-[#B42318]/10 leading-normal text-left max-w-sm mx-auto">
+            <p className="text-[10px] text-[#B42318] bg-[#FFFFFF] rounded-[8px] p-2 border border-[#B42318]/10 leading-normal text-left max-w-sm mx-auto">
               ⚠️ Le montant total doit être supérieur à 0 (onglet Diagnostic/Pièces).
             </p>
           </div>
@@ -2872,7 +2994,7 @@ function MobileQuoteSection({
               </span>
             </div>
 
-            <div className="border-t border-[#F7F7F7] pt-3.5 space-y-3">
+            <div className="border-t border-[#FFFFFF] pt-3.5 space-y-3">
               {q.lines?.map((line: any, idx: number) => (
                 <div key={`${line.description}_${idx}`} className="flex justify-between items-start text-xs">
                   <div className="min-w-0 flex-1 pr-3">
@@ -2886,23 +3008,23 @@ function MobileQuoteSection({
               ))}
             </div>
 
-            <div className="border-t border-[#F7F7F7] pt-3.5 space-y-1.5 text-xs text-right">
+            <div className="border-t border-[#FFFFFF] pt-3.5 space-y-1.5 text-xs text-right">
               <div className="flex justify-between">
                 <span className="text-[#6B6B6B]">Sous-total :</span>
                 <span className="font-semibold text-[#1A1916]">{formatQuoteCurrency(subtotal)}</span>
               </div>
-              <div className="flex justify-between pt-1 border-t border-[#F7F7F7]">
+              <div className="flex justify-between pt-1 border-t border-[#FFFFFF]">
                 <span className="font-bold text-[#1A1916]">Total :</span>
                 <span className="font-bold text-[15px] text-[#167B70]">{formatQuoteCurrency(total)}</span>
               </div>
             </div>
 
-            <div className="flex gap-2 pt-2 border-t border-[#F7F7F7]">
+            <div className="flex gap-2 pt-2 border-t border-[#FFFFFF]">
               {doc && (
                 <button
                   type="button"
                   onClick={() => setViewingMobileDoc(doc)}
-                  className="flex-1 h-9 rounded-full border border-[#E8E8E5] bg-[#FAFAF8] text-[#1A1916] text-[12px] font-bold flex items-center justify-center gap-1 shadow-sm hover:bg-[#FAFAFA]"
+                  className="flex-1 h-9 rounded-full border border-[#E8E8E5] bg-[#FFFFFF] text-[#1A1916] text-[12px] font-bold flex items-center justify-center gap-1 shadow-sm hover:bg-[#FFFFFF]"
                 >
                   <ExternalLink className="size-3.5" />
                   Aperçu PDF
@@ -2970,7 +3092,7 @@ function MobileInvoiceSection({
             >
               Créer une facture
             </button>
-            <p className="text-[10px] text-[#B42318] bg-[#FDECEC] rounded-[8px] p-2 border border-[#B42318]/10 leading-normal text-left max-w-sm mx-auto">
+            <p className="text-[10px] text-[#B42318] bg-[#FFFFFF] rounded-[8px] p-2 border border-[#B42318]/10 leading-normal text-left max-w-sm mx-auto">
               ⚠️ Un devis accepté ou un montant total &gt; 0 est requis pour générer une facture.
             </p>
           </div>
@@ -3003,14 +3125,14 @@ function MobileInvoiceSection({
               <span
                 className={cn(
                   "rounded-full px-2.5 py-0.5 font-bold text-[10px] uppercase tracking-wide",
-                  inv.status === "Payée" ? "bg-[#EAF6F2] text-[#167B70]" : "bg-[#FFF9EF] text-[#936100]"
+                  inv.status === "Payée" ? "bg-[#FFFFFF] text-[#167B70]" : "bg-[#FFFFFF] text-[#936100]"
                 )}
               >
                 {inv.status === "Payée" ? "Réglée" : "À régler"}
               </span>
             </div>
 
-            <div className="flex justify-between items-center bg-[#FAFAF8] rounded-[14px] p-4 border border-[#F0F0EE]">
+            <div className="flex justify-between items-center bg-[#FFFFFF] rounded-[14px] p-4 border border-[#E8E8E5]">
               <span className="text-xs font-semibold text-[#6B6B6B] uppercase tracking-wider">Montant total</span>
               <span className="text-lg font-bold text-[#167B70]">
                 {formatCurrency(getInvoiceTotal(inv), inv.currency)}
@@ -3050,12 +3172,12 @@ function MobileInvoiceSection({
               </div>
             )}
 
-            <div className="flex gap-2 pt-2 border-t border-[#F7F7F7]">
+            <div className="flex gap-2 pt-2 border-t border-[#FFFFFF]">
               {doc && (
                 <button
                   type="button"
                   onClick={() => setViewingMobileDoc(doc)}
-                  className="flex-1 h-9 rounded-full border border-[#E8E8E5] bg-[#FAFAF8] text-[#1A1916] text-[12px] font-bold flex items-center justify-center gap-1 shadow-sm hover:bg-[#FAFAFA]"
+                  className="flex-1 h-9 rounded-full border border-[#E8E8E5] bg-[#FFFFFF] text-[#1A1916] text-[12px] font-bold flex items-center justify-center gap-1 shadow-sm hover:bg-[#FFFFFF]"
                 >
                   <Printer className="size-3.5" />
                   Imprimer / PDF
@@ -3129,7 +3251,7 @@ function MobileDocumentsSection({
                 className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 shadow-[0_2px_8px_rgba(26,25,22,0.015)] space-y-3"
               >
                 <div className="flex items-center gap-3">
-                  <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#EAF6F2] text-[#2A9D8F] border border-[#E8E8E5]/50">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#2A9D8F] border border-[#E8E8E5]/50">
                     <FileText className="size-4.5" />
                   </span>
                   <div className="min-w-0 flex-1">
@@ -3140,26 +3262,27 @@ function MobileDocumentsSection({
                     <p className="truncate text-[#6B6B6B] text-[11px] mt-0.5">{doc.title}</p>
                   </div>
                   {statusLabel && (
-                    <span className="shrink-0 rounded-full bg-[#EAF6F2] px-2.5 py-0.5 font-bold text-[#167B70] text-[10px]">
+                    <span className="shrink-0 rounded-full bg-[#FFFFFF] px-2.5 py-0.5 font-bold text-[#167B70] text-[10px]">
                       {statusLabel}
                     </span>
                   )}
                 </div>
 
-                <div className="flex justify-between items-center bg-[#FAFAF8] rounded-[10px] px-3 py-2 text-xs">
+                <div className="flex justify-between items-center bg-[#FFFFFF] rounded-[10px] px-3 py-2 text-xs">
                   <span className="text-[#6B6B6B]">Montant :</span>
                   <span className="font-bold text-[#1A1916]">
                     {amount > 0 ? formatCurrency(amount, q?.currency ?? inv?.currency ?? repair.currency) : "—"}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 pt-1 border-t border-[#F7F7F7]">
+                <div className="grid grid-cols-4 gap-1.5 pt-1 border-t border-[#FFFFFF]">
                   <button
                     type="button"
                     onClick={() => setViewingMobileDoc(doc)}
-                    className="h-9 rounded-full bg-[#FAFAF8] border border-[#E8E8E5] text-[#1A1916] text-[11px] font-bold flex items-center justify-center gap-1 hover:bg-[#FAFAFA] active:scale-95 transition outline-none"
+                    className="h-9 rounded-full bg-[#FFFFFF] border border-[#E8E8E5] text-[#1A1916] text-[10px] font-bold flex items-center justify-center gap-1 hover:bg-[#FFFFFF] active:scale-95 transition outline-none"
+                    title="Voir"
                   >
-                    <ExternalLink className="size-3.5" />
+                    <ExternalLink className="size-3" />
                     Voir
                   </button>
                   <button
@@ -3168,10 +3291,11 @@ function MobileDocumentsSection({
                       const targetStr = getPrintableTarget(doc);
                       if (targetStr) download(targetStr.type, targetStr.id);
                     }}
-                    className="h-9 rounded-full bg-[#FAFAF8] border border-[#E8E8E5] text-[#1A1916] text-[11px] font-bold flex items-center justify-center gap-1 hover:bg-[#FAFAFA] active:scale-95 transition outline-none"
+                    className="h-9 rounded-full bg-[#FFFFFF] border border-[#E8E8E5] text-[#1A1916] text-[10px] font-bold flex items-center justify-center gap-1 hover:bg-[#FFFFFF] active:scale-95 transition outline-none"
+                    title="Télécharger"
                   >
-                    <Download className="size-3.5" />
-                    Télécharger
+                    <Download className="size-3" />
+                    PDF
                   </button>
                   <button
                     type="button"
@@ -3179,10 +3303,32 @@ function MobileDocumentsSection({
                       const targetStr = getPrintableTarget(doc);
                       if (targetStr) print(targetStr.type, targetStr.id);
                     }}
-                    className="h-9 rounded-full bg-[#EAF6F2] hover:bg-[#D7EFEA] text-[#167B70] text-[11px] font-bold flex items-center justify-center gap-1 active:scale-95 transition outline-none"
+                    className="h-9 rounded-full bg-[#FFFFFF] border border-[#E8E8E5] text-[#1A1916] text-[10px] font-bold flex items-center justify-center gap-1 hover:bg-[#FFFFFF] active:scale-95 transition outline-none"
+                    title="Imprimer"
                   >
-                    <Printer className="size-3.5" />
+                    <Printer className="size-3" />
                     Imprimer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const url = getShareableDocumentUrl(doc);
+                        if (url) {
+                          await navigator.clipboard.writeText(url);
+                          toast.success("Lien du document copié.");
+                        } else {
+                          toast.error("Lien non disponible.");
+                        }
+                      } catch {
+                        toast.error("Erreur lors de la copie.");
+                      }
+                    }}
+                    className="h-9 rounded-full bg-[#FFFFFF] hover:bg-[#FFFFFF] text-[#167B70] text-[10px] font-bold flex items-center justify-center gap-1 active:scale-95 transition outline-none"
+                    title="Copier le lien"
+                  >
+                    <Share2 className="size-3" />
+                    Lien
                   </button>
                 </div>
               </div>
@@ -3247,7 +3393,7 @@ function MobileNotesHistorySection({
   return (
     <div className="space-y-4">
       {/* Segmented Control */}
-      <div className="flex bg-[#FAFAF8] p-1 rounded-full border border-[#E8E8E5]">
+      <div className="flex bg-[#FFFFFF] p-1 rounded-full border border-[#E8E8E5]">
         <button
           type="button"
           onClick={() => setActiveSegment("internal")}
@@ -3285,12 +3431,12 @@ function MobileNotesHistorySection({
 
           <ul className="space-y-2.5">
             {internalNotes.length === 0 ? (
-              <li className="rounded-[12px] border border-dashed border-[#E8E8E5] bg-[#FAFAF8] px-3 py-4 text-center text-[#6B6B6B] text-xs">
+              <li className="rounded-[12px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] px-3 py-4 text-center text-[#6B6B6B] text-xs">
                 Aucune note interne.
               </li>
             ) : (
               [...internalNotes].reverse().map((note) => (
-                <li key={note.id} className="rounded-[12px] border border-[#F7F7F7] bg-[#FAFAF8] p-3 text-xs space-y-1">
+                <li key={note.id} className="rounded-[12px] border border-[#FFFFFF] bg-[#FFFFFF] p-3 text-xs space-y-1">
                   <div className="flex justify-between text-[10px] text-[#6B6B6B]">
                     <span className="font-bold text-[#1A1916]">{note.authorName}</span>
                     <span>{formatIsoToDisplay(note.createdAt)}</span>
@@ -3301,13 +3447,13 @@ function MobileNotesHistorySection({
             )}
           </ul>
 
-          <div className="space-y-2 pt-2 border-t border-[#F7F7F7]">
+          <div className="space-y-2 pt-2 border-t border-[#FFFFFF]">
             <textarea
               ref={internalRef}
               value={internalDraft}
               onChange={(e) => setInternalDraft(e.target.value)}
               placeholder="Ajouter une note de diagnostic, défaut constaté..."
-              className="w-full rounded-[12px] border border-[#E8E8E5] p-3 text-xs min-h-[80px] outline-none focus:border-[#2A9D8F] bg-[#FAFAF8]"
+              className="w-full rounded-[12px] border border-[#E8E8E5] p-3 text-xs min-h-[80px] outline-none focus:border-[#2A9D8F] bg-[#FFFFFF]"
             />
             <button
               type="button"
@@ -3328,12 +3474,12 @@ function MobileNotesHistorySection({
 
           <ul className="space-y-2.5">
             {clientNotes.length === 0 ? (
-              <li className="rounded-[12px] border border-dashed border-[#E8E8E5] bg-[#FAFAF8] px-3 py-4 text-center text-[#6B6B6B] text-xs">
+              <li className="rounded-[12px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] px-3 py-4 text-center text-[#6B6B6B] text-xs">
                 Aucune note client.
               </li>
             ) : (
               [...clientNotes].reverse().map((note) => (
-                <li key={note.id} className="rounded-[12px] border border-[#F7F7F7] bg-[#FAFAF8] p-3 text-xs space-y-1">
+                <li key={note.id} className="rounded-[12px] border border-[#FFFFFF] bg-[#FFFFFF] p-3 text-xs space-y-1">
                   <div className="flex justify-between text-[10px] text-[#6B6B6B]">
                     <span className="font-bold text-[#1A1916]">{note.authorName}</span>
                     <span>{formatIsoToDisplay(note.createdAt)}</span>
@@ -3344,13 +3490,13 @@ function MobileNotesHistorySection({
             )}
           </ul>
 
-          <div className="space-y-2 pt-2 border-t border-[#F7F7F7]">
+          <div className="space-y-2 pt-2 border-t border-[#FFFFFF]">
             <textarea
               ref={clientRef}
               value={clientDraft}
               onChange={(e) => setClientDraft(e.target.value)}
               placeholder="Ex: Pièce reçue, réparation commencée..."
-              className="w-full rounded-[12px] border border-[#E8E8E5] p-3 text-xs min-h-[80px] outline-none focus:border-[#2A9D8F] bg-[#FAFAF8]"
+              className="w-full rounded-[12px] border border-[#E8E8E5] p-3 text-xs min-h-[80px] outline-none focus:border-[#2A9D8F] bg-[#FFFFFF]"
             />
             <button
               type="button"
@@ -3417,7 +3563,7 @@ function MobileFinalTestSection({
               key={t.id}
               type="button"
               onClick={() => toggleTest(t.id)}
-              className="w-full flex items-center justify-between p-3 rounded-[12px] border border-[#F0F0EE] bg-[#FAFAF8] text-left active:scale-[0.99] transition outline-none"
+              className="w-full flex items-center justify-between p-3 rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] text-left active:scale-[0.99] transition outline-none"
             >
               <span className="text-xs font-bold text-[#1A1916]">{t.label}</span>
               <span
@@ -3434,14 +3580,14 @@ function MobileFinalTestSection({
           ))}
         </div>
 
-        <div className="pt-2 border-t border-[#F7F7F7]">
+        <div className="pt-2 border-t border-[#FFFFFF]">
           {allPassed ? (
-            <div className="bg-[#EAF6F2] border border-[#2A9D8F]/10 rounded-[12px] p-3 text-xs text-[#167B70] leading-normal font-semibold flex items-center gap-2">
+            <div className="bg-[#FFFFFF] border border-[#2A9D8F]/10 rounded-[12px] p-3 text-xs text-[#167B70] leading-normal font-semibold flex items-center gap-2">
               <CheckCircle2 className="size-4 shrink-0" />
               Tous les points de contrôle sont validés. L'appareil est prêt.
             </div>
           ) : (
-            <div className="bg-[#FFF9EF] border border-[#936100]/10 rounded-[12px] p-3 text-xs text-[#936100] leading-normal font-semibold">
+            <div className="bg-[#FFFFFF] border border-[#936100]/10 rounded-[12px] p-3 text-xs text-[#936100] leading-normal font-semibold">
               ⚠️ Veuillez vérifier et valider tous les tests.
             </div>
           )}
@@ -3465,7 +3611,7 @@ function MobileFinalTestSection({
             <button
               type="button"
               onClick={() => setMobileTab("Facture")}
-              className="flex h-9 w-full items-center justify-center gap-2 rounded-full border border-[#E8E8E5] text-[#1A1916] text-xs font-bold bg-[#FAFAF8] hover:bg-[#FAFAFA]"
+              className="flex h-9 w-full items-center justify-center gap-2 rounded-full border border-[#E8E8E5] text-[#1A1916] text-xs font-bold bg-[#FFFFFF] hover:bg-[#FFFFFF]"
             >
               <Receipt className="size-3.5" />
               Gérer la facture / règlement
@@ -3473,7 +3619,7 @@ function MobileFinalTestSection({
             <button
               type="button"
               onClick={onClose}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#F3D0CC] bg-white font-semibold text-[#B42318] text-sm hover:bg-[#FDF3F2] transition"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#F3D0CC] bg-white font-semibold text-[#B42318] text-sm hover:bg-[#FFFFFF] transition"
             >
               <ClipboardList className="size-4" />
               Marquer rendu au client
@@ -3487,7 +3633,7 @@ function MobileFinalTestSection({
           <button
             type="button"
             onClick={() => setMobileTab("Vue d'ensemble")}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#E8E8E5] text-[#1A1916] font-semibold text-sm"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#FFFFFF] text-[#1A1916] font-semibold text-sm"
           >
             Retour à la vue d'ensemble
           </button>
@@ -3565,7 +3711,7 @@ function MobileDocumentViewerModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-[#1A1916]/40 backdrop-blur-md flex flex-col justify-end sm:justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-[#FAFAF8] rounded-t-[28px] sm:rounded-[24px] max-h-[92vh] flex flex-col shadow-[0_-8px_32px_rgba(26,25,22,0.12)] sm:max-w-md sm:w-full sm:mx-auto overflow-hidden animate-in slide-in-from-bottom duration-300">
+      <div className="bg-[#FFFFFF] rounded-t-[28px] sm:rounded-[24px] max-h-[92vh] flex flex-col shadow-[0_-8px_32px_rgba(26,25,22,0.12)] sm:max-w-md sm:w-full sm:mx-auto overflow-hidden animate-in slide-in-from-bottom duration-300">
         
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E8E5] bg-white">
@@ -3580,7 +3726,7 @@ function MobileDocumentViewerModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full bg-[#FAFAF8] border border-[#E8E8E5] text-[#6B6B6B] hover:text-[#1A1916] outline-none"
+            className="p-1.5 rounded-full bg-[#FFFFFF] border border-[#E8E8E5] text-[#6B6B6B] hover:text-[#1A1916] outline-none"
           >
             <X className="size-4" />
           </button>
@@ -3601,13 +3747,13 @@ function MobileDocumentViewerModal({
               </div>
               <RealDeviceVisual
                 brand={repair.brandName}
-                className="size-11 rounded-[10px] border border-[#E8E8E5] bg-[#FAFAF8] p-1 shadow-sm"
+                className="size-11 rounded-[10px] border border-[#E8E8E5] bg-[#FFFFFF] p-1 shadow-sm"
                 model={repair.deviceModel || repair.model || repair.device}
                 type={repair.deviceType}
               />
             </div>
             
-            <div className="border-t border-[#F7F7F7] pt-3.5 grid grid-cols-2 gap-3 text-xs">
+            <div className="border-t border-[#FFFFFF] pt-3.5 grid grid-cols-2 gap-3 text-xs">
               <div>
                 <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Client</span>
                 <p className="font-bold text-[#1A1916] mt-0.5 truncate">
@@ -3625,24 +3771,24 @@ function MobileDocumentViewerModal({
 
           {isIntake && (
             <div className="bg-white rounded-[20px] border border-[#E8E8E5] p-5 shadow-[0_4px_12px_rgba(26,25,22,0.015)] space-y-4">
-              <h3 className="text-[13px] font-bold text-[#1A1916] border-b border-[#F7F7F7] pb-2">Contenu Bon de Prise en Charge</h3>
+              <h3 className="text-[13px] font-bold text-[#1A1916] border-b border-[#FFFFFF] pb-2">Contenu Bon de Prise en Charge</h3>
               
               <div className="space-y-3.5 text-xs">
                 <div>
                   <span className="text-[#6B6B6B] font-bold block mb-1">Panne déclarée</span>
-                  <p className="bg-[#FAFAF8] rounded-[10px] p-2.5 border border-[#F0F0EE] text-[#1A1916] leading-relaxed">
+                  <p className="bg-[#FFFFFF] rounded-[10px] p-2.5 border border-[#E8E8E5] text-[#1A1916] leading-relaxed">
                     {repair.issue || "Non renseigné"}
                   </p>
                 </div>
                 <div>
                   <span className="text-[#6B6B6B] font-bold block mb-1">Défauts constatés</span>
-                  <p className="bg-[#FAFAF8] rounded-[10px] p-2.5 border border-[#F0F0EE] text-[#1A1916] leading-relaxed">
+                  <p className="bg-[#FFFFFF] rounded-[10px] p-2.5 border border-[#E8E8E5] text-[#1A1916] leading-relaxed">
                     {repair.intakeCondition?.visibleDefects || "Aucun défaut majeur"}
                   </p>
                 </div>
                 <div>
                   <span className="text-[#6B6B6B] font-bold block mb-1">Accessoires déposés</span>
-                  <p className="bg-[#FAFAF8] rounded-[10px] p-2.5 border border-[#F0F0EE] text-[#1A1916] leading-relaxed">
+                  <p className="bg-[#FFFFFF] rounded-[10px] p-2.5 border border-[#E8E8E5] text-[#1A1916] leading-relaxed">
                     {repair.intakeCondition?.accessories?.join(", ") || "Aucun accessoire"}
                   </p>
                 </div>
@@ -3652,14 +3798,14 @@ function MobileDocumentViewerModal({
 
           {(isQuote || isInvoice || isPayment) && (
             <div className="bg-white rounded-[20px] border border-[#E8E8E5] p-5 shadow-[0_4px_12px_rgba(26,25,22,0.015)] space-y-4">
-              <h3 className="text-[13px] font-bold text-[#1A1916] border-b border-[#F7F7F7] pb-2">Détail des prestations</h3>
+              <h3 className="text-[13px] font-bold text-[#1A1916] border-b border-[#FFFFFF] pb-2">Détail des prestations</h3>
               
               <div className="space-y-3.5">
                 {lines?.length === 0 ? (
                   <p className="text-xs text-[#6B6B6B] italic">Aucune ligne de facture/devis.</p>
                 ) : (
                   lines?.map((line: any, index: number) => (
-                    <div key={`${line.description}_${index}`} className="flex justify-between items-start text-xs border-b border-[#F7F7F7] pb-3 last:border-b-0 last:pb-0">
+                    <div key={`${line.description}_${index}`} className="flex justify-between items-start text-xs border-b border-[#FFFFFF] pb-3 last:border-b-0 last:pb-0">
                       <div className="min-w-0 flex-1 pr-3">
                         <p className="font-bold text-[#1A1916] truncate">{line.description}</p>
                         <p className="text-[#6B6B6B] text-[10px] mt-0.5">Quantité : {line.quantity}</p>
@@ -3672,12 +3818,12 @@ function MobileDocumentViewerModal({
                 )}
               </div>
 
-              <div className="pt-4 border-t border-[#F0F0EE] space-y-2 text-xs">
+              <div className="pt-4 border-t border-[#E8E8E5] space-y-2 text-xs">
                 <div className="flex justify-between">
                   <span className="text-[#6B6B6B] font-semibold">Sous-total :</span>
                   <span className="font-bold text-[#1A1916]">{formatCurrency(subtotal, doc.currency ?? repair.currency)}</span>
                 </div>
-                <div className="flex justify-between items-center pt-2 border-t border-[#F0F0EE]">
+                <div className="flex justify-between items-center pt-2 border-t border-[#E8E8E5]">
                   <span className="text-sm font-bold text-[#1A1916]">Total TTC :</span>
                   <span className="text-lg font-black text-[#167B70]">{formatCurrency(total, doc.currency ?? repair.currency)}</span>
                 </div>
@@ -3691,7 +3837,7 @@ function MobileDocumentViewerModal({
           <button
             type="button"
             onClick={handleShare}
-            className="flex-1 h-11 rounded-[12px] bg-[#EAF6F2] text-[#167B70] font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition outline-none"
+            className="flex-1 h-11 rounded-[12px] bg-[#FFFFFF] text-[#167B70] font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition outline-none"
           >
             <Share2 className="size-4" />
             Partager
@@ -3700,7 +3846,7 @@ function MobileDocumentViewerModal({
             type="button"
             disabled={!target}
             onClick={() => target && download(target.type, target.id)}
-            className="h-11 w-12 rounded-[12px] border border-[#E8E8E5] bg-[#FAFAF8] text-[#1A1916] flex items-center justify-center hover:bg-[#FAFAFA] active:scale-95 transition shrink-0"
+            className="h-11 w-12 rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] text-[#1A1916] flex items-center justify-center hover:bg-[#FFFFFF] active:scale-95 transition shrink-0"
             title="Télécharger PDF"
           >
             <Download className="size-4" />
@@ -3760,13 +3906,13 @@ function MobilePhotoLightbox({
     >
       {/* Top Header */}
       <div className="flex items-center justify-between px-5 py-4 text-white z-10">
-        <span className="text-xs font-bold bg-white/10 px-3 py-1 rounded-full backdrop-blur-sm">
+        <span className="text-xs font-bold bg-white px-3 py-1 rounded-full backdrop-blur-sm">
           {activeIndex + 1} / {totalPhotos}
         </span>
         <button
           type="button"
           onClick={onClose}
-          className="p-2 rounded-full bg-white/10 text-white hover:bg-white/20 active:scale-95 transition outline-none"
+          className="p-2 rounded-full bg-white text-white hover:bg-white active:scale-95 transition outline-none"
         >
           <X className="size-5" />
         </button>
@@ -3779,7 +3925,7 @@ function MobilePhotoLightbox({
           <button
             type="button"
             onClick={handlePrev}
-            className="absolute left-4 p-3 rounded-full bg-white/15 text-white hover:bg-white/25 active:scale-90 transition z-10 outline-none"
+            className="absolute left-4 p-3 rounded-full bg-white text-white hover:bg-white active:scale-90 transition z-10 outline-none"
           >
             <ChevronLeft className="size-6" />
           </button>
@@ -3796,7 +3942,7 @@ function MobilePhotoLightbox({
           <button
             type="button"
             onClick={handleNext}
-            className="absolute right-4 p-3 rounded-full bg-white/15 text-white hover:bg-white/25 active:scale-90 transition z-10 outline-none"
+            className="absolute right-4 p-3 rounded-full bg-white text-white hover:bg-white active:scale-90 transition z-10 outline-none"
           >
             <ChevronRight className="size-6" />
           </button>

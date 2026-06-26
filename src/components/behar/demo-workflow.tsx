@@ -115,7 +115,7 @@ export function DemoWorkflow() {
             </div>
           </div>
 
-          <div className="mb-6 rounded-2xl border border-black/[0.07] bg-[#FAFAFA] p-4">
+          <div className="mb-6 rounded-2xl border border-black/[0.07] bg-[#FFFFFF] p-4">
             <div className="mb-2 flex justify-between text-sm">
               <span className="font-medium text-[#1A1916]">Progression</span>
               <span className="font-semibold text-[#2A9D8F]">{progress}%</span>
@@ -135,10 +135,10 @@ export function DemoWorkflow() {
                 <button
                   className={`rounded-2xl border p-4 text-left transition ${
                     done
-                      ? "border-[#2A9D8F]/25 bg-[#EAF6F2]"
+                      ? "border-[#2A9D8F]/25 bg-[#FFFFFF]"
                       : current
                         ? "border-[#2A9D8F] bg-white shadow-[0_14px_34px_rgba(42,157,143,0.10)]"
-                        : "border-black/[0.07] bg-white/78"
+                        : "border-black/[0.07] bg-white"
                   }`}
                   key={step.id}
                   onClick={() => completeStep(step.id)}
@@ -206,7 +206,7 @@ export function DemoWorkflow() {
           <div className="space-y-3">
             {demoDocuments.map((doc) => (
               <Link
-                className="block rounded-2xl border border-black/[0.07] bg-white/76 p-4 transition hover:bg-[#EAF6F2]"
+                className="block rounded-2xl border border-black/[0.07] bg-white p-4 transition hover:bg-[#FFFFFF]"
                 href="/dashboard/documents"
                 key={doc.id}
                 prefetch={false}
@@ -229,7 +229,7 @@ export function DemoWorkflow() {
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
             {state.messages.map((message) => (
-              <div className="rounded-2xl border border-black/[0.07] bg-white/78 p-4 text-sm" key={message.id}>
+              <div className="rounded-2xl border border-black/[0.07] bg-white p-4 text-sm" key={message.id}>
                 <p className="font-semibold text-[#1A1916]">
                   {message.channel} · {message.status}
                 </p>

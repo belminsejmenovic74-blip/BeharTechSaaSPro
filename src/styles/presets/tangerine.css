@@ -47,14 +47,14 @@ value: tangerine
 }
 
 .dark:root[data-theme-preset="tangerine"] {
-  --background: #1a1a1a;
+  --background: #ffffff;
   --foreground: #fdf2e9;
   --card: #262626;
   --card-foreground: #fdf2e9;
   --popover: #262626;
   --popover-foreground: #fdf2e9;
   --primary: #f4a261;
-  --primary-foreground: #1a1a1a;
+  --primary-foreground: #ffffff;
   --secondary: #333333;
   --secondary-foreground: #fdf2e9;
   --muted: #333333;
@@ -73,7 +73,7 @@ value: tangerine
   --sidebar: #262626;
   --sidebar-foreground: #fdf2e9;
   --sidebar-primary: #f4a261;
-  --sidebar-primary-foreground: #1a1a1a;
+  --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #333333;
   --sidebar-accent-foreground: #fdf2e9;
   --sidebar-border: rgba(255, 255, 255, 0.1);
