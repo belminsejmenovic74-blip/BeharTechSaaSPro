@@ -1,6 +1,6 @@
 {
   "name": "behar-tech-mvp",
-  "version": "1.0.21",
+  "version": "1.0.22",
   "private": true,
   "scripts": {
     "dev": "next dev",
