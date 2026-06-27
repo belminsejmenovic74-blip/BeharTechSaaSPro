@@ -27,10 +27,12 @@ function label(type: PublicPrintableDocumentDto["documentType"]) {
       return "Devis";
     case "invoice":
       return "Facture";
+    case "payment_confirmation":
+      return "Confirmation de règlement";
     case "payment_receipt":
-      return "Reçu de paiement";
+      return "Confirmation de règlement";
     case "sale_receipt":
-      return "Reçu de vente";
+      return "Justificatif de vente";
   }
 }
 
@@ -79,7 +81,7 @@ export function PublicPrintableDocumentPage({ token }: { token: string }) {
     const type =
       data.documentType === "repair_intake"
         ? "intake"
-        : data.documentType === "payment_receipt"
+        : data.documentType === "payment_confirmation" || data.documentType === "payment_receipt"
           ? "payment"
           : data.documentType === "sale_receipt"
             ? "sale-receipt"

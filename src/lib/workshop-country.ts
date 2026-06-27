@@ -237,6 +237,7 @@ export type DocumentFilenameType =
   | "quote"
   | "invoice"
   | "payment"
+  | "payment_confirmation"
   | "internal"
   | "summary"
   | "sale-receipt"
@@ -247,10 +248,11 @@ const DOCUMENT_FILE_PREFIX: Record<DocumentFilenameType, string> = {
   intake: "bon-prise-en-charge",
   quote: "devis",
   invoice: "facture",
-  payment: "recu-paiement",
+  payment: "confirmation-reglement",
+  payment_confirmation: "confirmation-reglement",
   internal: "fiche-intervention",
   summary: "resume-dossier",
-  "sale-receipt": "recu-vente",
+  "sale-receipt": "justificatif-vente",
   "sale-invoice": "facture-vente",
   diagnostic_report: "rapport-diagnostic",
 };

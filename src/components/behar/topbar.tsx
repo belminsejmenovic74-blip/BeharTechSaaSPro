@@ -222,7 +222,7 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
         {searchOpen && searchQuery.length >= 2 && (
           <>
             <button className="fixed inset-0 z-10 cursor-default" onClick={() => setSearchOpen(false)} type="button" />
-            <div className="absolute top-12 left-0 z-20 w-full overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-white shadow-[0_12px_28px_rgba(26,25,22,0.08)]">
+            <div className="absolute top-12 left-0 z-20 w-full overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-white shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
               {searchResults.length === 0 ? (
                 <p className="px-4 py-6 text-center text-[#6B6B6B] text-sm">Aucun résultat pour "{searchQuery}"</p>
               ) : (
@@ -287,7 +287,7 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
                 className="fixed inset-0 z-10 cursor-default"
                 onClick={() => setUserMenuOpen(false)}
               />
-              <div className="absolute top-12 right-0 z-20 w-[240px] overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-white p-1 shadow-[0_12px_28px_rgba(26,25,22,0.08)]">
+              <div className="absolute top-12 right-0 z-20 w-[240px] overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-white p-1 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
                 <div className="px-3 py-2.5 border-b border-[#FFFFFF]">
                   <p className="font-semibold text-[#1A1916] text-sm leading-tight">{currentUser.name}</p>
                   <p className="mt-0.5 text-[#6B6B6B] text-[11px]">{roleLabel}</p>
@@ -341,7 +341,7 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
                 onClick={() => setNotifOpen(false)}
                 type="button"
               />
-              <div className="absolute top-12 right-0 z-20 w-[340px] overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-white shadow-[0_12px_28px_rgba(26,25,22,0.08)]">
+              <div className="absolute top-12 right-0 z-20 w-[340px] overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-white shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
                 <div className="flex items-center justify-between border-[#E8E8E5] border-b px-4 py-3">
                   <span className="font-semibold text-[#1A1916] text-sm">
                     Notifications{unreadCount ? ` · ${unreadCount}` : ""}
@@ -423,7 +423,7 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
                 className="fixed inset-0 z-10 cursor-default"
                 onClick={() => setDocOpen(false)}
               />
-              <div className="absolute top-12 right-0 z-20 w-[220px] rounded-[14px] border border-[#E8E8E5] bg-white p-1 shadow-[0_12px_28px_rgba(26,25,22,0.08)]">
+              <div className="absolute top-12 right-0 z-20 w-[220px] rounded-[14px] border border-[#E8E8E5] bg-white p-1 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
                 <Link
                   href="/dashboard/documents"
                   prefetch={false}

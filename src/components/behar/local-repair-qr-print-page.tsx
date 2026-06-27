@@ -102,6 +102,9 @@ export function LocalRepairQrPrintPage({
 
   const customerName = customer?.name || "Client";
   const repairNumber = repair.number || repair.id.slice(-8).toUpperCase();
+  const trackingUrl = repair.publicAccess?.url ? publicAbsoluteUrl(repair.publicAccess.url) : "";
+  const shortLink = trackingUrl.replace(/^https?:\/\//, "");
+  const deviceLabel = [repair.brandName, repair.deviceModel || repair.model || repair.device].filter(Boolean).join(" ");
 
   return (
     <main className="min-h-screen bg-white text-[#111111]">
@@ -135,6 +138,7 @@ export function LocalRepairQrPrintPage({
         <p className="mt-2 w-full break-words font-mono font-bold text-[13px] leading-tight text-[#111111]">
           Dossier {repairNumber}
         </p>
+        <p className="mt-1 w-full break-words text-[11px] leading-tight text-[#111111]">{deviceLabel}</p>
         <div className="mt-6 flex w-full justify-center">
           {qrDataUrl ? (
             <img
@@ -149,6 +153,7 @@ export function LocalRepairQrPrintPage({
         <p className="mt-6 max-w-[46mm] text-center font-bold text-[13px] leading-snug text-[#111111]">
           Scannez pour suivre votre réparation
         </p>
+        {shortLink ? <p className="mt-3 w-full break-all text-[9px] leading-tight text-[#111111]">{shortLink}</p> : null}
       </section>
     </main>
   );

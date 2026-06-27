@@ -8,19 +8,26 @@ import type {
   PublicRepairDto,
   PublicWorkshopDto,
 } from "@/lib/public-dtos";
+import {
+  PUBLIC_REPAIR_TIMELINE_STEPS,
+  publicRepairProgress,
+  publicRepairStatusLabel,
+} from "@/lib/repair-status";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { getWorkshopCountryConfig } from "@/lib/workshop-country";
 
 type Supabase = NonNullable<ReturnType<typeof getSupabaseAdmin>>;
 
-const REPAIR_STATUS_LABELS: Record<string, string> = {
-  received: "Reçu",
-  diagnosis: "Diagnostic",
-  repair: "Réparation",
-  final_test: "Test final",
-  ready: "Prêt",
-  delivered: "Clôturé",
-  cancelled: "Annulé",
+const PUBLIC_DOCUMENT_TITLES: Record<string, string> = {
+  intake: "Bon de prise en charge",
+  repair_intake: "Bon de prise en charge",
+  quote: "Devis",
+  invoice: "Facture",
+  payment: "Confirmation de règlement — encaissé hors Behar Tech Pro",
+  payment_confirmation: "Confirmation de règlement — encaissé hors Behar Tech Pro",
+  payment_receipt: "Confirmation de règlement — encaissé hors Behar Tech Pro",
+  summary: "Rapport final",
+  diagnostic_report: "Rapport diagnostic",
 };
 
 function workshopDto(workshop: any): PublicWorkshopDto {
@@ -46,8 +53,67 @@ function workshopDto(workshop: any): PublicWorkshopDto {
   };
 }
 
+function trackingWorkshopDto(workshop: any): PublicWorkshopDto {
+  const base = workshopDto(workshop);
+  return {
+    name: base.name,
+    logoUrl: base.logoUrl,
+    phone: base.phone,
+    email: base.email,
+    address: base.address,
+    postalCode: base.postalCode,
+    city: base.city,
+    country: base.country,
+    currency: base.currency,
+    locale: base.locale,
+  };
+}
+
 function error(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
+}
+
+function publicTimelineFromRepair(repair: any): PublicRepairDto["timeline"] {
+  const createdAt = repair.created_at ?? new Date().toISOString();
+  const updatedAt = repair.updated_at ?? createdAt;
+  const progress = publicRepairProgress(repair.status);
+  if (progress.isCancelled) {
+    return [
+      {
+        title: "Dossier annulé",
+        description: "Le dossier a été annulé par l'atelier.",
+        date: updatedAt,
+        visibility: "client",
+      },
+    ];
+  }
+  return PUBLIC_REPAIR_TIMELINE_STEPS.slice(0, progress.activeStepIndex + 1).map((title, index) => ({
+    title,
+    description:
+      index === 0
+        ? "Votre appareil a été pris en charge."
+        : index === 4 && progress.isFinished
+          ? "Votre appareil a été remis au client."
+          : undefined,
+    date: index === 0 ? createdAt : updatedAt,
+    visibility: "client" as const,
+  }));
+}
+
+function isPublicRepairDocument(doc: any, paidPaymentIds: Set<string>) {
+  const type = String(doc?.document_type ?? "");
+  if (!Object.hasOwn(PUBLIC_DOCUMENT_TITLES, type)) return false;
+  if (type === "payment" || type === "payment_confirmation" || type === "payment_receipt") {
+    return paidPaymentIds.has(String(doc.payment_id ?? ""));
+  }
+  return true;
+}
+
+function publicDocumentTitle(doc: any) {
+  const type = String(doc?.document_type ?? "");
+  const base = PUBLIC_DOCUMENT_TITLES[type] ?? doc?.title ?? "Document";
+  if (type === "payment" || type === "payment_confirmation" || type === "payment_receipt") return base;
+  return doc?.document_number ? `${base} ${doc.document_number}` : base;
 }
 
 export function publicError(message = "Ressource introuvable", status = 404) {
@@ -119,12 +185,19 @@ export async function getPublicRepair(token: string): Promise<PublicRepairDto | 
   if (invoicesRes.error) throw invoicesRes.error;
   if (paymentsRes.error) throw paymentsRes.error;
 
+  const paidPaymentIds = new Set(
+    (paymentsRes.data ?? [])
+      .filter((payment: any) => ["Payé", "paid", "partially_paid", "Partiellement réglé"].includes(payment.status))
+      .map((payment: any) => String(payment.id)),
+  );
+  const publicDocs = (docsRes.data ?? []).filter((doc: any) => isPublicRepairDocument(doc, paidPaymentIds));
+
   return {
-    workshop: workshopDto(workshopRes.data),
+    workshop: trackingWorkshopDto(workshopRes.data),
     repair: {
       number: repair.repair_number,
       status: repair.status,
-      statusLabel: REPAIR_STATUS_LABELS[repair.status] ?? repair.status,
+      statusLabel: publicRepairStatusLabel(repair.status),
       deviceBrand: repair.device_brand || undefined,
       deviceModel: repair.device_model || undefined,
       deviceType: repair.device_type || undefined,
@@ -133,15 +206,10 @@ export async function getPublicRepair(token: string): Promise<PublicRepairDto | 
       updatedAt: repair.updated_at,
     },
     client: { displayName: clientRes?.data?.full_name || "Client" },
-    timeline: (eventsRes.data ?? []).map((entry: any) => ({
-      title: entry.title,
-      description: entry.description || undefined,
-      date: entry.created_at,
-      visibility: "client" as const,
-    })),
-    documents: (docsRes.data ?? []).map((doc: any) => ({
+    timeline: publicTimelineFromRepair(repair),
+    documents: publicDocs.map((doc: any) => ({
       type: doc.document_type,
-      title: doc.title,
+      title: publicDocumentTitle(doc),
       number: doc.document_number || undefined,
       status: doc.status,
       previewUrl: doc.public_url || undefined,
@@ -159,7 +227,7 @@ export async function getPublicRepair(token: string): Promise<PublicRepairDto | 
       totalTtc: Number(quote.total_ttc ?? 0),
       previewUrl: quote.public_url,
       downloadUrl:
-        (docsRes.data ?? []).find((doc: any) => doc.document_type === "quote" && doc.quote_id === quote.id)?.file_url ||
+        publicDocs.find((doc: any) => doc.document_type === "quote" && doc.quote_id === quote.id)?.file_url ||
         undefined,
     })),
     invoiceLinks: (invoicesRes.data ?? []).map((invoice: any) => ({
@@ -168,20 +236,25 @@ export async function getPublicRepair(token: string): Promise<PublicRepairDto | 
       totalTtc: Number(invoice.total_ttc ?? 0),
       previewUrl: invoice.public_url,
       downloadUrl:
-        (docsRes.data ?? []).find(
-          (doc: any) => doc.document_type === "invoice" && doc.invoice_id === invoice.id,
-        )?.file_url || undefined,
+        publicDocs.find((doc: any) => doc.document_type === "invoice" && doc.invoice_id === invoice.id)?.file_url ||
+        undefined,
     })),
-    receiptLinks: (paymentsRes.data ?? []).map((payment: any) => ({
-      number: payment.payment_number,
-      status: payment.status,
-      amount: Number(payment.amount ?? 0),
-      previewUrl: payment.public_url,
-      downloadUrl:
-        (docsRes.data ?? []).find(
-          (doc: any) => doc.document_type === "payment_receipt" && doc.payment_id === payment.id,
-        )?.file_url || undefined,
-    })),
+    receiptLinks: (paymentsRes.data ?? [])
+      .filter((payment: any) => paidPaymentIds.has(String(payment.id)))
+      .map((payment: any) => ({
+        number: payment.payment_number,
+        status: payment.status,
+        amount: Number(payment.amount ?? 0),
+        previewUrl: payment.public_url,
+        downloadUrl:
+          publicDocs.find(
+            (doc: any) =>
+              (doc.document_type === "payment" ||
+                doc.document_type === "payment_confirmation" ||
+                doc.document_type === "payment_receipt") &&
+              doc.payment_id === payment.id,
+          )?.file_url || undefined,
+      })),
   };
 }
 
@@ -236,7 +309,8 @@ export async function getPublicCommercialDocument(
   const supabase = getSupabaseAdmin();
   if (!supabase) throw new Error("Supabase server non configuré.");
 
-  const table = kind === "quote" ? "quotes" : kind === "invoice" ? "invoices" : kind === "receipt" ? "payments" : "sales";
+  const table =
+    kind === "quote" ? "quotes" : kind === "invoice" ? "invoices" : kind === "receipt" ? "payments" : "sales";
   const record = await getCommercialDocument(supabase, table, token);
   if (!record) return null;
 
@@ -436,7 +510,10 @@ export async function getPublicPrintableDocument(token: string): Promise<PublicP
       unitPriceTtc: Number(line.unit_price_ttc ?? 0),
       totalTtc: Number(line.total_ttc ?? 0),
     }));
-  } else if (document.document_type === "payment_receipt" && document.payment_id) {
+  } else if (
+    (document.document_type === "payment_confirmation" || document.document_type === "payment_receipt") &&
+    document.payment_id
+  ) {
     const { data: payment, error: paymentError } = await supabase
       .from("payments")
       .select("amount, method")
@@ -479,7 +556,8 @@ export async function getPublicPrintableDocument(token: string): Promise<PublicP
   }
 
   return {
-    documentType: document.document_type,
+    documentType:
+      document.document_type === "payment_receipt" ? "payment_confirmation" : document.document_type,
     workshop: workshopDto(workshopRes.data),
     client: {
       displayName: clientRes?.data?.full_name || "Client comptoir",
@@ -498,7 +576,7 @@ export async function getPublicPrintableDocument(token: string): Promise<PublicP
       ? {
           number: repairRes.data.repair_number,
           status: repairRes.data.status,
-          statusLabel: REPAIR_STATUS_LABELS[repairRes.data.status] ?? repairRes.data.status,
+          statusLabel: publicRepairStatusLabel(repairRes.data.status),
           deviceBrand: repairRes.data.device_brand || undefined,
           deviceModel: repairRes.data.device_model || undefined,
           deviceType: repairRes.data.device_type || undefined,

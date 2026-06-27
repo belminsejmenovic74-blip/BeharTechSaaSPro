@@ -14,6 +14,7 @@ import {
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 import { getDocumentFilename } from "@/lib/workshop-country";
 import { downloadPdfFile } from "@/lib/download-file.client";
+import { downloadDocumentPdf, printDocument, printDocumentPdf } from "@/lib/documents/document-actions";
 import { Modal, PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
 import {
   RepairIntakeDocument,
@@ -57,6 +58,20 @@ function clientDocTarget(doc: BeharDocument): { type: DocumentType; id: string }
     default:
       return null; // "internal" : jamais publié au client
   }
+}
+
+function documentForTarget(documents: BeharDocument[], type: DocumentType, id: string): BeharDocument | undefined {
+  return documents.find((doc) => {
+    if (type === "intake") return doc.type === "intake" && doc.repairId === id;
+    if (type === "summary") return doc.type === "summary" && doc.repairId === id;
+    if (type === "diagnostic_report") return doc.type === "diagnostic_report" && doc.repairId === id;
+    if (type === "internal") return doc.type === "internal" && doc.repairId === id;
+    if (type === "quote") return doc.type === "quote" && doc.quoteId === id;
+    if (type === "invoice") return (doc.type === "invoice" || doc.type === "sale-invoice") && doc.invoiceId === id;
+    if (type === "payment") return doc.type === "payment" && doc.paymentId === id;
+    if (type === "sale-receipt") return (doc.type === "sale-receipt" || doc.type === "sale-invoice") && doc.saleId === id;
+    return false;
+  });
 }
 
 const DocumentContext = createContext<DocumentContextType | null>(null);
@@ -199,6 +214,9 @@ export function PrintProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const print = useCallback((type: DocumentType, id: string) => {
+    const document = documentForTarget(useBeharStore.getState().documents, type, id);
+    if (document?.fileUrl && printDocumentPdf(document)) return;
+    if (document && printDocument(document)) return;
     setActiveDoc({ type, id, action: "print", reqId: ++reqCounterRef.current });
   }, []);
 
@@ -221,6 +239,12 @@ export function PrintProvider({ children }: { children: ReactNode }) {
   const download = useCallback((type: DocumentType, id: string) => {
     if (inFlightRef.current) {
       toast.info("Un téléchargement est déjà en cours…");
+      return;
+    }
+
+    const publishedDocument = documentForTarget(useBeharStore.getState().documents, type, id);
+    if (publishedDocument?.fileUrl) {
+      downloadDocumentPdf(publishedDocument);
       return;
     }
 
@@ -378,19 +402,78 @@ export function PrintProvider({ children }: { children: ReactNode }) {
     const currentReqId = activeDoc.reqId;
 
     if (activeDoc.action === "print") {
-      const timer = setTimeout(() => {
+      inFlightRef.current = true;
+      const processingToast = toast.loading("Préparation du PDF à imprimer…");
+      let settled = false;
+      let cancelled = false;
+
+      const finish = (kind: "ok" | "error" | "missing" | "timeout", payload?: string) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(safetyTimer);
+        clearTimeout(startTimer);
+        inFlightRef.current = false;
+        if (kind === "ok") {
+          toast.success("Document prêt pour impression.", { id: processingToast });
+        } else if (kind === "missing") {
+          toast.error(payload || "Document lié introuvable.", { id: processingToast });
+        } else if (kind === "timeout") {
+          toast.error("Impossible de préparer l'impression. Réessayez.", { id: processingToast });
+        } else {
+          toast.error("Erreur d'impression PDF.", { id: processingToast });
+        }
+        setActiveDoc((current) => (current?.reqId === currentReqId ? null : current));
+      };
+
+      const safetyTimer = setTimeout(() => {
+        if (!cancelled) finish("timeout");
+      }, 45_000);
+
+      const startTimer = setTimeout(async () => {
+        if (cancelled) return;
         try {
-          window.print();
+          const docElement = hiddenContainerRef.current?.querySelector(
+            '[data-pdf-paginate="true"], .print-document',
+          ) as HTMLElement | null;
+          if (!docElement) {
+            finish("missing", "Aucun document imprimable détecté.");
+            return;
+          }
+
+          const filename = getFilename(activeDoc.type, activeDoc.id);
+          const blob = await generatePdfFromElement(docElement, filename, "blob");
+          if (cancelled || !blob) return;
+          const blobUrl = URL.createObjectURL(blob);
+          const printWindow = window.open(blobUrl, "_blank", "popup=yes,width=920,height=1200,noopener,noreferrer");
+          if (printWindow) {
+            window.setTimeout(() => {
+              try {
+                printWindow.focus();
+                printWindow.print();
+              } catch {
+                // Le lecteur PDF du navigateur peut ignorer l'impression automatique.
+              }
+            }, 900);
+          } else {
+            downloadPdfFile(blob, filename);
+          }
+          window.setTimeout(() => URL.revokeObjectURL(blobUrl), 90_000);
+          finish("ok");
         } catch (error) {
           console.error("Print error:", error);
-          toast.error("Erreur d'impression");
-        } finally {
-          setTimeout(() => {
-            setActiveDoc((current) => (current?.reqId === currentReqId ? null : current));
-          }, 1500);
+          if (!cancelled) finish("error");
         }
-      }, 500);
-      return () => clearTimeout(timer);
+      }, 900);
+
+      return () => {
+        cancelled = true;
+        clearTimeout(startTimer);
+        clearTimeout(safetyTimer);
+        if (!settled) {
+          toast.dismiss(processingToast);
+          inFlightRef.current = false;
+        }
+      };
     }
 
     if (activeDoc.action === "preview") {
@@ -764,10 +847,6 @@ export function PrintProvider({ children }: { children: ReactNode }) {
   return (
     <DocumentContext.Provider value={{ print, download, preview, uploadToCloud }}>
       {children}
-      <div className="hidden print:block">
-        <div className="print-document">{activeDoc?.action === "print" && renderDocument()}</div>
-      </div>
-
       <div
         ref={hiddenContainerRef}
         style={{
@@ -780,7 +859,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
           zIndex: -1,
         }}
       >
-        {(activeDoc?.action === "download" || activeDoc?.action === "upload" || activeDoc?.action === "preview") && renderDocument()}
+        {(activeDoc?.action === "download" || activeDoc?.action === "upload" || activeDoc?.action === "preview" || activeDoc?.action === "print") && renderDocument()}
       </div>
 
       <Modal

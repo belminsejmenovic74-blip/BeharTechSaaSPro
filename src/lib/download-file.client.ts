@@ -25,8 +25,14 @@ export function downloadPdfFile(blob: Blob, filename: string): void {
 
 export async function downloadPdfUrl(url: string, filename: string): Promise<void> {
   const response = await fetch(url, { cache: "no-store" });
-  if (!response.ok) throw new Error(`Téléchargement PDF impossible (${response.status}).`);
   const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
+  if (!response.ok) {
+    if (contentType.includes("application/json")) {
+      const json = (await response.json().catch(() => null)) as { error?: string; message?: string } | null;
+      throw new Error(json?.error || json?.message || `Téléchargement PDF impossible (${response.status}).`);
+    }
+    throw new Error(`Téléchargement PDF impossible (${response.status}).`);
+  }
   const blob = await response.blob();
   if (!contentType.includes("application/pdf") && blob.type !== "application/pdf") {
     throw new Error("Le lien ne renvoie pas un vrai fichier PDF.");

@@ -1,5 +1,5 @@
 import percySnapshot from "@percy/playwright";
-import { type Page, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 import { openPoste } from "./helpers/behar-actions";
 import { STORAGE_KEY } from "./helpers/behar-data";
@@ -231,118 +231,57 @@ async function injectTestData(
   await page.reload({ waitUntil: "networkidle" });
 }
 
+const desktopViewport = { width: 1440, height: 900 };
+const tabletViewport = { width: 768, height: 1024 };
+const mobileViewport = { width: 390, height: 844 };
+
+const visualTargets = [
+  { name: "Dashboard Desktop", path: "/dashboard", viewport: desktopViewport },
+  { name: "Dashboard Tablet", path: "/dashboard", viewport: tabletViewport },
+  { name: "Dashboard Mobile", path: "/dashboard", viewport: mobileViewport },
+  { name: "Mode Comptoir Desktop", path: "/comptoir", viewport: desktopViewport },
+  { name: "Mode Comptoir Tablet", path: "/comptoir", viewport: tabletViewport },
+  { name: "Mode Comptoir Mobile", path: "/comptoir", viewport: mobileViewport },
+  { name: "Mode Atelier Desktop", path: "/atelier", viewport: desktopViewport },
+  { name: "Mode Atelier Tablet", path: "/atelier", viewport: tabletViewport },
+  { name: "Mode Atelier Mobile", path: "/atelier", viewport: mobileViewport },
+  { name: "Reparations Dashboard", path: "/dashboard/reparations", viewport: desktopViewport },
+  { name: "Dossier Reparation Detail", path: "/dashboard/dossiers/rep_visual_0", viewport: desktopViewport },
+  { name: "Documents Dashboard", path: "/dashboard/documents", viewport: desktopViewport },
+  { name: "Devis Dashboard", path: "/dashboard/devis", viewport: desktopViewport },
+  { name: "Facture Dashboard", path: "/dashboard/factures", viewport: desktopViewport },
+  { name: "Suivi Client Mobile", path: "/suivi/rp_visual_token_123", viewport: mobileViewport },
+  { name: "Stock Dashboard", path: "/dashboard/stock", viewport: desktopViewport },
+  { name: "Parametres Dashboard", path: "/dashboard/parametres", viewport: desktopViewport },
+  { name: "Document Prise en charge", path: "/print/document/_?doc=doc_intake_visual", viewport: desktopViewport },
+  { name: "Devis Print View", path: "/print/document/_?doc=doc_quote_visual", viewport: desktopViewport },
+  { name: "Facture Print View", path: "/print/document/_?doc=doc_invoice_visual", viewport: desktopViewport },
+] as const;
+
+async function capturePercyTarget(page: Page, target: (typeof visualTargets)[number]) {
+  await page.setViewportSize(target.viewport);
+  await page.goto(target.path, { waitUntil: "domcontentloaded" });
+  await page.waitForLoadState("networkidle", { timeout: 30_000 }).catch(() => undefined);
+  await expect(page.locator("body")).toBeVisible();
+  await page.waitForTimeout(500);
+  await percySnapshot(page, target.name);
+}
+
 test.describe("Visual Regression Suite - Behar Tech Pro", () => {
   test("Capture visual snapshots on various viewports and pages", async ({ browser }) => {
-    // 1. Initialize page with standard desktop view
     const { page } = await openPoste(browser, {
       name: "Visual_Desktop",
-      viewport: { width: 1440, height: 900 },
+      viewport: desktopViewport,
     });
 
-    // Seed test data and pre-select items
     await injectTestData(page, {
       repairId: "rep_visual_0",
       quoteId: "quote_visual_0",
       invoiceId: "invoice_visual_0",
     });
 
-    // Capture 1: Dashboard
-    await page.goto("/dashboard", { waitUntil: "networkidle" });
-    await page.waitForTimeout(500); // stable render
-    await percySnapshot(page, "Dashboard Desktop");
-
-    // Capture 1 (tablet & mobile): Responsiveness of Dashboard
-    await page.setViewportSize({ width: 768, height: 1024 });
-    await page.waitForTimeout(300);
-    await percySnapshot(page, "Dashboard Tablet");
-
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.waitForTimeout(300);
-    await percySnapshot(page, "Dashboard Mobile");
-
-    // Reset back to desktop viewport
-    await page.setViewportSize({ width: 1440, height: 900 });
-
-    // Capture 2: Mode Comptoir
-    await page.goto("/comptoir", { waitUntil: "networkidle" });
-    await page.waitForTimeout(500);
-    await percySnapshot(page, "Mode Comptoir Desktop");
-
-    await page.setViewportSize({ width: 768, height: 1024 });
-    await page.waitForTimeout(300);
-    await percySnapshot(page, "Mode Comptoir Tablet");
-
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.waitForTimeout(300);
-    await percySnapshot(page, "Mode Comptoir Mobile");
-
-    // Reset back to desktop viewport
-    await page.setViewportSize({ width: 1440, height: 900 });
-
-    // Capture 3: Mode Atelier
-    await page.goto("/atelier", { waitUntil: "networkidle" });
-    await page.waitForTimeout(500);
-    await percySnapshot(page, "Mode Atelier Desktop");
-
-    await page.setViewportSize({ width: 768, height: 1024 });
-    await page.waitForTimeout(300);
-    await percySnapshot(page, "Mode Atelier Tablet");
-
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.waitForTimeout(300);
-    await percySnapshot(page, "Mode Atelier Mobile");
-
-    // Reset back to desktop viewport
-    await page.setViewportSize({ width: 1440, height: 900 });
-
-    // Capture 4: Dossier Réparation (with pre-selected repair in layout)
-    await page.goto("/dashboard/reparations", { waitUntil: "networkidle" });
-    await page.waitForTimeout(500);
-    await percySnapshot(page, "Dossier Réparation");
-
-    // Capture 5: Devis (Dashboard view with pre-selected quote)
-    await page.goto("/dashboard/devis", { waitUntil: "networkidle" });
-    await page.waitForTimeout(500);
-    await percySnapshot(page, "Devis Dashboard");
-
-    // Capture 6: Facture (Dashboard view with pre-selected invoice)
-    await page.goto("/dashboard/factures", { waitUntil: "networkidle" });
-    await page.waitForTimeout(500);
-    await percySnapshot(page, "Facture Dashboard");
-
-    // Capture 7: Stock (Dashboard stock section)
-    await page.goto("/dashboard/stock", { waitUntil: "networkidle" });
-    await page.waitForTimeout(500);
-    await percySnapshot(page, "Stock Dashboard");
-
-    // Capture 8: Paramètres (Dashboard settings section)
-    await page.goto("/dashboard/parametres", { waitUntil: "networkidle" });
-    await page.waitForTimeout(500);
-    await percySnapshot(page, "Paramètres Dashboard");
-
-    // --- PRINT VIEWS (White background pages) ---
-
-    // Capture 9: Document Prise en charge (Local Print view)
-    await page.goto("/print/document/_?doc=doc_intake_visual", { waitUntil: "networkidle" });
-    await page.waitForTimeout(500);
-    await percySnapshot(page, "Document Prise en charge");
-
-    // Capture 10: Devis (Local Print view)
-    await page.goto("/print/document/_?doc=doc_quote_visual", { waitUntil: "networkidle" });
-    await page.waitForTimeout(500);
-    await percySnapshot(page, "Devis Print View");
-
-    // Capture 11: Facture (Local Print view)
-    await page.goto("/print/document/_?doc=doc_invoice_visual", { waitUntil: "networkidle" });
-    await page.waitForTimeout(500);
-    await percySnapshot(page, "Facture Print View");
-
-    // --- PUBLIC VIEWS (Intercepted client tracking QR code / lien) ---
-
-    // Capture 12: Suivi Client QR code / lien (viewport mobile)
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/suivi/rp_visual_token_123", { waitUntil: "networkidle" });
-    await page.waitForTimeout(800); // extra wait for local storage compilation
-    await percySnapshot(page, "Suivi Client Mobile");
+    for (const target of visualTargets) {
+      await capturePercyTarget(page, target);
+    }
   });
 });

@@ -498,7 +498,7 @@ function buildFinalState() {
       id: `doc_${payment.id}`,
       shopId: "shop_atelier_belmin",
       type: "payment",
-      title: `Reçu de paiement - ${payment.reference}`,
+      title: `Confirmation de règlement - ${payment.reference}`,
       customerId: payment.customerId,
       repairId: payment.repairId,
       invoiceId: payment.invoiceId,

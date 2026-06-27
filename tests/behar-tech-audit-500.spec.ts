@@ -283,7 +283,7 @@ function buildSeedState(): Record<string, unknown> {
     ...payments.map((p) => ({
       id: `doc_${p.id}`,
       type: "payment",
-      title: `Reçu - ${p.reference}`,
+      title: `Confirmation de règlement - ${p.reference}`,
       customerId: p.customerId,
       repairId: p.repairId,
       invoiceId: p.invoiceId,

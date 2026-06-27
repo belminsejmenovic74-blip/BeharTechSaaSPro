@@ -563,7 +563,7 @@ export function ComptoirWorkspace({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex h-svh w-svw flex-col bg-white text-[#1A1916]">
+    <div className="behar-app fixed inset-0 z-50 flex h-svh w-svw flex-col bg-white text-[#1A1916]">
       {/* Header — minimal, aligné sur l'image */}
       <header className="flex shrink-0 items-center justify-between gap-3 border-[#E8E8E5] border-b bg-white px-6 py-4 lg:px-10">
         <BeharLogo size="sm" />
@@ -858,7 +858,7 @@ function CounterChrome({
   onLogout: () => void;
 }>) {
   return (
-    <div className="fixed inset-0 z-50 flex h-svh w-svw flex-col bg-white text-[#1D1D1F]">
+    <div className="behar-app fixed inset-0 z-50 flex h-svh w-svw flex-col bg-white text-[#1A1916]">
       <header className="flex h-[72px] shrink-0 items-center justify-between gap-3 border-[#E8E8E5] border-b bg-white px-8 lg:px-12">
         <button type="button" onClick={onHome} className="flex min-h-[52px] items-center active:scale-[0.99]">
           <BeharLogo size="sm" />
@@ -961,14 +961,14 @@ function MoneySummary({
   return (
     <div className="space-y-4">
       {showPriceCard && (
-        <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-6 shadow-[0_10px_30px_rgba(29,29,31,0.04)]">
+        <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-6 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
           <p className="font-bold text-[15px]">Prix client</p>
           <p className="mt-4 font-black text-[#1E7A6E] text-[38px] tracking-tight tabular-nums">{formatEuro(amount)}</p>
           <p className="mt-1 text-[#6E6E73]">{ws.vatApplicable ? "TTC" : ""}</p>
         </section>
       )}
       {lines && (
-        <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-6 shadow-[0_10px_30px_rgba(29,29,31,0.04)]">
+        <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-6 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
           <p className="mb-4 font-bold text-[15px]">Récapitulatif</p>
           <dl className="space-y-3">
             {lines.map((line) => (
@@ -2044,8 +2044,8 @@ function AccessoryDrawer({
   formatValue?: (value: number) => string;
 }>) {
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/30 p-4">
-      <section className="max-h-[78vh] w-full max-w-[980px] overflow-hidden rounded-[20px] border border-[#E8E8E5] bg-white shadow-[0_24px_70px_rgba(29,29,31,0.2)]">
+    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-[#1A1916]/18 p-4">
+      <section className="max-h-[78vh] w-full max-w-[980px] overflow-hidden rounded-[20px] border border-[#E8E8E5] bg-white shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
         <div className="flex items-center justify-between border-[#E8E8E5] border-b px-5 py-4">
           <div>
             <h3 className="font-black text-[20px]">Tous les accessoires</h3>
@@ -3715,6 +3715,7 @@ function CounterRepairDetailScreen({
   onOpenDocuments,
 }: Readonly<{ repairId: string; onClose: () => void; onOpenDocuments?: () => void }>) {
   const store = useBeharStore();
+  const { print } = useDocument();
   const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
   const [selectedQrRepairId, setSelectedQrRepairId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
@@ -3876,7 +3877,7 @@ function CounterRepairDetailScreen({
         </button>
         <button
           type="button"
-          onClick={() => (onOpenDocuments ? onOpenDocuments() : printDocument(intakeDoc ?? { id: `doc_intake_${repair.id}`, type: "intake" }))}
+          onClick={() => (onOpenDocuments ? onOpenDocuments() : print("intake", repair.id))}
           className="h-[60px] rounded-[16px] border border-[#E8E8E5] bg-white font-black active:scale-[0.98]"
         >
           <FolderOpen className="mr-2 inline size-5" /> Voir documents
@@ -3903,7 +3904,7 @@ function CounterRepairDetailScreen({
                 type="button"
                 onClick={() => {
                   setActionsMenuOpen(false);
-                  if (!printDocument(intakeDoc ?? { id: `doc_intake_${repair.id}`, type: "intake" })) toast.error("Bon de prise en charge introuvable.");
+                  print("intake", repair.id);
                 }}
                 className="flex h-12 w-full items-center gap-3 rounded-[12px] px-3 font-bold hover:bg-[#FFFFFF]"
               >
@@ -4051,7 +4052,7 @@ function RepairAppointmentModal({
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-[#1A1916]/30 p-5">
-      <div className="flex max-h-[calc(100svh-2.5rem)] w-full max-w-[520px] flex-col rounded-[22px] border border-[#E8E8E5] bg-white p-5 shadow-[0_28px_80px_rgba(26,25,22,0.22)]">
+      <div className="flex max-h-[calc(100svh-2.5rem)] w-full max-w-[520px] flex-col rounded-[22px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="font-black text-[22px] tracking-tight">Nouveau rendez-vous</h2>
@@ -4102,7 +4103,7 @@ function CloseDossierConfirmModal({
 }: Readonly<{ onCancel: () => void; onConfirm: () => void }>) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-[#1A1916]/35 p-5">
-      <section className="w-full max-w-[460px] rounded-[22px] border border-[#E8E8E5] bg-white p-5 shadow-[0_28px_80px_rgba(26,25,22,0.22)]">
+      <section className="w-full max-w-[460px] rounded-[22px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
         <h2 className="font-black text-[#1D1D1F] text-[22px] tracking-tight">Marquer ce dossier comme rendu ?</h2>
         <p className="mt-3 text-[#6B6B6B] leading-relaxed">
           Cette action finalise le dossier. Vous pourrez toujours le consulter, mais il ne sera plus considéré comme actif.
@@ -4163,7 +4164,7 @@ function CounterTrackingScreen({ initialRepairId, onClose, onOpenRepairDetail }:
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState(initialRepairId || "");
   const [selectedQrRepairId, setSelectedQrRepairId] = useState<string | null>(null);
-  const { download } = useDocument();
+  const { download, print } = useDocument();
   const workshopSettings = useBeharStore((s) => s.workshopSettings);
   const [defaultActionFired, setDefaultActionFired] = useState(false);
   const customerOf = (id: string) => customers.find((c) => c.id === id);
@@ -4202,7 +4203,7 @@ function CounterTrackingScreen({ initialRepairId, onClose, onOpenRepairDetail }:
       if (action === "download") {
         download("intake", selected.id);
       } else if (action === "print_doc") {
-        printDocument({ id: `doc_intake_${selected.id}`, type: "intake" });
+        print("intake", selected.id);
       } else if (action === "print_qr") {
         if (!printRepairQr(selected.id, { format: workshopSettings.counterQrFormat })) {
           toast.error("Erreur d'impression du QR code.");
@@ -4245,9 +4246,7 @@ function CounterTrackingScreen({ initialRepairId, onClose, onOpenRepairDetail }:
             </button>
             <button
               type="button"
-              onClick={() => {
-                if (!printDocument({ id: `doc_intake_${selected.id}`, type: "intake" })) toast.error("Bon de prise en charge introuvable.");
-              }}
+              onClick={() => print("intake", selected.id)}
               className="h-[52px] rounded-[14px] border border-[#E8E8E5] font-bold active:scale-[0.98]"
             >
               <Printer className="mr-2 inline size-4" /> Imprimer le bon
@@ -4422,6 +4421,8 @@ function CounterCheckoutScreen({ initialRepairId, onClose }: Readonly<{ initialR
   const [method, setMethod] = useState<PaymentMethod>("TPE externe");
   const [lastPaymentId, setLastPaymentId] = useState("");
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
+  const [externalReference, setExternalReference] = useState("");
+  const [confirmExternal, setConfirmExternal] = useState(false);
   const repair = store.repairs.find((entry) => entry.id === selectedId) ?? unpaid[0];
   useEffect(() => { if (initialRepairId) setSelectedId(initialRepairId); }, [initialRepairId]);
   if (!repair) return <EmptyCounter title="Indiquer règlement" message="Aucun dossier à régler." onClose={onClose} />;
@@ -4429,25 +4430,40 @@ function CounterCheckoutScreen({ initialRepairId, onClose }: Readonly<{ initialR
   const lines: QuoteLine[] = (repair.counterPrestations?.length ? repair.counterPrestations : [{ label: repair.issue, prixClient: repairAmount(repair) }]).map((line, index) => ({ id: `line_${index}`, description: line.label, quantity: 1, unitPrice: line.prixClient, total: line.prixClient }));
   const vat = getVatSummary(lines, store.workshopInfo);
   const amount = repairAmount(repair);
-  // Règlement 100% interne : aucune app externe / TPE n'est ouverte. Le reçu
-  // de paiement (doc_${paymentId}) est généré par le store via markRepairAsPaid.
+  // Marquage administratif uniquement : aucune app externe / TPE n'est ouverte.
+  // La confirmation (doc_${paymentId}) est générée par le store.
   const pay = () => {
-    const paymentId = store.markRepairAsPaid(repair.id, method, "Règlement indiqué depuis le dossier");
+    if (!confirmExternal) {
+      toast.error("Confirmez que le paiement a été encaissé hors Behar Tech Pro.");
+      return;
+    }
+    if (!store.invoices.some((entry) => entry.repairId === repair.id)) {
+      store.createInvoiceFromRepair(repair.id);
+    }
+    const paymentId = store.recordRepairSettlement(repair.id, {
+      status: "Réglé",
+      amount,
+      date: localDateValue(),
+      method,
+      externalReference,
+      note: "Règlement indiqué depuis le mode Comptoir",
+      confirmExternal,
+    });
     if (!paymentId) return toast.error("Règlement impossible.");
     setLastPaymentId(paymentId);
-    toast.success(`Règlement indiqué : ${formatEuro(amount)}.`);
+    toast.success(`Règlement indiqué hors Behar Tech Pro : ${formatEuro(amount)}.`);
   };
-  // Retrouve le reçu lié au dossier (règlement de la session ou règlement déjà indiqué).
+  // Retrouve la confirmation liée au dossier (session ou règlement déjà indiqué).
   const resolvePaymentId = () =>
     lastPaymentId || store.payments.find((p) => p.repairId === repair.id && p.status === "Payé")?.id || "";
   const printReceipt = () => {
     const paymentId = resolvePaymentId();
-    if (!paymentId) return toast.info("Indiquez d'abord le règlement pour générer le reçu.");
-    if (!printDocument({ id: `doc_${paymentId}`, type: "payment" })) toast.error("Reçu introuvable.");
+    if (!paymentId) return toast.info("Indiquez d'abord le règlement pour générer la confirmation.");
+    if (!printDocument({ id: `doc_${paymentId}`, type: "payment" })) toast.error("Confirmation introuvable.");
   };
   const sendReceipt = () => {
-    if (!resolvePaymentId()) return toast.info("Indiquez d'abord le règlement externe pour générer le reçu.");
-    toast.success("Reçu marqué comme transmis au client.");
+    if (!resolvePaymentId()) return toast.info("Indiquez d'abord le règlement externe pour générer la confirmation.");
+    toast.success("Confirmation marquée comme transmise au client.");
   };
   // Donner la facture au client en un seul geste : retrouve la facture du dossier
   // (créée au règlement) et imprime le vrai document.
@@ -4467,8 +4483,8 @@ function CounterCheckoutScreen({ initialRepairId, onClose }: Readonly<{ initialR
         <aside className="rounded-[20px] border border-[#E8E8E5] bg-white p-4"><h2 className="mb-4 font-bold">À régler <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2">{unpaid.length}</span></h2><ul className="space-y-3">{unpaid.map((entry) => { const c = store.customers.find((customer) => customer.id === entry.customerId); return <li key={entry.id}><button type="button" onClick={() => setSelectedId(entry.id)} className={cn("w-full rounded-[14px] border p-4 text-left", entry.id === repair.id ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white")}><div className="flex justify-between"><b>{c?.name ?? "Comptoir"}</b><span className="text-[#6B6B6B]">À régler</span></div><b>{formatEuro(repairAmount(entry))}</b><p>{repairDeviceLabel(entry)}</p><p>Dossier #{displayRepairCode(entry)}</p></button></li>; })}</ul></aside>
         <section className="space-y-5">
           <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5"><div className="grid gap-5 lg:grid-cols-[1fr_350px]"><div><h2 className="font-black text-[20px]">{customer?.name ?? "Client comptoir"}</h2><p className="text-[#6E6E73]">{customer?.phone}<br />{customer?.email}</p><dl className="mt-8 grid grid-cols-[120px_1fr] gap-y-5"><dt>Dossier</dt><dd><b>#{displayRepairCode(repair)}</b></dd><dt>Intervention</dt><dd><b>{repair.issue}</b></dd><dt>Appareil</dt><dd><b>{repairDeviceLabel(repair)}</b></dd><dt>Statut</dt><dd><StatusPillCounter tone="orange">À régler</StatusPillCounter></dd></dl></div><div><p>Total à régler</p><p className="font-black text-[#1E7A6E] text-[42px] tabular-nums">{formatEuro(amount)} <span className="text-[15px] text-[#6E6E73]">{store.workshopInfo.vatApplicable ? "TTC" : ""}</span></p><MiniInvoice repair={repair} lines={lines} vat={vat} /></div></div></div>
-          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5"><h2 className="font-bold">Choisir le moyen de paiement externe</h2><div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">{counterPaymentMethods(store.workshopInfo.country, store.workshopInfo.twintEnabled !== false).map((entry) => <SelectTile key={entry} active={method === entry} onClick={() => setMethod(entry)}>{entry}</SelectTile>)}</div></section>
-          <div className="flex flex-wrap gap-3 [&>button]:min-w-[150px] [&>button]:flex-1"><button type="button" onClick={pay} className="h-[56px] rounded-[14px] bg-[#2A9D8F] font-bold text-white">Indiquer {formatEuro(amount)}</button><button type="button" onClick={printReceipt} className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold"><Printer className="mr-2 inline size-4" /> Imprimer reçu</button><button type="button" onClick={printInvoice} className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold"><Receipt className="mr-2 inline size-4" /> Imprimer la facture</button><button type="button" onClick={sendReceipt} className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold">Marquer reçu transmis</button><button type="button" onClick={() => setCloseConfirmOpen(true)} className="h-[56px] rounded-[14px] border border-[#F2C8C3] bg-white font-bold text-[#C7493B]">Marquer rendu</button></div>
+          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5"><h2 className="font-bold">Choisir le moyen de paiement externe</h2><div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">{counterPaymentMethods(store.workshopInfo.country, store.workshopInfo.twintEnabled !== false).map((entry) => <SelectTile key={entry} active={method === entry} onClick={() => setMethod(entry)}>{entry}</SelectTile>)}</div><input className="mt-4 h-[48px] w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]" onChange={(event) => setExternalReference(event.target.value)} placeholder="Référence externe facultative" value={externalReference} /><label className="mt-3 flex items-start gap-3 rounded-[12px] border border-[#E8E8E5] bg-white p-3 text-sm font-semibold"><input checked={confirmExternal} className="mt-1 accent-[#2A9D8F]" onChange={(event) => setConfirmExternal(event.target.checked)} type="checkbox" />Je confirme que le paiement a été encaissé hors Behar Tech Pro.</label></section>
+          <div className="flex flex-wrap gap-3 [&>button]:min-w-[150px] [&>button]:flex-1"><button type="button" onClick={pay} className="h-[56px] rounded-[14px] bg-[#2A9D8F] font-bold text-white">Indiquer {formatEuro(amount)}</button><button type="button" onClick={printReceipt} className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold"><Printer className="mr-2 inline size-4" /> Imprimer confirmation</button><button type="button" onClick={printInvoice} className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold"><Receipt className="mr-2 inline size-4" /> Imprimer la facture</button><button type="button" onClick={sendReceipt} className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold">Marquer confirmation transmise</button><button type="button" onClick={() => setCloseConfirmOpen(true)} className="h-[56px] rounded-[14px] border border-[#F2C8C3] bg-white font-bold text-[#C7493B]">Marquer rendu</button></div>
           {closeConfirmOpen && (
             <CloseDossierConfirmModal
               onCancel={() => setCloseConfirmOpen(false)}
@@ -5453,8 +5469,8 @@ const COUNTER_DOC_LABEL: Record<string, string> = {
   intake: "Bon de prise en charge",
   quote: "Devis",
   invoice: "Facture",
-  payment: "Reçu de paiement",
-  "sale-receipt": "Reçu de vente",
+  payment: "Confirmation de règlement",
+  "sale-receipt": "Justificatif de vente",
   "sale-invoice": "Facture de vente",
   internal: "Fiche interne",
   summary: "Résumé dossier",
@@ -5464,26 +5480,14 @@ const COUNTER_DOC_FILTERS: Array<{ key: string; label: string }> = [
   { key: "intake", label: "Bons" },
   { key: "quote", label: "Devis" },
   { key: "invoice", label: "Factures" },
-  { key: "payment", label: "Reçus" },
+  { key: "payment", label: "Règlements" },
   { key: "diagnostic_report", label: "Diagnostics" },
   { key: "summary", label: "Rapports finaux" },
   { key: "sale-receipt", label: "Ventes" },
 ];
-const COUNTER_DOC_ACTION_LABEL: Record<string, string> = {
-  intake: "le bon",
-  quote: "le devis",
-  invoice: "la facture",
-  payment: "le reçu",
-  "sale-receipt": "le reçu de vente",
-  "sale-invoice": "la facture de vente",
-  internal: "la fiche interne",
-  summary: "le résumé",
-  diagnostic_report: "le rapport diagnostic",
-};
-
 function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () => void; repairId?: string }>) {
   const store = useBeharStore();
-  const { download } = useDocument();
+  const { download, preview } = useDocument();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
   const scopedRepair = repairId ? store.repairs.find((r) => r.id === repairId) : undefined;
@@ -5541,7 +5545,6 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
             const customer = store.customers.find((entry) => entry.id === doc.customerId);
             const target = getPrintableTarget(doc);
             const linkedRepairId = repairIdForDocument(doc);
-            const actionLabel = COUNTER_DOC_ACTION_LABEL[doc.type] ?? "le document";
             const documentUnavailable = !target;
             return (
               <li key={doc.id} className="grid grid-cols-1 gap-3 rounded-[16px] border border-[#E8E8E5] bg-white p-4 md:grid-cols-[1fr_auto] md:items-center">
@@ -5556,13 +5559,20 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
                     </span>
                   ) : (
                     <>
+                      <button
+                        type="button"
+                        onClick={() => preview(target.type, target.id)}
+                        className="inline-flex h-[44px] items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold text-[#1A1916] text-sm active:scale-[0.98]"
+                      >
+                        <Eye className="size-4" /> Aperçu
+                      </button>
                       {store.hasPermission("canDownloadDocuments") && (
                         <button
                           type="button"
                           onClick={() => download(target.type, target.id)}
                           className="inline-flex h-[44px] items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold text-[#1A1916] text-sm active:scale-[0.98]"
                         >
-                          <Download className="size-4" /> Télécharger {actionLabel}
+                          <Download className="size-4" /> Télécharger PDF
                         </button>
                       )}
                       <button
@@ -5572,7 +5582,7 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
                         }}
                         className="inline-flex h-[44px] items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold text-[#1A1916] text-sm active:scale-[0.98]"
                       >
-                        <Printer className="size-4" /> Imprimer {actionLabel}
+                        <Printer className="size-4" /> Imprimer document
                       </button>
                     </>
                   )}
@@ -5586,7 +5596,20 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
                     }}
                     className="inline-flex h-[44px] items-center justify-center gap-2 rounded-[12px] bg-[#1A1916] px-4 font-bold text-sm text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-[#D7D7D2] disabled:text-[#777]"
                   >
-                    <QrCode className="size-4" /> Imprimer QR Code
+                    <QrCode className="size-4" /> Imprimer QR suivi
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!linkedRepairId}
+                    onClick={() => {
+                      const linkedRepair = store.repairs.find((entry) => entry.id === linkedRepairId);
+                      if (!linkedRepair) return;
+                      const access = linkedRepair.publicAccess ?? store.ensureRepairPublicAccess(linkedRepair.id);
+                      if (access) void shareCounterLink(publicAbsoluteUrl(access.url), "Lien de suivi copié pour le client.");
+                    }}
+                    className="inline-flex h-[44px] items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold text-[#1A1916] text-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-[#F7F7F4] disabled:text-[#777]"
+                  >
+                    <Copy className="size-4" /> Copier lien suivi
                   </button>
                 </div>
               </li>
@@ -5618,7 +5641,7 @@ function TodayStat({
   detail?: string;
 }>) {
   return (
-    <div className="flex min-h-[92px] items-center gap-4 rounded-[16px] border border-[#EDEAE2] bg-white px-5 py-4 shadow-[0_10px_24px_rgba(26,25,22,0.035)]">
+    <div className="flex min-h-[92px] items-center gap-4 rounded-[16px] border border-[#E8E8E5] bg-white px-5 py-4 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
       <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#FFFFFF] text-[#1E7A6E]">
         {icon}
       </span>

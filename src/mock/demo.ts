@@ -145,7 +145,7 @@ export const demoDocuments = [
   },
   {
     id: "receipt",
-    title: "Reçu de paiement",
+    title: "Confirmation de règlement",
     description: "Justificatif de règlement lié au dossier.",
   },
   {

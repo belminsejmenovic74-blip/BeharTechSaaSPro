@@ -72,7 +72,7 @@ export function ReconditioningPrintPage() {
   return (
     <div className="min-h-svh bg-[#FFFFFF] print:bg-white">
       {/* Toolbar (cachée à l'impression) */}
-      <div className="sticky top-0 z-10 border-[#E8E8E5] border-b bg-white backdrop-blur print:hidden">
+      <div className="sticky top-0 z-10 border-[#E8E8E5] border-b bg-white print:hidden">
         <div className="mx-auto flex max-w-[860px] flex-wrap items-center justify-between gap-3 px-4 py-3">
           <button
             className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-3 font-medium text-[#1A1916] text-sm transition hover:bg-[#FFFFFF]"

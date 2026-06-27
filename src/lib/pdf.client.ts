@@ -131,7 +131,7 @@ export function downloadInvoicePdf(workshop: WorkshopInfo, invoice: Invoice, cus
 }
 
 export function downloadReceiptPdf(workshop: WorkshopInfo, payment: Payment, customer: Customer) {
-  downloadSimplePdf(getDocumentFilename("payment", payment.paymentNumber || payment.reference), `Recu ${payment.reference}`, [
+  downloadSimplePdf(getDocumentFilename("payment", payment.paymentNumber || payment.reference), `Confirmation de règlement ${payment.reference}`, [
     { title: "Atelier", lines: workshopLines(workshop) },
     { title: "Client", lines: [customer.name, customer.phone, customer.email] },
     {

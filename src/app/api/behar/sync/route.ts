@@ -131,7 +131,7 @@ function documentType(type: unknown): string {
     case "invoice":
       return "invoice";
     case "payment":
-      return "payment_receipt";
+      return "payment_confirmation";
     case "sale-receipt":
     case "sale-invoice":
       return "sale_receipt";
@@ -381,16 +381,26 @@ export async function POST(request: Request) {
     const type = documentType(document.type);
     const publicVisible = type !== "internal_intervention_sheet";
     const token = publicVisible ? stableToken("dc", document.id) : null;
+    const documentNumber =
+      type === "quote" && document.quoteId
+        ? text((payload.quotes ?? []).find((quote) => quote.id === document.quoteId)?.number)
+        : type === "invoice" && document.invoiceId
+          ? text((payload.invoices ?? []).find((invoice) => invoice.id === document.invoiceId)?.number)
+          : type === "payment_confirmation" && document.paymentId
+            ? text((payload.payments ?? []).find((payment) => payment.id === document.paymentId)?.paymentNumber)
+            : type === "sale_receipt" && document.saleId
+              ? text((payload.sales ?? []).find((sale) => sale.id === document.saleId)?.number)
+              : text(document.title).match(/(?:#|-\s*)([A-Z]+-\d+)/)?.[1] ?? null;
     const linkedUrl =
       type === "repair_intake" && token
         ? makePublicUrl("/document", token)
-        : document.quoteId
+        : type === "quote" && document.quoteId
           ? makePublicUrl("/devis", stableToken("dv", document.quoteId))
-          : document.invoiceId
+          : type === "invoice" && document.invoiceId
             ? makePublicUrl("/facture", stableToken("fc", document.invoiceId))
-            : document.paymentId
+            : type === "payment_confirmation" && document.paymentId
               ? makePublicUrl("/recu", stableToken("py", document.paymentId))
-              : document.saleId
+              : type === "sale_receipt" && document.saleId
                 ? makePublicUrl("/vente", stableToken("vt", document.saleId))
                 : document.repairId
                   ? makePublicUrl(
@@ -409,11 +419,12 @@ export async function POST(request: Request) {
       payment_id: document.paymentId ? stableUuid(`payment:${workshopId}:${document.paymentId}`) : null,
       sale_id: document.saleId ? stableUuid(`sale:${workshopId}:${document.saleId}`) : null,
       document_type: type,
-      document_number: text(document.title).match(/(?:#|-\s*)([A-Z]+-\d+)/)?.[1] ?? null,
+      document_number: documentNumber || null,
       title: text(document.title, "Document"),
       public_visible: publicVisible,
       public_token: token,
       public_url: publicVisible ? linkedUrl : null,
+      file_url: text(document.fileUrl) || null,
       status: "ready",
       created_at: cleanIso(document.createdAt),
     };

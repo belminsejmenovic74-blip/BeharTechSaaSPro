@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Copy, Eye, Check } from "lucide-react";
+import { Copy, Eye, Check, Printer } from "lucide-react";
 import { toast } from "sonner";
 
-import { useBeharStore, type Repair } from "@/lib/behar-store";
+import { useBeharStore } from "@/lib/behar-store";
 import { Modal } from "./primitives";
 import { generateQrDataUrl, publicAbsoluteUrl } from "@/lib/public-access";
+import { printRepairQr } from "@/lib/documents/document-actions";
 
 interface TrackingQrModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ export function TrackingQrModal({ isOpen, onClose, repairId }: TrackingQrModalPr
   const store = useBeharStore();
   const [qr, setQr] = useState("");
   const [copied, setCopied] = useState(false);
+  const [format, setFormat] = useState<"A4" | "80mm" | "58mm">("80mm");
 
   const repair = store.repairs.find((r) => r.id === repairId);
   const customer = repair ? store.customers.find((c) => c.id === repair.customerId) : undefined;
@@ -109,6 +111,29 @@ export function TrackingQrModal({ isOpen, onClose, repairId }: TrackingQrModalPr
             <span>Suivre en ligne</span>
           </a>
         </div>
+        <div className="mt-3 grid w-full grid-cols-[1fr_auto] gap-2">
+          <select
+            className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-sm font-semibold outline-none focus:border-[#2A9D8F]"
+            onChange={(event) => setFormat(event.target.value as "A4" | "80mm" | "58mm")}
+            value={format}
+          >
+            <option value="A4">A4</option>
+            <option value="80mm">Format 80 mm</option>
+            <option value="58mm">Format 58 mm</option>
+          </select>
+          <button
+            type="button"
+            onClick={() => {
+              if (printRepairQr(repair.id, { format })) toast.success("Impression du QR lancée.");
+              else toast.error("QR de suivi indisponible.");
+            }}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-semibold text-[#1A1916] text-sm transition hover:bg-[#FFFFFF]"
+          >
+            <Printer className="size-4" />
+            <span>Imprimer QR</span>
+          </button>
+        </div>
+        {trackingUrl ? <p className="mt-3 w-full break-all text-left text-[#6B6B6B] text-xs">{trackingUrl}</p> : null}
       </div>
     </Modal>
   );

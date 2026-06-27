@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 import { useBeharStore } from "@/lib/behar-store";
+import { downloadDocumentPdf, printDocumentPdf } from "@/lib/documents/document-actions";
 
 import {
   getDocumentFileName,
@@ -72,6 +73,10 @@ export function LocalDocumentPrintPage({
   const downloadPdf = async () => {
     if (!document) {
       toast.error("Document introuvable");
+      return;
+    }
+    if (document.fileUrl) {
+      downloadDocumentPdf(document);
       return;
     }
     const target = documentRef.current?.querySelector(
@@ -155,7 +160,7 @@ export function LocalDocumentPrintPage({
               <p className="mt-1 text-[14px]" style={{ color: COLORS.sub }}>Document partagé par {shopName}.</p>
             </div>
           )}
-          <div className="mx-auto w-full max-w-[850px] rounded-[16px] border bg-white p-4 shadow-[0_1px_3px_rgba(26,25,22,0.04)] print:border-0 print:bg-white print:p-0 print:shadow-none" style={{ borderColor: COLORS.border }}>
+          <div className="mx-auto w-full max-w-[850px] rounded-[16px] border bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.035)] print:border-0 print:bg-white print:p-0 print:shadow-none" style={{ borderColor: COLORS.border }}>
             {blocked ? (
               <div className="grid min-h-[520px] place-items-center rounded-[14px] bg-white p-10 text-center">
                 <div>
@@ -178,7 +183,13 @@ export function LocalDocumentPrintPage({
             <button
               className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border bg-white px-3 font-semibold text-[13px] disabled:cursor-not-allowed disabled:opacity-50"
               disabled={blocked || !document}
-              onClick={() => window.print()}
+              onClick={() => {
+                if (document?.fileUrl) {
+                  printDocumentPdf(document);
+                  return;
+                }
+                window.print();
+              }}
               style={{ borderColor: COLORS.accent, color: COLORS.accent }}
               type="button"
             >

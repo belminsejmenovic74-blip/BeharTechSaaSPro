@@ -22,7 +22,7 @@ import { formatIntakeBonNumber } from "@/lib/utils";
 import { getPrintableTarget, LocalPrintableDocument } from "./local-printable-document";
 import { useDocument } from "./print-provider";
 
-// "sales" est un filtre composite : reçus de vente (sale-receipt + sale-invoice).
+// "sales" est un filtre composite : documents de vente (sale-receipt + sale-invoice).
 type FilterType = "all" | "sales" | DocumentType;
 
 const TYPE_FILTERS: Array<{ key: FilterType; label: string }> = [
@@ -30,7 +30,7 @@ const TYPE_FILTERS: Array<{ key: FilterType; label: string }> = [
   { key: "intake", label: "Bons" },
   { key: "quote", label: "Devis" },
   { key: "invoice", label: "Factures" },
-  { key: "payment", label: "Reçus" },
+  { key: "payment", label: "Règlements" },
   { key: "sales", label: "Ventes" },
   { key: "internal", label: "Fiches internes" },
   { key: "summary", label: "Résumés" },
@@ -40,9 +40,9 @@ const TYPE_LABEL: Record<DocumentType, string> = {
   intake: "Bon de prise en charge",
   quote: "Devis",
   invoice: "Facture",
-  payment: "Reçu de paiement",
-  "sale-receipt": "Reçu de paiement",
-  "sale-invoice": "Reçu de paiement",
+  payment: "Confirmation de règlement",
+  "sale-receipt": "Justificatif de vente",
+  "sale-invoice": "Facture de vente",
   internal: "Fiche interne",
   summary: "Rapport final",
   diagnostic_report: "Rapport diagnostic",
@@ -52,9 +52,9 @@ const TYPE_SHORT_LABEL: Record<DocumentType, string> = {
   intake: "Bon",
   quote: "Devis",
   invoice: "Facture",
-  payment: "Reçu",
-  "sale-receipt": "Reçu",
-  "sale-invoice": "Reçu",
+  payment: "Règlement",
+  "sale-receipt": "Vente",
+  "sale-invoice": "Vente",
   internal: "Interne",
   summary: "Rapport final",
   diagnostic_report: "Diagnostic",
@@ -276,7 +276,7 @@ export function DocumentPreview() {
       <button
         className={`w-full rounded-2xl border p-4 text-left transition ${
           active
-            ? "border-[#2A9D8F] bg-[#FFFFFF] shadow-[0_14px_34px_rgba(42,157,143,0.10)]"
+            ? "border-[#2A9D8F] bg-[#FFFFFF] shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
             : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/40"
         }`}
         data-document-id={row.document.id}
@@ -307,7 +307,7 @@ export function DocumentPreview() {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl border border-[#E8E8E5] bg-white p-4 shadow-[0_8px_22px_rgba(26,25,22,0.03)]">
+      <div className="rounded-2xl border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_160px]">
           <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#6B6B6B]" />
@@ -415,7 +415,7 @@ export function DocumentPreview() {
 
         {selected && selectedRow && (
           <section className="min-w-0" data-testid="document-preview-panel">
-            <div className="no-print mb-4 rounded-2xl border border-[#E8E8E5] bg-white p-4 shadow-[0_10px_28px_rgba(26,25,22,0.035)]">
+            <div className="no-print mb-4 rounded-2xl border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
               <div className="space-y-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
@@ -459,7 +459,7 @@ export function DocumentPreview() {
                     }}
                   >
                     <Eye className="size-4 shrink-0" />
-                    <span>Ouvrir</span>
+                    <span>Aperçu</span>
                   </button>
                   <SecondaryButton
                     className="min-w-0 justify-center gap-2 whitespace-normal px-3 text-center text-xs leading-tight"
@@ -558,7 +558,7 @@ function ResponsivePreviewFrame({ children }: Readonly<{ children: ReactNode }>)
   }, []);
 
   return (
-    <div className="rounded-2xl border border-[#E8E8E5] bg-white p-3 shadow-[0_12px_34px_rgba(26,25,22,0.045)] sm:p-4">
+    <div className="rounded-2xl border border-[#E8E8E5] bg-white p-3 shadow-[0_1px_2px_rgba(26,25,22,0.035)] sm:p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
         <p className="text-[#6B6B6B] text-sm">Aperçu du document</p>
         <ExternalLink className="size-4 shrink-0 text-[#6B6B6B]" aria-hidden />

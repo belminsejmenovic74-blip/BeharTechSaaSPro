@@ -553,7 +553,7 @@ export function PaymentsWorkspace() {
                 }}
               >
                 <Download className="size-4" />
-                Télécharger reçu PDF
+                Télécharger confirmation PDF
               </SecondaryButton>
               <SecondaryButton
                 className="w-full"
@@ -562,7 +562,7 @@ export function PaymentsWorkspace() {
                 }}
               >
                 <Printer className="size-4" />
-                Imprimer reçu
+                Imprimer confirmation
               </SecondaryButton>
               {selected.invoiceId && (
                 <SecondaryButton

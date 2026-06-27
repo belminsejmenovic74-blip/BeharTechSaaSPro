@@ -67,7 +67,7 @@ export type PublicCommercialDocumentDto = {
 };
 
 export type PublicPrintableDocumentDto = {
-  documentType: "repair_intake" | "quote" | "invoice" | "payment_receipt" | "sale_receipt";
+  documentType: "repair_intake" | "quote" | "invoice" | "payment_confirmation" | "payment_receipt" | "sale_receipt";
   workshop: PublicWorkshopDto;
   client: { displayName: string; phone?: string; email?: string; address?: string };
   document: {

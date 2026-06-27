@@ -5,21 +5,26 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { Check, Copy, Download, FileText, Link2, MessageCircle, Phone, Send, ShieldCheck, Wrench } from "lucide-react";
+import { toast } from "sonner";
 
 import { getPrintableTarget } from "@/components/behar/local-printable-document";
 import { useDocument } from "@/components/behar/print-provider";
 import { RealDeviceVisual } from "@/components/behar/real-product-visual";
-import { getPublicDocumentUrl } from "@/lib/documents/document-actions";
 import { downloadPdfUrl } from "@/lib/download-file.client";
 import type { PublicRepairDto } from "@/lib/public-dtos";
+import { buildPublicRepairDtoFromLocalState } from "@/lib/public-repair-dto";
 import { generateQrDataUrl, publicAbsoluteUrl } from "@/lib/public-link";
-import { getBillingWorkshopInfo, type WorkshopInfo, useBeharStore } from "@/lib/behar-store";
-import { getSupabase } from "@/lib/supabase/client";
-import { formatMoney, getDocumentFilename, getWorkshopCountryConfig } from "@/lib/workshop-country";
+import {
+  PUBLIC_REPAIR_TIMELINE_STEPS,
+  publicRepairHeadline,
+  publicRepairPageTitle,
+  publicRepairProgress,
+} from "@/lib/repair-status";
+import { useBeharStore } from "@/lib/behar-store";
+import { formatMoney, getDocumentFilename } from "@/lib/workshop-country";
 
 // Page publique client : fond BLANC PUR, jamais de crème. Branding = boutique.
 const COLORS = { bg: "#FFFFFF", text: "#1A1916", sub: "#6B6B6B", accent: "#2A9D8F", border: "#E8E8E5" };
-const STEP_LABELS = ["Reçu", "Diagnostic", "Réparation", "Test final", "Prêt"];
 
 function resolveShopName(candidates: Array<string | undefined>): string {
   for (const candidate of candidates) {
@@ -65,51 +70,6 @@ function formatMessageMoment(value?: string) {
   }).format(date);
 }
 
-function statusStep(status: string) {
-  switch (status) {
-    case "diagnosis":
-    case "Diagnostic":
-      return 1;
-    case "repair":
-    case "En réparation":
-    case "Devis accepté":
-      return 2;
-    case "final_test":
-    case "Test final":
-      return 3;
-    case "ready":
-    case "delivered":
-    case "Prêt":
-    case "Clôturé":
-      return 4;
-    default:
-      return 0;
-  }
-}
-
-function headline(status: string) {
-  switch (status) {
-    case "diagnosis":
-    case "Diagnostic":
-      return ["Diagnostic en cours", "Nos techniciens analysent votre appareil avant intervention."];
-    case "repair":
-    case "En réparation":
-    case "Devis accepté":
-      return ["Réparation en cours", "Nos techniciens travaillent sur votre appareil."];
-    case "final_test":
-    case "Test final":
-      return ["Tests finaux", "La réparation est terminée, nous vérifions le bon fonctionnement."];
-    case "ready":
-    case "Prêt":
-      return ["Appareil prêt", "Votre appareil est prêt à être récupéré à l'atelier."];
-    case "delivered":
-    case "Clôturé":
-      return ["Dossier clôturé", "Le dossier atelier est clôturé. Merci de votre confiance."];
-    default:
-      return ["Appareil reçu", "Votre appareil est bien arrivé à l'atelier. Le diagnostic va démarrer."];
-  }
-}
-
 function cleanToken(value?: string | null) {
   const token = (value ?? "").trim();
   return token && token !== "_" ? token : "";
@@ -124,157 +84,13 @@ function tokenFromBrowserUrl() {
 }
 
 async function readPublicRepairFromApi(token: string): Promise<PublicRepairDto | null> {
-  const response = await fetch(`/api/public/repairs/${encodeURIComponent(token)}`, { cache: "no-store" }).catch(() => null);
+  const response = await fetch(`/api/public/repairs/${encodeURIComponent(token)}`, { cache: "no-store" }).catch(
+    () => null,
+  );
   if (!response?.ok) return null;
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.includes("application/json")) return null;
   return response.json().catch(() => null);
-}
-
-function snapshotToPublicRepair(state: any, token: string, fallbackWorkshopName?: string): PublicRepairDto | null {
-  const repairs = Array.isArray(state?.repairs) ? state.repairs : [];
-  const repair = repairs.find((entry: any) => entry?.publicAccess?.token === token && entry.publicAccess.active !== false);
-  if (!repair) return null;
-
-  const customers = Array.isArray(state?.customers) ? state.customers : [];
-  const documents = Array.isArray(state?.documents) ? state.documents : [];
-  const quotes = Array.isArray(state?.quotes) ? state.quotes : [];
-  const invoices = Array.isArray(state?.invoices) ? state.invoices : [];
-  const payments = Array.isArray(state?.payments) ? state.payments : [];
-  const ws = state?.workshopSettings ?? state?.workshopInfo ?? {};
-  const billingWorkshop = getBillingWorkshopInfo(
-    ws as WorkshopInfo,
-    repair.billingCountry ?? ws.country ?? "FR",
-  );
-  const countryConfig = getWorkshopCountryConfig(billingWorkshop.country);
-  const customer = customers.find((entry: any) => entry?.id === repair.customerId);
-  const shopName = resolveShopName([
-    billingWorkshop.commercialName,
-    billingWorkshop.name,
-    billingWorkshop.brand,
-    fallbackWorkshopName,
-  ]);
-
-  return {
-    workshop: {
-      name: shopName,
-      logoUrl: billingWorkshop.showLogo ? billingWorkshop.logoUrl : undefined,
-      phone: billingWorkshop.phone || undefined,
-      email: billingWorkshop.email || undefined,
-      address: billingWorkshop.address || undefined,
-      postalCode: billingWorkshop.postalCode || undefined,
-      city: billingWorkshop.postalCity || billingWorkshop.city || undefined,
-      country: countryConfig.country,
-      currency: countryConfig.currency,
-      locale: countryConfig.locale,
-      canton: countryConfig.country === "CH" ? billingWorkshop.swissCanton || undefined : undefined,
-      businessId:
-        countryConfig.country === "CH" ? billingWorkshop.swissUid || undefined : billingWorkshop.siret || undefined,
-      vatNumber:
-        countryConfig.country === "CH"
-          ? billingWorkshop.swissVatNumber || undefined
-          : billingWorkshop.tvaNumber || undefined,
-      vatApplicable: Boolean(billingWorkshop.vatApplicable),
-      vatMention: billingWorkshop.tvaMention || undefined,
-    },
-    repair: {
-      number: repair.number,
-      status: repair.status,
-      statusLabel: repair.status,
-      deviceBrand: repair.brandName,
-      deviceModel: repair.deviceModel || repair.device,
-      deviceType: repair.deviceType,
-      issueDescription: repair.issue,
-      createdAt: repair.droppedAt,
-      updatedAt: repair.updatedAt || repair.droppedAt,
-    },
-    client: { displayName: customer?.name || "Client" },
-    timeline: (repair.history ?? []).map((title: string) => ({
-      title,
-      date: repair.updatedAt || repair.droppedAt,
-      visibility: "client" as const,
-    })),
-    documents: documents
-      .filter((doc: any) => doc.repairId === repair.id && doc.type !== "internal")
-      .map((doc: any) => ({
-        type: doc.type,
-        title: doc.title,
-        number:
-          quotes.find((quote: any) => quote.id === doc.quoteId)?.number ||
-          invoices.find((invoice: any) => invoice.id === doc.invoiceId)?.number ||
-          payments.find((payment: any) => payment.id === doc.paymentId)?.paymentNumber ||
-          (doc.type === "intake" ? repair.number : undefined),
-        status: "ready",
-        previewUrl: getPublicDocumentUrl(doc),
-        downloadUrl: doc.fileUrl || undefined,
-      })),
-    messages: (repair.messages ?? [])
-      .filter((message: any) => message.visibility === "client")
-      .map((message: any) => ({
-        authorType: message.authorType,
-        authorName: message.authorName,
-        body: message.body,
-        createdAt: message.createdAt,
-      })),
-    quoteLinks: quotes
-      .filter((quote: any) => quote.repairId === repair.id)
-      .map((quote: any) => ({
-        number: quote.number,
-        status: quote.status,
-        totalTtc: quote.totalTtc ?? quote.totalAmount ?? 0,
-        previewUrl: quote.publicUrl || "",
-        downloadUrl: documents.find((d: any) => d.quoteId === quote.id && d.type === "quote")?.fileUrl || undefined,
-      })),
-    invoiceLinks: invoices
-      .filter((invoice: any) => invoice.repairId === repair.id)
-      .map((invoice: any) => ({
-        number: invoice.number,
-        status: invoice.status,
-        totalTtc: (invoice.lines ?? []).reduce((sum: number, line: any) => sum + (line.total ?? 0), 0),
-        previewUrl: invoice.publicUrl || "",
-        downloadUrl:
-          documents.find((d: any) => d.invoiceId === invoice.id && d.type === "invoice")?.fileUrl || undefined,
-      })),
-    receiptLinks: payments
-      .filter((payment: any) => payment.repairId === repair.id && payment.status === "Payé")
-      .map((payment: any) => ({
-        number: payment.paymentNumber,
-        status: payment.status,
-        amount: payment.amount,
-        previewUrl: payment.publicUrl || "",
-        downloadUrl:
-          documents.find((d: any) => d.paymentId === payment.id && d.type === "payment")?.fileUrl || undefined,
-      })),
-  };
-}
-
-async function readPublicRepairFromSnapshots(token: string): Promise<PublicRepairDto | null> {
-  const supabase = getSupabase();
-  if (!supabase) return null;
-
-  const filtered = await supabase
-    .from("workshop_snapshots")
-    .select("workshop_name,state,updated_at")
-    .contains("state", { repairs: [{ publicAccess: { token } }] })
-    .order("updated_at", { ascending: false })
-    .limit(5);
-
-  const rows =
-    filtered.data && filtered.data.length
-      ? filtered.data
-      : (
-          await supabase
-            .from("workshop_snapshots")
-            .select("workshop_name,state,updated_at")
-            .order("updated_at", { ascending: false })
-            .limit(50)
-        ).data;
-
-  for (const row of rows ?? []) {
-    const data = snapshotToPublicRepair((row as any).state, token, (row as any).workshop_name);
-    if (data) return data;
-  }
-  return null;
 }
 
 function notFound(shopName?: string) {
@@ -282,7 +98,7 @@ function notFound(shopName?: string) {
   return (
     <div className="grid min-h-screen place-items-center px-6" style={{ background: COLORS.bg, color: COLORS.text }}>
       <div
-        className="w-full max-w-[420px] rounded-[22px] border bg-white p-8 text-center shadow-[0_18px_50px_rgba(26,25,22,0.06)]"
+        className="w-full max-w-[420px] rounded-[22px] border bg-white p-8 text-center shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
         style={{ borderColor: COLORS.border }}
       >
         <span
@@ -333,7 +149,6 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
     let cancelled = false;
     setLoadingRemote(true);
     readPublicRepairFromApi(token)
-      .then((apiData) => apiData ?? readPublicRepairFromSnapshots(token))
       .then((data) => {
         if (!cancelled) setRemote(data ?? null);
       })
@@ -359,118 +174,14 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
 
   const data = useMemo(() => {
     // Si le dossier est présent dans le store local (poste de l'atelier), on l'utilise en priorité :
-    // c'est toujours la source la plus fraîche (messages/documents qui viennent d'être créés).
+    // c'est toujours la source la plus fraîche, mais on passe par un DTO public strict.
     // Pour un client sur un autre appareil, il n'y a pas de localRepair → on retombe sur le remote (Supabase).
     if (!localRepair) return remote ?? null;
-    const customer = customers.find((entry) => entry.id === localRepair.customerId);
-    const billingWorkshop = getBillingWorkshopInfo(ws, localRepair.billingCountry);
-    const shopName = resolveShopName([
-      billingWorkshop.commercialName,
-      billingWorkshop.name,
-      billingWorkshop.brand,
-    ]);
-    const countryConfig = getWorkshopCountryConfig(billingWorkshop.country);
-    return {
-      workshop: {
-        name: shopName,
-        logoUrl: billingWorkshop.showLogo ? billingWorkshop.logoUrl : undefined,
-        phone: billingWorkshop.phone || undefined,
-        email: billingWorkshop.email || undefined,
-        address: billingWorkshop.address || undefined,
-        postalCode: billingWorkshop.postalCode || undefined,
-        city: billingWorkshop.postalCity || billingWorkshop.city || undefined,
-        country: countryConfig.country,
-        currency: countryConfig.currency,
-        locale: countryConfig.locale,
-        canton: countryConfig.country === "CH" ? billingWorkshop.swissCanton || undefined : undefined,
-        businessId:
-          countryConfig.country === "CH"
-            ? billingWorkshop.swissUid || undefined
-            : billingWorkshop.siret || undefined,
-        vatNumber:
-          countryConfig.country === "CH"
-            ? billingWorkshop.swissVatNumber || undefined
-            : billingWorkshop.tvaNumber || undefined,
-        vatApplicable: Boolean(billingWorkshop.vatApplicable),
-        vatMention: billingWorkshop.tvaMention || undefined,
-      },
-      repair: {
-        number: localRepair.number,
-        status: localRepair.status,
-        statusLabel: localRepair.status,
-        deviceBrand: localRepair.brandName,
-        deviceModel: localRepair.deviceModel || localRepair.device,
-        deviceType: localRepair.deviceType,
-        issueDescription: localRepair.issue,
-        createdAt: localRepair.droppedAt,
-        updatedAt: localRepair.updatedAt || localRepair.droppedAt,
-      },
-      client: { displayName: customer?.name || "Client" },
-      timeline: localRepair.history.map((title) => ({
-        title,
-        date: localRepair.updatedAt || localRepair.droppedAt,
-        visibility: "client" as const,
-      })),
-      documents: documents
-        .filter((doc) => doc.repairId === localRepair.id && doc.type !== "internal")
-        .map((doc) => ({
-          type: doc.type,
-          title: doc.title,
-          number:
-            quotes.find((quote) => quote.id === doc.quoteId)?.number ||
-            invoices.find((invoice) => invoice.id === doc.invoiceId)?.number ||
-            payments.find((payment) => payment.id === doc.paymentId)?.paymentNumber ||
-            (doc.type === "intake" ? localRepair.number : undefined),
-          status: "ready",
-          previewUrl: getPublicDocumentUrl(doc),
-          downloadUrl: doc.fileUrl || undefined,
-        })),
-      messages: (localRepair.messages ?? [])
-        .filter((message) => message.visibility === "client")
-        .map((message) => ({
-          authorType: message.authorType,
-          authorName: message.authorName,
-          body: message.body,
-          createdAt: message.createdAt,
-        })),
-      quoteLinks: quotes
-        .filter((quote) => quote.repairId === localRepair.id)
-        .map((quote) => {
-          const document = documents.find((doc) => doc.quoteId === quote.id && doc.type === "quote");
-          return {
-            number: quote.number,
-            status: quote.status,
-            totalTtc: quote.totalTtc ?? quote.totalAmount ?? 0,
-            previewUrl: document ? getPublicDocumentUrl(document) : "",
-            downloadUrl: document?.fileUrl || undefined,
-          };
-        }),
-      invoiceLinks: invoices
-        .filter((invoice) => invoice.repairId === localRepair.id)
-        .map((invoice) => {
-          const document = documents.find((doc) => doc.invoiceId === invoice.id && doc.type === "invoice");
-          return {
-            number: invoice.number,
-            status: invoice.status,
-            totalTtc: invoice.lines.reduce((sum, line) => sum + line.total, 0),
-            previewUrl: document ? getPublicDocumentUrl(document) : "",
-            downloadUrl: document?.fileUrl || undefined,
-          };
-        }),
-      receiptLinks: payments
-        .filter((payment) => payment.repairId === localRepair.id && payment.status === "Payé")
-        .map((payment) => {
-          const document = documents.find((doc) => doc.paymentId === payment.id && doc.type === "payment");
-          return {
-            number: payment.paymentNumber,
-            status: payment.status,
-            amount: payment.amount,
-            previewUrl: document ? getPublicDocumentUrl(document) : "",
-            downloadUrl: document?.fileUrl || undefined,
-          };
-        }),
-    } satisfies PublicRepairDto;
-  }, [customers, documents, invoices, localRepair, payments, quotes, remote, ws]);
+    return buildPublicRepairDtoFromLocalState(
+      { customers, documents, invoices, payments, quotes, repairs, workshopInfo: ws, workshopSettings: ws },
+      token,
+    );
+  }, [customers, documents, invoices, localRepair, payments, quotes, remote, repairs, token, ws]);
 
   const publicUrl = useMemo(() => {
     if (localRepair?.publicAccess?.url) return publicAbsoluteUrl(localRepair.publicAccess.url);
@@ -525,12 +236,12 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
         })),
       );
     }
-    if (!hasType("payment_receipt")) {
+    if (!hasType("payment") && !hasType("payment_confirmation") && !hasType("payment_receipt")) {
       rows.push(
         ...data.receiptLinks.map((receipt) => ({
           key: `receipt:${receipt.number}`,
-          type: "payment_receipt",
-          title: `Reçu ${receipt.number} - ${formatMoney(receipt.amount, data.workshop.currency)}`,
+          type: "payment_confirmation",
+          title: `Confirmation de règlement — encaissé hors Behar Tech Pro - ${formatMoney(receipt.amount, data.workshop.currency)}`,
           status: receipt.status,
           number: receipt.number,
           previewUrl: receipt.previewUrl,
@@ -543,7 +254,7 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
       const linkedInvoice =
         row.type === "invoice" ? invoices.find((invoice) => invoice.number === row.number) : undefined;
       const linkedPayment =
-        row.type === "payment_receipt"
+        row.type === "payment" || row.type === "payment_confirmation" || row.type === "payment_receipt"
           ? payments.find((payment) => payment.paymentNumber === row.number)
           : undefined;
       const localDocument = localRepair
@@ -552,13 +263,15 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
             if (linkedQuote) return document.quoteId === linkedQuote.id;
             if (linkedInvoice) return document.invoiceId === linkedInvoice.id;
             if (linkedPayment) return document.paymentId === linkedPayment.id;
-            if (row.type === "payment_receipt") return document.type === "payment";
+            if (row.type === "payment" || row.type === "payment_confirmation" || row.type === "payment_receipt") {
+              return document.type === "payment";
+            }
             return document.type === row.type;
           })
         : undefined;
       const localTarget = localDocument ? getPrintableTarget(localDocument) : null;
       const filenameType =
-        row.type === "payment_receipt"
+        row.type === "payment" || row.type === "payment_confirmation" || row.type === "payment_receipt"
           ? "payment"
           : row.type === "repair_intake"
             ? "intake"
@@ -577,7 +290,10 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
   }, [data, documents, invoices, localRepair, payments, quotes]);
 
   useEffect(() => {
-    if (publicUrl) generateQrDataUrl(publicUrl).then(setQr).catch(() => setQr(""));
+    if (publicUrl)
+      generateQrDataUrl(publicUrl)
+        .then(setQr)
+        .catch(() => setQr(""));
   }, [publicUrl]);
 
   const send = async () => {
@@ -585,7 +301,12 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
     if (!body || !data) return;
     // Dossier dans le store local (poste atelier) → on écrit directement, c'est instantané et persisté.
     if (localRepair) {
-      addRepairMessage(localRepair.id, { body, visibility: "client", authorType: "client", authorName: data.client.displayName });
+      addRepairMessage(localRepair.id, {
+        body,
+        visibility: "client",
+        authorType: "client",
+        authorName: data.client.displayName,
+      });
     } else if (remote) {
       const response = await fetch(`/api/public/repairs/${encodeURIComponent(token)}/messages`, {
         method: "POST",
@@ -593,8 +314,8 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
         body: JSON.stringify({ body, authorName: data.client.displayName }),
       }).catch(() => null);
       if (response?.ok) {
-        const fresh = await fetch(`/api/public/repairs/${encodeURIComponent(token)}`, { cache: "no-store" }).then((r) =>
-          r.ok ? r.json() : null,
+        const fresh = await fetch(`/api/public/repairs/${encodeURIComponent(token)}`, { cache: "no-store" }).then(
+          (r) => (r.ok ? r.json() : null),
         );
         if (fresh) setRemote(fresh);
       }
@@ -615,10 +336,7 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
 
   if ((loadingRemote && !hydrated) || (!token && !hydrated)) {
     return (
-      <div
-        className="grid min-h-screen place-items-center"
-        style={{ background: COLORS.bg, color: COLORS.sub }}
-      >
+      <div className="grid min-h-screen place-items-center" style={{ background: COLORS.bg, color: COLORS.sub }}>
         Chargement…
       </div>
     );
@@ -628,8 +346,9 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
 
   const shopName = resolveShopName([data.workshop.name]);
   const initials = shopInitials(shopName);
-  const active = statusStep(data.repair.status);
-  const [title, body] = headline(data.repair.status);
+  const progress = publicRepairProgress(data.repair.status);
+  const active = progress.activeStepIndex;
+  const [title, body] = publicRepairHeadline(data.repair.status);
   const shortLink = publicUrl.replace(/^https?:\/\//, "");
   const contactHref = data.workshop.phone ? `tel:${data.workshop.phone}` : "#messages";
 
@@ -659,14 +378,16 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
               <span className="truncate font-semibold text-[15px] tracking-tight">{shopName}</span>
             </header>
 
-            <h1 className="mt-6 font-bold text-[26px] leading-tight tracking-tight">Suivi de votre réparation</h1>
+            <h1 className="mt-6 font-bold text-[26px] leading-tight tracking-tight">
+              {publicRepairPageTitle(data.repair.status)}
+            </h1>
             <p className="mt-1.5 text-[14px]" style={{ color: COLORS.sub }}>
               {shopName} vous tient informé à chaque étape.
             </p>
 
             {/* Carte dossier */}
             <section
-              className="mt-5 rounded-[20px] border bg-white p-5 shadow-[0_10px_30px_rgba(26,25,22,0.04)]"
+              className="mt-5 rounded-[20px] border bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
               style={{ borderColor: COLORS.border }}
             >
               <div className="flex items-center justify-between gap-3">
@@ -675,13 +396,14 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
                   className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-semibold text-[12px]"
                   style={{ background: "#FFFFFF", color: "#1E7A6E" }}
                 >
-                  <span className="size-2 rounded-full" style={{ background: COLORS.accent }} /> {data.repair.statusLabel}
+                  <span className="size-2 rounded-full" style={{ background: COLORS.accent }} />{" "}
+                  {data.repair.statusLabel}
                 </span>
               </div>
               <div className="mt-4 grid gap-4 sm:grid-cols-[104px_1fr] sm:items-center">
                 <RealDeviceVisual
                   brand={data.repair.deviceBrand}
-                  className="size-[104px] rounded-[18px] border border-[#E8E8E5] bg-[#FFFFFF] p-2 shadow-[0_10px_24px_rgba(26,25,22,0.045)]"
+                  className="size-[104px] rounded-[18px] border border-[#E8E8E5] bg-[#FFFFFF] p-2 shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
                   model={data.repair.deviceModel}
                   type={data.repair.deviceType}
                 />
@@ -706,20 +428,32 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
 
             {/* Timeline étapes — avec date/heure quand disponible */}
             <section
-              className="mt-4 rounded-[20px] border bg-white p-5 shadow-[0_10px_30px_rgba(26,25,22,0.04)]"
+              className="mt-4 rounded-[20px] border bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
               style={{ borderColor: COLORS.border }}
             >
               <div className="grid grid-cols-5">
-                {STEP_LABELS.map((label, index) => {
-                  const done = index < active;
-                  const current = index === active;
-                  const sourceDate =
-                    index === 0 ? data.repair.createdAt : current ? data.repair.updatedAt : undefined;
-                  const day = done && index !== 0 ? "—" : index > active ? "À venir" : formatDayShort(sourceDate) || "—";
+                {PUBLIC_REPAIR_TIMELINE_STEPS.map((label, index) => {
+                  const done = progress.isFinished ? index <= active : !progress.isCancelled && index < active;
+                  const current = !progress.isFinished && !progress.isCancelled && index === active;
+                  const sourceDate = index === 0 ? data.repair.createdAt : current ? data.repair.updatedAt : undefined;
+                  const day =
+                    progress.isCancelled
+                      ? index === 0
+                        ? formatDayShort(data.repair.createdAt) || "—"
+                        : "Annulé"
+                      : progress.isFinished && index <= active
+                        ? index === 0
+                          ? formatDayShort(data.repair.createdAt) || "—"
+                          : formatDayShort(data.repair.updatedAt) || "—"
+                        : done && index !== 0
+                          ? "—"
+                          : index > active
+                            ? "À venir"
+                            : formatDayShort(sourceDate) || "—";
                   const time = index === 0 || current ? formatTimeShort(sourceDate) : "";
                   return (
                     <div key={label} className="relative px-0.5 text-center">
-                      {index < STEP_LABELS.length - 1 ? (
+                      {index < PUBLIC_REPAIR_TIMELINE_STEPS.length - 1 ? (
                         <span
                           className="absolute right-0 left-1/2 top-3.5 h-px"
                           style={{ background: done ? COLORS.accent : "#E2E0DA" }}
@@ -781,7 +515,7 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
 
             {/* Documents */}
             <section
-              className="mt-4 rounded-[20px] border bg-white p-5 shadow-[0_10px_30px_rgba(26,25,22,0.04)]"
+              className="mt-4 rounded-[20px] border bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
               style={{ borderColor: COLORS.border }}
             >
               <h2 className="font-bold text-[15px]">Documents</h2>
@@ -835,9 +569,13 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
                           onClick={() => {
                             if (doc.downloadUrl) {
                               setDownloadingDocument(doc.key);
-                              void downloadPdfUrl(doc.downloadUrl, doc.filename).finally(() =>
-                                setDownloadingDocument(""),
-                              );
+                              void downloadPdfUrl(doc.downloadUrl, doc.filename)
+                                .catch((error) => {
+                                  toast.error(
+                                    `Document impossible à générer : ${error instanceof Error ? error.message : "raison inconnue"}`,
+                                  );
+                                })
+                                .finally(() => setDownloadingDocument(""));
                               return;
                             }
                             if (doc.localTarget) {
@@ -869,7 +607,7 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
             {/* Messages */}
             <section
               id="messages"
-              className="mt-4 rounded-[20px] border bg-white p-5 shadow-[0_10px_30px_rgba(26,25,22,0.04)]"
+              className="mt-4 rounded-[20px] border bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
               style={{ borderColor: COLORS.border }}
             >
               <h2 className="font-bold text-[15px]">Messages</h2>
@@ -885,7 +623,11 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
                     <li key={`${message.createdAt}-${index}`} className="flex items-start gap-3">
                       <span
                         className="grid size-8 shrink-0 place-items-center rounded-full font-bold text-[12px]"
-                        style={isClient ? { background: "#EEF2FF", color: "#4F46E5" } : { background: "#FFFFFF", color: "#1E7A6E" }}
+                        style={
+                          isClient
+                            ? { background: "#EEF2FF", color: "#4F46E5" }
+                            : { background: "#FFFFFF", color: "#1E7A6E" }
+                        }
                       >
                         {isClient ? "V" : initials.slice(0, 1)}
                       </span>
@@ -944,7 +686,7 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
           {/* Colonne droite (desktop) / bas (mobile) — accès rapide + coordonnées */}
           <aside className="space-y-4 lg:sticky lg:top-12">
             <section
-              className="rounded-[22px] border bg-white p-6 text-center shadow-[0_14px_40px_rgba(26,25,22,0.06)]"
+              className="rounded-[22px] border bg-white p-6 text-center shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
               style={{ borderColor: COLORS.border }}
             >
               <span
@@ -984,17 +726,14 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
                   )}
                 </button>
               ) : null}
-              <p
-                className="mt-3 flex items-center justify-center gap-1.5 text-[11.5px]"
-                style={{ color: COLORS.sub }}
-              >
+              <p className="mt-3 flex items-center justify-center gap-1.5 text-[11.5px]" style={{ color: COLORS.sub }}>
                 <ShieldCheck className="size-3.5" style={{ color: COLORS.accent }} /> Lien sécurisé et personnel.
               </p>
             </section>
 
             {[data.workshop.address, data.workshop.city, data.workshop.phone, data.workshop.email].some(Boolean) ? (
               <section
-                className="rounded-[22px] border bg-white p-5 text-[13px] shadow-[0_10px_30px_rgba(26,25,22,0.04)]"
+                className="rounded-[22px] border bg-white p-5 text-[13px] shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
                 style={{ borderColor: COLORS.border }}
               >
                 <p className="font-bold text-[14px]">{shopName}</p>

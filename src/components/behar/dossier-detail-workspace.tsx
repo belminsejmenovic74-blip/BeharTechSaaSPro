@@ -47,13 +47,15 @@ import {
   paymentMethods,
   type Customer,
   type DeviceModel,
+  type Invoice,
   type PaymentMethod,
   type Repair,
   type RepairStatus,
+  type SettlementStatus,
   type StockItem,
   useBeharStore,
 } from "@/lib/behar-store";
-import { getInternalDocumentUrl, getShareableDocumentUrl } from "@/lib/documents/document-actions";
+import { getInternalDocumentUrl, getShareableDocumentUrl, printRepairQr } from "@/lib/documents/document-actions";
 import { isStockItemCompatibleWithRepair } from "./atelier-workspace";
 import { displayCustomerName } from "@/lib/customer-display";
 import { formatDeviceLabel } from "@/lib/format-device";
@@ -61,7 +63,7 @@ import { generateQrDataUrl, publicAbsoluteUrl } from "@/lib/public-link";
 import { cn } from "@/lib/utils";
 
 import { useDocument } from "./print-provider";
-import { PrimaryButton, SecondaryButton, StatusBadge } from "./primitives";
+import { Modal, PrimaryButton, SecondaryButton, StatusBadge } from "./primitives";
 import { TrackingQrModal } from "./tracking-qr-modal";
 
 const progression: RepairStatus[] = [
@@ -139,13 +141,34 @@ const docLabel: Record<string, string> = {
   intake: "Bon de prise en charge",
   quote: "Devis",
   invoice: "Facture",
-  payment: "Reçu de paiement",
+  payment: "Confirmation de règlement",
   internal: "Fiche intervention interne",
   summary: "Rapport final",
-  "sale-receipt": "Reçu de paiement",
-  "sale-invoice": "Reçu de paiement",
+  "sale-receipt": "Justificatif de vente",
+  "sale-invoice": "Facture de vente",
   diagnostic_report: "Rapport diagnostic",
 };
+
+const settlementStatuses: SettlementStatus[] = ["Non réglé", "Partiellement réglé", "Réglé"];
+
+const settlementMethods: PaymentMethod[] = [
+  "Espèces",
+  "Carte bancaire via SumUp",
+  "Carte bancaire via Stripe Terminal",
+  "Lien de paiement Stripe",
+  "Virement bancaire",
+  "Chèque",
+  "Revolut",
+  "PayPal",
+  "Autre",
+];
+
+function todayInputValue() {
+  const date = new Date();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
 
 function cleanDossierId(value?: string | null) {
   const id = (value ?? "").trim();
@@ -172,7 +195,28 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
   const [notesFocus, setNotesFocus] = useState<"internal" | "client" | null>(null);
   const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null);
   const [viewingMobileDoc, setViewingMobileDoc] = useState<any | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("TPE externe");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("" as PaymentMethod);
+  const [settlementModalOpen, setSettlementModalOpen] = useState(false);
+  const [closureModalOpen, setClosureModalOpen] = useState(false);
+  const [settlementDraft, setSettlementDraft] = useState<{
+    status: SettlementStatus;
+    amount: string;
+    date: string;
+    method: PaymentMethod;
+    customMethod: string;
+    externalReference: string;
+    note: string;
+    confirmExternal: boolean;
+  }>({
+    status: "Réglé",
+    amount: "0",
+    date: todayInputValue(),
+    method: "" as PaymentMethod,
+    customMethod: "",
+    externalReference: "",
+    note: "",
+    confirmExternal: false,
+  });
   const resolvedDossierId = cleanDossierId(dossierId) || browserDossierId;
 
   useEffect(() => {
@@ -291,12 +335,37 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
   };
 
   const indicatePayment = () => {
-    const targetInvoice = invoice ?? store.invoices.find((entry) => entry.repairId === repair.id);
-    if (!targetInvoice) return toast.info("Créez d'abord une facture.");
-    if (targetInvoice.status === "Payée") return toast.info("La facture est déjà réglée.");
-    const id = store.markInvoicePaid(targetInvoice.id, paymentMethod, `Règlement indiqué depuis le dossier ${repair.number}`);
-    if (!id) return toast.error("Règlement impossible à indiquer.");
-    toast.success("Règlement indiqué.");
+    setSettlementDraft((draft) => ({
+      ...draft,
+      amount: String(Math.max(dossierTotal - paidAmount, 0) || dossierTotal || repair.amount || 0),
+      date: todayInputValue(),
+      method: settlementMethods.includes(paymentMethod) ? paymentMethod : ("" as PaymentMethod),
+      customMethod: "",
+      status: paidAmount > 0 && paidAmount < dossierTotal ? "Partiellement réglé" : "Réglé",
+      confirmExternal: false,
+    }));
+    setSettlementModalOpen(true);
+  };
+
+  const submitSettlement = () => {
+    const amount = Number.parseFloat(settlementDraft.amount.replace(",", "."));
+    const id = store.recordRepairSettlement(repair.id, {
+      status: settlementDraft.status,
+      amount: Number.isFinite(amount) ? amount : 0,
+      date: settlementDraft.date,
+      method: settlementDraft.method,
+      customMethod: settlementDraft.customMethod,
+      externalReference: settlementDraft.externalReference,
+      note: settlementDraft.note,
+      confirmExternal: settlementDraft.confirmExternal,
+    });
+    if (!id) {
+      toast.error("Règlement impossible à indiquer : confirmez l'encaissement hors Behar Tech Pro.");
+      return;
+    }
+    setPaymentMethod(settlementDraft.method);
+    setSettlementModalOpen(false);
+    toast.success("Règlement indiqué hors Behar Tech Pro.");
   };
 
   const advance = () => {
@@ -307,10 +376,39 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
   };
 
   const closeDossier = () => {
-    const ok = window.confirm("Confirmez-vous le retrait de l'appareil et la clôture du dossier ?");
-    if (!ok) return;
-    store.changeRepairStatus(repair.id, "Rendu");
-    toast.success("Dossier marqué comme rendu.");
+    // Open the closure + settlement modal instead of window.confirm
+    setSettlementDraft((draft) => ({
+      ...draft,
+      amount: String(dossierTotal || repair.amount || 0),
+      date: todayInputValue(),
+      method: settlementMethods.includes(paymentMethod) ? paymentMethod : ("" as PaymentMethod),
+      customMethod: "",
+      status: paidAmount > 0 && paidAmount >= dossierTotal ? "Réglé" : paidAmount > 0 ? "Partiellement réglé" : "Non réglé",
+      confirmExternal: false,
+      externalReference: "",
+      note: "",
+    }));
+    setClosureModalOpen(true);
+  };
+
+  const submitClosure = () => {
+    const amount = Number.parseFloat(settlementDraft.amount.replace(",", "."));
+    const ok = store.closeDossierWithSettlement(repair.id, {
+      status: settlementDraft.status,
+      amount: Number.isFinite(amount) ? amount : 0,
+      date: settlementDraft.date,
+      method: settlementDraft.method,
+      customMethod: settlementDraft.customMethod,
+      externalReference: settlementDraft.externalReference,
+      note: settlementDraft.note,
+      confirmExternal: settlementDraft.confirmExternal,
+    });
+    if (!ok) {
+      toast.error("Clôture impossible. Vérifiez les informations de règlement.");
+      return;
+    }
+    setClosureModalOpen(false);
+    toast.success("Dossier clôturé avec succès.");
   };
 
   const activeIndex = Math.max(0, progression.indexOf(repair.status));
@@ -422,10 +520,11 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
                 onCreate={createInvoice}
                 onPayment={indicatePayment}
                 paymentMethod={paymentMethod}
+                paymentSummary={repair.paymentMethodNote}
                 setPaymentMethod={setPaymentMethod}
               />
             )}
-            {tab === "Documents" && <DocumentsTab documents={documents} download={download} print={print} />}
+            {tab === "Documents" && <DocumentsTab documents={documents} download={download} print={print} repair={repair} />}
             {tab === "Notes" && <NotesTab focus={notesFocus} onFocusHandled={() => setNotesFocus(null)} repair={repair} />}
             {tab === "Historique" && <HistoryTab items={activity} />}
           </section>
@@ -504,6 +603,7 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
               onCreate={createInvoice} 
               onPayment={indicatePayment} 
               paymentMethod={paymentMethod} 
+              paymentSummary={repair.paymentMethodNote}
               setPaymentMethod={setPaymentMethod} 
               formatDossier={formatDossier} 
               setViewingMobileDoc={setViewingMobileDoc}
@@ -562,7 +662,185 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
           />
         )}
       </div>
+
+      <SettlementModal
+        draft={settlementDraft}
+        isOpen={settlementModalOpen}
+        onClose={() => setSettlementModalOpen(false)}
+        onDraftChange={setSettlementDraft}
+        onSubmit={submitSettlement}
+        total={dossierTotal}
+      />
+      <ClosureSettlementModal
+        draft={settlementDraft}
+        isOpen={closureModalOpen}
+        onClose={() => setClosureModalOpen(false)}
+        onDraftChange={setSettlementDraft}
+        onSubmit={submitClosure}
+        repair={repair}
+        customer={customer}
+        invoice={invoice}
+        total={dossierTotal}
+      />
     </>
+  );
+}
+
+function SettlementModal({
+  draft,
+  isOpen,
+  onClose,
+  onDraftChange,
+  onSubmit,
+  total,
+}: Readonly<{
+  draft: {
+    status: SettlementStatus;
+    amount: string;
+    date: string;
+    method: PaymentMethod;
+    customMethod: string;
+    externalReference: string;
+    note: string;
+    confirmExternal: boolean;
+  };
+  isOpen: boolean;
+  onClose: () => void;
+  onDraftChange: (draft: {
+    status: SettlementStatus;
+    amount: string;
+    date: string;
+    method: PaymentMethod;
+    customMethod: string;
+    externalReference: string;
+    note: string;
+    confirmExternal: boolean;
+  }) => void;
+  onSubmit: () => void;
+  total: number;
+}>) {
+  const patch = (partial: Partial<typeof draft>) => onDraftChange({ ...draft, ...partial });
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Indiquer le règlement" maxWidth="max-w-2xl">
+      <div className="space-y-5">
+        <div className="rounded-[14px] border border-[#E8E8E5] bg-white p-4">
+          <p className="text-[#6B6B6B] text-xs">Total dossier</p>
+          <p className="mt-1 font-bold text-[#1A1916] text-xl">{formatEuro(total)}</p>
+          <p className="mt-2 text-[#6B6B6B] text-xs leading-relaxed">
+            Paiement enregistré manuellement. Encaissement effectué hors Behar Tech Pro via le prestataire ou le moyen
+            de paiement sélectionné.
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="grid gap-1.5 text-sm">
+            <span className="font-semibold text-[#1A1916]">Statut</span>
+            <select
+              className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
+              onChange={(event) => patch({ status: event.target.value as SettlementStatus })}
+              value={draft.status}
+            >
+              {settlementStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1.5 text-sm">
+            <span className="font-semibold text-[#1A1916]">Montant réglé</span>
+            <input
+              className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
+              inputMode="decimal"
+              onChange={(event) => patch({ amount: event.target.value })}
+              type="text"
+              value={draft.amount}
+            />
+          </label>
+          <label className="grid gap-1.5 text-sm">
+            <span className="font-semibold text-[#1A1916]">Date du règlement</span>
+            <input
+              className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
+              onChange={(event) => patch({ date: event.target.value })}
+              type="date"
+              value={draft.date}
+            />
+          </label>
+          <label className="grid gap-1.5 text-sm">
+            <span className="font-semibold text-[#1A1916]">Moyen de paiement</span>
+            <select
+              className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
+              onChange={(event) => patch({ method: event.target.value as PaymentMethod })}
+              value={draft.method}
+            >
+              <option value="" disabled>Sélectionner...</option>
+              {settlementMethods.map((method) => (
+                <option key={method} value={method}>
+                  {method}
+                </option>
+              ))}
+            </select>
+          </label>
+          {draft.method === "Autre" && (
+            <label className="grid gap-1.5 text-sm md:col-span-2">
+              <span className="font-semibold text-[#1A1916]">Préciser le moyen de paiement</span>
+              <input
+                className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
+                onChange={(event) => patch({ customMethod: event.target.value })}
+                type="text"
+                value={draft.customMethod}
+                placeholder="Ex: Chèque cadeau, Bon d'achat..."
+              />
+            </label>
+          )}
+          <label className="grid gap-1.5 text-sm md:col-span-2">
+            <span className="font-semibold text-[#1A1916]">Référence externe facultative</span>
+            <input
+              className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
+              onChange={(event) => patch({ externalReference: event.target.value })}
+              placeholder="ID transaction SumUp, ID paiement Stripe, référence virement, numéro chèque..."
+              type="text"
+              value={draft.externalReference}
+            />
+          </label>
+          <label className="grid gap-1.5 text-sm md:col-span-2">
+            <span className="font-semibold text-[#1A1916]">Note interne</span>
+            <textarea
+              className="min-h-[84px] rounded-[12px] border border-[#E8E8E5] bg-white px-3 py-2 outline-none focus:border-[#2A9D8F]"
+              onChange={(event) => patch({ note: event.target.value })}
+              placeholder="Note facultative..."
+              value={draft.note}
+            />
+          </label>
+        </div>
+
+        <label className="flex items-start gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-4 text-sm">
+          <input
+            checked={draft.confirmExternal}
+            className="mt-1 size-4 accent-[#2A9D8F]"
+            onChange={(event) => patch({ confirmExternal: event.target.checked })}
+            type="checkbox"
+          />
+          <span className="font-semibold text-[#1A1916]">
+            Je confirme que le paiement a été encaissé hors Behar Tech Pro.
+          </span>
+        </label>
+
+        <p className="rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] p-3 text-[#6B6B6B] text-xs leading-relaxed">
+          Ce document ne remplace pas une facture. La facture reste le document comptable officiel.
+        </p>
+
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <SecondaryButton className="justify-center" onClick={onClose}>
+            Annuler
+          </SecondaryButton>
+          <PrimaryButton className="justify-center" onClick={onSubmit}>
+            Enregistrer le règlement
+          </PrimaryButton>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -574,6 +852,223 @@ function HeaderCol({ className, label, value }: Readonly<{ label: string; value:
       <p className="text-[#6B6B6B] text-xs">{label}</p>
       <p className="mt-1 truncate font-medium text-[#1A1916] text-sm">{value}</p>
     </div>
+  );
+}
+
+function ClosureSettlementModal({
+  draft,
+  isOpen,
+  onClose,
+  onDraftChange,
+  onSubmit,
+  repair,
+  customer,
+  invoice,
+  total,
+}: Readonly<{
+  draft: {
+    status: SettlementStatus;
+    amount: string;
+    date: string;
+    method: PaymentMethod;
+    customMethod: string;
+    externalReference: string;
+    note: string;
+    confirmExternal: boolean;
+  };
+  isOpen: boolean;
+  onClose: () => void;
+  onDraftChange: (draft: {
+    status: SettlementStatus;
+    amount: string;
+    date: string;
+    method: PaymentMethod;
+    customMethod: string;
+    externalReference: string;
+    note: string;
+    confirmExternal: boolean;
+  }) => void;
+  onSubmit: () => void;
+  repair: Repair;
+  customer?: Pick<Customer, "name" | "phone">;
+  invoice?: Invoice;
+  total: number;
+}>) {
+  const patch = (partial: Partial<typeof draft>) => onDraftChange({ ...draft, ...partial });
+  
+  const isPaid = draft.status === "Réglé" || draft.status === "Partiellement réglé";
+  const canSubmit = !isPaid || (draft.method && draft.confirmExternal && Number(draft.amount.replace(",", ".")) > 0);
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Clôture & règlement" maxWidth="max-w-2xl">
+      <div className="space-y-6">
+        {/* Résumé dossier */}
+        <section className="rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA] p-4 text-sm">
+          <h3 className="font-semibold text-[#1A1916] mb-3">Résumé du dossier</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <span className="text-[#6B6B6B] block text-xs mb-1">Dossier</span>
+              <span className="font-medium">{repair.number}</span>
+            </div>
+            <div>
+              <span className="text-[#6B6B6B] block text-xs mb-1">Client</span>
+              <span className="font-medium">{customer?.name || "Client de passage"}</span>
+            </div>
+            <div>
+              <span className="text-[#6B6B6B] block text-xs mb-1">Appareil</span>
+              <span className="font-medium">
+                {[repair.brandName, repair.deviceModel].filter(Boolean).join(" ") || repair.device || "Appareil"}
+              </span>
+            </div>
+            <div>
+              <span className="text-[#6B6B6B] block text-xs mb-1">Total TTC</span>
+              <span className="font-bold text-[#1A1916] text-base">{formatEuro(total)}</span>
+            </div>
+          </div>
+          {invoice && (
+            <div className="mt-3 pt-3 border-t border-[#E8E8E5]">
+              <span className="text-[#6B6B6B] text-xs">Facture liée : </span>
+              <span className="font-medium">{invoice.number}</span>
+            </div>
+          )}
+        </section>
+
+        {/* Statut règlement */}
+        <section>
+          <h3 className="font-semibold text-[#1A1916] mb-3 text-sm">Statut du règlement</h3>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {(["Non réglé", "Partiellement réglé", "Réglé"] as SettlementStatus[]).map((status) => (
+              <button
+                key={status}
+                type="button"
+                onClick={() => {
+                  patch({ 
+                    status,
+                    amount: status === "Non réglé" ? "0" : String(total),
+                    method: status === "Non réglé" ? ("" as PaymentMethod) : draft.method,
+                    confirmExternal: status === "Non réglé" ? false : draft.confirmExternal
+                  });
+                }}
+                className={cn(
+                  "flex items-center justify-center gap-2 rounded-[12px] border h-11 px-3 text-sm font-medium transition-colors",
+                  draft.status === status
+                    ? "border-[#2A9D8F] bg-[#E9F4F3] text-[#167B70]"
+                    : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:bg-[#FAFAFA]"
+                )}
+              >
+                {draft.status === status && <CheckCircle2 className="size-4" />}
+                {status}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {isPaid && (
+          <div className="space-y-4 rounded-[14px] border border-[#E8E8E5] p-4 bg-white shadow-[0_1px_2px_rgba(26,25,22,0.02)]">
+            <h3 className="font-semibold text-[#1A1916] text-sm">Informations d'encaissement</h3>
+            
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="grid gap-1.5 text-sm">
+                <span className="font-semibold text-[#1A1916]">Montant réglé (€)</span>
+                <input
+                  className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
+                  inputMode="decimal"
+                  onChange={(event) => patch({ amount: event.target.value })}
+                  type="text"
+                  value={draft.amount}
+                />
+              </label>
+
+              <label className="grid gap-1.5 text-sm">
+                <span className="font-semibold text-[#1A1916]">Moyen de paiement</span>
+                <select
+                  className={cn(
+                    "h-11 rounded-[12px] border bg-white px-3 outline-none focus:border-[#2A9D8F]",
+                    !draft.method ? "border-red-300 ring-1 ring-red-100" : "border-[#E8E8E5]"
+                  )}
+                  onChange={(event) => patch({ method: event.target.value as PaymentMethod })}
+                  value={draft.method}
+                >
+                  <option value="" disabled>Sélectionner...</option>
+                  {settlementMethods.map((method) => (
+                    <option key={method} value={method}>
+                      {method}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {draft.method === "Autre" && (
+                <label className="grid gap-1.5 text-sm sm:col-span-2">
+                  <span className="font-semibold text-[#1A1916]">Préciser le moyen de paiement</span>
+                  <input
+                    className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
+                    onChange={(event) => patch({ customMethod: event.target.value })}
+                    type="text"
+                    value={draft.customMethod}
+                    placeholder="Ex: Chèque cadeau..."
+                  />
+                </label>
+              )}
+
+              <label className="grid gap-1.5 text-sm">
+                <span className="font-semibold text-[#1A1916]">Date</span>
+                <input
+                  className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
+                  onChange={(event) => patch({ date: event.target.value })}
+                  type="date"
+                  value={draft.date}
+                />
+              </label>
+
+              <label className="grid gap-1.5 text-sm">
+                <span className="font-semibold text-[#1A1916]">Réf. externe (facultatif)</span>
+                <input
+                  className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
+                  onChange={(event) => patch({ externalReference: event.target.value })}
+                  type="text"
+                  placeholder="N° transaction..."
+                  value={draft.externalReference}
+                />
+              </label>
+            </div>
+
+            <label className="mt-4 flex items-start gap-3 rounded-[12px] bg-[#FEFBF6] p-3 border border-[#F3E8C8] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={draft.confirmExternal}
+                onChange={(e) => patch({ confirmExternal: e.target.checked })}
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-[#2A9D8F] focus:ring-[#2A9D8F]"
+              />
+              <span className="text-sm font-medium text-[#B48421]">
+                Je confirme que ce paiement a bien été encaissé hors de l'application Behar Tech Pro.
+              </span>
+            </label>
+          </div>
+        )}
+
+        <div className="flex gap-3 pt-4 border-t border-[#E8E8E5]">
+          <button
+            className="flex h-11 flex-1 items-center justify-center rounded-[12px] border border-[#E8E8E5] bg-white font-semibold text-[#1A1916] text-sm hover:bg-[#FAFAFA]"
+            onClick={onClose}
+            type="button"
+          >
+            Annuler
+          </button>
+          <PrimaryButton 
+            className="flex-1" 
+            onClick={onSubmit} 
+            disabled={!canSubmit}
+          >
+            {draft.status === "Non réglé" 
+              ? "Clôturer sans règlement" 
+              : draft.status === "Réglé" 
+                ? "Clôturer et marquer réglé" 
+                : "Clôturer (règlement partiel)"}
+          </PrimaryButton>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -1374,6 +1869,7 @@ function InvoiceTab({
   onCreate,
   onPayment,
   paymentMethod,
+  paymentSummary,
   setPaymentMethod,
 }: Readonly<{
   invoice?: { id: string; number: string; status: string; lines: any[] };
@@ -1381,6 +1877,7 @@ function InvoiceTab({
   onCreate: () => void;
   onPayment: () => void;
   paymentMethod: PaymentMethod;
+  paymentSummary?: string;
   setPaymentMethod: (method: PaymentMethod) => void;
 }>) {
   const store = useBeharStore();
@@ -1399,6 +1896,11 @@ function InvoiceTab({
           title={`Facture ${entry.number}`}
         />
       ))}
+      {paymentSummary ? (
+        <div className="rounded-[14px] border border-[#D7EFEA] bg-[#FFFFFF] p-3 text-[#1E7A6E] text-sm font-semibold">
+          {paymentSummary}
+        </div>
+      ) : null}
       <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
         <p className="font-semibold text-[#1A1916]">Moyen de règlement indiqué</p>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -1426,15 +1928,42 @@ function DocumentsTab({
   documents,
   download,
   print,
+  repair,
 }: Readonly<{
   documents: Array<{ id: string; title: string; type: string }>;
   print: (type: any, id: string) => void;
   download: (type: any, id: string) => void;
+  repair: Repair;
 }>) {
   const { preview } = useDocument();
-  if (!documents.length) return <EmptyLinked action="Retour au dossier" onClick={() => undefined} title="Aucun document lié" />;
   return (
     <div className="space-y-3">
+      <div className="flex flex-wrap gap-2 rounded-[16px] border border-[#E8E8E5] bg-white p-4">
+        <SecondaryButton
+          onClick={() => {
+            if (!printRepairQr(repair.id)) toast.error("QR de suivi indisponible.");
+          }}
+        >
+          <QrCode className="size-4" />
+          Imprimer QR suivi
+        </SecondaryButton>
+        <SecondaryButton
+          onClick={async () => {
+            try {
+              const access = repair.publicAccess ?? useBeharStore.getState().ensureRepairPublicAccess(repair.id);
+              if (!access) return toast.error("Lien de suivi indisponible.");
+              await navigator.clipboard.writeText(publicAbsoluteUrl(access.url));
+              toast.success("Lien de suivi client copié.");
+            } catch {
+              toast.error("Copie impossible.");
+            }
+          }}
+        >
+          <Copy className="size-4" />
+          Copier lien suivi client
+        </SecondaryButton>
+      </div>
+      {!documents.length ? <EmptyLinked action="Retour au dossier" onClick={() => undefined} title="Aucun document lié" /> : null}
       {documents.map((document) => {
         const target = getPrintableTarget(document as any);
         return (
@@ -1458,7 +1987,7 @@ function DocumentsTab({
                 }}
               >
                 <ExternalLink className="size-4" />
-                Ouvrir
+                Aperçu
               </SecondaryButton>
               <SecondaryButton disabled={!target} onClick={() => target && print(target.type, target.id)}>
                 <Printer className="size-4" />
@@ -2394,7 +2923,7 @@ function MobileOverviewSection({
                 className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
               >
                 <Receipt className="size-4" />
-                Voir le reçu de paiement
+                Voir la confirmation de règlement
               </button>
             )}
             <button
@@ -3056,6 +3585,7 @@ function MobileInvoiceSection({
   onCreate,
   onPayment,
   paymentMethod,
+  paymentSummary,
   setPaymentMethod,
   formatDossier,
   setViewingMobileDoc,
@@ -3065,6 +3595,7 @@ function MobileInvoiceSection({
   onCreate: () => void;
   onPayment: () => void;
   paymentMethod: PaymentMethod;
+  paymentSummary?: string;
   setPaymentMethod: (method: PaymentMethod) => void;
   formatDossier: (val: number) => string;
   setViewingMobileDoc: (doc: any) => void;
@@ -3111,6 +3642,11 @@ function MobileInvoiceSection({
 
   return (
     <div className="space-y-4">
+      {paymentSummary ? (
+        <div className="rounded-[16px] border border-[#D7EFEA] bg-white p-4 text-[#1E7A6E] text-sm font-bold">
+          {paymentSummary}
+        </div>
+      ) : null}
       {invoices.map((inv) => {
         const doc = store.documents.find(d => d.invoiceId === inv.id && d.type === "invoice");
         return (
@@ -3710,8 +4246,8 @@ function MobileDocumentViewerModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#1A1916]/40 backdrop-blur-md flex flex-col justify-end sm:justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-[#FFFFFF] rounded-t-[28px] sm:rounded-[24px] max-h-[92vh] flex flex-col shadow-[0_-8px_32px_rgba(26,25,22,0.12)] sm:max-w-md sm:w-full sm:mx-auto overflow-hidden animate-in slide-in-from-bottom duration-300">
+    <div className="fixed inset-0 z-50 bg-[#1A1916]/18 flex flex-col justify-end sm:justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+      <div className="bg-[#FFFFFF] rounded-t-[28px] sm:rounded-[24px] max-h-[92vh] flex flex-col shadow-[0_1px_2px_rgba(26,25,22,0.035)] sm:max-w-md sm:w-full sm:mx-auto overflow-hidden animate-in slide-in-from-bottom duration-300">
         
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E8E5] bg-white">
@@ -3902,11 +4438,11 @@ function MobilePhotoLightbox({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 bg-[#1A1916]/95 backdrop-blur-md flex flex-col justify-between animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 bg-[#1A1916] flex flex-col justify-between animate-in fade-in duration-200"
     >
       {/* Top Header */}
       <div className="flex items-center justify-between px-5 py-4 text-white z-10">
-        <span className="text-xs font-bold bg-white px-3 py-1 rounded-full backdrop-blur-sm">
+        <span className="text-xs font-bold bg-white px-3 py-1 rounded-full">
           {activeIndex + 1} / {totalPhotos}
         </span>
         <button
@@ -3950,7 +4486,7 @@ function MobilePhotoLightbox({
       </div>
 
       {/* Footer Info */}
-      <div className="p-6 text-center text-white/80 text-xs bg-gradient-to-t from-black/60 to-transparent">
+      <div className="p-6 text-center text-white/80 text-xs bg-[#1A1916]">
         <p className="font-semibold tracking-wide">
           {currentPhoto.name || currentPhoto.label || "Photo d'entrée"}
         </p>

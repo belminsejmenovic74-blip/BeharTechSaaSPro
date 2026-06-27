@@ -4,6 +4,7 @@ import { AutoSyncProvider } from "@/components/behar/auto-sync-provider";
 import { DashboardSidebar } from "@/components/behar/dashboard-sidebar";
 import { InstallationGate } from "@/components/behar/installation-gate";
 import { MobileTopbar } from "@/components/behar/mobile-topbar";
+import { PermissionRouteGuard } from "@/components/behar/permission-route-guard";
 import { PinLoginGate } from "@/components/behar/pin-login-gate";
 import { PrintProvider } from "@/components/behar/print-provider";
 import { Topbar } from "@/components/behar/topbar";
@@ -21,7 +22,9 @@ export default function Layout({ children }: Readonly<{ children: ReactNode }>) 
                 <Topbar />
               </div>
               <MobileTopbar />
-              <main className="flex-1">{children}</main>
+              <main className="flex-1">
+                <PermissionRouteGuard>{children}</PermissionRouteGuard>
+              </main>
             </div>
           </div>
         </PinLoginGate>

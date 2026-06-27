@@ -53,7 +53,7 @@ const DOC_THEME: Record<
     chipText: "#1A1916",
   },
   recu: {
-    label: "REÇU DE PAIEMENT",
+    label: "CONFIRMATION DE RÈGLEMENT — ENCAISSÉ HORS BEHAR TECH PRO",
     accent: "#2A9D8F",
     soft: "#FFFFFF",
     ink: "#1A1916",
@@ -84,6 +84,16 @@ function text(value: unknown, fallback = "Non renseigné"): string {
 
 function dash(value: unknown): string {
   return text(value, "—");
+}
+
+function paymentMethodLabel(value: unknown): string {
+  const method = dash(value);
+  if (method === "TPE externe") return "Carte bancaire via terminal externe";
+  if (method === "Espèces hors Behar Tech") return "Espèces";
+  if (method === "Carte externe") return "Carte bancaire via terminal externe";
+  if (method === "Virement") return "Virement bancaire";
+  if (method === "Lien externe") return "Lien de paiement externe";
+  return method;
 }
 
 function money(value: unknown, currency?: WorkshopCurrency): string {
@@ -758,10 +768,10 @@ function PaymentHero({
 }: Readonly<{ amount: number; method?: string; date?: string; currency?: WorkshopCurrency }>) {
   return (
     <section className="rounded-[6px] border border-[#2A9D8F] bg-white p-6 text-center">
-      <p className="font-bold text-[#2A9D8F] text-[12px] uppercase tracking-wider">Montant reçu</p>
+      <p className="font-bold text-[#2A9D8F] text-[12px] uppercase tracking-wider">Montant réglé</p>
       <p className="mt-2 font-semibold text-[#1A1916] text-[32px] leading-none">{money(amount, currency)}</p>
       <p className="mt-3 text-[#6B6B6B] text-[12px]">
-        {dash(method)} · {date ? dateLabel(date) : "—"}
+        {paymentMethodLabel(method)} · {date ? dateLabel(date) : "—"}
       </p>
     </section>
   );
@@ -1065,6 +1075,8 @@ function InvoiceLegalMentions({
   const ws = workshop;
   const issuedAt = invoice.date ? dateLabel(invoice.date) : "Non renseignée";
   const paid = invoice.status === "Payée";
+  const partial = !paid && (invoice.paidAmount ?? 0) > 0;
+  const settlementStatus = paid ? "Réglée hors Behar Tech Pro" : partial ? "Partiellement réglée" : "Non réglée";
   const dueLabel = paid ? "Réglée" : "Paiement à réception de facture";
   const serviceDateRaw = invoice.paidAt ?? invoice.date;
   const serviceDate = serviceDateRaw ? dateLabel(serviceDateRaw) : issuedAt;
@@ -1079,13 +1091,18 @@ function InvoiceLegalMentions({
   return (
     <section className="grid gap-4 md:grid-cols-2">
       <div className="rounded-[6px] border border-[#E8E8E8] bg-white p-4">
-        <h3 className="mb-3 font-bold text-[#2A9D8F] text-[11px] uppercase tracking-wider">Conditions de règlement</h3>
+        <h3 className="mb-3 font-bold text-[#2A9D8F] text-[11px] uppercase tracking-wider">Règlement</h3>
         <div className="space-y-1.5 text-[#1A1916] text-[11.5px]">
           <KeyValue label="Date d'émission" value={issuedAt} />
           <KeyValue label="Date de prestation" value={serviceDate} />
           <KeyValue label="Date d'échéance" value={dueLabel} />
-          <KeyValue label="Mode de règlement" value={dash(invoice.paymentMethod)} />
-          {invoice.paidAt ? <KeyValue label="Date de paiement" value={dateLabel(invoice.paidAt)} /> : null}
+          <KeyValue label="Statut" value={settlementStatus} />
+          <KeyValue 
+            label="Moyen de paiement" 
+            value={invoice.paymentMethod === "Autre" && repair?.paymentCustomMethod ? repair.paymentCustomMethod : paymentMethodLabel(invoice.paymentMethod)} 
+          />
+          {invoice.paidAt ? <KeyValue label="Date du règlement" value={dateLabel(invoice.paidAt)} /> : null}
+          {repair?.paymentReference ? <KeyValue label="Référence" value={repair.paymentReference} /> : null}
         </div>
         {ws.country === "FR" ? (
           <p className="mt-3 text-[#6B6B6B] text-[10px] leading-relaxed">
@@ -1176,7 +1193,7 @@ export function PaymentReceiptDocument({
   const isFullSettlement = invoice ? Math.abs(payment.amount - invoiceTotal) < 0.01 : true;
   return (
     <DocumentPage
-      badge={isFullSettlement ? "Acquit pour solde" : "Acompte"}
+      badge={isFullSettlement ? "Réglé hors Behar Tech Pro" : "Règlement partiel"}
       date={payment.date}
       number={payment.paymentNumber}
       type="recu"
@@ -1186,18 +1203,26 @@ export function PaymentReceiptDocument({
       <PaymentHero amount={payment.amount} currency={payment.currency} date={payment.date} method={payment.method} />
       <DocumentSection title="Détails du règlement">
         <KeyValue label="Facture liée" value={dash(invoice?.number)} />
-        <KeyValue label="Référence" value={dash(payment.reference ?? payment.paymentNumber)} />
-        <KeyValue label="Mode" value={dash(payment.method ?? payment.mode)} />
+        <KeyValue label="Dossier lié" value={dash(repair?.number)} />
+        <KeyValue label="Montant réglé" value={money(payment.amount, payment.currency)} />
+        <KeyValue 
+          label="Moyen de paiement" 
+          value={(payment.method ?? payment.mode) === "Autre" && payment.customMethod ? payment.customMethod : paymentMethodLabel(payment.method ?? payment.mode)} 
+        />
+        <KeyValue label="Date du règlement" value={dateLabel(payment.date)} />
+        <KeyValue label="Référence externe" value={dash(payment.externalReference ?? payment.reference)} />
         {payment.method === "TWINT" ? <KeyValue label="Paiement" value="Payé par TWINT" /> : null}
         {payment.method === "TWINT" && payment.twintReference ? (
           <KeyValue label="Référence TWINT" value={dash(payment.twintReference)} />
         ) : null}
         <KeyValue label="Statut" value={dash(payment.status)} />
       </DocumentSection>
-      <NoticeCard title={isFullSettlement ? "Acquit pour solde de tout compte" : "Reçu d'acompte"}>
+      <NoticeCard title="Confirmation de règlement - encaissé hors Behar Tech Pro">
+        Paiement enregistré manuellement. Encaissement effectué hors Behar Tech Pro via le moyen de paiement indiqué. Ce
+        document ne remplace pas une facture. La facture reste le document comptable officiel.
         {isFullSettlement
-          ? `Le présent reçu vaut acquit pour solde de tout compte de la facture ${dash(invoice?.number)}. Aucune somme ne reste due au titre de la prestation associée.`
-          : `Le présent reçu constate un acompte sur la facture ${dash(invoice?.number)}. Le solde restant à régler reste exigible selon les conditions de la facture.`}
+          ? ` Le dossier est indiqué comme réglé pour la facture ${dash(invoice?.number)}.`
+          : ` Le présent document constate un règlement partiel sur la facture ${dash(invoice?.number)}.`}
       </NoticeCard>
     </DocumentPage>
   );

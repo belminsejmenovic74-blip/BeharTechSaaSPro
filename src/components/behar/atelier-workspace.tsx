@@ -580,7 +580,7 @@ export function AtelierWorkspace() {
               const columnRepairs = filteredRepairs.filter((repair) => column.statuses.includes(repair.status));
               return (
                 <section
-                  className="min-h-[620px] rounded-[18px] border border-[#E8E8E5] bg-white p-3 shadow-[0_1px_2px_rgba(26,25,22,0.035)] backdrop-blur"
+                  className="min-h-[620px] rounded-[18px] border border-[#E8E8E5] bg-white p-3 shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
                   key={column.title}
                 >
                   <div className="mb-3 flex items-start justify-between">

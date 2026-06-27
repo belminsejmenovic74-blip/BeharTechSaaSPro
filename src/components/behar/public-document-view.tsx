@@ -18,8 +18,8 @@ function endpoint(kind: PublicCommercialDocumentDto["kind"], token: string) {
 function title(kind: PublicCommercialDocumentDto["kind"]) {
   if (kind === "quote") return "Devis";
   if (kind === "invoice") return "Facture";
-  if (kind === "receipt") return "Reçu de paiement";
-  return "Reçu de vente";
+  if (kind === "receipt") return "Confirmation de règlement";
+  return "Justificatif de vente";
 }
 
 export function PublicDocumentView({ kind, token }: { kind: PublicCommercialDocumentDto["kind"]; token: string }) {

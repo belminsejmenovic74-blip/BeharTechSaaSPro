@@ -32,9 +32,9 @@ const TYPE_LABEL: Record<DocumentType, string> = {
   intake: "Bon de prise en charge",
   quote: "Devis",
   invoice: "Facture",
-  payment: "Reçu de paiement",
-  "sale-receipt": "Reçu de vente",
-  "sale-invoice": "Reçu de vente comptoir",
+  payment: "Confirmation de règlement",
+  "sale-receipt": "Justificatif de vente",
+  "sale-invoice": "Facture de vente comptoir",
   internal: "Fiche intervention interne",
   summary: "Résumé dossier",
   diagnostic_report: "Rapport diagnostic & tests",
@@ -75,11 +75,10 @@ export function getDocumentFileName(document: BeharDocument, store: BeharStoreSn
   const quote = document.quoteId ? store.quotes.find((entry) => entry.id === document.quoteId) : undefined;
   const invoice = document.invoiceId ? store.invoices.find((entry) => entry.id === document.invoiceId) : undefined;
   const payment = document.paymentId ? store.payments.find((entry) => entry.id === document.paymentId) : undefined;
-  const paymentInvoice = invoice ?? store.invoices.find((entry) => entry.id === payment?.invoiceId);
   const sale = document.saleId ? store.sales.find((entry) => entry.id === document.saleId) : undefined;
   const rawNumber =
     target?.type === "payment"
-      ? paymentInvoice?.number ?? payment?.paymentNumber ?? document.id.slice(-8)
+      ? payment?.paymentNumber ?? document.id.slice(-8)
       : sale?.number ??
         invoice?.number ??
         quote?.number ??
@@ -144,7 +143,7 @@ export function LocalPrintableDocument({
         />
       );
     case "payment":
-      if (!payment || !customer) return <MissingDocument>Reçu de paiement incomplet.</MissingDocument>;
+      if (!payment || !customer) return <MissingDocument>Confirmation de règlement incomplète.</MissingDocument>;
       return (
         <PaymentReceiptDocument
           customer={customer}
@@ -166,7 +165,7 @@ export function LocalPrintableDocument({
       return <DiagnosticReportDocument customer={customer} repair={repair} workshop={billingWorkshop} />;
     case "sale-receipt":
     case "sale-invoice":
-      if (!sale) return <MissingDocument>Reçu de vente incomplet.</MissingDocument>;
+      if (!sale) return <MissingDocument>Justificatif de vente incomplet.</MissingDocument>;
       return <SaleReceiptDocument customer={customer ?? counterCustomer} sale={sale} workshop={billingWorkshop} />;
     default:
       return <MissingDocument>Type de document non pris en charge.</MissingDocument>;

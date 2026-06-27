@@ -52,6 +52,14 @@ export type InvoiceStatus = "Brouillon" | "Envoyée" | "Payée" | "Annulée";
 export type QuoteStatus = "Brouillon" | "Envoyé" | "Accepté" | "Refusé" | "Facturé";
 export type PaymentStatus = "Payé" | "Annulé" | "Remboursé";
 export type PaymentMethod =
+  | "Espèces"
+  | "Carte bancaire via SumUp"
+  | "Carte bancaire via Stripe Terminal"
+  | "Lien de paiement Stripe"
+  | "Virement bancaire"
+  | "Chèque"
+  | "Revolut"
+  | "PayPal"
   | "TPE externe"
   | "Espèces hors Behar Tech"
   | "TWINT"
@@ -60,9 +68,9 @@ export type PaymentMethod =
   | "Lien externe"
   | "Autre"
   | "Mixte"
-  | "Espèces"
   | "Carte"
   | "En ligne";
+export type SettlementStatus = "Non réglé" | "Partiellement réglé" | "Réglé";
 export type AppointmentStatus =
   | "Planifié"
   | "En attente"
@@ -457,6 +465,13 @@ export type Repair = {
   history: string[];
   paymentStatus?: "À régler" | "Réglée" | "Partiellement réglée" | "Annulée";
   paymentMethodNote?: string;
+  paymentCustomMethod?: string;
+  paymentAmount?: number;
+  paymentPaidAt?: string;
+  paymentReference?: string;
+  paymentRecordedBy?: string;
+  paymentRecordedOutsideBeharTechPro?: boolean;
+  paymentNote?: string;
   closedAt?: string;
   diagnosticNotes?: string;
   diagnosticCause?: string;
@@ -530,6 +545,74 @@ export type QuoteDevice = {
   subtotalTtc: number;
 };
 
+export type LegalDocumentSnapshot = {
+  version: number;
+  generatedAt: string;
+  generatedBy?: string;
+  documentType: "quote" | "invoice" | "intake" | "final_report" | "sale_receipt";
+  documentNumber: string;
+  status: string;
+  currency: WorkshopCurrency;
+  country: WorkshopCountry;
+  locale: WorkshopLocale;
+  vat: {
+    applicable?: boolean;
+    rate?: number;
+    regime?: WorkshopTaxRegime;
+    mention?: string;
+  };
+  workshop: {
+    brand?: string;
+    name: string;
+    commercialName?: string;
+    address?: string;
+    postalCode?: string;
+    city?: string;
+    country: WorkshopCountry;
+    email?: string;
+    phone?: string;
+    website?: string;
+    siret?: string;
+    tvaNumber?: string;
+    swissUid?: string;
+    swissVatNumber?: string;
+  };
+  client: {
+    id: string;
+    name: string;
+    phone?: string;
+    email?: string;
+    address?: string;
+  };
+  device?: {
+    type?: DeviceType;
+    brand?: string;
+    model?: string;
+    imei?: string;
+  };
+  repair?: {
+    id: string;
+    number: string;
+    status: RepairStatus;
+    issue?: string;
+    droppedAt?: string;
+  };
+  lines: QuoteLine[];
+  totals: {
+    ht: number;
+    tva: number;
+    ttc: number;
+  };
+  legalMentions?: string;
+  terms?: string;
+  footer?: string;
+  signature?: {
+    name?: string;
+    signedAt?: string;
+    dataUrl?: string;
+  };
+};
+
 export type Quote = {
   id: string;
   billingCountry: WorkshopCountry;
@@ -570,6 +653,11 @@ export type Quote = {
   updatedByName?: string;
   createdAt?: string;
   updatedAt?: string;
+  version?: number;
+  lockedAt?: string;
+  lockedReason?: string;
+  snapshot?: LegalDocumentSnapshot;
+  previousVersionId?: string;
 };
 
 export type Invoice = {
@@ -597,6 +685,11 @@ export type Invoice = {
   updatedByName?: string;
   createdAt?: string;
   updatedAt?: string;
+  version?: number;
+  lockedAt?: string;
+  lockedReason?: string;
+  snapshot?: LegalDocumentSnapshot;
+  previousVersionId?: string;
 };
 
 export type Payment = {
@@ -612,7 +705,9 @@ export type Payment = {
   quoteId?: string;
   paymentNumber: string;
   reference: string;
+  externalReference?: string;
   method: PaymentMethod;
+  customMethod?: string;
   mode: string;
   status: PaymentStatus;
   amount: number;
@@ -861,6 +956,11 @@ export type BeharDocument = {
   fileUrl?: string;
   /** Chemin dans le bucket Supabase Storage `repair-documents`. */
   storagePath?: string;
+  version?: number;
+  lockedAt?: string;
+  lockedReason?: string;
+  snapshot?: LegalDocumentSnapshot;
+  previousVersionId?: string;
 };
 
 export type MessageLog = {
@@ -1030,7 +1130,12 @@ export type StoreState = {
   // Messagerie dossier (interne / public) + accès public par token.
   addRepairMessage: (
     repairId: string,
-    input: { body: string; visibility: RepairMessage["visibility"]; authorType?: RepairMessage["authorType"]; authorName?: string },
+    input: {
+      body: string;
+      visibility: RepairMessage["visibility"];
+      authorType?: RepairMessage["authorType"];
+      authorName?: string;
+    },
   ) => string;
   markRepairMessagesRead: (repairId: string, side: "client" | "staff") => void;
   findRepairByPublicToken: (token: string) => Repair | undefined;
@@ -1063,6 +1168,7 @@ export type StoreState = {
     customerId: string;
     amount: number;
     method: PaymentMethod;
+    customMethod?: string;
     status: PaymentStatus;
     date: string;
     reference: string;
@@ -1070,6 +1176,32 @@ export type StoreState = {
     twintReference?: string;
   }) => string;
   markRepairAsPaid: (repairId: string, method?: PaymentMethod, note?: string) => string;
+  recordRepairSettlement: (
+    repairId: string,
+    input: {
+      status: SettlementStatus;
+      amount: number;
+      date: string;
+      method: PaymentMethod;
+      customMethod?: string;
+      externalReference?: string;
+      note?: string;
+      confirmExternal: boolean;
+    },
+  ) => string;
+  closeDossierWithSettlement: (
+    repairId: string,
+    input: {
+      status: SettlementStatus;
+      amount: number;
+      date: string;
+      method: PaymentMethod;
+      customMethod?: string;
+      externalReference?: string;
+      note?: string;
+      confirmExternal: boolean;
+    },
+  ) => boolean;
   updatePaymentStatus: (id: string, status: PaymentStatus) => void;
   addAppointment: (input: AppointmentInput) => string;
   updateAppointment: (id: string, patch: Partial<Appointment>) => void;
@@ -1623,7 +1755,7 @@ const defaultWorkshopInfo: WorkshopInfo = {
   invoiceTerms: "Paiement comptant à réception.",
   intakeTerms: "",
   documentFooter: "Merci pour votre confiance.",
-  acceptedPaymentMethods: ["Espèces hors Behar Tech", "TPE externe", "Virement"],
+  acceptedPaymentMethods: ["Espèces", "Carte bancaire via SumUp", "Virement bancaire"],
   businessHours: "Lun-Ven 09:00-18:00 · Sam 09:00-13:00",
   allowCounterClient: true,
   counterPrintFormat: "A4",
@@ -1675,9 +1807,8 @@ const countryLabel = (country: WorkshopCountry) => (country === "CH" ? "Suisse" 
 export const getWorkshopCountryLabel = (country: WorkshopCountry) => countryLabel(country);
 const withWorkshopLocaleDefaults = (settings: WorkshopSettings): WorkshopSettings => {
   const defaultMarket = settings.defaultMarket || (settings.country === "CH" ? "CH" : "FR");
-  const allowedMarkets = settings.allowedMarkets && settings.allowedMarkets.length > 0
-    ? settings.allowedMarkets
-    : [defaultMarket];
+  const allowedMarkets =
+    settings.allowedMarkets && settings.allowedMarkets.length > 0 ? settings.allowedMarkets : [defaultMarket];
   const country = normalizeWorkshopCountry(defaultMarket);
   const isSwiss = country === "CH";
   const countryConfig = getWorkshopCountryConfig(country);
@@ -1738,10 +1869,7 @@ export const formatCurrency = (value: number, currency?: WorkshopCurrency) =>
   formatMoney(value, currency ?? activeWorkshopCountry);
 const euro = (value: string | number) => parseMoney(value);
 export const formatEuro = (value: number) => formatMoney(value, activeWorkshopCountry);
-export const getBillingWorkshopInfo = (
-  workshop: WorkshopInfo,
-  countryValue: WorkshopCountry,
-): WorkshopInfo => {
+export const getBillingWorkshopInfo = (workshop: WorkshopInfo, countryValue: WorkshopCountry): WorkshopInfo => {
   const config = getWorkshopCountryConfig(countryValue);
   const profile = createBillingProfile(
     workshop.billingProfiles?.[config.country] ?? {
@@ -1789,10 +1917,7 @@ export const getBillingWorkshopInfo = (
     tvaMention: profile.tvaMention || "",
   };
 };
-export const isWorkshopBillingProfileComplete = (
-  workshop: WorkshopInfo,
-  country: WorkshopCountry,
-): boolean => {
+export const isWorkshopBillingProfileComplete = (workshop: WorkshopInfo, country: WorkshopCountry): boolean => {
   if (country === "FR" && workshop.country !== "FR") {
     return true;
   }
@@ -1934,11 +2059,127 @@ const quoteTotal = (quote: Pick<Quote, "lines" | "devices" | "totalTtc">) => {
   if (Array.isArray(quote.devices) && quote.devices.length) {
     return quote.devices.reduce((total, device) => total + quoteDeviceSubtotal(device), 0);
   }
-  if (typeof quote.totalTtc === "number" && Number.isFinite(quote.totalTtc) && quote.totalTtc > 0) return quote.totalTtc;
+  if (typeof quote.totalTtc === "number" && Number.isFinite(quote.totalTtc) && quote.totalTtc > 0)
+    return quote.totalTtc;
   return 0;
 };
 const invoiceTotal = (invoice: Pick<Invoice, "lines">) =>
   invoice.lines.reduce((total, line) => total + safeLineAmount(line), 0);
+const legalDocumentVersion = (entity: { version?: number }) => Math.max(1, normalizeCounter(entity.version ?? 1));
+const legalTermsForSnapshot = (type: LegalDocumentSnapshot["documentType"], workshop: WorkshopInfo) => {
+  if (type === "quote") return workshop.quoteTerms || workshop.documentFooter;
+  if (type === "invoice") return workshop.invoiceTerms || workshop.documentFooter;
+  if (type === "intake") return workshop.intakeTerms || workshop.documentFooter;
+  return workshop.documentFooter;
+};
+const createLegalDocumentSnapshot = (input: {
+  type: LegalDocumentSnapshot["documentType"];
+  number: string;
+  status: string;
+  version?: number;
+  currency?: WorkshopCurrency;
+  country?: WorkshopCountry;
+  locale?: WorkshopLocale;
+  workshop: WorkshopInfo;
+  customer?: Customer;
+  repair?: Repair;
+  lines: QuoteLine[];
+  generatedBy?: string;
+  signature?: LegalDocumentSnapshot["signature"];
+}): LegalDocumentSnapshot => {
+  const country = input.country ?? input.workshop.country;
+  const currency = input.currency ?? input.workshop.currency;
+  const locale = input.locale ?? (currency === "CHF" ? "fr-CH" : "fr-FR");
+  const vat = getVatSummary(input.lines, input.workshop);
+  return {
+    version: legalDocumentVersion({ version: input.version }),
+    generatedAt: getNowIso(),
+    generatedBy: input.generatedBy,
+    documentType: input.type,
+    documentNumber: input.number,
+    status: input.status,
+    currency,
+    country,
+    locale,
+    vat: {
+      applicable: input.workshop.vatApplicable,
+      rate: input.workshop.vatRate,
+      regime: input.workshop.taxRegime,
+      mention: input.workshop.tvaMention,
+    },
+    workshop: {
+      brand: input.workshop.brand,
+      name: input.workshop.name,
+      commercialName: input.workshop.commercialName,
+      address: input.workshop.address,
+      postalCode: input.workshop.postalCode,
+      city: input.workshop.postalCity || input.workshop.city,
+      country,
+      email: input.workshop.email,
+      phone: input.workshop.phone,
+      website: input.workshop.website,
+      siret: input.workshop.siret,
+      tvaNumber: input.workshop.tvaNumber,
+      swissUid: input.workshop.swissUid,
+      swissVatNumber: input.workshop.swissVatNumber,
+    },
+    client: {
+      id: input.customer?.id ?? "",
+      name: input.customer?.name || "Client",
+      phone: input.customer?.phone || undefined,
+      email: input.customer?.email || undefined,
+      address: input.customer?.address || undefined,
+    },
+    device: input.repair
+      ? {
+          type: input.repair.deviceType,
+          brand: input.repair.brandName,
+          model: input.repair.deviceModel || input.repair.model || input.repair.device,
+          imei: input.repair.imei || undefined,
+        }
+      : undefined,
+    repair: input.repair
+      ? {
+          id: input.repair.id,
+          number: input.repair.number,
+          status: input.repair.status,
+          issue: input.repair.issue,
+          droppedAt: input.repair.droppedAt,
+        }
+      : undefined,
+    lines: input.lines.map((line) => ({ ...line })),
+    totals: {
+      ht: vat.ht,
+      tva: vat.tva,
+      ttc: vat.ttc,
+    },
+    legalMentions: input.workshop.tvaMention,
+    terms: legalTermsForSnapshot(input.type, input.workshop),
+    footer: input.workshop.documentFooter,
+    signature: input.signature,
+  };
+};
+const isLegalDocumentLocked = (entity?: { lockedAt?: string; status?: string }) =>
+  Boolean(
+    entity?.lockedAt ||
+      entity?.status === "Accepté" ||
+      entity?.status === "Facturé" ||
+      entity?.status === "Envoyée" ||
+      entity?.status === "Payée",
+  );
+const mutableQuoteKeysAfterLock = new Set(["status", "invoiceId", "updatedAt", "updatedBy", "updatedByName"]);
+const mutableInvoiceKeysAfterLock = new Set([
+  "status",
+  "paymentIds",
+  "paidAmount",
+  "paidAt",
+  "paymentMethod",
+  "updatedAt",
+  "updatedBy",
+  "updatedByName",
+]);
+const changesImmutableFields = (patch: Record<string, unknown>, allowedKeys: Set<string>) =>
+  Object.keys(patch).some((key) => !allowedKeys.has(key));
 const normalizeCounter = (value: unknown, fallback = 1) => {
   const n = Number(value);
   if (!Number.isFinite(n)) return fallback;
@@ -1969,10 +2210,21 @@ const repairStatuses: RepairStatus[] = [
 export const terminalRepairStatuses: RepairStatus[] = ["Rendu", "Clôturé", "Annulé", "Irréparable"];
 export const isTerminalRepairStatus = (status: RepairStatus | string | undefined) =>
   terminalRepairStatuses.includes(status as RepairStatus);
+const mutableTerminalRepairKeys = new Set(["messages", "publicAccess", "updatedAt", "updatedBy", "updatedByName"]);
+const changesTerminalRepair = (patch: Record<string, unknown>) =>
+  Object.keys(patch).some((key) => !mutableTerminalRepairKeys.has(key));
 const quoteStatuses: QuoteStatus[] = ["Brouillon", "Envoyé", "Accepté", "Refusé", "Facturé"];
 const invoiceStatuses: InvoiceStatus[] = ["Brouillon", "Envoyée", "Payée", "Annulée"];
 const paymentStatuses: PaymentStatus[] = ["Payé", "Annulé", "Remboursé"];
 export const paymentMethods: PaymentMethod[] = [
+  "Espèces",
+  "Carte bancaire via SumUp",
+  "Carte bancaire via Stripe Terminal",
+  "Lien de paiement Stripe",
+  "Virement bancaire",
+  "Chèque",
+  "Revolut",
+  "PayPal",
   "TPE externe",
   "Espèces hors Behar Tech",
   "TWINT",
@@ -2012,11 +2264,11 @@ const normalizeRepairStatus = (status: unknown): RepairStatus =>
     ? "En réparation"
     : status === "En attente pièce" || status === "Pièce commandée" || status === "En attente validation client"
       ? "En attente"
-    : status === "Restitué" || status === "Livré"
-      ? "Rendu"
-      : repairStatuses.includes(status as RepairStatus)
-        ? (status as RepairStatus)
-        : "Reçu";
+      : status === "Restitué" || status === "Livré"
+        ? "Rendu"
+        : repairStatuses.includes(status as RepairStatus)
+          ? (status as RepairStatus)
+          : "Reçu";
 const repairPriorities: RepairPriority[] = ["Urgent", "Haute", "Normale", "Basse"];
 const repairSubStatuses: RepairSubStatus[] = [
   "En attente pièce",
@@ -2034,7 +2286,14 @@ const repairSubStatuses: RepairSubStatus[] = [
   "Annulé",
   "SAV / retour",
 ];
-const repairTestResults: RepairTestResult[] = ["OK", "KO", "Non testé", "Non testable", "Test repoussé", "Non applicable"];
+const repairTestResults: RepairTestResult[] = [
+  "OK",
+  "KO",
+  "Non testé",
+  "Non testable",
+  "Test repoussé",
+  "Non applicable",
+];
 const normalizeRepairPriority = (priority: unknown): RepairPriority =>
   repairPriorities.includes(priority as RepairPriority) ? (priority as RepairPriority) : "Normale";
 const normalizeRepairSubStatus = (subStatus: unknown): RepairSubStatus | undefined =>
@@ -2045,7 +2304,9 @@ const normalizeChecklistItems = (items: unknown): RepairChecklistItem[] =>
         .map((item: Partial<RepairChecklistItem>) => ({
           id: normalizeText(item.id, uid("check")),
           label: normalizeText(item.label, "Point de contrôle"),
-          result: repairTestResults.includes(item.result as RepairTestResult) ? (item.result as RepairTestResult) : "Non testé",
+          result: repairTestResults.includes(item.result as RepairTestResult)
+            ? (item.result as RepairTestResult)
+            : "Non testé",
           comment: normalizeText(item.comment) || undefined,
         }))
         .filter((item) => item.label)
@@ -2286,7 +2547,7 @@ const sanitizeQuoteAccessories = (accessories: any[] | undefined): QuoteAccessor
 
 const quoteDeviceSubtotal = (device: Pick<QuoteDevice, "services" | "accessories">) =>
   device.services.reduce((sum, service) => sum + service.priceTtc * service.quantity, 0) +
-  device.accessories.reduce((sum, accessory) => sum + (accessory.included ? 0 : accessory.priceTtc ?? 0), 0);
+  device.accessories.reduce((sum, accessory) => sum + (accessory.included ? 0 : (accessory.priceTtc ?? 0)), 0);
 
 const sanitizeQuoteDevices = (devices: any[] | undefined): QuoteDevice[] =>
   (Array.isArray(devices) ? devices : [])
@@ -2350,8 +2611,8 @@ const linesFromQuoteDevices = (devices: QuoteDevice[]): QuoteLine[] =>
         id: `${device.id}_${accessory.id}`,
         description: `${deviceName} · ${accessory.label}`,
         quantity: 1,
-        unitPrice: accessory.included ? 0 : accessory.priceTtc ?? 0,
-        total: accessory.included ? 0 : accessory.priceTtc ?? 0,
+        unitPrice: accessory.included ? 0 : (accessory.priceTtc ?? 0),
+        total: accessory.included ? 0 : (accessory.priceTtc ?? 0),
       })),
     ];
   });
@@ -2460,12 +2721,20 @@ const normalizePaymentMethod = (method: unknown): PaymentMethod => {
   const text = normalizeText(method);
   if (paymentMethods.includes(text as PaymentMethod)) return text as PaymentMethod;
   const lower = text.toLowerCase();
+  if (lower.includes("sumup")) return "Carte bancaire via SumUp";
+  if (lower.includes("terminal") || lower.includes("stripe terminal")) return "Carte bancaire via Stripe Terminal";
+  if (lower.includes("stripe") || lower.includes("lien de paiement")) return "Lien de paiement Stripe";
+  if (lower.includes("paypal")) return "PayPal";
+  if (lower.includes("revolut")) return "Revolut";
+  if (lower.includes("chèque") || lower.includes("cheque")) return "Chèque";
+  if (lower.includes("virement bancaire")) return "Virement bancaire";
   if (lower.includes("twint")) return "TWINT";
   if (lower.includes("carte externe")) return "Carte externe";
-  if (lower.includes("tpe") || lower.includes("carte")) return "TPE externe";
-  if (lower.includes("virement")) return "Virement";
-  if (lower.includes("esp")) return "Espèces hors Behar Tech";
-  if (lower.includes("lien") || lower.includes("ligne") || lower.includes("stripe")) return "Lien externe";
+  if (lower.includes("tpe")) return "Carte bancaire via terminal externe" as PaymentMethod;
+  if (lower.includes("carte")) return "Carte bancaire via SumUp";
+  if (lower.includes("virement")) return "Virement bancaire";
+  if (lower.includes("esp")) return "Espèces";
+  if (lower.includes("lien") || lower.includes("ligne")) return "Lien de paiement Stripe";
   return "Autre";
 };
 const uniqueIds = (ids: Array<string | undefined>) => [...new Set(ids.filter(Boolean) as string[])];
@@ -2731,9 +3000,7 @@ const normalizeRepair = (
     device,
     deviceColor: normalizeText(repair.deviceColor) || undefined,
     deviceCapacity: normalizeText(repair.deviceCapacity) || undefined,
-    plannedPaymentMethod: repair.plannedPaymentMethod
-      ? normalizePaymentMethod(repair.plannedPaymentMethod)
-      : undefined,
+    plannedPaymentMethod: repair.plannedPaymentMethod ? normalizePaymentMethod(repair.plannedPaymentMethod) : undefined,
     model: deviceModel,
     issue: normalizeText(repair.issue, "Problème à renseigner"),
     status: normalizeRepairStatus(repair.status),
@@ -2793,7 +3060,9 @@ const normalizeRepair = (
           .map((entry) => ({
             id: normalizeText(entry.id, uid("msg")),
             repairId: normalizeText(entry.repairId, id),
-            authorType: (["staff", "client", "system"].includes(String(entry.authorType)) ? entry.authorType : "staff") as RepairMessage["authorType"],
+            authorType: (["staff", "client", "system"].includes(String(entry.authorType))
+              ? entry.authorType
+              : "staff") as RepairMessage["authorType"],
             authorName: normalizeText(entry.authorName, "Atelier"),
             visibility: (entry.visibility === "client" ? "client" : "internal") as RepairMessage["visibility"],
             body: normalizeText(entry.body),
@@ -2822,7 +3091,9 @@ const normalizeRepair = (
     intervention: repair.intervention
       ? {
           estimatedMinutes: clampQuantity(repair.intervention.estimatedMinutes),
-          manualMinutes: repair.intervention.manualMinutes ? clampQuantity(repair.intervention.manualMinutes) : undefined,
+          manualMinutes: repair.intervention.manualMinutes
+            ? clampQuantity(repair.intervention.manualMinutes)
+            : undefined,
           timerStartedAt: normalizeText(repair.intervention.timerStartedAt) || undefined,
           timerPausedAt: normalizeText(repair.intervention.timerPausedAt) || undefined,
           timerFinishedAt: normalizeText(repair.intervention.timerFinishedAt) || undefined,
@@ -2859,19 +3130,17 @@ const normalizeRepair = (
             repair.sav.decision === "Pris en garantie" || repair.sav.decision === "Hors garantie"
               ? repair.sav.decision
               : undefined,
-          status: (
-            [
-              "En cours",
-              "En attente pièce",
-              "En attente client",
-              "Devis envoyé",
-              "Validé",
-              "Hors garantie",
-              "Clos",
-            ].includes(String(repair.sav.status))
-              ? repair.sav.status
-              : "En cours"
-          ) as RepairSav["status"],
+          status: ([
+            "En cours",
+            "En attente pièce",
+            "En attente client",
+            "Devis envoyé",
+            "Validé",
+            "Hors garantie",
+            "Clos",
+          ].includes(String(repair.sav.status))
+            ? repair.sav.status
+            : "En cours") as RepairSav["status"],
           warrantyRemaining: normalizeText(repair.sav.warrantyRemaining) || undefined,
           nextAction: normalizeText(repair.sav.nextAction) || undefined,
           createdAt: normalizeText(repair.sav.createdAt, nowLabel()),
@@ -2889,7 +3158,9 @@ const normalizeQuote = (quote: Partial<Quote>, customers: Customer[], repairs: R
   const inferred = inferDeviceCatalog(rawDevice, rawModel);
   const selectedBrand = quote.brandId ? deviceBrands.find((entry) => entry.id === quote.brandId) : undefined;
   const selectedModel = quote.modelId ? deviceModels.find((entry) => entry.id === quote.modelId) : undefined;
-  const deviceType = normalizeDeviceType(quote.deviceType ?? repair?.deviceType ?? selectedModel?.deviceType ?? inferred.deviceType);
+  const deviceType = normalizeDeviceType(
+    quote.deviceType ?? repair?.deviceType ?? selectedModel?.deviceType ?? inferred.deviceType,
+  );
   const brandId = normalizeText(quote.brandId, repair?.brandId ?? selectedBrand?.id ?? inferred.brandId);
   const brandName = normalizeText(quote.brandName, repair?.brandName ?? selectedBrand?.name ?? inferred.brandName);
   const modelId = normalizeText(quote.modelId, repair?.modelId ?? selectedModel?.id ?? inferred.modelId);
@@ -2909,7 +3180,8 @@ const normalizeQuote = (quote: Partial<Quote>, customers: Customer[], repairs: R
     ? [
         ...deviceLines,
         ...initialLines.filter(
-          (line) => line.id.startsWith("quote_extra") || line.id.startsWith("extra") || line.id.startsWith("line_extra"),
+          (line) =>
+            line.id.startsWith("quote_extra") || line.id.startsWith("extra") || line.id.startsWith("line_extra"),
         ),
       ]
     : initialLines;
@@ -2917,7 +3189,7 @@ const normalizeQuote = (quote: Partial<Quote>, customers: Customer[], repairs: R
   const billingConfig = getWorkshopCountryConfig(
     quote.billingCountry ?? repair?.billingCountry ?? (quote.currency === "CHF" ? "CH" : activeWorkshopCountry),
   );
-  const currency = (quote.currency === "CHF" || quote.currency === "EUR") ? quote.currency : billingConfig.currency;
+  const currency = quote.currency === "CHF" || quote.currency === "EUR" ? quote.currency : billingConfig.currency;
   return {
     id,
     billingCountry: billingConfig.country,
@@ -2940,7 +3212,10 @@ const normalizeQuote = (quote: Partial<Quote>, customers: Customer[], repairs: R
     deviceModel,
     device: normalizeText(rawDevice, [brandName, deviceModel].filter(Boolean).join(" ")),
     imei: normalizeText(quote.imei, repair?.imei ?? ""),
-    issueType: normalizeText(quote.issueType, repair?.issueType ?? normalizeText(quote.issue, repair?.issue ?? "Diagnostic")),
+    issueType: normalizeText(
+      quote.issueType,
+      repair?.issueType ?? normalizeText(quote.issue, repair?.issue ?? "Diagnostic"),
+    ),
     issue: normalizeText(quote.issue, repair?.issue ?? ""),
     selectedPriceSnapshot: quote.selectedPriceSnapshot ?? repair?.selectedPriceSnapshot,
     status: normalizeQuoteStatus(quote.status),
@@ -3017,7 +3292,7 @@ const normalizeInvoice = (invoice: Partial<Invoice>, customers: Customer[], repa
       repair?.billingCountry ??
       (invoice.currency === "CHF" ? "CH" : activeWorkshopCountry),
   );
-  const currency = (invoice.currency === "CHF" || invoice.currency === "EUR") ? invoice.currency : billingConfig.currency;
+  const currency = invoice.currency === "CHF" || invoice.currency === "EUR" ? invoice.currency : billingConfig.currency;
   return {
     id,
     billingCountry: billingConfig.country,
@@ -3066,7 +3341,10 @@ const normalizePayment = (
       sale?.billingCountry ??
       (payment.currency === "CHF" ? "CH" : activeWorkshopCountry),
   );
-  const currency = (payment.currency === "CHF" || payment.currency === "EUR") ? payment.currency : (invoice?.currency ?? sale?.currency ?? billingConfig.currency);
+  const currency =
+    payment.currency === "CHF" || payment.currency === "EUR"
+      ? payment.currency
+      : (invoice?.currency ?? sale?.currency ?? billingConfig.currency);
   return {
     id,
     billingCountry: billingConfig.country,
@@ -3080,6 +3358,7 @@ const normalizePayment = (
     quoteId: payment.quoteId ?? invoice?.quoteId,
     paymentNumber,
     reference: normalizeText(payment.reference, paymentNumber),
+    externalReference: normalizeText(payment.externalReference),
     method,
     mode: method,
     status: normalizePaymentStatus(payment.status),
@@ -3140,7 +3419,7 @@ const normalizeSale = (sale: Partial<Sale>, customers: Customer[], repairs: Repa
   const billingConfig = getWorkshopCountryConfig(
     sale.billingCountry ?? repair?.billingCountry ?? (sale.currency === "CHF" ? "CH" : activeWorkshopCountry),
   );
-  const currency = (sale.currency === "CHF" || sale.currency === "EUR") ? sale.currency : billingConfig.currency;
+  const currency = sale.currency === "CHF" || sale.currency === "EUR" ? sale.currency : billingConfig.currency;
   return {
     id,
     billingCountry: billingConfig.country,
@@ -3170,11 +3449,12 @@ const normalizeSale = (sale: Partial<Sale>, customers: Customer[], repairs: Repa
 
 function buildRepairTasksFromIssue(issue: string) {
   const source = normalizeText(issue).toLowerCase();
-  const labels = source.includes("écran") || source.includes("ecran") || source.includes("vitre")
-    ? ["Démontage", "Remplacement écran", "Test tactile + affichage", "Nettoyage + remontage"]
-    : source.includes("batterie")
-      ? ["Ouverture appareil", "Remplacement batterie", "Test charge", "Nettoyage + remontage"]
-      : ["Diagnostic", "Intervention", "Test fonctionnel", "Nettoyage + remontage"];
+  const labels =
+    source.includes("écran") || source.includes("ecran") || source.includes("vitre")
+      ? ["Démontage", "Remplacement écran", "Test tactile + affichage", "Nettoyage + remontage"]
+      : source.includes("batterie")
+        ? ["Ouverture appareil", "Remplacement batterie", "Test charge", "Nettoyage + remontage"]
+        : ["Diagnostic", "Intervention", "Test fonctionnel", "Nettoyage + remontage"];
   return labels.map((label, index) => ({ id: `task_${Date.now()}_${index}`, label, fait: false }));
 }
 
@@ -3208,7 +3488,8 @@ const normalizeAppointment = (
     repairId: linkedRepair?.id ?? appointment.repairId,
     repairNumber: normalizeText(appointment.repairNumber, linkedRepair?.number) || undefined,
     appointmentNumber: normalizeText(appointment.appointmentNumber) || undefined,
-    clientMode: appointment.clientMode === "new" || appointment.clientMode === "existing" ? appointment.clientMode : "counter",
+    clientMode:
+      appointment.clientMode === "new" || appointment.clientMode === "existing" ? appointment.clientMode : "counter",
     clientName: normalizeText(appointment.clientName, customer?.name || "Client comptoir"),
     clientPhone: normalizeText(appointment.clientPhone, customer?.phone) || undefined,
     clientEmail: normalizeText(appointment.clientEmail, customer?.email) || undefined,
@@ -4362,7 +4643,26 @@ export const useBeharStore = create<StoreState>()(
         const effective = resolveUserPermissions(user);
         return Boolean(user.active && effective[permission]);
       },
-      requirePermission: (permission) => get().hasPermission(permission),
+      requirePermission: (permission, actionName) => {
+        const allowed = get().hasPermission(permission);
+        if (allowed) return true;
+        const actor = get().currentUser ?? defaultCurrentUser;
+        get().addAuditLog({
+          action: "permission.denied",
+          targetType: "permission",
+          targetId: permission,
+          message: `${actor.name} a tenté une action non autorisée : ${actionName || permission}`,
+          metadata: { permission, actionName },
+        });
+        get().addNotification({
+          type: "warning",
+          title: "Accès refusé",
+          message: "Votre rôle ne permet pas cette action.",
+          targetType: "permission",
+          targetId: permission,
+        });
+        return false;
+      },
       addAuditLog: (input) => {
         const id = uid("audit");
         set((state) => {
@@ -4848,6 +5148,9 @@ export const useBeharStore = create<StoreState>()(
         if (!get().requirePermission("canEditRepair", "Modifier une réparation")) return;
         const actor = get().currentUser ?? defaultCurrentUser;
         const existingRepair = get().repairs.find((entry) => entry.id === id);
+        if (existingRepair && isTerminalRepairStatus(existingRepair.status) && changesTerminalRepair(patch)) {
+          if (!get().requirePermission("canDeleteRepair", "Modifier une réparation terminée")) return;
+        }
         if (
           existingRepair &&
           patch.status === "Prêt" &&
@@ -4901,7 +5204,7 @@ export const useBeharStore = create<StoreState>()(
                 ? nowLabel()
                 : patch.status && patch.status !== "Rendu" && patch.status !== "Clôturé"
                   ? undefined
-                  : patch.closedAt ?? repair.closedAt;
+                  : (patch.closedAt ?? repair.closedAt);
             const nextLaborPrice =
               patch.laborPrice === undefined
                 ? patch.amount === undefined
@@ -4986,7 +5289,10 @@ export const useBeharStore = create<StoreState>()(
           id,
           repairId,
           authorType,
-          authorName: normalizeText(input.authorName, authorType === "client" ? "Client" : authorType === "system" ? "Atelier" : actor.name),
+          authorName: normalizeText(
+            input.authorName,
+            authorType === "client" ? "Client" : authorType === "system" ? "Atelier" : actor.name,
+          ),
           visibility: input.visibility,
           body,
           createdAt: getNowIso(),
@@ -5033,7 +5339,9 @@ export const useBeharStore = create<StoreState>()(
       findRepairByPublicToken: (token) => {
         const clean = normalizeText(token).trim();
         if (!clean) return undefined;
-        return get().repairs.find((repair) => repair.publicAccess?.token === clean && repair.publicAccess?.active !== false);
+        return get().repairs.find(
+          (repair) => repair.publicAccess?.token === clean && repair.publicAccess?.active !== false,
+        );
       },
       ensureRepairPublicAccess: (repairId) => {
         const existing = get().repairs.find((repair) => repair.id === repairId)?.publicAccess;
@@ -5041,14 +5349,18 @@ export const useBeharStore = create<StoreState>()(
           const access = { ...existing, url: makePublicAccessUrl("/p", existing.token) };
           if (existing.url !== access.url) {
             set((state) => ({
-              repairs: state.repairs.map((repair) => (repair.id === repairId ? { ...repair, publicAccess: access } : repair)),
+              repairs: state.repairs.map((repair) =>
+                repair.id === repairId ? { ...repair, publicAccess: access } : repair,
+              ),
             }));
           }
           return access;
         }
         const access = makePublicAccess("rp", "/p");
         set((state) => ({
-          repairs: state.repairs.map((repair) => (repair.id === repairId ? { ...repair, publicAccess: access } : repair)),
+          repairs: state.repairs.map((repair) =>
+            repair.id === repairId ? { ...repair, publicAccess: access } : repair,
+          ),
         }));
         return access;
       },
@@ -5060,7 +5372,10 @@ export const useBeharStore = create<StoreState>()(
           repairs: quote.repairId
             ? state.repairs.map((repair) => {
                 if (repair.id !== quote.repairId) return repair;
-                const note = decision === "Accepté" ? `Devis accepté par le client : ${quote.number}` : `Devis refusé par le client : ${quote.number}`;
+                const note =
+                  decision === "Accepté"
+                    ? `Devis accepté par le client : ${quote.number}`
+                    : `Devis refusé par le client : ${quote.number}`;
                 const sysMessage: RepairMessage = {
                   id: uid("msg"),
                   repairId: repair.id,
@@ -5150,9 +5465,7 @@ export const useBeharStore = create<StoreState>()(
         const actor = get().currentUser ?? defaultCurrentUser;
         set((state) => ({
           repairs: state.repairs.map((repair) =>
-            repair.id === id
-              ? { ...repair, history: [...repair.history, label], ...updateActorFields(actor) }
-              : repair,
+            repair.id === id ? { ...repair, history: [...repair.history, label], ...updateActorFields(actor) } : repair,
           ),
         }));
         const repair = get().repairs.find((entry) => entry.id === id);
@@ -5251,6 +5564,12 @@ export const useBeharStore = create<StoreState>()(
         const previous = state.repairs.find((r) => r.id === id);
         if (!previous) return;
         if (previous.status === status) return;
+        if (
+          isTerminalRepairStatus(previous.status) &&
+          !get().requirePermission("canDeleteRepair", "Changer un dossier terminé")
+        ) {
+          return;
+        }
         if (status === "Prêt" && !hasFinalTestClearance(previous)) {
           get().addNotification({
             type: "warning",
@@ -5399,7 +5718,8 @@ export const useBeharStore = create<StoreState>()(
         const item = state.stockItems.find((stockItem) => stockItem.id === stockItemId);
         const repair = state.repairs.find((entry) => entry.id === repairId);
         // We still check if stock is available, but we don't decrement yet
-        if (!repair || !item || item.active === false || item.repairEnabled === false || item.stock < wanted) return false;
+        if (!repair || !item || item.active === false || item.repairEnabled === false || item.stock < wanted)
+          return false;
         set((current) => {
           const currentItem = current.stockItems.find((stockItem) => stockItem.id === stockItemId);
           const currentRepair = current.repairs.find((entry) => entry.id === repairId);
@@ -5718,6 +6038,26 @@ export const useBeharStore = create<StoreState>()(
           state.customers,
           state.repairs,
         );
+        const shouldLockQuote = quote.status === "Accepté" || quote.status === "Facturé";
+        const quoteSnapshot = shouldLockQuote
+          ? createLegalDocumentSnapshot({
+              type: "quote",
+              number: quote.number,
+              status: quote.status,
+              version: 1,
+              currency: quote.currency,
+              country: quote.billingCountry,
+              locale: quote.locale,
+              workshop: getBillingWorkshopInfo(ws, quote.billingCountry),
+              customer,
+              repair: repairForQuote,
+              lines: quote.lines,
+              generatedBy: actor.name,
+            })
+          : undefined;
+        const storedQuote = shouldLockQuote
+          ? { ...quote, version: 1, lockedAt: getNowIso(), lockedReason: "Devis validé", snapshot: quoteSnapshot }
+          : { ...quote, version: 1 };
         set((state) => ({
           workshopSettings: {
             ...state.workshopSettings,
@@ -5729,13 +6069,14 @@ export const useBeharStore = create<StoreState>()(
             nextQuoteNumber: normalizeCounter((state.workshopSettings?.nextQuoteNumber ?? 1) + 1),
             updatedAt: nowLabel(),
           } as WorkshopSettings),
-          quotes: [quote, ...state.quotes],
+          quotes: [storedQuote, ...state.quotes],
           repairs: state.repairs.map((repair) =>
             repair.id === quote.repairId
               ? {
                   ...repair,
                   status:
-                    quote.status === "Envoyé" && !["Prêt", "Rendu", "Clôturé", "Annulé", "Irréparable"].includes(repair.status)
+                    quote.status === "Envoyé" &&
+                    !["Prêt", "Rendu", "Clôturé", "Annulé", "Irréparable"].includes(repair.status)
                       ? ("Devis envoyé" as RepairStatus)
                       : repair.status,
                   subStatus: quote.status === "Envoyé" ? ("Devis envoyé" as RepairSubStatus) : repair.subStatus,
@@ -5759,6 +6100,10 @@ export const useBeharStore = create<StoreState>()(
               repairId: quote.repairId,
               quoteId: id,
               createdAt: quote.date,
+              version: storedQuote.version,
+              lockedAt: storedQuote.lockedAt,
+              lockedReason: storedQuote.lockedReason,
+              snapshot: storedQuote.snapshot,
             },
             ...state.documents,
           ],
@@ -5777,12 +6122,29 @@ export const useBeharStore = create<StoreState>()(
         if (!get().requirePermission(required, "Modifier un devis")) return;
         const actor = get().currentUser ?? defaultCurrentUser;
         const previousStatus = get().quotes.find((q) => q.id === id)?.status;
+        const currentQuote = get().quotes.find((q) => q.id === id);
+        if (isLegalDocumentLocked(currentQuote) && changesImmutableFields(patch, mutableQuoteKeysAfterLock)) {
+          get().addNotification({
+            type: "warning",
+            title: "Devis verrouillé",
+            message: `${currentQuote?.number ?? id} est figé : créez une nouvelle version pour modifier le contenu.`,
+            targetType: "quote",
+            targetId: id,
+          });
+          get().addAuditLog({
+            action: "quote.update_blocked",
+            targetType: "quote",
+            targetId: id,
+            message: `${actor.name} a tenté de modifier le devis verrouillé ${currentQuote?.number ?? id}`,
+          });
+          return;
+        }
         set((state) => {
           const previous = state.quotes.find((quote) => quote.id === id);
           const quotes = state.quotes.map((quote) => {
             if (quote.id !== id) return quote;
             const repair = patch.repairId ? state.repairs.find((entry) => entry.id === patch.repairId) : undefined;
-            return {
+            const nextQuote = {
               ...quote,
               ...patch,
               customerId: patch.customerId
@@ -5793,6 +6155,47 @@ export const useBeharStore = create<StoreState>()(
               totalAmount: patch.totalAmount ?? quote.totalAmount,
               ...updateActorFields(actor),
             };
+            if (!quote.snapshot && quote.status !== "Accepté" && nextQuote.status === "Accepté") {
+              const customer = state.customers.find((entry) => entry.id === nextQuote.customerId);
+              const repairForSnapshot = nextQuote.repairId
+                ? state.repairs.find((entry) => entry.id === nextQuote.repairId)
+                : undefined;
+              const workshop = getBillingWorkshopInfo(
+                state.workshopSettings ?? defaultWorkshopSettings,
+                nextQuote.billingCountry,
+              );
+              const snapshot = createLegalDocumentSnapshot({
+                type: "quote",
+                number: nextQuote.number,
+                status: nextQuote.status,
+                version: nextQuote.version ?? 1,
+                currency: nextQuote.currency,
+                country: nextQuote.billingCountry,
+                locale: nextQuote.locale,
+                workshop,
+                customer,
+                repair: repairForSnapshot,
+                lines: nextQuote.lines,
+                generatedBy: actor.name,
+                signature: repairForSnapshot?.intakeCondition?.signatureDataUrl
+                  ? {
+                      name: repairForSnapshot.intakeCondition.signerName,
+                      signedAt:
+                        repairForSnapshot.intakeCondition.signatureSignedAt ||
+                        repairForSnapshot.intakeCondition.signedAt,
+                      dataUrl: repairForSnapshot.intakeCondition.signatureDataUrl,
+                    }
+                  : undefined,
+              });
+              return {
+                ...nextQuote,
+                version: nextQuote.version ?? 1,
+                lockedAt: getNowIso(),
+                lockedReason: "Devis accepté",
+                snapshot,
+              };
+            }
+            return nextQuote;
           });
           const updated = quotes.find((quote) => quote.id === id);
           const repairs =
@@ -5808,7 +6211,20 @@ export const useBeharStore = create<StoreState>()(
                     : repair,
                 )
               : state.repairs;
-          return { quotes, repairs: syncRepairQuoteIds(repairs, quotes) };
+          const documents = updated?.snapshot
+            ? state.documents.map((document) =>
+                document.quoteId === id
+                  ? {
+                      ...document,
+                      version: updated.version,
+                      lockedAt: updated.lockedAt,
+                      lockedReason: updated.lockedReason,
+                      snapshot: updated.snapshot,
+                    }
+                  : document,
+              )
+            : state.documents;
+          return { documents, quotes, repairs: syncRepairQuoteIds(repairs, quotes) };
         });
         const quote = get().quotes.find((entry) => entry.id === id);
         get().addAuditLog({
@@ -5830,7 +6246,26 @@ export const useBeharStore = create<StoreState>()(
           });
         }
       },
-      deleteQuote: (id) =>
+      deleteQuote: (id) => {
+        if (!get().requirePermission("canEditQuote", "Supprimer un devis")) return;
+        const actor = get().currentUser ?? defaultCurrentUser;
+        const deleted = get().quotes.find((quote) => quote.id === id);
+        if (isLegalDocumentLocked(deleted)) {
+          get().addNotification({
+            type: "warning",
+            title: "Suppression bloquée",
+            message: `${deleted?.number ?? id} est verrouillé : créez une nouvelle version ou une annulation.`,
+            targetType: "quote",
+            targetId: id,
+          });
+          get().addAuditLog({
+            action: "quote.delete_blocked",
+            targetType: "quote",
+            targetId: id,
+            message: `${actor.name} a tenté de supprimer le devis verrouillé ${deleted?.number ?? id}`,
+          });
+          return;
+        }
         set((state) => {
           const quotes = state.quotes.filter((quote) => quote.id !== id);
           return {
@@ -5846,8 +6281,10 @@ export const useBeharStore = create<StoreState>()(
             }),
             selectedQuoteId: quotes[0]?.id ?? "",
           };
-        }),
-      addQuoteLine: (quoteId) =>
+        });
+      },
+      addQuoteLine: (quoteId) => {
+        if (isLegalDocumentLocked(get().quotes.find((quote) => quote.id === quoteId))) return;
         set((state) => ({
           quotes: state.quotes.map((quote) =>
             quote.id === quoteId
@@ -5860,8 +6297,10 @@ export const useBeharStore = create<StoreState>()(
                 }
               : quote,
           ),
-        })),
-      updateQuoteLine: (quoteId, lineId, patch) =>
+        }));
+      },
+      updateQuoteLine: (quoteId, lineId, patch) => {
+        if (isLegalDocumentLocked(get().quotes.find((quote) => quote.id === quoteId))) return;
         set((state) => ({
           quotes: state.quotes.map((quote) =>
             quote.id === quoteId
@@ -5881,15 +6320,18 @@ export const useBeharStore = create<StoreState>()(
                 }
               : quote,
           ),
-        })),
-      deleteQuoteLine: (quoteId, lineId) =>
+        }));
+      },
+      deleteQuoteLine: (quoteId, lineId) => {
+        if (isLegalDocumentLocked(get().quotes.find((quote) => quote.id === quoteId))) return;
         set((state) => ({
           quotes: state.quotes.map((quote) =>
             quote.id === quoteId && quote.lines.length > 1
               ? { ...quote, lines: quote.lines.filter((line) => line.id !== lineId) }
               : quote,
           ),
-        })),
+        }));
+      },
       convertQuoteToInvoice: (quoteId) => {
         if (!get().requirePermission("canCreateInvoice", "Convertir un devis")) return "";
         const actor = get().currentUser ?? defaultCurrentUser;
@@ -6001,6 +6443,28 @@ export const useBeharStore = create<StoreState>()(
           paidAt: undefined,
           ...actorFields(actor),
         };
+        const workshopForSnapshot = getBillingWorkshopInfo(ws, invoice.billingCountry);
+        const invoiceSnapshot = createLegalDocumentSnapshot({
+          type: "invoice",
+          number: invoice.number,
+          status: invoice.status,
+          version: 1,
+          currency: invoice.currency,
+          country: invoice.billingCountry,
+          locale: invoice.locale,
+          workshop: workshopForSnapshot,
+          customer,
+          repair,
+          lines: invoice.lines,
+          generatedBy: actor.name,
+        });
+        const storedInvoice: Invoice = {
+          ...invoice,
+          version: 1,
+          lockedAt: getNowIso(),
+          lockedReason: "Facture générée",
+          snapshot: invoiceSnapshot,
+        };
         set((state) => ({
           workshopSettings: {
             ...state.workshopSettings,
@@ -6012,7 +6476,7 @@ export const useBeharStore = create<StoreState>()(
             nextInvoiceNumber: normalizeCounter((state.workshopSettings?.nextInvoiceNumber ?? 1) + 1),
             updatedAt: nowLabel(),
           } as WorkshopSettings),
-          invoices: [invoice, ...state.invoices],
+          invoices: [storedInvoice, ...state.invoices],
           repairs: state.repairs.map((repair) =>
             repair.id === invoice.repairId
               ? {
@@ -6042,6 +6506,10 @@ export const useBeharStore = create<StoreState>()(
               quoteId: invoice.quoteId,
               invoiceId: id,
               createdAt: invoice.date,
+              version: storedInvoice.version,
+              lockedAt: storedInvoice.lockedAt,
+              lockedReason: storedInvoice.lockedReason,
+              snapshot: storedInvoice.snapshot,
             },
             ...state.documents,
           ],
@@ -6065,12 +6533,11 @@ export const useBeharStore = create<StoreState>()(
         if (!get().requirePermission("canEditInvoice", "Modifier une facture")) return;
         const actor = get().currentUser ?? defaultCurrentUser;
         const existingInvoice = get().invoices.find((invoice) => invoice.id === id);
-        if (existingInvoice?.status === "Payée") {
-          // TODO: ajouter un vrai flux d'avoir / annulation de facture au lieu d'éditer une facture validée.
+        if (isLegalDocumentLocked(existingInvoice) && changesImmutableFields(patch, mutableInvoiceKeysAfterLock)) {
           get().addNotification({
             type: "warning",
             title: "Facture verrouillée",
-            message: `${existingInvoice.number} est réglée : créez un avoir ou une annulation dédiée plus tard.`,
+            message: `${existingInvoice?.number ?? id} est figée : créez une nouvelle version, un avoir ou une annulation.`,
             targetType: "invoice",
             targetId: id,
           });
@@ -6078,7 +6545,7 @@ export const useBeharStore = create<StoreState>()(
             action: "invoice.update_blocked",
             targetType: "invoice",
             targetId: id,
-            message: `${actor.name} a tenté de modifier la facture réglée ${existingInvoice.number}`,
+            message: `${actor.name} a tenté de modifier la facture verrouillée ${existingInvoice?.number ?? id}`,
           });
           return;
         }
@@ -6116,12 +6583,11 @@ export const useBeharStore = create<StoreState>()(
         if (!get().requirePermission("canEditInvoice", "Supprimer une facture")) return;
         const actor = get().currentUser ?? defaultCurrentUser;
         const deleted = get().invoices.find((invoice) => invoice.id === id);
-        if (deleted?.status === "Payée") {
-          // TODO: ajouter un vrai flux d'avoir / annulation de facture au lieu de supprimer une facture validée.
+        if (isLegalDocumentLocked(deleted)) {
           get().addNotification({
             type: "warning",
             title: "Suppression bloquée",
-            message: `${deleted.number} est réglée : suppression directe interdite.`,
+            message: `${deleted?.number ?? id} est verrouillée : suppression directe interdite.`,
             targetType: "invoice",
             targetId: id,
           });
@@ -6129,7 +6595,7 @@ export const useBeharStore = create<StoreState>()(
             action: "invoice.delete_blocked",
             targetType: "invoice",
             targetId: id,
-            message: `${actor.name} a tenté de supprimer la facture réglée ${deleted.number}`,
+            message: `${actor.name} a tenté de supprimer la facture verrouillée ${deleted?.number ?? id}`,
           });
           return;
         }
@@ -6194,8 +6660,8 @@ export const useBeharStore = create<StoreState>()(
           customerId: invoice.customerId,
           repairId: invoice.repairId,
           quoteId: invoice.quoteId,
-          paymentNumber: docNumber(ws.receiptPrefix, ws.nextReceiptNumber ?? 1, "REC"),
-          reference: docNumber(ws.receiptPrefix, ws.nextReceiptNumber ?? 1, "REC"),
+          paymentNumber: docNumber("CONF", ws.nextReceiptNumber ?? 1, "CONF"),
+          reference: docNumber("CONF", ws.nextReceiptNumber ?? 1, "CONF"),
           method,
           mode: method,
           status: "Payé",
@@ -6297,7 +6763,7 @@ export const useBeharStore = create<StoreState>()(
                 id: `doc_${paymentId}`,
                 shopId,
                 type: "payment",
-                title: `Reçu de paiement - ${payment.reference}`,
+                title: `Confirmation de règlement - ${payment.reference}`,
                 customerId: payment.customerId,
                 repairId: payment.repairId,
                 invoiceId,
@@ -6344,9 +6810,10 @@ export const useBeharStore = create<StoreState>()(
           locale: paymentBillingConfig.locale,
           shopId,
           ...input,
-          paymentNumber: docNumber(ws.receiptPrefix, ws.nextReceiptNumber ?? 1, "REC"),
+          paymentNumber: docNumber("CONF", ws.nextReceiptNumber ?? 1, "CONF"),
           mode: input.method,
-          twintReference: input.method === "TWINT" ? normalizeText(input.twintReference ?? input.note) || undefined : undefined,
+          twintReference:
+            input.method === "TWINT" ? normalizeText(input.twintReference ?? input.note) || undefined : undefined,
           createdAt: timestamp,
           updatedAt: timestamp,
           createdBy: actor.id,
@@ -6372,7 +6839,7 @@ export const useBeharStore = create<StoreState>()(
               id: `doc_${id}`,
               shopId,
               type: "payment" as DocumentType,
-              title: `Reçu de paiement - ${payment.paymentNumber}`,
+              title: `Confirmation de règlement - ${payment.paymentNumber}`,
               customerId: payment.customerId,
               repairId: payment.repairId,
               invoiceId: payment.invoiceId,
@@ -6434,9 +6901,233 @@ export const useBeharStore = create<StoreState>()(
 
         return state.markInvoicePaid(invoiceId, method, note);
       },
+      recordRepairSettlement: (repairId, input) => {
+        if (!get().requirePermission("canMarkPaymentPaid", "Indiquer un règlement")) return "";
+        if (!input.confirmExternal) return "";
+
+        const state = get();
+        const repair = state.repairs.find((entry) => entry.id === repairId);
+        if (!repair?.customerId) return "";
+
+        const actor = state.currentUser ?? defaultCurrentUser;
+        const invoice = state.invoices.find((entry) => entry.repairId === repairId);
+        const previousStatus =
+          repair.paymentStatus ??
+          (state.payments.some((payment) => payment.repairId === repairId && payment.status === "Payé")
+            ? "Réglée"
+            : "À régler");
+        const nextRepairStatus: Repair["paymentStatus"] =
+          input.status === "Réglé"
+            ? "Réglée"
+            : input.status === "Partiellement réglé"
+              ? "Partiellement réglée"
+              : "À régler";
+        const amount = clampMoney(input.status === "Non réglé" ? 0 : input.amount);
+        const date = normalizeText(input.date, nowLabel());
+        const method = normalizePaymentMethod(input.method);
+        const externalReference = normalizeText(input.externalReference);
+        const note = normalizeText(input.note);
+        const ws = state.workshopSettings ?? defaultWorkshopSettings;
+        const timestamp = nowLabel();
+        const paymentId = amount > 0 ? uid("payment") : "";
+        const paymentNumber = amount > 0 ? docNumber("CONF", ws.nextReceiptNumber ?? 1, "CONF") : "";
+        const paymentBillingConfig = getWorkshopCountryConfig(repair.billingCountry);
+        const payment: Payment | null =
+          amount > 0
+            ? {
+                id: paymentId,
+                billingCountry: paymentBillingConfig.country,
+                currency: paymentBillingConfig.currency,
+                locale: paymentBillingConfig.locale,
+                shopId,
+                invoiceId: invoice?.id,
+                customerId: repair.customerId,
+                repairId,
+                quoteId: repair.quoteId,
+                paymentNumber,
+                reference: externalReference || paymentNumber,
+                externalReference: externalReference || undefined,
+                method,
+                mode: method,
+                status: "Payé",
+                amount,
+                date,
+                note: [
+                  note,
+                  "Paiement enregistré manuellement. Encaissement effectué hors Behar Tech Pro via le moyen de paiement indiqué.",
+                  "Ce document ne remplace pas une facture. La facture reste le document comptable officiel.",
+                ]
+                  .filter(Boolean)
+                  .join("\n"),
+                twintReference: method === "TWINT" ? externalReference || note || undefined : undefined,
+                createdAt: timestamp,
+                updatedAt: timestamp,
+                createdBy: actor.id,
+                createdByName: actor.name,
+                updatedBy: actor.id,
+                updatedByName: actor.name,
+              }
+            : null;
+
+        set((current) => {
+          const payments = payment ? [payment, ...current.payments] : current.payments;
+          const relatedPayments = payments.filter((entry) => entry.repairId === repairId && entry.status === "Payé");
+          const paidAmount = relatedPayments.reduce((sum, entry) => sum + entry.amount, 0);
+          const invoiceTotalValue = invoice ? invoiceTotal(invoice) : repair.total ?? repair.amount ?? paidAmount;
+          const isPaid = nextRepairStatus === "Réglée" || (invoiceTotalValue > 0 && paidAmount >= invoiceTotalValue);
+          const paymentIds = uniqueIds([...(repair.paymentIds ?? []), repair.paymentId, payment?.id]);
+          const invoices = current.invoices.map((entry) => {
+            if (entry.id !== invoice?.id) return entry;
+            return {
+              ...entry,
+              paymentIds: uniqueIds([...(entry.paymentIds ?? []), payment?.id]),
+              paidAmount,
+              paidAt: isPaid ? date : entry.paidAt,
+              status: isPaid ? ("Payée" as InvoiceStatus) : entry.status === "Payée" ? "Envoyée" : entry.status,
+              paymentMethod: nextRepairStatus === "À régler" ? "Non réglée" : method,
+            };
+          });
+          const repairs = current.repairs.map((entry) => {
+            if (entry.id !== repairId) return entry;
+            return {
+              ...entry,
+              paymentId: payment?.id ?? entry.paymentId,
+              paymentIds,
+              paymentStatus: nextRepairStatus,
+              paymentMethodNote:
+                nextRepairStatus === "À régler" ? undefined : `Réglé hors Behar Tech Pro — ${method} — ${date}`,
+              paymentCustomMethod: input.customMethod || entry.paymentCustomMethod,
+              paymentAmount: amount || entry.paymentAmount,
+              paymentPaidAt: nextRepairStatus !== "À régler" ? date : entry.paymentPaidAt,
+              paymentReference: externalReference || entry.paymentReference,
+              paymentRecordedBy: actor.name,
+              paymentRecordedOutsideBeharTechPro: nextRepairStatus !== "À régler",
+              paymentNote: note || entry.paymentNote,
+              history: [
+                ...entry.history,
+                nextRepairStatus === "À régler"
+                  ? `Règlement indiqué : non réglé (${date})`
+                  : `Réglé hors Behar Tech Pro : ${formatEuro(amount)} (${method})`,
+              ],
+            };
+          });
+          return {
+            invoices,
+            payments,
+            repairs,
+            customers: deriveCustomers(current.customers, repairs, payments),
+            selectedPaymentId: payment?.id ?? current.selectedPaymentId,
+            workshopSettings: payment
+              ? {
+                  ...current.workshopSettings,
+                  nextReceiptNumber: normalizeCounter((current.workshopSettings?.nextReceiptNumber ?? 1) + 1),
+                  updatedAt: timestamp,
+                }
+              : current.workshopSettings,
+            workshopInfo: payment
+              ? asWorkshopInfo({
+                  ...current.workshopSettings,
+                  nextReceiptNumber: normalizeCounter((current.workshopSettings?.nextReceiptNumber ?? 1) + 1),
+                  updatedAt: timestamp,
+                } as WorkshopSettings)
+              : current.workshopInfo,
+            documents: payment
+              ? [
+                  {
+                    id: `doc_${payment.id}`,
+                    shopId,
+                    type: "payment" as DocumentType,
+                    title: `Confirmation de règlement - ${payment.paymentNumber}`,
+                    customerId: payment.customerId,
+                    repairId,
+                    invoiceId: invoice?.id,
+                    paymentId: payment.id,
+                    createdAt: payment.date,
+                  },
+                  ...current.documents,
+                ]
+              : current.documents,
+          };
+        });
+
+        get().addAuditLog({
+          action:
+            input.status === "Non réglé"
+              ? "payment.settlement.updated"
+              : previousStatus === "À régler"
+                ? "payment.settlement.created"
+                : "payment.settlement.modified",
+          targetType: "repair",
+          targetId: repairId,
+          message: `${actor.name} a indiqué le règlement hors Behar Tech Pro du dossier ${repair.number}`,
+          metadata: {
+            auditAction: previousStatus === "À régler" ? "création" : "modification",
+            oldStatus: previousStatus,
+            newStatus: nextRepairStatus,
+            amount,
+            method,
+            externalReference,
+            note,
+            paymentId: payment?.id,
+            invoiceId: invoice?.id,
+          },
+        });
+        get().addNotification({
+          type: nextRepairStatus === "À régler" ? "info" : "success",
+          title: "Règlement indiqué",
+          message:
+            nextRepairStatus === "À régler"
+              ? `${repair.number} marqué non réglé`
+              : `${repair.number} - réglé hors Behar Tech Pro via ${method}`,
+          targetType: "repair",
+          targetId: repairId,
+        });
+
+        return payment?.id || repairId;
+      },
+      closeDossierWithSettlement: (repairId, input) => {
+        const state = get();
+        const repair = state.repairs.find((entry) => entry.id === repairId);
+        if (!repair) return false;
+
+        // Record settlement if paid or partially paid
+        if (input.status !== "Non réglé") {
+          const settlementId = state.recordRepairSettlement(repairId, input);
+          if (!settlementId) return false;
+        } else {
+          // For "Non réglé", still record the settlement status
+          state.recordRepairSettlement(repairId, {
+            ...input,
+            amount: 0,
+            confirmExternal: true, // Auto-confirm for non-paid
+          });
+        }
+
+        // Change status to Rendu
+        state.changeRepairStatus(repairId, "Rendu");
+
+        // Add specific audit log for closure with settlement
+        const actor = state.currentUser ?? defaultCurrentUser;
+        get().addAuditLog({
+          action: "repair.closed_with_settlement",
+          targetType: "repair",
+          targetId: repairId,
+          message: `${actor.name} a clôturé le dossier ${repair.number} avec règlement ${input.status}`,
+          metadata: {
+            settlementStatus: input.status,
+            amount: input.amount,
+            method: input.method,
+            customMethod: input.customMethod,
+            externalReference: input.externalReference,
+          },
+        });
+
+        return true;
+      },
       updatePaymentStatus: (id, status) => {
         if (status === "Annulé" && !get().requirePermission("canCancelPayment", "Annuler un paiement")) return;
         const actor = get().currentUser ?? defaultCurrentUser;
+        const previousPayment = get().payments.find((entry) => entry.id === id);
         set((state) => {
           const timestamp = nowLabel();
           const payments = state.payments.map((payment) =>
@@ -6482,6 +7173,15 @@ export const useBeharStore = create<StoreState>()(
           targetType: "payment",
           targetId: id,
           message: `${actor.name} a passé le paiement ${payment?.paymentNumber ?? id} en ${status}`,
+          metadata: {
+            auditAction: status === "Annulé" ? "annulation" : "modification",
+            oldStatus: previousPayment?.status,
+            newStatus: status,
+            amount: payment?.amount ?? previousPayment?.amount,
+            method: payment?.method ?? previousPayment?.method,
+            externalReference: payment?.externalReference ?? previousPayment?.externalReference,
+            note: payment?.note ?? previousPayment?.note,
+          },
         });
       },
       addAppointment: (input) => {
@@ -6534,7 +7234,10 @@ export const useBeharStore = create<StoreState>()(
           row: input.row ?? 6,
           color: input.color || "mint",
         };
-        set((state) => ({ appointments: [normalizeAppointment(appointment, state.customers, state.repairs), ...state.appointments], selectedAppointmentId: id }));
+        set((state) => ({
+          appointments: [normalizeAppointment(appointment, state.customers, state.repairs), ...state.appointments],
+          selectedAppointmentId: id,
+        }));
         get().addAuditLog({
           action: "appointment.created",
           targetType: "appointment",
@@ -6638,7 +7341,8 @@ export const useBeharStore = create<StoreState>()(
           return existing.id;
         }
         const amount = clampMoney(appointment.estimatedTotal ?? appointment.customerPrice ?? 0);
-        const issue = appointment.issueDescription || appointment.interventionLabel || appointment.issue || "Diagnostic";
+        const issue =
+          appointment.issueDescription || appointment.interventionLabel || appointment.issue || "Diagnostic";
         const repairId = get().addRepair({
           appointmentId: appointment.id,
           customerId,
@@ -6937,15 +7641,68 @@ export const useBeharStore = create<StoreState>()(
         });
         return id;
       },
-      updateDocument: (id, patch) =>
+      updateDocument: (id, patch) => {
+        const document = get().documents.find((entry) => entry.id === id);
+        if (!document) return;
+        if (!get().requirePermission("canDownloadDocuments", "Modifier un document")) return;
+        if (
+          document.type === "internal" &&
+          !get().requirePermission("canViewInternalDocuments", "Modifier un document privé")
+        )
+          return;
+        const technicalPdfKeys = new Set(["fileUrl", "storagePath"]);
+        if (document.lockedAt && Object.keys(patch).some((key) => !technicalPdfKeys.has(key))) {
+          const actor = get().currentUser ?? defaultCurrentUser;
+          get().addNotification({
+            type: "warning",
+            title: "Document verrouillé",
+            message: `${document.title} est figé : créez une nouvelle version pour modifier son contenu.`,
+            targetType: "document",
+            targetId: id,
+          });
+          get().addAuditLog({
+            action: "document.update_blocked",
+            targetType: "document",
+            targetId: id,
+            message: `${actor.name} a tenté de modifier le document verrouillé ${document.title}`,
+          });
+          return;
+        }
         set((state) => ({
-          documents: state.documents.map((document) => (document.id === id ? { ...document, ...patch, id: document.id } : document)),
-        })),
-      deleteDocument: (id) =>
+          documents: state.documents.map((entry) => (entry.id === id ? { ...entry, ...patch, id: entry.id } : entry)),
+        }));
+      },
+      deleteDocument: (id) => {
+        const document = get().documents.find((entry) => entry.id === id);
+        if (!document) return;
+        if (!get().requirePermission("canViewDocuments", "Supprimer un document")) return;
+        if (
+          document.type === "internal" &&
+          !get().requirePermission("canViewInternalDocuments", "Supprimer un document privé")
+        )
+          return;
+        if (document.lockedAt || document.type === "invoice" || document.type === "quote") {
+          const actor = get().currentUser ?? defaultCurrentUser;
+          get().addNotification({
+            type: "warning",
+            title: "Suppression bloquée",
+            message: `${document.title} est un document légal : créez une nouvelle version ou une annulation.`,
+            targetType: "document",
+            targetId: id,
+          });
+          get().addAuditLog({
+            action: "document.delete_blocked",
+            targetType: "document",
+            targetId: id,
+            message: `${actor.name} a tenté de supprimer le document légal ${document.title}`,
+          });
+          return;
+        }
         set((state) => {
           const documents = state.documents.filter((document) => document.id !== id);
           return { documents, selectedDocumentId: documents[0]?.id ?? "" };
-        }),
+        });
+      },
       loadPreloadedCatalog: async () => {
         // [DESACTIVER] Le catalogue global.json est pollué par des faux modèles (ex: "iPhone 11 Blanc").
         // On ne l'utilise plus comme base automatique pour garantir la propreté du catalogue.
@@ -7141,7 +7898,7 @@ export const useBeharStore = create<StoreState>()(
           id: docId,
           shopId,
           type: "sale-receipt" as DocumentType,
-          title: `Reçu de vente comptoir - ${sale.number}`,
+          title: `Justificatif de vente comptoir - ${sale.number}`,
           customerId: sale.customerId,
           repairId: sale.repairId,
           saleId,
@@ -7288,13 +8045,24 @@ export const getQuotePrimaryDeviceLabel = (quote: Quote) => {
   const devices = getQuoteDevices(quote);
   const first = devices[0];
   if (!first) return quote.deviceModel || quote.device || "Appareil";
-  return first.model || [first.brand, first.model].filter(Boolean).join(" ") || quote.deviceModel || quote.device || "Appareil";
+  return (
+    first.model ||
+    [first.brand, first.model].filter(Boolean).join(" ") ||
+    quote.deviceModel ||
+    quote.device ||
+    "Appareil"
+  );
 };
 
 export const getQuoteDeviceListLabel = (quote: Quote) => {
   const devices = getQuoteDevices(quote);
   const first = devices[0];
-  const main = first?.model || [first?.brand, first?.model].filter(Boolean).join(" ") || quote.deviceModel || quote.device || "Appareil";
+  const main =
+    first?.model ||
+    [first?.brand, first?.model].filter(Boolean).join(" ") ||
+    quote.deviceModel ||
+    quote.device ||
+    "Appareil";
   return devices.length > 1 ? `${main} +${devices.length - 1}` : main;
 };
 
