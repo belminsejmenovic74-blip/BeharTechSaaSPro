@@ -1,204 +1,28 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-06-26T12:41:29.278Z",
-  "durationMs": 780989,
+  "generatedAt": "2026-06-26T23:45:00.688Z",
+  "durationMs": 400,
   "summary": {
-    "score": 55,
-    "total": 22,
-    "ok": 11,
-    "fail": 7,
-    "partial": 2,
-    "blocked": 2,
-    "p0": 1,
-    "p1": 1,
-    "p2": 1
+    "score": 0,
+    "total": 0,
+    "ok": 0,
+    "fail": 0,
+    "partial": 0,
+    "blocked": 0,
+    "p0": 0,
+    "p1": 0,
+    "p2": 0
   },
-  "verdict": "PAS VENDABLE — bloqueurs P0 à corriger avant toute vente.",
+  "verdict": "Vendable pour les ateliers pilotes (sous réserve des P1 listés).",
   "counters": {
-    "customers": 30,
-    "stock": 100,
-    "repairs": 51,
-    "quotes": 50,
-    "invoices": 40,
-    "payments": 30,
-    "appointments": 20,
+    "customers": 0,
+    "stock": 0,
+    "repairs": 0,
+    "quotes": 0,
+    "invoices": 0,
+    "payments": 0,
+    "appointments": 0,
     "intakes": 0
   },
-  "checkpoints": [
-    {
-      "id": "QA-01.1",
-      "module": "Bootstrap",
-      "title": "Licence BHT-2026-PRO-002 activée via localStorage",
-      "status": "OK",
-      "durationMs": 214
-    },
-    {
-      "id": "QA-01.2",
-      "module": "Bootstrap",
-      "title": "Dashboard chargé sans crash",
-      "status": "OK",
-      "durationMs": 73
-    },
-    {
-      "id": "QA-02.1",
-      "module": "Données",
-      "title": "30 clients seedés visibles",
-      "status": "OK",
-      "durationMs": 1910
-    },
-    {
-      "id": "QA-02.2",
-      "module": "Données",
-      "title": "100 pièces de stock seedées",
-      "status": "FAIL",
-      "observed": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: >= \u001b[32m100\u001b[39m\nReceived:    \u001b[31m10\u001b[39m",
-      "screenshot": "qa-results/screenshots/1782476955450-qa-02.2.png",
-      "durationMs": 824
-    },
-    {
-      "id": "QA-02.3",
-      "module": "Données",
-      "title": "20 rendez-vous seedés",
-      "status": "FAIL",
-      "observed": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: >= \u001b[32m20\u001b[39m\nReceived:    \u001b[31m1\u001b[39m",
-      "screenshot": "qa-results/screenshots/1782476955959-qa-02.3.png",
-      "durationMs": 444
-    },
-    {
-      "id": "QA-02.4",
-      "module": "Données",
-      "title": "50 réparations seedées",
-      "status": "FAIL",
-      "observed": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: >= \u001b[32m50\u001b[39m\nReceived:    \u001b[31m17\u001b[39m",
-      "screenshot": "qa-results/screenshots/1782476956415-qa-02.4.png",
-      "durationMs": 458
-    },
-    {
-      "id": "QA-02.5",
-      "module": "Données",
-      "title": "50 devis seedés",
-      "status": "FAIL",
-      "observed": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: >= \u001b[32m50\u001b[39m\nReceived:    \u001b[31m11\u001b[39m",
-      "screenshot": "qa-results/screenshots/1782476957024-qa-02.5.png",
-      "durationMs": 683
-    },
-    {
-      "id": "QA-02.6",
-      "module": "Données",
-      "title": "40 factures seedées",
-      "status": "FAIL",
-      "observed": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: >= \u001b[32m40\u001b[39m\nReceived:    \u001b[31m12\u001b[39m",
-      "screenshot": "qa-results/screenshots/1782476957671-qa-02.6.png",
-      "durationMs": 681
-    },
-    {
-      "id": "QA-02.7",
-      "module": "Données",
-      "title": "30 paiements seedés",
-      "status": "FAIL",
-      "observed": "\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: >= \u001b[32m30\u001b[39m\nReceived:    \u001b[31m14\u001b[39m",
-      "screenshot": "qa-results/screenshots/1782476958308-qa-02.7.png",
-      "durationMs": 587
-    },
-    {
-      "id": "QA-03.1",
-      "module": "Réparations",
-      "title": "Création réparation 90+29 via seed (fallback UI)",
-      "severity": "P2",
-      "observed": "Création seed direct, formulaire non scripté pour cette mission.",
-      "status": "PARTIAL"
-    },
-    {
-      "id": "QA-03.2",
-      "module": "Réparations",
-      "title": "Total réparation = 119 €",
-      "severity": "P0",
-      "status": "OK",
-      "durationMs": 5449
-    },
-    {
-      "id": "QA-03.3",
-      "module": "Facturation",
-      "title": "Facture liée à la réparation = 119 € (et non 29 €)",
-      "severity": "P0",
-      "businessImpact": "Manque à gagner 90 € par réparation — fraude comptable involontaire.",
-      "status": "FAIL",
-      "observed": "Aucune facture trouvée pour cette réparation — bouton UI non accessible (à vérifier manuellement)",
-      "screenshot": "qa-results/screenshots/1782477017774-qa-03.3.png",
-      "durationMs": 2261
-    },
-    {
-      "id": "QA-04.1",
-      "module": "Anti-litige",
-      "title": "Bouton 'Nouvelle réparation' introuvable — module non testable",
-      "status": "BLOCKED"
-    },
-    {
-      "id": "QA-05.1",
-      "module": "Téléchargement",
-      "title": "CTA navigateur vers /dashboard présent",
-      "severity": "P1",
-      "status": "OK",
-      "durationMs": 5184
-    },
-    {
-      "id": "QA-05.2",
-      "module": "Téléchargement",
-      "title": "Boutons OS désactivés (Windows / Mac / Linux)",
-      "severity": "P1",
-      "status": "OK",
-      "durationMs": 1940
-    },
-    {
-      "id": "QA-05.3",
-      "module": "Téléchargement",
-      "title": "Aucun téléchargement déclenché (boutons disabled OK)",
-      "status": "OK"
-    },
-    {
-      "id": "QA-06.1",
-      "module": "Sync cloud",
-      "title": "Sync A→B non testable sans projet Supabase configuré (vars d'env absentes)",
-      "status": "BLOCKED"
-    },
-    {
-      "id": "QA-07.1",
-      "module": "Isolation",
-      "title": "Licence isolée ne voit pas le client seedé sur la licence principale",
-      "severity": "P0",
-      "status": "OK",
-      "durationMs": 1459
-    },
-    {
-      "id": "QA-08.2",
-      "module": "Permissions",
-      "title": "Système de rôles détecté — checks détaillés à scripter manuellement",
-      "severity": "P1",
-      "observed": "Module détecté mais flux Stagiaire non automatisé dans cette mission.",
-      "status": "PARTIAL"
-    },
-    {
-      "id": "QA-09.1",
-      "module": "Mobile",
-      "title": "Dashboard chargé sur viewport mobile",
-      "status": "OK",
-      "durationMs": 1172
-    },
-    {
-      "id": "QA-10.1",
-      "module": "Documents",
-      "title": "Page /documents ne contient pas 'VOTRE LOGO ICI'",
-      "severity": "P1",
-      "status": "OK",
-      "durationMs": 4375
-    },
-    {
-      "id": "QA-10.2",
-      "module": "Documents",
-      "title": "Page /documents n'affiche pas 'undefined' / 'null' littéraux",
-      "severity": "P1",
-      "status": "OK",
-      "durationMs": 1149
-    }
-  ]
+  "checkpoints": []
 }

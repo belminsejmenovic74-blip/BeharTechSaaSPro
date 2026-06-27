@@ -1,0 +1,1615 @@
+"use client";
+
+import Link from "next/link";
+import { BeharLogo } from "@/components/behar/behar-logo";
+import { PrimaryButton } from "@/components/behar/primitives";
+
+export function LandingHeader() {
+  return (
+    <header className="sticky top-0 z-50 bg-[#FAFAF8]/90 backdrop-blur-md border-b border-[#E8E8E5]">
+      <div className="max-w-[1200px] mx-auto px-6 h-20 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+          <BeharLogo />
+          <span className="font-bold text-[#1A1916] text-[18px] tracking-tight flex items-center gap-1.5">
+            BEHAR <span className="text-[#E8E8E5]">•</span> TECH <span className="text-[#2A9D8F]">PRO</span>
+          </span>
+        </Link>
+        
+        <nav className="hidden md:flex items-center gap-8">
+          <Link href="#produit" className="text-sm font-medium text-[#6B6B6B] hover:text-[#1A1916] transition-colors">Produit</Link>
+          <Link href="#demo" className="text-sm font-medium text-[#6B6B6B] hover:text-[#1A1916] transition-colors">Démo</Link>
+          <Link href="#fonctionnalites" className="text-sm font-medium text-[#6B6B6B] hover:text-[#1A1916] transition-colors">Fonctionnalités</Link>
+          <Link href="#tarifs" className="text-sm font-medium text-[#6B6B6B] hover:text-[#1A1916] transition-colors">Tarifs</Link>
+          <Link href="#contact" className="text-sm font-medium text-[#6B6B6B] hover:text-[#1A1916] transition-colors">Contact</Link>
+        </nav>
+
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard" className="hidden sm:block text-sm font-medium text-[#6B6B6B] hover:text-[#1A1916] transition-colors">
+            Se connecter
+          </Link>
+          <PrimaryButton as={Link} href="#contact" className="shadow-sm">
+            Demander une démo
+          </PrimaryButton>
+        </div>
+      </div>
+    </header>
+  );
+}
+"use client";
+
+import Link from "next/link";
+import { ChevronRight, ShieldCheck, Sliders, Users } from "lucide-react";
+import { PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
+
+export function LandingHero() {
+  return (
+    <section id="produit" className="pt-20 pb-32 overflow-hidden bg-[#FAFAF8] relative">
+      {/* Decorative Background Blob */}
+      <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[#2A9D8F]/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+      
+      <div className="max-w-[1200px] mx-auto px-6 grid lg:grid-cols-[1fr_1.2fr] gap-12 lg:gap-8 items-center relative z-10">
+        
+        {/* Left Content */}
+        <div className="space-y-8 max-w-xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[#E8E8E5] shadow-sm">
+            <span className="flex size-2 rounded-full bg-[#2A9D8F] animate-pulse" />
+            <span className="text-xs font-semibold text-[#1A1916] uppercase tracking-wide">La gestion d'atelier, réinventée</span>
+          </div>
+
+          <h1 className="text-5xl lg:text-[64px] leading-[1.1] font-bold text-[#1A1916] tracking-tight">
+            Passez votre atelier en <span className="text-[#2A9D8F]">mode pro.</span>
+          </h1>
+
+          <p className="text-lg lg:text-xl text-[#6B6B6B] leading-relaxed">
+            Behar Tech Pro centralise, automatise et sécurise la gestion de votre atelier. Moins d'administratif, plus de sérénité, un contrôle total.
+          </p>
+
+          <div className="space-y-4 pt-2">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 p-1.5 rounded-full bg-[#E5F5F3] text-[#2A9D8F]">
+                <ShieldCheck className="size-4" />
+              </div>
+              <p className="text-[#1A1916] font-medium">Solution sécurisée et fiable.</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 p-1.5 rounded-full bg-[#E5F5F3] text-[#2A9D8F]">
+                <Sliders className="size-4" />
+              </div>
+              <p className="text-[#1A1916] font-medium">Gardez le contrôle sur chaque réparation et chaque vente.</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 p-1.5 rounded-full bg-[#E5F5F3] text-[#2A9D8F]">
+                <Users className="size-4" />
+              </div>
+              <p className="text-[#1A1916] font-medium">Offrez une expérience client fluide et professionnelle.</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
+            <PrimaryButton as={Link} href="#contact" className="w-full sm:w-auto h-12 px-8 text-[15px] shadow-lg shadow-[#2A9D8F]/20">
+              Demander une démo
+            </PrimaryButton>
+            <SecondaryButton as={Link} href="#demo" className="w-full sm:w-auto h-12 px-6 text-[15px] border-none bg-transparent hover:bg-[#E8E8E5]/50 group">
+              Voir la démo interactive
+              <ChevronRight className="size-4 ml-1 group-hover:translate-x-1 transition-transform" />
+            </SecondaryButton>
+          </div>
+        </div>
+
+        {/* Right Composition - Mockups */}
+        <div className="relative h-[600px] w-full flex items-center justify-center lg:justify-end mt-12 lg:mt-0 perspective-[2000px]">
+          
+          {/* Main Desktop Mockup */}
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[800px] bg-white rounded-xl border border-[#E8E8E5] shadow-[0_24px_64px_rgba(26,25,22,0.08)] overflow-hidden transform rotate-y-[-12deg] rotate-x-[2deg] translate-z-[0]">
+            {/* Window Header */}
+            <div className="h-10 bg-[#FAFAF8] border-b border-[#E8E8E5] flex items-center px-4 gap-2">
+              <div className="flex gap-1.5">
+                <div className="size-3 rounded-full bg-[#FF5F56]" />
+                <div className="size-3 rounded-full bg-[#FFBD2E]" />
+                <div className="size-3 rounded-full bg-[#27C93F]" />
+              </div>
+              <div className="mx-auto bg-white border border-[#E8E8E5] rounded-md w-64 h-6 flex items-center justify-center">
+                <span className="text-[10px] text-[#A3A3A3] font-medium">behar.tech/dashboard</span>
+              </div>
+            </div>
+            {/* Desktop Content */}
+            <div className="h-[460px] flex">
+              <div className="w-48 border-r border-[#E8E8E5] p-4 space-y-4">
+                <div className="h-6 w-24 bg-[#E8E8E5] rounded animate-pulse opacity-50" />
+                <div className="space-y-2 mt-8">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className={`h-8 rounded ${i === 1 ? 'bg-[#E5F5F3]' : 'bg-[#FAFAF8]'}`} />
+                  ))}
+                </div>
+              </div>
+              <div className="flex-1 p-8 space-y-6">
+                <div className="flex justify-between items-end">
+                  <div>
+                    <div className="h-8 w-48 bg-[#1A1916] rounded opacity-10 mb-2" />
+                    <div className="h-4 w-64 bg-[#6B6B6B] rounded opacity-10" />
+                  </div>
+                  <div className="h-8 w-32 bg-[#E8E8E5] rounded" />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-24 bg-[#FAFAF8] border border-[#E8E8E5] rounded-xl" />
+                  ))}
+                </div>
+                <div className="h-48 bg-[#FAFAF8] border border-[#E8E8E5] rounded-xl" />
+              </div>
+            </div>
+          </div>
+
+          {/* Tablet Mockup (Comptoir) */}
+          <div className="absolute left-[10%] bottom-[10%] w-[400px] h-[300px] bg-white rounded-[24px] border-[6px] border-[#1A1916] shadow-[0_32px_64px_rgba(26,25,22,0.15)] overflow-hidden transform rotate-y-[-5deg] rotate-x-[5deg] translate-z-[100px]">
+            <div className="h-full bg-[#FAFAF8] flex flex-col">
+              <div className="h-12 border-b border-[#E8E8E5] flex items-center px-4 justify-between bg-white">
+                <div className="h-4 w-24 bg-[#1A1916] rounded opacity-20" />
+                <div className="h-6 w-6 rounded-full bg-[#2A9D8F]" />
+              </div>
+              <div className="p-4 flex-1">
+                <div className="h-6 w-32 bg-[#1A1916] rounded opacity-10 mb-4" />
+                <div className="grid grid-cols-2 gap-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-16 bg-white border border-[#E8E8E5] rounded-xl flex items-center p-3 gap-3 shadow-sm">
+                      <div className="size-8 rounded-full bg-[#E5F5F3]" />
+                      <div className="h-3 w-16 bg-[#6B6B6B] rounded opacity-20" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Smartphone Mockup */}
+          <div className="absolute right-[5%] bottom-[5%] w-[220px] h-[460px] bg-white rounded-[32px] border-[8px] border-[#1A1916] shadow-[0_32px_64px_rgba(26,25,22,0.2)] overflow-hidden transform rotate-y-[-15deg] rotate-z-[2deg] translate-z-[200px]">
+            {/* Notch */}
+            <div className="absolute top-0 inset-x-0 h-6 bg-[#1A1916] rounded-b-xl w-32 mx-auto z-10" />
+            <div className="h-full bg-[#FAFAF8] relative pt-10 px-4">
+              <div className="h-4 w-20 bg-[#1A1916] rounded opacity-20 mb-6 mx-auto" />
+              <div className="space-y-4">
+                <div className="h-24 bg-white border border-[#E8E8E5] rounded-2xl p-4 shadow-sm">
+                  <div className="flex gap-3 mb-2">
+                    <div className="size-10 bg-[#E5F5F3] rounded-full" />
+                    <div className="space-y-2 flex-1">
+                      <div className="h-3 w-20 bg-[#1A1916] rounded opacity-20" />
+                      <div className="h-2 w-12 bg-[#6B6B6B] rounded opacity-20" />
+                    </div>
+                  </div>
+                  <div className="h-2 w-full bg-[#E8E8E5] rounded-full mt-4" />
+                </div>
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-16 bg-white border border-[#E8E8E5] rounded-xl shadow-sm" />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Floating KPI Cards */}
+          <div className="absolute top-[15%] left-[5%] bg-white/80 backdrop-blur-md border border-[#E8E8E5] p-4 rounded-2xl shadow-[0_8px_32px_rgba(26,25,22,0.06)] translate-z-[150px] transform hover:-translate-y-1 transition-transform">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-full bg-[#E5F5F3] flex items-center justify-center">
+                <Sliders className="size-5 text-[#2A9D8F]" />
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold text-[#6B6B6B] uppercase tracking-wide">Réparations</p>
+                <p className="text-xl font-bold text-[#1A1916]">12 <span className="text-xs text-[#2A9D8F] font-medium">+3 vs hier</span></p>
+              </div>
+            </div>
+          </div>
+
+          <div className="absolute bottom-[40%] left-[2%] bg-white/80 backdrop-blur-md border border-[#E8E8E5] p-4 rounded-2xl shadow-[0_8px_32px_rgba(26,25,22,0.06)] translate-z-[250px] transform hover:-translate-y-1 transition-transform">
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-full bg-[#E8E8E5]/50 flex items-center justify-center">
+                <ShieldCheck className="size-5 text-[#1A1916]" />
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold text-[#6B6B6B] uppercase tracking-wide">Satisfaction</p>
+                <p className="text-xl font-bold text-[#1A1916]">98 % <span className="text-xs text-[#6B6B6B] font-medium">Clients satisfaits</span></p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  );
+}
+"use client";
+
+import { ShieldCheck, Cloud, Database, Lock } from "lucide-react";
+
+export function TrustBand() {
+  return (
+    <section className="bg-[#FAFAF8] pb-24 relative z-20">
+      <div className="max-w-[1200px] mx-auto px-6">
+        <div className="bg-white/60 backdrop-blur-md border border-[#E8E8E5] rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_4px_24px_rgba(26,25,22,0.02)]">
+          
+          <div className="flex items-center gap-4">
+            <div className="flex -space-x-3">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="size-10 rounded-full border-2 border-white bg-[#F3F4F6] flex items-center justify-center overflow-hidden">
+                  <div className="size-full bg-gradient-to-br from-[#E5F5F3] to-[#E8E8E5]" />
+                </div>
+              ))}
+            </div>
+            <div>
+              <p className="font-bold text-[#1A1916]">Pensé pour les ateliers exigeants</p>
+              <p className="text-sm text-[#6B6B6B]">Conçu avec des réparateurs terrain</p>
+            </div>
+          </div>
+
+          <div className="hidden md:block w-px h-12 bg-[#E8E8E5]" />
+
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6 md:gap-12 text-center md:text-left">
+            <div className="flex items-center gap-3">
+              <Cloud className="size-5 text-[#2A9D8F]" />
+              <span className="text-sm font-medium text-[#6B6B6B]">Hébergé en Europe</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Lock className="size-5 text-[#2A9D8F]" />
+              <span className="text-sm font-medium text-[#6B6B6B]">Données sécurisées</span>
+            </div>
+            <div className="flex items-center gap-3 col-span-2 md:col-span-1 justify-center md:justify-start">
+              <Database className="size-5 text-[#2A9D8F]" />
+              <span className="text-sm font-medium text-[#6B6B6B]">Sauvegardes auto</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  );
+}
+"use client";
+
+import { Monitor, Wrench, FileText, Package, MessageSquare, RefreshCcw, Store, Navigation } from "lucide-react";
+
+const MODULES = [
+  {
+    title: "Mode comptoir",
+    desc: "Prise en charge ultra-rapide et devis en 3 clics.",
+    icon: Monitor,
+  },
+  {
+    title: "Atelier",
+    desc: "Suivi des réparations, affectation et contrôle qualité.",
+    icon: Wrench,
+  },
+  {
+    title: "Factures & règlements",
+    desc: "Facturation auto, gestion des acomptes et relances.",
+    icon: FileText,
+  },
+  {
+    title: "Stock",
+    desc: "Inventaire temps réel, alertes de rupture, suggestions IA.",
+    icon: Package,
+  },
+  {
+    title: "Suivi client",
+    desc: "Espace client sécurisé, SMS et portail en ligne.",
+    icon: MessageSquare,
+  },
+  {
+    title: "Reconditionnement",
+    desc: "Achats, tests, marges et mise en vente simplifiés.",
+    icon: RefreshCcw,
+  },
+  {
+    title: "Multi-boutique",
+    desc: "Pilotage global de vos différents points de vente.",
+    icon: Store,
+  },
+  {
+    title: "Déplacement",
+    desc: "Mode mobile pour les réparations chez le client.",
+    icon: Navigation,
+  },
+];
+
+export function SuiteGrid() {
+  return (
+    <section id="fonctionnalites" className="py-24 bg-white border-t border-[#E8E8E5]">
+      <div className="max-w-[1200px] mx-auto px-6">
+        
+        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+          <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-[#FAFAF8] border border-[#E8E8E5] text-[11px] font-bold tracking-widest uppercase text-[#6B6B6B]">
+            TOUT-EN-UN
+          </div>
+          <h2 className="text-3xl md:text-[40px] font-bold text-[#1A1916] leading-tight">
+            Une suite complète pour piloter votre atelier.
+          </h2>
+          <p className="text-lg text-[#6B6B6B]">
+            De l'accueil client à la revente, en passant par les achats et le reconditionnement : tout est connecté, tout est maîtrisé.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {MODULES.map((mod, i) => (
+            <div key={i} className="group p-6 bg-[#FAFAF8] rounded-2xl border border-[#E8E8E5] hover:bg-white hover:border-[#2A9D8F]/30 hover:shadow-[0_8px_24px_rgba(26,25,22,0.04)] transition-all duration-300">
+              <div className="size-12 rounded-xl bg-white border border-[#E8E8E5] flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-sm">
+                <mod.icon className="size-5 text-[#2A9D8F]" />
+              </div>
+              <h3 className="text-lg font-bold text-[#1A1916] mb-2">{mod.title}</h3>
+              <p className="text-sm text-[#6B6B6B] leading-relaxed">{mod.desc}</p>
+            </div>
+          ))}
+        </div>
+
+      </div>
+    </section>
+  );
+}
+"use client";
+
+import { useRef, useState, useEffect } from "react";
+import { Store, RefreshCcw, Navigation, Layers, ChevronLeft, ChevronRight } from "lucide-react";
+import { PrimaryButton } from "@/components/behar/primitives";
+
+const SLIDES = [
+  {
+    id: "comptoir",
+    title: "Atelier comptoir",
+    icon: Store,
+    content: (
+      <div className="bg-white border border-[#E8E8E5] rounded-xl shadow-sm h-[320px] p-6 flex flex-col">
+        <div className="flex items-center justify-between border-b border-[#E8E8E5] pb-4 mb-4">
+          <div className="font-bold text-[#1A1916] tracking-tight">BEHAR <span className="text-[#2A9D8F]">PRO</span></div>
+          <div className="flex items-center gap-2"><span className="size-2 rounded-full bg-[#2A9D8F]"></span><span className="text-xs font-medium text-[#2A9D8F]">En ligne</span></div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-[#FAFAF8] p-3 rounded-lg border border-[#E8E8E5]">
+            <div className="text-xs text-[#6B6B6B] mb-1">Aujourd'hui</div>
+            <div className="text-xl font-bold">12</div>
+            <div className="text-[10px] text-[#2A9D8F]">+3 réparations</div>
+          </div>
+          <div className="bg-[#FAFAF8] p-3 rounded-lg border border-[#E8E8E5]">
+            <div className="text-xs text-[#6B6B6B] mb-1">Encaissé</div>
+            <div className="text-xl font-bold">1 240 €</div>
+            <div className="text-[10px] text-[#2A9D8F]">+18% vs hier</div>
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {[1,2,3,4,5,6].map(i => <div key={i} className="h-10 bg-[#FAFAF8] border border-[#E8E8E5] rounded-lg"></div>)}
+        </div>
+      </div>
+    )
+  },
+  {
+    id: "reconditionnement",
+    title: "Reconditionnement & revente",
+    icon: RefreshCcw,
+    content: (
+      <div className="bg-white border border-[#E8E8E5] rounded-xl shadow-lg h-[400px] flex flex-col overflow-hidden">
+        <div className="grid grid-cols-5 divide-x divide-[#E8E8E5] border-b border-[#E8E8E5]">
+          <div className="p-4 text-center">
+            <div className="text-xs text-[#6B6B6B] mb-1">Achats</div>
+            <div className="text-2xl font-bold text-[#1A1916]">120</div>
+            <div className="text-[10px] text-[#2A9D8F]">+18%</div>
+          </div>
+          <div className="p-4 text-center">
+            <div className="text-xs text-[#6B6B6B] mb-1">Lots</div>
+            <div className="text-2xl font-bold text-[#1A1916]">36</div>
+            <div className="text-[10px] text-[#FF5F56]">-9%</div>
+          </div>
+          <div className="p-4 text-center">
+            <div className="text-xs text-[#6B6B6B] mb-1">En reconditionnement</div>
+            <div className="text-2xl font-bold text-[#1A1916]">58</div>
+            <div className="text-[10px] text-[#2A9D8F]">+21%</div>
+          </div>
+          <div className="p-4 text-center">
+            <div className="text-xs text-[#6B6B6B] mb-1">Prêts à vendre</div>
+            <div className="text-2xl font-bold text-[#1A1916]">158</div>
+            <div className="text-[10px] text-[#2A9D8F]">+23%</div>
+          </div>
+          <div className="p-4 text-center">
+            <div className="text-xs text-[#6B6B6B] mb-1">Marge moyenne</div>
+            <div className="text-2xl font-bold text-[#1A1916]">28,4 %</div>
+            <div className="text-[10px] text-[#2A9D8F]">+4,2 pts</div>
+          </div>
+        </div>
+        <div className="flex-1 p-6 flex gap-6 bg-[#FAFAF8]">
+          <div className="flex-1 bg-white border border-[#E8E8E5] rounded-lg p-4">
+            <div className="text-sm font-bold mb-4">Inventaire & rentabilité</div>
+            <div className="space-y-2">
+              {[1,2,3,4].map(i => <div key={i} className="h-8 bg-[#FAFAF8] rounded border border-[#E8E8E5]"></div>)}
+            </div>
+          </div>
+          <div className="w-1/3 bg-white border border-[#E8E8E5] rounded-lg p-4">
+            <div className="text-sm font-bold mb-4">Opportunités d'achat</div>
+            <div className="space-y-4">
+              <div className="p-3 border border-[#E8E8E5] rounded-lg bg-[#FAFAF8]">
+                <div className="text-xs font-bold mb-1">iPhone 12 128Go</div>
+                <div className="text-[10px] text-[#6B6B6B] mb-2">Marge estimée : 20%</div>
+                <PrimaryButton className="w-full h-6 text-[10px]">Voir l'offre</PrimaryButton>
+              </div>
+              <div className="p-3 border border-[#E8E8E5] rounded-lg bg-[#FAFAF8]">
+                <div className="text-xs font-bold mb-1">Samsung S21</div>
+                <div className="text-[10px] text-[#6B6B6B] mb-2">Marge estimée : 26%</div>
+                <PrimaryButton className="w-full h-6 text-[10px]">Voir l'offre</PrimaryButton>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  },
+  {
+    id: "deplacement",
+    title: "Réparateur en déplacement",
+    icon: Navigation,
+    content: (
+      <div className="bg-white border border-[#E8E8E5] rounded-[24px] shadow-sm w-[260px] h-[480px] mx-auto p-4 flex flex-col relative">
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-16 h-4 bg-[#1A1916] rounded-b-xl" />
+        <div className="mt-6 flex items-center justify-between">
+          <div className="text-xs font-bold">Aujourd'hui</div>
+          <div className="size-6 rounded-full bg-[#E8E8E5]"></div>
+        </div>
+        <div className="mt-6 space-y-3 flex-1 overflow-hidden">
+          <div className="p-3 border border-[#E8E8E5] rounded-xl relative">
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#2A9D8F] rounded-l-xl"></div>
+            <div className="text-xs text-[#6B6B6B]">09:00</div>
+            <div className="font-bold text-sm">Sophie Martin</div>
+            <div className="text-[10px] text-[#6B6B6B]">Remplacement batterie</div>
+          </div>
+          <div className="p-3 border border-[#E8E8E5] rounded-xl relative">
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#2A9D8F] rounded-l-xl"></div>
+            <div className="text-xs text-[#6B6B6B]">11:30</div>
+            <div className="font-bold text-sm">Thomas Bernard</div>
+            <div className="text-[10px] text-[#6B6B6B]">Écran cassé, pixels morts</div>
+          </div>
+        </div>
+      </div>
+    )
+  },
+  {
+    id: "multi",
+    title: "Multi-boutique",
+    icon: Layers,
+    content: (
+      <div className="bg-white border border-[#E8E8E5] rounded-[24px] shadow-sm w-[260px] h-[480px] mx-auto p-4 flex flex-col relative">
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-16 h-4 bg-[#1A1916] rounded-b-xl" />
+        <div className="mt-8 text-sm font-bold">Vue d'ensemble</div>
+        <div className="text-[10px] text-[#6B6B6B] mb-6">Toutes les boutiques</div>
+        <div className="space-y-3">
+          {['Paris - République', 'Lyon - Part-Dieu', 'Marseille - Vieux-Port'].map((city, i) => (
+            <div key={i} className="p-3 border border-[#E8E8E5] rounded-xl">
+              <div className="font-bold text-xs mb-2 flex items-center gap-1.5"><Store className="size-3 text-[#2A9D8F]"/> {city}</div>
+              <div className="flex justify-between text-[10px]">
+                <span className="text-[#6B6B6B]">CA du jour</span>
+                <span className="font-bold">{(3450 - i * 500)} €</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+];
+
+export function TargetCarousel() {
+  const [activeIndex, setActiveIndex] = useState(1); // default to center (reconditionnement)
+
+  return (
+    <section className="py-24 bg-[#FAFAF8] overflow-hidden">
+      <div className="max-w-[1200px] mx-auto px-6 text-center mb-16 space-y-4">
+        <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-white border border-[#E8E8E5] text-[11px] font-bold tracking-widest uppercase text-[#2A9D8F]">
+          TOUT-EN-UN
+        </div>
+        <h2 className="text-3xl md:text-[40px] font-bold text-[#1A1916] leading-tight">
+          Un logiciel pour chaque type d'atelier.
+        </h2>
+        <p className="text-lg text-[#6B6B6B]">
+          Du comptoir à la revente, en passant par l'intervention mobile et le multi-site.
+        </p>
+      </div>
+
+      <div className="relative max-w-[1400px] mx-auto px-6 flex flex-col items-center">
+        
+        {/* Navigation Arrows */}
+        <div className="absolute top-1/2 -translate-y-1/2 left-4 md:left-12 z-20">
+          <button 
+            onClick={() => setActiveIndex(Math.max(0, activeIndex - 1))}
+            disabled={activeIndex === 0}
+            className="size-12 rounded-full bg-white border border-[#E8E8E5] flex items-center justify-center shadow-sm disabled:opacity-30 hover:bg-[#FAFAF8] transition-colors"
+          >
+            <ChevronLeft className="size-5" />
+          </button>
+        </div>
+        <div className="absolute top-1/2 -translate-y-1/2 right-4 md:right-12 z-20">
+          <button 
+            onClick={() => setActiveIndex(Math.min(SLIDES.length - 1, activeIndex + 1))}
+            disabled={activeIndex === SLIDES.length - 1}
+            className="size-12 rounded-full bg-white border border-[#E8E8E5] flex items-center justify-center shadow-sm disabled:opacity-30 hover:bg-[#FAFAF8] transition-colors"
+          >
+            <ChevronRight className="size-5" />
+          </button>
+        </div>
+
+        {/* Carousel Container */}
+        <div className="relative w-full h-[550px] flex justify-center items-center perspective-[1000px]">
+          {SLIDES.map((slide, i) => {
+            const isActive = i === activeIndex;
+            const isPrev = i === activeIndex - 1;
+            const isNext = i === activeIndex + 1;
+            const isFar = Math.abs(i - activeIndex) > 1;
+
+            let transform = "translateX(0) scale(1)";
+            let zIndex = 10;
+            let opacity = 1;
+
+            if (isPrev) {
+              transform = "translateX(-60%) scale(0.85)";
+              zIndex = 5;
+              opacity = 0.6;
+            } else if (isNext) {
+              transform = "translateX(60%) scale(0.85)";
+              zIndex = 5;
+              opacity = 0.6;
+            } else if (isFar) {
+              transform = `translateX(${i < activeIndex ? '-100%' : '100%'}) scale(0.7)`;
+              zIndex = 0;
+              opacity = 0;
+            }
+
+            return (
+              <div 
+                key={slide.id}
+                className="absolute transition-all duration-500 ease-out cursor-pointer"
+                style={{ transform, zIndex, opacity }}
+                onClick={() => setActiveIndex(i)}
+              >
+                <div className="flex flex-col items-center gap-6">
+                  <div className={`flex items-center gap-3 px-6 py-3 rounded-full bg-white shadow-sm border border-[#E8E8E5] transition-colors ${isActive ? 'ring-2 ring-[#2A9D8F]/20' : ''}`}>
+                    <div className="size-8 rounded-full bg-[#E5F5F3] flex items-center justify-center">
+                      <slide.icon className="size-4 text-[#2A9D8F]" />
+                    </div>
+                    <span className="font-bold text-[#1A1916]">{slide.title}</span>
+                  </div>
+                  <div className={`w-[800px] max-w-[90vw] transition-all duration-500 ${isActive ? 'ring-4 ring-black/5 rounded-xl' : ''}`}>
+                    {slide.content}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Dots */}
+        <div className="flex items-center gap-2 mt-8">
+          {SLIDES.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveIndex(i)}
+              className={`h-2 rounded-full transition-all duration-300 ${i === activeIndex ? 'w-6 bg-[#2A9D8F]' : 'w-2 bg-[#E8E8E5]'}`}
+            />
+          ))}
+        </div>
+
+        <p className="mt-12 text-center text-[#6B6B6B]">
+          Un écosystème complet adapté à votre métier,<br/>pour gagner du temps, augmenter votre rentabilité et offrir une expérience client irréprochable.
+        </p>
+
+      </div>
+    </section>
+  );
+}
+"use client";
+
+import { useState } from "react";
+import { PhoneOff, Box, Shield, Activity, Clock, TrendingUp, CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react";
+
+const BENEFITS = [
+  {
+    id: "appels",
+    title: "Moins d'appels",
+    icon: PhoneOff,
+    desc: "Vos clients trouvent leurs réponses, vous gardez votre concentration.",
+    bullets: ["Suivi en ligne 24/7", "Notifications automatiques", "Moins d'interruptions, plus d'efficacité"],
+    mockup: (
+      <div className="bg-white border border-[#E8E8E5] rounded-xl shadow-sm h-full flex flex-col p-4">
+        <div className="h-8 w-32 bg-[#E8E8E5] rounded-md mb-4" />
+        <div className="space-y-3">
+          {[1,2,3].map(i => (
+            <div key={i} className="p-3 border border-[#E8E8E5] rounded-lg flex items-center gap-3">
+              <div className="size-8 rounded-full bg-[#E5F5F3]" />
+              <div className="space-y-1 flex-1">
+                <div className="h-2 w-20 bg-[#1A1916] rounded opacity-20" />
+                <div className="h-2 w-full bg-[#E8E8E5] rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  },
+  {
+    id: "stock",
+    title: "Stock intelligent",
+    icon: Box,
+    desc: "Le bon produit, au bon moment, au bon prix.",
+    subtitle: "via partenaires IA",
+    bullets: ["Import fournisseurs via PDF ou photo", "Mise à jour automatique des stocks", "Achats suggérés par IA"],
+    mockup: (
+      <div className="bg-white border border-[#E8E8E5] rounded-xl shadow-lg h-full flex overflow-hidden">
+        <div className="w-48 bg-[#FAFAF8] border-r border-[#E8E8E5] p-4 space-y-2">
+          <div className="h-6 w-24 bg-[#1A1916] rounded opacity-20 mb-6" />
+          {[1,2,3,4,5,6].map(i => <div key={i} className={`h-6 rounded ${i === 3 ? 'bg-[#E5F5F3]' : 'bg-transparent'}`} />)}
+        </div>
+        <div className="flex-1 p-6 flex flex-col">
+          <div className="text-lg font-bold mb-6">Gérant — Inventaire & rentabilité</div>
+          <div className="flex-1 bg-white border border-[#E8E8E5] rounded-lg">
+            <div className="grid grid-cols-5 p-3 border-b border-[#E8E8E5] text-[10px] text-[#6B6B6B] font-medium">
+              <div className="col-span-2">Modèle</div>
+              <div>SKU / Lot</div>
+              <div>Stock</div>
+              <div>Statut</div>
+            </div>
+            <div className="divide-y divide-[#E8E8E5]">
+              <div className="grid grid-cols-5 p-3 items-center text-[10px]">
+                <div className="col-span-2 font-bold">iPhone 13 128Go</div>
+                <div className="text-[#6B6B6B]">LOT-13G4-001</div>
+                <div className="font-bold">85</div>
+                <div className="text-[#2A9D8F] font-medium bg-[#E5F5F3] px-2 py-0.5 rounded-full inline-block w-fit">Bon</div>
+              </div>
+              <div className="grid grid-cols-5 p-3 items-center text-[10px]">
+                <div className="col-span-2 font-bold">iPhone 12 64Go</div>
+                <div className="text-[#6B6B6B]">LOT-12G4-002</div>
+                <div className="font-bold">38</div>
+                <div className="text-[#FFBD2E] font-medium bg-[#FFF8E6] px-2 py-0.5 rounded-full inline-block w-fit">Faible</div>
+              </div>
+              <div className="grid grid-cols-5 p-3 items-center text-[10px]">
+                <div className="col-span-2 font-bold">Samsung S21 128Go</div>
+                <div className="text-[#6B6B6B]">LOT-S21G-003</div>
+                <div className="font-bold">0</div>
+                <div className="text-[#FF5F56] font-medium bg-[#FFEBEA] px-2 py-0.5 rounded-full inline-block w-fit">Rupture</div>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 p-4 border border-[#E8E8E5] rounded-lg bg-[#FAFAF8] flex justify-between items-center">
+            <div>
+              <div className="text-xs font-bold">Achats suggérés par IA</div>
+              <div className="text-[10px] text-[#6B6B6B]">Basées sur vos ventes et la saisonnalité</div>
+            </div>
+            <div className="bg-[#2A9D8F] text-white text-[10px] px-3 py-1.5 rounded-md font-medium">Voir les suggestions</div>
+          </div>
+        </div>
+      </div>
+    )
+  },
+  {
+    id: "litiges",
+    title: "Moins de litiges",
+    icon: Shield,
+    desc: "Chaque étape est tracée, chaque action est protégée.",
+    bullets: ["Historique complet", "Preuves et documents centralisés", "Transparence totale"],
+    mockup: <div className="bg-white border border-[#E8E8E5] rounded-xl shadow-sm h-full p-4 flex flex-col justify-center items-center"><Shield className="size-12 text-[#E8E8E5]" /></div>
+  },
+  {
+    id: "controle",
+    title: "Plus de contrôle",
+    icon: Activity,
+    desc: "Vos données se transforment en indicateurs visuels et clairs.",
+    bullets: ["Tableaux de bord", "Pilotage en temps réel", "Décisions éclairées"],
+    mockup: <div className="bg-white border border-[#E8E8E5] rounded-xl shadow-sm h-full p-4 flex flex-col justify-center items-center"><Activity className="size-12 text-[#E8E8E5]" /></div>
+  },
+  {
+    id: "temps",
+    title: "Plus de temps",
+    icon: Clock,
+    desc: "Automatisez vos tâches répétitives et concentrez-vous sur l'essentiel.",
+    bullets: ["Relances SMS", "Génération auto de factures", "Gain estimé : 2h/jour"],
+    mockup: <div className="bg-white border border-[#E8E8E5] rounded-xl shadow-sm h-full p-4 flex flex-col justify-center items-center"><Clock className="size-12 text-[#E8E8E5]" /></div>
+  },
+  {
+    id: "rentabilite",
+    title: "Plus de rentabilité",
+    icon: TrendingUp,
+    desc: "Optimisez vos marges et évitez les pertes.",
+    bullets: ["Analyse des marges", "Calcul IA des prix", "Réduction des erreurs"],
+    mockup: <div className="bg-white border border-[#E8E8E5] rounded-xl shadow-sm h-full p-4 flex flex-col justify-center items-center"><TrendingUp className="size-12 text-[#E8E8E5]" /></div>
+  }
+];
+
+export function BenefitsCarousel() {
+  const [activeIndex, setActiveIndex] = useState(1); // Default to "Stock intelligent"
+
+  return (
+    <section className="py-24 bg-white overflow-hidden">
+      <div className="max-w-[1200px] mx-auto px-6 text-center mb-16 space-y-4">
+        <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-[#E5F5F3] text-[11px] font-bold tracking-widest uppercase text-[#2A9D8F]">
+          VOTRE QUOTIDIEN, OPTIMISÉ
+        </div>
+        <h2 className="text-3xl md:text-[40px] font-bold text-[#1A1916] leading-tight">
+          Ce que le logiciel apporte à votre atelier.
+        </h2>
+      </div>
+
+      <div className="relative max-w-[1400px] mx-auto px-6 h-[500px] flex items-center justify-center perspective-[1200px]">
+        {/* Navigation */}
+        <div className="absolute top-1/2 -translate-y-1/2 left-4 md:left-12 z-30">
+          <button 
+            onClick={() => setActiveIndex(Math.max(0, activeIndex - 1))}
+            disabled={activeIndex === 0}
+            className="size-12 rounded-full bg-white border border-[#E8E8E5] flex items-center justify-center shadow-sm disabled:opacity-30 hover:bg-[#FAFAF8] transition-colors"
+          >
+            <ChevronLeft className="size-5" />
+          </button>
+        </div>
+        <div className="absolute top-1/2 -translate-y-1/2 right-4 md:right-12 z-30">
+          <button 
+            onClick={() => setActiveIndex(Math.min(BENEFITS.length - 1, activeIndex + 1))}
+            disabled={activeIndex === BENEFITS.length - 1}
+            className="size-12 rounded-full bg-white border border-[#E8E8E5] flex items-center justify-center shadow-sm disabled:opacity-30 hover:bg-[#FAFAF8] transition-colors"
+          >
+            <ChevronRight className="size-5" />
+          </button>
+        </div>
+
+        {/* Carousel Cards */}
+        {BENEFITS.map((benefit, i) => {
+          const isActive = i === activeIndex;
+          const isPrev = i === activeIndex - 1;
+          const isNext = i === activeIndex + 1;
+          const isFar = Math.abs(i - activeIndex) > 1;
+
+          let transform = "translateX(0) scale(1)";
+          let zIndex = 20;
+          let opacity = 1;
+
+          if (isPrev) {
+            transform = "translateX(-110%) scale(0.9)";
+            zIndex = 10;
+            opacity = 0.5;
+          } else if (isNext) {
+            transform = "translateX(110%) scale(0.9)";
+            zIndex = 10;
+            opacity = 0.5;
+          } else if (isFar) {
+            transform = `translateX(${i < activeIndex ? '-200%' : '200%'}) scale(0.8)`;
+            zIndex = 0;
+            opacity = 0;
+          }
+
+          if (!isActive) {
+            return (
+              <div 
+                key={benefit.id}
+                className="absolute w-[300px] h-[400px] bg-white border border-[#E8E8E5] rounded-3xl p-8 flex flex-col items-center justify-center text-center transition-all duration-500 ease-out cursor-pointer shadow-sm hover:shadow-md"
+                style={{ transform, zIndex, opacity }}
+                onClick={() => setActiveIndex(i)}
+              >
+                <div className="size-16 rounded-full bg-[#FAFAF8] border border-[#E8E8E5] flex items-center justify-center mb-6">
+                  <benefit.icon className="size-6 text-[#2A9D8F]" />
+                </div>
+                <h3 className="text-xl font-bold text-[#1A1916] mb-4">{benefit.title}</h3>
+                <p className="text-sm text-[#6B6B6B] leading-relaxed mb-8">{benefit.desc}</p>
+                <div className="w-full space-y-3 mt-auto">
+                  {benefit.bullets.map((b, j) => (
+                    <div key={j} className="flex items-start gap-2 text-left">
+                      <CheckCircle2 className="size-4 text-[#2A9D8F] mt-0.5 shrink-0" />
+                      <span className="text-[11px] font-medium text-[#6B6B6B]">{b}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div 
+              key={benefit.id}
+              className="absolute w-[800px] max-w-[90vw] h-[450px] bg-[#FAFAF8] border border-[#E8E8E5] rounded-[32px] p-2 flex flex-col md:flex-row transition-all duration-500 ease-out shadow-[0_24px_64px_rgba(26,25,22,0.08)]"
+              style={{ transform, zIndex, opacity }}
+            >
+              <div className="w-full md:w-5/12 p-8 md:p-10 flex flex-col justify-center">
+                <div className="size-12 rounded-2xl bg-[#E5F5F3] flex items-center justify-center mb-6 shadow-sm">
+                  <benefit.icon className="size-6 text-[#2A9D8F]" />
+                </div>
+                <h3 className="text-2xl font-bold text-[#1A1916] mb-1">
+                  {benefit.title}
+                  {benefit.subtitle && <><br/><span className="text-xl">{benefit.subtitle}</span></>}
+                </h3>
+                <p className="text-[#6B6B6B] mb-8 leading-relaxed">
+                  {benefit.desc}
+                </p>
+                <div className="space-y-4">
+                  {benefit.bullets.map((b, j) => (
+                    <div key={j} className="flex items-start gap-3">
+                      <CheckCircle2 className="size-5 text-[#2A9D8F] shrink-0" />
+                      <span className="text-sm font-medium text-[#1A1916]">{b}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="hidden md:block w-7/12 p-4">
+                {benefit.mockup}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center justify-center gap-2 mt-8">
+        {BENEFITS.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setActiveIndex(i)}
+            className={`h-2 rounded-full transition-all duration-300 ${i === activeIndex ? 'w-6 bg-[#2A9D8F]' : 'w-2 bg-[#E8E8E5]'}`}
+          />
+        ))}
+      </div>
+      <p className="text-center text-sm text-[#6B6B6B] mt-6 flex items-center justify-center gap-2">
+        <span className="inline-block animate-bounce-x">👈</span>
+        Faites glisser pour découvrir tous les bénéfices
+        <span className="inline-block animate-bounce-x">👉</span>
+      </p>
+
+    </section>
+  );
+}
+"use client";
+
+import { CreditCard, Calendar, BarChart3, ShieldCheck, CheckCircle2 } from "lucide-react";
+
+export function FourToolsSection() {
+  return (
+    <section className="py-24 bg-white">
+      <div className="max-w-[1200px] mx-auto px-6">
+        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+          <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-[#E5F5F3] text-[11px] font-bold tracking-widest uppercase text-[#2A9D8F]">
+            TOUT-EN-UN
+          </div>
+          <h2 className="text-3xl md:text-[40px] font-bold text-[#1A1916] leading-tight">
+            Quatre outils pour développer votre atelier.
+          </h2>
+          <p className="text-lg text-[#6B6B6B]">
+            Paiement, prise de rendez-vous, prix de référence et protection anti-litige :<br className="hidden md:block"/> tout est connecté pour gagner du temps et renforcer la confiance.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          
+          {/* Outil 1 : Paiement */}
+          <div className="bg-[#FAFAF8] rounded-[24px] p-6 border border-[#E8E8E5] flex flex-col hover:shadow-lg transition-shadow">
+            <div className="size-12 rounded-full bg-[#E5F5F3] flex items-center justify-center mb-6">
+              <CreditCard className="size-5 text-[#2A9D8F]" />
+            </div>
+            <h3 className="text-lg font-bold text-[#1A1916] mb-1">Paiement en ligne</h3>
+            <p className="text-sm text-[#6B6B6B] mb-6 font-medium">SumUp / Stripe</p>
+            <div className="space-y-3 mb-8">
+              {["Liens de paiement sécurisés envoyés à vos clients.", "Acompte ou paiement total en quelques clics.", "Suivi des transactions en temps réel."].map((t,i)=>(
+                <div key={i} className="flex gap-3 text-sm text-[#6B6B6B]">
+                  <CheckCircle2 className="size-4 text-[#2A9D8F] shrink-0 mt-0.5" />
+                  <span>{t}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-auto bg-white rounded-2xl p-4 shadow-[0_4px_16px_rgba(26,25,22,0.04)] border border-[#E8E8E5]">
+              <div className="text-[10px] text-[#6B6B6B] uppercase font-bold mb-1">Paiement de la réparation</div>
+              <div className="text-xl font-bold text-[#1A1916]">279,00 €</div>
+              <div className="text-[10px] text-[#6B6B6B] mb-4">Réparation iPhone 13 Pro</div>
+              <div className="text-[10px] font-medium text-[#1A1916] mb-2">Choisissez votre moyen de paiement</div>
+              <div className="flex gap-2 mb-4">
+                <div className="flex-1 h-8 rounded border border-[#E8E8E5] flex items-center justify-center">
+                  <span className="font-bold text-[12px] text-[#1A1916]">sumup</span>
+                </div>
+                <div className="flex-1 h-8 rounded border border-[#E8E8E5] flex items-center justify-center">
+                  <span className="font-bold text-[12px] text-[#635BFF]">stripe</span>
+                </div>
+              </div>
+              <button className="w-full h-8 bg-[#2A9D8F] text-white text-[11px] font-bold rounded flex items-center justify-center gap-1.5">
+                <LockIcon className="size-3" /> Payer en toute sécurité
+              </button>
+            </div>
+          </div>
+
+          {/* Outil 2 : RDV */}
+          <div className="bg-[#FAFAF8] rounded-[24px] p-6 border border-[#E8E8E5] flex flex-col hover:shadow-lg transition-shadow">
+            <div className="size-12 rounded-full bg-[#E5F5F3] flex items-center justify-center mb-6">
+              <Calendar className="size-5 text-[#2A9D8F]" />
+            </div>
+            <h3 className="text-lg font-bold text-[#1A1916] mb-1">Widget de rendez-vous</h3>
+            <p className="text-sm text-[#6B6B6B] mb-6 font-medium">Intégrez-le à votre site.</p>
+            <div className="space-y-3 mb-8">
+              {["Calendrier en temps réel et créneaux disponibles.", "Choix de l'appareil et du problème.", "Notes et pièces jointes optionnelles."].map((t,i)=>(
+                <div key={i} className="flex gap-3 text-sm text-[#6B6B6B]">
+                  <CheckCircle2 className="size-4 text-[#2A9D8F] shrink-0 mt-0.5" />
+                  <span>{t}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-auto bg-white rounded-2xl p-4 shadow-[0_4px_16px_rgba(26,25,22,0.04)] border border-[#E8E8E5]">
+              <div className="text-xs font-bold text-[#1A1916] mb-3">Prendre rendez-vous</div>
+              <div className="space-y-2">
+                <div>
+                  <div className="text-[10px] text-[#6B6B6B] mb-1">Date</div>
+                  <div className="h-8 border border-[#E8E8E5] rounded flex items-center justify-between px-2 text-[10px] font-medium text-[#1A1916]">
+                    <span>Mercredi 29 mai 2024</span>
+                    <Calendar className="size-3 text-[#A3A3A3]" />
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-[#6B6B6B] mb-1">Créneau</div>
+                  <div className="flex gap-2">
+                    <div className="px-2 py-1 bg-[#FAFAF8] border border-[#E8E8E5] text-[10px] rounded text-[#6B6B6B]">09:00</div>
+                    <div className="px-2 py-1 bg-[#2A9D8F] text-white text-[10px] rounded font-medium shadow-sm">10:30</div>
+                    <div className="px-2 py-1 bg-[#FAFAF8] border border-[#E8E8E5] text-[10px] rounded text-[#6B6B6B]">14:00</div>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-[#6B6B6B] mb-1">Appareil</div>
+                  <div className="h-8 border border-[#E8E8E5] rounded flex items-center px-2 text-[10px] font-medium text-[#1A1916]">iPhone 13 Pro</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Outil 3 : Prix IA */}
+          <div className="bg-[#FAFAF8] rounded-[24px] p-6 border border-[#E8E8E5] flex flex-col hover:shadow-lg transition-shadow">
+            <div className="size-12 rounded-full bg-[#E5F5F3] flex items-center justify-center mb-6">
+              <BarChart3 className="size-5 text-[#2A9D8F]" />
+            </div>
+            <h3 className="text-lg font-bold text-[#1A1916] mb-1">Prix de référence avec IA</h3>
+            <p className="text-sm text-[#6B6B6B] mb-6 font-medium">Achat / revente / marge.</p>
+            <div className="space-y-3 mb-8">
+              {["Estimez vos prix d'achat et de revente à partir de millions de références.", "IA intégrée pour des suggestions fiables et à jour.", "Marge estimée pour décider en confiance."].map((t,i)=>(
+                <div key={i} className="flex gap-3 text-sm text-[#6B6B6B]">
+                  <CheckCircle2 className="size-4 text-[#2A9D8F] shrink-0 mt-0.5" />
+                  <span>{t}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-auto bg-white rounded-2xl p-4 shadow-[0_4px_16px_rgba(26,25,22,0.04)] border border-[#E8E8E5]">
+              <div className="flex gap-3 mb-4 items-center">
+                <div className="w-8 h-12 bg-[#1A1916] rounded flex items-center justify-center">
+                  <div className="w-6 h-10 bg-[#333] rounded-sm" />
+                </div>
+                <div>
+                  <div className="text-[12px] font-bold text-[#1A1916]">iPhone 13 Pro</div>
+                  <div className="text-[9px] text-[#6B6B6B] mb-1">128 Go • Graphite • Bon état</div>
+                  <div className="text-[10px] font-bold text-[#2A9D8F] bg-[#E5F5F3] px-1.5 py-0.5 rounded inline-block">Score IA 92/100</div>
+                </div>
+              </div>
+              <div className="space-y-2 pt-2 border-t border-[#E8E8E5]">
+                <div className="flex justify-between items-center text-[10px]">
+                  <span className="text-[#6B6B6B]">Prix d'achat suggéré</span>
+                  <span className="font-bold text-[#1A1916]">420,00 €</span>
+                </div>
+                <div className="flex justify-between items-center text-[10px]">
+                  <span className="text-[#6B6B6B]">Coût estimé (pièces + frais)</span>
+                  <span className="font-bold text-[#1A1916]">80,00 €</span>
+                </div>
+                <div className="flex justify-between items-center text-[10px]">
+                  <span className="text-[#6B6B6B]">Prix de revente conseillé</span>
+                  <span className="font-bold text-[#1A1916]">649,00 €</span>
+                </div>
+                <div className="flex justify-between items-end pt-2">
+                  <span className="text-[11px] font-bold text-[#2A9D8F]">Marge estimée</span>
+                  <div className="text-right">
+                    <div className="font-bold text-[#2A9D8F] text-sm">149,00 €</div>
+                    <div className="font-bold text-[#2A9D8F] text-[10px]">22,9 %</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Outil 4 : Litige */}
+          <div className="bg-[#FAFAF8] rounded-[24px] p-6 border border-[#E8E8E5] flex flex-col hover:shadow-lg transition-shadow">
+            <div className="size-12 rounded-full bg-[#E5F5F3] flex items-center justify-center mb-6">
+              <ShieldCheck className="size-5 text-[#2A9D8F]" />
+            </div>
+            <h3 className="text-lg font-bold text-[#1A1916] mb-1">Protection anti-litige</h3>
+            <p className="text-sm text-[#6B6B6B] mb-6 font-medium">Dossier complet et horodaté.</p>
+            <div className="space-y-3 mb-8">
+              {["Photos et état de l'appareil à l'entrée.", "Accessoires et observations enregistrés.", "Signature du client et historique horodaté."].map((t,i)=>(
+                <div key={i} className="flex gap-3 text-sm text-[#6B6B6B]">
+                  <CheckCircle2 className="size-4 text-[#2A9D8F] shrink-0 mt-0.5" />
+                  <span>{t}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-auto bg-white rounded-2xl p-4 shadow-[0_4px_16px_rgba(26,25,22,0.04)] border border-[#E8E8E5]">
+              <div className="text-[10px] font-bold text-[#1A1916] mb-0.5">Dossier d'intervention</div>
+              <div className="text-[8px] text-[#6B6B6B] mb-3">N° INT-2024-05-29-1287</div>
+              
+              <div className="text-[9px] font-bold text-[#1A1916] mb-1">Photos à l'entrée</div>
+              <div className="flex gap-1 mb-3">
+                <div className="h-6 w-8 bg-[#E8E8E5] rounded flex items-center justify-center"><div className="w-4 h-3 bg-white/50" /></div>
+                <div className="h-6 w-8 bg-[#E8E8E5] rounded flex items-center justify-center"><div className="w-4 h-3 bg-white/50" /></div>
+                <div className="h-6 w-8 bg-[#E8E8E5] rounded flex items-center justify-center"><div className="w-4 h-3 bg-white/50" /></div>
+                <div className="h-6 w-8 bg-[#FAFAF8] border border-[#E8E8E5] rounded flex items-center justify-center text-[8px] text-[#6B6B6B] font-medium">+3</div>
+              </div>
+
+              <div className="text-[9px] font-bold text-[#1A1916] mb-1">État de l'appareil</div>
+              <div className="text-[8px] text-[#6B6B6B] mb-3 leading-tight">Écran rayé, chute coin inférieur droit.</div>
+
+              <div className="text-[9px] font-bold text-[#1A1916] mb-1">Accessoires fournis</div>
+              <div className="text-[8px] text-[#6B6B6B] mb-3 leading-tight">Boîte, câble USB-C.</div>
+
+              <div className="flex items-end justify-between border-t border-[#E8E8E5] pt-2">
+                <div className="text-[8px] text-[#6B6B6B]">Signature du client</div>
+                <div className="font-[Signature] text-xs italic text-[#1A1916] opacity-80 rotate-[-5deg]">R. Macaron</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div className="mt-16 flex items-center justify-center">
+          <div className="bg-[#FAFAF8] border border-[#E8E8E5] px-4 py-2 rounded-full flex items-center gap-2 shadow-sm">
+            <ShieldCheck className="size-4 text-[#2A9D8F]" />
+            <span className="text-sm text-[#6B6B6B] font-medium">Un écosystème simple, premium et conçu pour les ateliers exigeants.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function LockIcon(props: any) {
+  return (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+    </svg>
+  );
+}
+"use client";
+
+import Link from "next/link";
+import { Play, UserPlus, FileText, CheckCircle, Send } from "lucide-react";
+import { PrimaryButton } from "@/components/behar/primitives";
+
+export function InteractiveDemoSection() {
+  return (
+    <section id="demo" className="py-24 bg-[#FAFAF8] border-t border-[#E8E8E5]">
+      <div className="max-w-[1200px] mx-auto px-6">
+        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+          <h2 className="text-3xl md:text-[40px] font-bold text-[#1A1916] leading-tight">
+            Essayez l'expérience comme si vous étiez à l'atelier.
+          </h2>
+          <p className="text-lg text-[#6B6B6B]">
+            Découvrez le mode comptoir, la création d'un client, la génération d'une facture et le suivi client en quelques clics.
+          </p>
+        </div>
+
+        <div className="bg-white rounded-[32px] border border-[#E8E8E5] p-8 md:p-12 shadow-[0_24px_64px_rgba(26,25,22,0.06)] relative overflow-hidden">
+          {/* Decorative background circle */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#2A9D8F]/5 rounded-full blur-[80px] pointer-events-none" />
+          
+          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
+            <div className="space-y-6 md:w-5/12">
+              {[
+                { title: "Nouveau client", icon: UserPlus },
+                { title: "Créer dossier", icon: FileText },
+                { title: "Générer facture", icon: FileText },
+                { title: "Indiquer règlement", icon: CheckCircle },
+                { title: "Envoyer suivi client", icon: Send }
+              ].map((step, i) => (
+                <div key={i} className={`flex items-center gap-4 p-4 rounded-xl transition-all ${i === 0 ? 'bg-[#FAFAF8] border border-[#E8E8E5] shadow-sm' : 'opacity-50 grayscale'}`}>
+                  <div className={`size-10 rounded-full flex items-center justify-center ${i === 0 ? 'bg-[#E5F5F3] text-[#2A9D8F]' : 'bg-[#E8E8E5] text-[#6B6B6B]'}`}>
+                    <step.icon className="size-5" />
+                  </div>
+                  <span className={`font-semibold ${i === 0 ? 'text-[#1A1916]' : 'text-[#6B6B6B]'}`}>{step.title}</span>
+                </div>
+              ))}
+              <div className="pt-4">
+                <PrimaryButton as={Link} href="#contact" className="w-full gap-2 shadow-sm">
+                  Lancer la démo
+                  <Play className="size-4" fill="currentColor" />
+                </PrimaryButton>
+              </div>
+            </div>
+
+            <div className="md:w-7/12 w-full">
+              <div className="bg-[#FAFAF8] rounded-2xl border border-[#E8E8E5] p-2 aspect-[4/3] flex flex-col shadow-inner">
+                <div className="h-8 border-b border-[#E8E8E5] flex items-center gap-2 px-3">
+                  <div className="size-2.5 rounded-full bg-[#E8E8E5]" />
+                  <div className="size-2.5 rounded-full bg-[#E8E8E5]" />
+                  <div className="size-2.5 rounded-full bg-[#E8E8E5]" />
+                </div>
+                <div className="flex-1 bg-white flex items-center justify-center p-8 text-center border-t border-white rounded-b-xl">
+                  <div className="space-y-4">
+                    <div className="size-16 rounded-full bg-[#E5F5F3] flex items-center justify-center mx-auto">
+                      <Play className="size-6 text-[#2A9D8F]" fill="currentColor" />
+                    </div>
+                    <div className="font-bold text-[#1A1916]">Aperçu interactif</div>
+                    <div className="text-sm text-[#6B6B6B] max-w-xs">Cliquez sur "Lancer la démo" pour commencer la simulation interactive.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+"use client";
+
+import Link from "next/link";
+import { GraduationCap, PlayCircle } from "lucide-react";
+import { SecondaryButton } from "@/components/behar/primitives";
+
+const ACADEMY_LESSONS = [
+  "Créer un client",
+  "Utiliser le mode comptoir",
+  "Générer une facture",
+  "Indiquer un règlement",
+  "Gérer le stock",
+  "Envoyer le suivi client"
+];
+
+export function AcademySection() {
+  return (
+    <section className="py-24 bg-white">
+      <div className="max-w-[1200px] mx-auto px-6">
+        <div className="bg-[#FAFAF8] rounded-[32px] border border-[#E8E8E5] p-8 md:p-16 flex flex-col md:flex-row items-center gap-12 shadow-sm">
+          <div className="md:w-1/2 space-y-6 text-center md:text-left">
+            <div className="size-16 mx-auto md:mx-0 rounded-2xl bg-white border border-[#E8E8E5] flex items-center justify-center shadow-sm">
+              <GraduationCap className="size-8 text-[#2A9D8F]" />
+            </div>
+            <h2 className="text-3xl md:text-[40px] font-bold text-[#1A1916] leading-tight">
+              Une formation simple dès le premier jour.
+            </h2>
+            <p className="text-lg text-[#6B6B6B] leading-relaxed">
+              Après activation, vos équipes reçoivent un lien vers l'Académie Behar Tech Pro : vidéos courtes, guides pratiques et parcours de démarrage.
+            </p>
+            <div className="pt-2">
+              <SecondaryButton as={Link} href="/formation" className="w-full sm:w-auto px-8 bg-white shadow-sm">
+                Voir l'académie
+              </SecondaryButton>
+            </div>
+          </div>
+
+          <div className="md:w-1/2 w-full grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {ACADEMY_LESSONS.map((lesson, i) => (
+              <div key={i} className="bg-white border border-[#E8E8E5] rounded-xl p-4 flex items-center gap-3 shadow-sm hover:-translate-y-1 transition-transform">
+                <PlayCircle className="size-5 text-[#2A9D8F] shrink-0" />
+                <span className="text-sm font-semibold text-[#1A1916]">{lesson}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+"use client";
+
+import Link from "next/link";
+import { Check } from "lucide-react";
+import { PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
+
+const PLANS = [
+  {
+    name: "Gratuit",
+    price: "0",
+    desc: "Pour découvrir la plateforme et faire quelques réparations.",
+    features: ["1 utilisateur", "Jusqu'à 10 dossiers/mois", "Factures basiques", "Support par email"],
+    cta: "Créer un compte",
+    href: "/dashboard",
+    isPopular: false,
+  },
+  {
+    name: "Starter",
+    price: "29",
+    desc: "L'essentiel pour un réparateur indépendant au quotidien.",
+    features: ["1 utilisateur", "Dossiers illimités", "Mode comptoir", "Signature en ligne", "Support prioritaire"],
+    cta: "Commencer l'essai",
+    href: "#contact",
+    isPopular: false,
+  },
+  {
+    name: "Pro",
+    price: "49",
+    desc: "La suite complète pour piloter et développer votre atelier.",
+    features: ["3 utilisateurs", "Gestion de stock", "Suggestions d'achats IA", "Suivi client par SMS", "Statistiques avancées"],
+    cta: "Commencer l'essai",
+    href: "#contact",
+    isPopular: true,
+  },
+  {
+    name: "Business",
+    price: "99",
+    desc: "Pour les structures multi-boutiques et gros volumes.",
+    features: ["Utilisateurs illimités", "Multi-boutique", "API et Webhooks", "Manager dédié", "Formation sur site possible"],
+    cta: "Contacter les ventes",
+    href: "#contact",
+    isPopular: false,
+  }
+];
+
+export function PricingSection() {
+  return (
+    <section id="tarifs" className="py-24 bg-[#FAFAF8] border-t border-[#E8E8E5]">
+      <div className="max-w-[1200px] mx-auto px-6">
+        <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
+          <h2 className="text-3xl md:text-[40px] font-bold text-[#1A1916] leading-tight">
+            Des tarifs simples, sans surprise.
+          </h2>
+          <p className="text-lg text-[#6B6B6B]">
+            Passez à la vitesse supérieure quand vous êtes prêt. Aucun engagement de durée.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+          {PLANS.map((plan, i) => (
+            <div 
+              key={i} 
+              className={`relative bg-white rounded-2xl flex flex-col ${
+                plan.isPopular 
+                  ? 'border-2 border-[#2A9D8F] shadow-[0_16px_48px_rgba(42,157,143,0.12)] p-8' 
+                  : 'border border-[#E8E8E5] p-6 shadow-sm hover:shadow-md transition-shadow'
+              }`}
+            >
+              {plan.isPopular && (
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#2A9D8F] text-white text-[11px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-sm">
+                  Recommandé
+                </div>
+              )}
+              
+              <h3 className="text-lg font-bold text-[#1A1916] mb-2">{plan.name}</h3>
+              <p className="text-sm text-[#6B6B6B] h-10 mb-6 leading-tight">{plan.desc}</p>
+              
+              <div className="flex items-baseline gap-1 mb-8">
+                <span className="text-4xl font-bold text-[#1A1916]">{plan.price}</span>
+                <span className="text-xl font-bold text-[#1A1916]">€</span>
+                <span className="text-[#6B6B6B] text-sm">/mois</span>
+              </div>
+
+              <div className="space-y-4 mb-8 flex-1">
+                {plan.features.map((feat, j) => (
+                  <div key={j} className="flex gap-3 text-sm">
+                    <Check className={`size-4 shrink-0 ${plan.isPopular ? 'text-[#2A9D8F]' : 'text-[#A3A3A3]'}`} />
+                    <span className="text-[#1A1916] font-medium">{feat}</span>
+                  </div>
+                ))}
+              </div>
+
+              {plan.isPopular ? (
+                <PrimaryButton as={Link} href={plan.href} className="w-full justify-center">
+                  {plan.cta}
+                </PrimaryButton>
+              ) : (
+                <SecondaryButton as={Link} href={plan.href} className="w-full justify-center bg-[#FAFAF8]">
+                  {plan.cta}
+                </SecondaryButton>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+"use client";
+
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+import { PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
+
+export function FinalCtaSection() {
+  return (
+    <section id="contact" className="py-24 bg-[#FAFAF8] relative overflow-hidden">
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="w-full max-w-[1000px] h-[400px] bg-[#2A9D8F]/5 blur-[100px] rounded-full" />
+      </div>
+
+      <div className="max-w-[1200px] mx-auto px-6 relative z-10">
+        <div className="bg-white/80 backdrop-blur-xl border border-[#E8E8E5] rounded-[32px] p-10 md:p-20 text-center shadow-[0_32px_64px_rgba(26,25,22,0.06)]">
+          <h2 className="text-4xl md:text-5xl font-bold text-[#1A1916] leading-tight mb-6 max-w-3xl mx-auto">
+            Votre atelier mérite mieux qu'un tableau Excel.
+          </h2>
+          <p className="text-xl text-[#6B6B6B] mb-10 max-w-2xl mx-auto leading-relaxed">
+            Centralisez vos réparations, documents, paiements et suivis clients dans une seule interface premium.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <PrimaryButton as={Link} href="mailto:contact@behar.tech" className="w-full sm:w-auto h-14 px-8 text-lg shadow-lg shadow-[#2A9D8F]/20">
+              Demander une démo
+            </PrimaryButton>
+            <SecondaryButton as={Link} href="#fonctionnalites" className="w-full sm:w-auto h-14 px-8 text-lg bg-white group border-[#E8E8E5]">
+              Voir les fonctionnalités
+              <ChevronRight className="size-5 ml-1 group-hover:translate-x-1 transition-transform" />
+            </SecondaryButton>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+"use client";
+
+import Link from "next/link";
+import { BeharLogo } from "@/components/behar/behar-logo";
+
+export function LandingFooter() {
+  return (
+    <footer className="bg-white border-t border-[#E8E8E5] py-12">
+      <div className="max-w-[1200px] mx-auto px-6">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-2 opacity-50">
+            <BeharLogo size="sm" />
+            <span className="font-bold text-[#1A1916] text-sm tracking-tight">
+              BEHAR • TECH PRO
+            </span>
+          </div>
+          <div className="flex items-center gap-6 text-sm text-[#6B6B6B]">
+            <Link href="#" className="hover:text-[#1A1916]">Mentions légales</Link>
+            <Link href="#" className="hover:text-[#1A1916]">Confidentialité</Link>
+            <Link href="#" className="hover:text-[#1A1916]">CGV</Link>
+          </div>
+          <div className="text-sm text-[#A3A3A3]">
+            &copy; {new Date().getFullYear()} Behar Tech. Tous droits réservés.
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+          <PrimaryButton asChild className="shadow-sm">
+            <Link href="#contact">Demander une démo</Link>
+          </PrimaryButton>
+          <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
+            <PrimaryButton asChild className="w-full sm:w-auto h-12 px-8 text-[15px] shadow-lg shadow-[#2A9D8F]/20">
+              <Link href="#contact">Demander une démo</Link>
+            </PrimaryButton>
+            <SecondaryButton asChild className="w-full sm:w-auto h-12 px-6 text-[15px] border-none bg-transparent hover:bg-[#E8E8E5]/50 group">
+              <Link href="#demo">
+                Voir la démo interactive
+                <ChevronRight className="size-4 ml-1 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </SecondaryButton>
+          </div>
+            <div className="pt-2">
+              <SecondaryButton asChild className="w-full sm:w-auto px-8 bg-white shadow-sm">
+                <Link href="/formation">Voir l'académie</Link>
+              </SecondaryButton>
+            </div>
+              <div className="pt-4">
+                <PrimaryButton asChild className="w-full gap-2 shadow-sm">
+                  <Link href="#contact">
+                    Lancer la démo
+                    <Play className="size-4" fill="currentColor" />
+                  </Link>
+                </PrimaryButton>
+              </div>
+              {plan.isPopular ? (
+                <PrimaryButton asChild className="w-full justify-center">
+                  <Link href={plan.href}>{plan.cta}</Link>
+                </PrimaryButton>
+              ) : (
+                <SecondaryButton asChild className="w-full justify-center bg-[#FAFAF8]">
+                  <Link href={plan.href}>{plan.cta}</Link>
+                </SecondaryButton>
+              )}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <PrimaryButton asChild className="w-full sm:w-auto h-14 px-8 text-lg shadow-lg shadow-[#2A9D8F]/20">
+              <Link href="mailto:contact@behar.tech">Demander une démo</Link>
+            </PrimaryButton>
+            <SecondaryButton asChild className="w-full sm:w-auto h-14 px-8 text-lg bg-white group border-[#E8E8E5]">
+              <Link href="#fonctionnalites">
+                Voir les fonctionnalités
+                <ChevronRight className="size-5 ml-1 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </SecondaryButton>
+          </div>
+          {/* Main Desktop Mockup */}
+          <div className="absolute right-[-10%] top-1/2 -translate-y-1/2 w-[800px] xl:w-[900px] transform rotate-y-[-12deg] rotate-x-[2deg] translate-z-[0]">
+            <img 
+              src="/mockups/hero-dashboard.png" 
+              alt="Dashboard Behar Tech Pro" 
+              className="w-full h-auto drop-shadow-2xl rounded-2xl"
+            />
+          </div>
+
+          {/* Tablet Mockup (Comptoir) */}
+          <div className="absolute left-[5%] bottom-[5%] w-[400px] xl:w-[450px] transform rotate-y-[-5deg] rotate-x-[5deg] translate-z-[100px]">
+            <img 
+              src="/mockups/hero-tablette-comptoir.png" 
+              alt="Mode comptoir sur tablette" 
+              className="w-full h-auto drop-shadow-2xl rounded-2xl"
+            />
+          </div>
+
+          {/* Smartphone Mockup */}
+          <div className="absolute right-[10%] bottom-[-5%] w-[220px] xl:w-[250px] transform rotate-y-[-15deg] rotate-z-[2deg] translate-z-[200px]">
+            <img 
+              src="/mockups/hero-mobile-suivi.png" 
+              alt="Suivi client sur mobile" 
+              className="w-full h-auto drop-shadow-xl rounded-[2rem]"
+            />
+          </div>
+const SLIDES = [
+  {
+    id: "comptoir",
+    title: "Atelier comptoir",
+    icon: Store,
+    content: (
+      <img src="/mockups/mockup-atelier-comptoir.png" alt="Atelier comptoir" className="w-full h-auto drop-shadow-xl rounded-xl" />
+    )
+  },
+  {
+    id: "reconditionnement",
+    title: "Reconditionnement & revente",
+    icon: RefreshCcw,
+    content: (
+      <img src="/mockups/mockup-reconditionnement.png" alt="Reconditionnement & revente" className="w-full h-auto drop-shadow-xl rounded-xl" />
+    )
+  },
+  {
+    id: "deplacement",
+    title: "Réparateur en déplacement",
+    icon: Navigation,
+    content: (
+      <img src="/mockups/mockup-deplacement.png" alt="Réparateur en déplacement" className="h-[480px] w-auto mx-auto drop-shadow-xl rounded-[24px]" />
+    )
+  },
+  {
+    id: "multi",
+    title: "Multi-boutique",
+    icon: Layers,
+    content: (
+      <img src="/mockups/mockup-multiboutique.png" alt="Multi-boutique" className="h-[480px] w-auto mx-auto drop-shadow-xl rounded-[24px]" />
+    )
+  }
+];
+const BENEFITS = [
+  {
+    id: "appels",
+    title: "Moins d'appels",
+    icon: PhoneOff,
+    desc: "Vos clients trouvent leurs réponses, vous gardez votre concentration.",
+    bullets: ["Suivi en ligne 24/7", "Notifications automatiques", "Moins d'interruptions, plus d'efficacité"],
+    mockup: <img src="/mockups/mockup-moins-appels.png" alt="Moins d'appels" className="w-full h-full object-contain rounded-xl drop-shadow-lg" />
+  },
+  {
+    id: "stock",
+    title: "Stock intelligent",
+    icon: Box,
+    desc: "Le bon produit, au bon moment, au bon prix.",
+    subtitle: "via partenaires IA",
+    bullets: ["Import fournisseurs via PDF ou photo", "Mise à jour automatique des stocks", "Achats suggérés par IA"],
+    mockup: <img src="/mockups/mockup-stock-intelligent.png" alt="Stock intelligent" className="w-full h-full object-contain rounded-xl drop-shadow-lg" />
+  },
+  {
+    id: "litiges",
+    title: "Moins de litiges",
+    icon: Shield,
+    desc: "Chaque étape est tracée, chaque action est protégée.",
+    bullets: ["Historique complet", "Preuves et documents centralisés", "Transparence totale"],
+    mockup: <img src="/mockups/mockup-anti-litige-tablette.png" alt="Anti-litige" className="w-full h-full object-contain rounded-xl drop-shadow-lg" />
+  },
+  {
+    id: "controle",
+    title: "Plus de contrôle",
+    icon: Activity,
+    desc: "Vos données se transforment en indicateurs visuels et clairs.",
+    bullets: ["Tableaux de bord", "Pilotage en temps réel", "Décisions éclairées"],
+    mockup: <img src="/mockups/mockup-dashboard-controle.png" alt="Contrôle" className="w-full h-full object-contain rounded-xl drop-shadow-lg" />
+  },
+  {
+    id: "temps",
+    title: "Plus de temps",
+    icon: Clock,
+    desc: "Automatisez vos tâches répétitives et concentrez-vous sur l'essentiel.",
+    bullets: ["Relances SMS", "Génération auto de factures", "Gain estimé : 2h/jour"],
+    mockup: <img src="/mockups/mockup-administratif-dossier.png" alt="Administratif" className="w-full h-full object-contain rounded-xl drop-shadow-lg" />
+  },
+  {
+    id: "rentabilite",
+    title: "Plus de rentabilité",
+    icon: TrendingUp,
+    desc: "Optimisez vos marges et évitez les pertes.",
+    bullets: ["Analyse des marges", "Calcul IA des prix", "Réduction des erreurs"],
+    mockup: <img src="/mockups/mockup-prix-ia.png" alt="Rentabilité" className="w-full h-full object-contain rounded-xl drop-shadow-lg" />
+  }
+];
+const TOOLS = [
+  {
+    title: "Paiements sans friction",
+    desc: "Proposez le paiement en 3x, la caution bancaire ou le paiement sur facture. Tout est intégré, sécurisé et réconcilié.",
+    icon: CreditCard,
+    mockup: <img src="/mockups/mockup-paiement.png" alt="Paiement" className="w-full h-auto object-cover rounded-t-xl" />
+  },
+  {
+    title: "Rendez-vous en ligne",
+    desc: "Vos clients réservent leur créneau depuis votre site ou Google. Moins de temps au téléphone, plus de réparations.",
+    icon: Calendar,
+    mockup: <img src="/mockups/mockup-rendez-vous.png" alt="Rendez-vous" className="w-full h-auto object-cover rounded-t-xl" />
+  },
+  {
+    title: "Estimations par IA",
+    desc: "Un client veut revendre son téléphone ? Notre IA analyse le marché et vous donne le meilleur prix de reprise en 3 secondes.",
+    icon: BrainCircuit,
+    mockup: <img src="/mockups/mockup-prix-ia.png" alt="Prix IA" className="w-full h-auto object-cover rounded-t-xl" />
+  },
+  {
+    title: "Protection anti-litige",
+    desc: "Photos avant/après, diagnostic signé sur tablette, état des lieux complet. Vous êtes protégé contre les clients de mauvaise foi.",
+    icon: ShieldCheck,
+    mockup: <img src="/mockups/mockup-protection-anti-litige.png" alt="Protection" className="w-full h-auto object-cover rounded-t-xl" />
+  }
+];
+"use client";
+
+import { CreditCard, Calendar, BrainCircuit, ShieldCheck, CheckCircle2 } from "lucide-react";
+
+const TOOLS = [
+  {
+    title: "Paiements sans friction",
+    desc: "Proposez le paiement en 3x, la caution bancaire ou le paiement sur facture. Tout est intégré, sécurisé et réconcilié.",
+    icon: CreditCard,
+    bullets: ["Liens de paiement sécurisés envoyés à vos clients.", "Acompte ou paiement total en quelques clics.", "Suivi des transactions en temps réel."],
+    mockup: <img src="/mockups/mockup-paiement.png" alt="Paiement" className="w-full h-auto object-cover rounded-t-xl" />
+  },
+  {
+    title: "Rendez-vous en ligne",
+    desc: "Vos clients réservent leur créneau depuis votre site ou Google. Moins de temps au téléphone, plus de réparations.",
+    icon: Calendar,
+    bullets: ["Calendrier en temps réel et créneaux disponibles.", "Choix de l'appareil et du problème.", "Notes et pièces jointes optionnelles."],
+    mockup: <img src="/mockups/mockup-rendez-vous.png" alt="Rendez-vous" className="w-full h-auto object-cover rounded-t-xl" />
+  },
+  {
+    title: "Estimations par IA",
+    desc: "Un client veut revendre son téléphone ? Notre IA analyse le marché et vous donne le meilleur prix de reprise en 3 secondes.",
+    icon: BrainCircuit,
+    bullets: ["Mise à jour en temps réel des prix du marché.", "Analyse de la demande locale et de l'état.", "Marges garanties pour chaque rachat."],
+    mockup: <img src="/mockups/mockup-prix-ia.png" alt="Prix IA" className="w-full h-auto object-cover rounded-t-xl" />
+  },
+  {
+    title: "Protection anti-litige",
+    desc: "Photos avant/après, diagnostic signé sur tablette, état des lieux complet. Vous êtes protégé contre les clients de mauvaise foi.",
+    icon: ShieldCheck,
+    bullets: ["Rapport PDF auto-généré et envoyé au client.", "Validation avant ouverture de l'appareil.", "Historique infalsifiable des manipulations."],
+    mockup: <img src="/mockups/mockup-protection-anti-litige.png" alt="Protection" className="w-full h-auto object-cover rounded-t-xl" />
+  }
+];
+
+export function FourToolsSection() {
+  return (
+    <section className="py-24 bg-white">
+      <div className="max-w-[1200px] mx-auto px-6">
+        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+          <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-[#E5F5F3] text-[11px] font-bold tracking-widest uppercase text-[#2A9D8F]">
+            TOUT-EN-UN
+          </div>
+          <h2 className="text-3xl md:text-[40px] font-bold text-[#1A1916] leading-tight">
+            Quatre outils pour développer votre atelier.
+          </h2>
+          <p className="text-lg text-[#6B6B6B]">
+            Paiement, prise de rendez-vous, prix de référence et protection anti-litige :<br className="hidden md:block"/> tout est connecté pour gagner du temps et renforcer la confiance.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {TOOLS.map((tool, index) => (
+            <div key={index} className="bg-[#FAFAF8] rounded-[24px] pt-6 border border-[#E8E8E5] flex flex-col hover:shadow-lg transition-shadow overflow-hidden">
+              <div className="px-6 mb-6">
+                <div className="size-12 rounded-full bg-[#E5F5F3] flex items-center justify-center mb-6">
+                  <tool.icon className="size-5 text-[#2A9D8F]" />
+                </div>
+                <h3 className="text-lg font-bold text-[#1A1916] mb-1">{tool.title}</h3>
+                <p className="text-sm text-[#6B6B6B] mb-6 font-medium">{tool.desc}</p>
+                <div className="space-y-3 mb-8">
+                  {tool.bullets.map((t,i)=>(
+                    <div key={i} className="flex gap-3 text-sm text-[#6B6B6B]">
+                      <CheckCircle2 className="size-4 text-[#2A9D8F] shrink-0 mt-0.5" />
+                      <span>{t}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-auto px-6 pb-0 pt-6 bg-[#FAFAF8] flex-1 flex flex-col justify-end">
+                {tool.mockup}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}

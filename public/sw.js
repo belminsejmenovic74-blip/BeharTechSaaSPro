@@ -4,7 +4,7 @@
  * Cache versionné pour pouvoir invalider proprement.
  */
 
-const VERSION = "behar-tech-pro-v5";
+const VERSION = "behar-tech-pro-v7";
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 
@@ -14,6 +14,33 @@ const PRECACHE_URLS = [
   "/assets/logos/app-icon-512.png",
   "/assets/logos/logo-horizontal.jpg",
 ];
+
+const DOCUMENT_ROUTE_PREFIXES = [
+  "/api/documents/",
+  "/api/public/documents/",
+  "/api/repair-documents",
+  "/documents/",
+  "/document/",
+  "/print/",
+  "/download/",
+  "/downloads/",
+  "/telecharger/",
+  "/qr-print/",
+];
+
+const FILE_ROUTE_PATTERN = /\.(?:pdf|csv|xlsx?|zip|png|jpe?g|webp|avif|svg)$/i;
+const PUBLIC_TRACKING_DOCUMENT_PATTERN = /^\/suivi\/[^/]+\/documents(?:\/|$)/;
+
+function isDocumentOrPrintRoute(url, request) {
+  const pathname = url.pathname;
+  if (DOCUMENT_ROUTE_PREFIXES.some((prefix) => pathname === prefix.replace(/\/$/, "") || pathname.startsWith(prefix))) {
+    return true;
+  }
+  if (PUBLIC_TRACKING_DOCUMENT_PATTERN.test(pathname)) return true;
+  if (FILE_ROUTE_PATTERN.test(pathname)) return true;
+  const accept = request.headers.get("accept") || "";
+  return accept.includes("application/pdf");
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -43,6 +70,11 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  // Les documents, PDF, téléchargements et pages d'impression ne doivent jamais
+  // passer dans le fallback PWA. Sinon le navigateur peut recevoir l'app HTML
+  // (ou un JSON d'erreur) à la place du fichier imprimable.
+  if (isDocumentOrPrintRoute(url, request)) return;
 
   // Next.js gère déjà ses chunks versionnés via HTTP. Les cacher ici peut
   // mélanger un ancien runtime avec de nouveaux modules après un rebuild.

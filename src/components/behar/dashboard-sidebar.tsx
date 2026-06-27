@@ -19,6 +19,7 @@ import {
   Store,
   Users,
   Wrench,
+  KeyRound,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -36,6 +37,7 @@ const navItems = [
   { label: "Stock", href: "/dashboard/stock", icon: Package },
   { label: "Documents", href: "/dashboard/documents", icon: Files },
   { label: "Paramètres", href: "/dashboard/parametres", icon: Settings },
+  { label: "Licences & Téléchargements", href: "/admin/licenses", icon: KeyRound, adminOnly: true },
 ];
 
 export function DashboardSidebar() {
@@ -67,6 +69,7 @@ export function DashboardSidebar() {
 
       <nav className="mt-6 flex flex-1 flex-col gap-0.5">
         {navItems
+          .filter((item) => !item.adminOnly || currentUser.role === "admin")
           .filter((item) => item.href !== "/dashboard/parametres" || canViewSettings)
           .map((item) => {
             const Icon = item.icon;
