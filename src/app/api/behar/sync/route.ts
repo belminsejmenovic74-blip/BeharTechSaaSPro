@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import type { NormalizedBusinessState } from "@/lib/data/normalized-sync";
+import { getCustomerTrackingPath, getTrackingCode } from "@/lib/customer-tracking";
 import { makePublicUrl } from "@/lib/public-access";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 
@@ -230,7 +231,7 @@ export async function POST(request: Request) {
   if (clients.length) await supabase.from("clients").upsert(clients, { onConflict: "id" });
 
   const repairs = (payload.repairs ?? []).map((repair) => {
-    const token = repair.publicAccess?.token || stableToken("rp", repair.id);
+    const token = getTrackingCode(repair);
     return {
       id: stableUuid(`repair:${workshopId}:${repair.id}`),
       workshop_id: workshopId,
@@ -245,7 +246,18 @@ export async function POST(request: Request) {
       customer_price: money(repair.total ?? repair.amount),
       status: repairStatus(repair.status),
       public_token: token,
-      public_url: repair.publicAccess?.url?.includes("?t=") ? makePublicUrl("/suivi", token) : repair.publicAccess?.url || makePublicUrl("/suivi", token),
+      public_url: getCustomerTrackingPath(
+        {
+          ...repair,
+          publicAccess: {
+            token,
+            url: repair.publicAccess?.url || "",
+            createdAt: repair.publicAccess?.createdAt || cleanIso(repair.createdAt || repair.droppedAt) || new Date().toISOString(),
+            active: repair.publicAccess?.active !== false,
+          },
+        },
+        ws,
+      ),
       public_active: repair.publicAccess?.active !== false,
       created_at: cleanIso(repair.createdAt || repair.droppedAt),
     };

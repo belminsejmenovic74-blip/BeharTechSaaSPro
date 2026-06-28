@@ -519,15 +519,17 @@ export const normalizePriceBookItem = (raw: unknown): PriceBookItem | null => {
   return normalizePriceBookStructure(created).item;
 };
 
-// Clé de doublon : marque + modele + reparation + qualite + sku
+// Clé de doublon : marque + modele + reparation + piece + qualite + sku
 export const priceBookDuplicateKey = (
-  item: Pick<PriceBookItem, "typeAppareil" | "marque" | "modele" | "reparation" | "sku">,
+  item: Pick<PriceBookItem, "typeAppareil" | "marque" | "modele" | "reparation" | "piece" | "qualite" | "sku">,
 ) =>
   [
     item.typeAppareil.trim().toLowerCase(),
     item.marque.trim().toLowerCase(),
     item.modele.trim().toLowerCase(),
     item.reparation.trim().toLowerCase(),
+    (item.piece ?? "").trim().toLowerCase(),
+    (item.qualite ?? "").trim().toLowerCase(),
     (item.sku ?? "").trim().toLowerCase(),
   ].join("|");
 

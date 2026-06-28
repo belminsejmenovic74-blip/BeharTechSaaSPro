@@ -22,6 +22,10 @@ export type PublicRepairDto = {
     number: string;
     status: string;
     statusLabel: string;
+    readyLabel?: string;
+    paymentStatus?: string;
+    hasPaidPayment?: boolean;
+    finalTestStatus?: string;
     deviceBrand?: string;
     deviceModel?: string;
     deviceType?: string;

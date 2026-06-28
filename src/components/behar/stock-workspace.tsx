@@ -58,14 +58,14 @@ function tariffPriceLabel(item: StockItem, priceBookItems: PriceBookItem[]) {
   if (tariff) return formatEuro(tariff.prixVentePiece || tariff.prixClientTotal);
   // §4 — article comptoir (accessoire/consommable) : prix de vente direct.
   if (item.salePrice > 0) return formatEuro(item.salePrice);
-  return "Non défini dans les tarifs";
+  return "Prix à définir";
 }
 
 function tariffHelperLabel(item: StockItem, priceBookItems: PriceBookItem[]) {
   const tariff = findLinkedTariff(item, priceBookItems);
   if (!tariff) {
     if (item.salePrice > 0) return "Prix de vente comptoir";
-    return "À définir dans Tarifs / Prestations";
+    return "Prix requis avant vente";
   }
   if (tariff.prixClientTotal > 0 && tariff.prixClientTotal !== tariff.prixVentePiece) {
     return `Prestation ${formatEuro(tariff.prixClientTotal)}`;
@@ -1354,10 +1354,6 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
         return;
       }
       const sale = Math.max(0, Number(salePrice.replace(",", ".")) || 0);
-      if (sale <= 0) {
-        toast.error("Indiquez le prix de vente TTC.");
-        return;
-      }
       store.addStockItem({
         sku: skuOverride.trim() || `ACC-${Date.now()}`,
         name,
@@ -1378,7 +1374,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
         threshold: Math.max(0, Number(threshold) || 0),
         skipModelInference: true,
       });
-      toast.success("Article ajouté au stock.");
+      toast.success(sale > 0 ? "Article ajouté au stock." : "Article ajouté au stock — prix à définir avant encaissement.");
       onClose();
       return;
     }
@@ -1695,7 +1691,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-[#6B6B6B] text-[11px]">Prix de vente TTC *</span>
+                  <span className="text-[#6B6B6B] text-[11px]">Prix de vente TTC</span>
                   <input
                     className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[13.5px] outline-none focus:border-[#2A9D8F]"
                     min="0"

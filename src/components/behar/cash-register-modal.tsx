@@ -40,6 +40,7 @@ import {
   formatCurrency,
   formatEuro,
   type PaymentMethod,
+  paymentMethods as manualPaymentMethods,
   type Repair,
   type Sale,
   type SaleLine,
@@ -146,33 +147,23 @@ function matchCategory(item: StockItem, key: CategoryKey): boolean {
   }
 }
 
-// §4 — la vente comptoir n'affiche que les articles explicitement activés pour le comptoir.
-const isSellable = (item: StockItem) => item.active !== false && item.counterSaleEnabled === true && item.stock > 0 && item.salePrice > 0;
+// §4 — la vente comptoir affiche les articles activés, mais bloque ceux sans prix.
+const isCounterVisible = (item: StockItem) => item.active !== false && item.counterSaleEnabled === true && item.stock > 0;
+const isSellable = (item: StockItem) => isCounterVisible(item) && Number.isFinite(item.salePrice) && item.salePrice > 0;
 
 const FR_PAYMENT_OPTIONS: Array<{ key: PaymentMethod; label: string; icon: typeof CreditCard }> = [
-  { key: "TPE externe", label: "TPE ext.", icon: CreditCard },
-  { key: "Espèces hors Behar Tech", label: "Espèces ext.", icon: Banknote },
-  { key: "Autre", label: "Mixte / autre", icon: Shuffle },
-  { key: "Virement", label: "Virement", icon: Landmark },
-];
-const CH_PAYMENT_OPTIONS: Array<{ key: PaymentMethod; label: string; icon: typeof CreditCard }> = [
   { key: "Espèces", label: "Espèces", icon: Banknote },
-  { key: "TWINT", label: "TWINT", icon: Zap },
-  { key: "Carte externe", label: "Carte ext.", icon: CreditCard },
+  { key: "Carte bancaire", label: "Carte bancaire", icon: CreditCard },
+  { key: "SumUp", label: "SumUp", icon: CreditCard },
+  { key: "Stripe", label: "Stripe", icon: Zap },
   { key: "Virement", label: "Virement", icon: Landmark },
+  { key: "Chèque", label: "Chèque", icon: FileText },
   { key: "Autre", label: "Autre", icon: Shuffle },
 ];
-const getPaymentOptions = (country: WorkshopCountry, twintEnabled = true) =>
-  country === "CH"
-    ? CH_PAYMENT_OPTIONS.filter((option) => option.key !== "TWINT" || twintEnabled)
-    : FR_PAYMENT_OPTIONS;
+const getPaymentOptions = (_country: WorkshopCountry, _twintEnabled = true) => FR_PAYMENT_OPTIONS;
 
 function formatPaymentLabel(method?: PaymentMethod) {
-  if (!method) return "—";
-  if (method === "Carte") return "TPE externe";
-  if (method === "Espèces") return "Espèces hors Behar Tech";
-  if (method === "En ligne") return "Lien externe";
-  return method;
+  return method || "Moyen à choisir";
 }
 
 export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () => void }>) {
@@ -184,7 +175,7 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<CategoryKey>("accessoires");
   const [cart, setCart] = useState<CartLine[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("TPE externe");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("" as PaymentMethod);
   const [saleCountry, setSaleCountry] = useState<WorkshopCountry>(store.workshopInfo.country);
 
   const [serialDraft, setSerialDraft] = useState<Record<string, string>>({});
@@ -200,7 +191,7 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
 
   const [mode, setMode] = useState<"products" | "repair">("products");
   const [cashRepairId, setCashRepairId] = useState("");
-  const [repairPaymentMethod, setRepairPaymentMethod] = useState<PaymentMethod>("TPE externe");
+  const [repairPaymentMethod, setRepairPaymentMethod] = useState<PaymentMethod>("" as PaymentMethod);
 
   const [completedSaleId, setCompletedSaleId] = useState<string>("");
 
@@ -213,17 +204,13 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
   }, [step]);
 
   useEffect(() => {
-    const defaultMethod: PaymentMethod =
-      store.workshopInfo.country === "CH"
-        ? store.workshopInfo.twintEnabled === false
-          ? "Espèces"
-          : "TWINT"
-        : "TPE externe";
-    setPaymentMethod(defaultMethod);
-    setRepairPaymentMethod(defaultMethod);
-  }, [store.workshopInfo.country, store.workshopInfo.twintEnabled]);
+    if (paymentMethod && !manualPaymentMethods.includes(paymentMethod)) setPaymentMethod("" as PaymentMethod);
+    if (repairPaymentMethod && !manualPaymentMethods.includes(repairPaymentMethod)) {
+      setRepairPaymentMethod("" as PaymentMethod);
+    }
+  }, [paymentMethod, repairPaymentMethod]);
 
-  const sellable = useMemo(() => store.stockItems.filter(isSellable), [store.stockItems]);
+  const sellable = useMemo(() => store.stockItems.filter(isCounterVisible), [store.stockItems]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -282,7 +269,7 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
 
   const addToCart = (item: StockItem) => {
     if (!isSellable(item)) {
-      toast.error("Ce produit n'est pas disponible à la vente.");
+      toast.error(item.salePrice > 0 ? "Ce produit n'est pas disponible à la vente." : "Prix à définir avant encaissement.");
       return;
     }
     setCart((current) => {
@@ -342,6 +329,10 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
     }
     if (subtotal <= 0) {
       toast.error(`Le total doit être supérieur à 0 ${store.workshopInfo.currency}.`);
+      return;
+    }
+    if (cart.some((line) => line.unitPrice <= 0 || line.total <= 0)) {
+      toast.error("Prix à définir avant encaissement.");
       return;
     }
     for (const line of cart) {
@@ -439,6 +430,11 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
       toast.error("Règlement externe impossible : vérifiez votre permission de vente.");
       return;
     }
+    if (!paymentMethod) {
+      store.deleteSale(saleId);
+      toast.error("Choisissez le moyen de paiement.");
+      return;
+    }
     const paymentId = store.paySale(saleId, paymentMethod);
     if (!paymentId) {
       store.deleteSale(saleId);
@@ -466,6 +462,10 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
       toast.error("Renseignez d'abord un montant sur la réparation.");
       return;
     }
+    if (!repairPaymentMethod) {
+      toast.error("Choisissez le moyen de paiement.");
+      return;
+    }
     const paymentId = store.markRepairAsPaid(cashRepairId, repairPaymentMethod);
     if (!paymentId) {
       toast.error("Règlement impossible : dossier déjà réglé.");
@@ -473,14 +473,14 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
     }
     toast.success("Règlement indiqué.");
     setCashRepairId("");
-    setRepairPaymentMethod("TPE externe");
+    setRepairPaymentMethod("" as PaymentMethod);
   };
 
   const startNewSale = () => {
     setCart([]);
     setSearch("");
     setCategory("accessoires");
-    setPaymentMethod("TPE externe");
+    setPaymentMethod("" as PaymentMethod);
     setClientType("comptoir");
     setSelectedCustomerId("");
     setCustomerSearch("");
@@ -772,7 +772,7 @@ function RepairCashStep({
               </div>
               <button
                 type="button"
-                disabled={amount <= 0}
+                disabled={amount <= 0 || !paymentMethod}
                 onClick={onSettle}
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[10px] bg-[#11998E] text-[15px] font-semibold text-white transition hover:bg-[#0F8C82] disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -1080,12 +1080,17 @@ function CashierStep(props: CashierStepProps) {
 
 function ProductCard({ item, onClick }: Readonly<{ item: StockItem; onClick: () => void }>) {
   const lowStock = item.stock <= (item.threshold || 0);
+  const hasPrice = item.salePrice > 0;
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={`Ajouter ${item.name} au panier`}
-      className="group flex min-h-[236px] flex-col overflow-hidden rounded-[8px] border border-[#E8E8E5] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.03)] transition hover:-translate-y-0.5 hover:border-[#2A9D8F]/50 hover:shadow-[0_10px_24px_rgba(26,25,22,0.08)] active:scale-[0.99]"
+      aria-label={hasPrice ? `Ajouter ${item.name} au panier` : `${item.name} - Prix à définir`}
+      className={`group flex min-h-[236px] flex-col overflow-hidden rounded-[8px] border bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.03)] transition hover:-translate-y-0.5 active:scale-[0.99] ${
+        hasPrice
+          ? "border-[#E8E8E5] hover:border-[#2A9D8F]/50 hover:shadow-[0_10px_24px_rgba(26,25,22,0.08)]"
+          : "border-[#F3D2C7] hover:border-[#B42318]/40"
+      }`}
     >
       <div className="mb-4 flex h-[116px] items-center justify-center">
         <ProductThumb item={item} size={104} />
@@ -1093,7 +1098,9 @@ function ProductCard({ item, onClick }: Readonly<{ item: StockItem; onClick: () 
       <div className="flex min-h-0 flex-1 flex-col">
         <p className="line-clamp-2 font-semibold text-[#1A1916] text-[14px] leading-tight tracking-tight">{item.name}</p>
         <div className="mt-2 flex items-baseline justify-between gap-2">
-          <span className="font-bold text-[#11998E] text-[17px] tabular-nums">{formatEuro(item.salePrice)}</span>
+          <span className={`font-bold text-[17px] tabular-nums ${hasPrice ? "text-[#11998E]" : "text-[#B42318]"}`}>
+            {hasPrice ? formatEuro(item.salePrice) : "Prix à définir"}
+          </span>
         </div>
         <div className="mt-auto flex items-center gap-1.5 pt-3 text-[12px]">
           <Layers className="size-3 text-[#8A8A8A]" strokeWidth={1.8} />
@@ -1162,8 +1169,12 @@ function FrequentProducts({
             </span>
             <span className="min-w-0">
               <span className="block truncate text-[12.5px] font-medium text-[#1A1916]">{item.name}</span>
-              <span className="mt-1 block text-[12px] font-semibold text-[#1A1916] tabular-nums">
-                {formatEuro(item.salePrice)}
+              <span
+                className={`mt-1 block text-[12px] font-semibold tabular-nums ${
+                  item.salePrice > 0 ? "text-[#1A1916]" : "text-[#B42318]"
+                }`}
+              >
+                {item.salePrice > 0 ? formatEuro(item.salePrice) : "Prix à définir"}
               </span>
             </span>
           </button>
@@ -1354,8 +1365,8 @@ function CheckoutStep(props: CheckoutStepProps) {
   const formatSale = (value: number) => formatCurrency(value, activeConfig.currency);
 
   useEffect(() => {
-    if (!paymentOptions.some((option) => option.key === paymentMethod)) {
-      setPaymentMethod(paymentOptions[0].key);
+    if (paymentMethod && !paymentOptions.some((option) => option.key === paymentMethod)) {
+      setPaymentMethod("" as PaymentMethod);
     }
   }, [paymentMethod, paymentOptions, setPaymentMethod]);
 
@@ -1629,8 +1640,9 @@ function CheckoutStep(props: CheckoutStepProps) {
 
               <button
                 type="button"
+                disabled={!paymentMethod}
                 onClick={finalize}
-                className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-[14px] bg-[#2A9D8F] font-semibold text-[14px] text-white shadow-[0_4px_12px_rgba(42,157,143,0.25)] transition hover:bg-[#23867a]"
+                className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-[14px] bg-[#2A9D8F] font-semibold text-[14px] text-white shadow-[0_4px_12px_rgba(42,157,143,0.25)] transition hover:bg-[#23867a] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <CheckCircle2 className="size-4" />
                 Valider le règlement

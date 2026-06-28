@@ -47,6 +47,7 @@ import {
   getInvoiceTotal,
   type PaymentMethod,
   type PaymentStatus,
+  paymentMethods,
   useBeharStore,
 } from "@/lib/behar-store";
 import { displayCustomerName } from "@/lib/customer-display";
@@ -60,27 +61,21 @@ type MethodFilter = "all" | PaymentMethod;
 
 const FR_METHOD_TABS: ReadonlyArray<{ value: MethodFilter; label: string }> = [
   { value: "all", label: "Tous" },
-  { value: "TPE externe", label: "TPE externe" },
-  { value: "Espèces hors Behar Tech", label: "Espèces ext." },
+  { value: "Espèces", label: "Espèces" },
+  { value: "Carte bancaire", label: "Carte bancaire" },
+  { value: "SumUp", label: "SumUp" },
+  { value: "Stripe", label: "Stripe" },
   { value: "Virement", label: "Virement" },
-  { value: "Lien externe", label: "Lien externe" },
+  { value: "Chèque", label: "Chèque" },
+  { value: "Autre", label: "Autre" },
 ];
 const CH_METHOD_TABS: ReadonlyArray<{ value: MethodFilter; label: string }> = [
-  { value: "all", label: "Tous" },
-  { value: "Espèces", label: "Espèces hors Behar Tech" },
-  { value: "TWINT", label: "TWINT" },
-  { value: "Carte externe", label: "Carte externe" },
-  { value: "Virement", label: "Virement" },
-  { value: "Autre", label: "Autre" },
+  ...FR_METHOD_TABS,
 ];
 
 type KpiTone = "teal" | "amber" | "blue" | "violet" | "rose";
 
 function formatPaymentMethodLabel(method: PaymentMethod): string {
-  if (method === "Carte") return "TPE externe";
-  if (method === "Espèces") return "Espèces hors Behar Tech";
-  if (method === "En ligne") return "Lien externe";
-  if (method === "TWINT") return "TWINT";
   return method;
 }
 
@@ -609,13 +604,11 @@ function CreatePaymentModal({
   const store = useBeharStore();
   const [sourceType, setSourceType] = useState<"invoice" | "repair">("invoice");
   const [selectedId, setSelectedId] = useState("");
-  const [method, setMethod] = useState<PaymentMethod>("TPE externe");
+  const [method, setMethod] = useState<PaymentMethod>("" as PaymentMethod);
   const [note, setNote] = useState("");
   const currentCurrency = store.workshopInfo.currency;
   const isSwiss = store.workshopInfo.country === "CH";
-  const availableMethods: PaymentMethod[] = isSwiss
-    ? ["Espèces", ...(store.workshopInfo.twintEnabled === false ? [] : ["TWINT" as const]), "Carte externe", "Virement", "Autre"]
-    : ["TPE externe", "Espèces hors Behar Tech", "Virement", "Lien externe", "Autre"];
+  const availableMethods: PaymentMethod[] = paymentMethods;
 
   const unpaidInvoices = useMemo(
     () => store.invoices.filter((inv) => inv.status !== "Payée" && inv.status !== "Annulée"),
@@ -635,7 +628,7 @@ function CreatePaymentModal({
 
   useEffect(() => {
     if (!isOpen) return;
-    setMethod(isSwiss ? (store.workshopInfo.twintEnabled === false ? "Espèces" : "TWINT") : "TPE externe");
+    setMethod("" as PaymentMethod);
     setNote("");
     const s = useBeharStore.getState();
     const openUnpaidInv = s.invoices.filter((inv) => inv.status !== "Payée" && inv.status !== "Annulée");
@@ -657,11 +650,15 @@ function CreatePaymentModal({
       return;
     }
     setSelectedId("");
-  }, [isOpen, presetInvoiceId, presetRepairId, isSwiss, store.workshopInfo.twintEnabled]);
+  }, [isOpen, presetInvoiceId, presetRepairId, isSwiss]);
 
   const handleCreate = () => {
     if (!selectedId) {
       toast.error("Veuillez sélectionner un élément.");
+      return;
+    }
+    if (!method) {
+      toast.error("Choisissez le moyen de paiement.");
       return;
     }
 
@@ -753,6 +750,9 @@ function CreatePaymentModal({
         <div className="space-y-2">
           <label className="text-sm font-medium text-[#6B6B6B]">Mode de paiement</label>
           <Select value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
+            <option value="" disabled>
+              Sélectionner...
+            </option>
             {availableMethods.map((m) => (
               <option key={m} value={m}>
                 {formatPaymentMethodLabel(m)}
@@ -763,10 +763,10 @@ function CreatePaymentModal({
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-[#6B6B6B]">
-            {method === "TWINT" ? "Référence paiement TWINT (facultatif)" : "Note (facultatif)"}
+            Référence paiement (facultatif)
           </label>
           <Textarea
-            placeholder={method === "TWINT" ? "Ex : TWINT-2026-0042" : "Ex: Terminal 1, référence..."}
+            placeholder="Ex : SumUp-2026-0042, virement, chèque..."
             value={note}
             onChange={(e) => setNote(e.target.value)}
             rows={3}
@@ -777,8 +777,8 @@ function CreatePaymentModal({
           <SecondaryButton className="flex-1" onClick={onClose}>
             Annuler
           </SecondaryButton>
-          <PrimaryButton className="flex-1" onClick={handleCreate}>
-            {method === "TWINT" ? "Marquer payé par TWINT" : "Enregistrer le paiement"}
+          <PrimaryButton className="flex-1" disabled={!method} onClick={handleCreate}>
+            Enregistrer le paiement
           </PrimaryButton>
         </div>
       </div>
@@ -808,13 +808,14 @@ function MobileKpi({
 
 function PaymentMethodTile({ method }: Readonly<{ method: PaymentMethod }>) {
   const config = (() => {
-    if (method === "Carte" || method === "TPE externe") return { Icon: CreditCard, bg: "bg-[#FFFFFF]", color: "text-[#2A9D8F]", label: "TPE externe" };
-    if (method === "Espèces" || method === "Espèces hors Behar Tech") return { Icon: Banknote, bg: "bg-[#FFFFFF]", color: "text-[#6B6B6B]", label: "Espèces ext." };
+    if (method === "Carte bancaire" || method === "SumUp" || method === "Stripe" || method === "Carte" || method === "TPE externe")
+      return { Icon: CreditCard, bg: "bg-[#FFFFFF]", color: "text-[#2A9D8F]", label: formatPaymentMethodLabel(method) };
+    if (method === "Espèces" || method === "Espèces hors Behar Tech")
+      return { Icon: Banknote, bg: "bg-[#FFFFFF]", color: "text-[#6B6B6B]", label: formatPaymentMethodLabel(method) };
     if (method === "Virement")
       return { Icon: Landmark, bg: "bg-[#FFFFFF]", color: "text-[#6B6B6B]", label: "Virement" };
-    if (method === "TWINT")
-      return { Icon: Wallet, bg: "bg-[#FFFFFF]", color: "text-[#2A9D8F]", label: "TWINT" };
-    return { Icon: Link2, bg: "bg-[#FFFFFF]", color: "text-[#6B6B6B]", label: "Lien externe" };
+    if (method === "Chèque") return { Icon: FileText, bg: "bg-[#FFFFFF]", color: "text-[#6B6B6B]", label: "Chèque" };
+    return { Icon: Link2, bg: "bg-[#FFFFFF]", color: "text-[#6B6B6B]", label: formatPaymentMethodLabel(method) };
   })();
   const { Icon, bg, color, label } = config;
   return (

@@ -115,6 +115,23 @@ _Deploy your own copy with one click._
 
 Your app will be running at [http://localhost:3000](http://localhost:3000)
 
+### Testing Client Tracking & QR Codes on Local Network (Smartphone)
+
+To test scanning QR codes with a phone connected to the same Wi-Fi network:
+
+1. Start the server exposing it to the local network:
+   ```bash
+   npm run dev -- --host 0.0.0.0
+   ```
+2. Find the local IP address of your PC (e.g. `192.168.1.25`).
+3. Add the following to your `.env.local` file:
+   ```env
+   VITE_PUBLIC_APP_URL=http://<YOUR_PC_IP>:3000
+   ```
+   (Replace `<YOUR_PC_IP>` with your actual local IP address).
+4. Restart the server. Any generated tracking links and QR codes will now use this IP address and load successfully on your mobile phone.
+
+
 ### Formatting and Linting
 
 Format, lint, and organize imports

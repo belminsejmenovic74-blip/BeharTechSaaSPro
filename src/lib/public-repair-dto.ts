@@ -1,28 +1,18 @@
 import type { BeharDocument, Repair, StoreState, WorkshopInfo } from "@/lib/behar-store";
-import { getBillingWorkshopInfo } from "@/lib/behar-store";
+import { getBillingWorkshopInfo, getRepairReadyDisplayLabel, repairHasConfirmedPayment } from "@/lib/behar-store";
+import { getTrackingCode } from "@/lib/customer-tracking";
 import { getPublicDocumentUrl } from "@/lib/documents/document-actions";
 import type { PublicRepairDto } from "@/lib/public-dtos";
-import {
-  PUBLIC_REPAIR_TIMELINE_STEPS,
-  publicRepairProgress,
-  publicRepairStatusLabel,
-} from "@/lib/repair-status";
+import { PUBLIC_REPAIR_TIMELINE_STEPS, publicRepairProgress, publicRepairStatusLabel } from "@/lib/repair-status";
 import { getWorkshopCountryConfig } from "@/lib/workshop-country";
 
-const PUBLIC_DOCUMENT_TYPES = new Set([
-  "intake",
-  "quote",
-  "invoice",
-  "payment",
-  "summary",
-  "diagnostic_report",
-]);
+const PUBLIC_DOCUMENT_TYPES = new Set(["intake", "quote", "invoice", "payment", "summary", "diagnostic_report"]);
 
 const PUBLIC_DOCUMENT_TITLE_BY_TYPE: Record<string, string> = {
   intake: "Bon de prise en charge",
   quote: "Devis",
   invoice: "Facture",
-  payment: "Confirmation de règlement — encaissé hors Behar Tech Pro",
+  payment: "Confirmation de règlement",
   summary: "Rapport final",
   diagnostic_report: "Rapport diagnostic",
 };
@@ -30,7 +20,14 @@ const PUBLIC_DOCUMENT_TITLE_BY_TYPE: Record<string, string> = {
 function resolveShopName(candidates: Array<string | undefined>): string {
   for (const candidate of candidates) {
     const value = (candidate ?? "").trim();
-    if (value) return value;
+    if (
+      value &&
+      value.toLowerCase() !== "behar tech" &&
+      value.toLowerCase() !== "behar tech pro" &&
+      value.toLowerCase() !== "behartechpro"
+    ) {
+      return value;
+    }
   }
   return "Votre atelier";
 }
@@ -70,7 +67,7 @@ function publicTimeline(repair: Repair): PublicRepairDto["timeline"] {
     description:
       index === 0
         ? "Votre appareil a été pris en charge."
-        : index === 4 && progress.isFinished
+        : index === 3 && progress.isFinished
           ? "Votre appareil a été remis au client."
           : undefined,
     date: index === 0 ? createdAt : updatedAt,
@@ -121,9 +118,7 @@ function documentNumber(
   if (document.type === "quote") {
     return state.quotes.find((quote) => quote.id === document.quoteId)?.number;
   }
-  return (
-    (document.type === "intake" ? repair.number : undefined)
-  );
+  return document.type === "intake" ? repair.number : undefined;
 }
 
 export function buildPublicRepairDtoFromLocalState(
@@ -134,7 +129,8 @@ export function buildPublicRepairDtoFromLocalState(
   token: string,
 ): PublicRepairDto | null {
   const repair = state.repairs.find(
-    (entry) => entry.publicAccess?.token === token && entry.publicAccess.active !== false,
+    (entry) =>
+      (entry.publicAccess?.token === token || getTrackingCode(entry) === token) && entry.publicAccess?.active !== false,
   );
   if (!repair) return null;
 
@@ -144,6 +140,7 @@ export function buildPublicRepairDtoFromLocalState(
     repair.billingCountry,
   );
   const paymentConfirmed = isPaymentConfirmed(repair.paymentStatus);
+  const hasPaidPayment = repairHasConfirmedPayment(repair, state.payments);
   const documents = state.documents.filter(
     (document) =>
       document.repairId === repair.id &&
@@ -156,7 +153,14 @@ export function buildPublicRepairDtoFromLocalState(
     repair: {
       number: repair.number,
       status: repair.status,
-      statusLabel: publicRepairStatusLabel(repair.status),
+      statusLabel:
+        repair.status === "Prêt"
+          ? getRepairReadyDisplayLabel(repair, state.payments)
+          : publicRepairStatusLabel(repair.status),
+      readyLabel: repair.status === "Prêt" ? getRepairReadyDisplayLabel(repair, state.payments) : undefined,
+      paymentStatus: repair.paymentStatus,
+      hasPaidPayment,
+      finalTestStatus: repair.finalTest?.status,
       deviceBrand: repair.brandName || undefined,
       deviceModel: repair.deviceModel || repair.device || undefined,
       deviceType: repair.deviceType || undefined,

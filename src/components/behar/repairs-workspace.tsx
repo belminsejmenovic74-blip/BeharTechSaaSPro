@@ -203,7 +203,7 @@ export function RepairsWorkspace() {
   const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "unpaid">("all");
   const [isSendingSms, setIsSendingSms] = useState(false);
   const [paymentNote, setPaymentNote] = useState("");
-  const [repairPayMethod, setRepairPayMethod] = useState<PaymentMethod>("TPE externe");
+  const [repairPayMethod, setRepairPayMethod] = useState<PaymentMethod>("" as PaymentMethod);
   const [importOpen, setImportOpen] = useState(false);
   const [prefillFromQuote, setPrefillFromQuote] = useState<any>(null);
   const [detailMode, setDetailMode] = useState<"repair" | "intake">("repair");
@@ -479,8 +479,12 @@ export function RepairsWorkspace() {
     }
   };
 
-  const markPaidAction = (method: PaymentMethod = "Carte") => {
+  const markPaidAction = (method?: PaymentMethod) => {
     if (!selectedRepair) return;
+    if (!method) {
+      toast.error("Choisissez le moyen de paiement.");
+      return;
+    }
     if (!primaryInvoice?.id) {
       const id = createInvoiceFromRepair(selectedRepair.id);
       if (!id) {
@@ -641,6 +645,7 @@ export function RepairsWorkspace() {
         return {
           label: `Marquer payée (${formatRepairAmount(selectedRepair, resteAPayer)})`,
           onClick: () => markPaidAction(repairPayMethod),
+          disabled: !repairPayMethod,
         };
       }
 
@@ -1137,9 +1142,12 @@ export function RepairsWorkspace() {
                               onChange={(event) => setRepairPayMethod(event.target.value as PaymentMethod)}
                               value={repairPayMethod}
                             >
+                              <option value="" disabled>
+                                Sélectionner...
+                              </option>
                               {paymentMethods.map((m) => (
                                 <option key={m} value={m}>
-                                  {m === "Carte" ? "TPE externe" : m === "Espèces" ? "Espèces hors Behar Tech" : m === "En ligne" ? "Lien externe" : m}
+                                  {m}
                                 </option>
                               ))}
                             </select>
@@ -1151,7 +1159,11 @@ export function RepairsWorkspace() {
                             />
                           </div>
                         )}
-                        <PrimaryButton className="mt-4 h-11 w-full" onClick={primaryAction.onClick}>
+                        <PrimaryButton
+                          className="mt-4 h-11 w-full"
+                          disabled={"disabled" in primaryAction ? Boolean(primaryAction.disabled) : false}
+                          onClick={primaryAction.onClick}
+                        >
                           {primaryAction.label.startsWith("Marquer payée") ? (
                             <CreditCard className="mr-2 size-4" />
                           ) : primaryAction.label === "Voir reçu" ? (

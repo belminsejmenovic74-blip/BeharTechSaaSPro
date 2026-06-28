@@ -1,1 +1,7 @@
-export { generateQrCodeDataUrl, generateQrDataUrl, publicAbsoluteUrl } from "@/lib/public-access";
+export {
+  generateQrCodeDataUrl,
+  generateQrDataUrl,
+  getPublicUrlConfigurationError,
+  publicAbsoluteUrl,
+  safePublicAbsoluteUrl,
+} from "@/lib/public-access";

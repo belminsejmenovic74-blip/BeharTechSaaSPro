@@ -41,25 +41,75 @@ function browserOrigin(): string {
   return window.location.origin.replace(/\/$/, "");
 }
 
-function publicBaseUrl(): string {
-  const envBase = process.env.NEXT_PUBLIC_PUBLIC_BASE_URL?.replace(/\/$/, "") || "";
+const PUBLIC_URL_ERROR =
+  "URL publique non configurée. Renseignez NEXT_PUBLIC_APP_URL ou NEXT_PUBLIC_PUBLIC_BASE_URL avec le domaine public de production.";
+
+function configuredPublicBaseUrl(): string {
+  return (
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
+    process.env.NEXT_PUBLIC_PUBLIC_BASE_URL?.replace(/\/$/, "") ||
+    process.env.VITE_PUBLIC_APP_URL?.replace(/\/$/, "") ||
+    process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") ||
+    process.env.APP_URL?.replace(/\/$/, "") ||
+    process.env.SITE_URL?.replace(/\/$/, "") ||
+    process.env.PUBLIC_APP_URL?.replace(/\/$/, "") ||
+    ""
+  );
+}
+
+function publicBaseUrl(): { base: string; error: string } {
+  const envBase = configuredPublicBaseUrl();
   const origin = browserOrigin();
-  
+  const isProduction = process.env.NODE_ENV === "production";
+
   // Si l'application tourne dans Tauri (app de bureau), l'origine n'est pas partageable au client.
-  // Dans ce cas précis, on utilise l'URL de production par défaut.
   const isTauri = !origin || origin.startsWith("tauri:");
   if (isTauri) {
-    return envBase || "https://behartechpro.fr";
+    if (!envBase) return { base: "", error: PUBLIC_URL_ERROR };
+    if (isProduction && isLocalPublicBase(envBase)) return { base: "", error: PUBLIC_URL_ERROR };
+    return { base: envBase, error: "" };
   }
-  
-  // Sinon (web local ou production), on utilise l'URL de l'environnement ou l'origine actuelle.
-  // Cela permet aux liens "localhost" de rester "localhost" pour les tests en développement.
-  return envBase || origin || "http://localhost:3000";
+
+  if (isProduction) {
+    if (!envBase) return { base: "", error: PUBLIC_URL_ERROR };
+    if (isLocalPublicBase(envBase)) return { base: "", error: PUBLIC_URL_ERROR };
+    return { base: envBase, error: "" };
+  }
+
+  // En développement local uniquement, localhost reste autorisé pour tester les QR/lien.
+  return { base: envBase || origin || "http://localhost:3000", error: "" };
+}
+
+import { buildTrackingUrl } from "@/lib/customer-tracking";
+
+export function getPublicUrlConfigurationError(): string {
+  return publicBaseUrl().error;
 }
 
 export function publicAbsoluteUrl(relativeUrl: string): string {
-  const base = publicBaseUrl();
+  const { base, error } = publicBaseUrl();
+  if (error || !base) return "";
   if (!relativeUrl) return base;
+
+  // Intercepter les liens de suivi client pour reconstruire l'adresse avec le domaine dynamique actif
+  if (relativeUrl.includes("/suivi/") || relativeUrl.includes("/p/")) {
+    try {
+      const segments = relativeUrl.split("/").filter(Boolean);
+      const token = segments.pop() || "";
+      const suiviIdx = segments.indexOf("suivi");
+      const pIdx = segments.indexOf("p");
+      const idx = suiviIdx !== -1 ? suiviIdx : pIdx;
+      const shopSlug =
+        idx !== -1 && segments[idx + 1] && segments[idx + 1] !== token
+          ? decodeURIComponent(segments[idx + 1])
+          : "atelier";
+
+      return buildTrackingUrl({ shopSlug, trackingToken: token });
+    } catch (e) {
+      console.error("[public-access] Failed to rebuild dynamic tracking url:", e);
+    }
+  }
+
   if (relativeUrl.startsWith("http")) {
     if (base && typeof window !== "undefined" && isLocalPublicBase(relativeUrl) && !isLocalPublicBase(base)) {
       const url = new URL(relativeUrl);
@@ -69,6 +119,13 @@ export function publicAbsoluteUrl(relativeUrl: string): string {
   }
   const path = relativeUrl.startsWith("/") ? relativeUrl : `/${relativeUrl}`;
   return `${base}${path}`;
+}
+
+export function safePublicAbsoluteUrl(relativeUrl: string): { url: string; error: string } {
+  const error = getPublicUrlConfigurationError();
+  if (error) return { url: "", error };
+  const url = publicAbsoluteUrl(relativeUrl);
+  return url ? { url, error: "" } : { url: "", error: PUBLIC_URL_ERROR };
 }
 
 export async function generateQrCodeDataUrl(value: string): Promise<string> {

@@ -10,6 +10,7 @@ import type {
 } from "@/lib/public-dtos";
 import {
   PUBLIC_REPAIR_TIMELINE_STEPS,
+  repairReadyStatusLabel,
   publicRepairProgress,
   publicRepairStatusLabel,
 } from "@/lib/repair-status";
@@ -23,9 +24,9 @@ const PUBLIC_DOCUMENT_TITLES: Record<string, string> = {
   repair_intake: "Bon de prise en charge",
   quote: "Devis",
   invoice: "Facture",
-  payment: "Confirmation de règlement — encaissé hors Behar Tech Pro",
-  payment_confirmation: "Confirmation de règlement — encaissé hors Behar Tech Pro",
-  payment_receipt: "Confirmation de règlement — encaissé hors Behar Tech Pro",
+  payment: "Confirmation de règlement",
+  payment_confirmation: "Confirmation de règlement",
+  payment_receipt: "Confirmation de règlement",
   summary: "Rapport final",
   diagnostic_report: "Rapport diagnostic",
 };
@@ -73,7 +74,7 @@ function error(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
 }
 
-function publicTimelineFromRepair(repair: any): PublicRepairDto["timeline"] {
+function publicTimelineFromRepair(repair: any, events: any[] = []): PublicRepairDto["timeline"] {
   const createdAt = repair.created_at ?? new Date().toISOString();
   const updatedAt = repair.updated_at ?? createdAt;
   const progress = publicRepairProgress(repair.status);
@@ -87,17 +88,32 @@ function publicTimelineFromRepair(repair: any): PublicRepairDto["timeline"] {
       },
     ];
   }
-  return PUBLIC_REPAIR_TIMELINE_STEPS.slice(0, progress.activeStepIndex + 1).map((title, index) => ({
-    title,
-    description:
-      index === 0
-        ? "Votre appareil a été pris en charge."
-        : index === 4 && progress.isFinished
-          ? "Votre appareil a été remis au client."
-          : undefined,
-    date: index === 0 ? createdAt : updatedAt,
-    visibility: "client" as const,
-  }));
+  return PUBLIC_REPAIR_TIMELINE_STEPS.slice(0, progress.activeStepIndex + 1).map((title, index) => {
+    let stepDate = index === 0 ? createdAt : updatedAt;
+    if (events && events.length > 0) {
+      if (title === "Diagnostic") {
+        const ev = events.find(e => e.title?.toLowerCase().includes("diagnostic") || e.description?.toLowerCase().includes("diagnostic"));
+        if (ev) stepDate = ev.created_at;
+      } else if (title === "En réparation") {
+        const ev = events.find(e => e.title?.toLowerCase().includes("réparation") || e.description?.toLowerCase().includes("réparation") || e.title?.toLowerCase().includes("reparation"));
+        if (ev) stepDate = ev.created_at;
+      } else if (title === "Prêt") {
+        const ev = events.find(e => e.title?.toLowerCase().includes("prêt") || e.description?.toLowerCase().includes("prêt") || e.title?.toLowerCase().includes("pret"));
+        if (ev) stepDate = ev.created_at;
+      }
+    }
+    return {
+      title,
+      description:
+        index === 0
+          ? "Votre appareil a été pris en charge."
+          : index === 3 && progress.isFinished
+            ? "Votre appareil a été remis au client."
+            : undefined,
+      date: stepDate,
+      visibility: "client" as const,
+    };
+  });
 }
 
 function isPublicRepairDocument(doc: any, paidPaymentIds: Set<string>) {
@@ -190,14 +206,22 @@ export async function getPublicRepair(token: string): Promise<PublicRepairDto | 
       .filter((payment: any) => ["Payé", "paid", "partially_paid", "Partiellement réglé"].includes(payment.status))
       .map((payment: any) => String(payment.id)),
   );
+  const hasPaidPayment = (paymentsRes.data ?? []).some((payment: any) => ["Payé", "paid"].includes(payment.status));
   const publicDocs = (docsRes.data ?? []).filter((doc: any) => isPublicRepairDocument(doc, paidPaymentIds));
+  const repairProgress = publicRepairProgress(repair.status);
+  const readyLabel =
+    repairProgress.key === "ready" ? repairReadyStatusLabel(repair.status, repair.payment_status, hasPaidPayment) : undefined;
 
   return {
     workshop: trackingWorkshopDto(workshopRes.data),
     repair: {
       number: repair.repair_number,
       status: repair.status,
-      statusLabel: publicRepairStatusLabel(repair.status),
+      statusLabel: readyLabel ?? publicRepairStatusLabel(repair.status),
+      readyLabel,
+      paymentStatus: repair.payment_status || undefined,
+      hasPaidPayment,
+      finalTestStatus: repair.final_test_status || repair.final_test?.status || undefined,
       deviceBrand: repair.device_brand || undefined,
       deviceModel: repair.device_model || undefined,
       deviceType: repair.device_type || undefined,
@@ -206,7 +230,7 @@ export async function getPublicRepair(token: string): Promise<PublicRepairDto | 
       updatedAt: repair.updated_at,
     },
     client: { displayName: clientRes?.data?.full_name || "Client" },
-    timeline: publicTimelineFromRepair(repair),
+    timeline: publicTimelineFromRepair(repair, eventsRes.data ?? []),
     documents: publicDocs.map((doc: any) => ({
       type: doc.document_type,
       title: publicDocumentTitle(doc),

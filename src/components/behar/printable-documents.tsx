@@ -53,7 +53,7 @@ const DOC_THEME: Record<
     chipText: "#1A1916",
   },
   recu: {
-    label: "CONFIRMATION DE RÈGLEMENT — ENCAISSÉ HORS BEHAR TECH PRO",
+    label: "CONFIRMATION DE RÈGLEMENT",
     accent: "#2A9D8F",
     soft: "#FFFFFF",
     ink: "#1A1916",
@@ -88,10 +88,10 @@ function dash(value: unknown): string {
 
 function paymentMethodLabel(value: unknown): string {
   const method = dash(value);
-  if (method === "TPE externe") return "Carte bancaire via terminal externe";
+  if (method === "TPE externe") return "CB";
   if (method === "Espèces hors Behar Tech") return "Espèces";
-  if (method === "Carte externe") return "Carte bancaire via terminal externe";
-  if (method === "Virement") return "Virement bancaire";
+  if (method === "Carte externe") return "CB";
+  if (method === "Virement") return "Virement";
   if (method === "Lien externe") return "Lien de paiement externe";
   return method;
 }
@@ -214,8 +214,16 @@ function RepairCard({
   );
 }
 
+import { getSyncState, subscribeSyncState } from "@/lib/cloud-sync";
+
 function DocumentTrackingQr({ url }: Readonly<{ url?: string }>) {
   const [qr, setQr] = useState("");
+  const [syncStatus, setSyncStatus] = useState(getSyncState().status);
+
+  useEffect(() => {
+    return subscribeSyncState((s) => setSyncStatus(s.status));
+  }, []);
+
   useEffect(() => {
     if (!url) return;
     let active = true;
@@ -228,7 +236,22 @@ function DocumentTrackingQr({ url }: Readonly<{ url?: string }>) {
       active = false;
     };
   }, [url]);
-  if (!url || !qr) return null;
+  if (!url) return null;
+
+  if (syncStatus === "syncing" || syncStatus === "error" || syncStatus === "offline") {
+    return (
+      <div className="flex shrink-0 flex-col items-center gap-1">
+        <div className="flex size-[80px] items-center justify-center rounded-[6px] border border-[#E8E8E8] bg-[#FAFAF8] p-1 text-center">
+          <span className="font-medium text-[#6B6B6B] text-[7px] leading-[1.1]">
+            {syncStatus === "syncing" ? "Synchronisation du suivi en cours..." : "Suivi cloud non disponible"}
+          </span>
+        </div>
+        <p className="max-w-[90px] text-center text-[#6B6B6B] text-[9px] leading-tight">Suivi client</p>
+      </div>
+    );
+  }
+
+  if (!qr) return null;
   return (
     <div className="flex shrink-0 flex-col items-center gap-1">
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -257,7 +280,7 @@ function DocumentHeader({
   workshop: WorkshopInfo;
   qrSlot?: ReactNode;
 }>) {
-  const atelierName = text(workshop.name, "BEHAR • TECH PRO");
+  const atelierName = text(workshop.name, "Votre atelier");
   const isSwiss = workshop.country === "CH";
   const theme = DOC_THEME[type];
 
@@ -344,7 +367,7 @@ function DocumentFooter({
       {methods.length ? <p>Moyens de paiement acceptés : {methods.join(" · ")}</p> : null}
       {workshop.documentFooter && workshop.documentFooter !== "Non renseigné" ? <p>{workshop.documentFooter}</p> : null}
       <p>
-        {text(workshop.name, "BEHAR • TECH PRO")}
+        {text(workshop.name, "Votre atelier")}
         {legalIdentity ? ` · ${legalIdentity}` : ""}
         {workshop.email ? ` · ${workshop.email}` : ""}
         {workshop.phone ? ` · ${workshop.phone}` : ""}
@@ -783,8 +806,9 @@ export function RepairIntakeDocument({
   workshop,
 }: Readonly<{ repair: Repair; customer: Customer; workshop?: WorkshopInfo }>) {
   const ws = workshop ?? defaultWorkshopInfo;
-  const photos = (repair.intakeCondition?.photos ?? [])
-    .filter((photo): photo is typeof photo & { dataUrl: string } => Boolean(photo.dataUrl));
+  const photos = (repair.intakeCondition?.photos ?? []).filter((photo): photo is typeof photo & { dataUrl: string } =>
+    Boolean(photo.dataUrl),
+  );
   const hasPhotos = photos.length > 0;
   const pageCount = hasPhotos ? 2 : 1;
   const accessories = intakeAccessories(repair);
@@ -1009,7 +1033,14 @@ export function QuoteDocument({
 }: Readonly<{ quote: Quote; customer: Customer; repair?: Repair; workshop?: WorkshopInfo }>) {
   const ws = workshop ?? defaultWorkshopInfo;
   return (
-    <DocumentPage badge={quote.status} date={quote.date} number={quote.number} type="devis" workshop={ws}>
+    <DocumentPage
+      badge={quote.status}
+      date={quote.date}
+      number={quote.number}
+      type="devis"
+      workshop={ws}
+      qrSlot={repair ? <DocumentTrackingQr url={repair.publicAccess?.url} /> : undefined}
+    >
       <DocumentIntro customer={customer} quote={quote} repair={repair} />
       {quote.notes ? (
         <DocumentSection title="Notes">
@@ -1045,6 +1076,7 @@ export function InvoiceDocument({
       number={invoice.number}
       type="facture"
       workshop={ws}
+      qrSlot={repair ? <DocumentTrackingQr url={repair.publicAccess?.url} /> : undefined}
     >
       <DocumentIntro customer={customer} invoice={invoice} repair={repair} />
       {quote ? (
@@ -1076,7 +1108,7 @@ function InvoiceLegalMentions({
   const issuedAt = invoice.date ? dateLabel(invoice.date) : "Non renseignée";
   const paid = invoice.status === "Payée";
   const partial = !paid && (invoice.paidAmount ?? 0) > 0;
-  const settlementStatus = paid ? "Réglée hors Behar Tech Pro" : partial ? "Partiellement réglée" : "Non réglée";
+  const settlementStatus = paid ? "Réglée" : partial ? "Partiellement réglée" : "Non réglée";
   const dueLabel = paid ? "Réglée" : "Paiement à réception de facture";
   const serviceDateRaw = invoice.paidAt ?? invoice.date;
   const serviceDate = serviceDateRaw ? dateLabel(serviceDateRaw) : issuedAt;
@@ -1097,9 +1129,13 @@ function InvoiceLegalMentions({
           <KeyValue label="Date de prestation" value={serviceDate} />
           <KeyValue label="Date d'échéance" value={dueLabel} />
           <KeyValue label="Statut" value={settlementStatus} />
-          <KeyValue 
-            label="Moyen de paiement" 
-            value={invoice.paymentMethod === "Autre" && repair?.paymentCustomMethod ? repair.paymentCustomMethod : paymentMethodLabel(invoice.paymentMethod)} 
+          <KeyValue
+            label="Moyen de paiement"
+            value={
+              invoice.paymentMethod === "Autre" && repair?.paymentCustomMethod
+                ? repair.paymentCustomMethod
+                : paymentMethodLabel(invoice.paymentMethod)
+            }
           />
           {invoice.paidAt ? <KeyValue label="Date du règlement" value={dateLabel(invoice.paidAt)} /> : null}
           {repair?.paymentReference ? <KeyValue label="Référence" value={repair.paymentReference} /> : null}
@@ -1193,11 +1229,12 @@ export function PaymentReceiptDocument({
   const isFullSettlement = invoice ? Math.abs(payment.amount - invoiceTotal) < 0.01 : true;
   return (
     <DocumentPage
-      badge={isFullSettlement ? "Réglé hors Behar Tech Pro" : "Règlement partiel"}
+      badge={isFullSettlement ? "Réglé" : "Règlement partiel"}
       date={payment.date}
       number={payment.paymentNumber}
       type="recu"
       workshop={workshop}
+      qrSlot={repair ? <DocumentTrackingQr url={repair.publicAccess?.url} /> : undefined}
     >
       <DocumentIntro customer={customer} invoice={invoice} repair={repair} />
       <PaymentHero amount={payment.amount} currency={payment.currency} date={payment.date} method={payment.method} />
@@ -1205,9 +1242,13 @@ export function PaymentReceiptDocument({
         <KeyValue label="Facture liée" value={dash(invoice?.number)} />
         <KeyValue label="Dossier lié" value={dash(repair?.number)} />
         <KeyValue label="Montant réglé" value={money(payment.amount, payment.currency)} />
-        <KeyValue 
-          label="Moyen de paiement" 
-          value={(payment.method ?? payment.mode) === "Autre" && payment.customMethod ? payment.customMethod : paymentMethodLabel(payment.method ?? payment.mode)} 
+        <KeyValue
+          label="Moyen de paiement"
+          value={
+            (payment.method ?? payment.mode) === "Autre" && payment.customMethod
+              ? payment.customMethod
+              : paymentMethodLabel(payment.method ?? payment.mode)
+          }
         />
         <KeyValue label="Date du règlement" value={dateLabel(payment.date)} />
         <KeyValue label="Référence externe" value={dash(payment.externalReference ?? payment.reference)} />
@@ -1217,9 +1258,9 @@ export function PaymentReceiptDocument({
         ) : null}
         <KeyValue label="Statut" value={dash(payment.status)} />
       </DocumentSection>
-      <NoticeCard title="Confirmation de règlement - encaissé hors Behar Tech Pro">
-        Paiement enregistré manuellement. Encaissement effectué hors Behar Tech Pro via le moyen de paiement indiqué. Ce
-        document ne remplace pas une facture. La facture reste le document comptable officiel.
+      <NoticeCard title="Confirmation de règlement">
+        Paiement enregistré manuellement. Encaissement effectué via le moyen de paiement indiqué. Ce document ne
+        remplace pas une facture. La facture reste le document comptable officiel.
         {isFullSettlement
           ? ` Le dossier est indiqué comme réglé pour la facture ${dash(invoice?.number)}.`
           : ` Le présent document constate un règlement partiel sur la facture ${dash(invoice?.number)}.`}
@@ -1321,6 +1362,7 @@ export function RepairSummaryDocument({
       number={repair.number}
       type="bon-prise-en-charge"
       workshop={ws}
+      qrSlot={repair ? <DocumentTrackingQr url={repair.publicAccess?.url} /> : undefined}
     >
       <DocumentIntro customer={customer} repair={repair} />
       <DocumentSection title="Intervention réalisée">
@@ -1403,8 +1445,8 @@ export function SaleReceiptDocument({
       </div>
       {sale.paymentMethod && (
         <NoticeCard title="Paiement">
-          Réglé hors Behar Tech par {sale.paymentMethod} le {sale.paidAt ? dateLabel(sale.paidAt) : "Non renseigné"}. Ce
-          reçu atteste du règlement de la vente comptoir indiquée ci-dessus.
+          Réglé — {paymentMethodLabel(sale.paymentMethod)} le {sale.paidAt ? dateLabel(sale.paidAt) : "Non renseigné"}.
+          Ce reçu atteste du règlement de la vente comptoir indiquée ci-dessus.
         </NoticeCard>
       )}
       <NoticeCard title="Garantie">
@@ -1429,9 +1471,13 @@ export function DiagnosticReportDocument({
       ? repair.diagnosisChecklist
       : (repair.finalTest?.items ?? []);
 
-  // Check if any check has been marked as "Non testable" or "Test repoussé"
+  // Check if any check has been marked as not fully validated.
   const hasIncompleteOrWarning = checklist.some(
-    (item) => item.result === "Non testable" || item.result === "Test repoussé",
+    (item) =>
+      item.result === "Non testable" ||
+      item.result === "Test repoussé" ||
+      item.result === "Non testé" ||
+      item.result === "Non applicable",
   );
 
   return (
@@ -1441,6 +1487,7 @@ export function DiagnosticReportDocument({
       number={repair.number}
       type="bon-prise-en-charge"
       workshop={ws}
+      qrSlot={repair ? <DocumentTrackingQr url={repair.publicAccess?.url} /> : undefined}
     >
       <DocumentIntro customer={customer} repair={repair} />
 
@@ -1454,6 +1501,7 @@ export function DiagnosticReportDocument({
 
         <DocumentSection title="Conclusion technique">
           <KeyValue label="Statut de l'appareil" value={dash(repair.status)} />
+          <KeyValue label="Statut test final" value={dash(repair.finalTest?.status)} />
           <KeyValue label="Garantie proposée" value={dash(repair.diagnosticWarranty || ws.defaultWarranty)} />
           <KeyValue
             label="Réf. Diagnostic"
@@ -1465,8 +1513,8 @@ export function DiagnosticReportDocument({
       {hasIncompleteOrWarning && (
         <section className="rounded-[6px] border border-[#B54708] bg-white p-4 text-[#B54708]">
           <p className="font-medium text-[12px] leading-relaxed">
-            ⚠️ <strong>Notice importante :</strong> Certains tests n’ont pas pu être réalisés en raison de l’état de
-            l’appareil à l’entrée.
+            <strong>Notice importante :</strong> Certains tests sont non applicables ou non testés selon le contexte
+            réel de l'intervention.
           </p>
         </section>
       )}
@@ -1477,7 +1525,7 @@ export function DiagnosticReportDocument({
             {checklist.map((item) => {
               let textColor = "text-[#6B6B6B]"; // Neutral
               if (item.result === "OK") textColor = "text-[#2A9D8F]";
-              if (item.result === "KO") textColor = "text-[#B42318]";
+              if (item.result === "KO" || item.result === "Défaut constaté") textColor = "text-[#B42318]";
               if (item.result === "Test repoussé") textColor = "text-[#B54708]";
               if (item.result === "Non testable") textColor = "text-[#6B6B6B]";
 
@@ -1487,7 +1535,10 @@ export function DiagnosticReportDocument({
                   className="flex items-center justify-between border-[#E8E8E8] border-b pb-1.5 text-[11.5px]"
                 >
                   <span className="font-medium text-[#1A1916]">{item.label}</span>
-                  <span className={`font-bold text-[11px] ${textColor}`}>{item.result}</span>
+                  <span className={`font-bold text-[11px] ${textColor}`}>
+                    {item.result}
+                    {item.comment ? ` — ${item.comment}` : ""}
+                  </span>
                 </div>
               );
             })}

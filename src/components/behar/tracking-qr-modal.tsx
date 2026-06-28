@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Copy, Eye, Check, Printer } from "lucide-react";
+import { Check, Copy, Eye, Printer, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { useBeharStore } from "@/lib/behar-store";
 import { Modal } from "./primitives";
-import { generateQrDataUrl, publicAbsoluteUrl } from "@/lib/public-access";
+import { getCustomerTrackingUrl, getTrackingCode } from "@/lib/customer-tracking";
+import { generateQrDataUrl } from "@/lib/public-access";
 import { printRepairQr } from "@/lib/documents/document-actions";
 
 interface TrackingQrModalProps {
@@ -23,30 +24,33 @@ export function TrackingQrModal({ isOpen, onClose, repairId }: TrackingQrModalPr
 
   const repair = store.repairs.find((r) => r.id === repairId);
   const customer = repair ? store.customers.find((c) => c.id === repair.customerId) : undefined;
+  const workshop = store.workshopSettings ?? store.workshopInfo;
+  const trackingUrl = repair ? getCustomerTrackingUrl(repair, workshop) : "";
 
   useEffect(() => {
     if (!isOpen || !repairId) return;
 
-    // Ensure the repair has public access token & url
     const access = store.ensureRepairPublicAccess(repairId);
-    if (access?.url) {
-      const trackingUrl = publicAbsoluteUrl(access.url);
-      generateQrDataUrl(trackingUrl)
-        .then(setQr)
-        .catch((err) => {
-          console.error("Failed to generate QR Code", err);
-          setQr("");
-        });
-    }
+    const current = store.repairs.find((r) => r.id === repairId);
+    const url = current && access ? getCustomerTrackingUrl({ ...current, publicAccess: access }, store.workshopSettings ?? store.workshopInfo) : "";
+    if (!url) return;
+    generateQrDataUrl(url)
+      .then(setQr)
+      .catch((err) => {
+        console.error("Failed to generate QR Code", err);
+        setQr("");
+      });
   }, [isOpen, repairId, store]);
 
   if (!repair) return null;
-
-  const access = store.ensureRepairPublicAccess(repairId);
-  const trackingUrl = access?.url ? publicAbsoluteUrl(access.url) : "";
+  const shopName = workshop.commercialName || workshop.name || "Behar Tech";
+  const trackingCode = getTrackingCode(repair);
 
   const copyLink = async () => {
-    if (!trackingUrl) return;
+    if (!trackingUrl) {
+      toast.error("Lien de suivi indisponible.");
+      return;
+    }
     try {
       await navigator.clipboard.writeText(trackingUrl);
       setCopied(true);
@@ -57,46 +61,82 @@ export function TrackingQrModal({ isOpen, onClose, repairId }: TrackingQrModalPr
     }
   };
 
+  const printQr = () => {
+    if (printRepairQr(repair.id, { format })) toast.success("Impression du QR lancée.");
+    else toast.error("QR de suivi indisponible.");
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Suivi client (QR Code)" maxWidth="max-w-md">
+    <Modal isOpen={isOpen} onClose={onClose} title="Suivi client" maxWidth="max-w-[520px]">
       <div className="flex flex-col items-center text-center">
+        <div className="mb-5 flex w-full items-start justify-between gap-4 text-left">
+          <div>
+            <p className="font-semibold text-[#1A1916] text-[18px]">QR Code de suivi</p>
+            <p className="mt-1 text-[#6B6B6B] text-sm">Scannez pour suivre votre réparation.</p>
+          </div>
+          <button
+            aria-label="Fermer"
+            className="grid size-9 shrink-0 place-items-center rounded-[10px] border border-[#E8E8E5] bg-white text-[#6B6B6B]"
+            onClick={onClose}
+            type="button"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
         {qr ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={qr}
             alt="QR Code Suivi Client"
-            className="size-48 rounded-[16px] border border-[#E8E8E5] p-3 shadow-md bg-white"
+            className="size-64 rounded-[18px] border border-[#E8E8E5] bg-white p-4 shadow-[0_16px_48px_rgba(26,25,22,0.08)]"
           />
         ) : (
-          <div className="size-48 rounded-[16px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] flex items-center justify-center text-[#6B6B6B]">
+          <div className="flex size-64 items-center justify-center rounded-[18px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]">
             Génération du QR...
           </div>
         )}
 
-        <div className="mt-6 w-full space-y-4 text-left border-t border-[#FFFFFF] pt-4">
-          <div className="flex justify-between py-1.5 border-b border-[#FFFFFF]/60">
-            <span className="text-xs text-[#6B6B6B] font-medium">Numéro de dossier</span>
-            <span className="font-bold text-[#1A1916] text-sm">#{repair.number}</span>
+        <div className="mt-6 w-full space-y-3 rounded-[16px] border border-[#E8E8E5] bg-[#FAFAF8] p-4 text-left">
+          <div className="flex justify-between gap-4">
+            <span className="font-medium text-[#6B6B6B] text-xs">Boutique</span>
+            <span className="text-right font-bold text-[#1A1916] text-sm">{shopName}</span>
           </div>
-
-          <div className="flex justify-between py-1.5 border-b border-[#FFFFFF]/60">
-            <span className="text-xs text-[#6B6B6B] font-medium">Client</span>
-            <span className="font-semibold text-[#1A1916] text-sm">{customer?.name ?? "Client de passage"}</span>
+          <div className="flex justify-between gap-4">
+            <span className="font-medium text-[#6B6B6B] text-xs">Code de suivi</span>
+            <span className="font-mono font-bold text-[#1A1916] text-sm">{trackingCode}</span>
           </div>
-
-          <div className="flex justify-between py-1.5">
-            <span className="text-xs text-[#6B6B6B] font-medium">Appareil</span>
-            <span className="font-semibold text-[#1A1916] text-sm">
+          <div className="flex justify-between gap-4">
+            <span className="font-medium text-[#6B6B6B] text-xs">Dossier</span>
+            <span className="text-right font-semibold text-[#1A1916] text-sm">{repair.number}</span>
+          </div>
+          <div className="flex justify-between gap-4">
+            <span className="font-medium text-[#6B6B6B] text-xs">Client</span>
+            <span className="text-right font-semibold text-[#1A1916] text-sm">{customer?.name ?? "Client de passage"}</span>
+          </div>
+          <div className="flex justify-between gap-4">
+            <span className="font-medium text-[#6B6B6B] text-xs">Appareil</span>
+            <span className="text-right font-semibold text-[#1A1916] text-sm">
               {[repair.brandName, repair.deviceModel || repair.model || repair.device].filter(Boolean).join(" ")}
             </span>
           </div>
         </div>
 
-        <div className="mt-8 flex w-full gap-3">
+        {trackingUrl ? (
+          <a
+            className="mt-4 w-full break-all rounded-[12px] border border-[#E8E8E5] bg-white px-3 py-2.5 text-left font-mono text-[#1E7A6E] text-xs hover:underline"
+            href={trackingUrl}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            {trackingUrl}
+          </a>
+        ) : null}
+
+        <div className="mt-5 grid w-full gap-2 sm:grid-cols-2">
           <button
             type="button"
             onClick={copyLink}
-            className="flex-1 inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-semibold text-[#1A1916] text-sm transition hover:bg-[#FFFFFF]"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-semibold text-[#1A1916] text-sm transition hover:bg-[#FFFFFF]"
           >
             {copied ? <Check className="size-4 text-[#2A9D8F]" /> : <Copy className="size-4" />}
             <span>{copied ? "Copié !" : "Copier le lien"}</span>
@@ -105,10 +145,10 @@ export function TrackingQrModal({ isOpen, onClose, repairId }: TrackingQrModalPr
             href={trackingUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 inline-flex h-11 items-center justify-center gap-2 rounded-[12px] bg-[#2A9D8F] font-semibold text-white text-sm transition hover:bg-[#238579]"
+            className={`inline-flex h-11 items-center justify-center gap-2 rounded-[12px] bg-[#2A9D8F] font-semibold text-white text-sm transition hover:bg-[#238579] ${trackingUrl ? "" : "pointer-events-none opacity-50"}`}
           >
             <Eye className="size-4" />
-            <span>Suivre en ligne</span>
+            <span>Ouvrir le suivi</span>
           </a>
         </div>
         <div className="mt-3 grid w-full grid-cols-[1fr_auto] gap-2">
@@ -123,17 +163,13 @@ export function TrackingQrModal({ isOpen, onClose, repairId }: TrackingQrModalPr
           </select>
           <button
             type="button"
-            onClick={() => {
-              if (printRepairQr(repair.id, { format })) toast.success("Impression du QR lancée.");
-              else toast.error("QR de suivi indisponible.");
-            }}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-semibold text-[#1A1916] text-sm transition hover:bg-[#FFFFFF]"
+            onClick={printQr}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-semibold text-[#1A1916] text-sm transition hover:bg-[#FFFFFF] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Printer className="size-4" />
             <span>Imprimer QR</span>
           </button>
         </div>
-        {trackingUrl ? <p className="mt-3 w-full break-all text-left text-[#6B6B6B] text-xs">{trackingUrl}</p> : null}
       </div>
     </Modal>
   );

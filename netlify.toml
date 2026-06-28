@@ -39,6 +39,12 @@
   to    = "/telecharger/"
   status = 302
 
+# Fallback SPA pour la route de suivi client
+[[redirects]]
+  from   = "/suivi/*"
+  to    = "/suivi/_/index.html"
+  status = 200
+
 # Fallback SPA pour les routes dynamiques Next non générées statiquement :
 # évite le 404 et laisse Next côté client gérer la navigation.
 [[redirects]]

@@ -10,6 +10,7 @@
 
 "use client";
 
+import { syncPublicTrackingRepairsToCloud } from "@/lib/public-tracking-sync";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
 
 const STORAGE_KEY = "behar-tech-local-demo-v3";
@@ -231,6 +232,13 @@ export async function uploadSnapshot(opts?: { silent?: boolean }): Promise<Uploa
     fresh.cloudSync = { ...(fresh.cloudSync || {}), workshopId, lastSyncedAt: finalUpdatedAt };
     writeLocalState(fresh);
     setSyncState({ status: "synced", lastSyncedAt: finalUpdatedAt, lastError: undefined });
+
+    // Sync public tracking data independently (don't block the main upload result)
+    const activeRepairs = (state.repairs || []).filter((r: any) => r?.publicAccess?.active !== false);
+    if (activeRepairs.length > 0) {
+      syncPublicTrackingRepairsToCloud(activeRepairs, state).catch(() => {});
+    }
+
     return { ok: true, updatedAt: finalUpdatedAt, sizeBytes };
   } catch (e: any) {
     setSyncState({ status: "offline", lastError: e?.message || "Réseau indisponible." });

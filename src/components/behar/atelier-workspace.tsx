@@ -41,6 +41,7 @@ import {
   type Repair,
   type RepairChecklistItem,
   type RepairEvidencePhoto,
+  type RepairFinalTestStatus,
   type RepairPriority,
   type RepairStatus,
   type RepairSubStatus,
@@ -50,12 +51,14 @@ import {
   formatEuro,
   formatIsoToDisplay,
   getNowIso,
+  getRepairReadyDisplayLabel,
   isTerminalRepairStatus,
   useBeharStore,
 } from "@/lib/behar-store";
 import { displayCustomerName } from "@/lib/customer-display";
+import { getCustomerTrackingUrl } from "@/lib/customer-tracking";
 import { formatDeviceLabel } from "@/lib/format-device";
-import { publicAbsoluteUrl } from "@/lib/public-link";
+import { repairReadyStatusLabel } from "@/lib/repair-status";
 import { sendRealSms } from "@/lib/send-sms";
 import { cn } from "@/lib/utils";
 
@@ -246,7 +249,7 @@ function isOverdue(repair: Repair) {
 
 function resultTone(result: RepairTestResult) {
   if (result === "OK") return "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]";
-  if (result === "KO") return "border-[#F2D4D1] bg-[#FFFFFF] text-[#B42318]";
+  if (result === "KO" || result === "Défaut constaté") return "border-[#F2D4D1] bg-[#FFFFFF] text-[#B42318]";
   if (result === "Non testable") return "border-[#E8E8E5] bg-[#FFFFFF] text-[#71717A]";
   if (result === "Test repoussé") return "border-[#FEF0C7] bg-[#FFFFFF] text-[#B54708]";
   if (result === "Non applicable") return "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]";
@@ -380,6 +383,7 @@ export function AtelierWorkspace() {
     appendRepairHistory,
     validateRepairFinalTest,
     markRepairTestImpossible,
+    setRepairWorkshopOutcome,
     addRepairMessage,
     addPartToRepair,
     confirmPartUsage,
@@ -407,6 +411,7 @@ export function AtelierWorkspace() {
       appendRepairHistory: s.appendRepairHistory,
       validateRepairFinalTest: s.validateRepairFinalTest,
       markRepairTestImpossible: s.markRepairTestImpossible,
+      setRepairWorkshopOutcome: s.setRepairWorkshopOutcome,
       addRepairMessage: s.addRepairMessage,
       addPartToRepair: s.addPartToRepair,
       confirmPartUsage: s.confirmPartUsage,
@@ -513,6 +518,11 @@ export function AtelierWorkspace() {
   const updateChecklistResult = (kind: "diagnosis" | "final", itemId: string, result: RepairTestResult) => {
     const setter = kind === "diagnosis" ? setDiagnosisItems : setFinalItems;
     setter((items) => items.map((item) => (item.id === itemId ? { ...item, result } : item)));
+  };
+
+  const updateChecklistComment = (kind: "diagnosis" | "final", itemId: string, comment: string) => {
+    const setter = kind === "diagnosis" ? setDiagnosisItems : setFinalItems;
+    setter((items) => items.map((item) => (item.id === itemId ? { ...item, comment } : item)));
   };
 
   if (!repairs.length) {
@@ -635,6 +645,15 @@ export function AtelierWorkspace() {
   const relatedAudit = auditLogs.filter((entry) => entry.targetType === "repair" && entry.targetId === selectedRepair.id);
   const selectedPriority = priorityForRepair(selectedRepair);
   const elapsed = interventionElapsed(selectedRepair);
+  const relatedPaidLabel = getRepairReadyDisplayLabel(selectedRepair, relatedPayments);
+
+  const markWorkshopOutcome = (outcome: RepairFinalTestStatus, fallbackNote = "") => {
+    const note =
+      outcome === "Test impossible" || outcome === "Test refusé par le client"
+        ? impossibleReason.trim() || finalComment.trim() || fallbackNote
+        : finalComment.trim() || fallbackNote;
+    setRepairWorkshopOutcome(selectedRepair.id, outcome, note);
+  };
 
   const saveDiagnosis = () => {
     updateRepair(selectedRepair.id, {
@@ -976,6 +995,7 @@ export function AtelierWorkspace() {
       case "Diagnostic":
         return [
           { label: "Créer un devis", onClick: () => setView("diagnostic") },
+          { label: "Téléphone prêt", onClick: () => markWorkshopOutcome("Téléphone prêt") },
           { label: "Passer en réparation", onClick: () => changeRepairStatus(id, "En réparation") },
           { label: "Envoyer message client", onClick: () => setView("history") },
         ];
@@ -999,6 +1019,7 @@ export function AtelierWorkspace() {
       case "Test final":
         return [
           { label: "Valider le test final", onClick: () => setView("final-test") },
+          { label: "Téléphone prêt", onClick: () => markWorkshopOutcome("Téléphone prêt") },
           { label: "Envoyer message client", onClick: () => setView("history") },
         ];
       case "Prêt":
@@ -1031,8 +1052,8 @@ export function AtelierWorkspace() {
     }
   })();
 
-  const access = ensureRepairPublicAccess(selectedRepair.id);
-  const publicUrl = access?.url ? publicAbsoluteUrl(access.url) : "";
+  const currentWorkshop = useBeharStore.getState().workshopSettings ?? useBeharStore.getState().workshopInfo;
+  const publicUrl = getCustomerTrackingUrl(selectedRepair, currentWorkshop);
 
   return (
     <div className="space-y-5">
@@ -1047,6 +1068,8 @@ export function AtelierWorkspace() {
         </button>
         <div className="flex flex-wrap gap-2">
           <StatusBadge status={selectedRepair.status} />
+          {selectedRepair.status === "Prêt" && <StatusBadge status={relatedPaidLabel} />}
+          {selectedRepair.finalTest?.status && <StatusBadge status={selectedRepair.finalTest.status} />}
           {selectedRepair.subStatus && <StatusBadge status={selectedRepair.subStatus} />}
           <span className={priorityBadge(selectedPriority)}>
             <Circle className="size-2 fill-current" />
@@ -1204,7 +1227,12 @@ export function AtelierWorkspace() {
                 </thead>
                 <tbody>
                   {diagnosisItems.map((item) => (
-                    <ChecklistRow item={item} key={item.id} onChange={(result) => updateChecklistResult("diagnosis", item.id, result)} />
+                    <ChecklistRow
+                      item={item}
+                      key={item.id}
+                      onChange={(result) => updateChecklistResult("diagnosis", item.id, result)}
+                      onCommentChange={(comment) => updateChecklistComment("diagnosis", item.id, comment)}
+                    />
                   ))}
                 </tbody>
               </table>
@@ -1218,25 +1246,32 @@ export function AtelierWorkspace() {
             <SectionTitle title="Décision" />
             <div className="mt-4 space-y-3">
               <PrimaryButton className="w-full" onClick={createQuote}>Créer devis</PrimaryButton>
+              <PrimaryButton className="w-full" onClick={() => markWorkshopOutcome("Téléphone prêt")}>
+                Téléphone prêt
+              </PrimaryButton>
+              <button
+                className="w-full rounded-[12px] bg-[#FFFFFF] px-4 py-3 font-semibold text-[#167B70] text-sm"
+                onClick={() => markWorkshopOutcome("Test non applicable")}
+                type="button"
+              >
+                Test non applicable
+              </button>
               <button className="w-full rounded-[12px] bg-[#FFFFFF] px-4 py-3 font-semibold text-[#167B70] text-sm" onClick={askClientValidation} type="button">
                 Demander validation client
               </button>
               <button
                 className="w-full rounded-[12px] bg-[#FFFFFF] px-4 py-3 font-semibold text-[#936100] text-sm"
                 onClick={() => {
-                  updateRepair(selectedRepair.id, { subStatus: "Pièce commandée", blockReason: "En attente pièce" });
-                  if (selectedRepair.status !== "En attente") changeRepairStatus(selectedRepair.id, "En attente");
-                  appendRepairHistory(selectedRepair.id, "Dossier mis en attente pièce");
+                  setRepairWorkshopOutcome(selectedRepair.id, "Pièce en attente", finalComment);
                 }}
                 type="button"
               >
-                Passer en attente pièce
+                Pièce en attente
               </button>
               <button
                 className="w-full rounded-[12px] border border-[#F2D4D1] px-4 py-3 font-semibold text-[#B42318] text-sm"
                 onClick={() => {
-                  updateRepair(selectedRepair.id, { subStatus: "Irréparable", repairability: "Non", blockReason: "Irréparable" });
-                  changeRepairStatus(selectedRepair.id, "Irréparable");
+                  setRepairWorkshopOutcome(selectedRepair.id, "Irréparable", finalComment);
                 }}
                 type="button"
               >
@@ -1526,11 +1561,18 @@ export function AtelierWorkspace() {
                   <tr>
                     <th className="px-4 py-3">Point</th>
                     <th className="px-4 py-3">Résultat</th>
+                    <th className="px-4 py-3">Note</th>
                   </tr>
                 </thead>
                 <tbody>
                   {finalItems.map((item) => (
-                    <ChecklistRow compact item={item} key={item.id} onChange={(result) => updateChecklistResult("final", item.id, result)} />
+                    <ChecklistRow
+                      compact
+                      item={item}
+                      key={item.id}
+                      onChange={(result) => updateChecklistResult("final", item.id, result)}
+                      onCommentChange={(comment) => updateChecklistComment("final", item.id, comment)}
+                    />
                   ))}
                 </tbody>
               </table>
@@ -1552,22 +1594,33 @@ export function AtelierWorkspace() {
                 <span className="mx-auto grid size-16 place-items-center rounded-full bg-[#2A9D8F] text-white">
                   <ShieldCheck className="size-8" />
                 </span>
-                <p className="mt-4 font-semibold text-[#1A1916]">Tous les points doivent être validés.</p>
-                <p className="mt-1 text-[#6B6B6B] text-sm">Le passage en Prêt est bloqué sans test final validé.</p>
+                <p className="mt-4 font-semibold text-[#1A1916]">Contrôle qualité flexible.</p>
+                <p className="mt-1 text-[#6B6B6B] text-sm">
+                  OK, défaut, non applicable ou non testé avec note : le dossier peut refléter la réalité terrain.
+                </p>
               </div>
               <PrimaryButton className="mt-5 w-full" onClick={() => validateRepairFinalTest(selectedRepair.id, finalItems, finalComment)}>
-                Marquer comme prêt
+                Test final validé
               </PrimaryButton>
+              <SecondaryButton className="mt-3 w-full" onClick={() => markWorkshopOutcome("Téléphone prêt")}>
+                Téléphone prêt
+              </SecondaryButton>
+              <SecondaryButton className="mt-3 w-full" onClick={() => markWorkshopOutcome("Test non applicable")}>
+                Test non applicable
+              </SecondaryButton>
               <div className="mt-5 rounded-[16px] border border-[#E8E8E5] p-4">
-                <label className="font-medium text-[#1A1916] text-sm">Test impossible</label>
+                <label className="font-medium text-[#1A1916] text-sm">Exception atelier</label>
                 <textarea
                   className="mt-2 min-h-20 w-full rounded-[12px] border border-[#E8E8E5] p-3 text-sm outline-none"
                   value={impossibleReason}
                   onChange={(event) => setImpossibleReason(event.target.value)}
-                  placeholder="Raison obligatoire"
+                  placeholder="Raison obligatoire pour test impossible ou refusé"
                 />
                 <SecondaryButton className="mt-3 w-full" onClick={() => markRepairTestImpossible(selectedRepair.id, impossibleReason)}>
-                  Valider l'exception
+                  Test impossible
+                </SecondaryButton>
+                <SecondaryButton className="mt-3 w-full" onClick={() => markWorkshopOutcome("Test refusé par le client")}>
+                  Test refusé par le client
                 </SecondaryButton>
               </div>
             </div>
@@ -1781,7 +1834,7 @@ export function AtelierWorkspace() {
                   <InfoLine label="Client" value={displayCustomerName(selectedCustomer)} />
                   <InfoLine label="Appareil" value={formatDeviceLabel(selectedRepair, selectedRepair.device)} />
                   <InfoLine label="Intervention" value={selectedRepair.recommendedIntervention || selectedRepair.issue} />
-                  <InfoLine label="Test final" value={selectedRepair.finalTest?.validatedAt ? "Validé" : "Non validé"} />
+                  <InfoLine label="Test final" value={selectedRepair.finalTest?.status || (selectedRepair.finalTest?.validatedAt ? "Test final validé" : "Non renseigné")} />
                 </div>
                 <p className="mt-8 text-[#6B6B6B] text-sm">Les documents client n'affichent pas les prix d'achat, marge, fournisseur ou notes internes sensibles.</p>
               </div>
@@ -1882,6 +1935,7 @@ export function AtelierWorkspace() {
 
 function RepairQueueCard({ repair, customer, onOpen }: Readonly<{ repair: Repair; customer?: Customer; onOpen: () => void }>) {
   const priority = priorityForRepair(repair);
+  const readyLabel = repairReadyStatusLabel(repair.status, repair.paymentStatus);
   return (
     <button
       className="w-full rounded-[15px] border border-[#E8E8E5] bg-white p-3 text-left shadow-[0_1px_2px_rgba(26,25,22,0.035)] transition hover:-translate-y-0.5 hover:border-[#2A9D8F]/35 hover:shadow-[0_10px_24px_rgba(26,25,22,0.07)]"
@@ -1904,6 +1958,8 @@ function RepairQueueCard({ repair, customer, onOpen }: Readonly<{ repair: Repair
           <Circle className="size-2 fill-current" />
           {priority}
         </span>
+        {repair.status === "Prêt" && <StatusBadge status={readyLabel} />}
+        {repair.finalTest?.status && <StatusBadge status={repair.finalTest.status} />}
         {repair.subStatus && <StatusBadge status={repair.subStatus} />}
         {isOverdue(repair) && <StatusBadge status="En retard" />}
       </div>
@@ -1979,18 +2035,29 @@ function DiagnosticCard({ title, value, tone = "neutral" }: Readonly<{ title: st
   );
 }
 
-function ChecklistRow({ item, onChange, compact }: Readonly<{ item: RepairChecklistItem; onChange: (result: RepairTestResult) => void; compact?: boolean }>) {
+const visibleRepairTestResults: RepairTestResult[] = ["OK", "Défaut constaté", "Non applicable", "Non testé"];
+
+function ChecklistRow({
+  item,
+  onChange,
+  onCommentChange,
+}: Readonly<{
+  item: RepairChecklistItem;
+  onChange: (result: RepairTestResult) => void;
+  onCommentChange?: (comment: string) => void;
+  compact?: boolean;
+}>) {
   return (
     <tr className="border-[#E8E8E5] border-t">
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
-          {item.result === "OK" ? <CheckCircle2 className="size-4 text-[#2A9D8F]" /> : item.result === "KO" ? <X className="size-4 text-[#B42318]" /> : <Circle className="size-4 text-[#A3A3A3]" />}
+          {item.result === "OK" ? <CheckCircle2 className="size-4 text-[#2A9D8F]" /> : item.result === "Défaut constaté" || item.result === "KO" ? <X className="size-4 text-[#B42318]" /> : <Circle className="size-4 text-[#A3A3A3]" />}
           <span className="font-medium text-[#1A1916]">{item.label}</span>
         </div>
       </td>
       <td className="px-4 py-3">
         <div className="flex flex-wrap gap-1.5">
-          {(["OK", "KO", "Non testé", "Non testable", "Test repoussé", "Non applicable"] as RepairTestResult[]).map((result) => (
+          {visibleRepairTestResults.map((result) => (
             <button
               className={cn("rounded-[8px] border px-2 py-1 font-semibold text-[11px]", item.result === result ? resultTone(result) : "border-[#E8E8E5] bg-white text-[#6B6B6B]")}
               key={result}
@@ -2002,7 +2069,18 @@ function ChecklistRow({ item, onChange, compact }: Readonly<{ item: RepairCheckl
           ))}
         </div>
       </td>
-      {!compact && <td className="px-4 py-3 text-[#6B6B6B]">{item.comment || "À compléter si nécessaire"}</td>}
+      <td className="px-4 py-3">
+        {onCommentChange ? (
+          <input
+            className="h-9 w-full min-w-[160px] rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-xs outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+            value={item.comment ?? ""}
+            onChange={(event) => onCommentChange(event.target.value)}
+            placeholder={item.result === "Non testé" ? "Note requise" : "Note optionnelle"}
+          />
+        ) : (
+          <span className="text-[#6B6B6B]">{item.comment || "À compléter si nécessaire"}</span>
+        )}
+      </td>
     </tr>
   );
 }

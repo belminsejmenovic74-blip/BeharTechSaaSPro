@@ -329,7 +329,7 @@ test.describe("Documents, impression et règlement", () => {
     await openDossierTab(page, "Facture");
     await page.getByRole("button", { name: "Indiquer règlement" }).click();
     await page.getByLabel("Montant réglé").fill("149");
-    await page.getByLabel("Moyen de paiement").selectOption("Carte bancaire via SumUp");
+    await page.getByLabel("Moyen de paiement").selectOption("SumUp");
     await page.getByLabel("Référence externe facultative").fill("SUMUP-4242");
     await page.getByLabel("Je confirme que le paiement a été encaissé hors Behar Tech Pro.").check();
     await page.getByRole("button", { name: "Enregistrer le règlement" }).click();
@@ -343,7 +343,7 @@ test.describe("Documents, impression et règlement", () => {
     await expect(page.locator("body")).toContainText("FACTURE");
     await expect(page.locator("body")).toContainText("FAC-2026-DOC1");
     await expect(page.locator("body")).toContainText("Moyen de paiement");
-    await expect(page.locator("body")).toContainText("Carte bancaire via SumUp");
+    await expect(page.locator("body")).toContainText("SumUp");
     await expect(page.locator("body")).not.toContainText("CONFIRMATION DE RÈGLEMENT");
     await expect(page.locator("body")).not.toContainText("Ce document ne remplace pas une facture");
 
@@ -402,8 +402,8 @@ test.describe("Documents, impression et règlement", () => {
     await openDossierTab(page, "Facture");
     await page.getByRole("button", { name: "Indiquer règlement" }).click();
     await page.getByLabel("Montant réglé").fill("149");
-    await page.getByLabel("Moyen de paiement").selectOption("PayPal");
-    await page.getByLabel("Référence externe facultative").fill("PAYPAL-QA-42");
+    await page.getByLabel("Moyen de paiement").selectOption("Stripe");
+    await page.getByLabel("Référence externe facultative").fill("STRIPE-QA-42");
     await page.getByLabel("Je confirme que le paiement a été encaissé hors Behar Tech Pro.").check();
     await page.getByRole("button", { name: "Enregistrer le règlement" }).click();
 
@@ -413,8 +413,8 @@ test.describe("Documents, impression et règlement", () => {
     const document = state.documents.find((entry: any) => entry.paymentId === payment.id);
     const audit = state.auditLogs.find((entry: any) => entry.action === "payment.settlement.created");
     expect(repair.paymentStatus).toBe("Réglée");
-    expect(payment.method).toBe("PayPal");
-    expect(payment.externalReference).toBe("PAYPAL-QA-42");
+    expect(payment.method).toBe("Stripe");
+    expect(payment.externalReference).toBe("STRIPE-QA-42");
     expect(document.title).toContain("Confirmation de règlement");
     expect(audit.metadata.newStatus).toBe("Réglée");
     expect(audit.metadata.oldStatus).toBe("À régler");
@@ -441,7 +441,7 @@ test.describe("Documents, impression et règlement", () => {
     await expect(submitBtn).toBeDisabled();
     
     // Choisir un moyen de paiement
-    await page.getByLabel("Moyen de paiement").selectOption("Carte bancaire via terminal externe");
+    await page.getByLabel("Moyen de paiement").selectOption("Carte bancaire");
     
     // Toujours désactivé car la case de confirmation externe n'est pas cochée
     await expect(submitBtn).toBeDisabled();

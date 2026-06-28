@@ -54,6 +54,7 @@ import {
   type InvoiceStatus,
   linesForInvoiceFromQuote,
   type PaymentMethod,
+  paymentMethods as manualPaymentMethods,
   type QuoteLine,
   type WorkshopCountry,
   type WorkshopCurrency,
@@ -65,14 +66,7 @@ import { cn } from "@/lib/utils";
 import { useDocument } from "./print-provider";
 
 const invoiceStatuses: InvoiceStatus[] = ["Brouillon", "Envoyée", "Payée", "Annulée"];
-const francePaymentMethods: PaymentMethod[] = [
-  "TPE externe",
-  "Espèces hors Behar Tech",
-  "Virement",
-  "Lien externe",
-  "Autre",
-];
-const swissPaymentMethods: PaymentMethod[] = ["Espèces", "TWINT", "Carte externe", "Virement", "Autre"];
+const invoicePaymentMethods: PaymentMethod[] = manualPaymentMethods;
 
 function invoicePaymentBadge(invoice: { status: string }): string {
   if (invoice.status === "Payée") return "Payée";
@@ -107,8 +101,8 @@ export function InvoicesWorkspace() {
   const { print, download } = useDocument();
 
   const [paymentOpen, setPaymentOpen] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("TPE externe");
-  const [twintReference, setTwintReference] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("" as PaymentMethod);
+  const [paymentReference, setPaymentReference] = useState("");
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [linesEditing, setLinesEditing] = useState(false);
   const [invoiceSearch, setInvoiceSearch] = useState("");
@@ -116,10 +110,7 @@ export function InvoicesWorkspace() {
     "all" | "unpaid" | "paid" | "overdue" | "month" | "cancelled" | "counter"
   >("all");
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
-  const isSwiss = store.workshopInfo.country === "CH";
-  const paymentMethods = isSwiss
-    ? swissPaymentMethods.filter((method) => method !== "TWINT" || store.workshopInfo.twintEnabled !== false)
-    : francePaymentMethods;
+  const paymentMethods = invoicePaymentMethods;
 
   // Métadonnées enrichies par facture : dossier / devis / reçu liés + index de
   // recherche puissant (n°, client, téléphone, appareil, REP, DEV, REC).
@@ -663,7 +654,11 @@ export function InvoicesWorkspace() {
           <div className="mt-8 pt-6 border-t border-[#FFFFFF] space-y-3">
             {remainingAmount > 0 ? (
               <button
-                onClick={() => setPaymentOpen(true)}
+                onClick={() => {
+                  setPaymentMethod("" as PaymentMethod);
+                  setPaymentReference("");
+                  setPaymentOpen(true);
+                }}
                 className="w-full h-11 rounded-xl bg-[#1A1916] text-white font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2"
               >
                 <CreditCard className="size-4" />
@@ -730,19 +725,17 @@ export function InvoicesWorkspace() {
                   </span>
                 </div>
               </div>
-              {paymentMethod === "TWINT" && (
-                <div>
-                  <label className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider block mb-2">
-                    Référence paiement TWINT
-                  </label>
-                  <input
-                    className="h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F]"
-                    value={twintReference}
-                    onChange={(event) => setTwintReference(event.target.value)}
-                    placeholder="Optionnel"
-                  />
-                </div>
-              )}
+              <div>
+                <label className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider block mb-2">
+                  Référence paiement
+                </label>
+                <input
+                  className="h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F]"
+                  value={paymentReference}
+                  onChange={(event) => setPaymentReference(event.target.value)}
+                  placeholder="Optionnel"
+                />
+              </div>
 
               <div>
                 <label className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider block mb-2">
@@ -776,6 +769,7 @@ export function InvoicesWorkspace() {
                   const amtInput = document.getElementById("payment-amount") as HTMLInputElement;
                   const amt = Number(amtInput.value);
                   if (amt <= 0) return toast.error("Montant invalide");
+                  if (!paymentMethod) return toast.error("Choisissez le moyen de paiement.");
 
                   store.addPayment({
                     invoiceId: selected.id,
@@ -784,8 +778,8 @@ export function InvoicesWorkspace() {
                     method: paymentMethod,
                     status: "Payé",
                     date: new Date().toISOString().split("T")[0],
-                    reference: `PAY-${Date.now()}`,
-                    twintReference: paymentMethod === "TWINT" ? twintReference : undefined,
+                    reference: paymentReference.trim() || `PAY-${Date.now()}`,
+                    twintReference: undefined,
                   });
 
                   if (amt >= remainingAmount) {
@@ -793,11 +787,13 @@ export function InvoicesWorkspace() {
                   }
 
                   setPaymentOpen(false);
-                  setTwintReference("");
-                  toast.success(paymentMethod === "TWINT" ? "Facture marquée payée par TWINT" : "Paiement enregistré");
+                  setPaymentMethod("" as PaymentMethod);
+                  setPaymentReference("");
+                  toast.success("Paiement enregistré");
                 }}
+                disabled={!paymentMethod}
               >
-                {paymentMethod === "TWINT" ? "Marquer payé par TWINT" : "Confirmer"}
+                Confirmer
               </PrimaryButton>
             </div>
           </Panel>

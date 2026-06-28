@@ -1,0 +1,24 @@
+# Force download des installateurs au lieu d'ouvrir dans le navigateur
+<FilesMatch "\.(exe|dmg|msi|deb|AppImage)$">
+  Header set Content-Disposition "attachment"
+  Header set Content-Type "application/octet-stream"
+</FilesMatch>
+
+# Cache long des assets JS/CSS hashés par Next
+<FilesMatch "\.(js|css|woff2|png|jpg|jpeg|svg|webp)$">
+  Header set Cache-Control "public, max-age=31536000, immutable"
+</FilesMatch>
+
+# Fallback spécifique pour la route du suivi client (SPA dynamic route)
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^suivi/.* /suivi/_/index.html [L]
+
+# Réécriture globale pour les pages Next.js avec trailingSlash (fallback standard SPA)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.+)/?$ /$1/index.html [L]
+
+# Erreur 404 personnalisée (utilise la page Next.js)
+ErrorDocument 404 /404.html

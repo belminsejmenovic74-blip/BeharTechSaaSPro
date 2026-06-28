@@ -1,6 +1,7 @@
 export type PublicRepairStatusKey =
   | "received"
   | "diagnostic"
+  | "waiting"
   | "repair"
   | "final_test"
   | "ready"
@@ -11,7 +12,8 @@ export type PublicRepairStatusKey =
 export const PUBLIC_REPAIR_STATUS_LABELS: Record<PublicRepairStatusKey, string> = {
   received: "Reçu",
   diagnostic: "Diagnostic",
-  repair: "Réparation",
+  waiting: "En attente",
+  repair: "En réparation",
   final_test: "Test final",
   ready: "Prêt",
   returned: "Appareil rendu",
@@ -19,38 +21,72 @@ export const PUBLIC_REPAIR_STATUS_LABELS: Record<PublicRepairStatusKey, string> 
   cancelled: "Annulé",
 };
 
-export const PUBLIC_REPAIR_TIMELINE_STEPS = ["Reçu", "Diagnostic", "Réparation", "Test final", "Prêt"] as const;
+export const PUBLIC_REPAIR_TIMELINE_STEPS = [
+  "Reçu",
+  "Diagnostic",
+  "En attente",
+  "En réparation",
+  "Test final",
+  "Prêt",
+] as const;
 
 const NORMALIZED_REPAIR_STATUS: Record<string, PublicRepairStatusKey> = {
   received: "received",
   recu: "received",
   "reçu": "received",
   "dossier reçu": "received",
+  dossier_recu: "received",
+  created: "received",
+  intake: "received",
+
   diagnostic: "diagnostic",
   diagnosis: "diagnostic",
-  "en attente": "diagnostic",
-  "devis envoyé": "diagnostic",
+
+  waiting: "waiting",
+  waiting_part: "waiting",
+  waiting_customer: "waiting",
+  quote_sent: "waiting",
+  quote_accepted: "waiting",
+  pending: "waiting",
+  "en attente": "waiting",
+  "devis envoyé": "waiting",
+  "devis envoye": "waiting",
+  "devis accepté": "waiting",
+  "devis accepte": "waiting",
+
   repair: "repair",
   "réparation": "repair",
   "reparation": "repair",
   "en réparation": "repair",
   "en reparation": "repair",
-  "devis accepté": "repair",
-  "devis accepte": "repair",
+  repairing: "repair",
+  in_repair: "repair",
+  repair_in_progress: "repair",
+
   final_test: "final_test",
   "test final": "final_test",
+  testing: "final_test",
+
   ready: "ready",
+  ready_for_pickup: "ready",
   "prêt": "ready",
   "pret": "ready",
+  completed: "ready",
+  done: "ready",
+  "téléphone prêt": "ready",
+  "telephone pret": "ready",
+
   returned: "returned",
   delivered: "returned",
   rendu: "returned",
   "appareil rendu": "returned",
+
   closed: "closed",
   "clôturé": "closed",
   "cloture": "closed",
   "clôturée": "closed",
   "cloturee": "closed",
+
   cancelled: "cancelled",
   canceled: "cancelled",
   "annulé": "cancelled",
@@ -73,50 +109,85 @@ export function publicRepairStatusLabel(status?: string | null): string {
   return PUBLIC_REPAIR_STATUS_LABELS[normalizePublicRepairStatus(status)];
 }
 
-export function publicRepairHeadline(status?: string | null): [title: string, body: string] {
+function normalizePaymentStatus(status?: string | null) {
+  return (status ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/\s+/g, " ");
+}
+
+export function isRepairPaymentSettled(status?: string | null, hasPaidPayment = false): boolean {
+  const normalized = normalizePaymentStatus(status);
+  if (normalized.includes("partiellement")) return false;
+  if (normalized === "reglee" || normalized === "regle" || normalized === "payee" || normalized === "paye") {
+    return true;
+  }
+  if (normalized === "paid" || normalized === "settled") return true;
+  if (normalized === "a regler" || normalized === "non regle" || normalized === "non reglee") return false;
+  return hasPaidPayment;
+}
+
+export function repairReadyStatusLabel(
+  status?: string | null,
+  paymentStatus?: string | null,
+  hasPaidPayment = false,
+): string {
+  if (normalizePublicRepairStatus(status) !== "ready") return publicRepairStatusLabel(status);
+  return "Prêt";
+}
+
+export function publicRepairHeadline(
+  status?: string | null,
+  paymentStatus?: string | null,
+  hasPaidPayment = false,
+): [title: string, body: string] {
   switch (normalizePublicRepairStatus(status)) {
+    case "waiting":
     case "diagnostic":
-      return ["Diagnostic en cours", "Nos techniciens analysent votre appareil avant intervention."];
-    case "repair":
-      return ["Réparation en cours", "Nos techniciens travaillent sur votre appareil."];
+      return ["Diagnostic", "Diagnostic en cours ou réalisé."];
     case "final_test":
-      return ["Tests finaux", "La réparation est terminée, nous vérifions le bon fonctionnement."];
+    case "repair":
+      return ["En réparation", "Votre appareil est en cours de réparation."];
     case "ready":
-      return ["Appareil prêt", "Votre appareil est prêt à être récupéré à l'atelier."];
+      return ["Prêt", "Votre appareil est prêt."];
     case "returned":
-      return ["Appareil rendu", "Votre appareil a été remis au client. Merci pour votre confiance."];
+      return ["Prêt", "Votre appareil est prêt."];
     case "closed":
-      return ["Dossier clôturé", "Votre appareil a été remis au client. Merci pour votre confiance."];
+      return ["Prêt", "Votre appareil est prêt."];
     case "cancelled":
       return ["Dossier annulé", "Ce dossier a été annulé. Contactez l'atelier pour plus d'informations."];
     case "received":
     default:
-      return ["Appareil reçu", "Votre appareil est bien arrivé à l'atelier. Le diagnostic va démarrer."];
+      return ["Reçu", "Nous avons bien reçu votre appareil."];
   }
 }
 
 export function publicRepairPageTitle(status?: string | null): string {
   const key = normalizePublicRepairStatus(status);
-  if (key === "returned" || key === "closed") return "Votre réparation est terminée";
+  if (key === "returned" || key === "closed") return "Votre réparation est prête";
   if (key === "cancelled") return "Votre dossier est annulé";
   return "Suivi de votre réparation";
 }
 
 export function publicRepairProgress(status?: string | null) {
   const key = normalizePublicRepairStatus(status);
-  const stepIndex: Record<PublicRepairStatusKey, number> = {
+  const defaultStepIndex: Record<PublicRepairStatusKey, number> = {
     received: 0,
     diagnostic: 1,
-    repair: 2,
-    final_test: 3,
-    ready: 4,
-    returned: 4,
-    closed: 4,
+    waiting: 2,
+    repair: 3,
+    final_test: 4,
+    ready: 5,
+    returned: 5,
+    closed: 5,
     cancelled: -1,
   };
+  const activeStepIndex = defaultStepIndex[key];
   return {
     key,
-    activeStepIndex: stepIndex[key],
+    activeStepIndex,
     isFinished: key === "returned" || key === "closed",
     isCancelled: key === "cancelled",
     label: PUBLIC_REPAIR_STATUS_LABELS[key],

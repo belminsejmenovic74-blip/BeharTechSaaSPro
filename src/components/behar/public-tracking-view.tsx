@@ -7,29 +7,34 @@ import { useSearchParams } from "next/navigation";
 import { Check, Copy, Download, FileText, Link2, MessageCircle, Phone, Send, ShieldCheck, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
-import { getPrintableTarget } from "@/components/behar/local-printable-document";
-import { useDocument } from "@/components/behar/print-provider";
 import { RealDeviceVisual } from "@/components/behar/real-product-visual";
+import { useBeharStore } from "@/lib/behar-store";
+import { buildTrackingUrl, createShopSlug } from "@/lib/customer-tracking";
 import { downloadPdfUrl } from "@/lib/download-file.client";
 import type { PublicRepairDto } from "@/lib/public-dtos";
+import { generateQrDataUrl } from "@/lib/public-link";
 import { buildPublicRepairDtoFromLocalState } from "@/lib/public-repair-dto";
-import { generateQrDataUrl, publicAbsoluteUrl } from "@/lib/public-link";
 import {
   PUBLIC_REPAIR_TIMELINE_STEPS,
   publicRepairHeadline,
   publicRepairPageTitle,
   publicRepairProgress,
 } from "@/lib/repair-status";
-import { useBeharStore } from "@/lib/behar-store";
 import { formatMoney, getDocumentFilename } from "@/lib/workshop-country";
 
-// Page publique client : fond BLANC PUR, jamais de crème. Branding = boutique.
-const COLORS = { bg: "#FFFFFF", text: "#1A1916", sub: "#6B6B6B", accent: "#2A9D8F", border: "#E8E8E5" };
+const COLORS = { bg: "#FAFAF8", text: "#1A1916", sub: "#6B6B6B", accent: "#2A9D8F", border: "#E8E8E5" };
 
 function resolveShopName(candidates: Array<string | undefined>): string {
   for (const candidate of candidates) {
     const value = (candidate ?? "").trim();
-    if (value) return value;
+    if (
+      value &&
+      value.toLowerCase() !== "behar tech" &&
+      value.toLowerCase() !== "behar tech pro" &&
+      value.toLowerCase() !== "behartechpro"
+    ) {
+      return value;
+    }
   }
   return "Votre atelier";
 }
@@ -48,14 +53,16 @@ function formatDayShort(value?: string) {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "short" }).format(date);
+  return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "short", timeZone: "Europe/Paris" }).format(date);
 }
 
 function formatTimeShort(value?: string) {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" }).format(date);
+  return new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" }).format(
+    date,
+  );
 }
 
 function formatMessageMoment(value?: string) {
@@ -75,26 +82,77 @@ function cleanToken(value?: string | null) {
   return token && token !== "_" ? token : "";
 }
 
-function tokenFromBrowserUrl() {
-  if (typeof window === "undefined") return "";
-  const queryToken = cleanToken(new URLSearchParams(window.location.search).get("t"));
-  if (queryToken) return queryToken;
-  const [, rawToken] = window.location.pathname.match(/\/(?:p|suivi)\/([^/?#]+)/) ?? [];
-  return cleanToken(rawToken ? decodeURIComponent(rawToken) : "");
+function extractTrackingInfoFromUrl() {
+  if (typeof window === "undefined") return { shopSlug: "", trackingId: "" };
+
+  const segments = window.location.pathname.split("/").filter(Boolean);
+  let shopSlug = "";
+  let trackingId = "";
+
+  // Route officielle : /suivi/:shopSlug/:trackingToken
+  if (segments[0] === "suivi" || segments[0] === "p") {
+    const relevant = segments.slice(1).filter((s) => s !== "index.html" && s !== "_");
+
+    if (relevant.length === 1) {
+      trackingId = relevant[0];
+    } else if (relevant.length >= 2) {
+      shopSlug = relevant[0];
+      trackingId = relevant[relevant.length - 1]; // toujours le dernier segment valide
+    }
+  }
+
+  const queryToken = new URLSearchParams(window.location.search).get("t");
+  if (queryToken) trackingId = queryToken;
+
+  return {
+    shopSlug: shopSlug ? decodeURIComponent(shopSlug).trim() : "",
+    trackingId: trackingId ? decodeURIComponent(trackingId).trim() : "",
+  };
 }
 
-async function readPublicRepairFromApi(token: string): Promise<PublicRepairDto | null> {
-  const response = await fetch(`/api/public/repairs/${encodeURIComponent(token)}`, { cache: "no-store" }).catch(
-    () => null,
-  );
-  if (!response?.ok) return null;
-  const contentType = response.headers.get("content-type") ?? "";
-  if (!contentType.includes("application/json")) return null;
-  return response.json().catch(() => null);
+import { getSupabase } from "@/lib/supabase/client";
+
+async function readPublicRepairFromSupabase(token: string): Promise<PublicRepairDto | null> {
+  const supabase = getSupabase();
+  if (!supabase) {
+    console.error("[public-tracking] Supabase client non configuré.");
+    return null;
+  }
+
+  const safeToken = token.replace(/[^a-zA-Z0-9-]/g, "");
+  if (!safeToken) return null;
+
+  // On recherche par tracking_id en respectant la casse (originale ou majuscule) ou par numéro de dossier
+  const { data, error } = await supabase
+    .from("public_tracking_repairs")
+    .select("public_data")
+    .or(
+      `tracking_id.eq.${safeToken},tracking_id.eq.${safeToken.toUpperCase()},repair_number.eq.${safeToken},repair_number.eq.${safeToken.toUpperCase()}`,
+    )
+    .limit(1);
+
+  if (error) {
+    console.error("[public-tracking] Error fetching repair:", error.message);
+    return null;
+  }
+
+  if (!data || data.length === 0 || !data[0].public_data) {
+    console.warn("[public-tracking] Tracking not found for token:", token);
+    return null;
+  }
+
+  return data[0].public_data as PublicRepairDto;
 }
 
 function notFound(shopName?: string) {
-  const name = resolveShopName([shopName]);
+  const name = shopName ? shopName.trim() : "";
+  const cleanName =
+    name &&
+    name.toLowerCase() !== "behar-tech" &&
+    name.toLowerCase() !== "behar-tech-pro" &&
+    name.toLowerCase() !== "behartechpro"
+      ? name
+      : "votre réparateur";
   return (
     <div className="grid min-h-screen place-items-center px-6" style={{ background: COLORS.bg, color: COLORS.text }}>
       <div
@@ -107,86 +165,100 @@ function notFound(shopName?: string) {
         >
           <ShieldCheck className="size-6" />
         </span>
-        <p className="mt-4 font-bold text-[19px] tracking-tight">Lien de suivi indisponible</p>
+        <p className="mt-4 font-bold text-[19px] tracking-tight">Suivi introuvable</p>
         <p className="mt-2 text-[14px] leading-relaxed" style={{ color: COLORS.sub }}>
-          Ce lien n'est plus valide ou a expiré. Veuillez contacter {name} pour obtenir un nouveau lien de suivi.
+          Ce lien n'est plus valide ou a expiré. Veuillez contacter {cleanName} pour obtenir un nouveau lien de suivi.
         </p>
-        <p className="mt-5 font-semibold text-[14px]">{name}</p>
       </div>
     </div>
   );
 }
 
-export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
-  const { download, preview } = useDocument();
+export function PublicTrackingView({
+  shopSlug: propShopSlug,
+  token: tokenProp,
+}: {
+  shopSlug?: string;
+  token?: string;
+}) {
   const searchParams = useSearchParams();
   const [browserToken, setBrowserToken] = useState("");
+  const [browserShopSlug, setBrowserShopSlug] = useState("");
+
   const token = cleanToken(tokenProp) || cleanToken(searchParams.get("t")) || browserToken;
-  const [remote, setRemote] = useState<PublicRepairDto | null>(null);
-  const [loadingRemote, setLoadingRemote] = useState(false);
+  // biome-ignore lint/nursery/useNullishCoalescing: fallback needed on falsy empty string
+  const shopSlug = propShopSlug || browserShopSlug;
+
+  const [data, setData] = useState<PublicRepairDto | null>(null);
+  const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState("");
   const [qr, setQr] = useState("");
   const [copied, setCopied] = useState(false);
   const [downloadingDocument, setDownloadingDocument] = useState("");
 
-  const hydrated = useBeharStore((s) => s._hasHydrated);
-  const repairs = useBeharStore((s) => s.repairs);
-  const customers = useBeharStore((s) => s.customers);
-  const documents = useBeharStore((s) => s.documents);
-  const quotes = useBeharStore((s) => s.quotes);
-  const invoices = useBeharStore((s) => s.invoices);
-  const payments = useBeharStore((s) => s.payments);
-  const ws = useBeharStore((s) => s.workshopSettings ?? s.workshopInfo);
-  const addRepairMessage = useBeharStore((s) => s.addRepairMessage);
-  const markRepairMessagesRead = useBeharStore((s) => s.markRepairMessagesRead);
+  useEffect(() => {
+    const info = extractTrackingInfoFromUrl();
+    setBrowserToken(info.trackingId);
+    setBrowserShopSlug(info.shopSlug);
+  }, []);
 
   useEffect(() => {
-    setBrowserToken(tokenFromBrowserUrl());
-  }, [searchParams]);
+    console.log("[tracking-page] token from URL:", token);
+    if (!token) {
+      setLoading(false);
+      return;
+    }
 
-  useEffect(() => {
-    if (!token) return;
     let cancelled = false;
-    setLoadingRemote(true);
-    readPublicRepairFromApi(token)
-      .then((data) => {
-        if (!cancelled) setRemote(data ?? null);
+    setLoading(true);
+
+    let isLocalDev = false;
+    if (typeof window !== "undefined") {
+      const hostname = window.location.hostname;
+      isLocalDev = hostname === "localhost" || hostname === "127.0.0.1" || process.env.NODE_ENV === "development";
+    }
+
+    readPublicRepairFromSupabase(token)
+      .then((fetchedData) => {
+        console.log("[tracking-page] found repair:", fetchedData);
+        if (fetchedData) {
+          if (!cancelled) setData(fetchedData);
+        } else if (isLocalDev) {
+          // Fallback local uniquement en dev local
+          const localState = useBeharStore.getState();
+          const localDto = buildPublicRepairDtoFromLocalState(localState, token);
+          console.log("[tracking-page] local fallback found repair:", localDto);
+          if (!cancelled) setData(localDto ?? null);
+        } else {
+          if (!cancelled) setData(null);
+        }
       })
-      .catch(() => {
-        if (!cancelled) setRemote(null);
+      .catch((err) => {
+        console.log("[tracking-page] error:", err);
+        if (isLocalDev) {
+          const localState = useBeharStore.getState();
+          const localDto = buildPublicRepairDtoFromLocalState(localState, token);
+          console.log("[tracking-page] local fallback after error found repair:", localDto);
+          if (!cancelled) setData(localDto ?? null);
+        } else {
+          if (!cancelled) setData(null);
+        }
       })
       .finally(() => {
-        if (!cancelled) setLoadingRemote(false);
+        if (!cancelled) setLoading(false);
       });
+
     return () => {
       cancelled = true;
     };
   }, [token]);
 
-  const localRepair = useMemo(
-    () => repairs.find((repair) => repair.publicAccess?.token === token && repair.publicAccess?.active !== false),
-    [repairs, token],
-  );
-
-  useEffect(() => {
-    if (localRepair) markRepairMessagesRead(localRepair.id, "client");
-  }, [localRepair, markRepairMessagesRead]);
-
-  const data = useMemo(() => {
-    // Si le dossier est présent dans le store local (poste de l'atelier), on l'utilise en priorité :
-    // c'est toujours la source la plus fraîche, mais on passe par un DTO public strict.
-    // Pour un client sur un autre appareil, il n'y a pas de localRepair → on retombe sur le remote (Supabase).
-    if (!localRepair) return remote ?? null;
-    return buildPublicRepairDtoFromLocalState(
-      { customers, documents, invoices, payments, quotes, repairs, workshopInfo: ws, workshopSettings: ws },
-      token,
-    );
-  }, [customers, documents, invoices, localRepair, payments, quotes, remote, repairs, token, ws]);
-
   const publicUrl = useMemo(() => {
-    if (localRepair?.publicAccess?.url) return publicAbsoluteUrl(localRepair.publicAccess.url);
-    return token ? publicAbsoluteUrl(`/p/${token}`) : "";
-  }, [localRepair, token]);
+    if (!data) return "";
+    // biome-ignore lint/nursery/useNullishCoalescing: fallback needed on falsy empty string
+    const slug = shopSlug || createShopSlug(data.workshop.name || "atelier");
+    return token ? buildTrackingUrl({ shopSlug: slug, trackingToken: token }) : "";
+  }, [data, shopSlug, token]);
 
   const documentRows = useMemo(() => {
     if (!data) return [];
@@ -241,7 +313,7 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
         ...data.receiptLinks.map((receipt) => ({
           key: `receipt:${receipt.number}`,
           type: "payment_confirmation",
-          title: `Confirmation de règlement — encaissé hors Behar Tech Pro - ${formatMoney(receipt.amount, data.workshop.currency)}`,
+          title: `Confirmation de règlement - ${formatMoney(receipt.amount, data.workshop.currency)}`,
           status: receipt.status,
           number: receipt.number,
           previewUrl: receipt.previewUrl,
@@ -250,26 +322,6 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
       );
     }
     return rows.map((row) => {
-      const linkedQuote = row.type === "quote" ? quotes.find((quote) => quote.number === row.number) : undefined;
-      const linkedInvoice =
-        row.type === "invoice" ? invoices.find((invoice) => invoice.number === row.number) : undefined;
-      const linkedPayment =
-        row.type === "payment" || row.type === "payment_confirmation" || row.type === "payment_receipt"
-          ? payments.find((payment) => payment.paymentNumber === row.number)
-          : undefined;
-      const localDocument = localRepair
-        ? documents.find((document) => {
-            if (document.repairId !== localRepair.id) return false;
-            if (linkedQuote) return document.quoteId === linkedQuote.id;
-            if (linkedInvoice) return document.invoiceId === linkedInvoice.id;
-            if (linkedPayment) return document.paymentId === linkedPayment.id;
-            if (row.type === "payment" || row.type === "payment_confirmation" || row.type === "payment_receipt") {
-              return document.type === "payment";
-            }
-            return document.type === row.type;
-          })
-        : undefined;
-      const localTarget = localDocument ? getPrintableTarget(localDocument) : null;
       const filenameType =
         row.type === "payment" || row.type === "payment_confirmation" || row.type === "payment_receipt"
           ? "payment"
@@ -280,14 +332,14 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
               : row.type;
       return {
         ...row,
-        localTarget,
+        localTarget: null, // Plus de ciblage d'impression locale sur la vue publique cloud
         filename: getDocumentFilename(
           filenameType as "intake" | "quote" | "invoice" | "payment" | "sale-receipt",
-          row.number || localRepair?.number || "document",
+          row.number || data?.repair.number || "document",
         ),
       };
     });
-  }, [data, documents, invoices, localRepair, payments, quotes]);
+  }, [data]);
 
   useEffect(() => {
     if (publicUrl)
@@ -297,29 +349,9 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
   }, [publicUrl]);
 
   const send = async () => {
-    const body = draft.trim();
-    if (!body || !data) return;
-    // Dossier dans le store local (poste atelier) → on écrit directement, c'est instantané et persisté.
-    if (localRepair) {
-      addRepairMessage(localRepair.id, {
-        body,
-        visibility: "client",
-        authorType: "client",
-        authorName: data.client.displayName,
-      });
-    } else if (remote) {
-      const response = await fetch(`/api/public/repairs/${encodeURIComponent(token)}/messages`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ body, authorName: data.client.displayName }),
-      }).catch(() => null);
-      if (response?.ok) {
-        const fresh = await fetch(`/api/public/repairs/${encodeURIComponent(token)}`, { cache: "no-store" }).then(
-          (r) => (r.ok ? r.json() : null),
-        );
-        if (fresh) setRemote(fresh);
-      }
-    }
+    // La fonctionnalité d'envoi de message client nécessitera l'utilisation
+    // d'une table Supabase dédiée aux messages à l'avenir, car l'API locale n'est pas dispo
+    toast("L'envoi de messages est temporairement désactivé.");
     setDraft("");
   };
 
@@ -334,7 +366,7 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
     }
   };
 
-  if ((loadingRemote && !hydrated) || (!token && !hydrated)) {
+  if (loading || (!token && loading)) {
     return (
       <div className="grid min-h-screen place-items-center" style={{ background: COLORS.bg, color: COLORS.sub }}>
         Chargement…
@@ -342,13 +374,14 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
     );
   }
 
-  if (!data) return notFound(resolveShopName([ws.commercialName, ws.name]));
+  if (!data) return notFound(shopSlug);
 
   const shopName = resolveShopName([data.workshop.name]);
+  const trackingCode = token || data.repair.number;
   const initials = shopInitials(shopName);
   const progress = publicRepairProgress(data.repair.status);
   const active = progress.activeStepIndex;
-  const [title, body] = publicRepairHeadline(data.repair.status);
+  const [title, body] = publicRepairHeadline(data.repair.status, data.repair.paymentStatus, data.repair.hasPaidPayment);
   const shortLink = publicUrl.replace(/^https?:\/\//, "");
   const contactHref = data.workshop.phone ? `tel:${data.workshop.phone}` : "#messages";
 
@@ -362,6 +395,7 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
             <header className="flex items-center gap-3 border-b pb-4" style={{ borderColor: COLORS.border }}>
               {data.workshop.logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
+                // biome-ignore lint/performance/noImgElement: standard image tag is fine for tracking logo
                 <img
                   src={data.workshop.logoUrl}
                   alt={shopName}
@@ -391,7 +425,7 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
               style={{ borderColor: COLORS.border }}
             >
               <div className="flex items-center justify-between gap-3">
-                <span className="font-bold text-[20px] tracking-tight">{data.repair.number}</span>
+                <span className="font-bold font-mono text-[20px] tracking-tight">{trackingCode}</span>
                 <span
                   className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-semibold text-[12px]"
                   style={{ background: "#FFFFFF", color: "#1E7A6E" }}
@@ -407,10 +441,14 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
                   model={data.repair.deviceModel}
                   type={data.repair.deviceType}
                 />
-                <div className="grid grid-cols-1 gap-3 text-[13px] sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 text-[13px] sm:grid-cols-4">
                   <div>
                     <p style={{ color: COLORS.sub }}>Client</p>
                     <p className="font-semibold">{data.client.displayName}</p>
+                  </div>
+                  <div>
+                    <p style={{ color: COLORS.sub }}>Dossier</p>
+                    <p className="font-semibold">{data.repair.number}</p>
                   </div>
                   <div>
                     <p style={{ color: COLORS.sub }}>Appareil</p>
@@ -422,40 +460,42 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
                     <p style={{ color: COLORS.sub }}>Problème</p>
                     <p className="font-semibold">{data.repair.issueDescription || "—"}</p>
                   </div>
+                  <div>
+                    <p style={{ color: COLORS.sub }}>Contrôle</p>
+                    <p className="font-semibold">{data.repair.finalTestStatus || data.repair.readyLabel || "—"}</p>
+                  </div>
                 </div>
               </div>
             </section>
 
             {/* Timeline étapes — avec date/heure quand disponible */}
             <section
-              className="mt-4 rounded-[20px] border bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
+              className="mt-4 overflow-x-auto rounded-[20px] border bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
               style={{ borderColor: COLORS.border }}
             >
-              <div className="grid grid-cols-5">
+              <div className="grid min-w-[540px] grid-cols-6">
                 {PUBLIC_REPAIR_TIMELINE_STEPS.map((label, index) => {
                   const done = progress.isFinished ? index <= active : !progress.isCancelled && index < active;
                   const current = !progress.isFinished && !progress.isCancelled && index === active;
-                  const sourceDate = index === 0 ? data.repair.createdAt : current ? data.repair.updatedAt : undefined;
-                  const day =
-                    progress.isCancelled
-                      ? index === 0
-                        ? formatDayShort(data.repair.createdAt) || "—"
-                        : "Annulé"
-                      : progress.isFinished && index <= active
-                        ? index === 0
-                          ? formatDayShort(data.repair.createdAt) || "—"
-                          : formatDayShort(data.repair.updatedAt) || "—"
-                        : done && index !== 0
-                          ? "—"
-                          : index > active
-                            ? "À venir"
-                            : formatDayShort(sourceDate) || "—";
-                  const time = index === 0 || current ? formatTimeShort(sourceDate) : "";
+
+                  const timelineEvent = data.timeline.find((t) => t.title === label);
+                  const sourceDate = timelineEvent ? timelineEvent.date : undefined;
+
+                  const day = progress.isCancelled
+                    ? index === 0
+                      ? formatDayShort(sourceDate) || "—"
+                      : "Annulé"
+                    : timelineEvent
+                      ? formatDayShort(sourceDate) || "—"
+                      : index > active
+                        ? "À venir"
+                        : "—";
+                  const time = timelineEvent ? formatTimeShort(sourceDate) : "";
                   return (
                     <div key={label} className="relative px-0.5 text-center">
                       {index < PUBLIC_REPAIR_TIMELINE_STEPS.length - 1 ? (
                         <span
-                          className="absolute right-0 left-1/2 top-3.5 h-px"
+                          className="absolute top-3.5 left-1/2 -z-0 h-[2px] w-full"
                           style={{ background: done ? COLORS.accent : "#E2E0DA" }}
                         />
                       ) : null}
@@ -536,19 +576,15 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-semibold text-[14px]">{doc.title}</p>
                       <p className="text-[12px]" style={{ color: COLORS.sub }}>
-                        {doc.previewUrl || doc.downloadUrl || doc.localTarget ? "Disponible" : "À venir"}
+                        {doc.previewUrl || doc.downloadUrl ? "Disponible" : "À venir"}
                       </p>
                     </div>
-                    {doc.previewUrl || doc.downloadUrl || doc.localTarget ? (
+                    {doc.previewUrl || doc.downloadUrl ? (
                       <div className="flex shrink-0 items-center gap-1.5">
-                        {doc.previewUrl || doc.downloadUrl || doc.localTarget ? (
+                        {doc.previewUrl || doc.downloadUrl ? (
                           <button
                             type="button"
                             onClick={() => {
-                              if (doc.localTarget) {
-                                preview(doc.localTarget.type, doc.localTarget.id);
-                                return;
-                              }
                               if (doc.downloadUrl) {
                                 window.open(doc.downloadUrl, "_blank", "noopener,noreferrer");
                                 return;
@@ -576,10 +612,6 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
                                   );
                                 })
                                 .finally(() => setDownloadingDocument(""));
-                              return;
-                            }
-                            if (doc.localTarget) {
-                              download(doc.localTarget.type, doc.localTarget.id);
                               return;
                             }
                             if (doc.previewUrl) window.open(doc.previewUrl, "_blank", "noopener,noreferrer");
@@ -620,6 +652,7 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
                 {data.messages.map((message, index) => {
                   const isClient = message.authorType === "client";
                   return (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: index is acceptable here
                     <li key={`${message.createdAt}-${index}`} className="flex items-start gap-3">
                       <span
                         className="grid size-8 shrink-0 place-items-center rounded-full font-bold text-[12px]"
@@ -701,6 +734,7 @@ export function PublicTrackingView({ token: tokenProp }: { token?: string }) {
               </p>
               {qr ? (
                 // eslint-disable-next-line @next/next/no-img-element
+                // biome-ignore lint/performance/noImgElement: standard image tag is fine for QR code
                 <img
                   src={qr}
                   alt="QR code de suivi"

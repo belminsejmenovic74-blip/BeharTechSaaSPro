@@ -36,6 +36,7 @@ import { toast } from "sonner";
 
 import { getPrintableTarget } from "@/components/behar/local-printable-document";
 import { RealDeviceVisual } from "@/components/behar/real-product-visual";
+import { SettlementModal, useSettlementModal, todayInputValue as sharedTodayInputValue } from "@/components/behar/settlement-modal";
 import {
   buildInvoiceLinesFromRepair,
   formatCurrency,
@@ -43,6 +44,7 @@ import {
   formatIsoToDisplay,
   getInvoiceTotal,
   getQuoteTotal,
+  getRepairReadyDisplayLabel,
   isTerminalRepairStatus,
   paymentMethods,
   type Customer,
@@ -58,6 +60,7 @@ import {
 import { getInternalDocumentUrl, getShareableDocumentUrl, printRepairQr } from "@/lib/documents/document-actions";
 import { isStockItemCompatibleWithRepair } from "./atelier-workspace";
 import { displayCustomerName } from "@/lib/customer-display";
+import { getCustomerTrackingUrl } from "@/lib/customer-tracking";
 import { formatDeviceLabel } from "@/lib/format-device";
 import { generateQrDataUrl, publicAbsoluteUrl } from "@/lib/public-link";
 import { cn } from "@/lib/utils";
@@ -149,17 +152,15 @@ const docLabel: Record<string, string> = {
   diagnostic_report: "Rapport diagnostic",
 };
 
-const settlementStatuses: SettlementStatus[] = ["Non réglé", "Partiellement réglé", "Réglé"];
+const settlementStatuses: SettlementStatus[] = ["Non réglé", "Partiellement réglé", "Réglé", "Offert / Garantie / SAV"];
 
 const settlementMethods: PaymentMethod[] = [
   "Espèces",
-  "Carte bancaire via SumUp",
-  "Carte bancaire via Stripe Terminal",
-  "Lien de paiement Stripe",
-  "Virement bancaire",
+  "Carte bancaire",
+  "SumUp",
+  "Stripe",
+  "Virement",
   "Chèque",
-  "Revolut",
-  "PayPal",
   "Autre",
 ];
 
@@ -196,7 +197,7 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
   const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null);
   const [viewingMobileDoc, setViewingMobileDoc] = useState<any | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("" as PaymentMethod);
-  const [settlementModalOpen, setSettlementModalOpen] = useState(false);
+  const settlement = useSettlementModal();
   const [closureModalOpen, setClosureModalOpen] = useState(false);
   const [settlementDraft, setSettlementDraft] = useState<{
     status: SettlementStatus;
@@ -247,6 +248,7 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
   const dossierTotal = invoiceTotal || quoteTotal || repair?.total || repair?.amount || 0;
   const paidAmount = payments.filter((entry) => entry.status === "Payé").reduce((sum, entry) => sum + entry.amount, 0);
   const formatDossier = (value: number) => formatEuro(value);
+  const readyDisplayLabel = repair ? getRepairReadyDisplayLabel(repair, payments) : "";
 
   const activity = useMemo(() => {
     if (!repair) return [];
@@ -335,37 +337,7 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
   };
 
   const indicatePayment = () => {
-    setSettlementDraft((draft) => ({
-      ...draft,
-      amount: String(Math.max(dossierTotal - paidAmount, 0) || dossierTotal || repair.amount || 0),
-      date: todayInputValue(),
-      method: settlementMethods.includes(paymentMethod) ? paymentMethod : ("" as PaymentMethod),
-      customMethod: "",
-      status: paidAmount > 0 && paidAmount < dossierTotal ? "Partiellement réglé" : "Réglé",
-      confirmExternal: false,
-    }));
-    setSettlementModalOpen(true);
-  };
-
-  const submitSettlement = () => {
-    const amount = Number.parseFloat(settlementDraft.amount.replace(",", "."));
-    const id = store.recordRepairSettlement(repair.id, {
-      status: settlementDraft.status,
-      amount: Number.isFinite(amount) ? amount : 0,
-      date: settlementDraft.date,
-      method: settlementDraft.method,
-      customMethod: settlementDraft.customMethod,
-      externalReference: settlementDraft.externalReference,
-      note: settlementDraft.note,
-      confirmExternal: settlementDraft.confirmExternal,
-    });
-    if (!id) {
-      toast.error("Règlement impossible à indiquer : confirmez l'encaissement hors Behar Tech Pro.");
-      return;
-    }
-    setPaymentMethod(settlementDraft.method);
-    setSettlementModalOpen(false);
-    toast.success("Règlement indiqué hors Behar Tech Pro.");
+    settlement.open(repair.id);
   };
 
   const advance = () => {
@@ -430,7 +402,11 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
             <h1 className="font-semibold text-[#1A1916] text-[28px] tracking-tight">Dossier #{repair.number}</h1>
             <p className="mt-0.5 text-[#6B6B6B] text-sm">Suivi complet du dossier</p>
           </div>
-          <StatusPill status={repair.status} />
+          <div className="flex flex-wrap justify-end gap-2">
+            <StatusPill status={repair.status} />
+            {repair.status === "Prêt" && <StatusBadge status={readyDisplayLabel} />}
+            {repair.finalTest?.status && <StatusBadge status={repair.finalTest.status} />}
+          </div>
         </div>
 
         {/* En-tête : client / appareil / problème / intervention / montant */}
@@ -463,6 +439,9 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
               label="Intervention prévue"
               value={repair.recommendedIntervention || repair.issueType || "À définir"}
             />
+            {repair.status === "Prêt" && (
+              <HeaderCol className="lg:px-6" label="Restitution" value={readyDisplayLabel} />
+            )}
             <div className="pt-5 lg:pl-6 lg:pt-0">
               <p className="text-[#6B6B6B] text-xs">Montant dossier</p>
               <p className="mt-1 font-semibold text-[#167B70] text-2xl tracking-tight">{formatEuro(dossierTotal)}</p>
@@ -533,7 +512,7 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
 
       {/* Mobile view */}
       <div className="block md:hidden space-y-5 px-1 py-1 min-h-screen text-[#1A1916]">
-        <MobileRepairHeader repair={repair} customer={customer} />
+        <MobileRepairHeader repair={repair} customer={customer} readyDisplayLabel={readyDisplayLabel} />
         
         <MobileRepairSummaryCard 
           repair={repair} 
@@ -664,12 +643,12 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
       </div>
 
       <SettlementModal
-        draft={settlementDraft}
-        isOpen={settlementModalOpen}
-        onClose={() => setSettlementModalOpen(false)}
-        onDraftChange={setSettlementDraft}
-        onSubmit={submitSettlement}
-        total={dossierTotal}
+        draft={settlement.draft}
+        isOpen={settlement.isOpen}
+        onClose={settlement.close}
+        onDraftChange={settlement.setDraft}
+        onSubmit={settlement.submit}
+        total={settlement.total}
       />
       <ClosureSettlementModal
         draft={settlementDraft}
@@ -686,163 +665,7 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
   );
 }
 
-function SettlementModal({
-  draft,
-  isOpen,
-  onClose,
-  onDraftChange,
-  onSubmit,
-  total,
-}: Readonly<{
-  draft: {
-    status: SettlementStatus;
-    amount: string;
-    date: string;
-    method: PaymentMethod;
-    customMethod: string;
-    externalReference: string;
-    note: string;
-    confirmExternal: boolean;
-  };
-  isOpen: boolean;
-  onClose: () => void;
-  onDraftChange: (draft: {
-    status: SettlementStatus;
-    amount: string;
-    date: string;
-    method: PaymentMethod;
-    customMethod: string;
-    externalReference: string;
-    note: string;
-    confirmExternal: boolean;
-  }) => void;
-  onSubmit: () => void;
-  total: number;
-}>) {
-  const patch = (partial: Partial<typeof draft>) => onDraftChange({ ...draft, ...partial });
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Indiquer le règlement" maxWidth="max-w-2xl">
-      <div className="space-y-5">
-        <div className="rounded-[14px] border border-[#E8E8E5] bg-white p-4">
-          <p className="text-[#6B6B6B] text-xs">Total dossier</p>
-          <p className="mt-1 font-bold text-[#1A1916] text-xl">{formatEuro(total)}</p>
-          <p className="mt-2 text-[#6B6B6B] text-xs leading-relaxed">
-            Paiement enregistré manuellement. Encaissement effectué hors Behar Tech Pro via le prestataire ou le moyen
-            de paiement sélectionné.
-          </p>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="grid gap-1.5 text-sm">
-            <span className="font-semibold text-[#1A1916]">Statut</span>
-            <select
-              className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
-              onChange={(event) => patch({ status: event.target.value as SettlementStatus })}
-              value={draft.status}
-            >
-              {settlementStatuses.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="grid gap-1.5 text-sm">
-            <span className="font-semibold text-[#1A1916]">Montant réglé</span>
-            <input
-              className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
-              inputMode="decimal"
-              onChange={(event) => patch({ amount: event.target.value })}
-              type="text"
-              value={draft.amount}
-            />
-          </label>
-          <label className="grid gap-1.5 text-sm">
-            <span className="font-semibold text-[#1A1916]">Date du règlement</span>
-            <input
-              className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
-              onChange={(event) => patch({ date: event.target.value })}
-              type="date"
-              value={draft.date}
-            />
-          </label>
-          <label className="grid gap-1.5 text-sm">
-            <span className="font-semibold text-[#1A1916]">Moyen de paiement</span>
-            <select
-              className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
-              onChange={(event) => patch({ method: event.target.value as PaymentMethod })}
-              value={draft.method}
-            >
-              <option value="" disabled>Sélectionner...</option>
-              {settlementMethods.map((method) => (
-                <option key={method} value={method}>
-                  {method}
-                </option>
-              ))}
-            </select>
-          </label>
-          {draft.method === "Autre" && (
-            <label className="grid gap-1.5 text-sm md:col-span-2">
-              <span className="font-semibold text-[#1A1916]">Préciser le moyen de paiement</span>
-              <input
-                className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
-                onChange={(event) => patch({ customMethod: event.target.value })}
-                type="text"
-                value={draft.customMethod}
-                placeholder="Ex: Chèque cadeau, Bon d'achat..."
-              />
-            </label>
-          )}
-          <label className="grid gap-1.5 text-sm md:col-span-2">
-            <span className="font-semibold text-[#1A1916]">Référence externe facultative</span>
-            <input
-              className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
-              onChange={(event) => patch({ externalReference: event.target.value })}
-              placeholder="ID transaction SumUp, ID paiement Stripe, référence virement, numéro chèque..."
-              type="text"
-              value={draft.externalReference}
-            />
-          </label>
-          <label className="grid gap-1.5 text-sm md:col-span-2">
-            <span className="font-semibold text-[#1A1916]">Note interne</span>
-            <textarea
-              className="min-h-[84px] rounded-[12px] border border-[#E8E8E5] bg-white px-3 py-2 outline-none focus:border-[#2A9D8F]"
-              onChange={(event) => patch({ note: event.target.value })}
-              placeholder="Note facultative..."
-              value={draft.note}
-            />
-          </label>
-        </div>
-
-        <label className="flex items-start gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-4 text-sm">
-          <input
-            checked={draft.confirmExternal}
-            className="mt-1 size-4 accent-[#2A9D8F]"
-            onChange={(event) => patch({ confirmExternal: event.target.checked })}
-            type="checkbox"
-          />
-          <span className="font-semibold text-[#1A1916]">
-            Je confirme que le paiement a été encaissé hors Behar Tech Pro.
-          </span>
-        </label>
-
-        <p className="rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] p-3 text-[#6B6B6B] text-xs leading-relaxed">
-          Ce document ne remplace pas une facture. La facture reste le document comptable officiel.
-        </p>
-
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <SecondaryButton className="justify-center" onClick={onClose}>
-            Annuler
-          </SecondaryButton>
-          <PrimaryButton className="justify-center" onClick={onSubmit}>
-            Enregistrer le règlement
-          </PrimaryButton>
-        </div>
-      </div>
-    </Modal>
-  );
-}
+/* ───────────────────────── En-tête ───────────────────────── */
 
 /* ───────────────────────── En-tête ───────────────────────── */
 
@@ -1440,7 +1263,8 @@ function SuiviClientCard({ repair }: Readonly<{ repair: Repair }>) {
   const [qr, setQr] = useState("");
   const [copied, setCopied] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const trackingUrl = repair.publicAccess?.url ? publicAbsoluteUrl(repair.publicAccess.url) : "";
+  const store = useBeharStore();
+  const trackingUrl = getCustomerTrackingUrl(repair, store.workshopSettings ?? store.workshopInfo);
 
   useEffect(() => {
     if (!repair.publicAccess) ensureRepairPublicAccess(repair.id);
@@ -1950,10 +1774,11 @@ function DocumentsTab({
         <SecondaryButton
           onClick={async () => {
             try {
-              const access = repair.publicAccess ?? useBeharStore.getState().ensureRepairPublicAccess(repair.id);
+              const state = useBeharStore.getState();
+              const access = repair.publicAccess ?? state.ensureRepairPublicAccess(repair.id);
               if (!access) return toast.error("Lien de suivi indisponible.");
-              await navigator.clipboard.writeText(publicAbsoluteUrl(access.url));
-              toast.success("Lien de suivi client copié.");
+              await navigator.clipboard.writeText(getCustomerTrackingUrl({ ...repair, publicAccess: access }, state.workshopSettings ?? state.workshopInfo));
+              toast.success("Lien de suivi copié");
             } catch {
               toast.error("Copie impossible.");
             }
@@ -2292,9 +2117,11 @@ function LinkedRow({
 function MobileRepairHeader({
   repair,
   customer,
+  readyDisplayLabel,
 }: Readonly<{
   repair: Repair;
   customer?: Customer;
+  readyDisplayLabel: string;
 }>) {
   return (
     <div className="space-y-3">
@@ -2324,7 +2151,11 @@ function MobileRepairHeader({
         <h1 className="text-[22px] font-semibold text-[#1A1916] tracking-tight">
           Dossier #{repair.number}
         </h1>
-        <StatusPill status={repair.status} />
+        <div className="flex flex-col items-end gap-1">
+          <StatusPill status={repair.status} />
+          {repair.status === "Prêt" && <StatusBadge status={readyDisplayLabel} />}
+          {repair.finalTest?.status && <StatusBadge status={repair.finalTest.status} />}
+        </div>
       </div>
 
       {/* Appareil & Client Row (Miniature intégrée) */}
@@ -2559,7 +2390,8 @@ function MobileSuiviClientCard({ repair }: Readonly<{ repair: Repair }>) {
   const ensureRepairPublicAccess = useBeharStore((s) => s.ensureRepairPublicAccess);
   const [qr, setQr] = useState("");
   const [copied, setCopied] = useState(false);
-  const trackingUrl = repair.publicAccess?.url ? publicAbsoluteUrl(repair.publicAccess.url) : "";
+  const store = useBeharStore();
+  const trackingUrl = getCustomerTrackingUrl(repair, store.workshopSettings ?? store.workshopInfo);
 
   useEffect(() => {
     if (!repair.publicAccess) ensureRepairPublicAccess(repair.id);
@@ -4124,7 +3956,7 @@ function MobileFinalTestSection({
             </div>
           ) : (
             <div className="bg-[#FFFFFF] border border-[#936100]/10 rounded-[12px] p-3 text-xs text-[#936100] leading-normal font-semibold">
-              ⚠️ Veuillez vérifier et valider tous les tests.
+              Les tests décochés peuvent rester non applicables ou non testés si une note diagnostic l'explique.
             </div>
           )}
         </div>
@@ -4135,8 +3967,7 @@ function MobileFinalTestSection({
           <button
             type="button"
             onClick={onAdvance}
-            disabled={!allPassed}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#2A9D8F] disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed border border-transparent text-white font-semibold text-sm hover:bg-[#238579] shadow-sm transition"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#2A9D8F] border border-transparent text-white font-semibold text-sm hover:bg-[#238579] shadow-sm transition"
           >
             <CheckCircle2 className="size-4" />
             Valider les tests et passer à "Prêt"

@@ -16,6 +16,7 @@
 // le query param `doc` sur la page placeholder `_`, qui sait le lire côté client.
 
 import type { BeharDocument, DocumentType } from "@/lib/behar-store";
+import { publicAbsoluteUrl } from "@/lib/public-access";
 import { toast } from "sonner";
 
 // Seul l'identifiant est requis pour construire l'URL : le filtrage interne/public
@@ -297,10 +298,7 @@ export function printDocumentPdf(document?: PdfDocumentLike | null): boolean {
 /** URL absolue partageable (copie de lien, QR). */
 export function getShareableDocumentUrl(document: DocumentLike, options?: OpenOptions): string {
   const relative = buildUrl(document, { public: true, ...options });
-  const origin =
-    process.env.NEXT_PUBLIC_PUBLIC_BASE_URL?.replace(/\/$/, "") ||
-    (typeof window !== "undefined" ? window.location.origin : "");
-  return `${origin}${relative}`;
+  return publicAbsoluteUrl(relative);
 }
 
 export function getRepairQrPrintUrl(repairId: string, options?: QrPrintOptions): string {

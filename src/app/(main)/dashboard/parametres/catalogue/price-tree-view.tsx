@@ -302,44 +302,74 @@ export function PriceTreeView({
                                                             {interventionOpen && (
                                                               <div className="bg-[#FFFFFF] overflow-x-auto">
                                                                 {hasRows ? (
-                                                                  <table className="w-full min-w-[820px] text-sm">
-                                                                    <thead className="bg-[#FFFFFF] text-[#6B6B6B] text-[10px] uppercase tracking-wider font-bold">
-                                                                      <tr>
-                                                                        <th className="px-5 py-2 text-left">
-                                                                          Variante / Pièce
-                                                                        </th>
-                                                                        <th className="px-3 py-2 text-left">Qualité</th>
-                                                                        <th className="px-3 py-2 text-right">Achat</th>
-                                                                        <th className="px-3 py-2 text-right">
-                                                                          Vente pièce
-                                                                        </th>
-                                                                        <th className="px-3 py-2 text-right">M.O.</th>
-                                                                        <th className="px-3 py-2 text-right text-[#167B70]">
-                                                                          Prix client
-                                                                        </th>
-                                                                        <th className="px-3 py-2 text-center">Stock</th>
-                                                                        <th className="px-3 py-2 text-left">
-                                                                          Fournisseur / SKU
-                                                                        </th>
-                                                                        <th className="px-5 py-2 text-right">
-                                                                          Actions
-                                                                        </th>
-                                                                      </tr>
-                                                                    </thead>
-                                                                    <tbody className="divide-y divide-[#E8E8E5]">
-                                                                      {list.map((item) => (
-                                                                        <PriceTreeRow
-                                                                          item={item}
-                                                                          qualityLabel={extractPartQuality(item)}
-                                                                          key={`${item.id}-${marketCountry}`}
-                                                                          marketCountry={marketCountry}
-                                                                          onDelete={onDelete}
-                                                                          onEdit={onEdit}
-                                                                          onPatch={onPatch}
-                                                                        />
-                                                                      ))}
-                                                                    </tbody>
-                                                                  </table>
+                                                                  <div className="flex flex-col">
+                                                                    <table className="w-full min-w-[820px] text-sm">
+                                                                      <thead className="bg-[#FFFFFF] text-[#6B6B6B] text-[10px] uppercase tracking-wider font-bold">
+                                                                        <tr>
+                                                                          <th className="px-5 py-2 text-left">
+                                                                            Variante / Pièce
+                                                                          </th>
+                                                                          <th className="px-3 py-2 text-left">Qualité</th>
+                                                                          <th className="px-3 py-2 text-right">Achat</th>
+                                                                          <th className="px-3 py-2 text-right">
+                                                                            Vente pièce
+                                                                          </th>
+                                                                          <th className="px-3 py-2 text-right">M.O.</th>
+                                                                          <th className="px-3 py-2 text-right text-[#167B70]">
+                                                                            Prix client
+                                                                          </th>
+                                                                          <th className="px-3 py-2 text-center">Stock</th>
+                                                                          <th className="px-3 py-2 text-left">
+                                                                            Fournisseur / SKU
+                                                                          </th>
+                                                                          <th className="px-5 py-2 text-right">
+                                                                            Actions
+                                                                          </th>
+                                                                        </tr>
+                                                                      </thead>
+                                                                      <tbody className="divide-y divide-[#E8E8E5]">
+                                                                        {list.map((item) => (
+                                                                          <PriceTreeRow
+                                                                            item={item}
+                                                                            qualityLabel={extractPartQuality(item)}
+                                                                            key={`${item.id}-${marketCountry}`}
+                                                                            marketCountry={marketCountry}
+                                                                            onDelete={onDelete}
+                                                                            onEdit={onEdit}
+                                                                            onPatch={onPatch}
+                                                                          />
+                                                                        ))}
+                                                                      </tbody>
+                                                                    </table>
+                                                                    <div className="bg-[#FAFAF8] px-5 py-3 border-t border-[#E8E8E5] flex justify-end">
+                                                                      <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                          onEdit({
+                                                                            id: "",
+                                                                            typeAppareil: type,
+                                                                            marque: brand,
+                                                                            modele: model,
+                                                                            reparation,
+                                                                            piece: reparation,
+                                                                            qualite: "Nouvelle",
+                                                                            prixAchat: 0,
+                                                                            prixVentePiece: 0,
+                                                                            mainOeuvre: 0,
+                                                                            prixClientTotal: 0,
+                                                                            marge: 0,
+                                                                            isActive: true,
+                                                                            source: "manual",
+                                                                            createdAt: new Date().toISOString(),
+                                                                            updatedAt: new Date().toISOString(),
+                                                                          });
+                                                                        }}
+                                                                        className="text-[#167B70] text-[12px] font-bold hover:underline bg-white px-3 py-1.5 rounded-md border border-[#167B70]/20 shadow-sm"
+                                                                      >
+                                                                        + Ajouter une qualité (ex: OLED)
+                                                                      </button>
+                                                                    </div>
+                                                                  </div>
                                                                 ) : (
                                                                   <div className="px-12 py-4 flex flex-col items-center justify-center text-center">
                                                                     <p className="text-[#6B6B6B] text-xs mb-2 italic">
@@ -425,6 +455,7 @@ function PriceTreeRow({
   const [vente, setVente] = useState(String(marketPrice.prixVentePiece || ""));
   const [mo, setMo] = useState(String(marketPrice.mainOeuvre || ""));
   const [client, setClient] = useState(String(marketPrice.prixClientTotal || ""));
+  const [qualite, setQualite] = useState(item.qualite || qualityLabel || "");
 
   const numA = Number.parseFloat(achat.replace(",", ".") || "0") || 0;
   const numV = Number.parseFloat(vente.replace(",", ".") || "0") || 0;
@@ -436,13 +467,14 @@ function PriceTreeRow({
     numA !== marketPrice.prixAchat ||
     numV !== marketPrice.prixVentePiece ||
     numM !== marketPrice.mainOeuvre ||
-    numC !== marketPrice.prixClientTotal;
+    numC !== marketPrice.prixClientTotal ||
+    qualite !== (item.qualite || qualityLabel || "");
 
   const save = () => {
     const patch: Partial<PriceBookItem> =
       marketCountry === "CH"
-        ? { prixAchatChf: numA, prixVentePieceChf: numV, mainOeuvreChf: numM }
-        : { prixAchat: numA, prixVentePiece: numV, mainOeuvre: numM };
+        ? { prixAchatChf: numA, prixVentePieceChf: numV, mainOeuvreChf: numM, qualite }
+        : { prixAchat: numA, prixVentePiece: numV, mainOeuvre: numM, qualite };
     if (numC > 0 && numC !== numV + numM) {
       const ratio = numC / (numV + numM || 1);
       if (marketCountry === "CH") {
@@ -467,9 +499,12 @@ function PriceTreeRow({
         <div className="text-[#6B6B6B] text-xs">{item.piece}</div>
       </td>
       <td className="px-3 py-2 text-[#1A1916] text-sm">
-        <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[#6B6B6B] text-xs">
-          {qualityLabel || "Standard"}
-        </span>
+        <input 
+          className="h-8 w-[110px] rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 text-xs font-semibold text-[#6B6B6B] outline-none transition focus:border-[#2A9D8F]/50 focus:ring-2 focus:ring-[#2A9D8F]/10" 
+          value={qualite}
+          onChange={(e) => setQualite(e.target.value)}
+          placeholder="Standard"
+        />
       </td>
       <td className="px-3 py-2 text-right">
         <input className={numClass} inputMode="decimal" onChange={(e) => setAchat(e.target.value)} value={achat} />

@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { type DeviceCategory, deviceCatalog } from "@/data/deviceCatalog";
+import { repairReadyStatusLabel } from "@/lib/repair-status";
 import {
   createPriceBookItem,
   normalizePriceBookItem,
@@ -20,7 +21,6 @@ import { invoices as invoiceMocks } from "@/mock/invoices";
 import { transactions as paymentMocks } from "@/mock/payments";
 import { quote as quoteMock } from "@/mock/quotes";
 import { repairKanbanColumns } from "@/mock/repairs";
-import { stockItems as stockMocks } from "@/mock/stock";
 import {
   formatMoney,
   createBillingProfile,
@@ -33,6 +33,7 @@ import {
   type WorkshopCurrency,
   type WorkshopLocale,
 } from "@/lib/workshop-country";
+import { ensureTrackingCode, getCustomerTrackingPath, getTrackingCode } from "@/lib/customer-tracking";
 
 export type RepairStatus =
   | "Reçu"
@@ -53,6 +54,10 @@ export type QuoteStatus = "Brouillon" | "Envoyé" | "Accepté" | "Refusé" | "Fa
 export type PaymentStatus = "Payé" | "Annulé" | "Remboursé";
 export type PaymentMethod =
   | "Espèces"
+  | "Carte bancaire"
+  | "SumUp"
+  | "Stripe"
+  | "Virement"
   | "Carte bancaire via SumUp"
   | "Carte bancaire via Stripe Terminal"
   | "Lien de paiement Stripe"
@@ -70,7 +75,7 @@ export type PaymentMethod =
   | "Mixte"
   | "Carte"
   | "En ligne";
-export type SettlementStatus = "Non réglé" | "Partiellement réglé" | "Réglé";
+export type SettlementStatus = "Non réglé" | "Partiellement réglé" | "Réglé" | "Offert / Garantie / SAV";
 export type AppointmentStatus =
   | "Planifié"
   | "En attente"
@@ -303,16 +308,32 @@ export type RepairSubStatus =
   | "Client injoignable"
   | "Appareil verrouillé"
   | "Diagnostic impossible"
+  | "Pièce en attente"
   | "Irréparable"
   | "Annulé"
   | "SAV / retour";
-export type RepairTestResult = "OK" | "KO" | "Non testé" | "Non testable" | "Test repoussé" | "Non applicable";
+export type RepairTestResult =
+  | "OK"
+  | "Défaut constaté"
+  | "Non applicable"
+  | "Non testé"
+  | "KO"
+  | "Non testable"
+  | "Test repoussé";
 export type RepairChecklistItem = {
   id: string;
   label: string;
   result: RepairTestResult;
   comment?: string;
 };
+export type RepairFinalTestStatus =
+  | "Téléphone prêt"
+  | "Test final validé"
+  | "Test non applicable"
+  | "Test impossible"
+  | "Test refusé par le client"
+  | "Pièce en attente"
+  | "Irréparable";
 export type RepairEvidencePhoto = {
   id: string;
   category: "Avant / réception" | "Diagnostic" | "Réparation" | "Après / contrôle final" | "SAV";
@@ -343,12 +364,15 @@ export type RepairIntervention = {
 };
 export type RepairFinalTest = {
   items: RepairChecklistItem[];
+  status?: RepairFinalTestStatus;
   comment?: string;
   validatedAt?: string;
   validatedBy?: string;
   testImpossibleReason?: string;
   testImpossibleAt?: string;
   testImpossibleBy?: string;
+  outcomeAt?: string;
+  outcomeBy?: string;
 };
 export type RepairSav = {
   savNumber: string;
@@ -472,6 +496,7 @@ export type Repair = {
   paymentRecordedBy?: string;
   paymentRecordedOutsideBeharTechPro?: boolean;
   paymentNote?: string;
+  settlementReason?: string;
   closedAt?: string;
   diagnosticNotes?: string;
   diagnosticCause?: string;
@@ -1146,6 +1171,7 @@ export type StoreState = {
   appendRepairHistory: (id: string, event: string, metadata?: Record<string, unknown>) => void;
   validateRepairFinalTest: (id: string, items: RepairChecklistItem[], comment?: string) => void;
   markRepairTestImpossible: (id: string, reason: string) => void;
+  setRepairWorkshopOutcome: (id: string, outcome: RepairFinalTestStatus, note?: string) => void;
   addPartToRepair: (repairId: string, stockItemId: string, quantity?: number) => boolean;
   addSaleLinesToRepair: (repairId: string, lines: Omit<SaleLine, "id">[], saleId?: string) => boolean;
   markRepairSaleLineDelivered: (repairId: string, lineId: string) => boolean;
@@ -1755,7 +1781,7 @@ const defaultWorkshopInfo: WorkshopInfo = {
   invoiceTerms: "Paiement comptant à réception.",
   intakeTerms: "",
   documentFooter: "Merci pour votre confiance.",
-  acceptedPaymentMethods: ["Espèces", "Carte bancaire via SumUp", "Virement bancaire"],
+  acceptedPaymentMethods: ["Espèces", "Carte bancaire", "SumUp", "Stripe", "Virement", "Chèque", "Autre"],
   businessHours: "Lun-Ven 09:00-18:00 · Sam 09:00-13:00",
   allowCounterClient: true,
   counterPrintFormat: "A4",
@@ -1951,7 +1977,7 @@ export const isWorkshopBillingProfileComplete = (workshop: WorkshopInfo, country
 };
 const uid = (prefix: string) => `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
 
-// Token public non devinable (ex : "rp_8F3K92XQ9M2AZ7H") pour les liens de suivi/reçu.
+// Token public non devinable (ex : "rp_8F3K92XQ9M2AZ7H") pour les anciens liens publics.
 const PUBLIC_TOKEN_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789";
 const publicToken = (prefix: string, length = 16) => {
   let out = "";
@@ -1960,13 +1986,15 @@ const publicToken = (prefix: string, length = 16) => {
   }
   return `${prefix}_${out}`;
 };
-// Construit l'accès public (token + URL relative) pour un dossier.
-// URL propre dynamique ; l'ancienne route /suivi?t=... reste compatible.
+// Construit l'accès public historique. Les réparations utilisent désormais
+// makeRepairPublicAccess afin d'obtenir un code lisible BT-YYYY-00000.
 const makePublicAccess = (prefix: string, basePath: string): PublicAccess => {
   const token = publicToken(prefix);
   return { token, url: `${basePath}/${token}`, createdAt: getNowIso(), active: true };
 };
 const makePublicAccessUrl = (basePath: string, token: string) => `${basePath.replace(/\/$/, "")}/${token}`;
+const makeRepairPublicAccess = (repair: Partial<Repair>, workshop: Partial<WorkshopInfo> = defaultWorkshopSettings) =>
+  ensureTrackingCode(repair, workshop).publicAccess;
 // Message public automatique associé à un changement de statut réparation.
 const publicStatusMessage = (status: string): string | null => {
   switch (status) {
@@ -2218,19 +2246,11 @@ const invoiceStatuses: InvoiceStatus[] = ["Brouillon", "Envoyée", "Payée", "An
 const paymentStatuses: PaymentStatus[] = ["Payé", "Annulé", "Remboursé"];
 export const paymentMethods: PaymentMethod[] = [
   "Espèces",
-  "Carte bancaire via SumUp",
-  "Carte bancaire via Stripe Terminal",
-  "Lien de paiement Stripe",
-  "Virement bancaire",
-  "Chèque",
-  "Revolut",
-  "PayPal",
-  "TPE externe",
-  "Espèces hors Behar Tech",
-  "TWINT",
-  "Carte externe",
+  "Carte bancaire",
+  "SumUp",
+  "Stripe",
   "Virement",
-  "Lien externe",
+  "Chèque",
   "Autre",
 ];
 const deviceTypes: DeviceType[] = ["Smartphone", "Tablette", "Ordinateur", "Console", "Autre"];
@@ -2274,6 +2294,7 @@ const repairSubStatuses: RepairSubStatus[] = [
   "En attente pièce",
   "Pièce commandée",
   "Pièce reçue",
+  "Pièce en attente",
   "En attente validation client",
   "En attente devis",
   "Devis envoyé",
@@ -2288,25 +2309,40 @@ const repairSubStatuses: RepairSubStatus[] = [
 ];
 const repairTestResults: RepairTestResult[] = [
   "OK",
-  "KO",
+  "Défaut constaté",
+  "Non applicable",
   "Non testé",
+  "KO",
   "Non testable",
   "Test repoussé",
-  "Non applicable",
+];
+const repairFinalTestStatuses: RepairFinalTestStatus[] = [
+  "Téléphone prêt",
+  "Test final validé",
+  "Test non applicable",
+  "Test impossible",
+  "Test refusé par le client",
+  "Pièce en attente",
+  "Irréparable",
 ];
 const normalizeRepairPriority = (priority: unknown): RepairPriority =>
   repairPriorities.includes(priority as RepairPriority) ? (priority as RepairPriority) : "Normale";
 const normalizeRepairSubStatus = (subStatus: unknown): RepairSubStatus | undefined =>
   repairSubStatuses.includes(subStatus as RepairSubStatus) ? (subStatus as RepairSubStatus) : undefined;
+const normalizeRepairTestResult = (result: unknown): RepairTestResult => {
+  if (result === "KO") return "Défaut constaté";
+  if (result === "Non testable" || result === "Test repoussé") return "Non testé";
+  return repairTestResults.includes(result as RepairTestResult) ? (result as RepairTestResult) : "Non testé";
+};
+const normalizeRepairFinalTestStatus = (status: unknown): RepairFinalTestStatus | undefined =>
+  repairFinalTestStatuses.includes(status as RepairFinalTestStatus) ? (status as RepairFinalTestStatus) : undefined;
 const normalizeChecklistItems = (items: unknown): RepairChecklistItem[] =>
   Array.isArray(items)
     ? items
         .map((item: Partial<RepairChecklistItem>) => ({
           id: normalizeText(item.id, uid("check")),
           label: normalizeText(item.label, "Point de contrôle"),
-          result: repairTestResults.includes(item.result as RepairTestResult)
-            ? (item.result as RepairTestResult)
-            : "Non testé",
+          result: normalizeRepairTestResult(item.result),
           comment: normalizeText(item.comment) || undefined,
         }))
         .filter((item) => item.label)
@@ -2329,7 +2365,29 @@ const normalizeEvidencePhotos = (photos: unknown): RepairEvidencePhoto[] =>
         .filter((photo) => photo.label)
     : [];
 const hasFinalTestClearance = (repair: Pick<Repair, "finalTest">) =>
-  Boolean(repair.finalTest?.validatedAt || repair.finalTest?.testImpossibleReason);
+  Boolean(
+    repair.finalTest?.validatedAt ||
+      repair.finalTest?.testImpossibleReason ||
+      ["Téléphone prêt", "Test final validé", "Test non applicable", "Test impossible", "Test refusé par le client"].includes(
+        repair.finalTest?.status ?? "",
+      ),
+  );
+export const repairHasConfirmedPayment = (
+  repair: Pick<Repair, "id" | "paymentStatus" | "paymentId" | "paymentIds">,
+  payments: Array<Pick<Payment, "id" | "repairId" | "status">> = [],
+) => {
+  if (repair.paymentStatus === "Réglée") return true;
+  if (repair.paymentStatus === "Partiellement réglée" || repair.paymentStatus === "À régler") return false;
+  const repairPaymentIds = new Set([...(repair.paymentIds ?? []), repair.paymentId].filter(Boolean));
+  return payments.some(
+    (payment) =>
+      payment.status === "Payé" && (repairPaymentIds.has(payment.id) || payment.repairId === repair.id),
+  );
+};
+export const getRepairReadyDisplayLabel = (
+  repair: Pick<Repair, "id" | "status" | "paymentStatus" | "paymentId" | "paymentIds">,
+  payments: Array<Pick<Payment, "id" | "repairId" | "status">> = [],
+) => repairReadyStatusLabel(repair.status, repair.paymentStatus, repairHasConfirmedPayment(repair, payments));
 export const normalizeAppointmentStatus = (
   status: unknown,
   confirmed = false,
@@ -2721,21 +2779,19 @@ const normalizePaymentMethod = (method: unknown): PaymentMethod => {
   const text = normalizeText(method);
   if (paymentMethods.includes(text as PaymentMethod)) return text as PaymentMethod;
   const lower = text.toLowerCase();
-  if (lower.includes("sumup")) return "Carte bancaire via SumUp";
-  if (lower.includes("terminal") || lower.includes("stripe terminal")) return "Carte bancaire via Stripe Terminal";
-  if (lower.includes("stripe") || lower.includes("lien de paiement")) return "Lien de paiement Stripe";
-  if (lower.includes("paypal")) return "PayPal";
-  if (lower.includes("revolut")) return "Revolut";
+  if (lower.includes("sumup")) return "SumUp";
+  if (lower.includes("stripe") || lower.includes("lien de paiement") || lower.includes("lien externe")) return "Stripe";
+  if (lower.includes("paypal") || lower.includes("revolut")) return "Autre";
   if (lower.includes("chèque") || lower.includes("cheque")) return "Chèque";
-  if (lower.includes("virement bancaire")) return "Virement bancaire";
-  if (lower.includes("twint")) return "TWINT";
-  if (lower.includes("carte externe")) return "Carte externe";
-  if (lower.includes("tpe")) return "Carte bancaire via terminal externe" as PaymentMethod;
-  if (lower.includes("carte")) return "Carte bancaire via SumUp";
-  if (lower.includes("virement")) return "Virement bancaire";
+  if (lower.includes("virement")) return "Virement";
+  if (lower.includes("twint")) return "Autre";
+  if (lower.includes("terminal") || lower.includes("tpe") || lower.includes("carte")) return "Carte bancaire";
   if (lower.includes("esp")) return "Espèces";
-  if (lower.includes("lien") || lower.includes("ligne")) return "Lien de paiement Stripe";
   return "Autre";
+};
+const normalizeSelectedPaymentMethod = (method: unknown): PaymentMethod | null => {
+  const text = normalizeText(method);
+  return text ? normalizePaymentMethod(text) : null;
 };
 const uniqueIds = (ids: Array<string | undefined>) => [...new Set(ids.filter(Boolean) as string[])];
 const repairPartsTotal = (parts: RepairPart[]) =>
@@ -3049,12 +3105,18 @@ const normalizeRepair = (
     publicAccess:
       repair.publicAccess && repair.publicAccess.token
         ? {
-            token: normalizeText(repair.publicAccess.token),
-            url: makePublicAccessUrl("/p", normalizeText(repair.publicAccess.token)),
+            token: getTrackingCode(repair),
+            url: getCustomerTrackingPath(
+              {
+                ...repair,
+                publicAccess: { ...repair.publicAccess, token: getTrackingCode(repair) },
+              },
+              defaultWorkshopSettings,
+            ),
             createdAt: normalizeText(repair.publicAccess.createdAt, getNowIso()),
             active: repair.publicAccess.active !== false,
           }
-        : makePublicAccess("rp", "/suivi"),
+        : makeRepairPublicAccess(repair, defaultWorkshopSettings),
     messages: Array.isArray(repair.messages)
       ? repair.messages
           .map((entry) => ({
@@ -3111,12 +3173,15 @@ const normalizeRepair = (
     finalTest: repair.finalTest
       ? {
           items: normalizeChecklistItems(repair.finalTest.items),
+          status: normalizeRepairFinalTestStatus(repair.finalTest.status),
           comment: normalizeText(repair.finalTest.comment) || undefined,
           validatedAt: normalizeText(repair.finalTest.validatedAt) || undefined,
           validatedBy: normalizeText(repair.finalTest.validatedBy) || undefined,
           testImpossibleReason: normalizeText(repair.finalTest.testImpossibleReason) || undefined,
           testImpossibleAt: normalizeText(repair.finalTest.testImpossibleAt) || undefined,
           testImpossibleBy: normalizeText(repair.finalTest.testImpossibleBy) || undefined,
+          outcomeAt: normalizeText(repair.finalTest.outcomeAt) || undefined,
+          outcomeBy: normalizeText(repair.finalTest.outcomeBy) || undefined,
         }
       : undefined,
     originalRepairId: normalizeText(repair.originalRepairId) || undefined,
@@ -3576,9 +3641,6 @@ const normalizeStockItemType = (value: unknown, category: StockProductCategory):
 
 const normalizeStockItem = (item: Partial<StockItem> & { skipModelInference?: boolean }): StockItem => {
   const id = normalizeText(item.id, uid("stock"));
-  const fallbackMock = stockMocks.find(
-    (mock: any) => mock.id === id || mock.reference === item.reference || mock.reference === item.sku,
-  );
   const name = normalizeText(item.name, normalizeText(item.part, "Pièce"));
   const sku = normalizeText(item.sku, normalizeText(item.reference, `REF-${Date.now()}`));
   const category = item.categoryId
@@ -3619,7 +3681,7 @@ const normalizeStockItem = (item: Partial<StockItem> & { skipModelInference?: bo
     ...finalModelIds.map((modelId) => deviceModels.find((entry) => entry.id === modelId)?.name),
   ]);
   const deviceType = normalizeDeviceType(firstModel?.deviceType ?? item.deviceType ?? category?.deviceTypes[0]);
-  const quantity = clampQuantity(item.quantity ?? item.stock ?? (fallbackMock as any)?.stock);
+  const quantity = clampQuantity(item.quantity ?? item.stock);
   const productCategory = normalizeStockProductCategory(item.productCategory);
   const itemType = normalizeStockItemType(item.itemType, productCategory);
   const repairEnabled = typeof item.repairEnabled === "boolean" ? item.repairEnabled : itemType === "part";
@@ -3645,8 +3707,8 @@ const normalizeStockItem = (item: Partial<StockItem> & { skipModelInference?: bo
     part: name,
     reference: sku,
     category: category?.name ?? normalizeText(item.category, "Autre"),
-    purchasePrice: clampMoney(item.purchasePrice || (fallbackMock as any)?.purchasePrice),
-    salePrice: clampMoney(item.salePrice || (fallbackMock as any)?.salePrice),
+    purchasePrice: clampMoney(item.purchasePrice),
+    salePrice: clampMoney(item.salePrice),
     quantity,
     stock: quantity,
     threshold: clampQuantity(item.threshold),
@@ -3752,8 +3814,8 @@ const syncPriceBookToStockItems = (pbItems: PriceBookItem[], stockItems: StockIt
       nextStock[sIndex] = {
         ...nextStock[sIndex],
         priceBookItemId: pb.id,
-        purchasePrice: pb.prixAchat || nextStock[sIndex].purchasePrice,
-        salePrice: pb.prixVentePiece || nextStock[sIndex].salePrice,
+        purchasePrice: Number.isFinite(pb.prixAchat) ? pb.prixAchat : nextStock[sIndex].purchasePrice,
+        salePrice: Number.isFinite(pb.prixVentePiece) ? pb.prixVentePiece : nextStock[sIndex].salePrice,
         // Only update quantity if it was explicitly provided in PriceBook
         quantity: pb.stockDisponible ?? nextStock[sIndex].quantity,
         stock: pb.stockDisponible ?? nextStock[sIndex].stock,
@@ -5040,6 +5102,7 @@ export const useBeharStore = create<StoreState>()(
           counterTasks: input.counterTasks,
           counterPieces: input.counterPieces,
           counterNotifiedAt: input.counterNotifiedAt,
+          parts: input.parts ?? created.parts,
           repairSaleLines: input.repairSaleLines,
           intakeCondition: normalizeIntakeCondition(input.intakeCondition),
           diagnosticNotes: input.diagnosticNotes,
@@ -5057,7 +5120,7 @@ export const useBeharStore = create<StoreState>()(
           originalRepairId: input.originalRepairId,
           sav: input.sav,
           // Lien public sécurisé + QR généré automatiquement à la création.
-          publicAccess: makePublicAccess("rp", "/suivi"),
+          publicAccess: makeRepairPublicAccess({ ...created, id, number: docNumber(ws.repairPrefix, ws.nextRepairNumber ?? 1, "REP") }, ws),
           // Message public d'accueil visible côté client dès la création.
           messages: [
             {
@@ -5150,20 +5213,6 @@ export const useBeharStore = create<StoreState>()(
         const existingRepair = get().repairs.find((entry) => entry.id === id);
         if (existingRepair && isTerminalRepairStatus(existingRepair.status) && changesTerminalRepair(patch)) {
           if (!get().requirePermission("canDeleteRepair", "Modifier une réparation terminée")) return;
-        }
-        if (
-          existingRepair &&
-          patch.status === "Prêt" &&
-          !hasFinalTestClearance({ finalTest: patch.finalTest ?? existingRepair.finalTest })
-        ) {
-          get().addNotification({
-            type: "warning",
-            title: "Test final requis",
-            message: `${existingRepair.number} ne peut pas passer en Prêt sans test final validé.`,
-            targetType: "repair",
-            targetId: id,
-          });
-          return;
         }
         set((state) => {
           // Détecter explicitement si le patch fournit un customerId valide
@@ -5344,22 +5393,17 @@ export const useBeharStore = create<StoreState>()(
         );
       },
       ensureRepairPublicAccess: (repairId) => {
-        const existing = get().repairs.find((repair) => repair.id === repairId)?.publicAccess;
-        if (existing?.token) {
-          const access = { ...existing, url: makePublicAccessUrl("/p", existing.token) };
-          if (existing.url !== access.url) {
-            set((state) => ({
-              repairs: state.repairs.map((repair) =>
-                repair.id === repairId ? { ...repair, publicAccess: access } : repair,
-              ),
-            }));
-          }
-          return access;
+        const target = get().repairs.find((repair) => repair.id === repairId);
+        if (!target) return undefined;
+        const access = makeRepairPublicAccess(target, get().workshopSettings ?? defaultWorkshopSettings);
+        if (target.publicAccess?.token === access.token && target.publicAccess?.url === access.url) {
+          return target.publicAccess;
         }
-        const access = makePublicAccess("rp", "/p");
         set((state) => ({
           repairs: state.repairs.map((repair) =>
-            repair.id === repairId ? { ...repair, publicAccess: access } : repair,
+            repair.id === repairId && (repair.publicAccess?.token !== access.token || repair.publicAccess?.url !== access.url)
+              ? { ...repair, publicAccess: access }
+              : repair,
           ),
         }));
         return access;
@@ -5482,12 +5526,16 @@ export const useBeharStore = create<StoreState>()(
         const repair = get().repairs.find((entry) => entry.id === id);
         if (!repair) return;
         const cleaned = normalizeChecklistItems(items);
-        const blocking = cleaned.some((item) => item.result !== "OK" && item.result !== "Non applicable");
-        if (blocking || !cleaned.length) {
+        const cleanComment = normalizeText(comment);
+        const blocking = cleaned.some((item) => item.result === "Défaut constaté" || item.result === "KO");
+        const missingUntestedNote = cleaned.some((item) => item.result === "Non testé" && !normalizeText(item.comment) && !cleanComment);
+        if (blocking || missingUntestedNote) {
           get().addNotification({
             type: "warning",
-            title: "Test final incomplet",
-            message: `${repair.number} ne peut pas être marqué prêt : contrôles à valider.`,
+            title: blocking ? "Défaut constaté" : "Note requise",
+            message: blocking
+              ? `${repair.number} contient un défaut constaté : corrigez ou indiquez une exception atelier.`
+              : `${repair.number} contient un test non testé : ajoutez une note globale ou une note sur la ligne.`,
             targetType: "repair",
             targetId: id,
           });
@@ -5501,9 +5549,12 @@ export const useBeharStore = create<StoreState>()(
                   ...entry,
                   finalTest: {
                     items: cleaned,
-                    comment: normalizeText(comment) || undefined,
+                    status: "Test final validé",
+                    comment: cleanComment || undefined,
                     validatedAt: getNowIso(),
                     validatedBy: actor.name,
+                    outcomeAt: getNowIso(),
+                    outcomeBy: actor.name,
                   },
                   history: [...entry.history, "Test final validé"],
                   ...updateActorFields(actor),
@@ -5538,9 +5589,13 @@ export const useBeharStore = create<StoreState>()(
                   ...entry,
                   finalTest: {
                     items: normalizeChecklistItems(entry.finalTest?.items),
+                    status: "Test impossible",
+                    comment: cleanReason,
                     testImpossibleReason: cleanReason,
                     testImpossibleAt: getNowIso(),
                     testImpossibleBy: actor.name,
+                    outcomeAt: getNowIso(),
+                    outcomeBy: actor.name,
                   },
                   history: [...entry.history, `Test final impossible : ${cleanReason}`],
                   ...updateActorFields(actor),
@@ -5557,6 +5612,113 @@ export const useBeharStore = create<StoreState>()(
         });
         get().changeRepairStatus(id, "Prêt");
       },
+      setRepairWorkshopOutcome: (id, outcome, note = "") => {
+        if (!get().requirePermission("canChangeRepairStatus", "Changer l'état atelier")) return;
+        const repair = get().repairs.find((entry) => entry.id === id);
+        if (!repair) return;
+        const actor = get().currentUser ?? defaultCurrentUser;
+        const cleanNote = normalizeText(note);
+        if ((outcome === "Test impossible" || outcome === "Test refusé par le client") && !cleanNote) {
+          get().addNotification({
+            type: "warning",
+            title: "Note requise",
+            message: `${outcome} : ajoutez la raison au dossier.`,
+            targetType: "repair",
+            targetId: id,
+          });
+          return;
+        }
+        const nextStatus: RepairStatus =
+          outcome === "Pièce en attente" ? "En attente" : outcome === "Irréparable" ? "Irréparable" : "Prêt";
+        const now = getNowIso();
+        const readyOutcomes: RepairFinalTestStatus[] = [
+          "Téléphone prêt",
+          "Test final validé",
+          "Test non applicable",
+          "Test impossible",
+          "Test refusé par le client",
+        ];
+        const clientMessage =
+          outcome === "Pièce en attente"
+            ? "Nous attendons une pièce pour poursuivre votre réparation."
+            : outcome === "Irréparable"
+              ? "Après diagnostic, votre appareil est considéré comme irréparable."
+              : "Votre appareil est prêt à être récupéré.";
+        set((state) => ({
+          repairs: state.repairs.map((entry) => {
+            if (entry.id !== id) return entry;
+            const finalTest: RepairFinalTest = {
+              ...entry.finalTest,
+              items: normalizeChecklistItems(entry.finalTest?.items),
+              status: outcome,
+              comment: cleanNote || entry.finalTest?.comment,
+              validatedAt: outcome === "Test final validé" ? now : entry.finalTest?.validatedAt,
+              validatedBy: outcome === "Test final validé" ? actor.name : entry.finalTest?.validatedBy,
+              testImpossibleReason: outcome === "Test impossible" ? cleanNote : entry.finalTest?.testImpossibleReason,
+              testImpossibleAt: outcome === "Test impossible" ? now : entry.finalTest?.testImpossibleAt,
+              testImpossibleBy: outcome === "Test impossible" ? actor.name : entry.finalTest?.testImpossibleBy,
+              outcomeAt: now,
+              outcomeBy: actor.name,
+            };
+            const messages = readyOutcomes.includes(outcome) || outcome === "Pièce en attente" || outcome === "Irréparable"
+              ? [
+                  ...(entry.messages ?? []),
+                  {
+                    id: uid("msg"),
+                    repairId: entry.id,
+                    authorType: "system" as const,
+                    authorName: "Atelier",
+                    visibility: "client" as const,
+                    body: clientMessage,
+                    createdAt: now,
+                    readByClient: false,
+                    readByStaff: true,
+                  },
+                ]
+              : entry.messages;
+            return {
+              ...entry,
+              status: nextStatus,
+              subStatus:
+                outcome === "Pièce en attente"
+                  ? "Pièce en attente"
+                  : outcome === "Irréparable"
+                    ? "Irréparable"
+                    : entry.subStatus,
+              blockReason:
+                outcome === "Pièce en attente"
+                  ? "Pièce en attente"
+                  : outcome === "Irréparable"
+                    ? "Irréparable"
+                    : entry.blockReason,
+              repairability: outcome === "Irréparable" ? "Non" : entry.repairability,
+              finalTest,
+              messages,
+              history: [
+                ...entry.history,
+                cleanNote ? `${outcome} : ${cleanNote}` : outcome,
+                nextStatus === "Prêt" && entry.status !== "Prêt" ? "Dossier prêt" : "",
+              ].filter(Boolean),
+              ...updateActorFields(actor),
+            };
+          }),
+          customers: state.customers,
+        }));
+        get().addAuditLog({
+          action: "repair.workshop_outcome",
+          targetType: "repair",
+          targetId: id,
+          message: `${actor.name} a indiqué "${outcome}" sur ${repair.number}`,
+          metadata: { outcome, note: cleanNote },
+        });
+        get().addNotification({
+          type: nextStatus === "Irréparable" ? "warning" : nextStatus === "Prêt" ? "success" : "info",
+          title: "Atelier",
+          message: `${repair.number} — ${outcome}`,
+          targetType: "repair",
+          targetId: id,
+        });
+      },
       changeRepairStatus: (id, status) => {
         if (!get().requirePermission("canChangeRepairStatus", "Changer le statut")) return;
         const state = get();
@@ -5570,23 +5732,6 @@ export const useBeharStore = create<StoreState>()(
         ) {
           return;
         }
-        if (status === "Prêt" && !hasFinalTestClearance(previous)) {
-          get().addNotification({
-            type: "warning",
-            title: "Test final requis",
-            message: `${previous.number} ne peut pas passer en Prêt sans test final validé ou exception motivée.`,
-            targetType: "repair",
-            targetId: id,
-          });
-          get().addAuditLog({
-            action: "repair.ready_blocked",
-            targetType: "repair",
-            targetId: id,
-            message: `${actor.name} a tenté de passer ${previous.number} en Prêt sans test final.`,
-          });
-          return;
-        }
-
         const statusEvent = (() => {
           switch (status) {
             case "Diagnostic":
@@ -5648,67 +5793,6 @@ export const useBeharStore = create<StoreState>()(
           targetType: "repair",
           targetId: id,
         });
-
-        if (status !== "Prêt") return;
-
-        // Workflow auto au passage en "Prêt" : facture propre si possible
-        const after = get();
-        const repair = after.repairs.find((r) => r.id === id);
-        if (!repair) return;
-
-        const acceptedQuote = after.quotes.find((q) => q.repairId === id && q.status === "Accepté");
-        const existingInvoice =
-          (acceptedQuote && after.invoices.find((inv) => inv.quoteId === acceptedQuote.id)) ||
-          after.invoices.find((inv) => inv.repairId === id);
-
-        const appendHistory = (msg: string) => {
-          set((current) => ({
-            repairs: current.repairs.map((r) => (r.id === id ? { ...r, history: [...r.history, msg] } : r)),
-          }));
-        };
-
-        if (existingInvoice) {
-          appendHistory(`Facture déjà existante : ${existingInvoice.number}`);
-          return;
-        }
-
-        if (acceptedQuote) {
-          const invoiceId = get().convertQuoteToInvoice(acceptedQuote.id);
-          if (invoiceId) {
-            const inv = get().invoices.find((i) => i.id === invoiceId);
-            appendHistory(`Facture créée depuis le devis : ${inv?.number ?? invoiceId}`);
-          } else {
-            appendHistory("Facturation bloquée : conversion devis impossible.");
-          }
-          return;
-        }
-
-        const customer = after.customers.find((c) => c.id === repair.customerId);
-        if (!customer) {
-          appendHistory("Réparation prête, facturation bloquée : client invalide.");
-          return;
-        }
-
-        const built = buildInvoiceLinesFromRepair(repair);
-        if (!built.ok) {
-          appendHistory(`Réparation prête, facturation bloquée : ${built.message}`);
-          return;
-        }
-
-        const invoiceId = get().addInvoice({
-          customerId: repair.customerId,
-          repairId: repair.id,
-          lines: built.lines,
-          sourceType: "repair",
-          sourceNumber: repair.number,
-          status: "Envoyée",
-        });
-        if (invoiceId) {
-          const inv = get().invoices.find((i) => i.id === invoiceId);
-          appendHistory(`Facture créée depuis la réparation : ${inv?.number ?? invoiceId}`);
-        } else {
-          appendHistory("Réparation prête, facturation bloquée : données invalides.");
-        }
       },
       addPartToRepair: (repairId, stockItemId, quantity = 1) => {
         if (!get().requirePermission("canUseStockItem", "Utiliser une pièce")) return false;
@@ -6623,8 +6707,10 @@ export const useBeharStore = create<StoreState>()(
           message: `${actor.name} a supprimé la facture ${deleted?.number ?? id}`,
         });
       },
-      markInvoicePaid: (invoiceId, method = "Carte", note = "") => {
+      markInvoicePaid: (invoiceId, method, note = "") => {
         if (!get().requirePermission("canMarkPaymentPaid", "Indiquer un règlement")) return "";
+        const normalizedMethod = normalizeSelectedPaymentMethod(method);
+        if (!normalizedMethod) return "";
         const invoice = get().invoices.find((entry) => entry.id === invoiceId);
         const actor = get().currentUser ?? defaultCurrentUser;
         if (!invoice?.customerId) return "";
@@ -6662,13 +6748,13 @@ export const useBeharStore = create<StoreState>()(
           quoteId: invoice.quoteId,
           paymentNumber: docNumber("CONF", ws.nextReceiptNumber ?? 1, "CONF"),
           reference: docNumber("CONF", ws.nextReceiptNumber ?? 1, "CONF"),
-          method,
-          mode: method,
+          method: normalizedMethod,
+          mode: normalizedMethod,
           status: "Payé",
           amount,
           date: timestamp,
           note,
-          twintReference: method === "TWINT" ? normalizeText(note) || undefined : undefined,
+          twintReference: normalizedMethod === "TWINT" ? normalizeText(note) || undefined : undefined,
           createdAt: timestamp,
           updatedAt: timestamp,
           createdBy: actor.id,
@@ -6683,7 +6769,7 @@ export const useBeharStore = create<StoreState>()(
               ? {
                   ...entry,
                   status: "Payée" as InvoiceStatus,
-                  paymentMethod: method,
+                  paymentMethod: normalizedMethod,
                   paymentIds: nextPaymentIds,
                   paidAmount: total,
                   paidAt: timestamp,
@@ -6701,7 +6787,7 @@ export const useBeharStore = create<StoreState>()(
               invoiceIds: uniqueIds([...(repair.invoiceIds ?? []), repair.invoiceId, invoiceId]),
               status: canAutoReady ? ("Prêt" as RepairStatus) : repair.status,
               paymentStatus: "Réglée" as Repair["paymentStatus"],
-              paymentMethodNote: method,
+              paymentMethodNote: normalizedMethod,
               repairSaleLines: (repair.repairSaleLines ?? []).map((line) => ({
                 ...line,
                 status: "paid" as RepairSaleLineStatus,
@@ -6709,7 +6795,7 @@ export const useBeharStore = create<StoreState>()(
               })),
               history: [
                 ...repair.history,
-                `Règlement indiqué : ${formatEuro(payment.amount)} (${method})`,
+                `Règlement indiqué : ${formatEuro(payment.amount)} (${normalizedMethod})`,
                 ...(canAutoReady ? ["Dossier prêt"] : ["Passage en prêt bloqué : test final requis"]),
               ],
             };
@@ -6732,7 +6818,7 @@ export const useBeharStore = create<StoreState>()(
                   ? {
                       ...sale,
                       status: "Payée" as SaleStatus,
-                      paymentMethod: method,
+                      paymentMethod: normalizedMethod,
                       paymentId,
                       documentId: `doc_${paymentId}`,
                       paidAt: timestamp,
@@ -6792,6 +6878,8 @@ export const useBeharStore = create<StoreState>()(
       },
       addPayment: (input) => {
         if (!get().requirePermission("canMarkPaymentPaid", "Créer un paiement")) return "";
+        const normalizedMethod = normalizeSelectedPaymentMethod(input.method);
+        if (!normalizedMethod) return "";
         const actor = get().currentUser ?? defaultCurrentUser;
         const id = uid("payment");
         const timestamp = nowLabel();
@@ -6810,10 +6898,11 @@ export const useBeharStore = create<StoreState>()(
           locale: paymentBillingConfig.locale,
           shopId,
           ...input,
+          method: normalizedMethod,
           paymentNumber: docNumber("CONF", ws.nextReceiptNumber ?? 1, "CONF"),
-          mode: input.method,
+          mode: normalizedMethod,
           twintReference:
-            input.method === "TWINT" ? normalizeText(input.twintReference ?? input.note) || undefined : undefined,
+            normalizedMethod === "TWINT" ? normalizeText(input.twintReference ?? input.note) || undefined : undefined,
           createdAt: timestamp,
           updatedAt: timestamp,
           createdBy: actor.id,
@@ -6883,8 +6972,10 @@ export const useBeharStore = create<StoreState>()(
           sourceNumber: repair.number,
         });
       },
-      markRepairAsPaid: (repairId: string, method = "Carte", note = "") => {
+      markRepairAsPaid: (repairId: string, method, note = "") => {
         const state = get();
+        const normalizedMethod = normalizeSelectedPaymentMethod(method);
+        if (!normalizedMethod) return "";
         const repair = state.repairs.find((r) => r.id === repairId);
         if (!repair) return "";
 
@@ -6892,18 +6983,19 @@ export const useBeharStore = create<StoreState>()(
         const existingInvoice = state.invoices.find((inv) => inv.repairId === repairId);
         if (existingInvoice) {
           if (existingInvoice.status === "Payée") return "";
-          return state.markInvoicePaid(existingInvoice.id, method, note);
+          return state.markInvoicePaid(existingInvoice.id, normalizedMethod, note);
         }
 
         // Cas B : Pas de facture, créer automatiquement
         const invoiceId = state.createInvoiceFromRepair(repairId);
         if (!invoiceId) return "";
 
-        return state.markInvoicePaid(invoiceId, method, note);
+        return state.markInvoicePaid(invoiceId, normalizedMethod, note);
       },
       recordRepairSettlement: (repairId, input) => {
         if (!get().requirePermission("canMarkPaymentPaid", "Indiquer un règlement")) return "";
-        if (!input.confirmExternal) return "";
+        const isOffert = input.status === "Offert / Garantie / SAV";
+        if (!isOffert && !input.confirmExternal) return "";
 
         const state = get();
         const repair = state.repairs.find((entry) => entry.id === repairId);
@@ -6917,14 +7009,17 @@ export const useBeharStore = create<StoreState>()(
             ? "Réglée"
             : "À régler");
         const nextRepairStatus: Repair["paymentStatus"] =
-          input.status === "Réglé"
+          input.status === "Réglé" || isOffert
             ? "Réglée"
             : input.status === "Partiellement réglé"
               ? "Partiellement réglée"
               : "À régler";
-        const amount = clampMoney(input.status === "Non réglé" ? 0 : input.amount);
+        const isNoPayment = input.status === "Non réglé" || isOffert;
+        const amount = clampMoney(isNoPayment ? 0 : input.amount);
         const date = normalizeText(input.date, nowLabel());
-        const method = normalizePaymentMethod(input.method);
+        const method = isNoPayment ? null : normalizeSelectedPaymentMethod(input.method);
+        if (!isNoPayment && !method) return "";
+        const paidMethod = amount > 0 ? method : null;
         const externalReference = normalizeText(input.externalReference);
         const note = normalizeText(input.note);
         const ws = state.workshopSettings ?? defaultWorkshopSettings;
@@ -6933,7 +7028,7 @@ export const useBeharStore = create<StoreState>()(
         const paymentNumber = amount > 0 ? docNumber("CONF", ws.nextReceiptNumber ?? 1, "CONF") : "";
         const paymentBillingConfig = getWorkshopCountryConfig(repair.billingCountry);
         const payment: Payment | null =
-          amount > 0
+          paidMethod
             ? {
                 id: paymentId,
                 billingCountry: paymentBillingConfig.country,
@@ -6947,19 +7042,19 @@ export const useBeharStore = create<StoreState>()(
                 paymentNumber,
                 reference: externalReference || paymentNumber,
                 externalReference: externalReference || undefined,
-                method,
-                mode: method,
+                method: paidMethod,
+                mode: paidMethod,
                 status: "Payé",
                 amount,
                 date,
                 note: [
                   note,
-                  "Paiement enregistré manuellement. Encaissement effectué hors Behar Tech Pro via le moyen de paiement indiqué.",
+                  "Paiement enregistré manuellement.",
                   "Ce document ne remplace pas une facture. La facture reste le document comptable officiel.",
                 ]
                   .filter(Boolean)
                   .join("\n"),
-                twintReference: method === "TWINT" ? externalReference || note || undefined : undefined,
+                twintReference: paidMethod === "TWINT" ? externalReference || note || undefined : undefined,
                 createdAt: timestamp,
                 updatedAt: timestamp,
                 createdBy: actor.id,
@@ -6984,7 +7079,7 @@ export const useBeharStore = create<StoreState>()(
               paidAmount,
               paidAt: isPaid ? date : entry.paidAt,
               status: isPaid ? ("Payée" as InvoiceStatus) : entry.status === "Payée" ? "Envoyée" : entry.status,
-              paymentMethod: nextRepairStatus === "À régler" ? "Non réglée" : method,
+              paymentMethod: nextRepairStatus === "À régler" ? "Non réglée" : (method ?? entry.paymentMethod),
             };
           });
           const repairs = current.repairs.map((entry) => {
@@ -6995,7 +7090,11 @@ export const useBeharStore = create<StoreState>()(
               paymentIds,
               paymentStatus: nextRepairStatus,
               paymentMethodNote:
-                nextRepairStatus === "À régler" ? undefined : `Réglé hors Behar Tech Pro — ${method} — ${date}`,
+                isOffert
+                  ? `Dossier clôturé sans encaissement — Offert / Garantie / SAV — ${date}`
+                  : nextRepairStatus === "À régler" || !method
+                    ? undefined
+                    : `Réglé manuellement — ${method} — ${date}`,
               paymentCustomMethod: input.customMethod || entry.paymentCustomMethod,
               paymentAmount: amount || entry.paymentAmount,
               paymentPaidAt: nextRepairStatus !== "À régler" ? date : entry.paymentPaidAt,
@@ -7003,11 +7102,14 @@ export const useBeharStore = create<StoreState>()(
               paymentRecordedBy: actor.name,
               paymentRecordedOutsideBeharTechPro: nextRepairStatus !== "À régler",
               paymentNote: note || entry.paymentNote,
+              settlementReason: isOffert ? "Offert / Garantie / SAV" : entry.settlementReason,
               history: [
                 ...entry.history,
-                nextRepairStatus === "À régler"
-                  ? `Règlement indiqué : non réglé (${date})`
-                  : `Réglé hors Behar Tech Pro : ${formatEuro(amount)} (${method})`,
+                isOffert
+                  ? `Dossier clôturé sans encaissement — Offert / Garantie / SAV (${date})`
+                  : nextRepairStatus === "À régler"
+                    ? `Règlement indiqué : non réglé (${date})`
+                    : `Réglé manuellement : ${formatEuro(amount)} (${method ?? "moyen non précisé"})`,
               ],
             };
           });
@@ -7059,7 +7161,7 @@ export const useBeharStore = create<StoreState>()(
                 : "payment.settlement.modified",
           targetType: "repair",
           targetId: repairId,
-          message: `${actor.name} a indiqué le règlement hors Behar Tech Pro du dossier ${repair.number}`,
+          message: `${actor.name} a indiqué le règlement du dossier ${repair.number}`,
           metadata: {
             auditAction: previousStatus === "À régler" ? "création" : "modification",
             oldStatus: previousStatus,
@@ -7078,7 +7180,7 @@ export const useBeharStore = create<StoreState>()(
           message:
             nextRepairStatus === "À régler"
               ? `${repair.number} marqué non réglé`
-              : `${repair.number} - réglé hors Behar Tech Pro via ${method}`,
+              : `${repair.number} - réglé manuellement via ${method ?? "moyen non précisé"}`,
           targetType: "repair",
           targetId: repairId,
         });
@@ -7435,7 +7537,7 @@ export const useBeharStore = create<StoreState>()(
                   stock: patch.quantity ?? patch.stock ?? item.quantity,
                   purchasePrice:
                     patch.purchasePrice === undefined ? item.purchasePrice : clampMoney(patch.purchasePrice),
-                  salePrice: item.salePrice,
+                  salePrice: patch.salePrice === undefined ? item.salePrice : clampMoney(patch.salePrice),
                   threshold: patch.threshold === undefined ? item.threshold : clampQuantity(patch.threshold),
                   ...updateActorFields(actor),
                 })
@@ -7768,10 +7870,20 @@ export const useBeharStore = create<StoreState>()(
         const ws = get().workshopSettings;
         const id = uid("sale");
         const number = docNumber(ws.salePrefix, ws.nextSaleNumber ?? 1, "VTE");
-        const lines: SaleLine[] = input.lines.map((l, i) => ({
-          ...l,
-          id: `${id}_line_${i}`,
-        }));
+        const lines: SaleLine[] = input.lines
+          .map((line, i) => {
+            const quantity = Math.max(1, clampQuantity(line.quantity));
+            const unitPrice = clampMoney(line.unitPrice);
+            const total = clampMoney(line.total ?? quantity * unitPrice);
+            return {
+              ...line,
+              id: `${id}_line_${i}`,
+              quantity,
+              unitPrice,
+              total,
+            };
+          })
+          .filter((line) => line.quantity > 0 && line.unitPrice > 0 && line.total > 0);
         const subtotal = lines.reduce((s, l) => s + l.total, 0);
         if (!lines.length || subtotal <= 0) return "";
         const customerId = input.customerId === "counter" ? counterCustomerId : input.customerId;
@@ -7841,6 +7953,9 @@ export const useBeharStore = create<StoreState>()(
         }
         if (sale.status !== "Brouillon" && sale.status !== "Payée") return sale.paymentId ?? "";
         if (!sale.lines.length || sale.total <= 0) return "";
+        const normalizedMethod = normalizeSelectedPaymentMethod(method);
+        if (!normalizedMethod) return "";
+        if (sale.lines.some((line) => line.quantity <= 0 || line.unitPrice <= 0 || line.total <= 0)) return "";
         if (sale.status === "Payée" && sale.paymentId) return sale.paymentId;
 
         // Les lignes libres de vente comptoir n'ont pas d'article stock.
@@ -7879,8 +7994,8 @@ export const useBeharStore = create<StoreState>()(
           currency: sale.currency,
           locale: sale.locale,
           amount: sale.total,
-          method,
-          mode: method,
+          method: normalizedMethod,
+          mode: normalizedMethod,
           status: "Payé",
           date: timestamp,
           reference: `Vente liée ${sale.number}`,
@@ -7910,7 +8025,7 @@ export const useBeharStore = create<StoreState>()(
         const updatedSale: Sale = {
           ...sale,
           status: "Payée",
-          paymentMethod: method,
+          paymentMethod: normalizedMethod,
           paymentId,
           documentId: docId,
           paidAt: timestamp,
@@ -7956,7 +8071,7 @@ export const useBeharStore = create<StoreState>()(
           targetType: "sale",
           targetId: saleId,
           message: `${actor.name} a validé la vente ${sale.number} (${formatEuro(sale.total)})`,
-          metadata: { amount: sale.total, method, paymentId },
+          metadata: { amount: sale.total, method: normalizedMethod, paymentId },
         });
         get().addNotification({
           type: "success",

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import type { LucideIcon } from "lucide-react";
 import { AlertTriangle, ArrowRight, CalendarDays, CheckCheck, FileText, FolderOpen, MoreHorizontal, Package, Plus, Receipt, ShoppingCart, TrendingUp, Wrench } from "lucide-react";
@@ -10,6 +11,7 @@ import { toast } from "sonner";
 
 import { DetailRow, Panel, PrimaryButton, StatusBadge } from "@/components/behar/primitives";
 import { RevenueChart } from "@/components/behar/revenue-chart";
+import { SettlementModal, useSettlementModal } from "@/components/behar/settlement-modal";
 import { formatEuro, formatIsoToDisplay, isTerminalRepairStatus, normalizeAppointmentStatus, type RepairStatus, useBeharStore } from "@/lib/behar-store";
 import { isBuybackDecision, useConditionneStore } from "@/lib/conditionne-store";
 import { paymentDateToIso } from "@/lib/payment-date";
@@ -27,6 +29,8 @@ const DASHBOARD_NEXT_STATUS: Partial<Record<RepairStatus, { next: RepairStatus; 
 
 export function DashboardWorkspace() {
   const store = useBeharStore();
+  const settlement = useSettlementModal();
+  const router = useRouter();
   const conditionneRecords = useConditionneStore((s) => s.records);
   const selected = store.repairs.find((repair) => repair.id === store.selectedRepairId) ?? store.repairs[0];
   const customer = selected ? store.customers.find((entry) => entry.id === selected.customerId) : undefined;
@@ -69,8 +73,8 @@ export function DashboardWorkspace() {
   const buybacksToday = conditionneRecords
     .filter((record) => isBuybackDecision(record.decision) && paymentDateToIso(record.createdAt) === todayIsoLocal)
     .reduce((sum, record) => sum + (record.prixPropose || 0), 0);
-  const netRevenueToday = revenueToday - buybacksToday;
-  // Ventes comptoir du jour (§3) — accessoires/produits réglés hors Behar Tech Pro.
+  const netRevenueToday = Math.max(0, revenueToday - buybacksToday);
+  // Ventes comptoir du jour (§3) — accessoires/produits réglés.
   const todaysSales = store.sales.filter(
     (sale) => sale.status !== "Annulée" && paymentDateToIso(sale.createdAt) === todayIsoLocal,
   );
@@ -143,7 +147,10 @@ export function DashboardWorkspace() {
       label: "CA du jour",
       value: formatEuro(netRevenueToday),
       trend: "",
-      helper: buybacksToday > 0 ? `${formatEuro(revenueToday)} − ${formatEuro(buybacksToday)} rachats` : "réparations + comptoir − rachats",
+      helper:
+        buybacksToday > 0
+          ? `${formatEuro(revenueToday)} encaissés, ${formatEuro(buybacksToday)} rachats suivis`
+          : "réparations + comptoir réglés",
       icon: TrendingUp,
       href: "/dashboard/paiements",
     },
@@ -440,18 +447,7 @@ export function DashboardWorkspace() {
             {(() => {
               const nextStep = DASHBOARD_NEXT_STATUS[selected.status];
               const indiquerReglement = () => {
-                if (selectedPaid) return;
-                const total = typeof selected.total === "number" ? selected.total : (selected.amount ?? 0);
-                if (total <= 0) {
-                  toast.error("Ajoutez un tarif au dossier avant d'indiquer le règlement.");
-                  return;
-                }
-                const paymentId = store.markRepairAsPaid(selected.id, "Carte", "");
-                if (paymentId) {
-                  toast.success(`Règlement indiqué (${formatEuro(total)}).`);
-                } else {
-                  toast.error("Règlement impossible. Vérifiez le tarif et le stock.");
-                }
+                settlement.open(selected.id);
               };
               return (
                 <div className="mt-5 space-y-2">
@@ -550,6 +546,14 @@ export function DashboardWorkspace() {
           )}
         </Panel>
       )}
+      <SettlementModal
+        draft={settlement.draft}
+        isOpen={settlement.isOpen}
+        onClose={settlement.close}
+        onDraftChange={settlement.setDraft}
+        onSubmit={settlement.submit}
+        total={settlement.total}
+      />
     </div>
   );
 }

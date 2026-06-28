@@ -42,6 +42,18 @@ import {
   Users,
   Wrench,
   X,
+  Battery,
+  Cable,
+  Layers,
+  Ear,
+  Volume2,
+  Mic,
+  ScanFace,
+  Activity,
+  Zap,
+  Droplet,
+  Database,
+  Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -83,7 +95,9 @@ import {
   type RepairIntakeCondition,
   type WorkshopCountry,
   useBeharStore,
+  type RepairPart,
 } from "@/lib/behar-store";
+import type { PriceBookItem } from "@/lib/price-book";
 import { cn, formatDateTimeFr, formatIntakeBonNumber } from "@/lib/utils";
 import { getWorkshopCountryConfig } from "@/lib/workshop-country";
 
@@ -806,6 +820,144 @@ type CounterAppointmentPrefill = {
 const counterTypes: DeviceType[] = ["Smartphone", "Tablette", "Ordinateur", "Console"];
 const counterBrands = ["Apple", "Samsung", "Xiaomi", "Google", "Huawei", "OnePlus", "Sony", "Autre"];
 const intakeProblems = ["Écran cassé", "Batterie HS", "Connecteur de charge", "Vitre arrière", "Caméra", "Micro-soudure", "Diagnostic", "Autre"];
+
+const PRESTATION_FAMILIES = [
+  {
+    id: "ecran",
+    label: "Écran",
+    icon: Smartphone,
+    subTypes: [
+      { id: "ecran_avant", label: "Écran avant", keywords: ["ecran", "vitre tactile", "dalle", "afficheur", "screen", "display"] },
+      { id: "vitre_arriere", label: "Vitre arrière", keywords: ["vitre arriere", "dos", "chassis", "back glass", "vitre dos"] }
+    ]
+  },
+  {
+    id: "batterie",
+    label: "Batterie",
+    icon: Battery,
+    subTypes: [
+      { id: "batterie", label: "Remplacement batterie", keywords: ["batterie", "battery", "bat hs"] }
+    ]
+  },
+  {
+    id: "charge",
+    label: "Charge",
+    icon: Cable,
+    subTypes: [
+      { id: "connecteur_charge", label: "Connecteur de charge", keywords: ["connecteur", "charge", "usb", "dock", "charging"] }
+    ]
+  },
+  {
+    id: "cameras",
+    label: "Caméras",
+    icon: Camera,
+    subTypes: [
+      { id: "camera_arriere", label: "Caméra arrière", keywords: ["camera arriere", "camera dos", "rear camera", "lentille camera"] },
+      { id: "camera_avant", label: "Caméra avant", keywords: ["camera avant", "camera face", "front camera", "selfie"] }
+    ]
+  },
+  {
+    id: "audio",
+    label: "Audio",
+    icon: Volume2,
+    subTypes: [
+      { id: "ecouteur_interne", label: "Écouteur interne", keywords: ["ecouteur", "haut parleur oreille", "earpiece"] },
+      { id: "haut_parleur", label: "Haut-parleur", keywords: ["haut parleur", "buzzer", "speaker"] },
+      { id: "microphone", label: "Micro", keywords: ["micro", "microphone"] }
+    ]
+  },
+  {
+    id: "capteurs",
+    label: "Capteurs / Face ID",
+    icon: ScanFace,
+    subTypes: [
+      { id: "face_id_sensors", label: "Face ID / capteurs", keywords: ["face id", "touch id", "capteur", "sensors", "proximite", "nappe capteurs"] }
+    ]
+  },
+  {
+    id: "carte_mere",
+    label: "Carte mère",
+    icon: Zap,
+    subTypes: [
+      { id: "micro_soudure", label: "Micro-soudure", keywords: ["soudure", "micro soudure", "carte mere"] },
+      { id: "diagnostic_carte_mere", label: "Diagnostic carte mère", keywords: ["diagnostic carte", "recherche panne carte"] },
+      { id: "reparation_carte_mere", label: "Réparation carte mère", keywords: ["reparation carte", "carte mere hs"] }
+    ]
+  },
+  {
+    id: "logiciel",
+    label: "Logiciel",
+    icon: Lock,
+    subTypes: [
+      { id: "deblocage_logiciel", label: "Déblocage logiciel", keywords: ["deblocage", "logiciel", "reinstallation", "systeme"] },
+      { id: "transfert_donnees", label: "Transfert de données", keywords: ["transfert", "sauvegarde", "recuperation de donnees"] }
+    ]
+  },
+  {
+    id: "services",
+    label: "Services",
+    icon: Activity,
+    subTypes: [
+      { id: "diagnostic", label: "Diagnostic", keywords: ["diagnostic", "devis", "recherche panne"] },
+      { id: "desoxydation", label: "Désoxydation", keywords: ["deoxydation", "eau", "liquide"] }
+    ]
+  },
+  {
+    id: "autre",
+    label: "Autre",
+    icon: MoreHorizontal,
+    subTypes: [
+      { id: "autre_prestation", label: "Autre prestation", keywords: ["autre"] }
+    ]
+  }
+];
+
+const COUNTER_SERVICES = PRESTATION_FAMILIES.flatMap((f) =>
+  f.subTypes.map((s) => ({
+    id: s.id,
+    label: s.label,
+    category: s.id,
+    icon: f.icon,
+  }))
+);
+
+function getAvailableQualitiesForService(
+  subTypeId: string,
+  subTypeLabel: string,
+  priceBookItems: PriceBookItem[],
+  brand: string,
+  model: string,
+) {
+  if (!brand || !model) return [];
+
+  let keywords: string[] = [];
+  for (const fam of PRESTATION_FAMILIES) {
+    const sub = fam.subTypes.find((s) => s.id === subTypeId);
+    if (sub) {
+      keywords = sub.keywords;
+      break;
+    }
+  }
+
+  if (keywords.length === 0) return [];
+
+  return priceBookItems.filter((item) => {
+    if (!item.isActive) return false;
+
+    const sameBrand = compactText(item.marque) === compactText(brand);
+    const sameModel = modelMatchesCatalogue(model, item.modele);
+    if (!sameBrand || !sameModel) return false;
+
+    const itemRepair = compactText(item.reparation || "");
+    const itemPiece = compactText(item.piece || "");
+
+    return keywords.some(
+      (kw) =>
+        itemRepair.includes(kw) ||
+        itemPiece.includes(kw)
+    );
+  });
+}
 const intakeAccessories = ["Coque", "Chargeur", "Verre trempé", "Câble", "Carte SIM", "Carte SD", "Écouteurs", "Boîte d'origine", "Autre"];
 const quoteProblems = ["Remplacement écran", "Batterie", "Caméra", "Diagnostic", "Connecteur de charge", "Autre"];
 const conditionRows: Array<{ key: keyof CounterConditionState; label: string }> = [
@@ -1395,6 +1547,19 @@ function buildCounterTasks(prestations: string[]) {
   return Array.from(labels).map((label, index) => ({ id: `task_${Date.now()}_${index}`, label, fait: false }));
 }
 
+type SubType = {
+  id: string;
+  label: string;
+  keywords: string[];
+};
+
+type SelectedPrestation = {
+  familyId: string;
+  subTypeId: string;
+  label: string;
+  quality?: PriceBookItem;
+};
+
 function CounterIntakeScreen({
   initialStep = 0,
   prefill,
@@ -1453,6 +1618,11 @@ function CounterIntakeScreen({
   // Anti-litige : au moins une photo est requise, sauf décision explicite et
   // volontaire de continuer sans photo (caméra indisponible sur desktop, etc.).
   const [noPhotoConfirmed, setNoPhotoConfirmed] = useState(false);
+  const [selectedQualities, setSelectedQualities] = useState<Record<string, PriceBookItem>>({});
+  const [activePrestations, setActivePrestations] = useState<SelectedPrestation[]>([]);
+  const [prestationPrices, setPrestationPrices] = useState<Record<string, string>>({});
+  const [activeFamilyId, setActiveFamilyId] = useState<string>("ecran");
+  const [activeSubTypeId, setActiveSubTypeId] = useState<string>("ecran_avant");
 
   const selectedCustomer = store.customers.find((customer) => customer.id === existingCustomerId);
   const counterCustomer = store.customers.find((customer) => customer.type === "counter" || customer.name.startsWith("Client comptoir"));
@@ -1513,32 +1683,148 @@ function CounterIntakeScreen({
     notes: observations.trim(),
   });
 
+  // Synchronise activePrestations, selectedQualities and prestationPrices from prefilled prestations list
   useEffect(() => {
-    if (!model.trim() || prestations.length === 0) return;
-    const foundPrice = prestations.reduce((sum, entry) => {
-      const option = prestationOptions.find((candidate) => candidate.label === entry);
-      return sum + (option?.prixClient || findCataloguePrice(store.priceBookItems, brand, model, entry));
-    }, 0);
-    if (foundPrice > 0) setPrice(String(foundPrice));
-  }, [brand, model, prestations, store.priceBookItems, prestationOptions]);
+    if (activePrestations.length > 0) return; // Already initialized
+    if (!prestations.length || !brand || !model) return;
 
-  const togglePrestation = (option: { label: string; lookupLabel: string; prixClient: number }) => {
-    setPrestations((prev) => {
-      const next = prev.includes(option.label) ? prev.filter((entry) => entry !== option.label) : [...prev, option.label];
-      const foundPrice = next.reduce((sum, entry) => {
-        const candidate = prestationOptions.find((item) => item.label === entry);
-        return sum + (candidate?.prixClient || findCataloguePrice(store.priceBookItems, brand, model, candidate?.lookupLabel ?? entry));
-      }, 0);
-      if (foundPrice > 0) setPrice(String(foundPrice));
-      return next;
+    const list: SelectedPrestation[] = [];
+    const prices: Record<string, string> = {};
+
+    prestations.forEach((prestationStr) => {
+      let label = prestationStr;
+      let qualityLabel = "";
+      if (prestationStr.includes(" — ")) {
+        const parts = prestationStr.split(" — ");
+        label = parts[0];
+        qualityLabel = parts[1];
+      }
+
+      // Find family and sub-type
+      let foundFamilyId = "";
+      let foundSubTypeId = "";
+      let foundLabel = label;
+      
+      for (const fam of PRESTATION_FAMILIES) {
+        for (const sub of fam.subTypes) {
+          if (compactText(sub.label) === compactText(label)) {
+            foundFamilyId = fam.id;
+            foundSubTypeId = sub.id;
+            foundLabel = sub.label;
+            break;
+          }
+        }
+        if (foundFamilyId) break;
+      }
+
+      if (!foundFamilyId) {
+        foundFamilyId = "autre";
+        foundSubTypeId = "autre_prestation";
+      }
+
+      let qualityItem: PriceBookItem | undefined = undefined;
+      if (foundSubTypeId && qualityLabel) {
+        const qualities = getAvailableQualitiesForService(foundSubTypeId, foundLabel, store.priceBookItems, brand, model);
+        qualityItem = qualities.find((q) => (q.qualite || "") === qualityLabel);
+      }
+
+      let pPrice = "0";
+      if (qualityItem) {
+        pPrice = String(qualityItem.prixClientTotal || qualityItem.prixVentePiece || 0);
+      } else {
+        const catPrice = findCataloguePrice(store.priceBookItems, brand, model, foundLabel);
+        if (catPrice > 0) pPrice = String(catPrice);
+      }
+
+      list.push({
+        familyId: foundFamilyId,
+        subTypeId: foundSubTypeId,
+        label: foundLabel,
+        quality: qualityItem,
+      });
+      prices[foundSubTypeId] = pPrice;
+    });
+
+    if (list.length > 0) {
+      setActivePrestations(list);
+      setPrestationPrices(prices);
+    }
+  }, [prestations, brand, model, store.priceBookItems, activePrestations]);
+
+  // Synchronise prestations string array for backwards compatibility
+  useEffect(() => {
+    const list = activePrestations.map((p) => {
+      if (p.quality) {
+        return `${p.label} — ${p.quality.qualite || "Standard"}`;
+      }
+      return p.label;
+    });
+    setPrestations(list);
+  }, [activePrestations]);
+
+  // Compute total base amount when active prestations or customized prices change
+  useEffect(() => {
+    const total = Object.entries(prestationPrices)
+      .filter(([subTypeId]) => activePrestations.some((ap) => ap.subTypeId === subTypeId))
+      .reduce((sum, [_, val]) => sum + (parseFloat(val) || 0), 0);
+    if (total > 0) {
+      setPrice(String(total));
+    }
+  }, [prestationPrices, activePrestations]);
+
+  const togglePrestationSelection = (familyId: string, sub: SubType) => {
+    setActivePrestations((prev) => {
+      const existing = prev.find((ap) => ap.subTypeId === sub.id);
+      if (existing) {
+        const next = prev.filter((ap) => ap.subTypeId !== sub.id);
+        setPrestationPrices((prevPrices) => {
+          const nextPrices = { ...prevPrices };
+          delete nextPrices[sub.id];
+          return nextPrices;
+        });
+        return next;
+      } else {
+        const defaultPrice = findCataloguePrice(store.priceBookItems, brand, model, sub.label);
+        const qualities = getAvailableQualitiesForService(sub.id, sub.label, store.priceBookItems, brand, model);
+        const qualityItem = qualities.length === 1 ? qualities[0] : undefined;
+        
+        const resolvedPrice = qualityItem 
+          ? String(qualityItem.prixClientTotal || qualityItem.prixVentePiece || 0)
+          : defaultPrice > 0 
+          ? String(defaultPrice) 
+          : "";
+
+        setPrestationPrices((prevPrices) => ({
+          ...prevPrices,
+          [sub.id]: resolvedPrice
+        }));
+
+        return [
+          ...prev,
+          {
+            familyId,
+            subTypeId: sub.id,
+            label: sub.label,
+            quality: qualityItem
+          }
+        ];
+      }
     });
   };
 
-  const selectPrestation = (option: { label: string; lookupLabel: string; prixClient: number }) => {
-    // Aucun accessoire n'est coché automatiquement : le verre trempé (ou toute autre
-    // vente additionnelle) ne s'ajoute au total que si le réparateur le sélectionne
-    // volontairement. On se contente d'enregistrer l'intervention principale.
-    togglePrestation(option);
+  const selectQualityForSubType = (subTypeId: string, qItem: PriceBookItem) => {
+    setActivePrestations((prev) =>
+      prev.map((ap) => {
+        if (ap.subTypeId === subTypeId) {
+          return { ...ap, quality: qItem };
+        }
+        return ap;
+      })
+    );
+    setPrestationPrices((prev) => ({
+      ...prev,
+      [subTypeId]: String(qItem.prixClientTotal || qItem.prixVentePiece || 0),
+    }));
   };
 
   const resolveIntakeCustomerId = () => {
@@ -1588,6 +1874,46 @@ function CounterIntakeScreen({
           signedBy: customerLabel,
         }
       : {};
+    const designations = activePrestations.map((ap) => {
+      if (ap.quality) {
+        return `${ap.label} — ${ap.quality.qualite || "Standard"}`;
+      }
+      return ap.label;
+    });
+    const issueText = designations.join(", ") || prestations.join(", ");
+
+    const counterPrestationsList = [
+      ...activePrestations.map((ap) => {
+        const q = ap.quality;
+        const labelWithQuality = q ? `${ap.label} — ${q.qualite || "Standard"}` : ap.label;
+        const priceVal = parseFloat(prestationPrices[ap.subTypeId] || "0");
+        return { label: labelWithQuality, prixClient: priceVal };
+      }),
+      ...allAddonOptions
+        .filter((addon) => selectedAddons.includes(addon.id))
+        .map((addon) => ({ label: addon.label, prixClient: addon.prixClient })),
+    ];
+
+    const repairPartsList: RepairPart[] = activePrestations
+      .filter((ap) => ap.quality !== undefined)
+      .map((ap) => {
+        const q = ap.quality!;
+        return {
+          stockItemId: q.stockItemId || q.id,
+          name: `${q.piece || ap.label} ${brand} ${model} — ${q.qualite || "Standard"}`,
+          reference: q.id,
+          sku: q.sku,
+          categoryName: ap.subTypeId,
+          purchasePrice: q.prixAchat || 0,
+          salePrice: q.prixClientTotal || q.prixVentePiece || 0,
+          quantity: 1,
+          confirmed: false,
+          supplier: q.fournisseur,
+          modelName: model,
+          modelId: q.modele,
+        };
+      });
+
     const repairPayload: Parameters<typeof store.addRepair>[0] = {
       customerId,
       billingCountry,
@@ -1595,7 +1921,7 @@ function CounterIntakeScreen({
       locale: billingConfig.locale,
       appointmentId: prefill?.appointmentId,
       device: deviceLabel || model,
-      issue: prestations.join(", "),
+      issue: issueText,
       status: "Reçu" as const,
       amount,
       total: amount,
@@ -1610,14 +1936,10 @@ function CounterIntakeScreen({
         isDraft ? "Brouillon de prise en charge enregistré au comptoir" : "Dossier créé au comptoir",
         ...(!isDraft && !hasIntakePhoto ? ["Prise en charge validée sans photo."] : []),
       ],
-      counterPrestations: [
-        ...prestations.map((label) => ({ label, prixClient: prestations.length ? baseAmount / prestations.length : baseAmount })),
-        ...allAddonOptions
-          .filter((addon) => selectedAddons.includes(addon.id))
-          .map((addon) => ({ label: addon.label, prixClient: addon.prixClient })),
-      ],
+      counterPrestations: counterPrestationsList,
       counterTasks: buildCounterTasks(prestations),
       counterPieces: [],
+      parts: repairPartsList,
       repairSaleLines: allAddonOptions
         .filter((addon) => selectedAddons.includes(addon.id))
         .map((addon) => ({
@@ -1737,28 +2059,278 @@ function CounterIntakeScreen({
             <div className="grid grid-cols-4 gap-2 md:grid-cols-8">{counterBrands.map((entry) => <ChipButton key={entry} active={brand === entry} onClick={() => setBrand(entry)}>{entry}</ChipButton>)}</div>
             <ModelTouchSelector brand={brand} deviceType={deviceType} value={model} onChange={setModel} />
             <CounterInput placeholder="IMEI / numéro de série (optionnel)" inputMode="numeric" value={imei} onChange={(e) => setImei(e.target.value)} />
-            <h2 className="pt-2 font-bold">3. Problème / Prestation</h2>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
-              {prestationOptions.map((entry) => (
-                <button
-                  key={`${entry.source}-${entry.lookupLabel}`}
-                  type="button"
-                  onClick={() => selectPrestation(entry)}
-                  className={cn(
-                    "min-h-[82px] rounded-[16px] border px-4 py-3 text-left transition active:scale-[0.97]",
-                    prestations.includes(entry.label)
-                      ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
-                      : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
-                  )}
-                >
-                  <span className="block font-black text-[14px] leading-tight">{entry.label}</span>
-                  <span className="mt-2 block font-black text-[#1E7A6E] text-[15px] tabular-nums">
-                    {entry.prixClient > 0 ? formatDossier(entry.prixClient) : "Prix à saisir"}
-                  </span>
-                </button>
-              ))}
+            <div className="flex items-center gap-3 pt-2">
+              <div className="flex size-7 shrink-0 place-items-center justify-center rounded-full bg-[#1E7A6E] text-[13px] font-black text-white">
+                3
+              </div>
+              <div>
+                <h2 className="font-bold text-[#1A1916] text-[16px] leading-tight">Problème / Prestation</h2>
+                <p className="text-[12px] text-[#6B6B6B] mt-0.5">Sélectionnez une catégorie puis une prestation</p>
+              </div>
             </div>
-            <CounterInput placeholder="Prix client (optionnel)" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} />
+
+            <div className="flex flex-col lg:flex-row gap-5 items-stretch mt-4 min-h-[480px]">
+              {/* Left Column - Prestation Families */}
+              <div className="flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 shrink-0 lg:w-[220px] scrollbar-none">
+                {PRESTATION_FAMILIES.map((family) => {
+                  const Icon = family.icon;
+                  const isSelected = activeFamilyId === family.id;
+                  const count = activePrestations.filter((ap) => ap.familyId === family.id).length;
+                  return (
+                    <button
+                      key={family.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveFamilyId(family.id);
+                        if (family.subTypes.length === 1) {
+                          setActiveSubTypeId(family.subTypes[0].id);
+                        } else {
+                          setActiveSubTypeId("");
+                        }
+                      }}
+                      className={cn(
+                        "relative flex items-center justify-between gap-3 rounded-[14px] border p-3 lg:p-4 text-left transition active:scale-[0.98] shrink-0 min-w-[130px] lg:min-w-0 lg:w-full",
+                        isSelected
+                          ? "border-[#2A9D8F] bg-[#E6F4F1] text-[#1E7A6E]"
+                          : "border-[#E8E8E5] bg-white hover:border-[#D0D0CD] text-[#1A1916]"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "grid size-9 shrink-0 place-items-center rounded-[10px] transition",
+                          isSelected ? "bg-[#1E7A6E] text-white" : "bg-[#FAFAF8] text-[#6B6B6B]"
+                        )}>
+                          <Icon className="size-4.5" />
+                        </div>
+                        <span className="font-bold text-[14px]">{family.label}</span>
+                      </div>
+                      {count > 0 && (
+                        <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[#2A9D8F] text-[11px] font-black text-white ml-2">
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Right Column - Dynamic Details Panel */}
+              <div className="flex-1 rounded-[18px] border border-[#E8E8E5] bg-white p-5 lg:p-6 shadow-sm flex flex-col justify-between">
+                {activeFamilyId ? (
+                  (() => {
+                    const family = PRESTATION_FAMILIES.find((f) => f.id === activeFamilyId)!;
+                    const subType = family.subTypes.find((s) => s.id === activeSubTypeId);
+                    
+                    return (
+                      <div className="space-y-5 flex-1 flex flex-col justify-between">
+                        <div>
+                          {/* Title & Subtext */}
+                          <div>
+                            <h3 className="text-[17px] font-black text-[#1A1916]">{family.label}</h3>
+                            <p className="text-[12px] text-[#6B6B6B] mt-0.5">
+                              {family.id === "ecran" 
+                                ? "Choisissez le type de réparation écran"
+                                : family.id === "batterie"
+                                ? "Choisissez la batterie à remplacer"
+                                : family.id === "cameras"
+                                ? "Choisissez la caméra à réparer"
+                                : family.id === "audio"
+                                ? "Choisissez le composant audio"
+                                : "Sélectionnez le type de service"}
+                            </p>
+                          </div>
+
+                          {/* Step 1: Subtype choices (only show if family has > 1 subType) */}
+                          {family.subTypes.length >= 1 && (
+                            <div className="mt-4">
+                              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8A8A8A] mb-2">
+                                Étape 1 : type de réparation
+                              </label>
+                              <div className="grid grid-cols-2 gap-3">
+                                {family.subTypes.map((sub) => {
+                                  const isSubSelected = activePrestations.some((ap) => ap.subTypeId === sub.id);
+                                  const isSubActive = activeSubTypeId === sub.id;
+                                  return (
+                                    <button
+                                      key={sub.id}
+                                      type="button"
+                                      onClick={() => {
+                                        setActiveSubTypeId(sub.id);
+                                        togglePrestationSelection(family.id, sub);
+                                      }}
+                                      className={cn(
+                                        "flex items-center gap-3 w-full rounded-[14px] border p-4 text-left transition active:scale-[0.98]",
+                                        isSubActive
+                                          ? "border-[#2A9D8F] bg-white ring-1 ring-[#2A9D8F]"
+                                          : isSubSelected
+                                          ? "border-[#E8E8E5] bg-[#FAFAF8] text-[#1E7A6E]"
+                                          : "border-[#E8E8E5] bg-white hover:border-[#D0D0CD]"
+                                      )}
+                                    >
+                                      <div className={cn(
+                                        "grid size-5 shrink-0 place-items-center rounded-full border transition",
+                                        isSubSelected
+                                          ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
+                                          : "border-[#C7C7C2] bg-white"
+                                      )}>
+                                        {isSubSelected && <Check className="size-3" />}
+                                      </div>
+                                      <span className="font-bold text-[13px] text-[#1A1916]">{sub.label}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Step 2: Quality & Details (Only show if activeSubTypeId is set) */}
+                          {subType && (
+                            (() => {
+                              const isSubSelected = activePrestations.some((ap) => ap.subTypeId === subType.id);
+                              const selectedQual = activePrestations.find((ap) => ap.subTypeId === subType.id)?.quality;
+                              const qualities = getAvailableQualitiesForService(subType.id, subType.label, store.priceBookItems, brand, model);
+                              const currentPriceVal = prestationPrices[subType.id] ?? "";
+
+                              return (
+                                <div className="mt-5 space-y-4">
+                                  {isSubSelected ? (
+                                    <>
+                                      {/* Qualities Grid */}
+                                      {qualities.length > 0 && (
+                                        <div>
+                                          <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8A8A8A] mb-2.5">
+                                            Étape 2 : Qualité de la pièce
+                                          </label>
+                                          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                                            {qualities.map((q) => {
+                                              const isQualSelected = selectedQual?.id === q.id;
+                                              const stockCount = q.stockDisponible ?? 0;
+                                              const cardPrice = q.prixClientTotal || q.prixVentePiece || 0;
+                                              return (
+                                                <button
+                                                  key={q.id}
+                                                  type="button"
+                                                  onClick={() => selectQualityForSubType(subType.id, q)}
+                                                  className={cn(
+                                                    "flex flex-col rounded-[14px] border p-4 text-left transition active:scale-[0.97] bg-white shadow-sm",
+                                                    isQualSelected
+                                                      ? "border-[#2A9D8F] ring-1 ring-[#2A9D8F]"
+                                                      : "border-[#E8E8E5] hover:border-[#D0D0CD]"
+                                                  )}
+                                                >
+                                                  <span className="font-black text-[#1A1916] text-[14px]">{q.qualite || "Standard"}</span>
+                                                  <span className="mt-1 text-[#1E7A6E] font-black text-[15px] tabular-nums">
+                                                    {cardPrice > 0 ? formatDossier(cardPrice) : "Prix à saisir"}
+                                                  </span>
+                                                  <div className="mt-3 flex flex-col gap-0.5 text-[11px] text-[#6B6B6B] border-t border-[#FAFAF8] pt-2">
+                                                    <span className="font-bold">
+                                                      {stockCount > 0 ? `En stock : ${stockCount}` : "Stock à vérifier"}
+                                                    </span>
+                                                    {q.sku && <span className="font-mono text-[9px]">SKU : {q.sku}</span>}
+                                                  </div>
+                                                </button>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {/* Price Input Field */}
+                                      <div className="pt-2">
+                                        <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8A8A8A] mb-2">
+                                          Étape 3 : Prix client pour {subType.label}
+                                        </label>
+                                        <div className="relative max-w-xs">
+                                          <input
+                                            type="text"
+                                            inputMode="decimal"
+                                            placeholder="Prix à saisir"
+                                            value={currentPriceVal}
+                                            onChange={(e) => {
+                                              const val = e.target.value;
+                                              setPrestationPrices((prev) => ({
+                                                ...prev,
+                                                [subType.id]: val
+                                              }));
+                                            }}
+                                            className="w-full h-12 rounded-[14px] border border-[#E8E8E5] bg-white pl-4 pr-10 text-[15px] font-bold text-[#1A1916] placeholder-[#B2B2AE] focus:border-[#2A9D8F] focus:outline-none transition shadow-sm"
+                                          />
+                                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[14px] font-bold text-[#8A8A8A]">
+                                            €
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <div className="rounded-[14px] border border-dashed border-[#E8E8E5] p-5 text-center bg-[#FAFAF8] mt-3">
+                                      <p className="text-[13px] font-bold text-[#6B6B6B]">
+                                        Cliquez sur « {subType.label} » ci-dessus pour activer cette prestation.
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()
+                          )}
+                        </div>
+
+                        {/* Step 4: Summary of selected items */}
+                        {activePrestations.length > 0 && (
+                          <div className="mt-6 border-t border-[#E8E8E5] pt-5">
+                            <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#8A8A8A] mb-3">
+                              Prestations sélectionnées
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {activePrestations.map((ap) => {
+                                const priceVal = prestationPrices[ap.subTypeId] || "";
+                                return (
+                                  <div key={ap.subTypeId} className="flex items-center justify-between gap-3 rounded-[14px] bg-[#FAFAF8] border border-[#E8E8E5] p-3 shadow-sm">
+                                    <div className="min-w-0">
+                                      <span className="block font-black text-[13px] text-[#1A1916] truncate">
+                                        {ap.label}
+                                      </span>
+                                      {ap.quality && (
+                                        <span className="block text-[11px] text-[#2A9D8F] font-black mt-0.5">
+                                          {ap.quality.qualite || "Standard"}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-3 shrink-0">
+                                      <span className="text-[13px] font-black text-[#1E7A6E] tabular-nums">
+                                        {priceVal ? `${priceVal} €` : "Prix à saisir"}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const fam = PRESTATION_FAMILIES.find((f) => f.id === ap.familyId);
+                                          const sub = fam?.subTypes.find((s) => s.id === ap.subTypeId);
+                                          if (fam && sub) {
+                                            togglePrestationSelection(fam.id, sub);
+                                          }
+                                        }}
+                                        className="grid size-7 place-items-center rounded-full text-[#C7493B] hover:bg-[#FDF2F0] transition"
+                                      >
+                                        <Trash2 className="size-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center text-[#6B6B6B]">
+                    <Smartphone className="size-10 mb-3 text-[#B2B2AE] stroke-1" />
+                    <span className="font-bold text-[14px]">Aucune catégorie sélectionnée</span>
+                    <span className="text-[12px] mt-1">Choisissez une catégorie à gauche pour commencer.</span>
+                  </div>
+                )}
+              </div>
+            </div>
           </section>
           <MoneySummary
             amount={amount}
