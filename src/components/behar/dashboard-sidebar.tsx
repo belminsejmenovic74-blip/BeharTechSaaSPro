@@ -205,6 +205,7 @@ function SidebarInstallButton() {
 
   return (
     <button
+      type="button"
       onClick={handleInstall}
       className={cn(
         "flex h-[42px] items-center gap-3 rounded-[12px] px-3 font-medium text-[#2A9D8F] text-[13.5px] transition mt-2",

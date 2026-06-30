@@ -100,6 +100,7 @@ import {
 import type { PriceBookItem } from "@/lib/price-book";
 import { cn, formatDateTimeFr, formatIntakeBonNumber } from "@/lib/utils";
 import { getWorkshopCountryConfig } from "@/lib/workshop-country";
+import { getCustomerTrackingUrl } from "@/lib/customer-tracking";
 
 type Tile = {
   id: string;
@@ -2803,35 +2804,43 @@ function CounterMockPill({ children, tone = "green" }: Readonly<{ children: Reac
   );
 }
 
-function CounterMockQr({ className = "" }: Readonly<{ className?: string }>) {
-  return (
-    <div className={cn("grid grid-cols-7 gap-0.5 rounded-[10px] bg-white p-2", className)}>
-      {Array.from({ length: 49 }).map((_, index) => (
-        <span
-          key={index}
-          className={cn(
-            "aspect-square rounded-[1px]",
-            [0, 1, 2, 7, 14, 42, 43, 44, 35, 28, 4, 5, 6, 13, 20, 46, 47, 48, 41, 34, 16, 18, 22, 24, 27, 31, 33, 36, 38].includes(index)
-              ? "bg-[#1A1916]"
-              : "bg-[#FFFFFF]",
-          )}
-        />
-      ))}
-    </div>
-  );
-}
-
 // Vrai QR encodant le lien public sécurisé d'une réparation.
 function CounterRepairQr({ repair, className = "" }: Readonly<{ repair: Repair; className?: string }>) {
-  const ensureRepairPublicAccess = useBeharStore((s) => s.ensureRepairPublicAccess);
+  const store = useBeharStore();
+  const ensureRepairPublicAccess = store.ensureRepairPublicAccess;
   const [qr, setQr] = useState("");
-  const url = repair.publicAccess?.url ?? "";
+  const workshop = store.workshopSettings ?? store.workshopInfo;
+  
   useEffect(() => {
     const access = repair.publicAccess ?? ensureRepairPublicAccess(repair.id);
     if (!access) return;
-    generateQrDataUrl(publicAbsoluteUrl(access.url)).then(setQr).catch(() => setQr(""));
-  }, [repair.id, url, ensureRepairPublicAccess, repair.publicAccess]);
-  if (!qr) return <CounterMockQr className={className} />;
+    
+    const trackingUrl = getCustomerTrackingUrl(repair, workshop);
+    
+    if (process.env.NODE_ENV === "development") {
+      console.log("[CounterRepairQr] generated trackingUrl:", trackingUrl);
+      if (!trackingUrl) {
+        throw new Error("Lien de suivi client invalide : dossier sans trackingId/publicId");
+      }
+    }
+
+    if (trackingUrl) {
+      generateQrDataUrl(trackingUrl)
+        .then(setQr)
+        .catch((err) => {
+          console.error("Failed to generate QR Code", err);
+          setQr("");
+        });
+    }
+  }, [repair.id, ensureRepairPublicAccess, repair.publicAccess, workshop]);
+
+  if (!qr) {
+    return (
+      <div className={cn("flex items-center justify-center bg-white text-xs text-[#6B6B6B]", className)}>
+        Génération du QR...
+      </div>
+    );
+  }
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={qr} alt="QR code de suivi" className={cn("rounded-[10px] bg-white", className)} />;
 }
@@ -4312,10 +4321,11 @@ function CounterRepairDetailScreen({
   const prestations = repair.counterPrestations ?? [];
   const intakeDoc = store.documents.find((d) => d.type === "intake" && d.repairId === repair.id);
   const openClientTracking = () => {
-    const access = repair.publicAccess ?? store.ensureRepairPublicAccess(repair.id);
-    if (!access) return toast.error("Lien de suivi indisponible.");
-    window.open(publicAbsoluteUrl(access.url), "_blank", "noopener,noreferrer");
+    const url = getCustomerTrackingUrl(repair, store.workshopSettings ?? store.workshopInfo);
+    if (!url) return toast.error("Lien de suivi indisponible.");
+    window.open(url, "_blank", "noopener,noreferrer");
   };
+
   const markPaid = () => {
     const id = store.markRepairAsPaid(repair.id);
     if (id) toast.success("Règlement indiqué.");
@@ -4417,7 +4427,7 @@ function CounterRepairDetailScreen({
           </DetailBlock>
           <DetailBlock title="Garantie">Selon conditions de l'atelier</DetailBlock>
         </section>
-        <aside className="space-y-4"><section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4"><p>Montant devis</p><p className="font-black text-2xl">{formatEuro(amount)} <span className="text-[#6B6B6B] text-sm">TTC</span></p><div className="mt-4 border-[#E8E8E5] border-t pt-4"><p>Statut de facture</p><b className={paid ? "text-[#1E7A6E]" : "text-[#6B6B6B]"}>{paid ? "Réglée" : "À régler"}</b><p className="mt-3 text-[#6B6B6B] text-sm">Moyen indiqué<br />{repairPayment?.method ?? invoice?.paymentMethod ?? "Non renseigné"}</p><p className="mt-3 text-[#6B6B6B] text-sm">Facture<br /><b className="text-[#1A1916]">{invoice ? `#${invoice.number}` : "Non renseigné"}</b></p><p className="mt-4 rounded-[12px] bg-[#FFFFFF] px-3 py-2.5 text-[#6B6B6B] text-xs leading-relaxed">Le règlement est géré hors Behar Tech Pro via votre TPE ou prestataire externe.</p></div></section><section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-center"><h2 className="font-black text-left">QR Code dossier</h2><div className="cursor-pointer" onClick={() => setSelectedQrRepairId(repair.id)}><CounterRepairQr repair={repair} className="mx-auto mt-3 w-28" /></div><p className="mt-2 text-[#6B6B6B] text-xs">Scannez pour suivre l'avancement</p><div className="mt-3 flex flex-col gap-2"><button type="button" onClick={() => setSelectedQrRepairId(repair.id)} className="inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-xs active:scale-[0.98]">Afficher QR Code</button><button type="button" onClick={() => { const access = repair.publicAccess ?? store.ensureRepairPublicAccess(repair.id); if (access) void shareCounterLink(publicAbsoluteUrl(access.url), "Lien de suivi copié pour le client."); }} className="inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-xs active:scale-[0.98]">Copier le lien client</button><button type="button" onClick={openClientTracking} className="mt-3 inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#D7EFEA] bg-[#FFFFFF] font-bold text-[#1E7A6E] active:scale-[0.98]"><Eye className="size-4" /> Ouvrir le suivi client</button></div></section><section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-sm"><h2 className="font-black">Notes internes</h2><p className="mt-2 whitespace-pre-line">{repair.notes || "Aucune note interne."}</p></section></aside>
+        <aside className="space-y-4"><section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4"><p>Montant devis</p><p className="font-black text-2xl">{formatEuro(amount)} <span className="text-[#6B6B6B] text-sm">TTC</span></p><div className="mt-4 border-[#E8E8E5] border-t pt-4"><p>Statut de facture</p><b className={paid ? "text-[#1E7A6E]" : "text-[#6B6B6B]"}>{paid ? "Réglée" : "À régler"}</b><p className="mt-3 text-[#6B6B6B] text-sm">Moyen indiqué<br />{repairPayment?.method ?? invoice?.paymentMethod ?? "Non renseigné"}</p><p className="mt-3 text-[#6B6B6B] text-sm">Facture<br /><b className="text-[#1A1916]">{invoice ? `#${invoice.number}` : "Non renseigné"}</b></p><p className="mt-4 rounded-[12px] bg-[#FFFFFF] px-3 py-2.5 text-[#6B6B6B] text-xs leading-relaxed">Le règlement est géré hors Behar Tech Pro via votre TPE ou prestataire externe.</p></div></section><section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-center"><h2 className="font-black text-left">QR Code dossier</h2><div className="cursor-pointer" onClick={() => setSelectedQrRepairId(repair.id)}><CounterRepairQr repair={repair} className="mx-auto mt-3 w-28" /></div><p className="mt-2 text-[#6B6B6B] text-xs">Scannez pour suivre l'avancement</p><div className="mt-3 flex flex-col gap-2"><button type="button" onClick={() => setSelectedQrRepairId(repair.id)} className="inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-xs active:scale-[0.98]">Afficher QR Code</button><button type="button" onClick={() => { const url = getCustomerTrackingUrl(repair, store.workshopSettings ?? store.workshopInfo); if (url) void shareCounterLink(url, "Lien de suivi copié pour le client."); }} className="inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-xs active:scale-[0.98]">Copier le lien client</button><button type="button" onClick={openClientTracking} className="mt-3 inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#D7EFEA] bg-[#FFFFFF] font-bold text-[#1E7A6E] active:scale-[0.98]"><Eye className="size-4" /> Ouvrir le suivi client</button></div></section><section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-sm"><h2 className="font-black">Notes internes</h2><p className="mt-2 whitespace-pre-line">{repair.notes || "Aucune note interne."}</p></section></aside>
       </div>
       {/* Actions principales — gros boutons tactiles (min 56px) */}
       {nextStep ? (
@@ -4757,15 +4767,16 @@ function CounterTrackingScreen({ initialRepairId, onClose, onOpenRepairDetail }:
   const customer = customerOf(selected.customerId);
   const invoice = invoices.find((i) => i.repairId === selected.id);
   const paid = payments.some((p) => p.repairId === selected.id && p.status === "Payé") || invoice?.status === "Payée";
+  const workshop = useBeharStore((s) => s.workshopSettings ?? s.workshopInfo);
   const openClientTracking = () => {
-    const access = selected.publicAccess ?? useBeharStore.getState().ensureRepairPublicAccess(selected.id);
-    if (!access) return toast.error("Lien de suivi indisponible.");
-    window.open(publicAbsoluteUrl(access.url), "_blank", "noopener,noreferrer");
+    const url = getCustomerTrackingUrl(selected, workshop);
+    if (!url) return toast.error("Lien de suivi indisponible.");
+    window.open(url, "_blank", "noopener,noreferrer");
   };
   const copyClientTracking = async () => {
-    const access = selected.publicAccess ?? useBeharStore.getState().ensureRepairPublicAccess(selected.id);
-    if (!access) return toast.error("Lien de suivi indisponible.");
-    await shareCounterLink(publicAbsoluteUrl(access.url), "Lien de suivi copié pour le client.");
+    const url = getCustomerTrackingUrl(selected, workshop);
+    if (!url) return toast.error("Lien de suivi indisponible.");
+    await shareCounterLink(url, "Lien de suivi copié pour le client.");
   };
 
   useEffect(() => {

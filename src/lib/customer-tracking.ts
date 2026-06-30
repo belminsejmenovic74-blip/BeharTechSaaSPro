@@ -1,9 +1,13 @@
 import type { PublicAccess, Repair, WorkshopInfo } from "@/lib/behar-store";
 
-type TrackingRepair = Pick<Repair, "id" | "number" | "createdAt" | "droppedAt" | "publicAccess">;
+type TrackingRepair = Pick<Repair, "id" | "number" | "createdAt" | "droppedAt" | "publicAccess"> & {
+  trackingId?: string;
+  publicId?: string;
+};
 type TrackingShop = Partial<Pick<WorkshopInfo, "name" | "commercialName" | "brand">>;
 
 export function getPublicAppUrl() {
+  // 1. Priorité aux variables d'environnement
   if (
     typeof import.meta !== "undefined" &&
     (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_PUBLIC_APP_URL
@@ -15,11 +19,13 @@ export function getPublicAppUrl() {
     return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
   }
 
-  if (typeof window !== "undefined") {
-    return window.location.origin;
+  // 2. Fallback sur window.location.origin si exécuté côté navigateur
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin.replace(/\/$/, "");
   }
 
-  return "";
+  // 3. Fallback stable pour le build / SSR
+  return "https://behartechpro.fr";
 }
 
 export function buildTrackingUrl({ shopSlug, trackingToken }: { shopSlug: string; trackingToken: string }) {
@@ -30,11 +36,8 @@ export function buildTrackingUrl({ shopSlug, trackingToken }: { shopSlug: string
   }
 
   const safeShopSlug = shopSlug || "atelier";
-
   const url = `${baseUrl}/suivi/${encodeURIComponent(safeShopSlug)}/${encodeURIComponent(trackingToken)}`;
-  if (process.env.NODE_ENV === "development") {
-    console.log("[tracking] buildTrackingUrl generated:", url);
-  }
+  
   return url;
 }
 
@@ -68,11 +71,15 @@ export function generateUUID(): string {
 }
 
 export function getTrackingCode(repair?: Partial<TrackingRepair> | null) {
-  const existing = repair?.publicAccess?.token?.trim();
+  if (!repair) return generateUUID();
+
+  const existing = repair.publicAccess?.token?.trim() || repair.trackingId?.trim() || repair.publicId?.trim();
   if (existing) return existing;
 
-  const number = repair?.number?.trim();
+  const number = repair.number?.trim();
   if (number && /^BT-\d{4}-\d{5}$/i.test(number)) return number;
+
+  if (repair.id && repair.id !== "temp") return repair.id;
 
   return generateUUID();
 }
@@ -82,15 +89,44 @@ export function getCustomerTrackingPath(repair: Partial<TrackingRepair>, shop?: 
 }
 
 export function getCustomerTrackingUrl(repair: Partial<TrackingRepair>, shop?: TrackingShop | null) {
-  const shopSlug = shop ? createShopSlug(shopName(shop)) : "atelier";
+  if (!repair) {
+    if (process.env.NODE_ENV === "development") {
+      throw new Error("Lien de suivi client invalide : dossier absent");
+    }
+    return "";
+  }
+
   const token = getTrackingCode(repair);
-  return buildTrackingUrl({ shopSlug, trackingToken: token });
+
+  if (process.env.NODE_ENV === "development") {
+    const baseUrl = getPublicAppUrl();
+    const shopSlug = shop ? createShopSlug(shopName(shop)) : "atelier";
+    const trackingUrl = token ? `${baseUrl}/suivi/${encodeURIComponent(shopSlug)}/${encodeURIComponent(token)}` : "";
+
+    console.log({
+      dossierId: repair.id,
+      trackingId: token,
+      trackingUrl,
+    });
+
+    if (!token) {
+      throw new Error("Lien de suivi client invalide : dossier sans trackingId/publicId");
+    }
+  }
+
+  if (!token) {
+    return "";
+  }
+
+  const baseUrl = getPublicAppUrl();
+  const shopSlug = shop ? createShopSlug(shopName(shop)) : "atelier";
+  return `${baseUrl}/suivi/${encodeURIComponent(shopSlug)}/${encodeURIComponent(token)}`;
 }
 
 export function ensureTrackingCode<T extends Partial<TrackingRepair>>(
   repair: T,
   shop?: TrackingShop | null,
-): T & { publicAccess: PublicAccess } {
+): T & { publicAccess: PublicAccess; trackingId: string; publicId: string } {
   const token = getTrackingCode(repair);
 
   // Si le repair a déjà le même token dans son publicAccess, on le conserve pour ne pas perturber l'URL existante
@@ -99,11 +135,13 @@ export function ensureTrackingCode<T extends Partial<TrackingRepair>>(
 
   return {
     ...repair,
+    trackingId: token,
+    publicId: token,
     publicAccess: {
       token,
       url: targetUrl,
       createdAt: currentAccess?.createdAt || new Date().toISOString(),
       active: currentAccess?.active !== false,
     },
-  } as T & { publicAccess: PublicAccess };
+  } as T & { publicAccess: PublicAccess; trackingId: string; publicId: string };
 }

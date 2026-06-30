@@ -65,14 +65,14 @@ function publicBaseUrl(): { base: string; error: string } {
   // Si l'application tourne dans Tauri (app de bureau), l'origine n'est pas partageable au client.
   const isTauri = !origin || origin.startsWith("tauri:");
   if (isTauri) {
-    if (!envBase) return { base: "", error: PUBLIC_URL_ERROR };
-    if (isProduction && isLocalPublicBase(envBase)) return { base: "", error: PUBLIC_URL_ERROR };
+    if (!envBase) return { base: "https://behartechpro.fr", error: "" };
+    if (isProduction && isLocalPublicBase(envBase)) return { base: "https://behartechpro.fr", error: "" };
     return { base: envBase, error: "" };
   }
 
   if (isProduction) {
-    if (!envBase) return { base: "", error: PUBLIC_URL_ERROR };
-    if (isLocalPublicBase(envBase)) return { base: "", error: PUBLIC_URL_ERROR };
+    if (!envBase) return { base: origin || "https://behartechpro.fr", error: "" };
+    if (isLocalPublicBase(envBase)) return { base: origin || "https://behartechpro.fr", error: "" };
     return { base: envBase, error: "" };
   }
 

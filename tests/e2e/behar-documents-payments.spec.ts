@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noExplicitAny: E2E tests deal with raw JSON structures
 import { expect, type Page, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 
