@@ -153,6 +153,16 @@ function notFound(shopName?: string) {
     name.toLowerCase() !== "behartechpro"
       ? name
       : "votre réparateur";
+
+  let isLocalIp = false;
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+    isLocalIp =
+      hostname !== "localhost" &&
+      hostname !== "127.0.0.1" &&
+      /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(hostname);
+  }
+
   return (
     <div className="grid min-h-screen place-items-center px-6" style={{ background: COLORS.bg, color: COLORS.text }}>
       <div
@@ -167,7 +177,9 @@ function notFound(shopName?: string) {
         </span>
         <p className="mt-4 font-bold text-[19px] tracking-tight">Suivi introuvable</p>
         <p className="mt-2 text-[14px] leading-relaxed" style={{ color: COLORS.sub }}>
-          Ce lien n'est plus valide ou a expiré. Veuillez contacter {cleanName} pour obtenir un nouveau lien de suivi.
+          {isLocalIp
+            ? "Dossier introuvable en local. Pour tester depuis un téléphone, utilisez Supabase ou créez le dossier depuis le même appareil."
+            : `Ce lien n'est plus valide ou a expiré. Veuillez contacter ${cleanName} pour obtenir un nouveau lien de suivi.`}
         </p>
       </div>
     </div>
@@ -212,10 +224,10 @@ export function PublicTrackingView({
     let cancelled = false;
     setLoading(true);
 
-    let isLocalDev = false;
+    let isLocalhost = false;
     if (typeof window !== "undefined") {
       const hostname = window.location.hostname;
-      isLocalDev = hostname === "localhost" || hostname === "127.0.0.1" || process.env.NODE_ENV === "development";
+      isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
     }
 
     readPublicRepairFromSupabase(token)
@@ -223,8 +235,8 @@ export function PublicTrackingView({
         console.log("[tracking-page] found repair:", fetchedData);
         if (fetchedData) {
           if (!cancelled) setData(fetchedData);
-        } else if (isLocalDev) {
-          // Fallback local uniquement en dev local
+        } else if (isLocalhost) {
+          // Fallback local uniquement si on est vraiment sur localhost (sur le PC)
           const localState = useBeharStore.getState();
           const localDto = buildPublicRepairDtoFromLocalState(localState, token);
           console.log("[tracking-page] local fallback found repair:", localDto);
@@ -235,7 +247,7 @@ export function PublicTrackingView({
       })
       .catch((err) => {
         console.log("[tracking-page] error:", err);
-        if (isLocalDev) {
+        if (isLocalhost) {
           const localState = useBeharStore.getState();
           const localDto = buildPublicRepairDtoFromLocalState(localState, token);
           console.log("[tracking-page] local fallback after error found repair:", localDto);

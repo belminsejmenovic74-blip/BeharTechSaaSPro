@@ -6,39 +6,48 @@ type TrackingRepair = Pick<Repair, "id" | "number" | "createdAt" | "droppedAt" |
 };
 type TrackingShop = Partial<Pick<WorkshopInfo, "name" | "commercialName" | "brand">>;
 
+export function normalizeBaseUrl(url?: string | null): string {
+  if (!url) return "";
+  const trimmed = String(url).trim().replace(/\/+$/, "");
+  if (!trimmed) return "";
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
+
 export function getPublicAppUrl() {
-  // 1. Priorité aux variables d'environnement
-  if (
+  // 1. Priorité aux variables d'environnement Vite
+  const viteUrl =
     typeof import.meta !== "undefined" &&
-    (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_PUBLIC_APP_URL
-  ) {
-    return (import.meta as unknown as { env: Record<string, string> }).env.VITE_PUBLIC_APP_URL.replace(/\/$/, "");
-  }
+    (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_PUBLIC_APP_URL;
+  if (viteUrl) return normalizeBaseUrl(viteUrl);
 
-  if (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
-  }
+  // 2. Fallback Next.js
+  const nextUrl = typeof process !== "undefined" ? process.env?.NEXT_PUBLIC_APP_URL : undefined;
+  if (nextUrl) return normalizeBaseUrl(nextUrl);
 
-  // 2. Fallback sur window.location.origin si exécuté côté navigateur
+  // 3. Fallback sur window.location.origin si exécuté côté navigateur
   if (typeof window !== "undefined" && window.location?.origin) {
-    return window.location.origin.replace(/\/$/, "");
+    if (!window.location.origin.startsWith("tauri:")) {
+      return normalizeBaseUrl(window.location.origin);
+    }
   }
 
-  // 3. Fallback stable pour le build / SSR
-  return "https://behartechpro.fr";
+  // 4. Fallback vide pour forcer un chemin relatif si rien n'est disponible
+  return "";
 }
 
 export function buildTrackingUrl({ shopSlug, trackingToken }: { shopSlug: string; trackingToken: string }) {
-  const baseUrl = getPublicAppUrl();
-
-  if (!trackingToken) {
+  const cleanId = String(trackingToken || "").trim();
+  if (!cleanId) {
     throw new Error("[tracking] Missing trackingToken");
   }
 
   const safeShopSlug = shopSlug || "atelier";
-  const url = `${baseUrl}/suivi/${encodeURIComponent(safeShopSlug)}/${encodeURIComponent(trackingToken)}`;
-  
-  return url;
+  const path = `/suivi/${encodeURIComponent(safeShopSlug)}/${encodeURIComponent(cleanId)}`;
+
+  const envBase = getPublicAppUrl();
+  if (!envBase) return path;
+
+  return `${envBase}${path}`;
 }
 
 function normalizeAscii(value: string) {
@@ -85,42 +94,26 @@ export function getTrackingCode(repair?: Partial<TrackingRepair> | null) {
 }
 
 export function getCustomerTrackingPath(repair: Partial<TrackingRepair>, shop?: TrackingShop | null) {
-  return `/suivi/${createShopSlug(shopName(shop))}/${getTrackingCode(repair)}`;
-}
-
-export function getCustomerTrackingUrl(repair: Partial<TrackingRepair>, shop?: TrackingShop | null) {
-  if (!repair) {
+  const token = getTrackingCode(repair);
+  const cleanId = String(token || "").trim();
+  if (!cleanId) {
     if (process.env.NODE_ENV === "development") {
       throw new Error("Lien de suivi client invalide : dossier absent");
     }
     return "";
   }
+  const safeShopSlug = shop ? createShopSlug(shopName(shop)) : "atelier";
+  return `/suivi/${encodeURIComponent(safeShopSlug)}/${encodeURIComponent(cleanId)}`;
+}
 
-  const token = getTrackingCode(repair);
-
-  if (process.env.NODE_ENV === "development") {
-    const baseUrl = getPublicAppUrl();
-    const shopSlug = shop ? createShopSlug(shopName(shop)) : "atelier";
-    const trackingUrl = token ? `${baseUrl}/suivi/${encodeURIComponent(shopSlug)}/${encodeURIComponent(token)}` : "";
-
-    console.log({
-      dossierId: repair.id,
-      trackingId: token,
-      trackingUrl,
-    });
-
-    if (!token) {
-      throw new Error("Lien de suivi client invalide : dossier sans trackingId/publicId");
-    }
-  }
-
-  if (!token) {
-    return "";
-  }
-
-  const baseUrl = getPublicAppUrl();
-  const shopSlug = shop ? createShopSlug(shopName(shop)) : "atelier";
-  return `${baseUrl}/suivi/${encodeURIComponent(shopSlug)}/${encodeURIComponent(token)}`;
+export function getCustomerTrackingUrl(repair: Partial<TrackingRepair>, shop?: TrackingShop | null) {
+  const path = getCustomerTrackingPath(repair, shop);
+  if (!path) return "";
+  
+  const envBase = getPublicAppUrl();
+  if (!envBase) return path;
+  
+  return `${envBase}${path}`;
 }
 
 export function ensureTrackingCode<T extends Partial<TrackingRepair>>(

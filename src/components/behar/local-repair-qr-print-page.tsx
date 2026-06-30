@@ -108,6 +108,7 @@ export function LocalRepairQrPrintPage({
   const trackingUrl = getCustomerTrackingUrl(repair, shop);
   const shortLink = trackingUrl.replace(/^https?:\/\//, "");
   const deviceLabel = [repair.brandName, repair.deviceModel || repair.model || repair.device].filter(Boolean).join(" ");
+  const isLocalhost = trackingUrl.includes("localhost") || trackingUrl.includes("127.0.0.1") || trackingUrl.includes("[::1]");
 
   return (
     <main className="min-h-screen bg-white text-[#111111]">
@@ -159,6 +160,11 @@ export function LocalRepairQrPrintPage({
           )}
         </div>
         {shortLink ? <p className="mt-3 w-full break-all text-[9px] leading-tight text-[#111111]">{shortLink}</p> : null}
+        {isLocalhost && (
+          <p className="mt-3 w-full max-w-[200px] break-words font-medium text-[#B54708] text-[9px] leading-tight print:hidden">
+            Attention : ce QR Code pointe vers localhost. Un téléphone ne peut pas ouvrir le localhost de votre ordinateur. Pour tester depuis un téléphone, configurez VITE_PUBLIC_APP_URL avec l'IP locale de votre ordinateur.
+          </p>
+        )}
       </section>
     </main>
   );

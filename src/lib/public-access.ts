@@ -57,30 +57,17 @@ function configuredPublicBaseUrl(): string {
   );
 }
 
+import { buildTrackingUrl, getPublicAppUrl } from "@/lib/customer-tracking";
+
 function publicBaseUrl(): { base: string; error: string } {
-  const envBase = configuredPublicBaseUrl();
+  const envBase = getPublicAppUrl();
+  if (envBase) {
+    return { base: envBase, error: "" };
+  }
+  
   const origin = browserOrigin();
-  const isProduction = process.env.NODE_ENV === "production";
-
-  // Si l'application tourne dans Tauri (app de bureau), l'origine n'est pas partageable au client.
-  const isTauri = !origin || origin.startsWith("tauri:");
-  if (isTauri) {
-    if (!envBase) return { base: "https://behartechpro.fr", error: "" };
-    if (isProduction && isLocalPublicBase(envBase)) return { base: "https://behartechpro.fr", error: "" };
-    return { base: envBase, error: "" };
-  }
-
-  if (isProduction) {
-    if (!envBase) return { base: origin || "https://behartechpro.fr", error: "" };
-    if (isLocalPublicBase(envBase)) return { base: origin || "https://behartechpro.fr", error: "" };
-    return { base: envBase, error: "" };
-  }
-
-  // En développement local uniquement, localhost reste autorisé pour tester les QR/lien.
-  return { base: envBase || origin || "http://localhost:3000", error: "" };
+  return { base: origin || "http://localhost:3000", error: "" };
 }
-
-import { buildTrackingUrl } from "@/lib/customer-tracking";
 
 export function getPublicUrlConfigurationError(): string {
   return publicBaseUrl().error;
