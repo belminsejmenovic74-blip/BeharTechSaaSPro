@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 import { type StoreState, useBeharStore } from "@/lib/behar-store";
+import { syncPublicTrackingRepairsToCloud } from "@/lib/public-tracking-sync";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
 import {
   getWorkshopStateVersion,
@@ -255,6 +256,19 @@ export function AutoSyncProvider() {
             window.setTimeout(() => {
               applyingRemote = false;
             }, 0);
+
+            // Alimente la table de suivi public (/suivi) : le système de sync
+            // actif ne remplit que `workshop_snapshots`. Sans ce push, aucun
+            // dossier ne remonte vers `public_tracking_repairs` et la page
+            // publique affiche toujours « Suivi introuvable ».
+            // Fire-and-forget : ne bloque jamais la sauvegarde principale.
+            const trackingState = useBeharStore.getState();
+            const trackedRepairs = (trackingState.repairs ?? []).filter(
+              (repair) => repair?.publicAccess?.active !== false,
+            );
+            if (trackedRepairs.length > 0) {
+              void syncPublicTrackingRepairsToCloud(trackedRepairs, trackingState);
+            }
           })
           .catch(() => {
             // Le statut détaillé est déjà maintenu par workshop-sync.
