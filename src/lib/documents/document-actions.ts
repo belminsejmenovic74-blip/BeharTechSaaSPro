@@ -15,9 +15,11 @@
 // `/print/document/<vrai-id>/` renvoie donc une 404. On passe l'identifiant réel via
 // le query param `doc` sur la page placeholder `_`, qui sait le lire côté client.
 
-import type { BeharDocument, DocumentType } from "@/lib/behar-store";
-import { publicAbsoluteUrl } from "@/lib/public-access";
 import { toast } from "sonner";
+
+import type { BeharDocument, DocumentType } from "@/lib/behar-store";
+import { isIosLikeBrowser } from "@/lib/download-file.client";
+import { publicAbsoluteUrl } from "@/lib/public-access";
 
 // Seul l'identifiant est requis pour construire l'URL : le filtrage interne/public
 // se fait côté route à partir du vrai document du store. On accepte donc tout objet
@@ -238,6 +240,13 @@ export async function downloadDocumentPdfAsync(document?: PdfDocumentLike | null
 
 export function downloadDocumentPdf(document?: PdfDocumentLike | null): boolean {
   if (typeof window === "undefined" || typeof window.document === "undefined" || !document?.id) return false;
+  // iOS ignore `<a download>` + blob : on ouvre le vrai PDF (fileUrl Storage ou
+  // /api/documents/{id}.pdf) inline dans un onglet, synchronement pour préserver
+  // le geste utilisateur. L'utilisateur enregistre ensuite depuis le lecteur.
+  if (isIosLikeBrowser()) {
+    window.open(preferredPdfUrl(document, "inline"), "_blank", "noopener,noreferrer");
+    return true;
+  }
   void downloadDocumentPdfAsync(document);
   return true;
 }
