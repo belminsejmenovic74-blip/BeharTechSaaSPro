@@ -1,19 +1,45 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import type { LucideIcon } from "lucide-react";
-import { AlertTriangle, ArrowRight, CalendarDays, CheckCheck, FileText, FolderOpen, MoreHorizontal, Package, Plus, Receipt, ShoppingCart, TrendingUp, Wrench } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  CalendarDays,
+  CheckCheck,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  FolderOpen,
+  MoreHorizontal,
+  Package,
+  Plus,
+  Receipt,
+  TrendingUp,
+  Wrench,
+} from "lucide-react";
 import { toast } from "sonner";
 
+import { FinanceOverview } from "@/components/behar/finance-overview";
+import { KanbanBoard } from "@/components/behar/kanban";
 import { DetailRow, Panel, PrimaryButton, StatusBadge } from "@/components/behar/primitives";
 import { RevenueChart } from "@/components/behar/revenue-chart";
 import { SettlementModal, useSettlementModal } from "@/components/behar/settlement-modal";
-import { formatEuro, formatIsoToDisplay, isTerminalRepairStatus, normalizeAppointmentStatus, type RepairStatus, useBeharStore } from "@/lib/behar-store";
-import { isBuybackDecision, useConditionneStore } from "@/lib/conditionne-store";
+import {
+  formatEuro,
+  formatIsoToDisplay,
+  isTerminalRepairStatus,
+  normalizeAppointmentStatus,
+  type Repair,
+  type RepairStatus,
+  useBeharStore,
+} from "@/lib/behar-store";
+import { formatDeviceLabel } from "@/lib/format-device";
+import { computeReconditioningKpis, useReconditioningStore } from "@/lib/reconditioning-store";
 import { paymentDateToIso } from "@/lib/payment-date";
 import type { RepairCard } from "@/mock/repairs";
 
@@ -27,11 +53,15 @@ const DASHBOARD_NEXT_STATUS: Partial<Record<RepairStatus, { next: RepairStatus; 
   "Test final": { next: "Prêt", label: "Marquer prêt" },
 };
 
+const repairActivityTime = (repair: Pick<Repair, "updatedAt" | "droppedAt" | "createdAt">) =>
+  Date.parse(repair.updatedAt || repair.droppedAt || repair.createdAt || "") || 0;
+
 export function DashboardWorkspace() {
   const store = useBeharStore();
   const settlement = useSettlementModal();
   const router = useRouter();
-  const conditionneRecords = useConditionneStore((s) => s.records);
+  const reconditioningFiles = useReconditioningStore((s) => s.files);
+  const recondKpis = computeReconditioningKpis(reconditioningFiles);
   const selected = store.repairs.find((repair) => repair.id === store.selectedRepairId) ?? store.repairs[0];
   const customer = selected ? store.customers.find((entry) => entry.id === selected.customerId) : undefined;
   const unpaidInvoices = store.invoices.filter((invoice) => invoice.status !== "Payée");
@@ -53,7 +83,9 @@ export function DashboardWorkspace() {
     )
     .sort((a, b) => a.time.localeCompare(b.time));
   const todaysAppointments = todaysAppointmentRows.length;
-  const activeRepairs = store.repairs.filter((repair) => repair.status !== "Prêt" && !isTerminalRepairStatus(repair.status));
+  const activeRepairs = store.repairs.filter(
+    (repair) => repair.status !== "Prêt" && !isTerminalRepairStatus(repair.status),
+  );
   const todayRepairs = store.repairs.filter(
     (repair) => (repair.droppedAt || repair.createdAt || "").slice(0, 10) === todayIsoLocal,
   );
@@ -66,22 +98,11 @@ export function DashboardWorkspace() {
       (paymentDateToIso(payment.date) === todayIsoLocal || paymentDateToIso(payment.createdAt) === todayIsoLocal),
   );
   const paidTodayRepairIds = new Set(todaysPaidPayments.map((payment) => payment.repairId).filter(Boolean));
-  // CA réglé du jour : règlements réparation + ventes comptoir (paySale crée un Payment lié au saleId).
-  const revenueToday = todaysPaidPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
-  // Rachats du jour : un téléphone racheté (envoyé en reconditionnement) est une sortie externe.
-  // On déduit le prix de rachat du CA du jour (CA net). Les brouillons/estimations ne comptent pas.
-  const buybacksToday = conditionneRecords
-    .filter((record) => isBuybackDecision(record.decision) && paymentDateToIso(record.createdAt) === todayIsoLocal)
-    .reduce((sum, record) => sum + (record.prixPropose || 0), 0);
-  const netRevenueToday = Math.max(0, revenueToday - buybacksToday);
-  // Ventes comptoir du jour (§3) — accessoires/produits réglés.
-  const todaysSales = store.sales.filter(
-    (sale) => sale.status !== "Annulée" && paymentDateToIso(sale.createdAt) === todayIsoLocal,
-  );
-  const todaysSalesTotal = todaysSales.reduce((sum, sale) => sum + (sale.total || 0), 0);
   const lowStockItems = store.stockItems.filter((item) => item.stock <= item.threshold);
   const pendingQuotes = store.quotes.filter((quote) => quote.status === "Envoyé" || quote.status === "Brouillon");
-  const blockedRepairs = activeRepairs.filter((repair) => isOlderThanDays(repair.updatedAt || repair.droppedAt || repair.createdAt, 3));
+  const blockedRepairs = activeRepairs.filter((repair) =>
+    isOlderThanDays(repair.updatedAt || repair.droppedAt || repair.createdAt, 3),
+  );
   const selectedPaid = selected
     ? store.payments.some((payment) => payment.repairId === selected.id && payment.status === "Payé")
     : false;
@@ -102,146 +123,71 @@ export function DashboardWorkspace() {
       : (selected.amount ?? 0)
     : 0;
   const selectedMontant = selectedRepairTotal > 0 ? selectedRepairTotal : selectedInvoiceAmount || selectedQuoteAmount;
-  const dynamicKpis = [
-    {
-      label: "Dossiers du jour",
-      value: String(todayRepairs.length),
-      trend: "",
-      helper: "prises en charge créées",
-      icon: FolderOpen,
-      href: "/dashboard/dossiers",
-    },
+  // KPI secondaires : une seule ligne, navigation par flèches (les KPI financiers vivent dans FinanceOverview).
+  const secondaryKpis: Array<{ label: string; value: string; href: string; icon: LucideIcon }> = [
     {
       label: "Réparations en cours",
       value: String(activeRepairs.length),
-      trend: "",
-      helper: "dossiers actifs",
+      href: "/dashboard/reparations",
       icon: Wrench,
-      href: "/dashboard/reparations",
     },
-    {
-      label: "Rendez-vous du jour",
-      value: String(todaysAppointments),
-      trend: "",
-      helper: "rendez-vous planifiés",
-      icon: CalendarDays,
-      href: "/dashboard/rendez-vous",
-    },
-    {
-      label: "Dossiers prêts",
-      value: String(readyRepairs.length),
-      trend: "",
-      helper: "à restituer",
-      icon: CheckCheck,
-      href: "/dashboard/reparations",
-    },
-    {
-      label: "Ventes comptoir",
-      value: String(todaysSales.length),
-      trend: "",
-      helper: `${formatEuro(todaysSalesTotal)} aujourd'hui`,
-      icon: ShoppingCart,
-      href: "/dashboard/ventes",
-    },
-    {
-      label: "CA du jour",
-      value: formatEuro(netRevenueToday),
-      trend: "",
-      helper:
-        buybacksToday > 0
-          ? `${formatEuro(revenueToday)} encaissés, ${formatEuro(buybacksToday)} rachats suivis`
-          : "réparations + comptoir réglés",
-      icon: TrendingUp,
-      href: "/dashboard/paiements",
-    },
-    {
-      label: "Dossiers réglés",
-      value: String(paidTodayRepairIds.size),
-      trend: "",
-      helper: "règlements du jour",
-      icon: Receipt,
-      href: "/dashboard/paiements",
-    },
+    { label: "Dossiers prêts", value: String(readyRepairs.length), href: "/dashboard/reparations", icon: CheckCheck },
+    { label: "Dossiers du jour", value: String(todayRepairs.length), href: "/dashboard/dossiers", icon: FolderOpen },
+    { label: "RDV du jour", value: String(todaysAppointments), href: "/dashboard/rendez-vous", icon: CalendarDays },
+    { label: "Dossiers réglés", value: String(paidTodayRepairIds.size), href: "/dashboard/paiements", icon: Receipt },
     {
       label: "Factures à régler",
       value: formatEuro(amountToCollect),
-      trend: "",
-      helper: "factures impayées",
-      icon: ArrowRight,
       href: "/dashboard/factures?status=unpaid",
+      icon: FileText,
+    },
+    { label: "Devis en attente", value: String(pendingQuotes.length), href: "/dashboard/devis", icon: FileText },
+    { label: "Stock faible", value: String(lowStockItems.length), href: "/dashboard/stock", icon: Package },
+    {
+      label: "Dossiers bloqués",
+      value: String(blockedRepairs.length),
+      href: "/dashboard/reparations",
+      icon: AlertTriangle,
     },
   ];
-  const dashboardAlerts: Array<{ label: string; value: number; helper: string; href: string; icon: LucideIcon }> = [
-    { label: "Stock faible", value: lowStockItems.length, helper: "articles sous le seuil", href: "/dashboard/stock", icon: Package },
-    { label: "Dossiers bloqués", value: blockedRepairs.length, helper: "sans activité depuis 3 jours", href: "/dashboard/reparations", icon: AlertTriangle },
-    { label: "Devis en attente", value: pendingQuotes.length, helper: "brouillons ou envoyés", href: "/dashboard/devis", icon: FileText },
-    { label: "Rendez-vous proches", value: todaysAppointments, helper: "prévus aujourd'hui", href: "/dashboard/rendez-vous", icon: CalendarDays },
+  const repairFlowStatuses: RepairStatus[] = [
+    "Reçu",
+    "Diagnostic",
+    "Devis accepté",
+    "En réparation",
+    "Test final",
+    "Prêt",
   ];
-  const columns = ["Reçu", "Diagnostic", "Devis accepté", "En réparation", "Test final", "Prêt"].map((status) => ({
-    title: status,
-    count: store.repairs.filter((repair) => repair.status === status).length,
-    cards: store.repairs
+  // Mini kanban du flux : une colonne par étape, cartes triées par activité récente.
+  const repairFlowColumns = repairFlowStatuses.map((status) => {
+    const rows = store.repairs
       .filter((repair) => repair.status === status)
-      .map((repair) => ({
-        id: repair.id,
-        shop_id: repair.shopId,
-        device: repair.device,
-        issue: repair.issue,
-        customer: store.customers.find((entry) => entry.id === repair.customerId)?.name || "Client comptoir",
-        time: formatIsoToDisplay(repair.droppedAt),
-        status: repair.status,
-      })) as RepairCard[],
-  }));
-
-  const totalQuotes = store.quotes.length;
-  const acceptedQuotes = store.quotes.filter((q) => q.status === "Accepté" || q.status === "Facturé").length;
-  const conversionRate = totalQuotes > 0 ? ((acceptedQuotes / totalQuotes) * 100).toFixed(1) : "0";
-  const computedStats = [
-    {
-      label: "Dossiers",
-      value: String(store.repairs.length),
-      trend: "",
-      helper: "total dans l'atelier",
-      icon: FolderOpen,
-      href: "/dashboard/dossiers",
-    },
-    {
-      label: "Devis en attente",
-      value: String(store.quotes.filter((q) => q.status === "Envoyé" || q.status === "Brouillon").length),
-      trend: "",
-      helper: "brouillons + envoyés",
-      icon: ArrowRight,
-      href: "/dashboard/devis",
-    },
-    {
-      label: "Factures payées",
-      value: String(store.invoices.filter((i) => i.status === "Payée").length),
-      trend: "",
-      helper: "factures réglées",
-      icon: ArrowRight,
-      href: "/dashboard/factures?status=paid",
-    },
-    {
-      label: "Factures à régler",
-      value: String(store.invoices.filter((i) => i.status !== "Payée").length),
-      trend: "",
-      helper: "factures non réglées",
-      icon: ArrowRight,
-      href: "/dashboard/factures?status=unpaid",
-    },
-    {
-      label: "Règlements indiqués",
-      value: String(store.payments.filter((payment) => payment.status === "Payé").length),
-      trend: "",
-      helper: `${conversionRate}% conversion devis`,
-      icon: ArrowRight,
-      href: "/dashboard/factures",
-    },
-  ];
+      .sort((a, b) => repairActivityTime(b) - repairActivityTime(a));
+    return {
+      title: status,
+      count: rows.length,
+      cards: rows.map((repair) => {
+        const repairCustomer = store.customers.find((entry) => entry.id === repair.customerId);
+        const total = typeof repair.total === "number" ? repair.total : (repair.amount ?? 0);
+        return {
+          id: repair.id,
+          shop_id: repair.shopId,
+          number: repair.number,
+          device: formatDeviceLabel(repair),
+          issue: repair.issue,
+          customer: repairCustomer?.name || "Client comptoir",
+          time: formatIsoToDisplay(repair.updatedAt || repair.droppedAt || repair.createdAt || ""),
+          status: repair.status,
+          totalLabel: total > 0 ? formatEuro(total) : undefined,
+          showReadyBadge: repair.status === "Prêt",
+        } satisfies RepairCard;
+      }),
+    };
+  });
 
   return (
     <div className="hidden space-y-6 md:block">
-      {/* Actions rapides — prise en charge, mode comptoir tablette, vente directe. */}
+      {/* Action rapide — nouvelle prise en charge. */}
       <section className="flex flex-wrap items-center gap-2.5">
         <Link href="/dashboard/reparations?create=1" prefetch={false}>
           <PrimaryButton className="h-11 gap-2 px-4">
@@ -249,50 +195,93 @@ export function DashboardWorkspace() {
             Nouvelle prise en charge
           </PrimaryButton>
         </Link>
-        <Link
-          className="inline-flex h-11 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-medium text-[#1A1916] text-sm transition hover:border-[#2A9D8F]/40 hover:bg-[#FFFFFF]"
-          href="/dashboard/ventes"
-        >
-          <ShoppingCart className="size-4 text-[#167B70]" />
-          Vente comptoir
-        </Link>
       </section>
 
-      <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6">
-        {dynamicKpis.map((kpi) => (
-          <DashboardMetricCard {...kpi} key={kpi.label} />
-        ))}
-      </section>
+      {/* Volet finance : CA encaissé, variations réelles, répartition, encours. */}
+      <FinanceOverview />
 
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Alertes utiles</h2>
-          <span className="text-[#6B6B6B] text-[12px]">Données actuelles de l'atelier</span>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {dashboardAlerts.map((alert) => {
-            const Icon = alert.icon;
-            return (
-              <Link
-                href={alert.href}
-                key={alert.label}
-                className="flex min-h-[92px] items-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_3px_rgba(26,25,22,0.04)] transition hover:border-[#2A9D8F]/40"
+      {/* KPI secondaires : une ligne, flèches pour faire défiler. */}
+      <SecondaryKpiStrip items={secondaryKpis} />
+
+      {reconditioningFiles.length > 0 && (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Reconditionnement</h2>
+            <Link
+              className="text-[#6B6B6B] text-[12px] transition-colors hover:text-[#1A1916]"
+              href="/dashboard/reconditionnement"
+            >
+              Ouvrir le module →
+            </Link>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <Link
+              href="/dashboard/reconditionnement"
+              className="flex min-h-[92px] items-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_3px_rgba(26,25,22,0.04)] transition hover:border-[#2A9D8F]/40"
+            >
+              <span className="grid size-8 shrink-0 place-items-center text-[#2A9D8F]">
+                <CheckCheck className="size-[18px]" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center justify-between gap-2">
+                  <b className="truncate text-[#1A1916] text-sm">Prêts à vendre</b>
+                  <strong className="text-[#1A1916] text-lg tabular-nums">{recondKpis.prets}</strong>
+                </span>
+                <span className="mt-1 block truncate text-[#6B6B6B] text-xs">téléphones reconditionnés</span>
+              </span>
+            </Link>
+            <Link
+              href="/dashboard/reconditionnement"
+              className="flex min-h-[92px] items-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_3px_rgba(26,25,22,0.04)] transition hover:border-[#2A9D8F]/40"
+            >
+              <span className="grid size-8 shrink-0 place-items-center text-[#2A9D8F]">
+                <Package className="size-[18px]" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center justify-between gap-2">
+                  <b className="truncate text-[#1A1916] text-sm">Valeur stock</b>
+                  <strong className="text-[#1A1916] text-lg tabular-nums">{formatEuro(recondKpis.valeurStock)}</strong>
+                </span>
+                <span className="mt-1 block truncate text-[#6B6B6B] text-xs">potentiel (non vendu)</span>
+              </span>
+            </Link>
+            <Link
+              href="/dashboard/reconditionnement"
+              className="flex min-h-[92px] items-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_3px_rgba(26,25,22,0.04)] transition hover:border-[#2A9D8F]/40"
+            >
+              <span className="grid size-8 shrink-0 place-items-center text-[#2A9D8F]">
+                <TrendingUp className="size-[18px]" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center justify-between gap-2">
+                  <b className="truncate text-[#1A1916] text-sm">Marge potentielle</b>
+                  <strong className="text-[#1A1916] text-lg tabular-nums">
+                    {formatEuro(recondKpis.margeEstimeeTotale)}
+                  </strong>
+                </span>
+                <span className="mt-1 block truncate text-[#6B6B6B] text-xs">estimée, non vendus</span>
+              </span>
+            </Link>
+            <Link
+              href="/dashboard/reconditionnement"
+              className="flex min-h-[92px] items-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_3px_rgba(26,25,22,0.04)] transition hover:border-[#2A9D8F]/40"
+            >
+              <span
+                className={`grid size-8 shrink-0 place-items-center ${recondKpis.bloques > 0 ? "text-[#B4342A]" : "text-[#2A9D8F]"}`}
               >
-                <span className={`grid size-8 shrink-0 place-items-center ${alert.value > 0 ? "text-[#6B6B6B]" : "text-[#2A9D8F]"}`}>
-                  <Icon className="size-[18px]" />
+                <AlertTriangle className="size-[18px]" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center justify-between gap-2">
+                  <b className="truncate text-[#1A1916] text-sm">Bloqués</b>
+                  <strong className="text-[#1A1916] text-lg tabular-nums">{recondKpis.bloques}</strong>
                 </span>
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center justify-between gap-2">
-                    <b className="truncate text-[#1A1916] text-sm">{alert.label}</b>
-                    <strong className="text-[#1A1916] text-lg tabular-nums">{alert.value}</strong>
-                  </span>
-                  <span className="mt-1 block truncate text-[#6B6B6B] text-xs">{alert.helper}</span>
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
+                <span className="mt-1 block truncate text-[#6B6B6B] text-xs">à débloquer / décider</span>
+              </span>
+            </Link>
+          </div>
+        </section>
+      )}
 
       <Panel className="p-4">
         <div className="mb-4 flex items-center justify-between gap-3">
@@ -394,7 +383,7 @@ export function DashboardWorkspace() {
       </Panel>
 
       <section className="grid items-stretch gap-5 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_340px]">
-        <Panel className="flex min-h-[440px] min-w-0 flex-col p-4">
+        <Panel className="flex h-[500px] min-w-0 flex-col p-4">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Flux des réparations</h2>
             <Link
@@ -405,11 +394,17 @@ export function DashboardWorkspace() {
               <ArrowRight className="size-4" />
             </Link>
           </div>
-          <div className="min-h-0 flex-1">
-            <DashboardKanban
-              columns={columns}
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <KanbanBoard
+              compact
+              columns={repairFlowColumns}
               onSelect={(id) => store.setSelected("repair", id)}
               selectedId={selected?.id ?? ""}
+              onMoveCard={(cardId, _from, toStatus) => {
+                if (!repairFlowStatuses.includes(toStatus as RepairStatus)) return;
+                store.changeRepairStatus(cardId, toStatus as RepairStatus);
+                toast.success(`Statut : ${toStatus}`);
+              }}
             />
           </div>
         </Panel>
@@ -441,7 +436,16 @@ export function DashboardWorkspace() {
                 label="Montant"
                 value={selectedMontant > 0 ? formatEuro(selectedMontant) : "À chiffrer"}
               />
-              <DetailRow label="Règlement" value={selectedPaid ? "Réglé" : "À régler"} />
+              <DetailRow
+                label="Règlement"
+                value={
+                  selectedPaid
+                    ? "Réglé"
+                    : selected.status === "Rendu" || selected.status === "Clôturé"
+                      ? "Non indiqué"
+                      : "À régler"
+                }
+              />
             </dl>
 
             {(() => {
@@ -491,33 +495,13 @@ export function DashboardWorkspace() {
         )}
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[1.05fr_1fr]">
-        <Panel className="p-4">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Règlements indiqués par jour</h2>
-            <span className="text-[#6B6B6B] text-[13px]">30 derniers jours</span>
-          </div>
-          <RevenueChart />
-        </Panel>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          {computedStats.map((stat) => (
-            <DashboardStatCard {...stat} key={stat.label} />
-          ))}
-          {store.stockItems
-            .filter((item) => item.stock <= item.threshold)
-            .slice(0, 2)
-            .map((item) => (
-              <Panel className="h-[112px] p-4" key={item.id}>
-                <p className="text-[#6B6B6B] text-sm">{item.stock === 0 ? "Rupture stock" : "Stock faible"}</p>
-                <p className="mt-2 truncate font-semibold text-[#1A1916] text-xl">{item.part}</p>
-                <p className="mt-3 text-[#B42318] text-xs">
-                  {item.stock} disponible · seuil {item.threshold}
-                </p>
-              </Panel>
-            ))}
+      <Panel className="p-4">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Règlements indiqués par jour</h2>
+          <span className="text-[#6B6B6B] text-[13px]">30 derniers jours</span>
         </div>
-      </section>
+        <RevenueChart />
+      </Panel>
 
       {canViewAuditLog && (
         <Panel className="p-4">
@@ -682,104 +666,53 @@ function DashboardMetricCard({
   );
 }
 
-function DashboardStatCard({
-  label,
-  value,
-  trend,
-  helper,
-  icon: Icon,
-  href,
-}: Readonly<{ label: string; value: string; trend: string; helper: string; icon: LucideIcon; href?: string }>) {
-  const testId = dashboardTestId(label);
-  const content = (
-    <div className="flex h-full items-center justify-between gap-4">
-      <div>
-        <p className="text-[#6B6B6B] text-[13px]">{label}</p>
-        <p className="mt-2 font-semibold text-[24px] text-[#1A1916] leading-none tracking-tight">{value}</p>
-        <p className="mt-3 text-[12px]">
-          {trend ? <span className="font-medium text-[#2A9D8F]">{trend} </span> : null}
-          <span className="text-[#8A8A8A]">{helper}</span>
-        </p>
-      </div>
-      <div className="grid size-9 place-items-center text-[#2A9D8F]">
-        <Icon className="size-5" />
-      </div>
-    </div>
-  );
-
-  if (href) {
-    return (
-      <Link href={href} className="block transition-transform duration-200 hover:scale-[1.015]" data-testid={testId}>
-        <Panel className="h-[116px] p-5">{content}</Panel>
-      </Link>
-    );
-  }
+/** Ligne de KPI secondaires : 4 visibles à la fois, flèches gauche/droite pour faire défiler. */
+function SecondaryKpiStrip({
+  items,
+}: Readonly<{ items: Array<{ label: string; value: string; href: string; icon: LucideIcon }> }>) {
+  const pageSize = 4;
+  const pageCount = Math.max(1, Math.ceil(items.length / pageSize));
+  const [page, setPage] = useState(0);
+  const visible = items.slice(page * pageSize, page * pageSize + pageSize);
+  const canNavigate = pageCount > 1;
 
   return (
-    <Panel className="h-[116px] p-5" data-testid={testId}>
-      {content}
-    </Panel>
-  );
-}
-
-function DashboardKanban({
-  columns,
-  selectedId,
-  onSelect,
-}: Readonly<{
-  columns: Array<{ title: string; count: number; cards: RepairCard[] }>;
-  selectedId: string;
-  onSelect: (id: string) => void;
-}>) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  return (
-    <div className="kanban-scroll h-full overflow-x-auto pb-2" ref={scrollRef}>
-      <div className="flex h-full min-h-[320px] gap-3">
-        {columns.map((column) => (
-          <div
-            className="flex h-full w-[210px] shrink-0 flex-col rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] p-3"
-            key={column.title}
-          >
-            <div className="mb-3 flex shrink-0 items-center gap-2">
-              <h3 className="font-semibold text-[#1A1916] text-[13px]">{column.title}</h3>
-              <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[#6B6B6B] text-[11px] font-medium">
-                {column.count}
-              </span>
-            </div>
-            <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-1">
-              {column.cards.length === 0 ? (
-                <div className="flex h-full items-center justify-center">
-                  <p className="text-[#C4C2BB] text-[12px]">—</p>
-                </div>
-              ) : (
-                column.cards.map((card) => (
-                  <button
-                    className={`w-full rounded-[12px] border p-3 text-left transition ${
-                      card.id === selectedId
-                        ? "border-[#2A9D8F] bg-[#FFFFFF] shadow-[0_8px_20px_rgba(42,157,143,0.10)]"
-                        : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/40"
-                    }`}
-                    key={card.id}
-                    onClick={() => onSelect(card.id)}
-                    type="button"
-                  >
-                    <p className="line-clamp-2 font-semibold text-[#1A1916] text-sm leading-snug">{card.device}</p>
-                    <p className="mt-1 line-clamp-1 text-[#6B6B6B] text-xs">{card.issue}</p>
-                    <p className="mt-2 line-clamp-1 font-medium text-[#1A1916] text-xs">{card.customer}</p>
-                    <div className="mt-2 flex items-center justify-between gap-2">
-                      <span className="truncate text-[#6B6B6B] text-xs" suppressHydrationWarning>
-                        {card.time}
-                      </span>
-                      <StatusBadge status={card.status} />
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          </div>
-        ))}
+    <section className="flex items-center gap-2" data-testid="dashboard-secondary-kpis">
+      <button
+        aria-label="KPI précédents"
+        className="grid size-9 shrink-0 place-items-center rounded-[10px] border border-[#E8E8E5] bg-white text-[#6B6B6B] transition hover:border-[#2A9D8F]/40 hover:text-[#1A1916] disabled:cursor-not-allowed disabled:opacity-40"
+        disabled={!canNavigate}
+        onClick={() => setPage((current) => (current - 1 + pageCount) % pageCount)}
+        type="button"
+      >
+        <ChevronLeft className="size-4" />
+      </button>
+      <div className="grid min-w-0 flex-1 grid-cols-2 gap-2 xl:grid-cols-4">
+        {visible.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              className="flex h-11 min-w-0 items-center gap-2.5 rounded-[12px] border border-[#E8E8E5] bg-white px-3.5 transition hover:border-[#2A9D8F]/40"
+              data-testid={dashboardTestId(item.label)}
+              href={item.href}
+              key={item.label}
+            >
+              <Icon className="size-4 shrink-0 text-[#6B6B6B]" />
+              <span className="min-w-0 flex-1 truncate text-[#6B6B6B] text-[13px]">{item.label}</span>
+              <span className="shrink-0 font-semibold text-[#1A1916] text-sm tabular-nums">{item.value}</span>
+            </Link>
+          );
+        })}
       </div>
-    </div>
+      <button
+        aria-label="KPI suivants"
+        className="grid size-9 shrink-0 place-items-center rounded-[10px] border border-[#E8E8E5] bg-white text-[#6B6B6B] transition hover:border-[#2A9D8F]/40 hover:text-[#1A1916] disabled:cursor-not-allowed disabled:opacity-40"
+        disabled={!canNavigate}
+        onClick={() => setPage((current) => (current + 1) % pageCount)}
+        type="button"
+      >
+        <ChevronRight className="size-4" />
+      </button>
+    </section>
   );
 }

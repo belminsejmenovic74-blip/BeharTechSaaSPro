@@ -230,31 +230,43 @@ export function PublicTrackingView({
       isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
     }
 
+    const loadLocalData = async () => {
+      await (
+        useBeharStore as typeof useBeharStore & { persist?: { rehydrate?: () => Promise<void> | void } }
+      ).persist?.rehydrate?.();
+      const localState = useBeharStore.getState();
+      const localDto = buildPublicRepairDtoFromLocalState(localState, token);
+      console.log("[tracking-page] local state found repair:", localDto);
+      if (!cancelled) {
+        setData(localDto ?? null);
+        setLoading(false);
+      }
+    };
+
+    let interval: number | undefined;
+    if (isLocalhost) {
+      void loadLocalData();
+      interval = window.setInterval(() => {
+        void loadLocalData();
+      }, 1000);
+      return () => {
+        cancelled = true;
+        if (interval) window.clearInterval(interval);
+      };
+    }
+
     readPublicRepairFromSupabase(token)
       .then((fetchedData) => {
         console.log("[tracking-page] found repair:", fetchedData);
         if (fetchedData) {
           if (!cancelled) setData(fetchedData);
-        } else if (isLocalhost) {
-          // Fallback local uniquement si on est vraiment sur localhost (sur le PC)
-          const localState = useBeharStore.getState();
-          const localDto = buildPublicRepairDtoFromLocalState(localState, token);
-          console.log("[tracking-page] local fallback found repair:", localDto);
-          if (!cancelled) setData(localDto ?? null);
         } else {
           if (!cancelled) setData(null);
         }
       })
       .catch((err) => {
         console.log("[tracking-page] error:", err);
-        if (isLocalhost) {
-          const localState = useBeharStore.getState();
-          const localDto = buildPublicRepairDtoFromLocalState(localState, token);
-          console.log("[tracking-page] local fallback after error found repair:", localDto);
-          if (!cancelled) setData(localDto ?? null);
-        } else {
-          if (!cancelled) setData(null);
-        }
+        if (!cancelled) setData(null);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -482,10 +494,10 @@ export function PublicTrackingView({
 
             {/* Timeline étapes — avec date/heure quand disponible */}
             <section
-              className="mt-4 overflow-x-auto rounded-[20px] border bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
+              className="mt-4 rounded-[20px] border bg-white px-3 py-4 shadow-[0_1px_2px_rgba(26,25,22,0.035)] sm:p-5"
               style={{ borderColor: COLORS.border }}
             >
-              <div className="grid min-w-[540px] grid-cols-6">
+              <div className="grid grid-cols-5">
                 {PUBLIC_REPAIR_TIMELINE_STEPS.map((label, index) => {
                   const done = progress.isFinished ? index <= active : !progress.isCancelled && index < active;
                   const current = !progress.isFinished && !progress.isCancelled && index === active;
@@ -504,7 +516,7 @@ export function PublicTrackingView({
                         : "—";
                   const time = timelineEvent ? formatTimeShort(sourceDate) : "";
                   return (
-                    <div key={label} className="relative px-0.5 text-center">
+                    <div key={label} className="relative min-w-0 px-0.5 text-center">
                       {index < PUBLIC_REPAIR_TIMELINE_STEPS.length - 1 ? (
                         <span
                           className="absolute top-3.5 left-1/2 -z-0 h-[2px] w-full"
@@ -524,7 +536,7 @@ export function PublicTrackingView({
                         {done ? <Check className="size-4" /> : index + 1}
                       </span>
                       <p
-                        className="mt-2 font-semibold text-[11px] sm:text-[12px]"
+                        className="mt-2 min-h-[28px] text-balance font-semibold text-[10px] leading-tight sm:text-[12px]"
                         style={current ? { color: COLORS.accent } : undefined}
                       >
                         {label}

@@ -1,55 +1,41 @@
-# Behar Tech Pro — Design QA
+**Source Visual Truth**
+- `/var/folders/y2/0l9d6j_50gz9723lgrnl6lyw0000gn/T/codex-clipboard-ac48f111-6c72-47dd-8313-b9e05a900c82.png`
+- `/var/folders/y2/0l9d6j_50gz9723lgrnl6lyw0000gn/T/codex-clipboard-0f1a9b9b-7ab6-438c-9a7c-9714995f994a.png`
+- `/var/folders/y2/0l9d6j_50gz9723lgrnl6lyw0000gn/T/codex-clipboard-b18f2580-c67a-4011-be4e-d980a47c89a1.png`
+- `/var/folders/y2/0l9d6j_50gz9723lgrnl6lyw0000gn/T/codex-clipboard-4a18bbab-f85d-4e22-9c8d-f2a154d92ea9.png`
+- `/Users/belmin/.codex/attachments/0d6632d4-5c2f-4544-9ea7-4649a35509d4/pasted-text.txt`
 
-## Comparison target
+**Implementation Screenshots**
+- `/private/tmp/behar-reconditionnement-overview.png`
+- `/private/tmp/behar-reconditionnement-public.png`
 
-- Source visual truth:
-  - `/Users/belmin/Downloads/2561FBCE-2785-48CD-B98F-0AFD398B8785.PNG` — hero
-  - `/Users/belmin/Downloads/A975D63D-2382-4728-B731-B1A4900D88A8.PNG` — bénéfices
-  - `/Users/belmin/Downloads/5341F446-865E-4187-8CD5-8FB882DBC92E.PNG` — quatre outils
-  - `/Users/belmin/Downloads/EA907125-A8DC-4D0B-97F4-2E0671EFBA51.PNG` — types d’atelier
-- Implementation screenshots:
-  - `/private/tmp/behar-final-hero.png`
-  - `/private/tmp/behar-final-benefits.png`
-  - `/private/tmp/behar-final-tools.png`
-  - `/private/tmp/behar-final-workshop.png`
-  - `/private/tmp/behar-mobile-390x844.png`
-  - `/private/tmp/behar-mobile-benefits-390x844.png`
-- Combined comparison evidence:
-  - `/private/tmp/qa-hero-pair.png`
-  - `/private/tmp/qa-benefits-pair.png`
-  - `/private/tmp/qa-tools-pair.png`
-  - `/private/tmp/qa-workshop-pair.png`
-- Viewports: `1448 × 1086` desktop and `390 × 844` mobile.
-- State: landing initiale, carrousels sur “Stock intelligent” et “Reconditionnement & revente”.
+**Viewport**
+- Desktop: default in-app browser viewport.
+- Mobile: 390 x 844.
+- Tablet: 820 x 1180.
 
-## Fidelity review
+**State**
+- `/dashboard/reconditionnement` premium overview with KPI carousel, detail drawer, stock cards, actions, label workflow.
+- `/reconditionne/iphone-13-rec-01347` public QR detail page.
 
-- Fonts and typography: Geist/Inter-style sans-serif, headline weights, compact UI labels and line breaks match the supplied hierarchy. Hero headline breaks after “votre”, as in the source.
-- Spacing and layout rhythm: header, hero copy, floating KPIs, three-device composition, trust strip and next-section preview align with the reference frame. Benefits use the required 780 px landscape card with clipped side cards. Tools and workshop panels preserve the reference proportions.
-- Colors and tokens: white background, `#1A1916` text, `#6B6B6B` secondary text, `#2A9D8F` accent and `#E8E8E5` borders are consistently applied.
-- Image quality and asset fidelity: project-supplied high-resolution mockups are used throughout. No placeholder art or CSS-drawn product imagery remains.
-- Copy and content: logo, headings, CTA labels, benefit bullets, four tools, workshop metrics, pricing and contact copy match the mission brief.
-- Responsive behavior: mobile menu opens/closes, content stacks without clipping, carousel stays readable and document width remains exactly `390 px` at the `390 px` viewport.
-- Interactions: benefit and workshop carousels, pricing toggle, contact validation/success and appointment selection/success were exercised in the browser.
+**Full-View Comparison Evidence**
+- The dashboard now uses the PRD palette, white SaaS cards, internal tabs, real device thumbnails, KPI carousel cards with circular progress, right-side action panels, and a lighter overview instead of a dense KPI wall.
+- Public QR page is standalone, white-card centered, client-facing, and excludes internal economics and full IMEI.
 
-## Findings
+**Focused Region Comparison Evidence**
+- KPI carousel: verified titles, circular progress, arrows, and “Voir le détail”.
+- Detail drawer: verified secondary KPI cards and filtered device table.
+- Store label modal: verified QR code, masked IMEI, print/PDF actions.
+- Mobile/tablet: verified no horizontal overflow after the carousel/grid fix.
 
-- No actionable P0, P1 or P2 mismatch remains.
-- P3: the supplied raster mockups contain slightly different internal dashboard details and device crops than the composite reference boards. Their placement, scale and visual role match the references.
+**Findings**
+- No actionable P0/P1/P2 issues remain.
+- P3: Next warns that the generic device image is LCP and could be marked eager if desired.
 
-## Patches made
+**Patches Made Since Previous QA**
+- Replaced overview KPI wall with carousel/detail workflow.
+- Added label/public metadata, store label modal, sell-ready modal, and QR public page.
+- Fixed mobile/tablet horizontal overflow caused by carousel min-content width.
+- Removed sensitive wording from the public QR page.
 
-- Rebuilt the hero proportions and added the required badge, trust strip and next-section preview.
-- Rebuilt benefits as a wide central card with four visible neighboring states and swipe/pagination controls.
-- Removed excess tool-card copy and enlarged each supplied mockup.
-- Rebuilt workshop modes with a central dashboard, five KPI cards and three clipped lateral device panels.
-- Corrected annual pricing values and completed responsive/mobile states.
-
-## Verification
-
-- `npx tsc --noEmit`: passed.
-- `npx biome check src/components/landing/landing-page.tsx src/components/landing/landing-page.module.css`: passed.
-- Browser interaction and responsive checks: passed.
-- `npm run build`: passed after the final CSS refinement.
-
-final result: passed
+**final result: passed**

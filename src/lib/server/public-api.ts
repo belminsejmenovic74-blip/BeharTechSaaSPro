@@ -92,13 +92,30 @@ function publicTimelineFromRepair(repair: any, events: any[] = []): PublicRepair
     let stepDate = index === 0 ? createdAt : updatedAt;
     if (events && events.length > 0) {
       if (title === "Diagnostic") {
-        const ev = events.find(e => e.title?.toLowerCase().includes("diagnostic") || e.description?.toLowerCase().includes("diagnostic"));
+        const ev = events.find(
+          (e) => e.title?.toLowerCase().includes("diagnostic") || e.description?.toLowerCase().includes("diagnostic"),
+        );
         if (ev) stepDate = ev.created_at;
       } else if (title === "En réparation") {
-        const ev = events.find(e => e.title?.toLowerCase().includes("réparation") || e.description?.toLowerCase().includes("réparation") || e.title?.toLowerCase().includes("reparation"));
+        const ev = events.find(
+          (e) =>
+            e.title?.toLowerCase().includes("réparation") ||
+            e.description?.toLowerCase().includes("réparation") ||
+            e.title?.toLowerCase().includes("reparation"),
+        );
         if (ev) stepDate = ev.created_at;
-      } else if (title === "Prêt") {
-        const ev = events.find(e => e.title?.toLowerCase().includes("prêt") || e.description?.toLowerCase().includes("prêt") || e.title?.toLowerCase().includes("pret"));
+      } else if (title === "Terminé") {
+        const ev = events.find(
+          (e) =>
+            e.title?.toLowerCase().includes("rendu") ||
+            e.title?.toLowerCase().includes("clôtur") ||
+            e.title?.toLowerCase().includes("clotur") ||
+            e.description?.toLowerCase().includes("rendu") ||
+            e.description?.toLowerCase().includes("clôtur") ||
+            e.description?.toLowerCase().includes("clotur") ||
+            e.title?.toLowerCase().includes("termin") ||
+            e.description?.toLowerCase().includes("termin"),
+        );
         if (ev) stepDate = ev.created_at;
       }
     }
@@ -107,7 +124,7 @@ function publicTimelineFromRepair(repair: any, events: any[] = []): PublicRepair
       description:
         index === 0
           ? "Votre appareil a été pris en charge."
-          : index === 3 && progress.isFinished
+          : title === "Terminé"
             ? "Votre appareil a été remis au client."
             : undefined,
       date: stepDate,
@@ -210,7 +227,9 @@ export async function getPublicRepair(token: string): Promise<PublicRepairDto | 
   const publicDocs = (docsRes.data ?? []).filter((doc: any) => isPublicRepairDocument(doc, paidPaymentIds));
   const repairProgress = publicRepairProgress(repair.status);
   const readyLabel =
-    repairProgress.key === "ready" ? repairReadyStatusLabel(repair.status, repair.payment_status, hasPaidPayment) : undefined;
+    repairProgress.key === "ready"
+      ? repairReadyStatusLabel(repair.status, repair.payment_status, hasPaidPayment)
+      : undefined;
 
   return {
     workshop: trackingWorkshopDto(workshopRes.data),
@@ -580,8 +599,7 @@ export async function getPublicPrintableDocument(token: string): Promise<PublicP
   }
 
   return {
-    documentType:
-      document.document_type === "payment_receipt" ? "payment_confirmation" : document.document_type,
+    documentType: document.document_type === "payment_receipt" ? "payment_confirmation" : document.document_type,
     workshop: workshopDto(workshopRes.data),
     client: {
       displayName: clientRes?.data?.full_name || "Client comptoir",

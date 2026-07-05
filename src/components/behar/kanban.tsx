@@ -44,7 +44,9 @@ export function KanbanBoard({
   return (
     <div
       ref={scrollRef}
-      className={cn("grid h-full min-h-0 gap-2.5 overflow-x-auto pb-1 kanban-scroll")}
+      // overscroll-x-contain : en bout de board, le swipe horizontal ne déclenche pas
+      // le geste « page précédente » du navigateur (macOS/trackpad).
+      className={cn("grid h-full min-h-0 gap-2.5 overflow-x-auto overscroll-x-contain pb-1 kanban-scroll")}
       style={{
         // Une piste par colonne réelle (corrige l'ancien repeat(5) qui faisait passer
         // la 6e colonne « Prêt » à la ligne) + colonnes plus larges pour aérer le board.
@@ -88,7 +90,10 @@ export function KanbanBoard({
               <h3 className="font-semibold text-[#1A1916] text-[15px]">{column.title}</h3>
               <span className="font-semibold text-[#6B6B6B] text-xs">{column.count}</span>
             </div>
-            <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-0.5">
+            {/* overscroll-y-contain (et pas overscroll-contain) : on bloque la chaîne de scroll
+                verticale vers la page, mais le scroll horizontal doit remonter au board —
+                sinon la molette gauche/droite ne marche pas quand le curseur est sur les cartes. */}
+            <div className="kanban-scroll min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain pr-0.5">
               {column.cards.map((card) => (
                 <RepairCardView
                   card={card}
@@ -238,9 +243,7 @@ function RepairCardView({
             {card.showInvoiceBadge ? (
               <span className="font-semibold text-[#6B6B6B] text-[10px]">Facture à créer</span>
             ) : null}
-            {card.showReadyBadge ? (
-              <span className="font-semibold text-[#147065] text-[10px]">Prêt</span>
-            ) : null}
+            {card.showReadyBadge ? <span className="font-semibold text-[#147065] text-[10px]">Prêt</span> : null}
           </div>
         )}
         <div className="mt-2 flex items-center justify-between gap-2 pt-2">

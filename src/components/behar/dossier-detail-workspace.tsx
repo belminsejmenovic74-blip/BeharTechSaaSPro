@@ -36,7 +36,11 @@ import { toast } from "sonner";
 
 import { getPrintableTarget } from "@/components/behar/local-printable-document";
 import { RealDeviceVisual } from "@/components/behar/real-product-visual";
-import { SettlementModal, useSettlementModal, todayInputValue as sharedTodayInputValue } from "@/components/behar/settlement-modal";
+import {
+  SettlementModal,
+  useSettlementModal,
+  todayInputValue as sharedTodayInputValue,
+} from "@/components/behar/settlement-modal";
 import {
   buildInvoiceLinesFromRepair,
   formatCurrency,
@@ -124,8 +128,7 @@ const nextStatus: Partial<Record<RepairStatus, RepairStatus>> = {
 };
 
 // Un devis ne peut être créé que depuis un statut compatible : jamais sur un dossier prêt/rendu/clôturé.
-const canQuoteFromStatus = (status: RepairStatus): boolean =>
-  ["Reçu", "Diagnostic", "En attente"].includes(status);
+const canQuoteFromStatus = (status: RepairStatus): boolean => ["Reçu", "Diagnostic", "En attente"].includes(status);
 
 // Ordre d'affichage des documents liés : la fiche d'entrée toujours en premier.
 const docTypeOrder: Record<string, number> = {
@@ -322,7 +325,10 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
       totalAmount = acceptedQuote.totalTtc ?? acceptedQuote.totalAmount ?? 0;
     } else {
       const partsCount = repair.parts?.length ?? 0;
-      hasLines = partsCount > 0 || (repair.total !== undefined && repair.total > 0) || (repair.amount !== undefined && repair.amount > 0);
+      hasLines =
+        partsCount > 0 ||
+        (repair.total !== undefined && repair.total > 0) ||
+        (repair.amount !== undefined && repair.amount > 0);
       totalAmount = repair.total ?? repair.amount ?? 0;
     }
 
@@ -355,7 +361,8 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
       date: todayInputValue(),
       method: settlementMethods.includes(paymentMethod) ? paymentMethod : ("" as PaymentMethod),
       customMethod: "",
-      status: paidAmount > 0 && paidAmount >= dossierTotal ? "Réglé" : paidAmount > 0 ? "Partiellement réglé" : "Non réglé",
+      status:
+        paidAmount > 0 && paidAmount >= dossierTotal ? "Réglé" : paidAmount > 0 ? "Partiellement réglé" : "Non réglé",
       confirmExternal: false,
       externalReference: "",
       note: "",
@@ -430,7 +437,9 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
               />
               <div className="min-w-0">
                 <p className="truncate font-semibold text-[#1A1916]">{formatDeviceLabel(repair, repair.device)}</p>
-                <p className="truncate text-[#6B6B6B] text-xs">{repair.imei ? `IMEI : ${repair.imei}` : "IMEI / S/N non renseigné"}</p>
+                <p className="truncate text-[#6B6B6B] text-xs">
+                  {repair.imei ? `IMEI : ${repair.imei}` : "IMEI / S/N non renseigné"}
+                </p>
               </div>
             </div>
             <HeaderCol className="lg:px-6" label="Problème" value={repair.issue || "À préciser"} />
@@ -503,8 +512,12 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
                 setPaymentMethod={setPaymentMethod}
               />
             )}
-            {tab === "Documents" && <DocumentsTab documents={documents} download={download} print={print} repair={repair} />}
-            {tab === "Notes" && <NotesTab focus={notesFocus} onFocusHandled={() => setNotesFocus(null)} repair={repair} />}
+            {tab === "Documents" && (
+              <DocumentsTab documents={documents} download={download} print={print} repair={repair} />
+            )}
+            {tab === "Notes" && (
+              <NotesTab focus={notesFocus} onFocusHandled={() => setNotesFocus(null)} repair={repair} />
+            )}
             {tab === "Historique" && <HistoryTab items={activity} />}
           </section>
         )}
@@ -513,104 +526,96 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
       {/* Mobile view */}
       <div className="block md:hidden space-y-5 px-1 py-1 min-h-screen text-[#1A1916]">
         <MobileRepairHeader repair={repair} customer={customer} readyDisplayLabel={readyDisplayLabel} />
-        
-        <MobileRepairSummaryCard 
-          repair={repair} 
-          customer={customer} 
-          dossierTotal={dossierTotal} 
-          formatDossier={formatDossier} 
+
+        <MobileRepairSummaryCard
+          repair={repair}
+          customer={customer}
+          dossierTotal={dossierTotal}
+          formatDossier={formatDossier}
         />
-        
+
         <MobileRepairStepper status={repair.status} />
-        
+
         <MobileRepairTabs activeTab={mobileTab} setActiveTab={setMobileTab} />
-        
+
         <div className="space-y-4 pt-1">
           {mobileTab === "Vue d'ensemble" && (
-            <MobileOverviewSection 
-              repair={repair} 
-              customer={customer} 
-              documents={documents} 
-              invoices={invoices} 
-              quotes={quotes} 
-              total={dossierTotal} 
-              onAdvance={advance} 
-              onClose={closeDossier} 
-              onCreateQuote={createQuote} 
-              onCreateInvoice={createInvoice} 
-              onPrint={() => setMobileTab("Documents")} 
+            <MobileOverviewSection
+              repair={repair}
+              customer={customer}
+              documents={documents}
+              invoices={invoices}
+              quotes={quotes}
+              total={dossierTotal}
+              onAdvance={advance}
+              onClose={closeDossier}
+              onCreateQuote={createQuote}
+              onCreateInvoice={createInvoice}
+              onPrint={() => setMobileTab("Documents")}
               onNotes={(t) => {
                 setMobileTab("Notes");
                 if (t) setNotesFocus(t);
-              }} 
+              }}
               setViewingMobileDoc={setViewingMobileDoc}
             />
           )}
           {mobileTab === "Fiche d'entrée" && (
-            <MobileEntrySheetSection 
-              repair={repair} 
-              customer={customer} 
-              documents={documents} 
+            <MobileEntrySheetSection
+              repair={repair}
+              customer={customer}
+              documents={documents}
               setActivePhotoIndex={setActivePhotoIndex}
             />
           )}
           {mobileTab === "Diagnostic" && (
-            <MobileDiagnosticSection 
-              repair={repair} 
-              onCreateQuote={createQuote} 
-              onNotes={() => setMobileTab("Notes")} 
+            <MobileDiagnosticSection
+              repair={repair}
+              onCreateQuote={createQuote}
+              onNotes={() => setMobileTab("Notes")}
             />
           )}
-          {mobileTab === "Pièces" && (
-            <MobilePartsSection 
-              repair={repair} 
-            />
-          )}
+          {mobileTab === "Pièces" && <MobilePartsSection repair={repair} />}
           {mobileTab === "Devis" && (
-            <MobileQuoteSection 
-              repair={repair} 
-              quote={quote} 
-              quotes={quotes} 
-              onCreate={createQuote} 
+            <MobileQuoteSection
+              repair={repair}
+              quote={quote}
+              quotes={quotes}
+              onCreate={createQuote}
               setViewingMobileDoc={setViewingMobileDoc}
             />
           )}
           {mobileTab === "Facture" && (
-            <MobileInvoiceSection 
-              invoice={invoice} 
-              invoices={invoices} 
-              onCreate={createInvoice} 
-              onPayment={indicatePayment} 
-              paymentMethod={paymentMethod} 
+            <MobileInvoiceSection
+              invoice={invoice}
+              invoices={invoices}
+              onCreate={createInvoice}
+              onPayment={indicatePayment}
+              paymentMethod={paymentMethod}
               paymentSummary={repair.paymentMethodNote}
-              setPaymentMethod={setPaymentMethod} 
-              formatDossier={formatDossier} 
+              setPaymentMethod={setPaymentMethod}
+              formatDossier={formatDossier}
               setViewingMobileDoc={setViewingMobileDoc}
             />
           )}
           {mobileTab === "Documents" && (
-            <MobileDocumentsSection 
-              repair={repair} 
-              documents={documents} 
-              download={download} 
-              print={print} 
+            <MobileDocumentsSection
+              repair={repair}
+              documents={documents}
+              download={download}
+              print={print}
               setViewingMobileDoc={setViewingMobileDoc}
             />
           )}
           {mobileTab === "Notes" && (
-            <MobileNotesHistorySection 
-              repair={repair} 
-              focus={notesFocus} 
-              onFocusHandled={() => setNotesFocus(null)} 
-            />
+            <MobileNotesHistorySection repair={repair} focus={notesFocus} onFocusHandled={() => setNotesFocus(null)} />
           )}
           {mobileTab === "SAV" && (
-            <MobileFinalTestSection 
-              repair={repair} 
-              onAdvance={advance} 
-              onClose={closeDossier} 
-              invoice={invoice} 
-              setMobileTab={setMobileTab} 
+            <MobileFinalTestSection
+              repair={repair}
+              onAdvance={advance}
+              onClose={closeDossier}
+              invoice={invoice}
+              setMobileTab={setMobileTab}
               setViewingMobileDoc={setViewingMobileDoc}
             />
           )}
@@ -718,7 +723,7 @@ function ClosureSettlementModal({
   total: number;
 }>) {
   const patch = (partial: Partial<typeof draft>) => onDraftChange({ ...draft, ...partial });
-  
+
   const isPaid = draft.status === "Réglé" || draft.status === "Partiellement réglé";
   const canSubmit = !isPaid || (draft.method && draft.confirmExternal && Number(draft.amount.replace(",", ".")) > 0);
 
@@ -765,18 +770,18 @@ function ClosureSettlementModal({
                 key={status}
                 type="button"
                 onClick={() => {
-                  patch({ 
+                  patch({
                     status,
                     amount: status === "Non réglé" ? "0" : String(total),
                     method: status === "Non réglé" ? ("" as PaymentMethod) : draft.method,
-                    confirmExternal: status === "Non réglé" ? false : draft.confirmExternal
+                    confirmExternal: status === "Non réglé" ? false : draft.confirmExternal,
                   });
                 }}
                 className={cn(
                   "flex items-center justify-center gap-2 rounded-[12px] border h-11 px-3 text-sm font-medium transition-colors",
                   draft.status === status
                     ? "border-[#2A9D8F] bg-[#E9F4F3] text-[#167B70]"
-                    : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:bg-[#FAFAFA]"
+                    : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:bg-[#FAFAFA]",
                 )}
               >
                 {draft.status === status && <CheckCircle2 className="size-4" />}
@@ -789,7 +794,7 @@ function ClosureSettlementModal({
         {isPaid && (
           <div className="space-y-4 rounded-[14px] border border-[#E8E8E5] p-4 bg-white shadow-[0_1px_2px_rgba(26,25,22,0.02)]">
             <h3 className="font-semibold text-[#1A1916] text-sm">Informations d'encaissement</h3>
-            
+
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="grid gap-1.5 text-sm">
                 <span className="font-semibold text-[#1A1916]">Montant réglé (€)</span>
@@ -807,12 +812,14 @@ function ClosureSettlementModal({
                 <select
                   className={cn(
                     "h-11 rounded-[12px] border bg-white px-3 outline-none focus:border-[#2A9D8F]",
-                    !draft.method ? "border-red-300 ring-1 ring-red-100" : "border-[#E8E8E5]"
+                    !draft.method ? "border-red-300 ring-1 ring-red-100" : "border-[#E8E8E5]",
                   )}
                   onChange={(event) => patch({ method: event.target.value as PaymentMethod })}
                   value={draft.method}
                 >
-                  <option value="" disabled>Sélectionner...</option>
+                  <option value="" disabled>
+                    Sélectionner...
+                  </option>
                   {settlementMethods.map((method) => (
                     <option key={method} value={method}>
                       {method}
@@ -878,15 +885,11 @@ function ClosureSettlementModal({
           >
             Annuler
           </button>
-          <PrimaryButton 
-            className="flex-1" 
-            onClick={onSubmit} 
-            disabled={!canSubmit}
-          >
-            {draft.status === "Non réglé" 
-              ? "Clôturer sans règlement" 
-              : draft.status === "Réglé" 
-                ? "Clôturer et marquer réglé" 
+          <PrimaryButton className="flex-1" onClick={onSubmit} disabled={!canSubmit}>
+            {draft.status === "Non réglé"
+              ? "Clôturer sans règlement"
+              : draft.status === "Réglé"
+                ? "Clôturer et marquer réglé"
                 : "Clôturer (règlement partiel)"}
           </PrimaryButton>
         </div>
@@ -905,7 +908,7 @@ function StatusPill({ status }: Readonly<{ status: RepairStatus }>) {
           ? "bg-[#FFFFFF] text-[#B42318]"
           : status === "Devis envoyé" || status === "SAV"
             ? "bg-[#FFFFFF] text-[#936100]"
-          : "bg-[#FFFFFF] text-[#167B70]";
+            : "bg-[#FFFFFF] text-[#167B70]";
   return (
     <span className={cn("inline-flex items-center gap-2 rounded-full px-3 py-1.5 font-semibold text-sm", tone)}>
       <span className="size-1.5 rounded-full bg-current" />
@@ -948,7 +951,11 @@ function Stepper({ activeIndex }: Readonly<{ activeIndex: number }>) {
                 <span
                   className={cn(
                     "h-0.5 flex-1 rounded-full",
-                    index === progression.length - 1 ? "opacity-0" : index < activeIndex ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]",
+                    index === progression.length - 1
+                      ? "opacity-0"
+                      : index < activeIndex
+                        ? "bg-[#2A9D8F]"
+                        : "bg-[#FFFFFF]",
                   )}
                 />
               </div>
@@ -1059,7 +1066,9 @@ function ActivityCard({ repair }: Readonly<{ repair: Repair }>) {
                 >
                   {done ? <Check className="size-3.5" /> : current ? <Clock className="size-3.5" /> : index + 1}
                 </span>
-                {!isLast ? <span className={cn("my-0.5 w-0.5 flex-1", done ? "bg-[#FFFFFF]" : "bg-[#FFFFFF]")} /> : null}
+                {!isLast ? (
+                  <span className={cn("my-0.5 w-0.5 flex-1", done ? "bg-[#FFFFFF]" : "bg-[#FFFFFF]")} />
+                ) : null}
               </div>
               <div className={cn("pb-3", pending && "opacity-60")}>
                 <p className="font-semibold text-[#1A1916] text-sm leading-tight">{step.title}</p>
@@ -1121,11 +1130,18 @@ function DiagnosticNotesCard({ repair }: Readonly<{ repair: Repair }>) {
           <FactBlock label="Intervention prévue" value={repair.recommendedIntervention || repair.issueType} />
           <div className="grid grid-cols-2 gap-4">
             <FactBlock label="Technicien" value={repair.technician || "Atelier"} />
-            <FactBlock label="Temps estimé" value={repair.estimatedDoneAt ? formatIsoToDisplay(repair.estimatedDoneAt) : "—"} />
+            <FactBlock
+              label="Temps estimé"
+              value={repair.estimatedDoneAt ? formatIsoToDisplay(repair.estimatedDoneAt) : "—"}
+            />
           </div>
           <FactBlock
             label="Pièces utilisées"
-            value={repair.parts.length ? repair.parts.map((part) => `${part.name} ×${part.quantity}`).join(", ") : "Aucune pièce"}
+            value={
+              repair.parts.length
+                ? repair.parts.map((part) => `${part.name} ×${part.quantity}`).join(", ")
+                : "Aucune pièce"
+            }
           />
         </div>
       )}
@@ -1153,8 +1169,9 @@ function DocumentsLiesCard({
 }>) {
   const { preview, download } = useDocument();
   const rows = documents.map((doc) => {
-    const quote = doc.type === "quote" ? quotes.find((q) => q.id === (doc as any).quoteId) ?? quotes[0] : undefined;
-    const invoice = doc.type === "invoice" ? invoices.find((i) => i.id === (doc as any).invoiceId) ?? invoices[0] : undefined;
+    const quote = doc.type === "quote" ? (quotes.find((q) => q.id === (doc as any).quoteId) ?? quotes[0]) : undefined;
+    const invoice =
+      doc.type === "invoice" ? (invoices.find((i) => i.id === (doc as any).invoiceId) ?? invoices[0]) : undefined;
     const amount = quote ? getQuoteTotal(quote) : invoice ? getInvoiceTotal(invoice) : 0;
     const number = quote?.number || invoice?.number || "";
     const statusLabel = invoice
@@ -1192,7 +1209,9 @@ function DocumentsLiesCard({
                 </p>
                 <p className="truncate text-[#6B6B6B] text-xs">{doc.title}</p>
               </div>
-              {amount ? <span className="shrink-0 font-semibold text-[#1A1916] text-sm">{formatEuro(amount)}</span> : null}
+              {amount ? (
+                <span className="shrink-0 font-semibold text-[#1A1916] text-sm">{formatEuro(amount)}</span>
+              ) : null}
               {statusLabel ? (
                 <span className="shrink-0 rounded-full bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#167B70] text-[11px]">
                   {statusLabel}
@@ -1271,7 +1290,10 @@ function SuiviClientCard({ repair }: Readonly<{ repair: Repair }>) {
   }, [repair.id, repair.publicAccess, ensureRepairPublicAccess]);
 
   useEffect(() => {
-    if (trackingUrl) generateQrDataUrl(trackingUrl).then(setQr).catch(() => setQr(""));
+    if (trackingUrl)
+      generateQrDataUrl(trackingUrl)
+        .then(setQr)
+        .catch(() => setQr(""));
   }, [trackingUrl]);
 
   const copyLink = async () => {
@@ -1296,7 +1318,9 @@ function SuiviClientCard({ repair }: Readonly<{ repair: Repair }>) {
             <img alt="QR de suivi" className="size-24 rounded-[12px] border border-[#FFFFFF] bg-white p-1.5" src={qr} />
           </div>
         ) : (
-          <div className="grid size-24 shrink-0 place-items-center rounded-[12px] bg-[#FFFFFF] text-[#9A9AA0] text-xs">QR…</div>
+          <div className="grid size-24 shrink-0 place-items-center rounded-[12px] bg-[#FFFFFF] text-[#9A9AA0] text-xs">
+            QR…
+          </div>
         )}
         <div className="min-w-0 flex-1">
           <p className="text-[#6B6B6B] text-xs">Le client peut suivre l'avancement de son dossier en ligne.</p>
@@ -1376,8 +1400,16 @@ function ActionsCard({
           <ShoppingCart className="size-4" />
           Vente comptoir
         </Link>
-        <ActionRow icon={<Lock className="size-4" />} label="Ajouter une note interne" onClick={() => onNotes("internal")} />
-        <ActionRow icon={<MessageSquare className="size-4" />} label="Ajouter une note client" onClick={() => onNotes("client")} />
+        <ActionRow
+          icon={<Lock className="size-4" />}
+          label="Ajouter une note interne"
+          onClick={() => onNotes("internal")}
+        />
+        <ActionRow
+          icon={<MessageSquare className="size-4" />}
+          label="Ajouter une note client"
+          onClick={() => onNotes("client")}
+        />
         {(canMarkReturned || !isTerminalRepairStatus(repair.status)) && (
           <button
             className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#F3D0CC] bg-white font-semibold text-[#B42318] text-sm hover:bg-[#FFFFFF]"
@@ -1535,7 +1567,10 @@ function FicheEntreeTab({
           ["Client", displayCustomerName(customer) || "Non renseigné"],
           ["Téléphone", customer?.phone || "Non renseigné"],
           ["Appareil", formatDeviceLabel(repair, repair.device)],
-          ["Marque / modèle", [repair.brandName, repair.deviceModel || repair.model].filter(Boolean).join(" ") || "Non renseigné"],
+          [
+            "Marque / modèle",
+            [repair.brandName, repair.deviceModel || repair.model].filter(Boolean).join(" ") || "Non renseigné",
+          ],
           ["IMEI / série", repair.imei || "Non renseigné"],
           ["Code / verrouillage", accessLabel || "Non renseigné"],
         ]}
@@ -1607,7 +1642,9 @@ function DiagnosticTab({ repair }: Readonly<{ repair: Repair }>) {
       <aside className="space-y-3">
         <div className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
           <h4 className="font-semibold text-sm text-[#1A1916]">Actions diagnostic</h4>
-          <p className="text-xs text-[#6B6B6B] mt-1 mb-4">Générez le rapport de diagnostic officiel et de tests de l'appareil.</p>
+          <p className="text-xs text-[#6B6B6B] mt-1 mb-4">
+            Générez le rapport de diagnostic officiel et de tests de l'appareil.
+          </p>
           <SecondaryButton className="w-full" onClick={createDiagnosticReport}>
             Générer rapport diagnostic
           </SecondaryButton>
@@ -1621,7 +1658,11 @@ function RepairTab({ onAdvance, repair }: Readonly<{ repair: Repair; onAdvance: 
   const store = useBeharStore();
   const [notes, setNotes] = useState(repair.repairNotes ?? repair.notes ?? "");
   const save = () => {
-    store.updateRepair(repair.id, { repairNotes: notes, notes, history: [...repair.history, "Notes réparation mises à jour"] });
+    store.updateRepair(repair.id, {
+      repairNotes: notes,
+      notes,
+      history: [...repair.history, "Notes réparation mises à jour"],
+    });
     toast.success("Réparation mise à jour.");
   };
   return (
@@ -1636,7 +1677,10 @@ function RepairTab({ onAdvance, repair }: Readonly<{ repair: Repair; onAdvance: 
         onSave={save}
       />
       <aside className="space-y-3">
-        <TextBlock label="Pièces utilisées / réservées" value={repair.parts.map((part) => `${part.name} x${part.quantity}`).join("\n")} />
+        <TextBlock
+          label="Pièces utilisées / réservées"
+          value={repair.parts.map((part) => `${part.name} x${part.quantity}`).join("\n")}
+        />
         <TextBlock
           label="Statut pièce"
           value={
@@ -1681,7 +1725,9 @@ function QuoteTab({
         />
       ))}
       {quote.status !== "Accepté" && quote.status !== "Facturé" ? (
-        <PrimaryButton onClick={() => store.updateQuote(quote.id, { status: "Accepté" })}>Accepter le devis</PrimaryButton>
+        <PrimaryButton onClick={() => store.updateQuote(quote.id, { status: "Accepté" })}>
+          Accepter le devis
+        </PrimaryButton>
       ) : null}
     </div>
   );
@@ -1732,7 +1778,9 @@ function InvoiceTab({
             <button
               className={cn(
                 "rounded-full border px-3 py-1.5 text-xs font-semibold",
-                paymentMethod === method ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : "border-[#E8E8E5] bg-white text-[#1A1916]",
+                paymentMethod === method
+                  ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
+                  : "border-[#E8E8E5] bg-white text-[#1A1916]",
               )}
               key={method}
               onClick={() => setPaymentMethod(method)}
@@ -1777,7 +1825,12 @@ function DocumentsTab({
               const state = useBeharStore.getState();
               const access = repair.publicAccess ?? state.ensureRepairPublicAccess(repair.id);
               if (!access) return toast.error("Lien de suivi indisponible.");
-              await navigator.clipboard.writeText(getCustomerTrackingUrl({ ...repair, publicAccess: access }, state.workshopSettings ?? state.workshopInfo));
+              await navigator.clipboard.writeText(
+                getCustomerTrackingUrl(
+                  { ...repair, publicAccess: access },
+                  state.workshopSettings ?? state.workshopInfo,
+                ),
+              );
               toast.success("Lien de suivi copié");
             } catch {
               toast.error("Copie impossible.");
@@ -1788,7 +1841,9 @@ function DocumentsTab({
           Copier lien suivi client
         </SecondaryButton>
       </div>
-      {!documents.length ? <EmptyLinked action="Retour au dossier" onClick={() => undefined} title="Aucun document lié" /> : null}
+      {!documents.length ? (
+        <EmptyLinked action="Retour au dossier" onClick={() => undefined} title="Aucun document lié" />
+      ) : null}
       {documents.map((document) => {
         const target = getPrintableTarget(document as any);
         return (
@@ -2136,7 +2191,9 @@ function MobileRepairHeader({
         </Link>
         <div className="flex items-center gap-1.5">
           <span className="font-black text-[11px] tracking-wider text-[#6B6B6B]">BEHAR • TECH</span>
-          <span className="px-1.5 py-0.5 text-[9px] font-black bg-[#FFFFFF] text-[#167B70] rounded-[6px] tracking-wide shadow-sm">PRO</span>
+          <span className="px-1.5 py-0.5 text-[9px] font-black bg-[#FFFFFF] text-[#167B70] rounded-[6px] tracking-wide shadow-sm">
+            PRO
+          </span>
         </div>
         <button
           type="button"
@@ -2148,9 +2205,7 @@ function MobileRepairHeader({
 
       {/* Titre & Statut */}
       <div className="flex items-center justify-between pt-1">
-        <h1 className="text-[22px] font-semibold text-[#1A1916] tracking-tight">
-          Dossier #{repair.number}
-        </h1>
+        <h1 className="text-[22px] font-semibold text-[#1A1916] tracking-tight">Dossier #{repair.number}</h1>
         <div className="flex flex-col items-end gap-1">
           <StatusPill status={repair.status} />
           {repair.status === "Prêt" && <StatusBadge status={readyDisplayLabel} />}
@@ -2167,12 +2222,8 @@ function MobileRepairHeader({
           type={repair.deviceType}
         />
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-bold text-[#1A1916] truncate">
-            {formatDeviceLabel(repair, repair.device)}
-          </p>
-          <p className="text-[11px] text-[#6B6B6B] mt-0.5 truncate">
-            {displayCustomerName(customer) || "Client"}
-          </p>
+          <p className="text-[13px] font-bold text-[#1A1916] truncate">{formatDeviceLabel(repair, repair.device)}</p>
+          <p className="text-[11px] text-[#6B6B6B] mt-0.5 truncate">{displayCustomerName(customer) || "Client"}</p>
         </div>
       </div>
     </div>
@@ -2201,9 +2252,7 @@ function MobileRepairSummaryCard({
           type={repair.deviceType}
         />
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-bold text-[#1A1916] truncate">
-            {formatDeviceLabel(repair, repair.device)}
-          </h3>
+          <h3 className="text-sm font-bold text-[#1A1916] truncate">{formatDeviceLabel(repair, repair.device)}</h3>
           <p className="text-xs text-[#6B6B6B] mt-0.5 truncate">
             {repair.imei ? `IMEI : ${repair.imei}` : "IMEI : Non renseigné"}
           </p>
@@ -2216,9 +2265,7 @@ function MobileRepairSummaryCard({
           <p className="text-sm font-semibold text-[#1A1916] mt-0.5 truncate">
             {displayCustomerName(customer) || "Client"}
           </p>
-          <p className="text-xs text-[#6B6B6B] mt-0.5 truncate">
-            {customer?.phone || "Téléphone non renseigné"}
-          </p>
+          <p className="text-xs text-[#6B6B6B] mt-0.5 truncate">{customer?.phone || "Téléphone non renseigné"}</p>
         </div>
         <div>
           <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Problème</span>
@@ -2245,18 +2292,23 @@ function MobileRepairStepper({
   status: RepairStatus;
 }>) {
   const steps = ["Reçu", "Diagnostic", "Devis", "Réparation", "Test final", "Prêt", "Rendu"];
-  
+
   const getActiveStepIndex = (s: RepairStatus): number => {
     switch (s) {
-      case "Reçu": return 0;
-      case "Diagnostic": return 1;
+      case "Reçu":
+        return 0;
+      case "Diagnostic":
+        return 1;
       case "En attente":
       case "Devis envoyé":
       case "Devis accepté":
         return 2;
-      case "En réparation": return 3;
-      case "Test final": return 4;
-      case "Prêt": return 5;
+      case "En réparation":
+        return 3;
+      case "Test final":
+        return 4;
+      case "Prêt":
+        return 5;
       case "Rendu":
       case "Clôturé":
       default:
@@ -2290,7 +2342,7 @@ function MobileRepairStepper({
                         ? "border-[#2A9D8F] bg-[#2A9D8F] text-white shadow-sm"
                         : isCurrent
                           ? "border-[#2A9D8F] bg-white text-[#2A9D8F] shadow-[0_0_0_2px_rgba(42,157,143,0.1)] scale-110"
-                          : "border-[#E8E8E5] bg-white text-[#6B6B6B]"
+                          : "border-[#E8E8E5] bg-white text-[#6B6B6B]",
                     )}
                   >
                     {isCompleted ? <Check className="size-4" /> : index + 1}
@@ -2305,7 +2357,7 @@ function MobileRepairStepper({
                 <span
                   className={cn(
                     "mt-2 text-center text-[11px] font-semibold tracking-tight whitespace-nowrap",
-                    isCurrent ? "text-[#1A1916] font-bold" : isCompleted ? "text-[#2A9D8F]" : "text-[#6B6B6B]"
+                    isCurrent ? "text-[#1A1916] font-bold" : isCompleted ? "text-[#2A9D8F]" : "text-[#6B6B6B]",
                   )}
                 >
                   {step}
@@ -2351,7 +2403,7 @@ function MobileRepairTabs({
               "h-11 shrink-0 px-4 rounded-full text-[13px] font-bold transition-all duration-200 outline-none",
               active
                 ? "bg-[#2A9D8F] text-white shadow-[0_2px_8px_rgba(42,157,143,0.25)]"
-                : "bg-white border border-[#E8E8E5] text-[#6B6B6B] hover:text-[#1A1916]"
+                : "bg-white border border-[#E8E8E5] text-[#6B6B6B] hover:text-[#1A1916]",
             )}
           >
             {t}
@@ -2398,7 +2450,10 @@ function MobileSuiviClientCard({ repair }: Readonly<{ repair: Repair }>) {
   }, [repair.id, repair.publicAccess, ensureRepairPublicAccess]);
 
   useEffect(() => {
-    if (trackingUrl) generateQrDataUrl(trackingUrl).then(setQr).catch(() => setQr(""));
+    if (trackingUrl)
+      generateQrDataUrl(trackingUrl)
+        .then(setQr)
+        .catch(() => setQr(""));
   }, [trackingUrl]);
 
   const handleShareOrCopy = async () => {
@@ -2430,7 +2485,7 @@ function MobileSuiviClientCard({ repair }: Readonly<{ repair: Repair }>) {
   return (
     <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
       <h3 className="text-[15px] font-bold text-[#1A1916]">Suivi client en direct</h3>
-      
+
       <div className="flex flex-col items-center gap-3">
         {qr ? (
           <img
@@ -2449,7 +2504,9 @@ function MobileSuiviClientCard({ repair }: Readonly<{ repair: Repair }>) {
       </div>
 
       <div className="space-y-1.5">
-        <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Partager ou copier le lien</span>
+        <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">
+          Partager ou copier le lien
+        </span>
         <button
           onClick={handleShareOrCopy}
           type="button"
@@ -2503,14 +2560,14 @@ function MobileOverviewSection({
   const status = repair.status;
   const targetStatus = nextStatus[status];
   const canAdvance = Boolean(targetStatus) && !isTerminalRepairStatus(status);
-  
+
   const quote = quotes[0];
   const acceptedQuote = quotes.find((entry) => entry.status === "Accepté" || entry.status === "Facturé");
   const invoice = invoices[0];
 
-  const quoteDoc = documents.find(d => d.type === "quote");
-  const invoiceDoc = documents.find(d => d.type === "invoice");
-  const paymentDoc = documents.find(d => ["payment", "sale-receipt", "sale-invoice"].includes(d.type));
+  const quoteDoc = documents.find((d) => d.type === "quote");
+  const invoiceDoc = documents.find((d) => d.type === "invoice");
+  const paymentDoc = documents.find((d) => ["payment", "sale-receipt", "sale-invoice"].includes(d.type));
 
   const deduplicatedDocs = useMemo(() => getDeduplicatedDocuments(documents), [documents]);
 
@@ -2786,9 +2843,7 @@ function MobileOverviewSection({
               <p className="text-[13px] font-semibold text-[#1A1916] leading-snug">{item}</p>
             </li>
           ))}
-          {history.length === 0 && (
-            <p className="text-xs text-[#6B6B6B] pl-2">Aucun événement enregistré.</p>
-          )}
+          {history.length === 0 && <p className="text-xs text-[#6B6B6B] pl-2">Aucun événement enregistré.</p>}
         </ol>
         {history.length > 3 && (
           <button
@@ -2811,8 +2866,12 @@ function MobileOverviewSection({
             </li>
           ) : (
             deduplicatedDocs.map((doc) => {
-              const q = doc.type === "quote" ? quotes.find((entry) => entry.id === doc.quoteId) ?? quotes[0] : undefined;
-              const inv = doc.type === "invoice" ? invoices.find((entry) => entry.id === doc.invoiceId) ?? invoices[0] : undefined;
+              const q =
+                doc.type === "quote" ? (quotes.find((entry) => entry.id === doc.quoteId) ?? quotes[0]) : undefined;
+              const inv =
+                doc.type === "invoice"
+                  ? (invoices.find((entry) => entry.id === doc.invoiceId) ?? invoices[0])
+                  : undefined;
               const amount = q ? getQuoteTotal(q) : inv ? getInvoiceTotal(inv) : 0;
               const number = q?.number || inv?.number || "";
               const statusLabel = inv
@@ -2824,7 +2883,7 @@ function MobileOverviewSection({
                   : doc.type === "intake"
                     ? "Émise"
                     : "";
-              
+
               return (
                 <button
                   key={doc.id}
@@ -2863,9 +2922,7 @@ function MobileOverviewSection({
       {/* 3. Carte Actions Rapides */}
       <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
         <h3 className="text-[15px] font-bold text-[#1A1916]">Actions rapides</h3>
-        <div className="space-y-2.5">
-          {renderStatusActions()}
-        </div>
+        <div className="space-y-2.5">{renderStatusActions()}</div>
       </div>
 
       {/* 4. Suivi client & QR Code */}
@@ -2888,21 +2945,19 @@ function MobileEntrySheetSection({
   const { preview, download } = useDocument();
   const condition = repair.intakeCondition;
   const intakeDoc = documents.find((doc) => doc.type === "intake");
-  const accessories = [
-    ...(condition?.accessories ?? []),
-    ...(condition?.accessoriesOther ? [condition.accessoriesOther] : []),
-  ]
-    .filter(Boolean)
-    .join(", ") || "Aucun";
+  const accessories =
+    [...(condition?.accessories ?? []), ...(condition?.accessoriesOther ? [condition.accessoriesOther] : [])]
+      .filter(Boolean)
+      .join(", ") || "Aucun";
 
   const accessLabel = [condition?.accessMethod, condition?.accessCode].filter(Boolean).join(" · ") || "Non communiqué";
 
   const checklist = [
-    { label: "État général", value: condition?.generalCondition || "Non renseigné" },
-    { label: "Écran", value: condition?.screenState || "Non renseigné" },
-    { label: "Châssis", value: condition?.frameState || "Non renseigné" },
-    { label: "Caméras", value: condition?.camerasState || "OK" },
-    { label: "Boutons", value: condition?.buttonsState || "OK" },
+    { label: "État général", value: condition?.generalCondition ?? "Non renseigné" },
+    { label: "Écran", value: condition?.screenState ?? "Non renseigné" },
+    { label: "Châssis", value: condition?.frameState ?? "Non renseigné" },
+    { label: "Caméras", value: condition?.camerasState ?? "OK" },
+    { label: "Boutons", value: condition?.buttonsState ?? "OK" },
     { label: "Code appareil", value: accessLabel },
     { label: "Accessoires fournis", value: accessories },
     { label: "Défauts visibles", value: condition?.visibleDefects || "Aucun défaut majeur" },
@@ -2994,14 +3049,11 @@ function MobileEntrySheetSection({
         {condition?.signatureDataUrl ? (
           <div className="space-y-3">
             <div className="border border-[#E8E8E5] rounded-[14px] bg-[#FFFFFF] p-3 flex justify-center">
-              <img
-                src={condition.signatureDataUrl}
-                alt="Signature client"
-                className="h-20 max-w-full object-contain"
-              />
+              <img src={condition.signatureDataUrl} alt="Signature client" className="h-20 max-w-full object-contain" />
             </div>
             <p className="text-[11px] text-[#6B6B6B] text-center leading-snug">
-              Signé le {formatIsoToDisplay(condition.signatureSignedAt || condition.signedAt || "")} par {condition.signerName || "le client"}.
+              Signé le {formatIsoToDisplay(condition.signatureSignedAt || condition.signedAt || "")} par{" "}
+              {condition.signerName || "le client"}.
             </p>
           </div>
         ) : (
@@ -3076,7 +3128,9 @@ function MobileDiagnosticSection({
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Intervention prévue</label>
+              <label className="text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider block">
+                Intervention prévue
+              </label>
               <textarea
                 value={intervention}
                 onChange={(e) => setIntervention(e.target.value)}
@@ -3094,19 +3148,23 @@ function MobileDiagnosticSection({
               </p>
             </div>
             <div className="space-y-1">
-              <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Intervention recommandée</span>
+              <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">
+                Intervention recommandée
+              </span>
               <p className="text-xs text-[#1A1916] font-medium leading-relaxed bg-[#FFFFFF] rounded-[12px] p-3 border border-[#E8E8E5] whitespace-pre-wrap">
                 {repair.recommendedIntervention || "Aucune intervention spécifiée."}
               </p>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4 pt-1">
               <div>
                 <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Technicien</span>
                 <p className="text-xs font-bold text-[#1A1916] mt-0.5">{repair.technician || "Atelier principal"}</p>
               </div>
               <div>
-                <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Temps estimé</span>
+                <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">
+                  Temps estimé
+                </span>
                 <p className="text-xs font-bold text-[#1A1916] mt-0.5">
                   {repair.estimatedDoneAt ? formatIsoToDisplay(repair.estimatedDoneAt) : "Non précisé"}
                 </p>
@@ -3172,9 +3230,7 @@ function MobilePartsSection({
   };
 
   const compatibleItems = useMemo(() => {
-    return stockItems.filter((item) =>
-      isStockItemCompatibleWithRepair(item, repair, deviceModels)
-    );
+    return stockItems.filter((item) => isStockItemCompatibleWithRepair(item, repair, deviceModels));
   }, [stockItems, repair, deviceModels]);
 
   const itemsToShow = showAllStock ? stockItems : compatibleItems;
@@ -3183,7 +3239,7 @@ function MobilePartsSection({
     const isCompatible = isStockItemCompatibleWithRepair(item, repair, deviceModels);
     if (!isCompatible) {
       const ok = window.confirm(
-        `Attention : cette pièce (${item.name}) n'est pas compatible avec l'appareil (${repair.brandName} ${repair.deviceModel || repair.model}). Confirmer la réservation ?`
+        `Attention : cette pièce (${item.name}) n'est pas compatible avec l'appareil (${repair.brandName} ${repair.deviceModel || repair.model}). Confirmer la réservation ?`,
       );
       if (!ok) return;
     }
@@ -3201,9 +3257,7 @@ function MobilePartsSection({
         <h3 className="text-[14px] font-bold text-[#1A1916]">
           Pièces compatibles avec {repair.brandName} {repair.deviceModel || repair.model || repair.device}
         </h3>
-        <p className="text-xs text-[#6B6B6B] mt-0.5">
-          {compatibleItems.length} références compatibles
-        </p>
+        <p className="text-xs text-[#6B6B6B] mt-0.5">{compatibleItems.length} références compatibles</p>
       </div>
 
       <div className="space-y-2.5">
@@ -3231,9 +3285,7 @@ function MobilePartsSection({
                 <p className="text-[11px] text-[#6B6B6B] mt-0.5 truncate">
                   Réf. {item.sku || "N/A"} · Stock : <span className="font-bold text-[#1A1916]">{item.stock}</span>
                 </p>
-                <p className="text-xs font-bold text-[#167B70] mt-1">
-                  {formatPartsCurrency(item.salePrice)}
-                </p>
+                <p className="text-xs font-bold text-[#167B70] mt-1">{formatPartsCurrency(item.salePrice)}</p>
               </div>
               <button
                 type="button"
@@ -3341,10 +3393,13 @@ function MobileQuoteSection({
         const total = subtotal;
 
         // Find doc matching this quote
-        const doc = store.documents.find(d => d.quoteId === q.id && d.type === "quote");
+        const doc = store.documents.find((d) => d.quoteId === q.id && d.type === "quote");
 
         return (
-          <div key={q.id} className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
+          <div
+            key={q.id}
+            className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4"
+          >
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-bold text-[15px] text-[#1A1916]">Devis {q.number}</h4>
@@ -3439,7 +3494,7 @@ function MobileInvoiceSection({
   const acceptedQuote = quotes.find((entry) => entry.status === "Accepté" || entry.status === "Facturé");
 
   const hasAcceptedQuote = !!acceptedQuote;
-  const hasTotal = repair ? ((repair.total ?? 0) > 0 || (repair.amount ?? 0) > 0) : false;
+  const hasTotal = repair ? (repair.total ?? 0) > 0 || (repair.amount ?? 0) > 0 : false;
   const canCreateInvoice = hasAcceptedQuote || hasTotal;
 
   if (!invoice) {
@@ -3480,20 +3535,21 @@ function MobileInvoiceSection({
         </div>
       ) : null}
       {invoices.map((inv) => {
-        const doc = store.documents.find(d => d.invoiceId === inv.id && d.type === "invoice");
+        const doc = store.documents.find((d) => d.invoiceId === inv.id && d.type === "invoice");
         return (
-          <div key={inv.id} className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
+          <div
+            key={inv.id}
+            className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4"
+          >
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-bold text-[15px] text-[#1A1916]">Facture {inv.number}</h4>
-                <p className="text-[11px] text-[#6B6B6B] mt-0.5">
-                  Créée le {formatIsoToDisplay(inv.createdAt || "")}
-                </p>
+                <p className="text-[11px] text-[#6B6B6B] mt-0.5">Créée le {formatIsoToDisplay(inv.createdAt || "")}</p>
               </div>
               <span
                 className={cn(
                   "rounded-full px-2.5 py-0.5 font-bold text-[10px] uppercase tracking-wide",
-                  inv.status === "Payée" ? "bg-[#FFFFFF] text-[#167B70]" : "bg-[#FFFFFF] text-[#936100]"
+                  inv.status === "Payée" ? "bg-[#FFFFFF] text-[#167B70]" : "bg-[#FFFFFF] text-[#936100]",
                 )}
               >
                 {inv.status === "Payée" ? "Réglée" : "À régler"}
@@ -3509,7 +3565,9 @@ function MobileInvoiceSection({
 
             {inv.status !== "Payée" && (
               <div className="space-y-3 pt-1">
-                <label className="text-xs font-bold text-[#6B6B6B] uppercase tracking-wider block">Moyen de règlement</label>
+                <label className="text-xs font-bold text-[#6B6B6B] uppercase tracking-wider block">
+                  Moyen de règlement
+                </label>
                 <div className="grid grid-cols-2 gap-2">
                   {paymentMethods.map((method) => {
                     const active = paymentMethod === method;
@@ -3522,7 +3580,7 @@ function MobileInvoiceSection({
                           "h-10 rounded-full border text-[11px] font-bold flex items-center justify-center px-2.5 transition",
                           active
                             ? "border-[#2A9D8F] bg-[#2A9D8F] text-white shadow-sm"
-                            : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:text-[#1A1916]"
+                            : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:text-[#1A1916]",
                         )}
                       >
                         {method}
@@ -3587,9 +3645,7 @@ function MobileDocumentsSection({
     <div className="space-y-4">
       <div>
         <h3 className="text-[14px] font-bold text-[#1A1916]">Documents liés au dossier</h3>
-        <p className="text-xs text-[#6B6B6B] mt-0.5">
-          {deduplicatedDocs.length} documents émis
-        </p>
+        <p className="text-xs text-[#6B6B6B] mt-0.5">{deduplicatedDocs.length} documents émis</p>
       </div>
 
       <div className="space-y-3">
@@ -3599,8 +3655,12 @@ function MobileDocumentsSection({
           </div>
         ) : (
           deduplicatedDocs.map((doc) => {
-            const q = doc.type === "quote" ? quotes.find((entry) => entry.id === doc.quoteId) ?? quotes[0] : undefined;
-            const inv = doc.type === "invoice" ? invoices.find((entry) => entry.id === doc.invoiceId) ?? invoices[0] : undefined;
+            const q =
+              doc.type === "quote" ? (quotes.find((entry) => entry.id === doc.quoteId) ?? quotes[0]) : undefined;
+            const inv =
+              doc.type === "invoice"
+                ? (invoices.find((entry) => entry.id === doc.invoiceId) ?? invoices[0])
+                : undefined;
             const amount = q ? getQuoteTotal(q) : inv ? getInvoiceTotal(inv) : 0;
             const number = q?.number || inv?.number || "";
             const statusLabel = inv
@@ -3723,7 +3783,7 @@ function MobileNotesHistorySection({
   const [internalDraft, setInternalDraft] = useState("");
   const [clientDraft, setClientDraft] = useState("");
   const [activeSegment, setActiveSegment] = useState<"internal" | "client">("internal");
-  
+
   const internalRef = useRef<HTMLTextAreaElement>(null);
   const clientRef = useRef<HTMLTextAreaElement>(null);
 
@@ -3767,9 +3827,7 @@ function MobileNotesHistorySection({
           onClick={() => setActiveSegment("internal")}
           className={cn(
             "flex-1 h-9 rounded-full text-xs font-bold transition-all outline-none",
-            activeSegment === "internal"
-              ? "bg-[#2A9D8F] text-white shadow-sm"
-              : "text-[#6B6B6B] hover:text-[#1A1916]"
+            activeSegment === "internal" ? "bg-[#2A9D8F] text-white shadow-sm" : "text-[#6B6B6B] hover:text-[#1A1916]",
           )}
         >
           <Lock className="inline size-3.5 mr-1" />
@@ -3780,9 +3838,7 @@ function MobileNotesHistorySection({
           onClick={() => setActiveSegment("client")}
           className={cn(
             "flex-1 h-9 rounded-full text-xs font-bold transition-all outline-none",
-            activeSegment === "client"
-              ? "bg-[#2A9D8F] text-white shadow-sm"
-              : "text-[#6B6B6B] hover:text-[#1A1916]"
+            activeSegment === "client" ? "bg-[#2A9D8F] text-white shadow-sm" : "text-[#6B6B6B] hover:text-[#1A1916]",
           )}
         >
           <MessageSquare className="inline size-3.5 mr-1" />
@@ -3937,9 +3993,7 @@ function MobileFinalTestSection({
               <span
                 className={cn(
                   "size-5 rounded-full border flex items-center justify-center transition-all",
-                  t.checked
-                    ? "bg-[#2A9D8F] border-[#2A9D8F] text-white"
-                    : "border-[#E8E8E5] bg-white text-transparent"
+                  t.checked ? "bg-[#2A9D8F] border-[#2A9D8F] text-white" : "border-[#E8E8E5] bg-white text-transparent",
                 )}
               >
                 <Check className="size-3" />
@@ -4040,14 +4094,17 @@ function MobileDocumentViewerModal({
   const isInvoice = doc.type === "invoice";
   const isPayment = ["payment", "sale-receipt", "sale-invoice"].includes(doc.type);
 
-  const underlyingQuote = isQuote ? quotes.find((q) => q.id === doc.quoteId) ?? quotes[0] : undefined;
-  const underlyingInvoice = isInvoice ? invoices.find((i) => i.id === doc.invoiceId) ?? invoices[0] : undefined;
+  const underlyingQuote = isQuote ? (quotes.find((q) => q.id === doc.quoteId) ?? quotes[0]) : undefined;
+  const underlyingInvoice = isInvoice ? (invoices.find((i) => i.id === doc.invoiceId) ?? invoices[0]) : undefined;
 
-  const lines = underlyingQuote?.lines ?? underlyingInvoice?.lines ?? repair.parts.map((p) => ({
-    description: p.name,
-    quantity: p.quantity,
-    total: p.quantity * p.salePrice,
-  }));
+  const lines =
+    underlyingQuote?.lines ??
+    underlyingInvoice?.lines ??
+    repair.parts.map((p) => ({
+      description: p.name,
+      quantity: p.quantity,
+      total: p.quantity * p.salePrice,
+    }));
 
   const subtotal = lines?.reduce((sum: number, line: any) => sum + (line.total || 0), 0) || 0;
   const total = subtotal;
@@ -4056,7 +4113,7 @@ function MobileDocumentViewerModal({
     if (!target) return;
     const documentUrl = publicAbsoluteUrl(`/print/document/${doc.id}`);
     const shareText = `Bonjour, voici votre ${docLabel[doc.type] ?? doc.title} pour votre réparation chez Behar Tech : ${documentUrl}`;
-    
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -4079,16 +4136,11 @@ function MobileDocumentViewerModal({
   return (
     <div className="fixed inset-0 z-50 bg-[#1A1916]/18 flex flex-col justify-end sm:justify-center p-0 sm:p-4 animate-in fade-in duration-200">
       <div className="bg-[#FFFFFF] rounded-t-[28px] sm:rounded-[24px] max-h-[92vh] flex flex-col shadow-[0_1px_2px_rgba(26,25,22,0.035)] sm:max-w-md sm:w-full sm:mx-auto overflow-hidden animate-in slide-in-from-bottom duration-300">
-        
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E8E5] bg-white">
           <div className="min-w-0">
-            <h2 className="text-[15px] font-bold text-[#1A1916] truncate">
-              {docLabel[doc.type] ?? doc.title}
-            </h2>
-            <p className="text-[11px] text-[#6B6B6B] mt-0.5 truncate">
-              Dossier #{repair.number}
-            </p>
+            <h2 className="text-[15px] font-bold text-[#1A1916] truncate">{docLabel[doc.type] ?? doc.title}</h2>
+            <p className="text-[11px] text-[#6B6B6B] mt-0.5 truncate">Dossier #{repair.number}</p>
           </div>
           <button
             type="button"
@@ -4108,9 +4160,7 @@ function MobileDocumentViewerModal({
                 <h4 className="text-[13px] font-bold text-[#1A1916] mt-0.5">
                   {formatDeviceLabel(repair, repair.device)}
                 </h4>
-                {repair.imei && (
-                  <p className="text-[11px] text-[#6B6B6B] mt-0.5">IMEI: {repair.imei}</p>
-                )}
+                {repair.imei && <p className="text-[11px] text-[#6B6B6B] mt-0.5">IMEI: {repair.imei}</p>}
               </div>
               <RealDeviceVisual
                 brand={repair.brandName}
@@ -4119,13 +4169,11 @@ function MobileDocumentViewerModal({
                 type={repair.deviceType}
               />
             </div>
-            
+
             <div className="border-t border-[#FFFFFF] pt-3.5 grid grid-cols-2 gap-3 text-xs">
               <div>
                 <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Client</span>
-                <p className="font-bold text-[#1A1916] mt-0.5 truncate">
-                  {displayCustomerName(customer) || "Client"}
-                </p>
+                <p className="font-bold text-[#1A1916] mt-0.5 truncate">{displayCustomerName(customer) || "Client"}</p>
               </div>
               <div>
                 <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Date</span>
@@ -4138,8 +4186,10 @@ function MobileDocumentViewerModal({
 
           {isIntake && (
             <div className="bg-white rounded-[20px] border border-[#E8E8E5] p-5 shadow-[0_4px_12px_rgba(26,25,22,0.015)] space-y-4">
-              <h3 className="text-[13px] font-bold text-[#1A1916] border-b border-[#FFFFFF] pb-2">Contenu Bon de Prise en Charge</h3>
-              
+              <h3 className="text-[13px] font-bold text-[#1A1916] border-b border-[#FFFFFF] pb-2">
+                Contenu Bon de Prise en Charge
+              </h3>
+
               <div className="space-y-3.5 text-xs">
                 <div>
                   <span className="text-[#6B6B6B] font-bold block mb-1">Panne déclarée</span>
@@ -4165,14 +4215,19 @@ function MobileDocumentViewerModal({
 
           {(isQuote || isInvoice || isPayment) && (
             <div className="bg-white rounded-[20px] border border-[#E8E8E5] p-5 shadow-[0_4px_12px_rgba(26,25,22,0.015)] space-y-4">
-              <h3 className="text-[13px] font-bold text-[#1A1916] border-b border-[#FFFFFF] pb-2">Détail des prestations</h3>
-              
+              <h3 className="text-[13px] font-bold text-[#1A1916] border-b border-[#FFFFFF] pb-2">
+                Détail des prestations
+              </h3>
+
               <div className="space-y-3.5">
                 {lines?.length === 0 ? (
                   <p className="text-xs text-[#6B6B6B] italic">Aucune ligne de facture/devis.</p>
                 ) : (
                   lines?.map((line: any, index: number) => (
-                    <div key={`${line.description}_${index}`} className="flex justify-between items-start text-xs border-b border-[#FFFFFF] pb-3 last:border-b-0 last:pb-0">
+                    <div
+                      key={`${line.description}_${index}`}
+                      className="flex justify-between items-start text-xs border-b border-[#FFFFFF] pb-3 last:border-b-0 last:pb-0"
+                    >
                       <div className="min-w-0 flex-1 pr-3">
                         <p className="font-bold text-[#1A1916] truncate">{line.description}</p>
                         <p className="text-[#6B6B6B] text-[10px] mt-0.5">Quantité : {line.quantity}</p>
@@ -4188,11 +4243,15 @@ function MobileDocumentViewerModal({
               <div className="pt-4 border-t border-[#E8E8E5] space-y-2 text-xs">
                 <div className="flex justify-between">
                   <span className="text-[#6B6B6B] font-semibold">Sous-total :</span>
-                  <span className="font-bold text-[#1A1916]">{formatCurrency(subtotal, doc.currency ?? repair.currency)}</span>
+                  <span className="font-bold text-[#1A1916]">
+                    {formatCurrency(subtotal, doc.currency ?? repair.currency)}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-[#E8E8E5]">
                   <span className="text-sm font-bold text-[#1A1916]">Total TTC :</span>
-                  <span className="text-lg font-black text-[#167B70]">{formatCurrency(total, doc.currency ?? repair.currency)}</span>
+                  <span className="text-lg font-black text-[#167B70]">
+                    {formatCurrency(total, doc.currency ?? repair.currency)}
+                  </span>
                 </div>
               </div>
             </div>
@@ -4228,7 +4287,6 @@ function MobileDocumentViewerModal({
             Imprimer
           </button>
         </div>
-
       </div>
     </div>
   );
@@ -4318,9 +4376,7 @@ function MobilePhotoLightbox({
 
       {/* Footer Info */}
       <div className="p-6 text-center text-white/80 text-xs bg-[#1A1916]">
-        <p className="font-semibold tracking-wide">
-          {currentPhoto.name || currentPhoto.label || "Photo d'entrée"}
-        </p>
+        <p className="font-semibold tracking-wide">{currentPhoto.name || currentPhoto.label || "Photo d'entrée"}</p>
       </div>
     </div>
   );

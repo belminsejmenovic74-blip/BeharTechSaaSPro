@@ -296,13 +296,14 @@ html {
   background-color: #ffffff !important;
 }
 
-/* Scroll horizontal du kanban : barre fine */
+/* Scroll du kanban (horizontal board + vertical colonnes) : barre fine discrète */
 .kanban-scroll {
   scrollbar-width: thin;
   scrollbar-color: #e8e8e5 transparent;
 }
 .kanban-scroll::-webkit-scrollbar {
   height: 8px;
+  width: 6px;
 }
 .kanban-scroll::-webkit-scrollbar-track {
   background: transparent;

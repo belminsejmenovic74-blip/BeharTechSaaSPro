@@ -18,7 +18,7 @@ import {
 } from "@/lib/preferences/layout-utils";
 import { PREFERENCE_DEFAULTS } from "@/lib/preferences/preferences-config";
 import { persistPreference } from "@/lib/preferences/preferences-storage";
-import { THEME_PRESET_OPTIONS, type ThemePreset } from "@/lib/preferences/theme";
+import { PREMIUM_THEME_PRESET_OPTIONS, type ThemePreset } from "@/lib/preferences/theme";
 import { applyThemePreset } from "@/lib/preferences/theme-utils";
 import { usePreferencesStore } from "@/stores/preferences/preferences-provider";
 
@@ -115,7 +115,7 @@ export function LayoutControls() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    {THEME_PRESET_OPTIONS.map((preset) => (
+                    {PREMIUM_THEME_PRESET_OPTIONS.map((preset) => (
                       <SelectItem key={preset.value} className="text-xs" value={preset.value}>
                         <span
                           className="size-2.5 rounded-full"

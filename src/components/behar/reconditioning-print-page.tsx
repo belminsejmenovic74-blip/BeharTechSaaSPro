@@ -8,18 +8,28 @@ import { ArrowLeft, Download, Printer } from "lucide-react";
 
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 import { generateQrCodeDataUrl, publicAbsoluteUrl } from "@/lib/public-access";
+import { useRecondSettings } from "@/lib/recond-settings";
+import { useBeharStore } from "@/lib/behar-store";
 import { buildCertificateData, type CertificateData, certificatePublicPath } from "@/lib/reconditioning-certificate";
 import { useReconditioningStore } from "@/lib/reconditioning-store";
 import { cn } from "@/lib/utils";
 
-import { BonSortiePrintable, CertificatePrintable, EtiquetteStockPrintable } from "./reconditioning-documents";
+import {
+  BonAchatPrintable,
+  BonSortiePrintable,
+  CertificatePrintable,
+  EtiquetteInternePrintable,
+  EtiquetteStockPrintable,
+} from "./reconditioning-documents";
 
-type DocKind = "certificat" | "sortie" | "etiquette";
+type DocKind = "certificat" | "sortie" | "etiquette" | "achat" | "interne";
 
 const DOC_TABS: { key: DocKind; label: string }[] = [
+  { key: "achat", label: "Bon d'achat" },
+  { key: "interne", label: "Étiquette interne" },
   { key: "certificat", label: "Certificat" },
   { key: "sortie", label: "Bon de sortie" },
-  { key: "etiquette", label: "Étiquette stock" },
+  { key: "etiquette", label: "Étiquette" },
 ];
 
 export function ReconditioningPrintPage() {
@@ -27,6 +37,8 @@ export function ReconditioningPrintPage() {
   const id = params.get("id") ?? "";
   const initialDoc = (params.get("doc") as DocKind) || "certificat";
   const files = useReconditioningStore((s) => s.files);
+  const recondSettings = useRecondSettings((s) => s.settings);
+  const workshopSettings = useBeharStore((s) => s.workshopSettings);
 
   const [mounted, setMounted] = useState(false);
   const [doc, setDoc] = useState<DocKind>(initialDoc);
@@ -36,23 +48,42 @@ export function ReconditioningPrintPage() {
   useEffect(() => setMounted(true), []);
 
   const file = files.find((f) => f.id === id);
-  const data: CertificateData | null = useMemo(() => (file ? buildCertificateData(file) : null), [file]);
+  const labelFormat = params.get("format") === "mini" ? "mini" : "compact";
+  const shopName = workshopSettings.commercialName || workshopSettings.name || workshopSettings.brand || "Boutique";
+  const data: CertificateData | null = useMemo(
+    () => (file ? buildCertificateData(file, { workshopName: shopName, shopLogoUrl: workshopSettings.logoUrl }) : null),
+    [file, shopName, workshopSettings.logoUrl],
+  );
 
   useEffect(() => {
-    if (!data) return;
+    if (!data || !file) return;
     let alive = true;
-    const url = publicAbsoluteUrl(certificatePublicPath(data));
+    const url =
+      doc === "interne"
+        ? publicAbsoluteUrl(
+            `/dashboard/reconditionnement?tab=devices&device=${encodeURIComponent(file.id)}&internal=${encodeURIComponent(file.internalQrToken || file.number)}`,
+          )
+        : publicAbsoluteUrl(certificatePublicPath(data));
     generateQrCodeDataUrl(url)
       .then((value) => alive && setQr(value))
       .catch(() => undefined);
     return () => {
       alive = false;
     };
-  }, [data]);
+  }, [data, doc, file]);
 
   const download = async () => {
     if (!printRef.current || !data) return;
-    const name = doc === "certificat" ? "Certificat" : doc === "sortie" ? "Bon-de-sortie" : "Etiquette";
+    const name =
+      doc === "certificat"
+        ? "Certificat"
+        : doc === "sortie"
+          ? "Bon-de-sortie"
+          : doc === "achat"
+            ? "Bon-achat"
+            : doc === "interne"
+              ? "Etiquette-interne"
+              : "Etiquette";
     await generatePdfFromElement(printRef.current, `${name}_${data.ref}.pdf`);
   };
 
@@ -63,7 +94,9 @@ export function ReconditioningPrintPage() {
       <div className="grid min-h-svh place-items-center bg-[#FFFFFF] px-6 text-center">
         <div>
           <p className="font-semibold text-[#1A1916] text-lg">Dossier introuvable</p>
-          <p className="mt-1 text-[#6B6B6B] text-sm">Ouvrez ce document depuis l'étape « Certificat & sortie » d'un dossier de reconditionnement.</p>
+          <p className="mt-1 text-[#6B6B6B] text-sm">
+            Ouvrez ce document depuis l'étape « Certificat & sortie » d'un dossier de reconditionnement.
+          </p>
         </div>
       </div>
     );
@@ -125,15 +158,25 @@ export function ReconditioningPrintPage() {
         <div
           className={cn(
             "mx-auto bg-white shadow-[0_1px_3px_rgba(26,25,22,0.06)] print:shadow-none",
-            doc === "etiquette" ? "w-fit rounded-[14px]" : "w-full rounded-[16px] border border-[#E8E8E5] print:border-0",
+            doc === "etiquette" || doc === "interne"
+              ? "w-fit rounded-[14px]"
+              : "w-full rounded-[16px] border border-[#E8E8E5] print:border-0",
           )}
           ref={printRef}
         >
           {doc === "certificat" && <CertificatePrintable data={data} qr={qr} />}
           {doc === "sortie" && <BonSortiePrintable data={data} qr={qr} />}
+          {doc === "achat" && file && (
+            <BonAchatPrintable detailed={recondSettings.receiptTemplate === "detaille"} file={file} />
+          )}
+          {doc === "interne" && file && (
+            <div className="grid place-items-center p-6 print:p-0">
+              <EtiquetteInternePrintable file={file} qr={qr} />
+            </div>
+          )}
           {doc === "etiquette" && (
             <div className="grid place-items-center p-6 print:p-0">
-              <EtiquetteStockPrintable data={data} qr={qr} />
+              <EtiquetteStockPrintable data={data} format={labelFormat === "mini" ? "mini" : "compact"} qr={qr} />
             </div>
           )}
         </div>

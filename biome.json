@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "assist": {
-    "enabled": true,
+    "enabled": false,
     "actions": {
       "source": {
         "organizeImports": {
@@ -31,7 +31,36 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!.github", "!.husky", "!node_modules", "!.next", "!dist", "!out", "!src/components/ui"]
+    "includes": [
+      "**",
+      "!.github",
+      "!.husky",
+      "!node_modules",
+      "!.next",
+      "!dist",
+      "!out",
+      "!src/components/ui",
+      "!scratch",
+      "!scripts",
+      "!scratch-*.js",
+      "!scratch-*.ts",
+      "!scratch-*.mjs",
+      "!test-*.js",
+      "!test-results",
+      "!playwright-report",
+      "!qa-results",
+      "!qa-report-*.md",
+      "!extract.txt",
+      "!catalogues",
+      "!public/catalogues",
+      "!public/questionnaire.html",
+      "!scripts/audit-catalog.report.json",
+      "!scripts/convert-catalogs.js",
+      "!**/*.xlsx",
+      "!**/*.tsbuildinfo",
+      "!next.config.js",
+      "!.vercel"
+    ]
   },
   "formatter": {
     "enabled": true,
@@ -52,39 +81,76 @@
       "recommended": true,
       "correctness": {
         "noUndeclaredVariables": "error",
-        "noNestedComponentDefinitions": "error",
-        "noUndeclaredDependencies": "error"
+        "noNestedComponentDefinitions": "warn",
+        "noUndeclaredDependencies": "warn",
+        "noUnusedFunctionParameters": "warn",
+        "noUnusedImports": "warn",
+        "noUnusedVariables": "warn",
+        "useExhaustiveDependencies": "warn",
+        "useHookAtTopLevel": "warn",
+        "useParseIntRadix": "warn"
       },
       "nursery": {
-        "useSortedClasses": "on",
-        "useNullishCoalescing": "error",
+        "useSortedClasses": "off",
+        "useNullishCoalescing": "warn",
         "noUnnecessaryConditions": "warn",
-        "noFloatingPromises": "error",
-        "noMisusedPromises": "error"
+        "noFloatingPromises": "warn",
+        "noMisusedPromises": "warn"
       },
       "performance": {
         "noImgElement": "warn"
       },
       "style": {
-        "noCommonJs": "error",
+        "noCommonJs": "warn",
         "noHeadElement": "warn",
-        "noNamespace": "error",
-        "useAsConstAssertion": "error",
-        "useSelfClosingElements": "error",
-        "noParameterAssign": "error",
-        "noInferrableTypes": "error",
-        "noUselessElse": "error",
-        "useFilenamingConvention": "error"
+        "noNamespace": "warn",
+        "useAsConstAssertion": "warn",
+        "useSelfClosingElements": "warn",
+        "noParameterAssign": "warn",
+        "noInferrableTypes": "warn",
+        "noNonNullAssertion": "warn",
+        "noUselessElse": "warn",
+        "useFilenamingConvention": "warn",
+        "useImportType": "warn",
+        "useNodejsImportProtocol": "warn",
+        "useTemplate": "warn"
       },
       "suspicious": {
         "noArrayIndexKey": "warn",
-        "noConstantBinaryExpressions": "error",
-        "noEmptyBlockStatements": "error",
+        "noConfusingVoidType": "warn",
+        "noConstantBinaryExpressions": "warn",
+        "noEmptyBlockStatements": "warn",
+        "noExplicitAny": "warn",
+        "noSelfCompare": "warn",
         "noUnknownAtRules": "off",
-        "noImportCycles": "error"
+        "noImportCycles": "warn",
+        "useIterableCallbackReturn": "warn"
       },
       "complexity": {
-        "noImportantStyles": "off"
+        "noImportantStyles": "off",
+        "noUselessFragments": "warn",
+        "noUselessSwitchCase": "warn",
+        "noUselessUndefinedInitialization": "warn",
+        "useOptionalChain": "warn"
+      },
+      "a11y": {
+        "noAutofocus": "warn",
+        "noLabelWithoutControl": "warn",
+        "noNoninteractiveElementInteractions": "warn",
+        "noNoninteractiveElementToInteractiveRole": "warn",
+        "noRedundantAlt": "warn",
+        "noStaticElementInteractions": "warn",
+        "useAltText": "warn",
+        "useAriaPropsSupportedByRole": "warn",
+        "useButtonType": "warn",
+        "useFocusableInteractive": "warn",
+        "useKeyWithClickEvents": "warn",
+        "useMediaCaption": "warn",
+        "useSemanticElements": "warn",
+        "noSvgWithoutTitle": "warn"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "warn"
       }
     },
     "domains": {

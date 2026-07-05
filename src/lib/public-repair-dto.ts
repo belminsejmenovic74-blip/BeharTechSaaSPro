@@ -67,7 +67,7 @@ function publicTimeline(repair: Repair): PublicRepairDto["timeline"] {
     description:
       index === 0
         ? "Votre appareil a été pris en charge."
-        : index === 3 && progress.isFinished
+        : title === "Terminé"
           ? "Votre appareil a été remis au client."
           : undefined,
     date: index === 0 ? createdAt : updatedAt,

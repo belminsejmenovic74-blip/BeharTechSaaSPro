@@ -292,17 +292,8 @@ export default function CataloguePrixPage() {
           const prixVentePiece = parsePrice(getVal(["prix vente", "prix de vente", "prixventepiece"]));
           const mainOeuvre = parsePrice(getVal(["main oeuvre", "main-d'œuvre", "mainoeuvre", "m.o."]));
           const prixAchatChfRaw = getVal(["prix achat chf", "prixachat chf", "prixachatchf"]);
-          const prixVentePieceChfRaw = getVal([
-            "prix vente chf",
-            "prix de vente chf",
-            "prixventepiecechf",
-          ]);
-          const mainOeuvreChfRaw = getVal([
-            "main oeuvre chf",
-            "main-d'œuvre chf",
-            "mainoeuvrechf",
-            "m.o. chf",
-          ]);
+          const prixVentePieceChfRaw = getVal(["prix vente chf", "prix de vente chf", "prixventepiecechf"]);
+          const mainOeuvreChfRaw = getVal(["main oeuvre chf", "main-d'œuvre chf", "mainoeuvrechf", "m.o. chf"]);
           const stockDisponibleRaw = getVal(["stock", "stock disponible", "stockdisponible"]);
           const stockDisponible = stockDisponibleRaw ? Number.parseFloat(stockDisponibleRaw) : undefined;
           const notes = getVal(["notes", "remarques"]);
@@ -459,17 +450,10 @@ export default function CataloguePrixPage() {
       return { piece, labor };
     };
     const francePrice = resolveMarketPrice(form.prixVentePiece, form.mainOeuvre, form.prixClientFinal);
-    const swissPrice = resolveMarketPrice(
-      form.prixVentePieceChf,
-      form.mainOeuvreChf,
-      form.prixClientFinalChf,
+    const swissPrice = resolveMarketPrice(form.prixVentePieceChf, form.mainOeuvreChf, form.prixClientFinalChf);
+    const hasSwissPrice = [form.prixAchatChf, form.prixVentePieceChf, form.mainOeuvreChf, form.prixClientFinalChf].some(
+      (value) => value.trim() !== "",
     );
-    const hasSwissPrice = [
-      form.prixAchatChf,
-      form.prixVentePieceChf,
-      form.mainOeuvreChf,
-      form.prixClientFinalChf,
-    ].some((value) => value.trim() !== "");
     const payload = {
       typeAppareil: form.typeAppareil,
       marque: form.marque,
@@ -524,6 +508,12 @@ export default function CataloguePrixPage() {
             <SecondaryButton onClick={() => exportCatalogueCsv(filtered)}>
               <Download className="mr-2 size-4" /> Export CSV
             </SecondaryButton>
+            <Link
+              href="/dashboard/parametres/reconditionnement"
+              className="inline-flex h-10 items-center justify-center rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-semibold text-[#1A1916] text-sm transition hover:border-[#2A9D8F]/45"
+            >
+              Reconditionnement
+            </Link>
             <PrimaryButton onClick={openCreate}>
               <Plus className="mr-2 size-4" /> Ajouter un prix
             </PrimaryButton>
@@ -687,98 +677,100 @@ export default function CataloguePrixPage() {
                     visible.map((item) => {
                       const marketPrice = getPriceBookMarketPrice(item, marketCountry);
                       return (
-                      <tr key={item.id} className="border-[#E8E8E5] border-t hover:bg-[#FFFFFF]">
-                        <Td>{item.marque}</Td>
-                        <Td>{item.modele}</Td>
-                        <Td>{item.reparation}</Td>
-                        <Td>{item.piece}</Td>
-                        <Td>{item.qualite}</Td>
-                        <Td align="right">{formatEuroPriceBook(marketPrice.prixAchat, marketConfig.currency)}</Td>
-                        <Td align="right">{formatEuroPriceBook(marketPrice.prixVentePiece, marketConfig.currency)}</Td>
-                        <Td align="right">{formatEuroPriceBook(marketPrice.mainOeuvre, marketConfig.currency)}</Td>
-                        <Td align="right" className="font-semibold text-[#1A1916]">
-                          {marketPrice.hasPrice
-                            ? formatEuroPriceBook(marketPrice.prixClientTotal, marketConfig.currency)
-                            : "À définir"}
-                        </Td>
-                        <Td align="right">
-                          <span className={marketPrice.marge < 0 ? "text-red-600" : "text-[#2A9D8F]"}>
-                            {formatEuroPriceBook(marketPrice.marge, marketConfig.currency)}
-                          </span>
-                        </Td>
-                        <Td>
-                          <div className="flex flex-col gap-0.5">
-                            <span>{item.fournisseur ?? "—"}</span>
-                            {item.stockItemId && (
-                              <span className="text-[10px] text-[#167B70] font-medium flex items-center gap-1">
-                                <span className="size-1.5 rounded-full bg-[#167B70]" />
-                                Stock lié
-                              </span>
-                            )}
-                          </div>
-                        </Td>
-                        <Td align="right">
-                          <div className="flex flex-col items-end gap-0.5">
-                            <span
-                              className={
-                                item.stockDisponible !== undefined && item.stockDisponible > 0
-                                  ? "font-semibold text-[#167B70]"
-                                  : ""
-                              }
-                            >
-                              {item.stockDisponible !== undefined ? `${item.stockDisponible} dispo` : "—"}
+                        <tr key={item.id} className="border-[#E8E8E5] border-t hover:bg-[#FFFFFF]">
+                          <Td>{item.marque}</Td>
+                          <Td>{item.modele}</Td>
+                          <Td>{item.reparation}</Td>
+                          <Td>{item.piece}</Td>
+                          <Td>{item.qualite}</Td>
+                          <Td align="right">{formatEuroPriceBook(marketPrice.prixAchat, marketConfig.currency)}</Td>
+                          <Td align="right">
+                            {formatEuroPriceBook(marketPrice.prixVentePiece, marketConfig.currency)}
+                          </Td>
+                          <Td align="right">{formatEuroPriceBook(marketPrice.mainOeuvre, marketConfig.currency)}</Td>
+                          <Td align="right" className="font-semibold text-[#1A1916]">
+                            {marketPrice.hasPrice
+                              ? formatEuroPriceBook(marketPrice.prixClientTotal, marketConfig.currency)
+                              : "À définir"}
+                          </Td>
+                          <Td align="right">
+                            <span className={marketPrice.marge < 0 ? "text-red-600" : "text-[#2A9D8F]"}>
+                              {formatEuroPriceBook(marketPrice.marge, marketConfig.currency)}
                             </span>
-                            {item.stockItemId && (
+                          </Td>
+                          <Td>
+                            <div className="flex flex-col gap-0.5">
+                              <span>{item.fournisseur ?? "—"}</span>
+                              {item.stockItemId && (
+                                <span className="text-[10px] text-[#167B70] font-medium flex items-center gap-1">
+                                  <span className="size-1.5 rounded-full bg-[#167B70]" />
+                                  Stock lié
+                                </span>
+                              )}
+                            </div>
+                          </Td>
+                          <Td align="right">
+                            <div className="flex flex-col items-end gap-0.5">
+                              <span
+                                className={
+                                  item.stockDisponible !== undefined && item.stockDisponible > 0
+                                    ? "font-semibold text-[#167B70]"
+                                    : ""
+                                }
+                              >
+                                {item.stockDisponible !== undefined ? `${item.stockDisponible} dispo` : "—"}
+                              </span>
+                              {item.stockItemId && (
+                                <button
+                                  type="button"
+                                  onClick={() => router.push("/dashboard/stock")}
+                                  className="text-[10px] text-[#6B6B6B] hover:text-[#167B70] underline"
+                                >
+                                  Voir dans Stock
+                                </button>
+                              )}
+                            </div>
+                          </Td>
+                          <Td>
+                            <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[#6B6B6B] text-xs">
+                              {PRICE_BOOK_SOURCE_LABELS[item.source]}
+                            </span>
+                          </Td>
+                          <Td>
+                            <button
+                              type="button"
+                              onClick={() => toggleItem(item.id, !item.isActive)}
+                              className={`rounded-[7px] border px-2 py-0.5 text-xs ${
+                                item.isActive
+                                  ? "border-[#D7EFEA] bg-[#FFFFFF] text-[#1d6f65]"
+                                  : "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]"
+                              }`}
+                            >
+                              {item.isActive ? "Actif" : "Inactif"}
+                            </button>
+                          </Td>
+                          <Td align="right">
+                            <div className="flex justify-end gap-1">
                               <button
                                 type="button"
-                                onClick={() => router.push("/dashboard/stock")}
-                                className="text-[10px] text-[#6B6B6B] hover:text-[#167B70] underline"
+                                onClick={() => openEdit(item)}
+                                className="grid size-8 place-items-center rounded-lg text-[#6B6B6B] hover:bg-[#FFFFFF] hover:text-[#1A1916]"
+                                aria-label="Modifier"
                               >
-                                Voir dans Stock
+                                <Pencil className="size-4" />
                               </button>
-                            )}
-                          </div>
-                        </Td>
-                        <Td>
-                          <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[#6B6B6B] text-xs">
-                            {PRICE_BOOK_SOURCE_LABELS[item.source]}
-                          </span>
-                        </Td>
-                        <Td>
-                          <button
-                            type="button"
-                            onClick={() => toggleItem(item.id, !item.isActive)}
-                            className={`rounded-[7px] border px-2 py-0.5 text-xs ${
-                              item.isActive
-                                ? "border-[#D7EFEA] bg-[#FFFFFF] text-[#1d6f65]"
-                                : "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]"
-                            }`}
-                          >
-                            {item.isActive ? "Actif" : "Inactif"}
-                          </button>
-                        </Td>
-                        <Td align="right">
-                          <div className="flex justify-end gap-1">
-                            <button
-                              type="button"
-                              onClick={() => openEdit(item)}
-                              className="grid size-8 place-items-center rounded-lg text-[#6B6B6B] hover:bg-[#FFFFFF] hover:text-[#1A1916]"
-                              aria-label="Modifier"
-                            >
-                              <Pencil className="size-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(item)}
-                              className="grid size-8 place-items-center rounded-lg text-[#6B6B6B] hover:bg-red-50 hover:text-red-600"
-                              aria-label="Supprimer"
-                            >
-                              <Trash2 className="size-4" />
-                            </button>
-                          </div>
-                        </Td>
-                      </tr>
-                    );
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(item)}
+                                className="grid size-8 place-items-center rounded-lg text-[#6B6B6B] hover:bg-red-50 hover:text-red-600"
+                                aria-label="Supprimer"
+                              >
+                                <Trash2 className="size-4" />
+                              </button>
+                            </div>
+                          </Td>
+                        </tr>
+                      );
                     })
                   )}
                 </tbody>

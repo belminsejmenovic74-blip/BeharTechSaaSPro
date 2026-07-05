@@ -12,12 +12,16 @@ export const dynamic = "force-dynamic";
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 function stableUuid(input: unknown): string {
-  const hash = createHash("sha256").update(String(input || "missing")).digest("hex");
+  const hash = createHash("sha256")
+    .update(String(input || "missing"))
+    .digest("hex");
   return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-4${hash.slice(13, 16)}-a${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
 }
 
 function stableToken(prefix: string, seed: unknown): string {
-  const bytes = createHash("sha256").update(`${prefix}:${String(seed)}`).digest();
+  const bytes = createHash("sha256")
+    .update(`${prefix}:${String(seed)}`)
+    .digest();
   let out = "";
   for (let i = 0; i < 16; i += 1) out += ALPHABET[bytes[i] % ALPHABET.length];
   return `${prefix}_${out}`;
@@ -155,7 +159,14 @@ async function replaceLines(
   table: "quote_lines" | "invoice_lines" | "sale_lines",
   parentColumn: "quote_id" | "invoice_id" | "sale_id",
   parentId: string,
-  lines: Array<{ id?: string; description?: string; name?: string; quantity?: number; unitPrice?: number; total?: number }>,
+  lines: Array<{
+    id?: string;
+    description?: string;
+    name?: string;
+    quantity?: number;
+    unitPrice?: number;
+    total?: number;
+  }>,
 ) {
   await supabase.from(table).delete().eq(parentColumn, parentId);
   const rows = lines.map((line) => ({
@@ -252,7 +263,10 @@ export async function POST(request: Request) {
           publicAccess: {
             token,
             url: repair.publicAccess?.url || "",
-            createdAt: repair.publicAccess?.createdAt || cleanIso(repair.createdAt || repair.droppedAt) || new Date().toISOString(),
+            createdAt:
+              repair.publicAccess?.createdAt ||
+              cleanIso(repair.createdAt || repair.droppedAt) ||
+              new Date().toISOString(),
             active: repair.publicAccess?.active !== false,
           },
         },
@@ -316,7 +330,13 @@ export async function POST(request: Request) {
   if (quotes.length) {
     await supabase.from("quotes").upsert(quotes, { onConflict: "id" });
     for (const quote of payload.quotes ?? []) {
-      await replaceLines(supabase, "quote_lines", "quote_id", stableUuid(`quote:${workshopId}:${quote.id}`), quote.lines ?? []);
+      await replaceLines(
+        supabase,
+        "quote_lines",
+        "quote_id",
+        stableUuid(`quote:${workshopId}:${quote.id}`),
+        quote.lines ?? [],
+      );
     }
   }
 
@@ -342,7 +362,13 @@ export async function POST(request: Request) {
   if (invoices.length) {
     await supabase.from("invoices").upsert(invoices, { onConflict: "id" });
     for (const invoice of payload.invoices ?? []) {
-      await replaceLines(supabase, "invoice_lines", "invoice_id", stableUuid(`invoice:${workshopId}:${invoice.id}`), invoice.lines ?? []);
+      await replaceLines(
+        supabase,
+        "invoice_lines",
+        "invoice_id",
+        stableUuid(`invoice:${workshopId}:${invoice.id}`),
+        invoice.lines ?? [],
+      );
     }
   }
 
@@ -385,7 +411,13 @@ export async function POST(request: Request) {
   if (sales.length) {
     await supabase.from("sales").upsert(sales, { onConflict: "id" });
     for (const sale of payload.sales ?? []) {
-      await replaceLines(supabase, "sale_lines", "sale_id", stableUuid(`sale:${workshopId}:${sale.id}`), sale.lines ?? []);
+      await replaceLines(
+        supabase,
+        "sale_lines",
+        "sale_id",
+        stableUuid(`sale:${workshopId}:${sale.id}`),
+        sale.lines ?? [],
+      );
     }
   }
 
@@ -402,7 +434,7 @@ export async function POST(request: Request) {
             ? text((payload.payments ?? []).find((payment) => payment.id === document.paymentId)?.paymentNumber)
             : type === "sale_receipt" && document.saleId
               ? text((payload.sales ?? []).find((sale) => sale.id === document.saleId)?.number)
-              : text(document.title).match(/(?:#|-\s*)([A-Z]+-\d+)/)?.[1] ?? null;
+              : (text(document.title).match(/(?:#|-\s*)([A-Z]+-\d+)/)?.[1] ?? null);
     const linkedUrl =
       type === "repair_intake" && token
         ? makePublicUrl("/document", token)
@@ -458,10 +490,40 @@ export async function POST(request: Request) {
     quantity: money(item.stock ?? item.quantity) ?? 0,
     threshold: money(item.threshold),
     supplier: text(item.supplier) || null,
+    reconditioning_file_id: text(item.reconditioningFileId) || null,
     created_at: cleanIso(item.createdAt),
     updated_at: cleanIso(item.updatedAt),
   }));
   if (stockItems.length) await supabase.from("stock_items").upsert(stockItems, { onConflict: "id" });
+
+  const stockMovements = ((payload as any).stockMovements ?? []).map((movement: any) => ({
+    id: stableUuid(`stock_movement:${workshopId}:${movement.id}`),
+    organization_id: workshopId,
+    shop_id: text(movement.shopId) || null,
+    stock_item_id: movement.stockItemId
+      ? stableUuid(`stock:${workshopId}:${movement.stockItemId}`)
+      : text(movement.stockItemId),
+    movement_type: text(movement.movementType, "manual_adjustment"),
+    quantity_delta: money(movement.quantityDelta) ?? 0,
+    quantity_before: money(movement.quantityBefore) ?? 0,
+    quantity_after: money(movement.quantityAfter) ?? 0,
+    unit_cost: money(movement.unitCost),
+    total_cost: money(movement.totalCost),
+    reason: text(movement.reason) || null,
+    source_module: text(movement.sourceModule, "stock"),
+    source_id: text(movement.sourceId) || null,
+    linked_repair_id: movement.linkedRepairId ? stableUuid(`repair:${workshopId}:${movement.linkedRepairId}`) : null,
+    linked_reconditioning_device_id: text(movement.linkedReconditioningDeviceId) || null,
+    linked_sale_id: movement.linkedSaleId ? stableUuid(`sale:${workshopId}:${movement.linkedSaleId}`) : null,
+    linked_purchase_id: movement.linkedPurchaseId
+      ? stableUuid(`purchase:${workshopId}:${movement.linkedPurchaseId}`)
+      : null,
+    linked_supplier_invoice_id: text(movement.linkedSupplierInvoiceId) || null,
+    actor_id: text(movement.actorId) || null,
+    created_at: cleanIso(movement.createdAt),
+    metadata: movement.metadata && typeof movement.metadata === "object" ? movement.metadata : {},
+  }));
+  if (stockMovements.length) await supabase.from("stock_movements").upsert(stockMovements, { onConflict: "id" });
 
   return NextResponse.json({ ok: true });
 }

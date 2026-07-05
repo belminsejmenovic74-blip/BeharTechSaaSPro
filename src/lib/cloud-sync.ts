@@ -14,6 +14,16 @@ import { syncPublicTrackingRepairsToCloud } from "@/lib/public-tracking-sync";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
 
 const STORAGE_KEY = "behar-tech-local-demo-v3";
+// Stores annexes (Zustand persist) embarqués dans le même snapshot cloud.
+// Sans eux, les règles de reprise et les appareils reconditionnés resteraient
+// uniquement sur le poste local.
+const AUX_STORE_KEYS = [
+  "behar-recond-rules",
+  "behar-reconditioning",
+  "behar-recond-settings",
+  "behar-conditionne",
+] as const;
+const AUX_STORES_FIELD = "__auxStores";
 const DEBOUNCE_MS = 3000;
 // Marge pour considérer le cloud comme « réellement plus récent » que le local.
 const FRESHER_MARGIN_MS = 10_000;
@@ -67,6 +77,35 @@ function readLocalState(): any | null {
 function writeLocalState(state: any) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ state, version: 1 }));
+}
+
+/** Lit les stores annexes (règles de reprise, appareils recond…) pour les embarquer dans le snapshot. */
+function readAuxStores(): Record<string, unknown> {
+  const aux: Record<string, unknown> = {};
+  if (typeof window === "undefined") return aux;
+  for (const key of AUX_STORE_KEYS) {
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (raw) aux[key] = JSON.parse(raw);
+    } catch {
+      // store illisible — on l'ignore, le reste du snapshot part quand même
+    }
+  }
+  return aux;
+}
+
+/** Restaure les stores annexes depuis un snapshot cloud (avant reload). */
+function writeAuxStores(aux: unknown) {
+  if (typeof window === "undefined" || !aux || typeof aux !== "object") return;
+  for (const key of AUX_STORE_KEYS) {
+    const value = (aux as Record<string, unknown>)[key];
+    if (value === undefined) continue;
+    try {
+      window.localStorage.setItem(key, JSON.stringify(value));
+    } catch {
+      // quota / storage bloqué — la restauration du store principal continue
+    }
+  }
 }
 
 /** Renvoie le timestamp de la dernière modification locale connue. */
@@ -144,7 +183,10 @@ export async function uploadSnapshot(opts?: { silent?: boolean }): Promise<Uploa
     writeLocalState(state);
   }
 
-  const payload = JSON.stringify(state);
+  // Embarque les stores annexes (règles de reprise, appareils recond…) dans le
+  // même snapshot — réutilise la table workshop_snapshots, aucune migration.
+  const stateForUpload = { ...state, [AUX_STORES_FIELD]: readAuxStores() };
+  const payload = JSON.stringify(stateForUpload);
   const sizeBytes = new Blob([payload]).size;
   if (sizeBytes > 10 * 1024 * 1024) {
     setSyncState({ status: "error", lastError: "Données trop volumineuses (>10 Mo)." });
@@ -156,7 +198,7 @@ export async function uploadSnapshot(opts?: { silent?: boolean }): Promise<Uploa
     license_key: licenseKey,
     workshop_name: state.workshopSettings?.name || state.workshopInfo?.name || null,
     device_label: detectDeviceLabel(),
-    state,
+    state: stateForUpload,
     state_size_bytes: sizeBytes,
     schema_version: 1,
   };
@@ -329,12 +371,17 @@ export async function restoreFromLicense(rawKey: string): Promise<DownloadResult
     }
   }
 
+  // Restaure d'abord les stores annexes (règles de reprise, appareils recond…),
+  // puis le store principal — le champ technique __auxStores n'est pas conservé.
+  const { [AUX_STORES_FIELD]: auxStores, ...mainState } = result.state as Record<string, unknown>;
+  writeAuxStores(auxStores);
+
   // Conserve workshopId local si présent, et marque le sync.
   const merged = {
-    ...result.state,
+    ...mainState,
     cloudSync: {
-      ...(result.state.cloudSync || {}),
-      workshopId: result.state.cloudSync?.workshopId || localState?.cloudSync?.workshopId,
+      ...((mainState as any).cloudSync || {}),
+      workshopId: (mainState as any).cloudSync?.workshopId || localState?.cloudSync?.workshopId,
       lastSyncedAt: result.updatedAt,
       localUpdatedAt: result.updatedAt,
     },
@@ -403,8 +450,17 @@ export function setupAutoSync() {
   setupDone = true;
 
   let lastSeenPayload: string | null = null;
+  let lastSeenAux: string | null = null;
+  const readAuxSignature = (): string => {
+    // Signature légère des stores annexes : longueur + fin de chaque payload.
+    return AUX_STORE_KEYS.map((key) => {
+      const raw = window.localStorage.getItem(key) ?? "";
+      return `${key}:${raw.length}:${raw.slice(-40)}`;
+    }).join("|");
+  };
   try {
     lastSeenPayload = window.localStorage.getItem(STORAGE_KEY);
+    lastSeenAux = readAuxSignature();
   } catch {
     // localStorage indisponible (mode privé strict) — on abandonne en silence
     return;
@@ -412,10 +468,17 @@ export function setupAutoSync() {
 
   const tick = () => {
     let current: string | null = null;
+    let currentAux: string | null = null;
     try {
       current = window.localStorage.getItem(STORAGE_KEY);
+      currentAux = readAuxSignature();
     } catch {
       return;
+    }
+    if (currentAux !== lastSeenAux) {
+      // Règles de reprise / appareils recond modifiés → snapshot à repousser.
+      lastSeenAux = currentAux;
+      scheduleSync();
     }
     if (current !== lastSeenPayload) {
       lastSeenPayload = current;
@@ -443,6 +506,13 @@ export function setupAutoSync() {
   const onStorage = (e: StorageEvent) => {
     if (e.key === STORAGE_KEY) {
       lastSeenPayload = e.newValue;
+      scheduleSync();
+    } else if (e.key && (AUX_STORE_KEYS as readonly string[]).includes(e.key)) {
+      try {
+        lastSeenAux = readAuxSignature();
+      } catch {
+        // signature illisible — le prochain tick rattrapera
+      }
       scheduleSync();
     }
   };

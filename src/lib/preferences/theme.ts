@@ -46,3 +46,13 @@ export const THEME_PRESET_VALUES = THEME_PRESET_OPTIONS.map((p) => p.value);
 export type ThemePreset = (typeof THEME_PRESET_OPTIONS)[number]["value"];
 
 // --- generated:themePresets:end ---
+
+/**
+ * Presets exposés dans l'UI en production. Exigence premium (réf. Apple/Stripe/Linear) :
+ * on masque les thèmes non premium (`tangerine` orange, `brutalist`, `soft-pop`) qui
+ * cassent la cohérence visuelle. Le type reste complet pour ne rien casser côté runtime.
+ */
+export const PREMIUM_THEME_PRESET_VALUES: ThemePreset[] = ["default"];
+export const PREMIUM_THEME_PRESET_OPTIONS = THEME_PRESET_OPTIONS.filter((preset) =>
+  PREMIUM_THEME_PRESET_VALUES.includes(preset.value),
+);

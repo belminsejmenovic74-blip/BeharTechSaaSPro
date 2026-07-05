@@ -5,12 +5,7 @@ import { useState } from "react";
 import { CheckCircle2, Info } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  formatEuro,
-  type PaymentMethod,
-  type SettlementStatus,
-  useBeharStore,
-} from "@/lib/behar-store";
+import { formatEuro, type PaymentMethod, type SettlementStatus, useBeharStore } from "@/lib/behar-store";
 import { cn } from "@/lib/utils";
 
 import { Modal, PrimaryButton, SecondaryButton } from "./primitives";
@@ -95,9 +90,7 @@ export function SettlementModal({
         <div className="rounded-[14px] border border-[#E8E8E5] bg-white p-4">
           <p className="text-[#6B6B6B] text-xs">Total dossier</p>
           <p className="mt-1 font-bold text-[#1A1916] text-xl">{formatEuro(total)}</p>
-          <p className="mt-2 text-[#6B6B6B] text-xs leading-relaxed">
-            Règlement enregistré manuellement.
-          </p>
+          <p className="mt-2 text-[#6B6B6B] text-xs leading-relaxed">Règlement enregistré manuellement.</p>
         </div>
 
         {/* Statut du paiement */}
@@ -147,7 +140,9 @@ export function SettlementModal({
                   onChange={(event) => patch({ method: event.target.value as PaymentMethod })}
                   value={draft.method}
                 >
-                  <option value="" disabled>Sélectionner...</option>
+                  <option value="" disabled>
+                    Sélectionner...
+                  </option>
                   {settlementMethods.map((method) => (
                     <option key={method} value={method}>
                       {method}
@@ -217,9 +212,7 @@ export function SettlementModal({
                 onChange={(event) => patch({ confirmExternal: event.target.checked })}
                 type="checkbox"
               />
-              <span className="font-semibold text-[#1A1916]">
-                Je confirme que le paiement a été encaissé.
-              </span>
+              <span className="font-semibold text-[#1A1916]">Je confirme que le paiement a été encaissé.</span>
             </label>
           </div>
         )}
@@ -232,8 +225,8 @@ export function SettlementModal({
               <div>
                 <p className="font-semibold text-[#1A1916]">Dossier clôturé sans encaissement</p>
                 <p className="mt-1 text-[#6B6B6B]">
-                  Le dossier sera marqué comme traité mais aucun montant ne sera comptabilisé dans le chiffre d'affaires.
-                  L'historique indiquera clairement « Offert / Garantie / SAV ».
+                  Le dossier sera marqué comme traité mais aucun montant ne sera comptabilisé dans le chiffre
+                  d'affaires. L'historique indiquera clairement « Offert / Garantie / SAV ».
                 </p>
               </div>
             </div>
@@ -255,7 +248,7 @@ export function SettlementModal({
           <div className="rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA] p-4 text-sm">
             <p className="font-semibold text-[#1A1916]">Aucun encaissement</p>
             <p className="mt-1 text-[#6B6B6B]">
-              Le dossier restera en attente de règlement. Aucun montant ne sera comptabilisé.
+              Le règlement sera indiqué comme manquant. Aucun montant ne sera comptabilisé.
             </p>
             {/* Note interne optionnelle */}
             <label className="mt-3 grid gap-1.5 text-sm">
@@ -303,23 +296,26 @@ export function useSettlementModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [repairId, setRepairId] = useState("");
   const [draft, setDraft] = useState<SettlementDraft>(defaultSettlementDraft(0));
+  const [closeAfterSubmit, setCloseAfterSubmit] = useState(false);
 
-  const open = (targetRepairId: string) => {
+  const open = (targetRepairId: string, options?: { closeAfterSubmit?: boolean }) => {
     const repair = store.repairs.find((r) => r.id === targetRepairId);
     if (!repair) {
       toast.error("Dossier introuvable.");
       return;
     }
+    const shouldCloseAfterSubmit = Boolean(options?.closeAfterSubmit);
     const total = repair.total ?? repair.amount ?? 0;
-    if (total <= 0) {
+    if (total <= 0 && !shouldCloseAfterSubmit) {
       toast.error("Ajoutez un tarif au dossier avant d'indiquer le règlement.");
       return;
     }
     const payments = store.payments.filter((p) => p.repairId === targetRepairId && p.status === "Payé");
     const paidAmount = payments.reduce((sum, p) => sum + p.amount, 0);
     setRepairId(targetRepairId);
+    setCloseAfterSubmit(shouldCloseAfterSubmit);
     setDraft({
-      status: paidAmount > 0 && paidAmount < total ? "Partiellement réglé" : "Réglé",
+      status: total <= 0 ? "Non réglé" : paidAmount > 0 && paidAmount < total ? "Partiellement réglé" : "Réglé",
       amount: String(Math.max(total - paidAmount, 0) || total),
       date: todayInputValue(),
       method: "" as PaymentMethod,
@@ -331,7 +327,10 @@ export function useSettlementModal() {
     setIsOpen(true);
   };
 
-  const close = () => setIsOpen(false);
+  const close = () => {
+    setIsOpen(false);
+    setCloseAfterSubmit(false);
+  };
 
   const submit = (): boolean => {
     const amount = Number.parseFloat(draft.amount.replace(",", "."));
@@ -356,7 +355,7 @@ export function useSettlementModal() {
       store.createInvoiceFromRepair(repairId);
     }
 
-    const id = store.recordRepairSettlement(repairId, {
+    const settlementInput = {
       status: draft.status,
       amount: Number.isFinite(amount) ? amount : 0,
       date: draft.date,
@@ -365,13 +364,24 @@ export function useSettlementModal() {
       externalReference: draft.externalReference,
       note: draft.note,
       confirmExternal: draft.confirmExternal,
-    });
+    };
+    const ok = closeAfterSubmit
+      ? store.closeDossierWithSettlement(repairId, settlementInput)
+      : store.recordRepairSettlement(repairId, settlementInput);
+    if (!ok) {
+      toast.error(closeAfterSubmit ? "Clôture impossible. Vérifiez le règlement." : "Règlement impossible à indiquer.");
+      return false;
+    }
+    const id = typeof ok === "string" ? ok : ok ? repairId : "";
     if (!id && isPaid) {
       toast.error("Règlement impossible à indiquer.");
       return false;
     }
     setIsOpen(false);
-    if (isOffert) {
+    setCloseAfterSubmit(false);
+    if (closeAfterSubmit) {
+      toast.success("Règlement indiqué et dossier clôturé.");
+    } else if (isOffert) {
       toast.success("Dossier clôturé sans encaissement — Offert / Garantie / SAV.");
     } else if (draft.status === "Non réglé") {
       toast.success("Statut mis à jour : non réglé.");

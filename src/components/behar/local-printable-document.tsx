@@ -6,7 +6,9 @@ import {
   type BeharDocument,
   type DocumentType,
   getBillingWorkshopInfo,
+  type LegalDocumentSnapshot,
   type useBeharStore,
+  type WorkshopInfo,
 } from "@/lib/behar-store";
 import { getDocumentFilename } from "@/lib/workshop-country";
 
@@ -22,6 +24,41 @@ import {
 } from "./printable-documents";
 
 type BeharStoreSnapshot = ReturnType<typeof useBeharStore.getState>;
+
+/**
+ * Immutabilité documentaire (exigence légale FR/CH) : un document émis doit refléter
+ * l'identité et le régime fiscal de l'atelier **au moment de l'émission**, jamais l'état
+ * courant. Quand un snapshot légal existe (devis verrouillé, facture émise…), on gèle les
+ * champs juridiquement significatifs (raison sociale, adresse, SIRET/TVA, régime, mentions)
+ * par-dessus l'atelier vivant. Sans snapshot (brouillon), on garde le calcul courant.
+ */
+function freezeWorkshopFromSnapshot(live: WorkshopInfo, snapshot?: LegalDocumentSnapshot): WorkshopInfo {
+  if (!snapshot) return live;
+  const w = snapshot.workshop;
+  const postalCity = [w.postalCode, w.city].filter(Boolean).join(" ").trim() || live.postalCity;
+  return {
+    ...live,
+    brand: w.brand ?? live.brand,
+    name: w.name ?? live.name,
+    commercialName: w.commercialName ?? live.commercialName,
+    address: w.address ?? live.address,
+    postalCode: w.postalCode ?? live.postalCode,
+    city: w.city ?? live.city,
+    postalCity,
+    country: snapshot.country ?? w.country ?? live.country,
+    email: w.email ?? live.email,
+    phone: w.phone ?? live.phone,
+    website: w.website ?? live.website,
+    siret: w.siret ?? live.siret,
+    tvaNumber: w.tvaNumber ?? live.tvaNumber,
+    swissUid: w.swissUid ?? live.swissUid,
+    swissVatNumber: w.swissVatNumber ?? live.swissVatNumber,
+    taxRegime: snapshot.vat.regime ?? live.taxRegime,
+    vatApplicable: snapshot.vat.applicable ?? live.vatApplicable,
+    vatRate: snapshot.vat.rate ?? live.vatRate,
+    tvaMention: snapshot.vat.mention ?? live.tvaMention,
+  };
+}
 
 export type PrintableDocumentTarget = {
   type: "intake" | "quote" | "invoice" | "payment" | "internal" | "summary" | "sale-receipt" | "diagnostic_report";
@@ -47,7 +84,8 @@ export function getPrintableTarget(document: BeharDocument): PrintableDocumentTa
   if (document.type === "payment" && document.paymentId) return { type: "payment", id: document.paymentId };
   if (document.type === "internal" && document.repairId) return { type: "internal", id: document.repairId };
   if (document.type === "summary" && document.repairId) return { type: "summary", id: document.repairId };
-  if (document.type === "diagnostic_report" && document.repairId) return { type: "diagnostic_report", id: document.repairId };
+  if (document.type === "diagnostic_report" && document.repairId)
+    return { type: "diagnostic_report", id: document.repairId };
   if ((document.type === "sale-receipt" || document.type === "sale-invoice") && document.saleId) {
     return { type: "sale-receipt", id: document.saleId };
   }
@@ -78,12 +116,8 @@ export function getDocumentFileName(document: BeharDocument, store: BeharStoreSn
   const sale = document.saleId ? store.sales.find((entry) => entry.id === document.saleId) : undefined;
   const rawNumber =
     target?.type === "payment"
-      ? payment?.paymentNumber ?? document.id.slice(-8)
-      : sale?.number ??
-        invoice?.number ??
-        quote?.number ??
-        repair?.number ??
-        document.id.slice(-8);
+      ? (payment?.paymentNumber ?? document.id.slice(-8))
+      : (sale?.number ?? invoice?.number ?? quote?.number ?? repair?.number ?? document.id.slice(-8));
   return target
     ? getDocumentFilename(target.type, rawNumber)
     : `document-${String(rawNumber).replace(/[^a-zA-Z0-9_-]+/g, "-")}.pdf`;
@@ -118,7 +152,12 @@ export function LocalPrintableDocument({
     payment?.billingCountry ??
     sale?.billingCountry ??
     store.workshopInfo.country;
-  const billingWorkshop = getBillingWorkshopInfo(store.workshopInfo, billingCountry);
+  // Snapshot légal figé à l'émission (devis verrouillé / facture émise), sinon document lui-même.
+  const legalSnapshot = quote?.snapshot ?? invoice?.snapshot ?? document.snapshot;
+  const billingWorkshop = freezeWorkshopFromSnapshot(
+    getBillingWorkshopInfo(store.workshopInfo, billingCountry),
+    legalSnapshot,
+  );
 
   if (!customer && document.type !== "sale-receipt" && document.type !== "sale-invoice") {
     return <MissingDocument>Client lié introuvable.</MissingDocument>;

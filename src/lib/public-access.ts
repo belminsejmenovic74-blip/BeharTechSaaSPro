@@ -64,7 +64,7 @@ function publicBaseUrl(): { base: string; error: string } {
   if (envBase) {
     return { base: envBase, error: "" };
   }
-  
+
   const origin = browserOrigin();
   return { base: origin || "http://localhost:3000", error: "" };
 }
@@ -79,7 +79,7 @@ export function publicAbsoluteUrl(relativeUrl: string): string {
   if (!relativeUrl) return base;
 
   // Intercepter les liens de suivi client pour reconstruire l'adresse avec le domaine dynamique actif
-  if (relativeUrl.includes("/suivi/") || relativeUrl.includes("/p/")) {
+  if ((relativeUrl.includes("/suivi/") && !relativeUrl.startsWith("/suivi/appareil/")) || relativeUrl.includes("/p/")) {
     try {
       const segments = relativeUrl.split("/").filter(Boolean);
       const token = segments.pop() || "";

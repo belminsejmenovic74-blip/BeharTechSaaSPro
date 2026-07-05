@@ -37,7 +37,7 @@ import {
   getQuoteTotal,
   getVatSummary,
   isTerminalRepairStatus,
-  Quote,
+  type Quote,
   type QuoteStatus,
   type WorkshopCountry,
   type WorkshopCurrency,
@@ -122,34 +122,44 @@ export function QuotesWorkspace() {
     if (!selected) return;
     const devices = getQuoteDevices(selected);
     if (!devices.length) return toast.error("Aucun appareil à transformer.");
-    const createdIds = devices.map((device, index) =>
-      store.addRepair({
-        customerId: selected.customerId,
-        quoteId: selected.id,
-        deviceType: device.type === "Autre" ? "Smartphone" : device.type,
-        brandName: device.brand,
-        deviceModel: device.model,
-        device: formatBrandModel(device.brand, device.model, `Appareil ${index + 1}`),
-        issue: [
-          ...device.services.map((service) => service.label),
-          ...device.accessories.map((accessory) => accessory.label),
-        ].join(", "),
-        amount: device.subtotalTtc,
-        total: device.subtotalTtc,
-        status: "Reçu",
-        notes: `Créé depuis le devis ${selected.number}`,
-        droppedAt: new Date().toISOString(),
-        technician: "",
-        counterPrestations: [
-          ...device.services.map((service) => ({ label: service.label, prixClient: service.priceTtc * service.quantity })),
-          ...device.accessories.map((accessory) => ({ label: accessory.label, prixClient: accessory.included ? 0 : accessory.priceTtc ?? 0 })),
-        ],
-      }),
-    ).filter(Boolean);
+    const createdIds = devices
+      .map((device, index) =>
+        store.addRepair({
+          customerId: selected.customerId,
+          quoteId: selected.id,
+          deviceType: device.type === "Autre" ? "Smartphone" : device.type,
+          brandName: device.brand,
+          deviceModel: device.model,
+          device: formatBrandModel(device.brand, device.model, `Appareil ${index + 1}`),
+          issue: [
+            ...device.services.map((service) => service.label),
+            ...device.accessories.map((accessory) => accessory.label),
+          ].join(", "),
+          amount: device.subtotalTtc,
+          total: device.subtotalTtc,
+          status: "Reçu",
+          notes: `Créé depuis le devis ${selected.number}`,
+          droppedAt: new Date().toISOString(),
+          technician: "",
+          counterPrestations: [
+            ...device.services.map((service) => ({
+              label: service.label,
+              prixClient: service.priceTtc * service.quantity,
+            })),
+            ...device.accessories.map((accessory) => ({
+              label: accessory.label,
+              prixClient: accessory.included ? 0 : (accessory.priceTtc ?? 0),
+            })),
+          ],
+        }),
+      )
+      .filter(Boolean);
     if (!createdIds.length) return toast.error("Transformation impossible.");
     store.updateQuote(selected.id, { status: "Accepté", repairId: createdIds[0] });
     store.setSelected("repair", createdIds[0]);
-    toast.success(`${createdIds.length} prise${createdIds.length > 1 ? "s" : ""} en charge créée${createdIds.length > 1 ? "s" : ""}.`);
+    toast.success(
+      `${createdIds.length} prise${createdIds.length > 1 ? "s" : ""} en charge créée${createdIds.length > 1 ? "s" : ""}.`,
+    );
     router.push("/dashboard/reparations");
   };
 
@@ -393,8 +403,12 @@ export function QuotesWorkspace() {
                     </p>
                   </div>
                   <ul className="mt-3 space-y-1 text-sm text-[#1D1D1F]">
-                    {device.services.map((service) => <li key={service.id}>• {service.label}</li>)}
-                    {device.accessories.map((accessory) => <li key={accessory.id}>• {accessory.label}</li>)}
+                    {device.services.map((service) => (
+                      <li key={service.id}>• {service.label}</li>
+                    ))}
+                    {device.accessories.map((accessory) => (
+                      <li key={accessory.id}>• {accessory.label}</li>
+                    ))}
                   </ul>
                 </div>
               ))}
@@ -547,7 +561,7 @@ export function CreateQuoteModal({
   const [deviceState, setDeviceState] = useState<DeviceState>(makeDeviceSeed(""));
   const [billingCountry, setBillingCountry] = useState<WorkshopCountry>(workshopInfo.country);
   const [docCurrency, setDocCurrency] = useState<WorkshopCurrency>(
-    prefill?.currency ?? (workshopInfo.country === "CH" ? "CHF" : "EUR")
+    prefill?.currency ?? (workshopInfo.country === "CH" ? "CHF" : "EUR"),
   );
 
   // Sync prefill or selection

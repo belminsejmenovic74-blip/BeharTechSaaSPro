@@ -4,6 +4,7 @@ import { useEffect } from "react";
 
 import { type StoreState, useBeharStore } from "@/lib/behar-store";
 import { syncPublicTrackingRepairsToCloud } from "@/lib/public-tracking-sync";
+import { installReconditioningSalesBridge } from "@/lib/reconditioning-store";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
 import {
   getWorkshopStateVersion,
@@ -12,6 +13,7 @@ import {
   markSyncStatus,
   normalizeLicenseKey,
   saveSnapshotState,
+  subscribeAuxStoreChanges,
   type WorkshopSnapshot,
 } from "@/lib/workshop-sync";
 
@@ -46,6 +48,8 @@ const SHARED_STATE_KEYS = [
   "payments",
   "appointments",
   "stockItems",
+  "stockMovements",
+  "purchases",
   "documents",
   "messageLogs",
   "priceBookItems",
@@ -93,6 +97,10 @@ function remoteDeviceId(snapshot: WorkshopSnapshot): string | undefined {
  *   Si Realtime n'est pas reçu, un polling discret compare la version distante.
  */
 export function AutoSyncProvider() {
+  useEffect(() => {
+    installReconditioningSalesBridge();
+  }, []);
+
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
 
@@ -290,6 +298,15 @@ export function AutoSyncProvider() {
       scheduleSave(state);
     });
 
+    // Les stores annexes (règles de reprise, appareils recond…) déclenchent
+    // aussi une sauvegarde : ils voyagent dans le même snapshot cloud.
+    const unsubscribeAux = subscribeAuxStoreChanges(() => {
+      if (applyingRemote) return;
+      const state = useBeharStore.getState();
+      if (!state._hasHydrated) return;
+      scheduleSave(state);
+    });
+
     const initialState = useBeharStore.getState();
     const initialLicense = normalizeLicenseKey(initialState.licenseKey);
     if (initialState._hasHydrated && initialState.licenseActivated && initialLicense) {
@@ -305,6 +322,7 @@ export function AutoSyncProvider() {
     return () => {
       disposed = true;
       unsubscribe();
+      unsubscribeAux();
       if (saveTimer) clearTimeout(saveTimer);
       stopRealtime();
       window.removeEventListener("online", onOnline);

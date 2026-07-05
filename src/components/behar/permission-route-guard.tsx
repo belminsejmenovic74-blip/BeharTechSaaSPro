@@ -22,6 +22,7 @@ const ROUTE_PERMISSIONS: Array<{ prefix: string; permission: PermissionKey; labe
   { prefix: "/dashboard/paiements", permission: "canViewPayments", label: "paiements" },
   { prefix: "/dashboard/documents", permission: "canViewDocuments", label: "documents" },
   { prefix: "/dashboard/stock", permission: "canViewStock", label: "stock" },
+  { prefix: "/dashboard/achats", permission: "canViewPurchasePrice", label: "achats" },
   { prefix: "/dashboard/ventes", permission: "canViewSales", label: "ventes" },
   { prefix: "/dashboard/rendez-vous", permission: "canViewRepairs", label: "rendez-vous" },
   { prefix: "/dashboard/comptoir", permission: "canCreateRepair", label: "comptoir" },
@@ -36,7 +37,7 @@ function AccessDenied({ label }: Readonly<{ label: string }>) {
   return (
     <div className="grid min-h-[70vh] place-items-center px-5">
       <section className="w-full max-w-[460px] rounded-[18px] border border-[#E8E8E5] bg-white p-6 text-center shadow-sm">
-        <span className="mx-auto grid size-12 place-items-center rounded-full bg-[#FFF7ED] text-[#B45309]">
+        <span className="mx-auto grid size-12 place-items-center rounded-full bg-[#F4F4F2] text-[#6B6B6B]">
           <ShieldAlert className="size-6" />
         </span>
         <h1 className="mt-4 font-bold text-[#1A1916] text-xl">Accès non autorisé</h1>

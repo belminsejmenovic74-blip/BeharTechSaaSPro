@@ -75,6 +75,15 @@ function formatPhoneLocal(prefix: string, value: unknown): string {
   return digits.replace(/(\d{3})(?=\d)/g, "$1 ").trim();
 }
 
+function normalizeSearch(value: unknown): string {
+  return String(value ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
 export function CustomersWorkspace() {
   const store = useBeharStore();
   const router = useRouter();
@@ -85,20 +94,113 @@ export function CustomersWorkspace() {
   const [filterVip, setFilterVip] = useState(false);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
-  const filteredCustomers = store.customers.filter((customer) => {
-    const q = search.toLowerCase();
-    const matchesSearch =
-      customer.name.toLowerCase().includes(q) ||
-      (customer.email ?? "").toLowerCase().includes(q) ||
-      (customer.phone ?? "").toLowerCase().includes(q);
+  const filteredCustomers = useMemo(() => {
+    const q = normalizeSearch(search);
+    const qDigits = digitsOnly(search);
+    return store.customers.filter((customer) => {
+      const customerRepairs = store.repairs.filter((repair) => repair.customerId === customer.id);
+      const customerQuotes = store.quotes.filter((quote) => quote.customerId === customer.id);
+      const customerInvoices = store.invoices.filter((invoice) => invoice.customerId === customer.id);
+      const customerPayments = store.payments.filter((payment) => payment.customerId === customer.id);
+      const customerDocuments = store.documents.filter((document) => document.customerId === customer.id);
+      const customerMessages = store.messageLogs.filter((message) => message.customerId === customer.id);
+      const haystack = normalizeSearch(
+        [
+          customer.name,
+          customer.email,
+          customer.phone,
+          customer.address,
+          customer.device,
+          customer.lastRepair,
+          customer.notes,
+          ...customerRepairs.flatMap((repair) => [
+            repair.number,
+            repair.device,
+            repair.deviceModel,
+            repair.brandName,
+            repair.issue,
+            repair.imei,
+            repair.status,
+          ]),
+          ...customerQuotes.flatMap((quote) => [
+            quote.number,
+            quote.device,
+            quote.deviceModel,
+            quote.issue,
+            quote.status,
+          ]),
+          ...customerInvoices.flatMap((invoice) => [invoice.number, invoice.status]),
+          ...customerPayments.flatMap((payment) => [payment.paymentNumber, payment.method, payment.status]),
+          ...customerDocuments.flatMap((document) => [document.title, document.type]),
+          ...customerMessages.flatMap((message) => [message.channel, message.body]),
+        ].join(" "),
+      );
+      const matchesSearch =
+        !q ||
+        haystack.includes(q) ||
+        (qDigits
+          ? [customer.phone, ...customerRepairs.map((repair) => repair.imei)].some((value) =>
+              digitsOnly(value).includes(qDigits),
+            )
+          : false);
 
-    if (filterVip && customer.status !== "Client fidèle") return false;
-    return matchesSearch;
-  });
+      if (filterVip && customer.status !== "Client fidèle" && customer.status !== "VIP" && !(customer as any).vip)
+        return false;
+      return matchesSearch;
+    });
+  }, [
+    filterVip,
+    search,
+    store.customers,
+    store.documents,
+    store.invoices,
+    store.messageLogs,
+    store.payments,
+    store.quotes,
+    store.repairs,
+  ]);
 
   const today = getNowIso().split("T")[0];
   const selectedCustomer =
     filteredCustomers.find((customer) => customer.id === store.selectedCustomerId) ?? filteredCustomers[0];
+
+  const selectedCustomerSummary = useMemo(() => {
+    if (!selectedCustomer) return null;
+    const repairs = store.repairs
+      .filter((repair) => repair.customerId === selectedCustomer.id)
+      .sort((a, b) =>
+        String(b.updatedAt ?? b.droppedAt ?? b.createdAt ?? "").localeCompare(
+          String(a.updatedAt ?? a.droppedAt ?? a.createdAt ?? ""),
+        ),
+      );
+    const paidRepairIds = new Set(
+      store.payments
+        .filter((payment) => payment.customerId === selectedCustomer.id && payment.status === "Payé")
+        .map((payment) => payment.repairId)
+        .filter(Boolean),
+    );
+    const activeRepairs = repairs.filter(
+      (repair) => !["Rendu", "Clôturé", "Annulé", "Irréparable"].includes(repair.status),
+    );
+    const finishedRepairs = repairs.filter((repair) => ["Rendu", "Clôturé"].includes(repair.status));
+    const unpaidReturned = repairs.filter((repair) => repair.status === "Rendu" && !paidRepairIds.has(repair.id));
+    const devices = Array.from(
+      new Set(
+        repairs
+          .map((repair) => [repair.brandName, repair.deviceModel || repair.device].filter(Boolean).join(" "))
+          .filter(Boolean),
+      ),
+    );
+    return {
+      activeRepairs,
+      devices,
+      finishedRepairs,
+      latestRepair: repairs[0],
+      paidRepairIds,
+      repairs,
+      unpaidReturned,
+    };
+  }, [selectedCustomer, store.payments, store.repairs]);
 
   type HistoryItem = {
     title: string;
@@ -470,7 +572,39 @@ export function CustomersWorkspace() {
                     <DetailRow
                       className="py-2.5"
                       label="Interventions"
-                      value={<span className="font-semibold">{selectedCustomer.interventions}</span>}
+                      value={
+                        <span className="font-semibold">
+                          {selectedCustomerSummary?.repairs.length ?? selectedCustomer.interventions}
+                        </span>
+                      }
+                    />
+                    <DetailRow
+                      className="py-2.5"
+                      label="Dernier statut"
+                      value={selectedCustomerSummary?.latestRepair?.status || "Aucun dossier"}
+                    />
+                    <DetailRow
+                      className="py-2.5"
+                      label="En cours / terminées"
+                      value={`${selectedCustomerSummary?.activeRepairs.length ?? 0} en cours · ${selectedCustomerSummary?.finishedRepairs.length ?? 0} terminées`}
+                    />
+                    <DetailRow
+                      className="py-2.5"
+                      label="Règlements"
+                      value={
+                        selectedCustomerSummary?.unpaidReturned.length
+                          ? `${selectedCustomerSummary.unpaidReturned.length} règlement non indiqué`
+                          : "Aucun règlement manquant"
+                      }
+                    />
+                    <DetailRow
+                      className="py-2.5"
+                      label="Appareils liés"
+                      value={
+                        selectedCustomerSummary?.devices.length
+                          ? selectedCustomerSummary.devices.slice(0, 3).join(", ")
+                          : selectedCustomer.device || "Non renseigné"
+                      }
                     />
                     <DetailRow className="py-2.5" label="Provenance" value={selectedCustomer.source} />
                     <DetailRow
@@ -490,6 +624,45 @@ export function CustomersWorkspace() {
                     />
                   </div>
                   <div className="mt-4 rounded-[16px] bg-[#FFFFFF] p-4 border border-[#FFFFFF]">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <h3 className="font-medium text-[#6B6B6B] text-[12px] uppercase tracking-wider">Dossiers liés</h3>
+                      <span className="rounded-[8px] border border-[#E8E8E5] bg-white px-2 py-0.5 text-[#6B6B6B] text-[11px]">
+                        {selectedCustomerSummary?.repairs.length ?? 0}
+                      </span>
+                    </div>
+                    {selectedCustomerSummary?.repairs.length ? (
+                      <div className="mb-4 space-y-2">
+                        {selectedCustomerSummary.repairs.slice(0, 4).map((repair) => {
+                          const isPaymentMissing =
+                            repair.status === "Rendu" && !selectedCustomerSummary.paidRepairIds.has(repair.id);
+                          return (
+                            <Link
+                              key={repair.id}
+                              href={`/dashboard/dossiers/_/?id=${repair.id}`}
+                              className="flex items-center justify-between gap-3 rounded-[12px] border border-[#E8E8E5] bg-white px-3 py-2.5 transition hover:border-[#2A9D8F]/40"
+                            >
+                              <span className="min-w-0">
+                                <span className="block truncate font-semibold text-[#1A1916] text-[12px]">
+                                  {repair.number} · {repair.deviceModel || repair.device}
+                                </span>
+                                <span className="block truncate text-[#6B6B6B] text-[11px]">
+                                  {repair.issue || "Intervention"} ·{" "}
+                                  {isPaymentMissing ? "Règlement non indiqué" : repair.status}
+                                </span>
+                              </span>
+                              <StatusBadge
+                                className="h-6 shrink-0 px-2 text-[10px] font-medium"
+                                status={isPaymentMissing ? "Règlement non indiqué" : repair.status}
+                              />
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="mb-4 rounded-[12px] border border-[#E8E8E5] bg-white px-3 py-4 text-center text-[#6B6B6B] text-[12px]">
+                        Dossiers liés : aucun dossier lié à ce client.
+                      </p>
+                    )}
                     <h3 className="mb-2 font-medium text-[#6B6B6B] text-[12px] uppercase tracking-wider">
                       Notes internes
                     </h3>
@@ -690,6 +863,7 @@ export function CustomersWorkspace() {
 function CustomerModal({ onClose, initial }: Readonly<{ onClose: () => void; initial?: Customer }>) {
   const store = useBeharStore();
   const [phone, setPhone] = useState(initial?.phone || "");
+  const [email, setEmail] = useState(initial?.email || "");
   const [country, setCountry] = useState<(typeof countryOptions)[number]>("France");
   const [postalCode, setPostalCode] = useState("");
   const [city, setCity] = useState("");
@@ -708,6 +882,17 @@ function CustomerModal({ onClose, initial }: Readonly<{ onClose: () => void; ini
   const phoneInfo = phoneParts(phone);
   const phoneLocal = formatPhoneLocal(phoneInfo.prefix, phoneInfo.local);
   const { cities: postalCities } = usePostalCities(postalCode, country);
+  const duplicateCustomer = useMemo(() => {
+    if (initial) return undefined;
+    const phoneDigits = digitsOnly(phone);
+    const emailKey = email.trim().toLowerCase();
+    return store.customers.find((customer) => {
+      if (customer.type === "counter") return false;
+      const samePhone = phoneDigits && digitsOnly(customer.phone) === phoneDigits;
+      const sameEmail = emailKey && customer.email.trim().toLowerCase() === emailKey;
+      return Boolean(samePhone || sameEmail);
+    });
+  }, [email, initial, phone, store.customers]);
 
   const setInternationalPhone = (prefixValue: string, localValue: string) => {
     const normalizedPrefix = `+${digitsOnly(prefixValue).slice(0, 4) || "33"}`;
@@ -740,7 +925,7 @@ function CustomerModal({ onClose, initial }: Readonly<{ onClose: () => void; ini
                 .join("")
                 .toUpperCase(),
               phone: phone.trim() || "Non renseigné",
-              email: String(data.get("email") || "Non renseigné"),
+              email: email.trim() || "Non renseigné",
               address: [address.trim(), [postalCode, city].filter(Boolean).join(" "), country]
                 .filter(Boolean)
                 .join(", "),
@@ -788,7 +973,37 @@ function CustomerModal({ onClose, initial }: Readonly<{ onClose: () => void; ini
               value={phoneLocal}
             />
           </div>
-          <input className={inputClass} defaultValue={initial?.email} name="email" placeholder="Email" />
+          <input
+            className={inputClass}
+            name="email"
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="Email"
+            value={email}
+          />
+          {duplicateCustomer ? (
+            <div className="rounded-2xl border border-[#D7EFEA] bg-[#FFFFFF] p-3 text-sm">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-[#1A1916]">
+                  <b>Client déjà connu</b>
+                  <span className="block text-[#6B6B6B]">
+                    {duplicateCustomer.name}
+                    {duplicateCustomer.phone ? ` · ${duplicateCustomer.phone}` : ""}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    store.setSelected("customer", duplicateCustomer.id);
+                    toast.success(`Client existant repris : ${duplicateCustomer.name}`);
+                    onClose();
+                  }}
+                  className="h-10 rounded-[12px] bg-[#2A9D8F] px-4 font-bold text-white"
+                >
+                  Reprendre ce client
+                </button>
+              </div>
+            </div>
+          ) : null}
           <div className="grid gap-2 sm:grid-cols-3">
             <select
               className={`${inputClass} pr-8 appearance-none bg-white bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236B6B6B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat`}

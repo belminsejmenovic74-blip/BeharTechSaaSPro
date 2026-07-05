@@ -1,25 +1,29 @@
-// reconditioning-certificate — données dérivées + codec QR pour le certificat de reconditionnement.
-// Le payload du certificat est encodé dans l'URL (base64url) : la page publique scannée par
-// le client n'a besoin d'aucun backend, elle décode et affiche. Fonctionne sur tout appareil.
+// reconditioning-certificate — données dérivées + codec legacy pour le certificat de reconditionnement.
+// Le QR canonique pointe vers un token public stable. Le payload encodé reste accepté
+// uniquement comme fallback legacy pour les certificats déjà imprimés.
 
+import { realDeviceImage } from "@/lib/real-product-images";
 import {
   computeMargin,
   computeTestSummary,
+  DEFAULT_PUBLIC_SETTINGS,
   type FunctionalTestKey,
   gradeLabel,
   type PhysicalCheckKey,
+  type PhysicalState,
+  type ReconditioningPublicSettings,
   type ReconditioningFile,
   type TestState,
 } from "@/lib/reconditioning-store";
 
-export const PROTOCOL_POINTS = 80;
-export const WORKSHOP_NAME = "Behar Tech Pro";
+export const WORKSHOP_NAME = "Boutique";
 
-export type ControlStatus = "validé" | "à signaler" | "non testé";
+export type ControlStatus = "validé" | "à signaler" | "non testé" | "non applicable";
 export type ControlPoint = { label: string; status: ControlStatus };
 
 export type CertificateData = {
   ref: string;
+  publicToken: string;
   date: string;
   brand: string;
   model: string;
@@ -38,17 +42,52 @@ export type CertificateData = {
   controls: ControlPoint[];
   technician: string;
   workshopName: string;
+  shopLogoUrl?: string;
+  imageUrl: string;
+  publicPhotos: string[];
+  publicSettings: ReconditioningPublicSettings;
+  publicComment: string;
+  screenStatus: string;
+  backStatus: string;
+  biometricStatus: string;
+  networkStatus: string;
+  cameraStatus: string;
+  oxidationStatus: string;
+  imeiStatus: string;
   summary: string;
 };
+
+export const PUBLIC_ALLOWED_FIELDS = [
+  "shop_name",
+  "shop_logo",
+  "brand",
+  "model",
+  "storage",
+  "color",
+  "sale_price",
+  "final_grade",
+  "battery_health",
+  "warranty_months",
+  "reconditioned_at",
+  "internal_reference",
+  "masked_imei",
+  "public_final_diagnostic",
+  "tested_points_count",
+  "total_points_count",
+  "public_photos",
+  "public_comment",
+] as const;
 
 const funcStatus = (value?: TestState): ControlStatus => {
   if (value === "OK") return "validé";
   if (value === "Défaut") return "à signaler";
+  if (value === "Non applicable") return "non applicable";
   return "non testé";
 };
-const physToStatus = (value?: "OK" | "Léger" | "Important"): ControlStatus => {
+const physToStatus = (value?: PhysicalState): ControlStatus => {
   if (value === "OK") return "validé";
   if (value === "Léger" || value === "Important") return "à signaler";
+  if (value === "Non applicable") return "non applicable";
   return "non testé";
 };
 
@@ -118,12 +157,112 @@ function buildDefects(file: ReconditioningFile): string[] {
   return out;
 }
 
-export function buildCertificateData(file: ReconditioningFile): CertificateData {
-  const summary = computeTestSummary(file);
+export function publicTokenForReconditioningFile(
+  file: Pick<ReconditioningFile, "id" | "number" | "publicToken">,
+): string {
+  if (file.publicToken) return file.publicToken;
+  const stable = (file.number || file.id || "appareil")
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+  return `rd-${stable || "appareil"}`;
+}
+
+export function getPublicSettings(file: Pick<ReconditioningFile, "publicSettings">): ReconditioningPublicSettings {
+  return { ...DEFAULT_PUBLIC_SETTINGS, ...(file.publicSettings ?? {}) };
+}
+
+export function getPublicReconditioningMedia(file: Pick<ReconditioningFile, "media" | "photos">): string[] {
+  const media = (file.media ?? [])
+    .filter((item) => item.visibility === "public_sale" && item.isPublic && item.dataUrl)
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((item) => item.dataUrl);
+  return media.length ? media : file.photos.cote ? [file.photos.cote] : [];
+}
+
+export function getPrimaryPublicImage(file: Pick<ReconditioningFile, "media" | "photos">): string {
+  const primary = (file.media ?? []).find(
+    (item) => item.visibility === "public_sale" && item.isPublic && item.isPrimary,
+  );
+  return primary?.dataUrl || getPublicReconditioningMedia(file)[0] || "";
+}
+
+export function getDeviceImageFallback(file: Pick<ReconditioningFile, "brand" | "model">): string {
+  return realDeviceImage(file.brand, file.model, "smartphone") || "";
+}
+
+export function resolveReconditioningDeviceImage(
+  file: Pick<ReconditioningFile, "brand" | "model" | "photos" | "media">,
+): string {
+  return getPrimaryPublicImage(file) || getDeviceImageFallback(file);
+}
+
+export function buildSafePublicImageUrl(value?: string): string {
+  if (!value || value.startsWith("blob:")) return "";
+  return /^(data:image\/|https?:\/\/|\/)/.test(value) ? value : "";
+}
+
+export function maskImeiForPublic(value: string): string {
+  const clean = value.replace(/\D/g, "");
+  if (clean.length < 8) return value ? "Renseigné" : "Non renseigné";
+  return `${clean.slice(0, 4)}•••••••${clean.slice(-4)}`;
+}
+
+const hasPartMatching = (file: ReconditioningFile, pattern: RegExp) =>
+  file.parts.some((part) => pattern.test(part.label));
+const finalFunctional = (file: ReconditioningFile, key: FunctionalTestKey, repairedPattern?: RegExp) => {
+  const value = file.functionalTests[key];
+  if (value === "OK") return repairedPattern && hasPartMatching(file, repairedPattern) ? "Remplacé / testé OK" : "OK";
+  if (value === "Défaut") return "Défaut signalé";
+  if (value === "Non applicable") return "Non applicable";
+  return "Non renseigné";
+};
+const finalPhysical = (file: ReconditioningFile, key: PhysicalCheckKey, repairedPattern?: RegExp) => {
+  const value = file.physicalChecks[key];
+  if (value === "OK") return repairedPattern && hasPartMatching(file, repairedPattern) ? "Remplacée / testée OK" : "OK";
+  if (value === "Léger") return "Défaut mineur";
+  if (value === "Important") return "Défaut signalé";
+  if (value === "Non applicable") return "Non applicable";
+  return "Non renseigné";
+};
+export function calculateTestedPoints(file: ReconditioningFile) {
   const controls = buildControls(file);
-  const flagged = controls.filter((c) => c.status === "à signaler").length;
+  const testedPoints = controls.filter((control) => control.status !== "non testé").length;
+  return { testedPoints, totalPoints: controls.length, controls };
+}
+
+export function buildCertificateData(
+  file: ReconditioningFile,
+  options: { workshopName?: string; shopLogoUrl?: string } = {},
+): CertificateData {
+  const summary = computeTestSummary(file);
+  const { controls, testedPoints, totalPoints } = calculateTestedPoints(file);
+  const publicSettings = getPublicSettings(file);
+  const publicPhotos = publicSettings.showPublicPhotos
+    ? getPublicReconditioningMedia(file).map(buildSafePublicImageUrl).filter(Boolean)
+    : [];
+  const visibleControls = publicSettings.showFinalDiagnostic
+    ? controls.filter((control) => file.publicTestVisibility?.[control.label] !== false)
+    : [];
+  const screenStatus = finalFunctional(file, "Écran", /écran|ecran|oled|lcd|incell/i);
+  const backStatus = finalPhysical(file, "Back glass", /vitre|dos|face arrière|back glass/i);
+  const biometricStatus = finalFunctional(file, "Face ID / Touch ID");
+  const networkStatus = finalFunctional(file, "Réseau");
+  const cameraStatus = finalFunctional(file, "Caméras", /caméra|camera/i);
+  const oxidationStatus =
+    file.physicalChecks.Humidité === "OK"
+      ? "Non"
+      : file.physicalChecks.Humidité === "Léger"
+        ? "Légère"
+        : file.physicalChecks.Humidité === "Important"
+          ? "Forte"
+          : "Non renseigné";
+  const imeiStatus = file.imei ? "Propre" : "Non renseigné";
   return {
     ref: file.number,
+    publicToken: publicTokenForReconditioningFile(file),
     date: file.updatedAt,
     brand: file.brand || "—",
     model: file.model || "Appareil",
@@ -136,20 +275,54 @@ export function buildCertificateData(file: ReconditioningFile): CertificateData 
     warrantyMonths: file.warrantyMonths,
     accessories: file.accessories,
     batteryHealth: file.batteryHealth,
-    protocolPoints: PROTOCOL_POINTS,
-    validatedPoints: Math.max(0, PROTOCOL_POINTS - flagged),
+    protocolPoints: totalPoints,
+    validatedPoints: testedPoints,
     defects: buildDefects(file),
-    controls,
+    controls: visibleControls,
     technician: "Technicien certifié",
-    workshopName: WORKSHOP_NAME,
-    summary: file.m360Notes.trim() || file.testComment.trim() || "Reconditionnement complet réalisé en atelier, contrôle qualité validé.",
+    workshopName: publicShopName(options.workshopName),
+    shopLogoUrl: options.shopLogoUrl,
+    imageUrl: buildSafePublicImageUrl(publicPhotos[0] || getDeviceImageFallback(file)),
+    publicPhotos,
+    publicSettings,
+    publicComment: file.testComment.trim(),
+    screenStatus,
+    backStatus,
+    biometricStatus,
+    networkStatus,
+    cameraStatus,
+    oxidationStatus,
+    imeiStatus,
+    summary: "Reconditionnement complet réalisé en atelier, contrôle qualité validé.",
   };
+}
+
+function publicShopName(value?: string): string {
+  const clean = value?.trim();
+  if (!clean) return WORKSHOP_NAME;
+  const weak = clean
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+  if (weak === "behar" || weak === "behartech" || weak === "behartechpro") return WORKSHOP_NAME;
+  return clean;
 }
 
 /* ───────────────────────── Codec URL (base64url, unicode-safe) ───────────────────────── */
 
-const STATUS_CODE: Record<ControlStatus, string> = { validé: "1", "à signaler": "2", "non testé": "0" };
-const CODE_STATUS: Record<string, ControlStatus> = { "1": "validé", "2": "à signaler", "0": "non testé" };
+const STATUS_CODE: Record<ControlStatus, string> = {
+  validé: "1",
+  "à signaler": "2",
+  "non testé": "0",
+  "non applicable": "3",
+};
+const CODE_STATUS: Record<string, ControlStatus> = {
+  "1": "validé",
+  "2": "à signaler",
+  "0": "non testé",
+  "3": "non applicable",
+};
 
 function b64urlEncode(input: string): string {
   const b64 = btoa(unescape(encodeURIComponent(input)));
@@ -162,27 +335,44 @@ function b64urlDecode(input: string): string {
 
 /** Sérialise le certificat en chaîne compacte pour le QR / l'URL. */
 export function encodeCertificate(data: CertificateData): string {
+  const s = data.publicSettings;
   const compact = {
-    r: data.ref,
-    d: data.date,
+    r: s.showReference ? data.ref : "",
+    pt: data.publicToken,
+    d: s.showReconditionedDate ? data.date : "",
     b: data.brand,
-    m: data.model,
-    st: data.storage,
-    cl: data.color,
-    im: data.imei,
-    g: data.grade,
-    gl: data.gradeLabel,
-    p: data.price,
-    w: data.warrantyMonths,
-    ac: data.accessories,
-    bt: data.batteryHealth,
-    pp: data.protocolPoints,
-    vp: data.validatedPoints,
-    df: data.defects,
-    ct: data.controls.map((c) => STATUS_CODE[c.status]).join(""),
+    m: s.showModel ? data.model : "",
+    st: s.showStorage ? data.storage : "",
+    cl: s.showColor ? data.color : "",
+    // IMEI toujours masqué AVANT encodage : le payload est décodable par n'importe qui.
+    im: s.showMaskedImei ? maskImeiForPublic(data.imei) : "",
+    g: s.showGrade ? data.grade : "",
+    gl: s.showGrade ? data.gradeLabel : "",
+    p: s.showPrice ? data.price : 0,
+    w: s.showWarranty ? data.warrantyMonths : 0,
+    ac: "",
+    bt: s.showBattery ? data.batteryHealth : null,
+    pp: s.showControlPoints ? data.protocolPoints : 0,
+    vp: s.showControlPoints ? data.validatedPoints : 0,
+    // Défauts (dont le commentaire de test interne) : uniquement si le commentaire public est activé,
+    // comme à l'affichage — sinon ils resteraient lisibles dans l'URL encodée.
+    df: s.showPublicComment ? data.defects : [],
+    ct: s.showControlPoints ? data.controls.map((c) => STATUS_CODE[c.status]).join("") : "",
     tc: data.technician,
-    ws: data.workshopName,
+    ws: s.showShopName ? data.workshopName : "",
+    lg: s.showShopLogo ? data.shopLogoUrl : undefined,
+    img: s.showPublicPhotos ? data.imageUrl : "",
+    sc: s.showFinalDiagnostic ? data.screenStatus : "",
+    bk: s.showFinalDiagnostic ? data.backStatus : "",
+    bi: s.showFinalDiagnostic ? data.biometricStatus : "",
+    nw: s.showFinalDiagnostic ? data.networkStatus : "",
+    ca: s.showFinalDiagnostic ? data.cameraStatus : "",
+    ox: s.showFinalDiagnostic ? data.oxidationStatus : "",
+    is: s.showFinalDiagnostic ? data.imeiStatus : "",
     sm: data.summary,
+    ps: data.publicSettings,
+    pc: s.showPublicComment ? data.publicComment : "",
+    ph: s.showPublicPhotos ? data.publicPhotos : [],
   };
   return b64urlEncode(JSON.stringify(compact));
 }
@@ -217,6 +407,7 @@ export function decodeCertificate(encoded: string): CertificateData | null {
     }));
     return {
       ref: c.r ?? "",
+      publicToken: c.pt ?? "",
       date: c.d ?? "",
       brand: c.b ?? "",
       model: c.m ?? "Appareil",
@@ -229,12 +420,29 @@ export function decodeCertificate(encoded: string): CertificateData | null {
       warrantyMonths: Number(c.w) || 0,
       accessories: c.ac ?? "",
       batteryHealth: c.bt ?? null,
-      protocolPoints: Number(c.pp) || PROTOCOL_POINTS,
+      protocolPoints: Number(c.pp) || CONTROL_LABELS.length,
       validatedPoints: Number(c.vp) || 0,
       defects: Array.isArray(c.df) ? c.df : [],
       controls,
       technician: c.tc ?? "Technicien certifié",
       workshopName: c.ws ?? WORKSHOP_NAME,
+      shopLogoUrl: c.lg ?? undefined,
+      imageUrl: c.img ?? "",
+      publicPhotos: Array.isArray(c.ph)
+        ? c.ph
+            .filter((value: unknown) => typeof value === "string")
+            .map(buildSafePublicImageUrl)
+            .filter(Boolean)
+        : [],
+      publicSettings: { ...DEFAULT_PUBLIC_SETTINGS, ...(c.ps ?? {}) },
+      publicComment: c.pc ?? "",
+      screenStatus: c.sc ?? "Inconnu",
+      backStatus: c.bk ?? "Inconnu",
+      biometricStatus: c.bi ?? "Inconnu",
+      networkStatus: c.nw ?? "Inconnu",
+      cameraStatus: c.ca ?? "Inconnu",
+      oxidationStatus: c.ox ?? "Inconnu",
+      imeiStatus: c.is ?? "Inconnu",
       summary: c.sm ?? "",
     };
   } catch {
@@ -244,7 +452,7 @@ export function decodeCertificate(encoded: string): CertificateData | null {
 
 /** Chemin relatif de la page publique du certificat (à passer dans publicAbsoluteUrl). */
 export function certificatePublicPath(data: CertificateData): string {
-  return `/certificat?d=${encodeCertificate(data)}`;
+  return `/suivi/appareil/${encodeURIComponent(data.publicToken || stockRef(data.ref))}`;
 }
 
 /** Référence stock courte pour l'étiquette (ex. ACQ-2026-000123 → 000123). */

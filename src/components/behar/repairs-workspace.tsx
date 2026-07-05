@@ -74,10 +74,18 @@ import type { RepairCard } from "@/mock/repairs";
 import { DeviceThumb, Panel, PrimaryButton, SecondaryButton, StatusBadge } from "./primitives";
 import { useDocument } from "./print-provider";
 
-const statuses: RepairStatus[] = ["Reçu", "Diagnostic", "En attente", "Devis envoyé", "Devis accepté", "En réparation", "Test final", "Prêt"];
+const statuses: RepairStatus[] = [
+  "Reçu",
+  "Diagnostic",
+  "En attente",
+  "Devis envoyé",
+  "Devis accepté",
+  "En réparation",
+  "Test final",
+  "Prêt",
+];
 
-const formatRepairAmount = (repair: Pick<Repair, "currency">, value: number) =>
-  formatCurrency(value, repair.currency);
+const formatRepairAmount = (repair: Pick<Repair, "currency">, value: number) => formatCurrency(value, repair.currency);
 
 function compactStockText(value: string) {
   return value
@@ -90,8 +98,14 @@ function compactStockText(value: string) {
 
 function isAccessoryStockItem(item: { name: string; category?: string; categoryName?: string; part?: string }) {
   const text = compactStockText(`${item.name} ${item.category ?? ""} ${item.categoryName ?? ""} ${item.part ?? ""}`);
-  const looksLikeAccessory = /\b(accessoire|coque|etui|housse|chargeur|cable|ecouteurs|verre trempe|protection ecran|film|adaptateur|batterie externe|support voiture)\b/.test(text);
-  const looksLikeRepairPart = /\b(ecran|lcd|oled|vitre arriere|connecteur|nappe|camera|haut parleur|micro|vibreur|batterie interne|chassis|carte mere)\b/.test(text);
+  const looksLikeAccessory =
+    /\b(accessoire|coque|etui|housse|chargeur|cable|ecouteurs|verre trempe|protection ecran|film|adaptateur|batterie externe|support voiture)\b/.test(
+      text,
+    );
+  const looksLikeRepairPart =
+    /\b(ecran|lcd|oled|vitre arriere|connecteur|nappe|camera|haut parleur|micro|vibreur|batterie interne|chassis|carte mere)\b/.test(
+      text,
+    );
   return looksLikeAccessory && !looksLikeRepairPart;
 }
 
@@ -283,19 +297,8 @@ export function RepairsWorkspace() {
     });
   }, [repairs, search, statusFilter, paymentFilter, payments, customers]);
 
-  const accessoryStockItems = useMemo(() => stockItems.filter(isAccessoryStockItem), [stockItems]);
-  const compatibleStockItems = selectedRepair
-    ? accessoryStockItems.filter(
-        (item) =>
-          item.modelIds.includes(selectedRepair.modelId ?? "") ||
-          item.compatibleModels.includes(selectedRepair.deviceModel ?? selectedRepair.model),
-      )
-    : [];
-  const genericStockItems = selectedRepair
-    ? accessoryStockItems.filter((item) => !compatibleStockItems.some((compatible) => compatible.id === item.id))
-    : accessoryStockItems;
-
-  const columns = useMemo(
+  // Colonnes du kanban desktop : une colonne par statut, cartes issues des dossiers filtrés.
+  const kanbanColumns = useMemo(
     () =>
       statuses.map((status) => ({
         title: status,
@@ -304,16 +307,17 @@ export function RepairsWorkspace() {
           .filter((repair) => repair.status === status)
           .map((repair) => {
             const customer = customers.find((entry) => entry.id === repair.customerId);
-            const invs = invoices.filter((i) => i.repairId === repair.id);
-            const pays = payments.filter((p) => p.repairId === repair.id && p.status === "Payé");
-            const paid = pays.reduce((s, p) => s + p.amount, 0);
+            const invs = invoices.filter((invoice) => invoice.repairId === repair.id);
+            const paid = payments
+              .filter((payment) => payment.repairId === repair.id && payment.status === "Payé")
+              .reduce((sum, payment) => sum + payment.amount, 0);
             const total = typeof repair.total === "number" ? repair.total : (repair.amount ?? 0);
             const hasInvoice = invs.length > 0 || Boolean(repair.invoiceIds?.length);
             return {
               id: repair.id,
               shop_id: repair.shopId,
               number: repair.number,
-              device: repair.device,
+              device: formatDeviceLabel(repair),
               issue: repair.issue,
               customer: displayCustomerName(customer),
               time: formatIsoToDisplay(repair.droppedAt),
@@ -329,6 +333,18 @@ export function RepairsWorkspace() {
       })),
     [filteredRepairs, customers, invoices, payments],
   );
+
+  const accessoryStockItems = useMemo(() => stockItems.filter(isAccessoryStockItem), [stockItems]);
+  const compatibleStockItems = selectedRepair
+    ? accessoryStockItems.filter(
+        (item) =>
+          item.modelIds.includes(selectedRepair.modelId ?? "") ||
+          item.compatibleModels.includes(selectedRepair.deviceModel ?? selectedRepair.model),
+      )
+    : [];
+  const genericStockItems = selectedRepair
+    ? accessoryStockItems.filter((item) => !compatibleStockItems.some((compatible) => compatible.id === item.id))
+    : accessoryStockItems;
 
   const openCreate = (status: RepairStatus = "Reçu") => {
     setDraftStatus(status);
@@ -883,21 +899,28 @@ export function RepairsWorkspace() {
             : "xl:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] 2xl:grid-cols-[minmax(0,1fr)_400px]",
         )}
       >
-        {/* Kanban : desktop uniquement */}
+        {/* Kanban atelier : desktop uniquement */}
         <div className="hidden md:flex md:min-h-0 md:h-full md:flex-col md:overflow-hidden">
-          {!(detailMode === "intake" && selectedRepair) && (
-            <KanbanBoard
-              columns={columns}
-              onAdd={(status) => openCreate(status as RepairStatus)}
-              onSelect={(id) => setSelected("repair", id)}
-              selectedId={selectedRepair?.id ?? ""}
-              onMoveCard={(cardId, _from, toStatus) => {
-                if (!statuses.includes(toStatus as RepairStatus)) return;
-                changeRepairStatus(cardId, toStatus as RepairStatus);
-                toast.success(`Statut : ${toStatus}`);
-              }}
-            />
-          )}
+          {!(detailMode === "intake" && selectedRepair) &&
+            (filteredRepairs.length === 0 ? (
+              <div className="flex min-h-[340px] flex-1 items-center justify-center rounded-[20px] border border-[#E8E8E5] bg-white px-6 text-center text-[#6B6B6B] text-sm shadow-[0_12px_40px_rgba(26,25,22,0.045)]">
+                {search || statusFilter !== "all" || paymentFilter !== "all"
+                  ? "Aucun dossier ne correspond aux filtres."
+                  : "Aucun dossier pour l'instant."}
+              </div>
+            ) : (
+              <KanbanBoard
+                columns={kanbanColumns}
+                onAdd={(status) => openCreate(status as RepairStatus)}
+                onSelect={(id) => setSelected("repair", id)}
+                selectedId={selectedRepair?.id ?? ""}
+                onMoveCard={(cardId, _from, toStatus) => {
+                  if (!statuses.includes(toStatus as RepairStatus)) return;
+                  changeRepairStatus(cardId, toStatus as RepairStatus);
+                  toast.success(`Statut : ${toStatus}`);
+                }}
+              />
+            ))}
         </div>
 
         {importOpen && (
@@ -1247,7 +1270,9 @@ export function RepairsWorkspace() {
                   <section className="rounded-[16px] border border-[#E8E8E5]/90 bg-white px-[18px] py-4">
                     <div className="flex items-end justify-between gap-3">
                       <div>
-                        <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Total client</h3>
+                        <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">
+                          Total client
+                        </h3>
                         <p className="mt-2 font-semibold text-[#1A1916] text-[26px] leading-none tabular-nums">
                           {formatRepairAmount(selectedRepair, totalClientAmount)}
                           {workshopInfo.vatApplicable ? (

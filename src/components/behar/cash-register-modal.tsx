@@ -126,7 +126,9 @@ function matchCategory(item: StockItem, key: CategoryKey): boolean {
     case "telephones":
       return isRefurbishedPhoneItem(item);
     case "protections":
-      return hay.includes("protection") || hay.includes("verre") || hay.includes("vitre trempée") || hay.includes("coque");
+      return (
+        hay.includes("protection") || hay.includes("verre") || hay.includes("vitre trempée") || hay.includes("coque")
+      );
     case "chargeurs":
       return hay.includes("chargeur") || hay.includes("adaptateur") || hay.includes("alimentation");
     case "cables":
@@ -148,7 +150,8 @@ function matchCategory(item: StockItem, key: CategoryKey): boolean {
 }
 
 // §4 — la vente comptoir affiche les articles activés, mais bloque ceux sans prix.
-const isCounterVisible = (item: StockItem) => item.active !== false && item.counterSaleEnabled === true && item.stock > 0;
+const isCounterVisible = (item: StockItem) =>
+  item.active !== false && item.counterSaleEnabled === true && item.stock > 0;
 const isSellable = (item: StockItem) => isCounterVisible(item) && Number.isFinite(item.salePrice) && item.salePrice > 0;
 
 const FR_PAYMENT_OPTIONS: Array<{ key: PaymentMethod; label: string; icon: typeof CreditCard }> = [
@@ -163,7 +166,7 @@ const FR_PAYMENT_OPTIONS: Array<{ key: PaymentMethod; label: string; icon: typeo
 const getPaymentOptions = (_country: WorkshopCountry, _twintEnabled = true) => FR_PAYMENT_OPTIONS;
 
 function formatPaymentLabel(method?: PaymentMethod) {
-  return method || "Moyen à choisir";
+  return method ?? "Moyen à choisir";
 }
 
 export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () => void }>) {
@@ -217,7 +220,8 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
     return sellable.filter((item) => {
       if (!matchCategory(item, category)) return false;
       if (!q) return true;
-      const hay = `${item.name} ${item.sku ?? ""} ${item.brandName ?? ""} ${item.reference ?? ""} ${(item.compatibleModels ?? []).join(" ")}`.toLowerCase();
+      const hay =
+        `${item.name} ${item.sku ?? ""} ${item.brandName ?? ""} ${item.reference ?? ""} ${(item.compatibleModels ?? []).join(" ")}`.toLowerCase();
       return hay.includes(q);
     });
   }, [sellable, category, search]);
@@ -247,9 +251,7 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
   const customerMatches = useMemo(() => {
     const q = customerSearch.trim().toLowerCase();
     if (!q) return namedCustomers.slice(0, 6);
-    return namedCustomers
-      .filter((c) => `${c.name} ${c.phone} ${c.email}`.toLowerCase().includes(q))
-      .slice(0, 6);
+    return namedCustomers.filter((c) => `${c.name} ${c.phone} ${c.email}`.toLowerCase().includes(q)).slice(0, 6);
   }, [namedCustomers, customerSearch]);
 
   const eligibleRepairs = useMemo(() => {
@@ -269,7 +271,9 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
 
   const addToCart = (item: StockItem) => {
     if (!isSellable(item)) {
-      toast.error(item.salePrice > 0 ? "Ce produit n'est pas disponible à la vente." : "Prix à définir avant encaissement.");
+      toast.error(
+        item.salePrice > 0 ? "Ce produit n'est pas disponible à la vente." : "Prix à définir avant encaissement.",
+      );
       return;
     }
     setCart((current) => {
@@ -296,6 +300,7 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
         total: item.salePrice,
         purchasePriceInternal: item.purchasePrice,
         supplierInternal: item.supplier,
+        reconditioningFileId: item.reconditioningFileId,
       };
       return [...current, line];
     });
@@ -312,7 +317,9 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
         toast.error(`Stock insuffisant : ${item.stock} disponible.`);
         return current;
       }
-      return current.map((l) => (l.stockItemId === stockItemId ? { ...l, quantity: next, total: next * l.unitPrice } : l));
+      return current.map((l) =>
+        l.stockItemId === stockItemId ? { ...l, quantity: next, total: next * l.unitPrice } : l,
+      );
     });
   };
 
@@ -765,7 +772,7 @@ function RepairCashStep({
 
             <div className="mt-auto space-y-3">
               <div className="flex items-center justify-between border-t border-[#FFFFFF] pt-3">
-              <span className="text-sm text-[#6B6B6B]">Total à régler</span>
+                <span className="text-sm text-[#6B6B6B]">Total à régler</span>
                 <span className="text-[22px] font-bold tabular-nums text-[#1A1916]">
                   {amount > 0 ? formatEuro(amount) : "À définir"}
                 </span>
@@ -850,9 +857,7 @@ function CashierStep(props: CashierStepProps) {
     const q = search.trim().toLowerCase();
     if (!q) return false;
     const exactMatches = filtered.filter((item) =>
-      [item.sku, item.reference, item.name]
-        .filter(Boolean)
-        .some((value) => String(value).trim().toLowerCase() === q),
+      [item.sku, item.reference, item.name].filter(Boolean).some((value) => String(value).trim().toLowerCase() === q),
     );
     if (exactMatches.length !== 1) return false;
     addToCart(exactMatches[0]);
@@ -874,203 +879,206 @@ function CashierStep(props: CashierStepProps) {
       </div>
 
       <div className="grid min-h-0 flex-1 gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
-      {/* Catalogue column */}
-      <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
-        {/* Sticky header: search + add piece + categories */}
-        <div className="shrink-0 space-y-3">
-          <div className="flex flex-col gap-2 xl:flex-row">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-[#8A8A8A]" />
-              <ScanLine className="pointer-events-none absolute top-1/2 right-4 size-[18px] -translate-y-1/2 text-[#8A8A8A]" />
-              <input
-                ref={searchRef}
-                type="search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && addExactSearchMatch()) {
-                    event.preventDefault();
-                  }
-                }}
-                placeholder="Rechercher un produit, SKU ou scanner…"
-                className="h-[60px] w-full rounded-[8px] border border-[#E8E8E5] bg-white pl-12 pr-12 text-[15px] text-[#1A1916] shadow-[0_1px_2px_rgba(26,25,22,0.03)] outline-none transition focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10 placeholder:text-[#8F8B84]"
-                aria-label="Rechercher un produit"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => setQuickAddOpen(true)}
-              className="inline-flex h-[60px] w-full shrink-0 items-center justify-center gap-2 rounded-[8px] border border-[#E8E8E5] bg-white px-5 text-[14px] font-semibold text-[#1A1916] shadow-[0_1px_2px_rgba(26,25,22,0.03)] transition hover:border-[#2A9D8F]/40 hover:text-[#2A9D8F] xl:w-auto"
-              aria-label="Ajouter une pièce"
-            >
-              <PackagePlus className="size-4" strokeWidth={1.8} />
-              <span className="hidden sm:inline">Ajouter une pièce</span>
-            </button>
-          </div>
-
-          <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 scrollbar-none">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.key}
-                type="button"
-                onClick={() => setCategory(cat.key)}
-                className={`shrink-0 rounded-full px-5 py-3 text-[13px] font-semibold transition ${
-                  category === cat.key
-                    ? "bg-[#11998E] text-white shadow-[0_8px_18px_rgba(17,153,142,0.22)]"
-                    : "border border-[#E8E8E5] bg-white text-[#6B6B6B] hover:border-[#2A9D8F]/40 hover:text-[#1A1916]"
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Scrollable: grid only */}
-        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pb-3 pr-1">
-          <h2 className="text-[20px] font-semibold tracking-tight text-[#1A1916]">Catalogue</h2>
-          {filtered.length === 0 ? (
-            <div className="rounded-[8px] border border-dashed border-[#E8E8E5] bg-white py-14 text-center">
-              <Package className="mx-auto mb-3 size-7 text-[#8A8A8A]" strokeWidth={1.6} />
-              <p className="text-[#6B6B6B] text-sm">Aucun produit ne correspond à votre recherche.</p>
+        {/* Catalogue column */}
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
+          {/* Sticky header: search + add piece + categories */}
+          <div className="shrink-0 space-y-3">
+            <div className="flex flex-col gap-2 xl:flex-row">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-[#8A8A8A]" />
+                <ScanLine className="pointer-events-none absolute top-1/2 right-4 size-[18px] -translate-y-1/2 text-[#8A8A8A]" />
+                <input
+                  ref={searchRef}
+                  type="search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && addExactSearchMatch()) {
+                      event.preventDefault();
+                    }
+                  }}
+                  placeholder="Rechercher un produit, SKU ou scanner…"
+                  className="h-[60px] w-full rounded-[8px] border border-[#E8E8E5] bg-white pl-12 pr-12 text-[15px] text-[#1A1916] shadow-[0_1px_2px_rgba(26,25,22,0.03)] outline-none transition focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10 placeholder:text-[#8F8B84]"
+                  aria-label="Rechercher un produit"
+                />
+              </div>
               <button
                 type="button"
                 onClick={() => setQuickAddOpen(true)}
-                className="mt-4 inline-flex h-10 items-center gap-2 rounded-full border border-[#2A9D8F]/40 bg-[#FFFFFF] px-4 text-[12.5px] font-medium text-[#147065] transition hover:bg-[#FFFFFF]"
+                className="inline-flex h-[60px] w-full shrink-0 items-center justify-center gap-2 rounded-[8px] border border-[#E8E8E5] bg-white px-5 text-[14px] font-semibold text-[#1A1916] shadow-[0_1px_2px_rgba(26,25,22,0.03)] transition hover:border-[#2A9D8F]/40 hover:text-[#2A9D8F] xl:w-auto"
+                aria-label="Ajouter une pièce"
               >
-                <PackagePlus className="size-3.5" />
-                Ajouter une pièce à la volée
+                <PackagePlus className="size-4" strokeWidth={1.8} />
+                <span className="hidden sm:inline">Ajouter une pièce</span>
               </button>
             </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-5 lg:grid-cols-3">
-              {filtered.map((item) => (
-                <ProductCard key={item.id} item={item} onClick={() => addToCart(item)} />
+
+            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 scrollbar-none">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat.key}
+                  type="button"
+                  onClick={() => setCategory(cat.key)}
+                  className={`shrink-0 rounded-full px-5 py-3 text-[13px] font-semibold transition ${
+                    category === cat.key
+                      ? "bg-[#11998E] text-white shadow-[0_8px_18px_rgba(17,153,142,0.22)]"
+                      : "border border-[#E8E8E5] bg-white text-[#6B6B6B] hover:border-[#2A9D8F]/40 hover:text-[#1A1916]"
+                  }`}
+                >
+                  {cat.label}
+                </button>
               ))}
             </div>
-          )}
-
-          {frequent.length > 0 ? <FrequentProducts items={frequent} onAdd={addToCart} /> : null}
-
-          <div className="flex items-center justify-between gap-3 rounded-[8px] border border-[#CFEFEB] bg-[#FFFFFF] px-4 py-3 text-[12.5px] text-[#6B6B6B]">
-            <span className="inline-flex items-center gap-2">
-              <Info className="size-4 shrink-0 text-[#2A9D8F]" />
-              Les champs IMEI, État et Garantie apparaissent uniquement lors de la vente d'un téléphone reconditionné.
-            </span>
-          </div>
-        </div>
-
-        {quickAddOpen ? (
-          <QuickAddStockModal
-            onClose={() => setQuickAddOpen(false)}
-            onCreated={(item) => {
-              setQuickAddOpen(false);
-              addToCart(item);
-              toast.success(`${item.name} créé et ajouté au panier`);
-            }}
-          />
-        ) : null}
-      </section>
-
-      {/* Cart column */}
-      <aside className="flex min-h-0 shrink-0 flex-col gap-3 xl:overflow-hidden">
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[8px] border border-[#E8E8E5] bg-white shadow-[0_10px_30px_rgba(26,25,22,0.06)]">
-          <div className="flex shrink-0 items-center justify-between border-b border-[#E8E8E5] px-5 py-5">
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-[#1A1916] text-[20px] tracking-tight">Panier</h3>
-              <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[#6B6B6B] text-[11px] font-medium">
-                {cart.length} {cart.length > 1 ? "articles" : "article"}
-              </span>
-            </div>
-            {cart.length > 0 ? (
-              <button
-                type="button"
-                onClick={clearCart}
-                className="grid size-8 place-items-center rounded-full text-[#8A8A8A] transition hover:bg-[#FFFFFF] hover:text-[#B42318]"
-                aria-label="Vider le panier"
-              >
-                <Trash2 className="size-4" />
-              </button>
-            ) : null}
           </div>
 
-          <div className="flex-1 overflow-y-auto px-5 py-4">
-            {cart.length === 0 ? (
-              <div className="px-3 py-14 text-center">
+          {/* Scrollable: grid only */}
+          <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pb-3 pr-1">
+            <h2 className="text-[20px] font-semibold tracking-tight text-[#1A1916]">Catalogue</h2>
+            {filtered.length === 0 ? (
+              <div className="rounded-[8px] border border-dashed border-[#E8E8E5] bg-white py-14 text-center">
                 <Package className="mx-auto mb-3 size-7 text-[#8A8A8A]" strokeWidth={1.6} />
-                <p className="text-[#6B6B6B] text-sm">Ajoutez un produit pour commencer la vente.</p>
+                <p className="text-[#6B6B6B] text-sm">Aucun produit ne correspond à votre recherche.</p>
+                <button
+                  type="button"
+                  onClick={() => setQuickAddOpen(true)}
+                  className="mt-4 inline-flex h-10 items-center gap-2 rounded-full border border-[#2A9D8F]/40 bg-[#FFFFFF] px-4 text-[12.5px] font-medium text-[#147065] transition hover:bg-[#FFFFFF]"
+                >
+                  <PackagePlus className="size-3.5" />
+                  Ajouter une pièce à la volée
+                </button>
               </div>
             ) : (
-              <ul className="space-y-2">
-                {cart.map((line) => (
-                  <CartLineRow
-                    key={line.stockItemId}
-                    line={line}
-                    onIncrement={() => updateQty(line.stockItemId, 1)}
-                    onDecrement={() => updateQty(line.stockItemId, -1)}
-                    onRemove={() => removeLine(line.stockItemId)}
-                  />
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <div className="shrink-0 border-t border-[#E8E8E5] bg-white px-5 py-5">
-            <div className="space-y-2 text-[15px]">
-              <Row label="Sous-total" value={formatEuro(preTax)} />
-              <Row label="TVA (20 %)" value={formatEuro(extractedTax)} />
-            </div>
-            <div className="mt-6 flex items-baseline justify-between">
-              <span className="font-semibold text-[#1A1916] text-[18px]">Total</span>
-              <span className="font-bold text-[#11998E] text-[32px] tabular-nums tracking-tight">{formatEuro(subtotal)}</span>
-            </div>
-
-            <div className="mt-6">
-              <p className="mb-2 text-[#6B6B6B] text-[12px] font-medium">Paiement</p>
-              <div className="grid grid-cols-2 gap-2">
-                {paymentOptions.map((opt) => (
-                  <PaymentButton
-                    key={opt.key}
-                    icon={opt.icon}
-                    label={opt.label}
-                    active={paymentMethod === opt.key}
-                    onClick={() => setPaymentMethod(opt.key)}
-                  />
+              <div className="grid grid-cols-2 gap-5 lg:grid-cols-3">
+                {filtered.map((item) => (
+                  <ProductCard key={item.id} item={item} onClick={() => addToCart(item)} />
                 ))}
               </div>
+            )}
+
+            {frequent.length > 0 ? <FrequentProducts items={frequent} onAdd={addToCart} /> : null}
+
+            <div className="flex items-center justify-between gap-3 rounded-[8px] border border-[#CFEFEB] bg-[#FFFFFF] px-4 py-3 text-[12.5px] text-[#6B6B6B]">
+              <span className="inline-flex items-center gap-2">
+                <Info className="size-4 shrink-0 text-[#2A9D8F]" />
+                Les champs IMEI, État et Garantie apparaissent uniquement lors de la vente d'un téléphone reconditionné.
+              </span>
+            </div>
+          </div>
+
+          {quickAddOpen ? (
+            <QuickAddStockModal
+              onClose={() => setQuickAddOpen(false)}
+              onCreated={(item) => {
+                setQuickAddOpen(false);
+                addToCart(item);
+                toast.success(`${item.name} créé et ajouté au panier`);
+              }}
+            />
+          ) : null}
+        </section>
+
+        {/* Cart column */}
+        <aside className="flex min-h-0 shrink-0 flex-col gap-3 xl:overflow-hidden">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[8px] border border-[#E8E8E5] bg-white shadow-[0_10px_30px_rgba(26,25,22,0.06)]">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#E8E8E5] px-5 py-5">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-[#1A1916] text-[20px] tracking-tight">Panier</h3>
+                <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[#6B6B6B] text-[11px] font-medium">
+                  {cart.length} {cart.length > 1 ? "articles" : "article"}
+                </span>
+              </div>
+              {cart.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={clearCart}
+                  className="grid size-8 place-items-center rounded-full text-[#8A8A8A] transition hover:bg-[#FFFFFF] hover:text-[#B42318]"
+                  aria-label="Vider le panier"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              ) : null}
             </div>
 
-            <button
-              type="button"
-              onClick={() => setAttachRepair(!attachRepair)}
-              className={`mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[8px] border text-[13px] font-medium transition ${
-                attachRepair
-                  ? "border-[#2A9D8F]/40 bg-[#FFFFFF] text-[#147065]"
-                  : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:border-[#2A9D8F]/40 hover:text-[#1A1916]"
-              }`}
-            >
-              <Link2 className="size-4" />
-              {attachRepair ? "Rattachée à un dossier" : "Rattacher à un dossier"}
-            </button>
+            <div className="flex-1 overflow-y-auto px-5 py-4">
+              {cart.length === 0 ? (
+                <div className="px-3 py-14 text-center">
+                  <Package className="mx-auto mb-3 size-7 text-[#8A8A8A]" strokeWidth={1.6} />
+                  <p className="text-[#6B6B6B] text-sm">Ajoutez un produit pour commencer la vente.</p>
+                </div>
+              ) : (
+                <ul className="space-y-2">
+                  {cart.map((line) => (
+                    <CartLineRow
+                      key={line.stockItemId}
+                      line={line}
+                      onIncrement={() => updateQty(line.stockItemId, 1)}
+                      onDecrement={() => updateQty(line.stockItemId, -1)}
+                      onRemove={() => removeLine(line.stockItemId)}
+                    />
+                  ))}
+                </ul>
+              )}
+            </div>
 
-            <button
-              type="button"
-              disabled={cart.length === 0}
-              onClick={goCheckout}
-              className="mt-4 inline-flex h-14 w-full items-center justify-center gap-2 rounded-[8px] bg-[#11998E] font-semibold text-[15px] text-white shadow-[0_10px_22px_rgba(17,153,142,0.24)] transition hover:bg-[#0F8C82] disabled:cursor-not-allowed disabled:bg-[#FFFFFF] disabled:shadow-none"
-            >
-              Valider la vente
-              <ArrowRight className="size-4" />
-            </button>
+            <div className="shrink-0 border-t border-[#E8E8E5] bg-white px-5 py-5">
+              <div className="space-y-2 text-[15px]">
+                <Row label="Sous-total" value={formatEuro(preTax)} />
+                <Row label="TVA (20 %)" value={formatEuro(extractedTax)} />
+              </div>
+              <div className="mt-6 flex items-baseline justify-between">
+                <span className="font-semibold text-[#1A1916] text-[18px]">Total</span>
+                <span className="font-bold text-[#11998E] text-[32px] tabular-nums tracking-tight">
+                  {formatEuro(subtotal)}
+                </span>
+              </div>
 
-            {refurbishedLines.length > 0 ? (
-              <p className="mt-2 text-[#8A8A8A] text-[11px]">
-                {refurbishedLines.length} téléphone(s) reconditionné(s) — vous renseignerez IMEI / état à l'étape suivante.
-              </p>
-            ) : null}
+              <div className="mt-6">
+                <p className="mb-2 text-[#6B6B6B] text-[12px] font-medium">Paiement</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {paymentOptions.map((opt) => (
+                    <PaymentButton
+                      key={opt.key}
+                      icon={opt.icon}
+                      label={opt.label}
+                      active={paymentMethod === opt.key}
+                      onClick={() => setPaymentMethod(opt.key)}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setAttachRepair(!attachRepair)}
+                className={`mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[8px] border text-[13px] font-medium transition ${
+                  attachRepair
+                    ? "border-[#2A9D8F]/40 bg-[#FFFFFF] text-[#147065]"
+                    : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:border-[#2A9D8F]/40 hover:text-[#1A1916]"
+                }`}
+              >
+                <Link2 className="size-4" />
+                {attachRepair ? "Rattachée à un dossier" : "Rattacher à un dossier"}
+              </button>
+
+              <button
+                type="button"
+                disabled={cart.length === 0}
+                onClick={goCheckout}
+                className="mt-4 inline-flex h-14 w-full items-center justify-center gap-2 rounded-[8px] bg-[#11998E] font-semibold text-[15px] text-white shadow-[0_10px_22px_rgba(17,153,142,0.24)] transition hover:bg-[#0F8C82] disabled:cursor-not-allowed disabled:bg-[#FFFFFF] disabled:shadow-none"
+              >
+                Valider la vente
+                <ArrowRight className="size-4" />
+              </button>
+
+              {refurbishedLines.length > 0 ? (
+                <p className="mt-2 text-[#8A8A8A] text-[11px]">
+                  {refurbishedLines.length} téléphone(s) reconditionné(s) — vous renseignerez IMEI / état à l'étape
+                  suivante.
+                </p>
+              ) : null}
+            </div>
           </div>
-        </div>
-      </aside>
+        </aside>
       </div>
     </div>
   );
@@ -1096,7 +1104,9 @@ function ProductCard({ item, onClick }: Readonly<{ item: StockItem; onClick: () 
         <ProductThumb item={item} size={104} />
       </div>
       <div className="flex min-h-0 flex-1 flex-col">
-        <p className="line-clamp-2 font-semibold text-[#1A1916] text-[14px] leading-tight tracking-tight">{item.name}</p>
+        <p className="line-clamp-2 font-semibold text-[#1A1916] text-[14px] leading-tight tracking-tight">
+          {item.name}
+        </p>
         <div className="mt-2 flex items-baseline justify-between gap-2">
           <span className={`font-bold text-[17px] tabular-nums ${hasPrice ? "text-[#11998E]" : "text-[#B42318]"}`}>
             {hasPrice ? formatEuro(item.salePrice) : "Prix à définir"}
@@ -1105,7 +1115,9 @@ function ProductCard({ item, onClick }: Readonly<{ item: StockItem; onClick: () 
         <div className="mt-auto flex items-center gap-1.5 pt-3 text-[12px]">
           <Layers className="size-3 text-[#8A8A8A]" strokeWidth={1.8} />
           <span className={lowStock ? "text-[#B42318]" : "text-[#6B6B6B]"}>Stock {item.stock}</span>
-          {item.sku ? <span className="ml-auto truncate font-mono text-[#8A8A8A] text-[10.5px]">{item.sku}</span> : null}
+          {item.sku ? (
+            <span className="ml-auto truncate font-mono text-[#8A8A8A] text-[10.5px]">{item.sku}</span>
+          ) : null}
         </div>
       </div>
     </button>
@@ -1136,10 +1148,7 @@ function ProductThumb({ item, size = 64 }: Readonly<{ item: StockItem; size?: nu
   );
 }
 
-function FrequentProducts({
-  items,
-  onAdd,
-}: Readonly<{ items: StockItem[]; onAdd: (item: StockItem) => void }>) {
+function FrequentProducts({ items, onAdd }: Readonly<{ items: StockItem[]; onAdd: (item: StockItem) => void }>) {
   const [showAll, setShowAll] = useState(false);
   const visibleItems = showAll ? items : items.slice(0, 3);
   return (
@@ -1228,7 +1237,9 @@ function CartLineRow({
               >
                 <Minus className="size-3.5" />
               </button>
-              <span className="min-w-[24px] text-center font-medium text-[#1A1916] text-[13px] tabular-nums">{line.quantity}</span>
+              <span className="min-w-[24px] text-center font-medium text-[#1A1916] text-[13px] tabular-nums">
+                {line.quantity}
+              </span>
               <button
                 type="button"
                 onClick={onIncrement}
@@ -1248,7 +1259,8 @@ function CartLineRow({
 
 function LineThumb({ name }: Readonly<{ name: string }>) {
   const src = realProductImage(name);
-  if (src) return <img alt="" aria-hidden className="max-h-[58px] max-w-[58px] object-contain mix-blend-multiply" src={src} />;
+  if (src)
+    return <img alt="" aria-hidden className="max-h-[58px] max-w-[58px] object-contain mix-blend-multiply" src={src} />;
   return <Package className="size-5" strokeWidth={1.6} />;
 }
 
@@ -1424,7 +1436,9 @@ function CheckoutStep(props: CheckoutStepProps) {
                 </select>
               )
             ) : (
-              <p className="text-[#8A8A8A] text-[12px]">Pour une vente comptoir simple, laissez cette option désactivée.</p>
+              <p className="text-[#8A8A8A] text-[12px]">
+                Pour une vente comptoir simple, laissez cette option désactivée.
+              </p>
             )}
           </div>
 
@@ -1483,7 +1497,9 @@ function CheckoutStep(props: CheckoutStepProps) {
                   />
                   <div className="grid gap-2">
                     {customerMatches.length === 0 ? (
-                      <p className="rounded-[12px] bg-[#FFFFFF] px-3 py-2 text-[#6B6B6B] text-sm">Aucun client correspondant.</p>
+                      <p className="rounded-[12px] bg-[#FFFFFF] px-3 py-2 text-[#6B6B6B] text-sm">
+                        Aucun client correspondant.
+                      </p>
                     ) : (
                       customerMatches.map((customer) => (
                         <button
@@ -1540,8 +1556,12 @@ function CheckoutStep(props: CheckoutStepProps) {
 
           {refurbishedLines.length > 0 ? (
             <div className="rounded-[18px] border border-[#E8E8E5] bg-white p-5">
-              <h3 className="mb-1 font-semibold text-[#1A1916] text-[15px] tracking-tight">Téléphones reconditionnés</h3>
-              <p className="mb-3 text-[#6B6B6B] text-[12.5px]">IMEI, état et garantie ne sont demandés que pour ces lignes.</p>
+              <h3 className="mb-1 font-semibold text-[#1A1916] text-[15px] tracking-tight">
+                Téléphones reconditionnés
+              </h3>
+              <p className="mb-3 text-[#6B6B6B] text-[12.5px]">
+                IMEI, état et garantie ne sont demandés que pour ces lignes.
+              </p>
               <div className="space-y-3">
                 {refurbishedLines.map((line) => (
                   <div key={line.stockItemId} className="rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] p-3">
@@ -1620,7 +1640,9 @@ function CheckoutStep(props: CheckoutStepProps) {
               </div>
               <div className="mt-3 flex items-baseline justify-between">
                 <span className="font-medium text-[#1A1916] text-[15px]">Total TTC</span>
-                <span className="font-bold text-[#2A9D8F] text-[26px] tabular-nums tracking-tight">{formatSale(subtotal)}</span>
+                <span className="font-bold text-[#2A9D8F] text-[26px] tabular-nums tracking-tight">
+                  {formatSale(subtotal)}
+                </span>
               </div>
 
               <div className="mt-4">
@@ -1647,7 +1669,9 @@ function CheckoutStep(props: CheckoutStepProps) {
                 <CheckCircle2 className="size-4" />
                 Valider le règlement
               </button>
-              <p className="mt-2 text-[#8A8A8A] text-[11px]">Le stock est décrémenté uniquement après cette validation.</p>
+              <p className="mt-2 text-[#8A8A8A] text-[11px]">
+                Le stock est décrémenté uniquement après cette validation.
+              </p>
             </div>
           </div>
         </aside>
@@ -1844,7 +1868,8 @@ function QuickAddStockModal({
           </div>
 
           <p className="text-[#8A8A8A] text-[11.5px]">
-            Crée la pièce en stock et l'ajoute directement au panier. Vous pourrez compléter (achat, fournisseur, modèle compatible) plus tard depuis l'onglet Stock.
+            Crée la pièce en stock et l'ajoute directement au panier. Vous pourrez compléter (achat, fournisseur, modèle
+            compatible) plus tard depuis l'onglet Stock.
           </p>
         </div>
 

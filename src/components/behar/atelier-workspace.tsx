@@ -64,6 +64,7 @@ import { cn } from "@/lib/utils";
 
 import { Panel, PrimaryButton, SearchBox, SecondaryButton, StatusBadge } from "./primitives";
 import { useDocument } from "./print-provider";
+import { SettlementModal, useSettlementModal } from "./settlement-modal";
 import { TrackingQrModal } from "./tracking-qr-modal";
 
 type AtelierView =
@@ -89,7 +90,13 @@ type QueueColumn = {
 const queueColumns: QueueColumn[] = [
   { title: "Reçu", caption: "0-24h", statuses: ["Reçu"], icon: ClipboardCheck, tone: "blue" },
   { title: "Diagnostic", caption: "0-48h", statuses: ["Diagnostic"], icon: Search, tone: "blue" },
-  { title: "En attente", caption: "Pièce / client", statuses: ["En attente", "Devis envoyé", "Devis accepté"], icon: Package, tone: "amber" },
+  {
+    title: "En attente",
+    caption: "Pièce / client",
+    statuses: ["En attente", "Devis envoyé", "Devis accepté"],
+    icon: Package,
+    tone: "amber",
+  },
   { title: "En réparation", caption: "En cours", statuses: ["En réparation"], icon: Wrench, tone: "green" },
   { title: "Test final", caption: "Contrôle qualité", statuses: ["Test final"], icon: ShieldCheck, tone: "purple" },
   { title: "Prêt", caption: "À restituer", statuses: ["Prêt"], icon: CheckCircle2, tone: "green" },
@@ -124,8 +131,27 @@ const smartphoneChecks = [
   "Traces de choc",
 ];
 
-const consoleChecks = ["Allumage", "HDMI", "Ventilation", "Stockage", "Manette détectée", "Température", "Bruit anormal"];
-const computerChecks = ["Démarrage", "Écran", "Clavier", "Trackpad", "Charge", "Batterie", "Wi-Fi", "Disque", "Température", "Ventilateur"];
+const consoleChecks = [
+  "Allumage",
+  "HDMI",
+  "Ventilation",
+  "Stockage",
+  "Manette détectée",
+  "Température",
+  "Bruit anormal",
+];
+const computerChecks = [
+  "Démarrage",
+  "Écran",
+  "Clavier",
+  "Trackpad",
+  "Charge",
+  "Batterie",
+  "Wi-Fi",
+  "Disque",
+  "Température",
+  "Ventilateur",
+];
 const finalSmartphoneChecks = [
   "Allumage",
   "Écran",
@@ -165,8 +191,7 @@ const clientMessageTemplates: string[] = [
   "Merci de passer avec votre bon de dépôt.",
 ];
 
-const READY_CLIENT_MESSAGE =
-  "Bonjour, votre appareil est prêt. Vous pouvez passer le récupérer à votre convenance.";
+const READY_CLIENT_MESSAGE = "Bonjour, votre appareil est prêt. Vous pouvez passer le récupérer à votre convenance.";
 
 const photoCategoryType = (category: RepairEvidencePhoto["category"]): RepairEvidencePhoto["type"] =>
   category === "Avant / réception"
@@ -280,34 +305,51 @@ function customerFor(repair: Repair | undefined, customers: Customer[]) {
   return repair ? customers.find((customer) => customer.id === repair.customerId) : undefined;
 }
 
-function inferModelFromPieceNameStrict(pieceName: string, brandId?: string, deviceModelsList: DeviceModel[] = []): DeviceModel | undefined {
-  const pName = pieceName.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").replace(/[^a-z0-9]+/g, " ").trim();
+function inferModelFromPieceNameStrict(
+  pieceName: string,
+  brandId?: string,
+  deviceModelsList: DeviceModel[] = [],
+): DeviceModel | undefined {
+  const pName = pieceName
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
   if (!pName) return undefined;
-  
-  let bestMatch: DeviceModel | undefined = undefined;
+
+  let bestMatch: DeviceModel | undefined;
   let longestLength = 0;
-  
-  const candidateModels = brandId 
-    ? deviceModelsList.filter((m) => m.brandId === brandId) 
-    : deviceModelsList;
-    
+
+  const candidateModels = brandId ? deviceModelsList.filter((m) => m.brandId === brandId) : deviceModelsList;
+
   for (const m of candidateModels) {
-    const mName = m.name.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").replace(/[^a-z0-9]+/g, " ").trim();
+    const mName = m.name
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{M}/gu, "")
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
     if (!mName) continue;
-    
-    const regex = new RegExp(`\\b${mName}\\b`, 'i');
+
+    const regex = new RegExp(`\\b${mName}\\b`, "i");
     if (regex.test(pName)) {
       if (mName.length > longestLength) {
         longestLength = mName.length;
         bestMatch = m;
       }
     }
-    
+
     if (m.aliases) {
       for (const alias of m.aliases) {
-        const aName = alias.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").replace(/[^a-z0-9]+/g, " ").trim();
+        const aName = alias
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/\p{M}/gu, "")
+          .replace(/[^a-z0-9]+/g, " ")
+          .trim();
         if (!aName) continue;
-        const aliasRegex = new RegExp(`\\b${aName}\\b`, 'i');
+        const aliasRegex = new RegExp(`\\b${aName}\\b`, "i");
         if (aliasRegex.test(pName)) {
           if (aName.length > longestLength) {
             longestLength = aName.length;
@@ -317,14 +359,14 @@ function inferModelFromPieceNameStrict(pieceName: string, brandId?: string, devi
       }
     }
   }
-  
+
   return bestMatch;
 }
 
 export function isStockItemCompatibleWithRepair(
   item: StockItem,
   repair: Repair,
-  deviceModelsList: DeviceModel[]
+  deviceModelsList: DeviceModel[],
 ): boolean {
   if (item.brandId && repair.brandId && item.brandId !== repair.brandId) {
     return false;
@@ -339,22 +381,29 @@ export function isStockItemCompatibleWithRepair(
 
   const repairModelName = (repair.deviceModel ?? repair.model ?? "").trim().toLowerCase();
   if (repairModelName && item.compatibleModels && item.compatibleModels.length > 0) {
-    const isCompatible = item.compatibleModels.some(
-      (m) => m.trim().toLowerCase() === repairModelName
-    );
+    const isCompatible = item.compatibleModels.some((m) => m.trim().toLowerCase() === repairModelName);
     if (isCompatible) return true;
   }
 
-  const hasNoModels = (!item.modelIds || item.modelIds.length === 0) && 
-                      (!item.compatibleModels || item.compatibleModels.length === 0);
+  const hasNoModels =
+    (!item.modelIds || item.modelIds.length === 0) && (!item.compatibleModels || item.compatibleModels.length === 0);
   if (hasNoModels) {
     const inferred = inferModelFromPieceNameStrict(item.name || item.part, item.brandId, deviceModelsList);
     if (inferred) {
       if (repair.modelId && inferred.id === repair.modelId) {
         return true;
       }
-      const inferredName = inferred.name.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "").replace(/[^a-z0-9]+/g, " ").trim();
-      const repairName = repairModelName.normalize("NFD").replace(/\p{M}/gu, "").replace(/[^a-z0-9]+/g, " ").trim();
+      const inferredName = inferred.name
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/\p{M}/gu, "")
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+      const repairName = repairModelName
+        .normalize("NFD")
+        .replace(/\p{M}/gu, "")
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
       if (inferredName === repairName) {
         return true;
       }
@@ -441,15 +490,14 @@ export function AtelierWorkspace() {
 
   // Génération/téléchargement PDF réel (bon de dépôt, fiche d'intervention, devis, facture…).
   const { download: downloadDocument, uploadToCloud: uploadDocumentToCloud } = useDocument();
+  const settlement = useSettlementModal();
 
   const selectedRepair = repairs.find((repair) => repair.id === selectedRepairId) ?? repairs[0];
   const selectedCustomer = customerFor(selectedRepair, customers);
 
   const compatibleItems = useMemo(() => {
     if (!selectedRepair) return [];
-    return stockItems.filter((item) =>
-      isStockItemCompatibleWithRepair(item, selectedRepair, deviceModels)
-    );
+    return stockItems.filter((item) => isStockItemCompatibleWithRepair(item, selectedRepair, deviceModels));
   }, [stockItems, selectedRepair, deviceModels]);
 
   const canViewMoney = hasPermission("canViewMargin");
@@ -484,7 +532,9 @@ export function AtelierWorkspace() {
 
   const queueStats = useMemo(() => {
     const late = filteredRepairs.filter(isOverdue).length;
-    const blocked = filteredRepairs.filter((repair) => repair.blockReason || repair.subStatus?.includes("attente")).length;
+    const blocked = filteredRepairs.filter(
+      (repair) => repair.blockReason || repair.subStatus?.includes("attente"),
+    ).length;
     const ready = filteredRepairs.filter((repair) => repair.status === "Prêt").length;
     const load = Math.min(100, Math.round((filteredRepairs.length / 24) * 100));
     return { late, blocked, ready, load };
@@ -495,7 +545,9 @@ export function AtelierWorkspace() {
     setDiagnosisItems(
       selectedRepair.diagnosisChecklist?.length ? selectedRepair.diagnosisChecklist : defaultChecklist(selectedRepair),
     );
-    setFinalItems(selectedRepair.finalTest?.items?.length ? selectedRepair.finalTest.items : defaultChecklist(selectedRepair, true));
+    setFinalItems(
+      selectedRepair.finalTest?.items?.length ? selectedRepair.finalTest.items : defaultChecklist(selectedRepair, true),
+    );
     setFinalComment(selectedRepair.finalTest?.comment ?? "");
     setImpossibleReason(selectedRepair.finalTest?.testImpossibleReason ?? "");
     setCodeVisible(false);
@@ -547,7 +599,10 @@ export function AtelierWorkspace() {
               ["Diagnostic", "Contrôle technicien"],
               ["En réparation", "Intervention atelier"],
             ].map(([status, label], index) => (
-              <div className="rounded-[16px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.035)]" key={label}>
+              <div
+                className="rounded-[16px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
+                key={label}
+              >
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-[#1A1916] text-sm">Étape {index + 1}</span>
                   <StatusBadge status={status} />
@@ -566,10 +621,29 @@ export function AtelierWorkspace() {
     return (
       <div className="space-y-5">
         <div className="grid gap-3 md:grid-cols-4">
-          <WorkshopMetric label="Dossiers actifs" value={String(filteredRepairs.length)} helper="Tous statuts atelier" />
-          <WorkshopMetric label="En retard" value={String(queueStats.late)} helper="Date promise dépassée" tone="danger" />
-          <WorkshopMetric label="Bloqués" value={String(queueStats.blocked)} helper="Pièce, client ou devis" tone="amber" />
-          <WorkshopMetric label="Charge atelier" value={`${queueStats.load}%`} helper={`${queueStats.ready} prêts à récupérer`} tone="green" />
+          <WorkshopMetric
+            label="Dossiers actifs"
+            value={String(filteredRepairs.length)}
+            helper="Tous statuts atelier"
+          />
+          <WorkshopMetric
+            label="En retard"
+            value={String(queueStats.late)}
+            helper="Date promise dépassée"
+            tone="danger"
+          />
+          <WorkshopMetric
+            label="Bloqués"
+            value={String(queueStats.blocked)}
+            helper="Pièce, client ou devis"
+            tone="amber"
+          />
+          <WorkshopMetric
+            label="Charge atelier"
+            value={`${queueStats.load}%`}
+            helper={`${queueStats.ready} prêts à récupérer`}
+            tone="green"
+          />
         </div>
 
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -635,14 +709,18 @@ export function AtelierWorkspace() {
   if (!selectedRepair) return null;
 
   const relatedDocuments = documents.filter((document) => document.repairId === selectedRepair.id);
-  const relatedQuotes = quotes.filter((quote) => quote.repairId === selectedRepair.id || selectedRepair.quoteIds?.includes(quote.id));
+  const relatedQuotes = quotes.filter(
+    (quote) => quote.repairId === selectedRepair.id || selectedRepair.quoteIds?.includes(quote.id),
+  );
   const relatedInvoices = invoices.filter(
     (invoice) => invoice.repairId === selectedRepair.id || selectedRepair.invoiceIds?.includes(invoice.id),
   );
   const relatedPayments = payments.filter(
     (payment) => payment.repairId === selectedRepair.id || selectedRepair.paymentIds?.includes(payment.id),
   );
-  const relatedAudit = auditLogs.filter((entry) => entry.targetType === "repair" && entry.targetId === selectedRepair.id);
+  const relatedAudit = auditLogs.filter(
+    (entry) => entry.targetType === "repair" && entry.targetId === selectedRepair.id,
+  );
   const selectedPriority = priorityForRepair(selectedRepair);
   const elapsed = interventionElapsed(selectedRepair);
   const relatedPaidLabel = getRepairReadyDisplayLabel(selectedRepair, relatedPayments);
@@ -681,14 +759,22 @@ export function AtelierWorkspace() {
       toast.error("Création de devis impossible à ce stade du dossier.");
       return;
     }
-    const linePrice = selectedRepair.total || selectedRepair.amount || selectedRepair.selectedPriceSnapshot?.prixClientTotal || 0;
+    const linePrice =
+      selectedRepair.total || selectedRepair.amount || selectedRepair.selectedPriceSnapshot?.prixClientTotal || 0;
     const id = addQuote({
       customerId: selectedRepair.customerId,
       repairId: selectedRepair.id,
       status: linePrice > 0 ? "Envoyé" : "Brouillon",
       lines:
         linePrice > 0
-          ? [{ description: `${selectedRepair.issue} - ${formatDeviceLabel(selectedRepair, "")}`, quantity: 1, unitPrice: linePrice, total: linePrice }]
+          ? [
+              {
+                description: `${selectedRepair.issue} - ${formatDeviceLabel(selectedRepair, "")}`,
+                quantity: 1,
+                unitPrice: linePrice,
+                total: linePrice,
+              },
+            ]
           : [],
     });
     if (!id) {
@@ -769,10 +855,9 @@ export function AtelierWorkspace() {
     setNoteTag("Général");
   };
 
-  // Marquer rendu = clôture du dossier (statut delivered). Reste une transition gardée.
+  // Restitution = règlement obligatoire, puis clôture du dossier.
   const markDelivered = () => {
-    changeRepairStatus(selectedRepair.id, "Rendu");
-    toast.success("Dossier marqué comme rendu.");
+    settlement.open(selectedRepair.id, { closeAfterSubmit: true });
   };
 
   const uploadPhoto = (category: RepairEvidencePhoto["category"], file: File | null | undefined) => {
@@ -885,7 +970,10 @@ export function AtelierWorkspace() {
   };
 
   // Mappe un document du dossier vers la cible du moteur d'impression (type + id entité).
-  type DocPrintTarget = { type: "intake" | "quote" | "invoice" | "payment" | "internal" | "summary" | "sale-receipt" | "diagnostic_report"; id: string };
+  type DocPrintTarget = {
+    type: "intake" | "quote" | "invoice" | "payment" | "internal" | "summary" | "sale-receipt" | "diagnostic_report";
+    id: string;
+  };
   const docPrintTarget = (doc: BeharDocument): DocPrintTarget | null => {
     switch (doc.type) {
       case "intake":
@@ -1025,7 +1113,7 @@ export function AtelierWorkspace() {
       case "Prêt":
         return [
           { label: "Envoyer message client", onClick: () => sendClientMessage(READY_CLIENT_MESSAGE) },
-          { label: "Marquer comme rendu", onClick: markDelivered },
+          { label: "Clôturer / règlement", onClick: markDelivered },
           { label: "Rapport / documents", onClick: () => setView("documents") },
           { label: "Créer SAV", onClick: () => setView("sav") },
         ];
@@ -1139,12 +1227,22 @@ export function AtelierWorkspace() {
             </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <InfoLine label="Diagnostic réel" value={selectedRepair.diagnosticNotes || "À renseigner"} />
-              <InfoLine label="Motif de blocage" value={selectedRepair.blockReason || selectedRepair.subStatus || "Aucun"} />
+              <InfoLine
+                label="Motif de blocage"
+                value={selectedRepair.blockReason || selectedRepair.subStatus || "Aucun"}
+              />
               <InfoLine label="Temps de cycle" value={`Déposé depuis ${relativeSince(selectedRepair.droppedAt)}`} />
-              <InfoLine label="Paiement externe" value={relatedPayments.some((payment) => payment.status === "Payé") ? "Réglé hors Behar Tech" : "Non réglé"} />
+              <InfoLine
+                label="Paiement externe"
+                value={
+                  relatedPayments.some((payment) => payment.status === "Payé") ? "Réglé hors Behar Tech" : "Non réglé"
+                }
+              />
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
-              {canCreateQuote && <PrimaryButton onClick={() => setView("diagnostic")}>Ajouter diagnostic</PrimaryButton>}
+              {canCreateQuote && (
+                <PrimaryButton onClick={() => setView("diagnostic")}>Ajouter diagnostic</PrimaryButton>
+              )}
               <SecondaryButton onClick={() => setView("parts")}>Ajouter pièce</SecondaryButton>
               {canCreateQuote && <SecondaryButton onClick={createQuote}>Créer devis</SecondaryButton>}
               {!canCreateQuote && (
@@ -1168,7 +1266,8 @@ export function AtelierWorkspace() {
                       className="font-semibold text-[#167B70]"
                       onClick={() => {
                         setCodeVisible((visible) => !visible);
-                        if (!codeVisible) appendRepairHistory(selectedRepair.id, "Code appareil consulté", { source: "atelier.fiche" });
+                        if (!codeVisible)
+                          appendRepairHistory(selectedRepair.id, "Code appareil consulté", { source: "atelier.fiche" });
                       }}
                       type="button"
                     >
@@ -1179,7 +1278,10 @@ export function AtelierWorkspace() {
                   )
                 }
               />
-              <InfoLine label="Accessoires" value={selectedRepair.intakeCondition?.accessories?.join(", ") || "Aucun"} />
+              <InfoLine
+                label="Accessoires"
+                value={selectedRepair.intakeCondition?.accessories?.join(", ") || "Aucun"}
+              />
               <InfoLine label="Garantie" value={selectedRepair.diagnosticWarranty || "À définir"} />
             </div>
           </Panel>
@@ -1197,11 +1299,14 @@ export function AtelierWorkspace() {
               </PrimaryButton>
             </div>
             <div className="mt-4 space-y-2">
-              {selectedRepair.history.slice(-4).reverse().map((entry) => (
-                <div className="border-[#E8E8E5] border-l-2 pl-3 text-[#6B6B6B] text-xs" key={entry}>
-                  {entry}
-                </div>
-              ))}
+              {selectedRepair.history
+                .slice(-4)
+                .reverse()
+                .map((entry) => (
+                  <div className="border-[#E8E8E5] border-l-2 pl-3 text-[#6B6B6B] text-xs" key={entry}>
+                    {entry}
+                  </div>
+                ))}
             </div>
           </Panel>
         </div>
@@ -1213,7 +1318,11 @@ export function AtelierWorkspace() {
             <SectionTitle title="Diagnostic technicien" />
             <div className="mt-4 grid gap-4 md:grid-cols-3">
               <DiagnosticCard title="Panne déclarée" value={selectedRepair.issue} />
-              <DiagnosticCard title="Diagnostic confirmé" value={selectedRepair.diagnosticNotes || "À confirmer"} tone="green" />
+              <DiagnosticCard
+                title="Diagnostic confirmé"
+                value={selectedRepair.diagnosticNotes || "À confirmer"}
+                tone="green"
+              />
               <DiagnosticCard title="Réparation possible" value={selectedRepair.repairability || "Oui"} tone="green" />
             </div>
             <div className="mt-5 overflow-hidden rounded-[16px] border border-[#E8E8E5]">
@@ -1238,14 +1347,22 @@ export function AtelierWorkspace() {
               </table>
             </div>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <TextBox label="Risques / remarques" value={selectedRepair.diagnosticRisks || "Aucune oxydation visible. Contrôle final recommandé."} />
-              <TextBox label="Commentaires internes" value={selectedRepair.repairNotes || "Visible uniquement par l'équipe atelier."} />
+              <TextBox
+                label="Risques / remarques"
+                value={selectedRepair.diagnosticRisks || "Aucune oxydation visible. Contrôle final recommandé."}
+              />
+              <TextBox
+                label="Commentaires internes"
+                value={selectedRepair.repairNotes || "Visible uniquement par l'équipe atelier."}
+              />
             </div>
           </Panel>
           <Panel className="p-5">
             <SectionTitle title="Décision" />
             <div className="mt-4 space-y-3">
-              <PrimaryButton className="w-full" onClick={createQuote}>Créer devis</PrimaryButton>
+              <PrimaryButton className="w-full" onClick={createQuote}>
+                Créer devis
+              </PrimaryButton>
               <PrimaryButton className="w-full" onClick={() => markWorkshopOutcome("Téléphone prêt")}>
                 Téléphone prêt
               </PrimaryButton>
@@ -1256,7 +1373,11 @@ export function AtelierWorkspace() {
               >
                 Test non applicable
               </button>
-              <button className="w-full rounded-[12px] bg-[#FFFFFF] px-4 py-3 font-semibold text-[#167B70] text-sm" onClick={askClientValidation} type="button">
+              <button
+                className="w-full rounded-[12px] bg-[#FFFFFF] px-4 py-3 font-semibold text-[#167B70] text-sm"
+                onClick={askClientValidation}
+                type="button"
+              >
                 Demander validation client
               </button>
               <button
@@ -1277,7 +1398,9 @@ export function AtelierWorkspace() {
               >
                 Marquer irréparable
               </button>
-              <SecondaryButton className="w-full" onClick={saveDiagnosis}>Enregistrer le diagnostic</SecondaryButton>
+              <SecondaryButton className="w-full" onClick={saveDiagnosis}>
+                Enregistrer le diagnostic
+              </SecondaryButton>
             </div>
           </Panel>
         </div>
@@ -1288,10 +1411,12 @@ export function AtelierWorkspace() {
           <Panel className="overflow-hidden">
             <div className="flex flex-wrap items-center justify-between border-[#E8E8E5] border-b p-5 gap-3">
               <div>
-                <SectionTitle title={`Pièces compatibles avec ${selectedRepair.brandName} ${selectedRepair.deviceModel || selectedRepair.model}`} />
+                <SectionTitle
+                  title={`Pièces compatibles avec ${selectedRepair.brandName} ${selectedRepair.deviceModel || selectedRepair.model}`}
+                />
                 <span className="text-[#6B6B6B] text-xs font-normal mt-0.5 block">
-                  {showAllStock 
-                    ? `${stockItems.length} références stock totales` 
+                  {showAllStock
+                    ? `${stockItems.length} références stock totales`
                     : `${compatibleItems.length} références compatibles`}
                 </span>
               </div>
@@ -1321,12 +1446,10 @@ export function AtelierWorkspace() {
                         <div className="flex flex-col items-center justify-center gap-3">
                           <Package className="size-8 text-[#A3A3A3]" />
                           <p className="text-[#6B6B6B] text-sm font-medium">
-                            Aucune pièce compatible trouvée pour {selectedRepair.brandName} {selectedRepair.deviceModel || selectedRepair.model}.
+                            Aucune pièce compatible trouvée pour {selectedRepair.brandName}{" "}
+                            {selectedRepair.deviceModel || selectedRepair.model}.
                           </p>
-                          <SecondaryButton 
-                            className="h-9 text-xs px-4 mt-1" 
-                            onClick={() => setShowAllStock(true)}
-                          >
+                          <SecondaryButton className="h-9 text-xs px-4 mt-1" onClick={() => setShowAllStock(true)}>
                             Voir tout le stock
                           </SecondaryButton>
                         </div>
@@ -1340,17 +1463,29 @@ export function AtelierWorkspace() {
                         <tr className="border-[#E8E8E5] border-t" key={item.id}>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
-                              <RealProductVisual category={item.categoryName} className="size-10 rounded-[10px] border border-[#E8E8E5]" name={item.name} />
+                              <RealProductVisual
+                                category={item.categoryName}
+                                className="size-10 rounded-[10px] border border-[#E8E8E5]"
+                                name={item.name}
+                              />
                               <div>
                                 <p className="font-semibold text-[#1A1916]">{item.name}</p>
-                                <p className="text-[#6B6B6B] text-xs">{item.compatibleModels.join(", ") || "Compatibilité à vérifier"}</p>
+                                <p className="text-[#6B6B6B] text-xs">
+                                  {item.compatibleModels.join(", ") || "Compatibilité à vérifier"}
+                                </p>
                               </div>
                             </div>
                           </td>
                           <td className="px-4 py-3 text-[#6B6B6B]">{item.sku}</td>
-                          <td className="px-4 py-3"><StatusBadge status={item.categoryName || "En stock"} /></td>
                           <td className="px-4 py-3">
-                            <span className={item.stock <= item.threshold ? "font-semibold text-[#B42318]" : "text-[#1A1916]"}>
+                            <StatusBadge status={item.categoryName || "En stock"} />
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={
+                                item.stock <= item.threshold ? "font-semibold text-[#B42318]" : "text-[#1A1916]"
+                              }
+                            >
                               {item.stock}
                             </span>
                           </td>
@@ -1362,17 +1497,24 @@ export function AtelierWorkspace() {
                             {selectedPart?.confirmed ? (
                               <StatusBadge status="Pièce reçue" />
                             ) : selectedPart ? (
-                              <PrimaryButton className="h-9 px-3" onClick={() => confirmPartUsage(selectedRepair.id, item.id)}>
+                              <PrimaryButton
+                                className="h-9 px-3"
+                                onClick={() => confirmPartUsage(selectedRepair.id, item.id)}
+                              >
                                 Utiliser
                               </PrimaryButton>
                             ) : (
-                              <SecondaryButton 
-                                className="h-9 px-3" 
+                              <SecondaryButton
+                                className="h-9 px-3"
                                 onClick={() => {
-                                  const isCompatible = isStockItemCompatibleWithRepair(item, selectedRepair, deviceModels);
+                                  const isCompatible = isStockItemCompatibleWithRepair(
+                                    item,
+                                    selectedRepair,
+                                    deviceModels,
+                                  );
                                   if (!isCompatible) {
                                     const confirm = window.confirm(
-                                      `Attention : La pièce "${item.name}" n'est pas marquée compatible avec ${selectedRepair.brandName} ${selectedRepair.deviceModel || selectedRepair.model}. Voulez-vous tout de même la réserver pour ce dossier ?`
+                                      `Attention : La pièce "${item.name}" n'est pas marquée compatible avec ${selectedRepair.brandName} ${selectedRepair.deviceModel || selectedRepair.model}. Voulez-vous tout de même la réserver pour ce dossier ?`,
                                     );
                                     if (!confirm) return;
                                   }
@@ -1401,7 +1543,11 @@ export function AtelierWorkspace() {
                       <p className="font-semibold text-[#1A1916] text-sm">{part.name}</p>
                       <p className="text-[#6B6B6B] text-xs">{part.sku || part.reference}</p>
                     </div>
-                    <button className="text-[#B42318]" onClick={() => removePartFromRepair(selectedRepair.id, part.stockItemId)} type="button">
+                    <button
+                      className="text-[#B42318]"
+                      onClick={() => removePartFromRepair(selectedRepair.id, part.stockItemId)}
+                      type="button"
+                    >
                       <X className="size-4" />
                     </button>
                   </div>
@@ -1411,13 +1557,20 @@ export function AtelierWorkspace() {
                   </div>
                 </div>
               ))}
-              {!selectedRepair.parts.length && <p className="text-[#6B6B6B] text-sm">Aucune pièce réservée pour ce dossier.</p>}
+              {!selectedRepair.parts.length && (
+                <p className="text-[#6B6B6B] text-sm">Aucune pièce réservée pour ce dossier.</p>
+              )}
             </div>
             {canViewMoney && (
               <div className="mt-5 rounded-[16px] bg-[#FFFFFF] p-4">
                 <p className="text-[#6B6B6B] text-xs">Marge brute pièces</p>
                 <p className="mt-1 font-semibold text-[#167B70] text-[24px]">
-                  {formatEuro(selectedRepair.parts.reduce((sum, part) => sum + (part.salePrice - part.purchasePrice) * part.quantity, 0))}
+                  {formatEuro(
+                    selectedRepair.parts.reduce(
+                      (sum, part) => sum + (part.salePrice - part.purchasePrice) * part.quantity,
+                      0,
+                    ),
+                  )}
                 </p>
               </div>
             )}
@@ -1433,13 +1586,26 @@ export function AtelierWorkspace() {
               <p className="text-[#6B6B6B] text-sm">Temps de main-d'oeuvre réel optionnel</p>
               <div className="mt-2 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                 <div>
-                  <p className="font-semibold text-[#1A1916] text-[48px] leading-none tracking-tight">{formatSeconds(elapsed)}</p>
-                  <p className="mt-2 text-[#167B70] text-sm">{selectedRepair.intervention?.timerRunning ? "En cours" : "Timer optionnel"}</p>
+                  <p className="font-semibold text-[#1A1916] text-[48px] leading-none tracking-tight">
+                    {formatSeconds(elapsed)}
+                  </p>
+                  <p className="mt-2 text-[#167B70] text-sm">
+                    {selectedRepair.intervention?.timerRunning ? "En cours" : "Timer optionnel"}
+                  </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <SecondaryButton onClick={startIntervention}><Play className="mr-2 size-4" />Démarrer</SecondaryButton>
-                  <SecondaryButton onClick={pauseIntervention}><Pause className="mr-2 size-4" />Pause</SecondaryButton>
-                  <PrimaryButton onClick={finishIntervention}><Check className="mr-2 size-4" />Terminer</PrimaryButton>
+                  <SecondaryButton onClick={startIntervention}>
+                    <Play className="mr-2 size-4" />
+                    Démarrer
+                  </SecondaryButton>
+                  <SecondaryButton onClick={pauseIntervention}>
+                    <Pause className="mr-2 size-4" />
+                    Pause
+                  </SecondaryButton>
+                  <PrimaryButton onClick={finishIntervention}>
+                    <Check className="mr-2 size-4" />
+                    Terminer
+                  </PrimaryButton>
                 </div>
               </div>
             </div>
@@ -1448,16 +1614,24 @@ export function AtelierWorkspace() {
               <Panel className="p-4">
                 <SectionTitle title="Pièces utilisées" small />
                 <div className="mt-3 space-y-2">
-                  {selectedRepair.parts.filter((part) => part.confirmed).map((part) => (
-                    <p className="text-[#1A1916] text-sm" key={part.stockItemId}>{part.name} x{part.quantity}</p>
-                  ))}
-                  {!selectedRepair.parts.some((part) => part.confirmed) && <p className="text-[#6B6B6B] text-sm">Aucune pièce utilisée.</p>}
+                  {selectedRepair.parts
+                    .filter((part) => part.confirmed)
+                    .map((part) => (
+                      <p className="text-[#1A1916] text-sm" key={part.stockItemId}>
+                        {part.name} x{part.quantity}
+                      </p>
+                    ))}
+                  {!selectedRepair.parts.some((part) => part.confirmed) && (
+                    <p className="text-[#6B6B6B] text-sm">Aucune pièce utilisée.</p>
+                  )}
                 </div>
               </Panel>
               <Panel className="p-4">
                 <SectionTitle title="Notes techniques" small />
                 <p className="mt-3 rounded-[12px] bg-[#FFFFFF] p-3 text-[#6B6B6B] text-sm">
-                  {selectedRepair.intervention?.notes || selectedRepair.repairNotes || "Connecteurs à manipuler avec précaution."}
+                  {selectedRepair.intervention?.notes ||
+                    selectedRepair.repairNotes ||
+                    "Connecteurs à manipuler avec précaution."}
                 </p>
               </Panel>
             </div>
@@ -1474,7 +1648,11 @@ export function AtelierWorkspace() {
                 onClick={() => {
                   updateRepair(selectedRepair.id, {
                     subStatus: "Client injoignable",
-                    intervention: { ...(selectedRepair.intervention ?? {}), timerRunning: false, suspendedReason: "Intervention suspendue" },
+                    intervention: {
+                      ...(selectedRepair.intervention ?? {}),
+                      timerRunning: false,
+                      suspendedReason: "Intervention suspendue",
+                    },
                   });
                   changeRepairStatus(selectedRepair.id, "En attente");
                   appendRepairHistory(selectedRepair.id, "Intervention suspendue : motif requis");
@@ -1521,13 +1699,20 @@ export function AtelierWorkspace() {
                             src={photo.dataUrl}
                           />
                         ) : (
-                          <div className="grid size-24 shrink-0 place-items-center rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] text-center text-[#6B6B6B] text-[11px]" key={photo.id}>
+                          <div
+                            className="grid size-24 shrink-0 place-items-center rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] text-center text-[#6B6B6B] text-[11px]"
+                            key={photo.id}
+                          >
                             <Camera className="mb-1 size-5 text-[#2A9D8F]" />
                             {photo.label}
                           </div>
                         ),
                       )}
-                      {!photos.length && <div className="rounded-[12px] border border-dashed border-[#E8E8E5] px-4 py-8 text-[#8A8A8A] text-sm">Aucune photo</div>}
+                      {!photos.length && (
+                        <div className="rounded-[12px] border border-dashed border-[#E8E8E5] px-4 py-8 text-[#8A8A8A] text-sm">
+                          Aucune photo
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -1537,15 +1722,33 @@ export function AtelierWorkspace() {
           <Panel className="p-5">
             <SectionTitle title="État d'entrée" />
             <div className="mt-4 space-y-3">
-              <InfoLine label="Écran / affichage" value={selectedRepair.intakeCondition?.screenState || "Non renseigné"} />
-              <InfoLine label="Châssis / bordures" value={selectedRepair.intakeCondition?.frameState || "Non renseigné"} />
+              <InfoLine
+                label="Écran / affichage"
+                value={selectedRepair.intakeCondition?.screenState || "Non renseigné"}
+              />
+              <InfoLine
+                label="Châssis / bordures"
+                value={selectedRepair.intakeCondition?.frameState || "Non renseigné"}
+              />
               <InfoLine label="Allumage" value={selectedRepair.intakeCondition?.powerState || "Non renseigné"} />
-              <InfoLine label="Oxydation" value={selectedRepair.intakeCondition?.visibleDefects?.toLowerCase().includes("oxyd") ? "À signaler" : "Non signalée"} />
-              <InfoLine label="Accessoires" value={selectedRepair.intakeCondition?.accessories?.join(", ") || "Aucun"} />
+              <InfoLine
+                label="Oxydation"
+                value={
+                  selectedRepair.intakeCondition?.visibleDefects?.toLowerCase().includes("oxyd")
+                    ? "À signaler"
+                    : "Non signalée"
+                }
+              />
+              <InfoLine
+                label="Accessoires"
+                value={selectedRepair.intakeCondition?.accessories?.join(", ") || "Aucun"}
+              />
             </div>
             <div className="mt-5 rounded-[16px] bg-[#FFFFFF] p-4">
               <p className="font-semibold text-[#167B70] text-sm">Accord client enregistré</p>
-              <p className="mt-1 text-[#6B6B6B] text-xs">Photos horodatées, signature et document de prise en charge liés au dossier.</p>
+              <p className="mt-1 text-[#6B6B6B] text-xs">
+                Photos horodatées, signature et document de prise en charge liés au dossier.
+              </p>
             </div>
           </Panel>
         </div>
@@ -1599,7 +1802,10 @@ export function AtelierWorkspace() {
                   OK, défaut, non applicable ou non testé avec note : le dossier peut refléter la réalité terrain.
                 </p>
               </div>
-              <PrimaryButton className="mt-5 w-full" onClick={() => validateRepairFinalTest(selectedRepair.id, finalItems, finalComment)}>
+              <PrimaryButton
+                className="mt-5 w-full"
+                onClick={() => validateRepairFinalTest(selectedRepair.id, finalItems, finalComment)}
+              >
                 Test final validé
               </PrimaryButton>
               <SecondaryButton className="mt-3 w-full" onClick={() => markWorkshopOutcome("Téléphone prêt")}>
@@ -1616,10 +1822,16 @@ export function AtelierWorkspace() {
                   onChange={(event) => setImpossibleReason(event.target.value)}
                   placeholder="Raison obligatoire pour test impossible ou refusé"
                 />
-                <SecondaryButton className="mt-3 w-full" onClick={() => markRepairTestImpossible(selectedRepair.id, impossibleReason)}>
+                <SecondaryButton
+                  className="mt-3 w-full"
+                  onClick={() => markRepairTestImpossible(selectedRepair.id, impossibleReason)}
+                >
                   Test impossible
                 </SecondaryButton>
-                <SecondaryButton className="mt-3 w-full" onClick={() => markWorkshopOutcome("Test refusé par le client")}>
+                <SecondaryButton
+                  className="mt-3 w-full"
+                  onClick={() => markWorkshopOutcome("Test refusé par le client")}
+                >
                   Test refusé par le client
                 </SecondaryButton>
               </div>
@@ -1634,18 +1846,26 @@ export function AtelierWorkspace() {
             <SectionTitle title="Historique automatique" />
             <div className="mt-5 space-y-3">
               {relatedAudit.slice(0, 10).map((entry) => (
-                <div className="grid gap-3 rounded-[16px] border border-[#E8E8E5] p-4 md:grid-cols-[140px_1fr_170px]" key={entry.id}>
+                <div
+                  className="grid gap-3 rounded-[16px] border border-[#E8E8E5] p-4 md:grid-cols-[140px_1fr_170px]"
+                  key={entry.id}
+                >
                   <p className="text-[#6B6B6B] text-xs">{entry.createdAt}</p>
                   <div>
                     <p className="font-semibold text-[#1A1916] text-sm">{entry.action}</p>
                     <p className="mt-1 text-[#6B6B6B] text-sm">{entry.message}</p>
                   </div>
-                  <p className="text-[#6B6B6B] text-xs">{entry.actorName} · {entry.actorRole}</p>
+                  <p className="text-[#6B6B6B] text-xs">
+                    {entry.actorName} · {entry.actorRole}
+                  </p>
                 </div>
               ))}
               {!relatedAudit.length &&
                 selectedRepair.history.map((entry, index) => (
-                  <div className="rounded-[16px] border border-[#E8E8E5] p-4 text-[#1A1916] text-sm" key={`${entry}-${index}`}>
+                  <div
+                    className="rounded-[16px] border border-[#E8E8E5] p-4 text-[#1A1916] text-sm"
+                    key={`${entry}-${index}`}
+                  >
                     {entry}
                   </div>
                 ))}
@@ -1654,7 +1874,9 @@ export function AtelierWorkspace() {
           <div className="space-y-4">
             <Panel className="p-5">
               <SectionTitle title="Notes internes" />
-              <p className="mt-1 text-[#8A8A8A] text-xs">Visible uniquement par l'équipe atelier, jamais par le client.</p>
+              <p className="mt-1 text-[#8A8A8A] text-xs">
+                Visible uniquement par l'équipe atelier, jamais par le client.
+              </p>
               <div className="mt-4 space-y-3">
                 {(selectedRepair.messages ?? [])
                   .filter((message) => message.visibility === "internal")
@@ -1677,7 +1899,9 @@ export function AtelierWorkspace() {
                     <button
                       className={cn(
                         "rounded-full px-2.5 py-1 font-semibold text-[11px] transition",
-                        noteTag === tag ? "bg-[#FFFFFF] text-[#167B70]" : "bg-[#FFFFFF] text-[#6B6B6B] hover:text-[#1A1916]",
+                        noteTag === tag
+                          ? "bg-[#FFFFFF] text-[#167B70]"
+                          : "bg-[#FFFFFF] text-[#6B6B6B] hover:text-[#1A1916]",
                       )}
                       key={tag}
                       onClick={() => setNoteTag(tag)}
@@ -1698,9 +1922,7 @@ export function AtelierWorkspace() {
                     <Plus className="mr-2 size-4" />
                     Enregistrer
                   </PrimaryButton>
-                  {noteDraft.trim() && (
-                    <SecondaryButton onClick={() => setNoteDraft("")}>Annuler</SecondaryButton>
-                  )}
+                  {noteDraft.trim() && <SecondaryButton onClick={() => setNoteDraft("")}>Annuler</SecondaryButton>}
                 </div>
               </div>
             </Panel>
@@ -1714,7 +1936,9 @@ export function AtelierWorkspace() {
                     <div className="rounded-[14px] bg-[#FFFFFF] p-3" key={message.id}>
                       <div className="flex items-center justify-between">
                         <p className="font-semibold text-[#1A1916] text-sm">{message.authorName}</p>
-                        <span className="rounded-full bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#167B70] text-[10px]">Suivi client</span>
+                        <span className="rounded-full bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#167B70] text-[10px]">
+                          Suivi client
+                        </span>
                       </div>
                       <p className="mt-1 text-[#6B6B6B] text-sm">{message.body}</p>
                       <p className="mt-1 text-[#8A8A8A] text-[10px]">{formatIsoToDisplay(message.createdAt)}</p>
@@ -1748,7 +1972,8 @@ export function AtelierWorkspace() {
                   Envoyer au client
                 </PrimaryButton>
                 <p className="text-[#8A8A8A] text-[11px]">
-                  Le message est publié sur le suivi client et envoyé par SMS si un numéro est connu. Le statut du dossier reste inchangé.
+                  Le message est publié sur le suivi client et envoyé par SMS si un numéro est connu. Le statut du
+                  dossier reste inchangé.
                 </p>
               </div>
             </Panel>
@@ -1771,7 +1996,9 @@ export function AtelierWorkspace() {
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-[#6B6B6B] text-xs">{document.type} · {document.createdAt}</p>
+                  <p className="mt-1 text-[#6B6B6B] text-xs">
+                    {document.type} · {document.createdAt}
+                  </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <button
                       className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#E8E8E5] px-2.5 py-1 font-semibold text-[#167B70] text-xs hover:bg-[#FFFFFF]"
@@ -1800,15 +2027,22 @@ export function AtelierWorkspace() {
                   Publier tous les documents pour le client
                 </SecondaryButton>
               )}
-              <PrimaryButton className="mt-2 w-full" onClick={createRepairReport}>Générer rapport réparation</PrimaryButton>
-              <SecondaryButton className="mt-2 w-full text-xs font-semibold" onClick={createDiagnosticReport}>Générer rapport diagnostic</SecondaryButton>
+              <PrimaryButton className="mt-2 w-full" onClick={createRepairReport}>
+                Générer rapport réparation
+              </PrimaryButton>
+              <SecondaryButton className="mt-2 w-full text-xs font-semibold" onClick={createDiagnosticReport}>
+                Générer rapport diagnostic
+              </SecondaryButton>
             </div>
           </Panel>
           <Panel className="overflow-hidden">
             <div className="flex items-center justify-between border-[#E8E8E5] border-b p-5">
               <SectionTitle title="Aperçu rapport réparation" />
               <div className="flex gap-2">
-                <SecondaryButton className="h-9 px-3" onClick={downloadRepairReport}><Printer className="mr-2 size-4" />Télécharger</SecondaryButton>
+                <SecondaryButton className="h-9 px-3" onClick={downloadRepairReport}>
+                  <Printer className="mr-2 size-4" />
+                  Télécharger
+                </SecondaryButton>
                 <PrimaryButton
                   className="h-9 px-3"
                   onClick={() =>
@@ -1817,7 +2051,8 @@ export function AtelierWorkspace() {
                     )
                   }
                 >
-                  <Send className="mr-2 size-4" />Envoyer au client
+                  <Send className="mr-2 size-4" />
+                  Envoyer au client
                 </PrimaryButton>
               </div>
             </div>
@@ -1833,13 +2068,27 @@ export function AtelierWorkspace() {
                 <div className="mt-6 grid gap-6 text-sm md:grid-cols-2">
                   <InfoLine label="Client" value={displayCustomerName(selectedCustomer)} />
                   <InfoLine label="Appareil" value={formatDeviceLabel(selectedRepair, selectedRepair.device)} />
-                  <InfoLine label="Intervention" value={selectedRepair.recommendedIntervention || selectedRepair.issue} />
-                  <InfoLine label="Test final" value={selectedRepair.finalTest?.status || (selectedRepair.finalTest?.validatedAt ? "Test final validé" : "Non renseigné")} />
+                  <InfoLine
+                    label="Intervention"
+                    value={selectedRepair.recommendedIntervention || selectedRepair.issue}
+                  />
+                  <InfoLine
+                    label="Test final"
+                    value={
+                      selectedRepair.finalTest?.status ||
+                      (selectedRepair.finalTest?.validatedAt ? "Test final validé" : "Non renseigné")
+                    }
+                  />
                 </div>
-                <p className="mt-8 text-[#6B6B6B] text-sm">Les documents client n'affichent pas les prix d'achat, marge, fournisseur ou notes internes sensibles.</p>
+                <p className="mt-8 text-[#6B6B6B] text-sm">
+                  Les documents client n'affichent pas les prix d'achat, marge, fournisseur ou notes internes sensibles.
+                </p>
               </div>
               <div className="mt-5 rounded-[16px] border border-[#E8E8E5] bg-white p-4">
-                <div className="flex items-center gap-3 cursor-pointer" onClick={() => setSelectedQrRepairId(selectedRepair.id)}>
+                <div
+                  className="flex items-center gap-3 cursor-pointer"
+                  onClick={() => setSelectedQrRepairId(selectedRepair.id)}
+                >
                   <QrCode className="size-10 text-[#1A1916] shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-[#1A1916] text-sm">Lien de suivi client</p>
@@ -1889,25 +2138,34 @@ export function AtelierWorkspace() {
           <Panel className="p-5">
             <SectionTitle title="SAV & retours liés" />
             <div className="mt-4 space-y-3">
-              {repairs.filter((repair) => repair.originalRepairId === selectedRepair.id || repair.id === selectedRepair.originalRepairId).map((repair) => (
-                <div className="rounded-[16px] border border-[#E8E8E5] p-4" key={repair.id}>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-semibold text-[#1A1916]">{repair.sav?.savNumber || repair.number}</p>
-                      <p className="mt-1 text-[#6B6B6B] text-sm">{repair.issue}</p>
+              {repairs
+                .filter(
+                  (repair) =>
+                    repair.originalRepairId === selectedRepair.id || repair.id === selectedRepair.originalRepairId,
+                )
+                .map((repair) => (
+                  <div className="rounded-[16px] border border-[#E8E8E5] p-4" key={repair.id}>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="font-semibold text-[#1A1916]">{repair.sav?.savNumber || repair.number}</p>
+                        <p className="mt-1 text-[#6B6B6B] text-sm">{repair.issue}</p>
+                      </div>
+                      <StatusBadge status={repair.sav?.status || repair.status} />
                     </div>
-                    <StatusBadge status={repair.sav?.status || repair.status} />
+                    <div className="mt-3 grid gap-3 md:grid-cols-3">
+                      <InfoLine
+                        label="Réparation initiale"
+                        value={repair.sav?.originalRepairNumber || selectedRepair.number}
+                      />
+                      <InfoLine label="Décision" value={repair.sav?.decision || "À décider"} />
+                      <InfoLine label="Prochaine action" value={repair.sav?.nextAction || "Diagnostic SAV"} />
+                    </div>
                   </div>
-                  <div className="mt-3 grid gap-3 md:grid-cols-3">
-                    <InfoLine label="Réparation initiale" value={repair.sav?.originalRepairNumber || selectedRepair.number} />
-                    <InfoLine label="Décision" value={repair.sav?.decision || "À décider"} />
-                    <InfoLine label="Prochaine action" value={repair.sav?.nextAction || "Diagnostic SAV"} />
-                  </div>
-                </div>
-              ))}
-              {!repairs.some((repair) => repair.originalRepairId === selectedRepair.id || repair.id === selectedRepair.originalRepairId) && (
-                <p className="text-[#6B6B6B] text-sm">Aucun SAV lié à ce dossier.</p>
-              )}
+                ))}
+              {!repairs.some(
+                (repair) =>
+                  repair.originalRepairId === selectedRepair.id || repair.id === selectedRepair.originalRepairId,
+              ) && <p className="text-[#6B6B6B] text-sm">Aucun SAV lié à ce dossier.</p>}
             </div>
           </Panel>
           <Panel className="p-5">
@@ -1929,11 +2187,23 @@ export function AtelierWorkspace() {
           repairId={selectedQrRepairId}
         />
       )}
+      <SettlementModal
+        draft={settlement.draft}
+        isOpen={settlement.isOpen}
+        onClose={settlement.close}
+        onDraftChange={settlement.setDraft}
+        onSubmit={settlement.submit}
+        total={settlement.total}
+      />
     </div>
   );
 }
 
-function RepairQueueCard({ repair, customer, onOpen }: Readonly<{ repair: Repair; customer?: Customer; onOpen: () => void }>) {
+function RepairQueueCard({
+  repair,
+  customer,
+  onOpen,
+}: Readonly<{ repair: Repair; customer?: Customer; onOpen: () => void }>) {
   const priority = priorityForRepair(repair);
   const readyLabel = repairReadyStatusLabel(repair.status, repair.paymentStatus);
   return (
@@ -1947,7 +2217,12 @@ function RepairQueueCard({ repair, customer, onOpen }: Readonly<{ repair: Repair
         <span className="truncate text-[#6B6B6B] text-xs">{displayCustomerName(customer)}</span>
       </div>
       <div className="mt-3 flex gap-3">
-        <RealDeviceVisual brand={repair.brandName} className="size-11 rounded-[10px] border border-[#E8E8E5]" model={repair.deviceModel || repair.model} type={repair.deviceType} />
+        <RealDeviceVisual
+          brand={repair.brandName}
+          className="size-11 rounded-[10px] border border-[#E8E8E5]"
+          model={repair.deviceModel || repair.model}
+          type={repair.deviceType}
+        />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold text-[#1A1916] text-sm">{formatDeviceLabel(repair, repair.device)}</p>
           <p className="mt-0.5 line-clamp-2 text-[#1A1916] text-xs">{repair.issue}</p>
@@ -1978,11 +2253,23 @@ function RepairQueueCard({ repair, customer, onOpen }: Readonly<{ repair: Repair
   );
 }
 
-function WorkshopMetric({ label, value, helper, tone = "neutral" }: Readonly<{ label: string; value: string; helper: string; tone?: "neutral" | "danger" | "amber" | "green" }>) {
+function WorkshopMetric({
+  label,
+  value,
+  helper,
+  tone = "neutral",
+}: Readonly<{ label: string; value: string; helper: string; tone?: "neutral" | "danger" | "amber" | "green" }>) {
   return (
     <Panel className="p-4">
       <p className="text-[#6B6B6B] text-xs">{label}</p>
-      <p className={cn("mt-2 font-semibold text-[28px] leading-none tracking-tight", tone === "danger" ? "text-[#B42318]" : tone === "green" ? "text-[#167B70]" : "text-[#1A1916]")}>{value}</p>
+      <p
+        className={cn(
+          "mt-2 font-semibold text-[28px] leading-none tracking-tight",
+          tone === "danger" ? "text-[#B42318]" : tone === "green" ? "text-[#167B70]" : "text-[#1A1916]",
+        )}
+      >
+        {value}
+      </p>
       <p className="mt-2 text-[#6B6B6B] text-xs">{helper}</p>
     </Panel>
   );
@@ -2007,7 +2294,11 @@ function InfoLine({ label, value }: Readonly<{ label: string; value: React.React
 }
 
 function SectionTitle({ title, small }: Readonly<{ title: string; small?: boolean }>) {
-  return <h3 className={cn("font-semibold text-[#1A1916] tracking-tight", small ? "text-[15px]" : "text-[18px]")}>{title}</h3>;
+  return (
+    <h3 className={cn("font-semibold text-[#1A1916] tracking-tight", small ? "text-[15px]" : "text-[18px]")}>
+      {title}
+    </h3>
+  );
 }
 
 function ActionButton({ label, onClick, danger }: Readonly<{ label: string; onClick: () => void; danger?: boolean }>) {
@@ -2015,7 +2306,9 @@ function ActionButton({ label, onClick, danger }: Readonly<{ label: string; onCl
     <button
       className={cn(
         "flex h-10 w-full items-center justify-between rounded-[12px] border px-3 font-semibold text-sm transition",
-        danger ? "border-[#F2D4D1] text-[#B42318] hover:bg-[#FFFFFF]" : "border-[#E8E8E5] text-[#1A1916] hover:bg-[#FFFFFF]",
+        danger
+          ? "border-[#F2D4D1] text-[#B42318] hover:bg-[#FFFFFF]"
+          : "border-[#E8E8E5] text-[#1A1916] hover:bg-[#FFFFFF]",
       )}
       onClick={onClick}
       type="button"
@@ -2026,9 +2319,18 @@ function ActionButton({ label, onClick, danger }: Readonly<{ label: string; onCl
   );
 }
 
-function DiagnosticCard({ title, value, tone = "neutral" }: Readonly<{ title: string; value: string; tone?: "neutral" | "green" }>) {
+function DiagnosticCard({
+  title,
+  value,
+  tone = "neutral",
+}: Readonly<{ title: string; value: string; tone?: "neutral" | "green" }>) {
   return (
-    <div className={cn("rounded-[16px] border p-4", tone === "green" ? "border-[#D7EFEA] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white")}>
+    <div
+      className={cn(
+        "rounded-[16px] border p-4",
+        tone === "green" ? "border-[#D7EFEA] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white",
+      )}
+    >
       <p className="font-semibold text-[#1A1916] text-sm">{title}</p>
       <p className="mt-3 text-[#6B6B6B] text-sm leading-6">{value}</p>
     </div>
@@ -2051,7 +2353,13 @@ function ChecklistRow({
     <tr className="border-[#E8E8E5] border-t">
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
-          {item.result === "OK" ? <CheckCircle2 className="size-4 text-[#2A9D8F]" /> : item.result === "Défaut constaté" || item.result === "KO" ? <X className="size-4 text-[#B42318]" /> : <Circle className="size-4 text-[#A3A3A3]" />}
+          {item.result === "OK" ? (
+            <CheckCircle2 className="size-4 text-[#2A9D8F]" />
+          ) : item.result === "Défaut constaté" || item.result === "KO" ? (
+            <X className="size-4 text-[#B42318]" />
+          ) : (
+            <Circle className="size-4 text-[#A3A3A3]" />
+          )}
           <span className="font-medium text-[#1A1916]">{item.label}</span>
         </div>
       </td>
@@ -2059,7 +2367,10 @@ function ChecklistRow({
         <div className="flex flex-wrap gap-1.5">
           {visibleRepairTestResults.map((result) => (
             <button
-              className={cn("rounded-[8px] border px-2 py-1 font-semibold text-[11px]", item.result === result ? resultTone(result) : "border-[#E8E8E5] bg-white text-[#6B6B6B]")}
+              className={cn(
+                "rounded-[8px] border px-2 py-1 font-semibold text-[11px]",
+                item.result === result ? resultTone(result) : "border-[#E8E8E5] bg-white text-[#6B6B6B]",
+              )}
               key={result}
               onClick={() => onChange(result)}
               type="button"
@@ -2089,22 +2400,37 @@ function TextBox({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <div>
       <p className="font-semibold text-[#1A1916] text-sm">{label}</p>
-      <p className="mt-2 min-h-20 rounded-[12px] border border-[#E8E8E5] bg-white p-3 text-[#6B6B6B] text-sm leading-6">{value}</p>
+      <p className="mt-2 min-h-20 rounded-[12px] border border-[#E8E8E5] bg-white p-3 text-[#6B6B6B] text-sm leading-6">
+        {value}
+      </p>
     </div>
   );
 }
 
 function ProgressPanel({ repair }: Readonly<{ repair: Repair }>) {
   const steps = ["Préparation", "Démontage", "Remplacement", "Remontage", "Test final"];
-  const progress = repair.intervention?.progress ?? (repair.status === "En réparation" ? 40 : repair.status === "Test final" ? 80 : 15);
+  const progress =
+    repair.intervention?.progress ??
+    (repair.status === "En réparation" ? 40 : repair.status === "Test final" ? 80 : 15);
   return (
     <Panel className="p-4">
       <SectionTitle title="Progression" small />
       <div className="mt-4 space-y-3">
         {steps.map((step, index) => (
           <div className="flex items-center justify-between text-sm" key={step}>
-            <span className={cn("text-[#6B6B6B]", repair.intervention?.currentStep === step && "font-semibold text-[#167B70]")}>{index + 1}. {step}</span>
-            {index * 20 < progress ? <Check className="size-4 text-[#2A9D8F]" /> : <Circle className="size-4 text-[#DADADA]" />}
+            <span
+              className={cn(
+                "text-[#6B6B6B]",
+                repair.intervention?.currentStep === step && "font-semibold text-[#167B70]",
+              )}
+            >
+              {index + 1}. {step}
+            </span>
+            {index * 20 < progress ? (
+              <Check className="size-4 text-[#2A9D8F]" />
+            ) : (
+              <Circle className="size-4 text-[#DADADA]" />
+            )}
           </div>
         ))}
       </div>
@@ -2126,7 +2452,8 @@ function columnTone(tone: QueueColumn["tone"]) {
 function nextActionLabel(repair: Repair) {
   if (repair.status === "Reçu") return "Démarrer le diagnostic";
   if (repair.status === "Diagnostic") return "Créer un devis ou demander validation";
-  if (repair.status === "En attente" || repair.status === "Devis accepté") return "Lever le blocage / préparer la réparation";
+  if (repair.status === "En attente" || repair.status === "Devis accepté")
+    return "Lever le blocage / préparer la réparation";
   if (repair.status === "En réparation") return "Continuer l'intervention";
   if (repair.status === "Test final") return "Valider le test final";
   if (repair.status === "Prêt") return "Consulter documents / restitution";

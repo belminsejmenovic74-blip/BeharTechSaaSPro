@@ -1,10 +1,75 @@
 "use client";
 
 import { type StoreState, useBeharStore } from "@/lib/behar-store";
+import { useConditionneStore } from "@/lib/conditionne-store";
+import { useRecondSettings } from "@/lib/recond-settings";
+import { useReconditioningRules } from "@/lib/reconditioning-pricing";
+import { useReconditioningStore } from "@/lib/reconditioning-store";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
 
 export const WORKSHOP_STORAGE_KEY = "behar-tech-local-demo-v3";
 export const WORKSHOP_SCHEMA_VERSION = 1;
+
+// Stores annexes (Zustand persist) embarqués dans le même snapshot cloud :
+// règles de reprise, appareils reconditionnés, réglages recond. Sans eux,
+// la configuration Reconditionnement resterait uniquement sur le poste local.
+const AUX_STORE_KEYS = [
+  "behar-recond-rules",
+  "behar-reconditioning",
+  "behar-recond-settings",
+  "behar-conditionne",
+] as const;
+const AUX_STORES_FIELD = "__auxStores";
+
+const AUX_STORE_REHYDRATE: Record<(typeof AUX_STORE_KEYS)[number], () => void> = {
+  "behar-recond-rules": () => void useReconditioningRules.persist.rehydrate(),
+  "behar-reconditioning": () => void useReconditioningStore.persist.rehydrate(),
+  "behar-recond-settings": () => void useRecondSettings.persist.rehydrate(),
+  "behar-conditionne": () => void useConditionneStore.persist.rehydrate(),
+};
+
+/** Lit les stores annexes (enveloppe persist complète) pour le snapshot cloud. */
+function readAuxStores(): Record<string, unknown> {
+  const aux: Record<string, unknown> = {};
+  if (typeof window === "undefined") return aux;
+  for (const key of AUX_STORE_KEYS) {
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (raw) aux[key] = JSON.parse(raw);
+    } catch {
+      // store illisible — on l'ignore, le reste du snapshot part quand même
+    }
+  }
+  return aux;
+}
+
+/** Restaure les stores annexes d'un snapshot cloud, puis réhydrate les stores en mémoire. */
+function applyAuxStores(aux: unknown) {
+  if (typeof window === "undefined" || !aux || typeof aux !== "object") return;
+  for (const key of AUX_STORE_KEYS) {
+    const value = (aux as Record<string, unknown>)[key];
+    if (value === undefined) continue;
+    try {
+      window.localStorage.setItem(key, JSON.stringify(value));
+      AUX_STORE_REHYDRATE[key]();
+    } catch {
+      // quota / storage bloqué — la restauration du store principal continue
+    }
+  }
+}
+
+/** Abonnement aux mutations des stores annexes (pour déclencher une sauvegarde cloud). */
+export function subscribeAuxStoreChanges(listener: () => void): () => void {
+  const unsubscribers = [
+    useReconditioningRules.subscribe(listener),
+    useReconditioningStore.subscribe(listener),
+    useRecondSettings.subscribe(listener),
+    useConditionneStore.subscribe(listener),
+  ];
+  return () => {
+    for (const unsubscribe of unsubscribers) unsubscribe();
+  };
+}
 
 export type WorkshopSyncStatus = "idle" | "loading" | "saving" | "synced" | "offline" | "error";
 
@@ -274,7 +339,10 @@ async function upsertSnapshot(
     stateVersion: options.stateVersion,
     lastDeviceId: options.lastDeviceId,
   });
-  const sizeBytes = getStateSizeBytes(mergedState);
+  // Les stores annexes (reconditionnement…) voyagent dans le même snapshot —
+  // réutilise la table workshop_snapshots, aucune migration.
+  const stateForUpload = { ...mergedState, [AUX_STORES_FIELD]: readAuxStores() };
+  const sizeBytes = getStateSizeBytes(stateForUpload);
   if (sizeBytes <= 0 || sizeBytes > 10 * 1024 * 1024) {
     throw new Error("Snapshot trop volumineux (>10 Mo).");
   }
@@ -296,7 +364,7 @@ async function upsertSnapshot(
     license_key: normalizedKey,
     workshop_name: mergedState.workshopSettings?.name || mergedState.workshopInfo?.name || null,
     device_label: detectDeviceLabel(),
-    state: mergedState,
+    state: stateForUpload,
     state_size_bytes: sizeBytes,
     schema_version: WORKSHOP_SCHEMA_VERSION,
   };
@@ -471,7 +539,9 @@ export function hydrateStoreFromCloud(
 ) {
   const snapshot =
     "state" in snapshotOrState && "updatedAt" in snapshotOrState ? (snapshotOrState as WorkshopSnapshot) : null;
-  const state = snapshot ? snapshot.state : (snapshotOrState as Partial<StoreState> & Record<string, unknown>);
+  const rawState = snapshot ? snapshot.state : (snapshotOrState as Partial<StoreState> & Record<string, unknown>);
+  // Le champ technique __auxStores ne doit jamais entrer dans le store principal.
+  const { [AUX_STORES_FIELD]: auxStores, ...state } = rawState;
   const licenseKey = normalizeLicenseKey(snapshot?.licenseKey || (state.licenseKey as string | undefined));
 
   // Garde-fou : le backend est la vérité partagée, mais on n'applique jamais
@@ -495,6 +565,8 @@ export function hydrateStoreFromCloud(
     stateVersion: snapshot ? getWorkshopStateVersion(snapshot.state) : getWorkshopStateVersion(state),
   });
 
+  // Stores annexes d'abord (règles de reprise, appareils recond…), puis le principal.
+  applyAuxStores(auxStores);
   useBeharStore.setState(hydrated as Partial<StoreState>, false);
   cacheWorkshopState({ ...useBeharStore.getState(), ...hydrated } as Partial<StoreState> & Record<string, unknown>);
 
@@ -503,7 +575,10 @@ export function hydrateStoreFromCloud(
   }
 }
 
-export async function ensureCloudStateForLicense(key: string, force = false): Promise<"loaded" | "created" | "offline"> {
+export async function ensureCloudStateForLicense(
+  key: string,
+  force = false,
+): Promise<"loaded" | "created" | "offline"> {
   const normalizedKey = normalizeLicenseKey(key);
   if (!normalizedKey) throw new Error("Licence requise.");
 

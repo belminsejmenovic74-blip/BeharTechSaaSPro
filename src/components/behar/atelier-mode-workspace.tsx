@@ -73,12 +73,12 @@ export function AtelierModeWorkspace() {
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h1 className="font-semibold text-[#1A1916] text-[28px] leading-tight tracking-tight lg:text-[34px]">
-                {mode === "reparations" ? "File d'attente atelier" : "Reconditionnement"}
+                {mode === "reparations" ? "File d'attente atelier" : "File de reconditionnement atelier"}
               </h1>
               <p className="mt-1 text-[#6B6B6B] text-sm">
                 {mode === "reparations"
                   ? "Reçu, diagnostic, attente, réparation, test final et prêt."
-                  : "Rachat, remise en état, contrôle qualité et certificat de reconditionnement."}
+                  : "Rachat, diagnostic, remise en état, contrôle final et mise en vente."}
               </p>
             </div>
             <div className="inline-flex h-11 items-center self-start rounded-[12px] border border-[#E8E8E5] bg-white p-1 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
@@ -91,7 +91,9 @@ export function AtelierModeWorkspace() {
                 <button
                   className={cn(
                     "inline-flex h-9 items-center gap-2 rounded-[9px] px-3.5 font-semibold text-[13px] transition",
-                    mode === key ? "bg-[#2A9D8F] text-white shadow-[0_1px_2px_rgba(42,157,143,0.25)]" : "text-[#6B6B6B] hover:text-[#1A1916]",
+                    mode === key
+                      ? "bg-[#2A9D8F] text-white shadow-[0_1px_2px_rgba(42,157,143,0.25)]"
+                      : "text-[#6B6B6B] hover:text-[#1A1916]",
                   )}
                   key={key}
                   onClick={() => setMode(key)}

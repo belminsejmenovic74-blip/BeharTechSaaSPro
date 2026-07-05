@@ -58,22 +58,18 @@ import {
 import { toast } from "sonner";
 
 import { BeharLogo } from "@/components/behar/behar-logo";
-import { ConditionneScreen } from "@/components/behar/conditionne-workspace";
+import { NewReconditioningIntakeWizard } from "@/components/behar/reconditioning-intake-wizard";
 import { getPrintableTarget } from "@/components/behar/local-printable-document";
 import { RealDeviceVisual, RealProductVisual } from "@/components/behar/real-product-visual";
 import { useDocument } from "@/components/behar/print-provider";
+import { SettlementModal, useSettlementModal } from "@/components/behar/settlement-modal";
 import { TrackingQrModal } from "@/components/behar/tracking-qr-modal";
 import { DeviceSelector } from "@/components/DeviceSelector";
 import { ProblemSelector } from "@/components/ProblemSelector";
 import { deviceCatalog } from "@/data/deviceCatalog";
 import { formatBrandModel } from "@/lib/format-device";
 import { generateQrDataUrl, publicAbsoluteUrl } from "@/lib/public-link";
-import {
-  getShareableDocumentUrl,
-  openDocument,
-  printDocument,
-  printRepairQr,
-} from "@/lib/documents/document-actions";
+import { getShareableDocumentUrl, openDocument, printDocument, printRepairQr } from "@/lib/documents/document-actions";
 import {
   deviceBrands as catalogDeviceBrands,
   formatCurrency,
@@ -119,6 +115,13 @@ function compactText(value: string) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
+}
+
+function compactPhone(value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (digits.startsWith("0033") && digits.length >= 13) return `0${digits.slice(4)}`;
+  if (digits.startsWith("33") && digits.length === 11) return `0${digits.slice(2)}`;
+  return digits;
 }
 
 async function copyCounterText(value: string) {
@@ -243,9 +246,7 @@ type CounterScreen =
   | "documents"
   | "reconditionne";
 
-export function ComptoirWorkspace({
-  initialScreen = "home",
-}: Readonly<{ initialScreen?: CounterScreen }>) {
+export function ComptoirWorkspace({ initialScreen = "home" }: Readonly<{ initialScreen?: CounterScreen }>) {
   const router = useRouter();
   const currentUser = useBeharStore((s) => s.currentUser);
   const workshopInfo = useBeharStore((s) => s.workshopInfo);
@@ -358,8 +359,8 @@ export function ComptoirWorkspace({
     },
     {
       id: "reconditionne",
-      label: "Reconditionné",
-      description: "Estimation & reprise téléphone",
+      label: "Acheter un téléphone",
+      description: "Reprise client & reconditionnement",
       icon: Smartphone,
       permission: null,
       onClick: () => setCounterScreen("reconditionne"),
@@ -474,10 +475,7 @@ export function ComptoirWorkspace({
           />
         )}
         {counterScreen === "checkout" && (
-          <CounterCheckoutScreen
-            initialRepairId={counterRepairId}
-            onClose={() => setCounterScreen("home")}
-          />
+          <CounterCheckoutScreen initialRepairId={counterRepairId} onClose={() => setCounterScreen("home")} />
         )}
         {counterScreen === "follow" && (
           <CounterFollowScreen
@@ -562,7 +560,12 @@ export function ComptoirWorkspace({
         {counterScreen === "documents" && (
           <CounterDocumentsScreen onClose={() => setCounterScreen("home")} repairId={docFilterRepairId || undefined} />
         )}
-        {counterScreen === "reconditionne" && <ConditionneScreen onClose={() => setCounterScreen("home")} />}
+        {counterScreen === "reconditionne" && (
+          <NewReconditioningIntakeWizard
+            onClose={() => setCounterScreen("home")}
+            onOpenDevice={() => setCounterScreen("home")}
+          />
+        )}
         {counterScreen === "tracking" && (
           <CounterTrackingScreen
             initialRepairId={counterRepairId}
@@ -639,9 +642,7 @@ export function ComptoirWorkspace({
                     </span>
                   )}
                   <div className="min-w-0 pt-5">
-                    <p className="font-bold text-[#1A1916] text-[15.5px] tracking-tight md:text-[16px]">
-                      {tile.label}
-                    </p>
+                    <p className="font-bold text-[#1A1916] text-[15.5px] tracking-tight md:text-[16px]">{tile.label}</p>
                     <p className="mt-0.5 text-[#6B6B6B] text-[12.5px] leading-snug md:text-[13px]">
                       {tile.description}
                     </p>
@@ -697,7 +698,6 @@ export function ComptoirWorkspace({
       <footer className="shrink-0 border-[#E8E8E5] border-t bg-white px-6 py-3 text-center text-[#6B6B6B] text-[11px] lg:px-10">
         {workshopInfo.name} · {workshopInfo.phone || ""} · Behar Tech Pro
       </footer>
-
     </div>
   );
 }
@@ -820,7 +820,16 @@ type CounterAppointmentPrefill = {
 
 const counterTypes: DeviceType[] = ["Smartphone", "Tablette", "Ordinateur", "Console"];
 const counterBrands = ["Apple", "Samsung", "Xiaomi", "Google", "Huawei", "OnePlus", "Sony", "Autre"];
-const intakeProblems = ["Écran cassé", "Batterie HS", "Connecteur de charge", "Vitre arrière", "Caméra", "Micro-soudure", "Diagnostic", "Autre"];
+const intakeProblems = [
+  "Écran cassé",
+  "Batterie HS",
+  "Connecteur de charge",
+  "Vitre arrière",
+  "Caméra",
+  "Micro-soudure",
+  "Diagnostic",
+  "Autre",
+];
 
 const PRESTATION_FAMILIES = [
   {
@@ -828,34 +837,52 @@ const PRESTATION_FAMILIES = [
     label: "Écran",
     icon: Smartphone,
     subTypes: [
-      { id: "ecran_avant", label: "Écran avant", keywords: ["ecran", "vitre tactile", "dalle", "afficheur", "screen", "display"] },
-      { id: "vitre_arriere", label: "Vitre arrière", keywords: ["vitre arriere", "dos", "chassis", "back glass", "vitre dos"] }
-    ]
+      {
+        id: "ecran_avant",
+        label: "Écran avant",
+        keywords: ["ecran", "vitre tactile", "dalle", "afficheur", "screen", "display"],
+      },
+      {
+        id: "vitre_arriere",
+        label: "Vitre arrière",
+        keywords: ["vitre arriere", "dos", "chassis", "back glass", "vitre dos"],
+      },
+    ],
   },
   {
     id: "batterie",
     label: "Batterie",
     icon: Battery,
-    subTypes: [
-      { id: "batterie", label: "Remplacement batterie", keywords: ["batterie", "battery", "bat hs"] }
-    ]
+    subTypes: [{ id: "batterie", label: "Remplacement batterie", keywords: ["batterie", "battery", "bat hs"] }],
   },
   {
     id: "charge",
     label: "Charge",
     icon: Cable,
     subTypes: [
-      { id: "connecteur_charge", label: "Connecteur de charge", keywords: ["connecteur", "charge", "usb", "dock", "charging"] }
-    ]
+      {
+        id: "connecteur_charge",
+        label: "Connecteur de charge",
+        keywords: ["connecteur", "charge", "usb", "dock", "charging"],
+      },
+    ],
   },
   {
     id: "cameras",
     label: "Caméras",
     icon: Camera,
     subTypes: [
-      { id: "camera_arriere", label: "Caméra arrière", keywords: ["camera arriere", "camera dos", "rear camera", "lentille camera"] },
-      { id: "camera_avant", label: "Caméra avant", keywords: ["camera avant", "camera face", "front camera", "selfie"] }
-    ]
+      {
+        id: "camera_arriere",
+        label: "Caméra arrière",
+        keywords: ["camera arriere", "camera dos", "rear camera", "lentille camera"],
+      },
+      {
+        id: "camera_avant",
+        label: "Caméra avant",
+        keywords: ["camera avant", "camera face", "front camera", "selfie"],
+      },
+    ],
   },
   {
     id: "audio",
@@ -864,16 +891,20 @@ const PRESTATION_FAMILIES = [
     subTypes: [
       { id: "ecouteur_interne", label: "Écouteur interne", keywords: ["ecouteur", "haut parleur oreille", "earpiece"] },
       { id: "haut_parleur", label: "Haut-parleur", keywords: ["haut parleur", "buzzer", "speaker"] },
-      { id: "microphone", label: "Micro", keywords: ["micro", "microphone"] }
-    ]
+      { id: "microphone", label: "Micro", keywords: ["micro", "microphone"] },
+    ],
   },
   {
     id: "capteurs",
     label: "Capteurs / Face ID",
     icon: ScanFace,
     subTypes: [
-      { id: "face_id_sensors", label: "Face ID / capteurs", keywords: ["face id", "touch id", "capteur", "sensors", "proximite", "nappe capteurs"] }
-    ]
+      {
+        id: "face_id_sensors",
+        label: "Face ID / capteurs",
+        keywords: ["face id", "touch id", "capteur", "sensors", "proximite", "nappe capteurs"],
+      },
+    ],
   },
   {
     id: "carte_mere",
@@ -881,18 +912,30 @@ const PRESTATION_FAMILIES = [
     icon: Zap,
     subTypes: [
       { id: "micro_soudure", label: "Micro-soudure", keywords: ["soudure", "micro soudure", "carte mere"] },
-      { id: "diagnostic_carte_mere", label: "Diagnostic carte mère", keywords: ["diagnostic carte", "recherche panne carte"] },
-      { id: "reparation_carte_mere", label: "Réparation carte mère", keywords: ["reparation carte", "carte mere hs"] }
-    ]
+      {
+        id: "diagnostic_carte_mere",
+        label: "Diagnostic carte mère",
+        keywords: ["diagnostic carte", "recherche panne carte"],
+      },
+      { id: "reparation_carte_mere", label: "Réparation carte mère", keywords: ["reparation carte", "carte mere hs"] },
+    ],
   },
   {
     id: "logiciel",
     label: "Logiciel",
     icon: Lock,
     subTypes: [
-      { id: "deblocage_logiciel", label: "Déblocage logiciel", keywords: ["deblocage", "logiciel", "reinstallation", "systeme"] },
-      { id: "transfert_donnees", label: "Transfert de données", keywords: ["transfert", "sauvegarde", "recuperation de donnees"] }
-    ]
+      {
+        id: "deblocage_logiciel",
+        label: "Déblocage logiciel",
+        keywords: ["deblocage", "logiciel", "reinstallation", "systeme"],
+      },
+      {
+        id: "transfert_donnees",
+        label: "Transfert de données",
+        keywords: ["transfert", "sauvegarde", "recuperation de donnees"],
+      },
+    ],
   },
   {
     id: "services",
@@ -900,17 +943,15 @@ const PRESTATION_FAMILIES = [
     icon: Activity,
     subTypes: [
       { id: "diagnostic", label: "Diagnostic", keywords: ["diagnostic", "devis", "recherche panne"] },
-      { id: "desoxydation", label: "Désoxydation", keywords: ["deoxydation", "eau", "liquide"] }
-    ]
+      { id: "desoxydation", label: "Désoxydation", keywords: ["deoxydation", "eau", "liquide"] },
+    ],
   },
   {
     id: "autre",
     label: "Autre",
     icon: MoreHorizontal,
-    subTypes: [
-      { id: "autre_prestation", label: "Autre prestation", keywords: ["autre"] }
-    ]
-  }
+    subTypes: [{ id: "autre_prestation", label: "Autre prestation", keywords: ["autre"] }],
+  },
 ];
 
 const COUNTER_SERVICES = PRESTATION_FAMILIES.flatMap((f) =>
@@ -919,7 +960,7 @@ const COUNTER_SERVICES = PRESTATION_FAMILIES.flatMap((f) =>
     label: s.label,
     category: s.id,
     icon: f.icon,
-  }))
+  })),
 );
 
 function getAvailableQualitiesForService(
@@ -952,14 +993,20 @@ function getAvailableQualitiesForService(
     const itemRepair = compactText(item.reparation || "");
     const itemPiece = compactText(item.piece || "");
 
-    return keywords.some(
-      (kw) =>
-        itemRepair.includes(kw) ||
-        itemPiece.includes(kw)
-    );
+    return keywords.some((kw) => itemRepair.includes(kw) || itemPiece.includes(kw));
   });
 }
-const intakeAccessories = ["Coque", "Chargeur", "Verre trempé", "Câble", "Carte SIM", "Carte SD", "Écouteurs", "Boîte d'origine", "Autre"];
+const intakeAccessories = [
+  "Coque",
+  "Chargeur",
+  "Verre trempé",
+  "Câble",
+  "Carte SIM",
+  "Carte SD",
+  "Écouteurs",
+  "Boîte d'origine",
+  "Autre",
+];
 const quoteProblems = ["Remplacement écran", "Batterie", "Caméra", "Diagnostic", "Connecteur de charge", "Autre"];
 const conditionRows: Array<{ key: keyof CounterConditionState; label: string }> = [
   { key: "etatGeneral", label: "État général" },
@@ -1021,7 +1068,11 @@ function CounterChrome({
             <span className="size-2.5 rounded-full bg-[#2A9D8F]" /> Session active
           </span>
           <CounterClock />
-          <button type="button" onClick={onLogout} className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-4 font-medium active:scale-[0.97]">
+          <button
+            type="button"
+            onClick={onLogout}
+            className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-4 font-medium active:scale-[0.97]"
+          >
             <LogOut className="size-4" /> Quitter
           </button>
         </div>
@@ -1060,9 +1111,21 @@ function CounterStepper({
               type="button"
               disabled={!onStep || index > current}
               onClick={() => onStep?.(index)}
-              className={cn("flex min-h-[52px] items-center gap-2 rounded-[14px] px-2 text-left text-[13px] font-semibold transition active:scale-[0.98]", index <= current ? "text-[#1E7A6E]" : "text-[#6E6E73]")}
+              className={cn(
+                "flex min-h-[52px] items-center gap-2 rounded-[14px] px-2 text-left text-[13px] font-semibold transition active:scale-[0.98]",
+                index <= current ? "text-[#1E7A6E]" : "text-[#6E6E73]",
+              )}
             >
-              <span className={cn("grid size-8 shrink-0 place-items-center rounded-full border text-[13px]", done ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : active ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : "border-[#D9D6CF] bg-white text-[#6E6E73]")}>
+              <span
+                className={cn(
+                  "grid size-8 shrink-0 place-items-center rounded-full border text-[13px]",
+                  done
+                    ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
+                    : active
+                      ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
+                      : "border-[#D9D6CF] bg-white text-[#6E6E73]",
+                )}
+              >
                 {done ? <Check className="size-4" /> : index + 1}
               </span>
               <span className="hidden lg:inline">{label}</span>
@@ -1075,29 +1138,47 @@ function CounterStepper({
   );
 }
 
-function SelectTile({ active, children, onClick, className = "" }: Readonly<{ active: boolean; children: React.ReactNode; onClick: () => void; className?: string }>) {
+function SelectTile({
+  active,
+  children,
+  onClick,
+  className = "",
+}: Readonly<{ active: boolean; children: React.ReactNode; onClick: () => void; className?: string }>) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
         "relative flex min-h-[68px] items-center justify-center gap-2 rounded-[14px] border bg-white px-4 py-3 text-center font-semibold text-[14px] transition active:scale-[0.97]",
-        active ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] text-[#1D1D1F] hover:border-[#D9D6CF]",
+        active
+          ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
+          : "border-[#E8E8E5] text-[#1D1D1F] hover:border-[#D9D6CF]",
         className,
       )}
     >
       {children}
-      {active && <span className="absolute right-2 top-2 grid size-5 place-items-center rounded-full bg-[#2A9D8F] text-white"><Check className="size-3.5" /></span>}
+      {active && (
+        <span className="absolute right-2 top-2 grid size-5 place-items-center rounded-full bg-[#2A9D8F] text-white">
+          <Check className="size-3.5" />
+        </span>
+      )}
     </button>
   );
 }
 
-function ChipButton({ active, children, onClick }: Readonly<{ active: boolean; children: React.ReactNode; onClick: () => void }>) {
+function ChipButton({
+  active,
+  children,
+  onClick,
+}: Readonly<{ active: boolean; children: React.ReactNode; onClick: () => void }>) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={cn("inline-flex min-h-[52px] items-center justify-center gap-2 rounded-[14px] border px-4 font-semibold text-[13px] transition active:scale-[0.97]", active ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : "border-[#E8E8E5] bg-white text-[#1D1D1F]")}
+      className={cn(
+        "inline-flex min-h-[52px] items-center justify-center gap-2 rounded-[14px] border px-4 font-semibold text-[13px] transition active:scale-[0.97]",
+        active ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
+      )}
     >
       {active && <Check className="size-4" />} {children}
     </button>
@@ -1109,7 +1190,12 @@ function MoneySummary({
   lines,
   footer,
   showPriceCard = true,
-}: Readonly<{ amount: number; lines?: Array<{ label: string; value: string }>; footer?: React.ReactNode; showPriceCard?: boolean }>) {
+}: Readonly<{
+  amount: number;
+  lines?: Array<{ label: string; value: string }>;
+  footer?: React.ReactNode;
+  showPriceCard?: boolean;
+}>) {
   const ws = useBeharStore((s) => s.workshopInfo);
   return (
     <div className="space-y-4">
@@ -1133,7 +1219,9 @@ function MoneySummary({
           </dl>
           <div className="mt-5 flex items-center justify-between border-[#E8E8E5] border-t pt-4 font-bold">
             <span>Total estimé</span>
-            <span className="text-[#1E7A6E] tabular-nums">{formatEuro(amount)} {ws.vatApplicable ? "TTC" : ""}</span>
+            <span className="text-[#1E7A6E] tabular-nums">
+              {formatEuro(amount)} {ws.vatApplicable ? "TTC" : ""}
+            </span>
           </div>
           {footer && <div className="mt-5 border-[#E8E8E5] border-t pt-4">{footer}</div>}
         </section>
@@ -1192,20 +1280,28 @@ function ExistingCustomerSearch({
               }}
               className={cn(
                 "grid min-h-[56px] grid-cols-[1fr_auto] items-center gap-3 rounded-[14px] border px-4 text-left transition active:scale-[0.98]",
-                customer.id === value ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
+                customer.id === value
+                  ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
+                  : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
               )}
             >
               <span>
                 <b className="block">{customer.name}</b>
-                <span className="text-[#6E6E73] text-sm">{[customer.phone, customer.email].filter(Boolean).join(" · ") || "Client enregistré"}</span>
+                <span className="text-[#6E6E73] text-sm">
+                  {[customer.phone, customer.email].filter(Boolean).join(" · ") || "Client enregistré"}
+                </span>
               </span>
-              {customer.id === value ? <Check className="size-5" /> : <ChevronRight className="size-5 text-[#9A9AA0]" />}
+              {customer.id === value ? (
+                <Check className="size-5" />
+              ) : (
+                <ChevronRight className="size-5 text-[#9A9AA0]" />
+              )}
             </button>
           ))}
           {filteredCustomers.length === 0 && (
-          <p className="rounded-[14px] border border-dashed border-[#D9D6CF] bg-white px-4 py-4 text-center text-[#6E6E73] text-sm">
-            Aucun client trouvé.
-          </p>
+            <p className="rounded-[14px] border border-dashed border-[#D9D6CF] bg-white px-4 py-4 text-center text-[#6E6E73] text-sm">
+              Aucun client trouvé.
+            </p>
           )}
         </div>
       )}
@@ -1217,7 +1313,10 @@ function CounterInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className={cn("h-[52px] w-full rounded-[14px] border border-[#E8E8E5] bg-white px-4 text-[15px] outline-none placeholder:text-[#9A9AA0] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/10", props.className)}
+      className={cn(
+        "h-[52px] w-full rounded-[14px] border border-[#E8E8E5] bg-white px-4 text-[15px] outline-none placeholder:text-[#9A9AA0] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/10",
+        props.className,
+      )}
     />
   );
 }
@@ -1226,7 +1325,10 @@ function CounterTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
   return (
     <textarea
       {...props}
-      className={cn("min-h-[96px] w-full rounded-[14px] border border-[#E8E8E5] bg-white px-4 py-3 text-[15px] outline-none placeholder:text-[#9A9AA0] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/10", props.className)}
+      className={cn(
+        "min-h-[96px] w-full rounded-[14px] border border-[#E8E8E5] bg-white px-4 py-3 text-[15px] outline-none placeholder:text-[#9A9AA0] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/10",
+        props.className,
+      )}
     />
   );
 }
@@ -1261,7 +1363,9 @@ function formatCounterDateTime(value?: string | Date | number | null, fallback =
 }
 
 function counterDeviceLabel(value?: string | null, fallback = "Non renseigné") {
-  const clean = String(value ?? "").replace(/\s+/g, " ").trim();
+  const clean = String(value ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
   if (!clean) return fallback;
   return clean.replace(/^Apple\s+(iPhone\b.*)$/i, "$1");
 }
@@ -1293,11 +1397,21 @@ function accessLabel(value: CounterAccessValue | string | undefined) {
   return map[String(value)] ?? "Non communiqué";
 }
 
-function findCataloguePrice(priceBookItems: ReturnType<typeof useBeharStore.getState>["priceBookItems"], brand: string, model: string, label: string) {
+function findCataloguePrice(
+  priceBookItems: ReturnType<typeof useBeharStore.getState>["priceBookItems"],
+  brand: string,
+  model: string,
+  label: string,
+) {
   return findCatalogueItem(priceBookItems, brand, model, label)?.prixClientTotal ?? 0;
 }
 
-function findCatalogueItem(priceBookItems: ReturnType<typeof useBeharStore.getState>["priceBookItems"], brand: string, model: string, label: string) {
+function findCatalogueItem(
+  priceBookItems: ReturnType<typeof useBeharStore.getState>["priceBookItems"],
+  brand: string,
+  model: string,
+  label: string,
+) {
   const compactLabel = compactText(label).replace(/^remplacement /, "");
   return priceBookItems.find(
     (item) =>
@@ -1362,7 +1476,10 @@ function counterPrestationOptions(
   model: string,
   deviceType?: DeviceType,
 ) {
-  const byLabel = new Map<string, { label: string; lookupLabel: string; prixClient: number; source: "catalogue" | "motif" }>();
+  const byLabel = new Map<
+    string,
+    { label: string; lookupLabel: string; prixClient: number; source: "catalogue" | "motif" }
+  >();
   for (const entry of cataloguePrestationsForModel(priceBookItems, brand, model)) {
     const label = clarifyCounterPrestationLabel(entry.label);
     const key = compactText(label);
@@ -1539,9 +1656,13 @@ function buildCounterTasks(prestations: string[]) {
   const labels = new Set<string>();
   const source = prestations.join(" ").toLowerCase();
   if (source.includes("écran") || source.includes("vitre")) {
-    ["Démontage", "Remplacement écran", "Test tactile + affichage", "Test 50 points", "Nettoyage + remontage"].forEach((label) => labels.add(label));
+    ["Démontage", "Remplacement écran", "Test tactile + affichage", "Test 50 points", "Nettoyage + remontage"].forEach(
+      (label) => labels.add(label),
+    );
   } else if (source.includes("batterie")) {
-    ["Ouverture appareil", "Remplacement batterie", "Test charge", "Test autonomie", "Nettoyage + remontage"].forEach((label) => labels.add(label));
+    ["Ouverture appareil", "Remplacement batterie", "Test charge", "Test autonomie", "Nettoyage + remontage"].forEach(
+      (label) => labels.add(label),
+    );
   } else {
     ["Diagnostic", "Intervention", "Test fonctionnel", "Nettoyage + remontage"].forEach((label) => labels.add(label));
   }
@@ -1575,21 +1696,27 @@ function CounterIntakeScreen({
   onCreateAppointment: (prefill: CounterAppointmentPrefill) => void;
 }>) {
   const store = useBeharStore();
-  const prefillAppointment = prefill?.appointmentId ? store.appointments.find((appointment) => appointment.id === prefill.appointmentId) : undefined;
-  const prefillCustomer = prefill?.customerId ? store.customers.find((customer) => customer.id === prefill.customerId) : undefined;
+  const prefillAppointment = prefill?.appointmentId
+    ? store.appointments.find((appointment) => appointment.id === prefill.appointmentId)
+    : undefined;
+  const prefillCustomer = prefill?.customerId
+    ? store.customers.find((customer) => customer.id === prefill.customerId)
+    : undefined;
   const prefillIsCounter = prefillCustomer?.type === "counter";
   const [step, setStep] = useState(initialStep >= 2 ? 2 : 0);
-  const [clientMode, setClientMode] = useState<CounterClientMode>(prefill?.customerId && !prefillIsCounter ? "existing" : "counter");
-  const [existingCustomerId, setExistingCustomerId] = useState(prefill?.customerId && !prefillIsCounter ? prefill.customerId : "");
+  const [clientMode, setClientMode] = useState<CounterClientMode>(
+    prefill?.customerId && !prefillIsCounter ? "existing" : "counter",
+  );
+  const [existingCustomerId, setExistingCustomerId] = useState(
+    prefill?.customerId && !prefillIsCounter ? prefill.customerId : "",
+  );
   const [name, setName] = useState(prefillAppointment?.clientName ?? "");
   const [phone, setPhone] = useState(prefillAppointment?.clientPhone ?? "");
   const [email, setEmail] = useState(prefillAppointment?.clientEmail ?? "");
   const allowedMarkets = store.workshopSettings.allowedMarkets || [store.workshopInfo.country];
   const defaultMarket = store.workshopSettings.defaultMarket || store.workshopInfo.country;
 
-  const [billingCountry, setBillingCountry] = useState<WorkshopCountry>(
-    prefill?.billingCountry ?? defaultMarket,
-  );
+  const [billingCountry, setBillingCountry] = useState<WorkshopCountry>(prefill?.billingCountry ?? defaultMarket);
   const billingConfig = getWorkshopCountryConfig(billingCountry);
   const formatDossier = (value: number) => formatCurrency(value, billingConfig.currency);
 
@@ -1614,7 +1741,12 @@ function CounterIntakeScreen({
   const [patternPoints, setPatternPoints] = useState<number[]>([]);
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const [showAllAccessories, setShowAllAccessories] = useState(false);
-  const [photos, setPhotos] = useState<Record<CounterPhotoKey, string>>({ avant: "", arriere: "", defaut: "", accessoires: "" });
+  const [photos, setPhotos] = useState<Record<CounterPhotoKey, string>>({
+    avant: "",
+    arriere: "",
+    defaut: "",
+    accessoires: "",
+  });
   const [signature, setSignature] = useState("");
   // Anti-litige : au moins une photo est requise, sauf décision explicite et
   // volontaire de continuer sans photo (caméra indisponible sur desktop, etc.).
@@ -1626,21 +1758,33 @@ function CounterIntakeScreen({
   const [activeSubTypeId, setActiveSubTypeId] = useState<string>("ecran_avant");
 
   const selectedCustomer = store.customers.find((customer) => customer.id === existingCustomerId);
-  const counterCustomer = store.customers.find((customer) => customer.type === "counter" || customer.name.startsWith("Client comptoir"));
+  const counterCustomer = store.customers.find(
+    (customer) => customer.type === "counter" || customer.name.startsWith("Client comptoir"),
+  );
+  const duplicateCustomer = useMemo(() => {
+    if (clientMode !== "new") return undefined;
+    const phoneDigits = compactPhone(phone);
+    const emailKey = email.trim().toLowerCase();
+    if (!phoneDigits && !emailKey) return undefined;
+    return store.customers.find(
+      (customer) =>
+        customer.type !== "counter" &&
+        ((phoneDigits && compactPhone(customer.phone) === phoneDigits) ||
+          (emailKey && customer.email.trim().toLowerCase() === emailKey)),
+    );
+  }, [clientMode, email, phone, store.customers]);
   const prestationOptions = useMemo(
     () => counterPrestationOptions(store.priceBookItems, brand, model, deviceType),
     [store.priceBookItems, brand, model, deviceType],
   );
   const addonSuggestions = useMemo(() => addonSuggestionsFor(prestations, model), [prestations, model]);
   const allAddonOptions = useMemo(() => {
-    const stockAccessories = store.stockItems
-      .filter(isCounterSaleStockItem)
-      .map((item) => ({
-        id: `stock_${item.id}`,
-        label: item.part || item.name,
-        prixClient: item.salePrice ?? 0,
-        reason: `Stock · ${item.stock ?? item.quantity ?? 0}`,
-      }));
+    const stockAccessories = store.stockItems.filter(isCounterSaleStockItem).map((item) => ({
+      id: `stock_${item.id}`,
+      label: item.part || item.name,
+      prixClient: item.salePrice ?? 0,
+      reason: `Stock · ${item.stock ?? item.quantity ?? 0}`,
+    }));
     const presets = counterAccessoryProducts.map((item) => ({
       id: item.id,
       label: item.name,
@@ -1659,18 +1803,26 @@ function CounterIntakeScreen({
     .reduce((sum, addon) => sum + addon.prixClient, 0);
   const baseAmount = toMoney(price);
   const amount = baseAmount + addonTotal;
-  const customerLabel = clientMode === "new" ? name : clientMode === "existing" ? selectedCustomer?.name ?? "" : name.trim() || "Client comptoir";
+  const customerLabel =
+    clientMode === "new"
+      ? name
+      : clientMode === "existing"
+        ? (selectedCustomer?.name ?? "")
+        : name.trim() || "Client comptoir";
   const deviceLabel = [brand, model].filter(Boolean).join(" ");
   const canNext1 = Boolean(model.trim() && prestations.length);
   const canCreateAppointmentFromIntake = Boolean(
-    (clientMode === "counter" || (clientMode === "existing" && existingCustomerId) || (clientMode === "new" && name.trim())) &&
+    (clientMode === "counter" ||
+      (clientMode === "existing" && existingCustomerId) ||
+      (clientMode === "new" && name.trim())) &&
       model.trim() &&
       prestations.length,
   );
   const intakeStepLabels = ["Client & appareil", "Détails", "Anti-litige", "Photos & signature", "Récapitulatif"];
   const appointmentPrefillFromIntake = (): CounterAppointmentPrefill => ({
     clientMode,
-    customerId: clientMode === "existing" ? existingCustomerId : clientMode === "counter" ? counterCustomer?.id : undefined,
+    customerId:
+      clientMode === "existing" ? existingCustomerId : clientMode === "counter" ? counterCustomer?.id : undefined,
     clientName: customerLabel || "Client comptoir",
     clientPhone: clientMode === "existing" ? selectedCustomer?.phone : phone.trim(),
     clientEmail: clientMode === "existing" ? selectedCustomer?.email : email.trim(),
@@ -1705,7 +1857,7 @@ function CounterIntakeScreen({
       let foundFamilyId = "";
       let foundSubTypeId = "";
       let foundLabel = label;
-      
+
       for (const fam of PRESTATION_FAMILIES) {
         for (const sub of fam.subTypes) {
           if (compactText(sub.label) === compactText(label)) {
@@ -1723,9 +1875,15 @@ function CounterIntakeScreen({
         foundSubTypeId = "autre_prestation";
       }
 
-      let qualityItem: PriceBookItem | undefined = undefined;
+      let qualityItem: PriceBookItem | undefined;
       if (foundSubTypeId && qualityLabel) {
-        const qualities = getAvailableQualitiesForService(foundSubTypeId, foundLabel, store.priceBookItems, brand, model);
+        const qualities = getAvailableQualitiesForService(
+          foundSubTypeId,
+          foundLabel,
+          store.priceBookItems,
+          brand,
+          model,
+        );
         qualityItem = qualities.find((q) => (q.qualite || "") === qualityLabel);
       }
 
@@ -1784,32 +1942,31 @@ function CounterIntakeScreen({
           return nextPrices;
         });
         return next;
-      } else {
-        const defaultPrice = findCataloguePrice(store.priceBookItems, brand, model, sub.label);
-        const qualities = getAvailableQualitiesForService(sub.id, sub.label, store.priceBookItems, brand, model);
-        const qualityItem = qualities.length === 1 ? qualities[0] : undefined;
-        
-        const resolvedPrice = qualityItem 
-          ? String(qualityItem.prixClientTotal || qualityItem.prixVentePiece || 0)
-          : defaultPrice > 0 
-          ? String(defaultPrice) 
+      }
+      const defaultPrice = findCataloguePrice(store.priceBookItems, brand, model, sub.label);
+      const qualities = getAvailableQualitiesForService(sub.id, sub.label, store.priceBookItems, brand, model);
+      const qualityItem = qualities.length === 1 ? qualities[0] : undefined;
+
+      const resolvedPrice = qualityItem
+        ? String(qualityItem.prixClientTotal || qualityItem.prixVentePiece || 0)
+        : defaultPrice > 0
+          ? String(defaultPrice)
           : "";
 
-        setPrestationPrices((prevPrices) => ({
-          ...prevPrices,
-          [sub.id]: resolvedPrice
-        }));
+      setPrestationPrices((prevPrices) => ({
+        ...prevPrices,
+        [sub.id]: resolvedPrice,
+      }));
 
-        return [
-          ...prev,
-          {
-            familyId,
-            subTypeId: sub.id,
-            label: sub.label,
-            quality: qualityItem
-          }
-        ];
-      }
+      return [
+        ...prev,
+        {
+          familyId,
+          subTypeId: sub.id,
+          label: sub.label,
+          quality: qualityItem,
+        },
+      ];
     });
   };
 
@@ -1820,7 +1977,7 @@ function CounterIntakeScreen({
           return { ...ap, quality: qItem };
         }
         return ap;
-      })
+      }),
     );
     setPrestationPrices((prev) => ({
       ...prev,
@@ -1831,7 +1988,9 @@ function CounterIntakeScreen({
   const resolveIntakeCustomerId = () => {
     let customerId = "";
     if (clientMode === "counter") {
-      customerId = store.customers.find((customer) => customer.type === "counter")?.id ?? store.addCustomer({ name: "Client comptoir", type: "counter" });
+      customerId =
+        store.customers.find((customer) => customer.type === "counter")?.id ??
+        store.addCustomer({ name: "Client comptoir", type: "counter" });
     } else if (clientMode === "existing") {
       if (!existingCustomerId) {
         toast.error("Sélectionnez un client.");
@@ -1842,6 +2001,12 @@ function CounterIntakeScreen({
       if (!name.trim()) {
         toast.error("Indiquez le nom du client.");
         return "";
+      }
+      if (duplicateCustomer) {
+        setExistingCustomerId(duplicateCustomer.id);
+        setClientMode("existing");
+        toast.success(`Client existant repris : ${duplicateCustomer.name}`);
+        return duplicateCustomer.id;
       }
       customerId = store.addCustomer({ name: name.trim(), phone: phone.trim(), email: email.trim() });
       if (customerId) {
@@ -1954,7 +2119,8 @@ function CounterIntakeScreen({
           addedAt: now,
         })),
       intakeCondition: {
-        generalCondition: condition.etatGeneral === "ok" ? "Bon" : condition.etatGeneral === "abime" ? "Abîmé" : "Non renseigné",
+        generalCondition:
+          condition.etatGeneral === "ok" ? "Bon" : condition.etatGeneral === "abime" ? "Abîmé" : "Non renseigné",
         screenState: condition.ecran === "ok" ? "Intact" : condition.ecran === "abime" ? "Fissuré" : "Non renseigné",
         frameState: condition.chassis === "ok" ? "Bon état" : condition.chassis === "abime" ? "Chocs" : "Non renseigné",
         chargingState: condition.batterie === "ok" ? "Charge OK" : "Non renseigné",
@@ -1966,11 +2132,16 @@ function CounterIntakeScreen({
         networkState: condition.reseauSim === "ok" ? "OK" : "Non renseigné",
         accessMethod: accessLabel(access) as RepairIntakeCondition["accessMethod"],
         accessCode: access === "pin" || access === "mot_de_passe" ? accessCode.trim() : undefined,
-        patternData: access === "schema" && patternPoints.length ? { points: patternPoints, label: patternPoints.join("-") } : undefined,
+        patternData:
+          access === "schema" && patternPoints.length
+            ? { points: patternPoints, label: patternPoints.join("-") }
+            : undefined,
         accessories,
         visibleDefects: autrePrecision,
         customerStatement: clientInforme ? "Client informé" : "Client non informé",
-        photos: Object.entries(photos).filter(([, value]) => value).map(([key, value]) => ({ id: key, name: key, dataUrl: value, createdAt: now })),
+        photos: Object.entries(photos)
+          .filter(([, value]) => value)
+          .map(([key, value]) => ({ id: key, name: key, dataUrl: value, createdAt: now })),
         ...signedMetadata,
         customerConfirmed: !isDraft && Boolean(signature),
         createdAt: now,
@@ -1988,13 +2159,21 @@ function CounterIntakeScreen({
         ...repairPayload,
         history: [
           ...(store.repairs.find((repair) => repair.id === existingRepairId)?.history ?? []),
-          isDraft ? "Brouillon de prise en charge mis à jour au comptoir" : "Prise en charge complétée depuis le comptoir",
+          isDraft
+            ? "Brouillon de prise en charge mis à jour au comptoir"
+            : "Prise en charge complétée depuis le comptoir",
         ],
       });
     }
     // Le bon de prise en charge (doc_intake_${repairId}) est déjà généré par
     // store.addRepair — on ne crée pas de second document intake en double.
-    toast.success(isDraft ? "Brouillon de prise en charge enregistré." : existingRepairId ? "Prise en charge mise à jour." : "Prise en charge créée.");
+    toast.success(
+      isDraft
+        ? "Brouillon de prise en charge enregistré."
+        : existingRepairId
+          ? "Prise en charge mise à jour."
+          : "Prise en charge créée.",
+    );
     onCreated(repairId);
     return repairId;
   };
@@ -2002,7 +2181,8 @@ function CounterIntakeScreen({
   const saveAndPrint = () => {
     const repairId = save();
     if (!repairId) return;
-    if (!printDocument({ id: `doc_intake_${repairId}`, type: "intake" })) toast.error("Bon de prise en charge introuvable.");
+    if (!printDocument({ id: `doc_intake_${repairId}`, type: "intake" }))
+      toast.error("Bon de prise en charge introuvable.");
   };
 
   const saveAndShareTracking = () => {
@@ -2027,7 +2207,11 @@ function CounterIntakeScreen({
                 <p className="font-bold text-[14px]">Pays de facturation / marché</p>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   {allowedMarkets.map((country) => (
-                    <SelectTile key={country} active={billingCountry === country} onClick={() => setBillingCountry(country)}>
+                    <SelectTile
+                      key={country}
+                      active={billingCountry === country}
+                      onClick={() => setBillingCountry(country)}
+                    >
                       {country === "CH" ? "Suisse · CHF" : "France · EUR"}
                     </SelectTile>
                   ))}
@@ -2036,9 +2220,18 @@ function CounterIntakeScreen({
             )}
             <h2 className="font-bold">1. Client</h2>
             <div className="grid grid-cols-3 gap-3">
-              <SelectTile active={clientMode === "counter"} onClick={() => setClientMode("counter")}><User className="size-5" />Client comptoir</SelectTile>
-              <SelectTile active={clientMode === "new"} onClick={() => setClientMode("new")}><User className="size-5" />Nouveau client</SelectTile>
-              <SelectTile active={clientMode === "existing"} onClick={() => setClientMode("existing")}><Users className="size-5" />Client existant</SelectTile>
+              <SelectTile active={clientMode === "counter"} onClick={() => setClientMode("counter")}>
+                <User className="size-5" />
+                Client comptoir
+              </SelectTile>
+              <SelectTile active={clientMode === "new"} onClick={() => setClientMode("new")}>
+                <User className="size-5" />
+                Nouveau client
+              </SelectTile>
+              <SelectTile active={clientMode === "existing"} onClick={() => setClientMode("existing")}>
+                <Users className="size-5" />
+                Client existant
+              </SelectTile>
             </div>
             {clientMode === "counter" && (
               <div className="rounded-[14px] border border-[#DDEFEA] bg-[#FFFFFF] px-4 py-3 text-sm font-semibold text-[#1E7A6E]">
@@ -2046,20 +2239,64 @@ function CounterIntakeScreen({
               </div>
             )}
             {clientMode === "new" && (
-              <div className="grid gap-3 md:grid-cols-3">
-                <CounterInput placeholder="Nom" value={name} onChange={(e) => setName(e.target.value)} />
-                <CounterInput placeholder="Téléphone" value={phone} onChange={(e) => setPhone(e.target.value)} />
-                <CounterInput placeholder="Email (optionnel)" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <div className="grid gap-3">
+                <div className="grid gap-3 md:grid-cols-3">
+                  <CounterInput placeholder="Nom" value={name} onChange={(e) => setName(e.target.value)} />
+                  <CounterInput placeholder="Téléphone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  <CounterInput
+                    placeholder="Email (optionnel)"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+                {duplicateCustomer ? (
+                  <div className="flex flex-col gap-3 rounded-[14px] border border-[#D7EFEA] bg-[#FFFFFF] p-3 text-sm md:flex-row md:items-center md:justify-between">
+                    <span className="text-[#1A1916]">
+                      <b>Client déjà connu</b>
+                      <span className="block text-[#6B6B6B]">
+                        {duplicateCustomer.name}
+                        {duplicateCustomer.phone ? ` · ${duplicateCustomer.phone}` : ""}
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExistingCustomerId(duplicateCustomer.id);
+                        setClientMode("existing");
+                      }}
+                      className="h-10 rounded-[12px] bg-[#2A9D8F] px-4 font-bold text-white active:scale-[0.98]"
+                    >
+                      Reprendre ce client
+                    </button>
+                  </div>
+                ) : null}
               </div>
             )}
             {clientMode === "existing" && (
               <ExistingCustomerSearch value={existingCustomerId} onChange={setExistingCustomerId} />
             )}
             <h2 className="pt-2 font-bold">2. Appareil</h2>
-            <div className="grid grid-cols-4 gap-3">{counterTypes.map((type) => <ChipButton key={type} active={deviceType === type} onClick={() => setDeviceType(type)}>{type}</ChipButton>)}</div>
-            <div className="grid grid-cols-4 gap-2 md:grid-cols-8">{counterBrands.map((entry) => <ChipButton key={entry} active={brand === entry} onClick={() => setBrand(entry)}>{entry}</ChipButton>)}</div>
+            <div className="grid grid-cols-4 gap-3">
+              {counterTypes.map((type) => (
+                <ChipButton key={type} active={deviceType === type} onClick={() => setDeviceType(type)}>
+                  {type}
+                </ChipButton>
+              ))}
+            </div>
+            <div className="grid grid-cols-4 gap-2 md:grid-cols-8">
+              {counterBrands.map((entry) => (
+                <ChipButton key={entry} active={brand === entry} onClick={() => setBrand(entry)}>
+                  {entry}
+                </ChipButton>
+              ))}
+            </div>
             <ModelTouchSelector brand={brand} deviceType={deviceType} value={model} onChange={setModel} />
-            <CounterInput placeholder="IMEI / numéro de série (optionnel)" inputMode="numeric" value={imei} onChange={(e) => setImei(e.target.value)} />
+            <CounterInput
+              placeholder="IMEI / numéro de série (optionnel)"
+              inputMode="numeric"
+              value={imei}
+              onChange={(e) => setImei(e.target.value)}
+            />
             <div className="flex items-center gap-3 pt-2">
               <div className="flex size-7 shrink-0 place-items-center justify-center rounded-full bg-[#1E7A6E] text-[13px] font-black text-white">
                 3
@@ -2093,14 +2330,16 @@ function CounterIntakeScreen({
                         "relative flex items-center justify-between gap-3 rounded-[14px] border p-3 lg:p-4 text-left transition active:scale-[0.98] shrink-0 min-w-[130px] lg:min-w-0 lg:w-full",
                         isSelected
                           ? "border-[#2A9D8F] bg-[#E6F4F1] text-[#1E7A6E]"
-                          : "border-[#E8E8E5] bg-white hover:border-[#D0D0CD] text-[#1A1916]"
+                          : "border-[#E8E8E5] bg-white hover:border-[#D0D0CD] text-[#1A1916]",
                       )}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "grid size-9 shrink-0 place-items-center rounded-[10px] transition",
-                          isSelected ? "bg-[#1E7A6E] text-white" : "bg-[#FAFAF8] text-[#6B6B6B]"
-                        )}>
+                        <div
+                          className={cn(
+                            "grid size-9 shrink-0 place-items-center rounded-[10px] transition",
+                            isSelected ? "bg-[#1E7A6E] text-white" : "bg-[#FAFAF8] text-[#6B6B6B]",
+                          )}
+                        >
                           <Icon className="size-4.5" />
                         </div>
                         <span className="font-bold text-[14px]">{family.label}</span>
@@ -2121,7 +2360,7 @@ function CounterIntakeScreen({
                   (() => {
                     const family = PRESTATION_FAMILIES.find((f) => f.id === activeFamilyId)!;
                     const subType = family.subTypes.find((s) => s.id === activeSubTypeId);
-                    
+
                     return (
                       <div className="space-y-5 flex-1 flex flex-col justify-between">
                         <div>
@@ -2129,15 +2368,15 @@ function CounterIntakeScreen({
                           <div>
                             <h3 className="text-[17px] font-black text-[#1A1916]">{family.label}</h3>
                             <p className="text-[12px] text-[#6B6B6B] mt-0.5">
-                              {family.id === "ecran" 
+                              {family.id === "ecran"
                                 ? "Choisissez le type de réparation écran"
                                 : family.id === "batterie"
-                                ? "Choisissez la batterie à remplacer"
-                                : family.id === "cameras"
-                                ? "Choisissez la caméra à réparer"
-                                : family.id === "audio"
-                                ? "Choisissez le composant audio"
-                                : "Sélectionnez le type de service"}
+                                  ? "Choisissez la batterie à remplacer"
+                                  : family.id === "cameras"
+                                    ? "Choisissez la caméra à réparer"
+                                    : family.id === "audio"
+                                      ? "Choisissez le composant audio"
+                                      : "Sélectionnez le type de service"}
                             </p>
                           </div>
 
@@ -2164,16 +2403,18 @@ function CounterIntakeScreen({
                                         isSubActive
                                           ? "border-[#2A9D8F] bg-white ring-1 ring-[#2A9D8F]"
                                           : isSubSelected
-                                          ? "border-[#E8E8E5] bg-[#FAFAF8] text-[#1E7A6E]"
-                                          : "border-[#E8E8E5] bg-white hover:border-[#D0D0CD]"
+                                            ? "border-[#E8E8E5] bg-[#FAFAF8] text-[#1E7A6E]"
+                                            : "border-[#E8E8E5] bg-white hover:border-[#D0D0CD]",
                                       )}
                                     >
-                                      <div className={cn(
-                                        "grid size-5 shrink-0 place-items-center rounded-full border transition",
-                                        isSubSelected
-                                          ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
-                                          : "border-[#C7C7C2] bg-white"
-                                      )}>
+                                      <div
+                                        className={cn(
+                                          "grid size-5 shrink-0 place-items-center rounded-full border transition",
+                                          isSubSelected
+                                            ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
+                                            : "border-[#C7C7C2] bg-white",
+                                        )}
+                                      >
                                         {isSubSelected && <Check className="size-3" />}
                                       </div>
                                       <span className="font-bold text-[13px] text-[#1A1916]">{sub.label}</span>
@@ -2185,11 +2426,17 @@ function CounterIntakeScreen({
                           )}
 
                           {/* Step 2: Quality & Details (Only show if activeSubTypeId is set) */}
-                          {subType && (
+                          {subType &&
                             (() => {
                               const isSubSelected = activePrestations.some((ap) => ap.subTypeId === subType.id);
                               const selectedQual = activePrestations.find((ap) => ap.subTypeId === subType.id)?.quality;
-                              const qualities = getAvailableQualitiesForService(subType.id, subType.label, store.priceBookItems, brand, model);
+                              const qualities = getAvailableQualitiesForService(
+                                subType.id,
+                                subType.label,
+                                store.priceBookItems,
+                                brand,
+                                model,
+                              );
                               const currentPriceVal = prestationPrices[subType.id] ?? "";
 
                               return (
@@ -2216,10 +2463,12 @@ function CounterIntakeScreen({
                                                     "flex flex-col rounded-[14px] border p-4 text-left transition active:scale-[0.97] bg-white shadow-sm",
                                                     isQualSelected
                                                       ? "border-[#2A9D8F] ring-1 ring-[#2A9D8F]"
-                                                      : "border-[#E8E8E5] hover:border-[#D0D0CD]"
+                                                      : "border-[#E8E8E5] hover:border-[#D0D0CD]",
                                                   )}
                                                 >
-                                                  <span className="font-black text-[#1A1916] text-[14px]">{q.qualite || "Standard"}</span>
+                                                  <span className="font-black text-[#1A1916] text-[14px]">
+                                                    {q.qualite || "Standard"}
+                                                  </span>
                                                   <span className="mt-1 text-[#1E7A6E] font-black text-[15px] tabular-nums">
                                                     {cardPrice > 0 ? formatDossier(cardPrice) : "Prix à saisir"}
                                                   </span>
@@ -2227,7 +2476,9 @@ function CounterIntakeScreen({
                                                     <span className="font-bold">
                                                       {stockCount > 0 ? `En stock : ${stockCount}` : "Stock à vérifier"}
                                                     </span>
-                                                    {q.sku && <span className="font-mono text-[9px]">SKU : {q.sku}</span>}
+                                                    {q.sku && (
+                                                      <span className="font-mono text-[9px]">SKU : {q.sku}</span>
+                                                    )}
                                                   </div>
                                                 </button>
                                               );
@@ -2251,7 +2502,7 @@ function CounterIntakeScreen({
                                               const val = e.target.value;
                                               setPrestationPrices((prev) => ({
                                                 ...prev,
-                                                [subType.id]: val
+                                                [subType.id]: val,
                                               }));
                                             }}
                                             className="w-full h-12 rounded-[14px] border border-[#E8E8E5] bg-white pl-4 pr-10 text-[15px] font-bold text-[#1A1916] placeholder-[#B2B2AE] focus:border-[#2A9D8F] focus:outline-none transition shadow-sm"
@@ -2271,8 +2522,7 @@ function CounterIntakeScreen({
                                   )}
                                 </div>
                               );
-                            })()
-                          )}
+                            })()}
                         </div>
 
                         {/* Step 4: Summary of selected items */}
@@ -2285,7 +2535,10 @@ function CounterIntakeScreen({
                               {activePrestations.map((ap) => {
                                 const priceVal = prestationPrices[ap.subTypeId] || "";
                                 return (
-                                  <div key={ap.subTypeId} className="flex items-center justify-between gap-3 rounded-[14px] bg-[#FAFAF8] border border-[#E8E8E5] p-3 shadow-sm">
+                                  <div
+                                    key={ap.subTypeId}
+                                    className="flex items-center justify-between gap-3 rounded-[14px] bg-[#FAFAF8] border border-[#E8E8E5] p-3 shadow-sm"
+                                  >
                                     <div className="min-w-0">
                                       <span className="block font-black text-[13px] text-[#1A1916] truncate">
                                         {ap.label}
@@ -2335,7 +2588,19 @@ function CounterIntakeScreen({
           </section>
           <MoneySummary
             amount={amount}
-            lines={[{ label: "Client", value: customerLabel }, { label: "Appareil", value: model }, { label: "Problème", value: prestations.join(", ") }, { label: "Accessoires", value: accessories.join(", ") }, { label: "Vente +", value: allAddonOptions.filter((addon) => selectedAddons.includes(addon.id)).map((addon) => addon.label).join(", ") }]}
+            lines={[
+              { label: "Client", value: customerLabel },
+              { label: "Appareil", value: model },
+              { label: "Problème", value: prestations.join(", ") },
+              { label: "Accessoires", value: accessories.join(", ") },
+              {
+                label: "Vente +",
+                value: allAddonOptions
+                  .filter((addon) => selectedAddons.includes(addon.id))
+                  .map((addon) => addon.label)
+                  .join(", "),
+              },
+            ]}
             showPriceCard={false}
             footer={
               <button
@@ -2354,8 +2619,21 @@ function CounterIntakeScreen({
             }
           />
           <div className="lg:col-span-2 grid grid-cols-[160px_1fr] gap-4">
-            <button type="button" onClick={onClose} className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-semibold">Retour</button>
-            <button type="button" disabled={!canNext1} onClick={() => setStep(1)} className={cn("h-[52px] rounded-[14px] font-bold text-white", canNext1 ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]")}>Suivant</button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-semibold"
+            >
+              Retour
+            </button>
+            <button
+              type="button"
+              disabled={!canNext1}
+              onClick={() => setStep(1)}
+              className={cn("h-[52px] rounded-[14px] font-bold text-white", canNext1 ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]")}
+            >
+              Suivant
+            </button>
           </div>
         </div>
       )}
@@ -2364,11 +2642,39 @@ function CounterIntakeScreen({
         <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
           <section className="space-y-5 rounded-[20px] border border-[#E8E8E5] bg-white p-5">
             <h2 className="font-bold">Accessoires confiés</h2>
-            <div className="mt-4 grid grid-cols-3 gap-3 md:grid-cols-4">{intakeAccessories.map((entry) => <SelectTile key={entry} active={accessories.includes(entry)} onClick={() => setAccessories((prev) => prev.includes(entry) ? prev.filter((x) => x !== entry) : [...prev, entry])}>{entry}</SelectTile>)}</div>
+            <div className="mt-4 grid grid-cols-3 gap-3 md:grid-cols-4">
+              {intakeAccessories.map((entry) => (
+                <SelectTile
+                  key={entry}
+                  active={accessories.includes(entry)}
+                  onClick={() =>
+                    setAccessories((prev) =>
+                      prev.includes(entry) ? prev.filter((x) => x !== entry) : [...prev, entry],
+                    )
+                  }
+                >
+                  {entry}
+                </SelectTile>
+              ))}
+            </div>
             <section className="rounded-[16px] border border-[#E8E8E5] bg-white p-4">
               <h2 className="font-bold">Déverrouillage / accès appareil</h2>
               <div className="mt-4 grid grid-cols-3 gap-3 lg:grid-cols-6">
-                {(["non_communique", "aucun", "pin", "mot_de_passe", "schema", "biometrie"] as CounterAccessValue[]).map((entry) => <SelectTile key={entry} active={access === entry} onClick={() => { setAccess(entry); if (entry !== "schema") setPatternPoints([]); if (entry !== "pin" && entry !== "mot_de_passe") setAccessCode(""); }}>{accessLabel(entry)}</SelectTile>)}
+                {(
+                  ["non_communique", "aucun", "pin", "mot_de_passe", "schema", "biometrie"] as CounterAccessValue[]
+                ).map((entry) => (
+                  <SelectTile
+                    key={entry}
+                    active={access === entry}
+                    onClick={() => {
+                      setAccess(entry);
+                      if (entry !== "schema") setPatternPoints([]);
+                      if (entry !== "pin" && entry !== "mot_de_passe") setAccessCode("");
+                    }}
+                  >
+                    {accessLabel(entry)}
+                  </SelectTile>
+                ))}
               </div>
               {(access === "pin" || access === "mot_de_passe") && (
                 <div className="mt-4 grid grid-cols-[180px_1fr] items-center gap-4 rounded-[16px] bg-[#FFFFFF] p-4">
@@ -2388,7 +2694,11 @@ function CounterIntakeScreen({
                 <div className="mt-4 rounded-[16px] bg-[#FFFFFF] p-4">
                   <div className="mb-3 flex items-center justify-between">
                     <span className="font-semibold">Dessiner le schéma</span>
-                    <button type="button" onClick={() => setPatternPoints([])} className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3 font-semibold text-[#C7493B]">
+                    <button
+                      type="button"
+                      onClick={() => setPatternPoints([])}
+                      className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3 font-semibold text-[#C7493B]"
+                    >
                       <RotateCcw className="size-4" /> Refaire
                     </button>
                   </div>
@@ -2453,80 +2763,292 @@ function CounterIntakeScreen({
                 options={allAddonOptions}
                 selected={selectedAddons}
                 onToggle={(id) =>
-                  setSelectedAddons((prev) => (prev.includes(id) ? prev.filter((entry) => entry !== id) : [...prev, id]))
+                  setSelectedAddons((prev) =>
+                    prev.includes(id) ? prev.filter((entry) => entry !== id) : [...prev, id],
+                  )
                 }
                 onClose={() => setShowAllAccessories(false)}
               />
             )}
-            <div className="mt-5"><CounterTextarea placeholder="Observations" value={observations} onChange={(e) => setObservations(e.target.value)} /></div>
-            <div className="mt-4 flex items-center gap-2 font-semibold">Client informé <ChipButton active={clientInforme} onClick={() => setClientInforme(true)}>Oui</ChipButton><ChipButton active={!clientInforme} onClick={() => setClientInforme(false)}>Non</ChipButton></div>
+            <div className="mt-5">
+              <CounterTextarea
+                placeholder="Observations"
+                value={observations}
+                onChange={(e) => setObservations(e.target.value)}
+              />
+            </div>
+            <div className="mt-4 flex items-center gap-2 font-semibold">
+              Client informé{" "}
+              <ChipButton active={clientInforme} onClick={() => setClientInforme(true)}>
+                Oui
+              </ChipButton>
+              <ChipButton active={!clientInforme} onClick={() => setClientInforme(false)}>
+                Non
+              </ChipButton>
+            </div>
           </section>
-          <MoneySummary amount={amount} lines={[{ label: "Client", value: customerLabel }, { label: "Appareil", value: model }, { label: "Problème", value: prestations.join(", ") }, { label: "Accessoires", value: accessories.join(", ") }, { label: "Vente +", value: allAddonOptions.filter((addon) => selectedAddons.includes(addon.id)).map((addon) => addon.label).join(", ") }]} />
-          <div className="lg:col-span-2 grid grid-cols-[180px_1fr] gap-4"><button type="button" onClick={() => setStep(0)} className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-semibold">Retour</button><button type="button" onClick={() => setStep(2)} className="h-[52px] rounded-[14px] bg-[#2A9D8F] font-bold text-white">Suivant</button></div>
+          <MoneySummary
+            amount={amount}
+            lines={[
+              { label: "Client", value: customerLabel },
+              { label: "Appareil", value: model },
+              { label: "Problème", value: prestations.join(", ") },
+              { label: "Accessoires", value: accessories.join(", ") },
+              {
+                label: "Vente +",
+                value: allAddonOptions
+                  .filter((addon) => selectedAddons.includes(addon.id))
+                  .map((addon) => addon.label)
+                  .join(", "),
+              },
+            ]}
+          />
+          <div className="lg:col-span-2 grid grid-cols-[180px_1fr] gap-4">
+            <button
+              type="button"
+              onClick={() => setStep(0)}
+              className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-semibold"
+            >
+              Retour
+            </button>
+            <button
+              type="button"
+              onClick={() => setStep(2)}
+              className="h-[52px] rounded-[14px] bg-[#2A9D8F] font-bold text-white"
+            >
+              Suivant
+            </button>
+          </div>
         </div>
       )}
 
       {step === 2 && (
         <div className="space-y-4">
-          <div className="grid grid-cols-4 gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-4 text-[13px]"><b>Client<br />{customerLabel}</b><b>Appareil<br />{deviceLabel}</b><b>Intervention<br />{prestations.join(", ")}</b><b>Prix client<br />{formatDossier(amount)}</b></div>
+          <div className="grid grid-cols-4 gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-4 text-[13px]">
+            <b>
+              Client
+              <br />
+              {customerLabel}
+            </b>
+            <b>
+              Appareil
+              <br />
+              {deviceLabel}
+            </b>
+            <b>
+              Intervention
+              <br />
+              {prestations.join(", ")}
+            </b>
+            <b>
+              Prix client
+              <br />
+              {formatDossier(amount)}
+            </b>
+          </div>
           <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5">
             <h2 className="font-bold">État de l'appareil</h2>
             <div className="mt-4 grid gap-x-7 gap-y-3 lg:grid-cols-2">
-              {conditionRows.map((row) => <ConditionRow key={row.key} label={row.label} value={condition[row.key]} onChange={(value) => setCondition((prev) => ({ ...prev, [row.key]: value }))} />)}
+              {conditionRows.map((row) => (
+                <ConditionRow
+                  key={row.key}
+                  label={row.label}
+                  value={condition[row.key]}
+                  onChange={(value) => setCondition((prev) => ({ ...prev, [row.key]: value }))}
+                />
+              ))}
             </div>
-            <div className="mt-5 grid grid-cols-[220px_1fr] items-center gap-4"><span className="text-[#6E6E73] text-sm">Autre précision (optionnel)</span><CounterInput value={autrePrecision} onChange={(e) => setAutrePrecision(e.target.value)} /></div>
+            <div className="mt-5 grid grid-cols-[220px_1fr] items-center gap-4">
+              <span className="text-[#6E6E73] text-sm">Autre précision (optionnel)</span>
+              <CounterInput value={autrePrecision} onChange={(e) => setAutrePrecision(e.target.value)} />
+            </div>
           </section>
           <div className="grid grid-cols-[180px_1fr] gap-4">
-            <button type="button" onClick={() => setStep(1)} className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-semibold">Retour</button>
-            <button type="button" onClick={() => setStep(3)} className="h-[52px] rounded-[14px] bg-[#2A9D8F] font-bold text-white">Suivant</button>
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-semibold"
+            >
+              Retour
+            </button>
+            <button
+              type="button"
+              onClick={() => setStep(3)}
+              className="h-[52px] rounded-[14px] bg-[#2A9D8F] font-bold text-white"
+            >
+              Suivant
+            </button>
           </div>
         </div>
       )}
 
-      {step === 3 && (() => {
-        const hasIntakePhoto = Object.values(photos).some(Boolean);
-        const photoRequirementMet = hasIntakePhoto || noPhotoConfirmed;
-        const canContinue = Boolean(signature) && photoRequirementMet;
-        return (
-        <div className="space-y-5">
-          <div className="grid grid-cols-4 gap-4">{(["avant", "arriere", "defaut", "accessoires"] as CounterPhotoKey[]).map((key) => <PhotoCaptureCard key={key} title={{ avant: "Avant", arriere: "Arrière", defaut: "Défaut visible", accessoires: "Accessoires fournis" }[key]} value={photos[key]} onChange={(value) => { setPhotos((prev) => ({ ...prev, [key]: value })); if (value) setNoPhotoConfirmed(false); }} />)}</div>
-          {!hasIntakePhoto && (
-            <section className="rounded-[16px] border border-[#E8E8E5] bg-white p-5">
-              <p className="font-bold text-[#1D1D1F]">Photo anti-litige requise</p>
-              <p className="mt-1 text-[#6B6B6B] text-sm">Au moins une photo protège l'atelier et le client en cas de litige. Sur mobile ou tablette, privilégiez la prise de photo.</p>
-              {noPhotoConfirmed ? (
-                <p className="mt-3 inline-flex items-center gap-2 rounded-[12px] bg-[#FFFFFF] px-3 py-2 font-semibold text-[#1E7A6E] text-sm"><Check className="size-4" /> Vous continuez sans photo — mention ajoutée au dossier.</p>
-              ) : (
-                <button type="button" onClick={() => setNoPhotoConfirmed(true)} className="mt-3 h-[44px] rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-semibold text-[#6B6B6B] active:scale-[0.98]">Continuer sans photo</button>
+      {step === 3 &&
+        (() => {
+          const hasIntakePhoto = Object.values(photos).some(Boolean);
+          const photoRequirementMet = hasIntakePhoto || noPhotoConfirmed;
+          const canContinue = Boolean(signature) && photoRequirementMet;
+          return (
+            <div className="space-y-5">
+              <div className="grid grid-cols-4 gap-4">
+                {(["avant", "arriere", "defaut", "accessoires"] as CounterPhotoKey[]).map((key) => (
+                  <PhotoCaptureCard
+                    key={key}
+                    title={
+                      {
+                        avant: "Avant",
+                        arriere: "Arrière",
+                        defaut: "Défaut visible",
+                        accessoires: "Accessoires fournis",
+                      }[key]
+                    }
+                    value={photos[key]}
+                    onChange={(value) => {
+                      setPhotos((prev) => ({ ...prev, [key]: value }));
+                      if (value) setNoPhotoConfirmed(false);
+                    }}
+                  />
+                ))}
+              </div>
+              {!hasIntakePhoto && (
+                <section className="rounded-[16px] border border-[#E8E8E5] bg-white p-5">
+                  <p className="font-bold text-[#1D1D1F]">Photo anti-litige requise</p>
+                  <p className="mt-1 text-[#6B6B6B] text-sm">
+                    Au moins une photo protège l'atelier et le client en cas de litige. Sur mobile ou tablette,
+                    privilégiez la prise de photo.
+                  </p>
+                  {noPhotoConfirmed ? (
+                    <p className="mt-3 inline-flex items-center gap-2 rounded-[12px] bg-[#FFFFFF] px-3 py-2 font-semibold text-[#1E7A6E] text-sm">
+                      <Check className="size-4" /> Vous continuez sans photo — mention ajoutée au dossier.
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setNoPhotoConfirmed(true)}
+                      className="mt-3 h-[44px] rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-semibold text-[#6B6B6B] active:scale-[0.98]"
+                    >
+                      Continuer sans photo
+                    </button>
+                  )}
+                </section>
               )}
-            </section>
-          )}
-          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5">
-            <h2 className="font-bold">Signature du client</h2>
-            <SignaturePad value={signature} onChange={setSignature} />
-          </section>
-          <div className="grid grid-cols-[140px_1fr] gap-4"><button type="button" onClick={() => setStep(2)} className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-semibold">Retour</button><button type="button" disabled={!canContinue} onClick={() => setStep(4)} className={cn("h-[52px] rounded-[14px] font-bold text-white", canContinue ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]")}>Continuer</button></div>
-        </div>
-        );
-      })()}
+              <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5">
+                <h2 className="font-bold">Signature du client</h2>
+                <SignaturePad value={signature} onChange={setSignature} />
+              </section>
+              <div className="grid grid-cols-[140px_1fr] gap-4">
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-semibold"
+                >
+                  Retour
+                </button>
+                <button
+                  type="button"
+                  disabled={!canContinue}
+                  onClick={() => setStep(4)}
+                  className={cn(
+                    "h-[52px] rounded-[14px] font-bold text-white",
+                    canContinue ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]",
+                  )}
+                >
+                  Continuer
+                </button>
+              </div>
+            </div>
+          );
+        })()}
 
       {step === 4 && (
         <section className="ml-auto max-w-[720px] rounded-[20px] border border-[#E8E8E5] bg-white p-7 shadow-[0_10px_30px_rgba(29,29,31,0.04)]">
-          <div className="flex items-start justify-between"><div><p className="text-[#6E6E73] text-sm">Dossier</p><h2 className="mt-1 font-black text-[26px]">R-{new Date().getFullYear()}-XXXX</h2><StatusPillCounter tone="green">Prête à valider</StatusPillCounter></div><button type="button" onClick={() => setStep(0)} className="h-11 rounded-[14px] border border-[#E8E8E5] px-4 font-semibold">Modifier</button></div>
-          <dl className="mt-6 divide-y divide-[#E8E8E5]">{[["Client", `${customerLabel}${phone ? `\n${phone}` : ""}`], ["Appareil", model], ["Intervention", prestations.join(", ")], ["Accessoires", accessories.join(", ") || "Aucun"], ["Vente additionnelle", addonSuggestions.filter((addon) => selectedAddons.includes(addon.id)).map((addon) => addon.label).join(", ") || "Aucune"], ["Accès", `${accessLabel(access)}${accessCode ? ` · ${accessCode}` : patternPoints.length ? ` · schéma ${patternPoints.join("-")}` : ""}`], ["État", conditionRows.filter((row) => condition[row.key] !== "ok").map((row) => `${row.label} : ${conditionLabel(condition[row.key])}`).join(", ") || "OK"], ["Signature", "Signée"]].map(([label, value]) => <div key={label} className="grid grid-cols-[150px_1fr] gap-4 py-4"><dt className="font-bold">{label}</dt><dd className={label === "État" ? "text-[#6B6B6B]" : label === "Signature" ? "text-[#1E7A6E]" : ""}>{value}</dd></div>)}</dl>
-          <div className="mt-5 flex items-end justify-between"><span className="font-bold">Montant total</span><span className="font-black text-[32px] tabular-nums">{formatDossier(amount)} {store.workshopInfo.vatApplicable ? "TTC" : ""}</span></div>
-          <div className="mt-6 grid gap-3 md:grid-cols-2">
-            <button type="button" onClick={() => setStep(3)} className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold active:scale-[0.99]">Retour</button>
-            <button type="button" onClick={saveAndPrint} className="h-[56px] rounded-[14px] bg-[#2A9D8F] font-bold text-white active:scale-[0.99]">Générer le bon</button>
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-[#6E6E73] text-sm">Dossier</p>
+              <h2 className="mt-1 font-black text-[26px]">R-{new Date().getFullYear()}-XXXX</h2>
+              <StatusPillCounter tone="green">Prête à valider</StatusPillCounter>
+            </div>
+            <button
+              type="button"
+              onClick={() => setStep(0)}
+              className="h-11 rounded-[14px] border border-[#E8E8E5] px-4 font-semibold"
+            >
+              Modifier
+            </button>
           </div>
-          <button type="button" onClick={saveAndShareTracking} className="mt-3 h-[52px] w-full rounded-[14px] border border-[#2A9D8F] bg-white font-bold text-[#1E7A6E] active:scale-[0.99]">Créer + lien suivi</button>
+          <dl className="mt-6 divide-y divide-[#E8E8E5]">
+            {[
+              ["Client", `${customerLabel}${phone ? `\n${phone}` : ""}`],
+              ["Appareil", model],
+              ["Intervention", prestations.join(", ")],
+              ["Accessoires", accessories.join(", ") || "Aucun"],
+              [
+                "Vente additionnelle",
+                addonSuggestions
+                  .filter((addon) => selectedAddons.includes(addon.id))
+                  .map((addon) => addon.label)
+                  .join(", ") || "Aucune",
+              ],
+              [
+                "Accès",
+                `${accessLabel(access)}${accessCode ? ` · ${accessCode}` : patternPoints.length ? ` · schéma ${patternPoints.join("-")}` : ""}`,
+              ],
+              [
+                "État",
+                conditionRows
+                  .filter((row) => condition[row.key] !== "ok")
+                  .map((row) => `${row.label} : ${conditionLabel(condition[row.key])}`)
+                  .join(", ") || "OK",
+              ],
+              ["Signature", "Signée"],
+            ].map(([label, value]) => (
+              <div key={label} className="grid grid-cols-[150px_1fr] gap-4 py-4">
+                <dt className="font-bold">{label}</dt>
+                <dd className={label === "État" ? "text-[#6B6B6B]" : label === "Signature" ? "text-[#1E7A6E]" : ""}>
+                  {value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <div className="mt-5 flex items-end justify-between">
+            <span className="font-bold">Montant total</span>
+            <span className="font-black text-[32px] tabular-nums">
+              {formatDossier(amount)} {store.workshopInfo.vatApplicable ? "TTC" : ""}
+            </span>
+          </div>
+          <div className="mt-6 grid gap-3 md:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setStep(3)}
+              className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold active:scale-[0.99]"
+            >
+              Retour
+            </button>
+            <button
+              type="button"
+              onClick={saveAndPrint}
+              className="h-[56px] rounded-[14px] bg-[#2A9D8F] font-bold text-white active:scale-[0.99]"
+            >
+              Générer le bon
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={saveAndShareTracking}
+            className="mt-3 h-[52px] w-full rounded-[14px] border border-[#2A9D8F] bg-white font-bold text-[#1E7A6E] active:scale-[0.99]"
+          >
+            Créer + lien suivi
+          </button>
         </section>
       )}
     </div>
   );
 }
 
-function ConditionRow({ label, value, onChange }: Readonly<{ label: string; value: CounterConditionValue; onChange: (value: CounterConditionValue) => void }>) {
+function ConditionRow({
+  label,
+  value,
+  onChange,
+}: Readonly<{ label: string; value: CounterConditionValue; onChange: (value: CounterConditionValue) => void }>) {
   const options: Array<{ value: CounterConditionValue; label: string; className: string; icon: React.ReactNode }> = [
     { value: "ok", label: "OK", className: "text-[#1E7A6E]", icon: <Check className="size-3.5" /> },
     { value: "abime", label: "Abîmé", className: "text-[#6B6B6B]", icon: <TriangleAlert className="size-3.5" /> },
@@ -2537,16 +3059,27 @@ function ConditionRow({ label, value, onChange }: Readonly<{ label: string; valu
     <div className="grid grid-cols-[150px_1fr] items-center gap-3">
       <span className="font-semibold text-sm">{label}</span>
       <div className="grid grid-cols-4 rounded-[10px] border border-[#E8E8E5]">
-        {options.map((option) => <button key={option.value} type="button" onClick={() => onChange(option.value)} className={cn("flex h-10 items-center justify-center gap-1 border-[#E8E8E5] border-r text-[12px] font-semibold last:border-r-0", option.className, value === option.value && "bg-[#FFFFFF] ring-1 ring-[#2A9D8F]")}>{option.icon}{option.label}</button>)}
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            className={cn(
+              "flex h-10 items-center justify-center gap-1 border-[#E8E8E5] border-r text-[12px] font-semibold last:border-r-0",
+              option.className,
+              value === option.value && "bg-[#FFFFFF] ring-1 ring-[#2A9D8F]",
+            )}
+          >
+            {option.icon}
+            {option.label}
+          </button>
+        ))}
       </div>
     </div>
   );
 }
 
-function PatternGrid({
-  value,
-  onChange,
-}: Readonly<{ value: number[]; onChange: (value: number[]) => void }>) {
+function PatternGrid({ value, onChange }: Readonly<{ value: number[]; onChange: (value: number[]) => void }>) {
   const toggle = (point: number) => {
     onChange(value.includes(point) ? value.filter((entry) => entry !== point) : [...value, point]);
   };
@@ -2576,7 +3109,11 @@ function PinPad({ value, onChange }: Readonly<{ value: string; onChange: (value:
   return (
     <div className="grid gap-3 lg:grid-cols-[1fr_220px]">
       <div className="flex min-h-[64px] items-center justify-center rounded-[14px] border border-[#E8E8E5] bg-white px-4 font-black text-[26px] tracking-[0.3em] tabular-nums">
-        {value ? "•".repeat(value.length) : <span className="text-[#9A9AA0] text-[15px] tracking-normal">Touchez les chiffres</span>}
+        {value ? (
+          "•".repeat(value.length)
+        ) : (
+          <span className="text-[#9A9AA0] text-[15px] tracking-normal">Touchez les chiffres</span>
+        )}
       </div>
       <div className="grid grid-cols-3 gap-2">
         {keys.map((key) => (
@@ -2624,7 +3161,11 @@ function AccessoryDrawer({
             <h3 className="font-black text-[20px]">Tous les accessoires</h3>
             <p className="text-[#6E6E73] text-sm">Sélection tactile pour ajouter une vente complémentaire.</p>
           </div>
-          <button type="button" onClick={onClose} className="grid size-[52px] place-items-center rounded-[14px] border border-[#E8E8E5] bg-white">
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid size-[52px] place-items-center rounded-[14px] border border-[#E8E8E5] bg-white"
+          >
             <X className="size-5" />
           </button>
         </div>
@@ -2655,7 +3196,11 @@ function AccessoryDrawer({
           ))}
         </div>
         <div className="border-[#E8E8E5] border-t p-4">
-          <button type="button" onClick={onClose} className="h-[52px] w-full rounded-[14px] bg-[#2A9D8F] font-bold text-white">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-[52px] w-full rounded-[14px] bg-[#2A9D8F] font-bold text-white"
+          >
             Valider les accessoires
           </button>
         </div>
@@ -2664,7 +3209,11 @@ function AccessoryDrawer({
   );
 }
 
-function PhotoCaptureCard({ title, value, onChange }: Readonly<{ title: string; value: string; onChange: (value: string) => void }>) {
+function PhotoCaptureCard({
+  title,
+  value,
+  onChange,
+}: Readonly<{ title: string; value: string; onChange: (value: string) => void }>) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const addPhoto = (file?: File) => {
     if (!file) return;
@@ -2685,33 +3234,72 @@ function PhotoCaptureCard({ title, value, onChange }: Readonly<{ title: string; 
         className="hidden"
         onChange={(event) => addPhoto(event.target.files?.[0])}
       />
-      <button type="button" onClick={() => inputRef.current?.click()} className={cn("mt-4 flex min-h-[190px] w-full flex-col items-center justify-center overflow-hidden rounded-[14px] border-2 border-dashed border-[#CFE2DF] transition active:scale-[0.98]", value ? "bg-[#FFFFFF]" : "bg-white")}>
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        className={cn(
+          "mt-4 flex min-h-[190px] w-full flex-col items-center justify-center overflow-hidden rounded-[14px] border-2 border-dashed border-[#CFE2DF] transition active:scale-[0.98]",
+          value ? "bg-[#FFFFFF]" : "bg-white",
+        )}
+      >
         {value ? (
           <img src={value} alt={title} className="aspect-[4/3] size-full object-cover" />
         ) : (
           <>
-            <span className="grid size-14 place-items-center rounded-full bg-[#FFFFFF] text-[#1E7A6E]"><Camera className="size-7" /></span>
+            <span className="grid size-14 place-items-center rounded-full bg-[#FFFFFF] text-[#1E7A6E]">
+              <Camera className="size-7" />
+            </span>
             <span className="mt-4 font-bold">Prendre ou ajouter une photo</span>
             <span className="mt-2 text-[#6E6E73] text-sm">Caméra ou photothèque</span>
           </>
         )}
       </button>
-      {value ? <button type="button" onClick={() => onChange("")} className="mt-3 h-10 rounded-[12px] border border-[#E8E8E5] px-4 font-semibold text-[#B42318] text-sm">Retirer</button> : null}
+      {value ? (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          className="mt-3 h-10 rounded-[12px] border border-[#E8E8E5] px-4 font-semibold text-[#B42318] text-sm"
+        >
+          Retirer
+        </button>
+      ) : null}
     </section>
   );
 }
 
 function DetailLine({ label, value }: Readonly<{ label: string; value: string }>) {
-  return <div className="grid grid-cols-[110px_1fr] gap-3 border-[#E8E8E5] border-b pb-3"><dt className="font-bold">{label}</dt><dd>{value || "—"}</dd></div>;
+  return (
+    <div className="grid grid-cols-[110px_1fr] gap-3 border-[#E8E8E5] border-b pb-3">
+      <dt className="font-bold">{label}</dt>
+      <dd>{value || "—"}</dd>
+    </div>
+  );
 }
 
 function StatusPillCounter({ tone, children }: Readonly<{ tone: "green" | "orange"; children: React.ReactNode }>) {
-  return <span className={cn("mt-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[12px] font-bold", tone === "green" ? "bg-[#FFFFFF] text-[#1E7A6E]" : "bg-[#FFFFFF] text-[#6B6B6B]")}><span className={cn("size-2 rounded-full", tone === "green" ? "bg-[#1E7A6E]" : "bg-[#6B6B6B]")} />{children}</span>;
+  return (
+    <span
+      className={cn(
+        "mt-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[12px] font-bold",
+        tone === "green" ? "bg-[#FFFFFF] text-[#1E7A6E]" : "bg-[#FFFFFF] text-[#6B6B6B]",
+      )}
+    >
+      <span className={cn("size-2 rounded-full", tone === "green" ? "bg-[#1E7A6E]" : "bg-[#6B6B6B]")} />
+      {children}
+    </span>
+  );
 }
 
-function CounterFollowScreen({ repairId, onClose, onCheckout }: Readonly<{ repairId: string; onClose: () => void; onCheckout: (repairId: string) => void }>) {
+function CounterFollowScreen({
+  repairId,
+  onClose,
+  onCheckout,
+}: Readonly<{ repairId: string; onClose: () => void; onCheckout: (repairId: string) => void }>) {
   const store = useBeharStore();
-  const repair = store.repairs.find((entry) => entry.id === repairId) ?? store.repairs.find((entry) => !isTerminalRepairStatus(entry.status)) ?? store.repairs[0];
+  const repair =
+    store.repairs.find((entry) => entry.id === repairId) ??
+    store.repairs.find((entry) => !isTerminalRepairStatus(entry.status)) ??
+    store.repairs[0];
   const [pieceName, setPieceName] = useState("");
   const [piecePrice, setPiecePrice] = useState("");
   if (!repair) return <EmptyCounter title="Suivi du dossier" message="Aucun dossier à suivre." onClose={onClose} />;
@@ -2722,28 +3310,185 @@ function CounterFollowScreen({ repairId, onClose, onCheckout }: Readonly<{ repai
   const pieceCost = pieces.reduce((sum, piece) => sum + piece.prix, 0);
   const margin = repairAmount(repair) - pieceCost;
   const setStatus = (status: "À faire" | "En cours" | "En attente pièce" | "Prêt à rendre") => {
-    const mapped: Record<string, Repair["status"]> = { "À faire": "Reçu", "En cours": "En réparation", "En attente pièce": "Diagnostic", "Prêt à rendre": "Prêt" };
+    const mapped: Record<string, Repair["status"]> = {
+      "À faire": "Reçu",
+      "En cours": "En réparation",
+      "En attente pièce": "Diagnostic",
+      "Prêt à rendre": "Prêt",
+    };
     store.updateRepair(repair.id, { status: mapped[status] });
   };
-  const currentStatus = repair.status === "Prêt" ? "Prêt à rendre" : repair.status === "En réparation" ? "En cours" : repair.status === "Diagnostic" ? "En attente pièce" : "À faire";
+  const currentStatus =
+    repair.status === "Prêt"
+      ? "Prêt à rendre"
+      : repair.status === "En réparation"
+        ? "En cours"
+        : repair.status === "Diagnostic"
+          ? "En attente pièce"
+          : "À faire";
   return (
     <div className="mx-auto max-w-[1180px]">
-      <button type="button" onClick={onClose} className="mb-4 inline-flex h-[52px] items-center gap-2 rounded-full bg-white px-4 shadow-sm"><ArrowLeft className="size-5" /> Suivi du dossier</button>
-      <div className="mb-5"><p className="font-bold text-[#1E7A6E]">{displayRepairCode(repair)} <StatusPillCounter tone={repair.status === "Prêt" ? "green" : "orange"}>{currentStatus}</StatusPillCounter></p><h1 className="font-black text-[34px]">{repair.deviceModel || repair.device}</h1><p className="text-[#6E6E73]">{customer?.name ?? "Comptoir"} · entré il y a {Math.max(1, Math.round((Date.now() - new Date(repair.droppedAt || repair.createdAt || Date.now()).getTime()) / 36e5))} h</p></div>
-      <div className="mb-6 grid grid-cols-4 rounded-[14px] border border-[#E8E8E5] bg-white p-1">{(["À faire", "En cours", "En attente pièce", "Prêt à rendre"] as const).map((status) => <button type="button" key={status} onClick={() => setStatus(status)} className={cn("h-[52px] rounded-[12px] font-semibold", currentStatus === status && "bg-[#FFFFFF] text-[#1E7A6E]")}>{status}</button>)}</div>
+      <button
+        type="button"
+        onClick={onClose}
+        className="mb-4 inline-flex h-[52px] items-center gap-2 rounded-full bg-white px-4 shadow-sm"
+      >
+        <ArrowLeft className="size-5" /> Suivi du dossier
+      </button>
+      <div className="mb-5">
+        <p className="font-bold text-[#1E7A6E]">
+          {displayRepairCode(repair)}{" "}
+          <StatusPillCounter tone={repair.status === "Prêt" ? "green" : "orange"}>{currentStatus}</StatusPillCounter>
+        </p>
+        <h1 className="font-black text-[34px]">{repair.deviceModel || repair.device}</h1>
+        <p className="text-[#6E6E73]">
+          {customer?.name ?? "Comptoir"} · entré il y a{" "}
+          {Math.max(
+            1,
+            Math.round((Date.now() - new Date(repair.droppedAt || repair.createdAt || Date.now()).getTime()) / 36e5),
+          )}{" "}
+          h
+        </p>
+      </div>
+      <div className="mb-6 grid grid-cols-4 rounded-[14px] border border-[#E8E8E5] bg-white p-1">
+        {(["À faire", "En cours", "En attente pièce", "Prêt à rendre"] as const).map((status) => (
+          <button
+            type="button"
+            key={status}
+            onClick={() => setStatus(status)}
+            className={cn(
+              "h-[52px] rounded-[12px] font-semibold",
+              currentStatus === status && "bg-[#FFFFFF] text-[#1E7A6E]",
+            )}
+          >
+            {status}
+          </button>
+        ))}
+      </div>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-5">
-          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5"><div className="flex justify-between"><h2 className="font-bold text-xl">Tâches atelier</h2><b>{done}/{tasks.length}</b></div><div className="mt-3 h-2 rounded-full bg-[#FFFFFF]"><div className="h-full rounded-full bg-[#2A9D8F]" style={{ width: `${tasks.length ? (done / tasks.length) * 100 : 0}%` }} /></div><ul className="mt-4 divide-y divide-[#E8E8E5]">{tasks.map((task) => <li key={task.id} className="flex min-h-[52px] items-center gap-3"><button type="button" onClick={() => store.updateRepair(repair.id, { counterTasks: tasks.map((entry) => entry.id === task.id ? { ...entry, fait: !entry.fait } : entry) })} className={cn("grid size-7 place-items-center rounded-full border", task.fait ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : "border-[#9A9AA0]")} >{task.fait && <Check className="size-4" />}</button><span className={cn("flex-1", task.fait && "text-[#6E6E73] line-through")}>{task.label}</span><GripVertical className="size-4 text-[#9A9AA0]" /></li>)}</ul></section>
-          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5"><h2 className="font-bold text-xl">Pièces utilisées</h2><ul className="mt-4 space-y-2">{pieces.map((piece) => <li key={piece.id} className="flex h-[52px] items-center justify-between rounded-[12px] border border-[#E8E8E5] px-4"><span>{piece.nom}</span><b>{formatEuro(piece.prix)}</b></li>)}</ul><div className="mt-3 grid grid-cols-[1fr_120px_140px] gap-2"><CounterInput placeholder="Ajouter une pièce" value={pieceName} onChange={(e) => setPieceName(e.target.value)} /><CounterInput placeholder="Prix" value={piecePrice} onChange={(e) => setPiecePrice(e.target.value)} /><button type="button" className="rounded-[14px] border border-dashed border-[#D9D6CF] font-semibold" onClick={() => { if (!pieceName.trim()) return; store.updateRepair(repair.id, { counterPieces: [...pieces, { id: `piece_${Date.now()}`, nom: pieceName.trim(), prix: toMoney(piecePrice) }] }); setPieceName(""); setPiecePrice(""); }}>Ajouter</button></div></section>
+          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5">
+            <div className="flex justify-between">
+              <h2 className="font-bold text-xl">Tâches atelier</h2>
+              <b>
+                {done}/{tasks.length}
+              </b>
+            </div>
+            <div className="mt-3 h-2 rounded-full bg-[#FFFFFF]">
+              <div
+                className="h-full rounded-full bg-[#2A9D8F]"
+                style={{ width: `${tasks.length ? (done / tasks.length) * 100 : 0}%` }}
+              />
+            </div>
+            <ul className="mt-4 divide-y divide-[#E8E8E5]">
+              {tasks.map((task) => (
+                <li key={task.id} className="flex min-h-[52px] items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      store.updateRepair(repair.id, {
+                        counterTasks: tasks.map((entry) =>
+                          entry.id === task.id ? { ...entry, fait: !entry.fait } : entry,
+                        ),
+                      })
+                    }
+                    className={cn(
+                      "grid size-7 place-items-center rounded-full border",
+                      task.fait ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : "border-[#9A9AA0]",
+                    )}
+                  >
+                    {task.fait && <Check className="size-4" />}
+                  </button>
+                  <span className={cn("flex-1", task.fait && "text-[#6E6E73] line-through")}>{task.label}</span>
+                  <GripVertical className="size-4 text-[#9A9AA0]" />
+                </li>
+              ))}
+            </ul>
+          </section>
+          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5">
+            <h2 className="font-bold text-xl">Pièces utilisées</h2>
+            <ul className="mt-4 space-y-2">
+              {pieces.map((piece) => (
+                <li
+                  key={piece.id}
+                  className="flex h-[52px] items-center justify-between rounded-[12px] border border-[#E8E8E5] px-4"
+                >
+                  <span>{piece.nom}</span>
+                  <b>{formatEuro(piece.prix)}</b>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-3 grid grid-cols-[1fr_120px_140px] gap-2">
+              <CounterInput
+                placeholder="Ajouter une pièce"
+                value={pieceName}
+                onChange={(e) => setPieceName(e.target.value)}
+              />
+              <CounterInput placeholder="Prix" value={piecePrice} onChange={(e) => setPiecePrice(e.target.value)} />
+              <button
+                type="button"
+                className="rounded-[14px] border border-dashed border-[#D9D6CF] font-semibold"
+                onClick={() => {
+                  if (!pieceName.trim()) return;
+                  store.updateRepair(repair.id, {
+                    counterPieces: [
+                      ...pieces,
+                      { id: `piece_${Date.now()}`, nom: pieceName.trim(), prix: toMoney(piecePrice) },
+                    ],
+                  });
+                  setPieceName("");
+                  setPiecePrice("");
+                }}
+              >
+                Ajouter
+              </button>
+            </div>
+          </section>
         </div>
-        <aside className="space-y-4"><section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5"><h2 className="font-bold text-xl">Récap dossier</h2><dl className="mt-4 divide-y divide-[#E8E8E5]"><DetailRowLite label="Intervention" value={repair.issue} /><DetailRowLite label="Prix client" value={formatEuro(repairAmount(repair))} /><DetailRowLite label="Coût pièces" value={formatEuro(pieceCost)} /><DetailRowLite label="Marge" value={formatEuro(margin)} green /></dl></section><button type="button" onClick={() => { store.updateRepair(repair.id, { counterNotifiedAt: new Date().toISOString() }); toast.success("Client marqué comme prévenu."); }} className="h-[64px] w-full rounded-[14px] border border-[#1D1D1F] bg-white font-bold"><MessageCircle className="mr-2 inline size-5" /> Marquer client prévenu</button><button type="button" disabled={repair.status !== "Prêt"} onClick={() => onCheckout(repair.id)} className={cn("h-[64px] w-full rounded-[14px] font-bold text-white", repair.status === "Prêt" ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]")}>Indiquer règlement <ChevronRight className="ml-2 inline size-5" /></button></aside>
+        <aside className="space-y-4">
+          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5">
+            <h2 className="font-bold text-xl">Récap dossier</h2>
+            <dl className="mt-4 divide-y divide-[#E8E8E5]">
+              <DetailRowLite label="Intervention" value={repair.issue} />
+              <DetailRowLite label="Prix client" value={formatEuro(repairAmount(repair))} />
+              <DetailRowLite label="Coût pièces" value={formatEuro(pieceCost)} />
+              <DetailRowLite label="Marge" value={formatEuro(margin)} green />
+            </dl>
+          </section>
+          <button
+            type="button"
+            onClick={() => {
+              store.updateRepair(repair.id, { counterNotifiedAt: new Date().toISOString() });
+              toast.success("Client marqué comme prévenu.");
+            }}
+            className="h-[64px] w-full rounded-[14px] border border-[#1D1D1F] bg-white font-bold"
+          >
+            <MessageCircle className="mr-2 inline size-5" /> Marquer client prévenu
+          </button>
+          <button
+            type="button"
+            disabled={repair.status !== "Prêt"}
+            onClick={() => onCheckout(repair.id)}
+            className={cn(
+              "h-[64px] w-full rounded-[14px] font-bold text-white",
+              repair.status === "Prêt" ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]",
+            )}
+          >
+            Indiquer règlement <ChevronRight className="ml-2 inline size-5" />
+          </button>
+        </aside>
       </div>
     </div>
   );
 }
 
 function DetailRowLite({ label, value, green }: Readonly<{ label: string; value: string; green?: boolean }>) {
-  return <div className="flex justify-between py-3"><span className="text-[#6E6E73]">{label}</span><b className={green ? "text-[#1E7A6E]" : ""}>{value}</b></div>;
+  return (
+    <div className="flex justify-between py-3">
+      <span className="text-[#6E6E73]">{label}</span>
+      <b className={green ? "text-[#1E7A6E]" : ""}>{value}</b>
+    </div>
+  );
 }
 
 // Initiales d'un nom client réel (pour les avatars comptoir).
@@ -2788,7 +3533,10 @@ type CounterCartItem = {
   sku?: string;
 };
 
-function CounterMockPill({ children, tone = "green" }: Readonly<{ children: React.ReactNode; tone?: "green" | "orange" | "gray" }>) {
+function CounterMockPill({
+  children,
+  tone = "green",
+}: Readonly<{ children: React.ReactNode; tone?: "green" | "orange" | "gray" }>) {
   return (
     <span
       className={cn(
@@ -2798,7 +3546,12 @@ function CounterMockPill({ children, tone = "green" }: Readonly<{ children: Reac
         tone === "gray" && "bg-[#FFFFFF] text-[#6B6B6B]",
       )}
     >
-      <span className={cn("size-2 rounded-full", tone === "orange" ? "bg-[#6B6B6B]" : tone === "gray" ? "bg-[#9A9AA0]" : "bg-[#2A9D8F]")} />
+      <span
+        className={cn(
+          "size-2 rounded-full",
+          tone === "orange" ? "bg-[#6B6B6B]" : tone === "gray" ? "bg-[#9A9AA0]" : "bg-[#2A9D8F]",
+        )}
+      />
       {children}
     </span>
   );
@@ -2810,13 +3563,13 @@ function CounterRepairQr({ repair, className = "" }: Readonly<{ repair: Repair; 
   const ensureRepairPublicAccess = store.ensureRepairPublicAccess;
   const [qr, setQr] = useState("");
   const workshop = store.workshopSettings ?? store.workshopInfo;
-  
+
   useEffect(() => {
     const access = repair.publicAccess ?? ensureRepairPublicAccess(repair.id);
     if (!access) return;
-    
+
     const trackingUrl = getCustomerTrackingUrl(repair, workshop);
-    
+
     if (process.env.NODE_ENV === "development") {
       console.log("[CounterRepairQr] generated trackingUrl:", trackingUrl);
       if (!trackingUrl) {
@@ -2852,7 +3605,11 @@ function CounterScreenTitle({
 }: Readonly<{ title: string; subtitle?: string; onClose: () => void }>) {
   return (
     <div className="mb-6 flex items-start gap-4">
-      <button type="button" onClick={onClose} className="mt-1 grid size-[52px] place-items-center rounded-full bg-white shadow-sm active:scale-[0.97]">
+      <button
+        type="button"
+        onClick={onClose}
+        className="mt-1 grid size-[52px] place-items-center rounded-full bg-white shadow-sm active:scale-[0.97]"
+      >
         <ArrowLeft className="size-5" />
       </button>
       <div>
@@ -2888,10 +3645,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
   const [query, setQuery] = useState("");
   const selectedCustomer = customers.find((c) => c.id === customerId);
   // Dossiers ouverts auxquels on peut rattacher une vente.
-  const openRepairs = useMemo(
-    () => repairs.filter((r) => !isTerminalRepairStatus(r.status)).slice(0, 40),
-    [repairs],
-  );
+  const openRepairs = useMemo(() => repairs.filter((r) => !isTerminalRepairStatus(r.status)).slice(0, 40), [repairs]);
   const linkedRepair = openRepairs.find((r) => r.id === linkedRepairId);
   const saleCountry = mode === "repair" && linkedRepair ? linkedRepair.billingCountry : billingCountry;
   const saleConfig = getWorkshopCountryConfig(saleCountry);
@@ -2904,18 +3658,18 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
   const accessories = useMemo(() => {
     const q = compactText(query);
     const fromStock = stockItems
-        .filter(isCounterSaleStockItem)
-        .filter((item) => !q || compactText(`${item.name} ${item.sku ?? ""} ${item.categoryName ?? ""}`).includes(q))
-        .slice(0, q ? 24 : 12)
-        .map((item) => ({
-          id: item.id,
-          name: item.name,
-          salePrice: item.salePrice,
-          stock: item.stock,
-          stockItemId: item.id,
-          sku: item.sku,
-          categoryName: item.categoryName || item.category,
-        }));
+      .filter(isCounterSaleStockItem)
+      .filter((item) => !q || compactText(`${item.name} ${item.sku ?? ""} ${item.categoryName ?? ""}`).includes(q))
+      .slice(0, q ? 24 : 12)
+      .map((item) => ({
+        id: item.id,
+        name: item.name,
+        salePrice: item.salePrice,
+        stock: item.stock,
+        stockItemId: item.id,
+        sku: item.sku,
+        categoryName: item.categoryName || item.category,
+      }));
     if (fromStock.length) return fromStock;
     return counterAccessoryProducts
       .filter((item) => !q || compactText(item.name).includes(q))
@@ -2936,7 +3690,17 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
         const nextQuantity = item.stockItemId ? Math.min(item.stock, existing.quantity + 1) : existing.quantity + 1;
         return items.map((entry) => (entry.id === item.id ? { ...entry, quantity: nextQuantity } : entry));
       }
-      return [...items, { id: item.id, name: item.name, price: item.salePrice, quantity: 1, stockItemId: item.stockItemId, sku: item.sku }];
+      return [
+        ...items,
+        {
+          id: item.id,
+          name: item.name,
+          price: item.salePrice,
+          quantity: 1,
+          stockItemId: item.stockItemId,
+          sku: item.sku,
+        },
+      ];
     });
   };
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -3026,7 +3790,11 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
   };
   return (
     <div className="mx-auto max-w-[1180px]">
-      <CounterScreenTitle title="Vente comptoir" subtitle="Accessoires et produits actifs, paiement enregistré hors Behar Tech" onClose={onClose} />
+      <CounterScreenTitle
+        title="Vente comptoir"
+        subtitle="Accessoires et produits actifs, paiement enregistré hors Behar Tech"
+        onClose={onClose}
+      />
 
       {/* Modes : vente simple, à un client, ou à un dossier (brief §7) */}
       <div className="mb-4 space-y-3">
@@ -3092,27 +3860,57 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
               <div className="flex items-center justify-between gap-3">
                 <span className="min-w-0">
                   <b className="text-[#1A1916]">{selectedCustomer.name}</b>
-                  {selectedCustomer.phone ? <span className="ml-2 text-[#6B6B6B] text-sm">{selectedCustomer.phone}</span> : null}
+                  {selectedCustomer.phone ? (
+                    <span className="ml-2 text-[#6B6B6B] text-sm">{selectedCustomer.phone}</span>
+                  ) : null}
                 </span>
-                <button type="button" onClick={() => setCustomerId("")} className="shrink-0 font-bold text-[#1E7A6E] text-sm">
+                <button
+                  type="button"
+                  onClick={() => setCustomerId("")}
+                  className="shrink-0 font-bold text-[#1E7A6E] text-sm"
+                >
                   Changer
                 </button>
               </div>
             ) : newClientOpen ? (
               <div className="space-y-3">
                 <div className="grid gap-2 sm:grid-cols-2">
-                  <CounterInput value={newClientName} onChange={(e) => setNewClientName(e.target.value)} placeholder="Nom du client" />
-                  <CounterInput value={newClientPhone} onChange={(e) => setNewClientPhone(e.target.value)} placeholder="Téléphone (optionnel)" />
+                  <CounterInput
+                    value={newClientName}
+                    onChange={(e) => setNewClientName(e.target.value)}
+                    placeholder="Nom du client"
+                  />
+                  <CounterInput
+                    value={newClientPhone}
+                    onChange={(e) => setNewClientPhone(e.target.value)}
+                    placeholder="Téléphone (optionnel)"
+                  />
                 </div>
                 <div className="flex gap-2">
-                  <button type="button" onClick={createNewClient} className="h-[48px] flex-1 rounded-[14px] bg-[#2A9D8F] font-bold text-white">Créer le client</button>
-                  <button type="button" onClick={() => setNewClientOpen(false)} className="h-[48px] rounded-[14px] border border-[#E8E8E5] px-4 font-bold text-[#6B6B6B]">Annuler</button>
+                  <button
+                    type="button"
+                    onClick={createNewClient}
+                    className="h-[48px] flex-1 rounded-[14px] bg-[#2A9D8F] font-bold text-white"
+                  >
+                    Créer le client
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewClientOpen(false)}
+                    className="h-[48px] rounded-[14px] border border-[#E8E8E5] px-4 font-bold text-[#6B6B6B]"
+                  >
+                    Annuler
+                  </button>
                 </div>
               </div>
             ) : (
               <div className="space-y-3">
                 <ExistingCustomerSearch value={customerId} onChange={setCustomerId} />
-                <button type="button" onClick={() => setNewClientOpen(true)} className="inline-flex items-center gap-2 font-bold text-[#1E7A6E] text-sm">
+                <button
+                  type="button"
+                  onClick={() => setNewClientOpen(true)}
+                  className="inline-flex items-center gap-2 font-bold text-[#1E7A6E] text-sm"
+                >
                   <Plus className="size-4" /> Nouveau client
                 </button>
               </div>
@@ -3129,19 +3927,32 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
             placeholder="Rechercher un article (nom, référence)…"
           />
           <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-3">
-          {accessories.map((item) => (
-            <button key={item.id} type="button" onClick={() => addProduct(item)} className="group flex min-h-[220px] flex-col items-center justify-center rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-center shadow-[0_10px_26px_rgba(26,25,22,0.04)] transition hover:-translate-y-0.5 hover:border-[#2A9D8F]/40 hover:shadow-[0_14px_32px_rgba(26,25,22,0.08)] active:scale-[0.98]">
-              <RealProductVisual name={item.name} category={item.categoryName} className="size-[112px] rounded-[12px] p-2" />
-              <b className="mt-3 line-clamp-2">{item.name}</b>
-              <span className="mt-1 text-[#6B6B6B] text-xs">{item.stockItemId ? `${item.stock} en stock` : "Disponible"}</span>
-              <span className="mt-2 font-black text-[#1E7A6E] tabular-nums">{formatSale(item.salePrice)}</span>
-            </button>
-          ))}
-          <div className="flex min-h-[190px] flex-col items-center justify-center rounded-[18px] border border-dashed border-[#C8C8C2] bg-white p-5 text-center">
-            <span className="grid size-14 place-items-center rounded-full bg-[#2A9D8F] text-white"><Plus className="size-7" /></span>
-            <b className="mt-4">Article libre</b>
-            <span className="mt-1 text-[#6B6B6B] text-sm">Voir le formulaire à droite →</span>
-          </div>
+            {accessories.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => addProduct(item)}
+                className="group flex min-h-[220px] flex-col items-center justify-center rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-center shadow-[0_10px_26px_rgba(26,25,22,0.04)] transition hover:-translate-y-0.5 hover:border-[#2A9D8F]/40 hover:shadow-[0_14px_32px_rgba(26,25,22,0.08)] active:scale-[0.98]"
+              >
+                <RealProductVisual
+                  name={item.name}
+                  category={item.categoryName}
+                  className="size-[112px] rounded-[12px] p-2"
+                />
+                <b className="mt-3 line-clamp-2">{item.name}</b>
+                <span className="mt-1 text-[#6B6B6B] text-xs">
+                  {item.stockItemId ? `${item.stock} en stock` : "Disponible"}
+                </span>
+                <span className="mt-2 font-black text-[#1E7A6E] tabular-nums">{formatSale(item.salePrice)}</span>
+              </button>
+            ))}
+            <div className="flex min-h-[190px] flex-col items-center justify-center rounded-[18px] border border-dashed border-[#C8C8C2] bg-white p-5 text-center">
+              <span className="grid size-14 place-items-center rounded-full bg-[#2A9D8F] text-white">
+                <Plus className="size-7" />
+              </span>
+              <b className="mt-4">Article libre</b>
+              <span className="mt-1 text-[#6B6B6B] text-sm">Voir le formulaire à droite →</span>
+            </div>
           </div>
           {accessories.length === 0 && (
             <p className="mt-4 rounded-[14px] border border-dashed border-[#E8E8E5] bg-white px-4 py-6 text-center text-[#6B6B6B] text-sm">
@@ -3151,39 +3962,114 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
         </section>
         <aside className="space-y-4">
           <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 shadow-[0_10px_30px_rgba(26,25,22,0.04)]">
-            <div className="mb-3 flex items-center justify-between"><h2 className="font-black text-xl">Panier</h2><CounterMockPill>{cart.reduce((sum, item) => sum + item.quantity, 0)} articles</CounterMockPill></div>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="font-black text-xl">Panier</h2>
+              <CounterMockPill>{cart.reduce((sum, item) => sum + item.quantity, 0)} articles</CounterMockPill>
+            </div>
             <ul className="divide-y divide-[#E8E8E5]">
               {cart.map((item) => (
-                <li key={item.id} className="grid min-h-[78px] grid-cols-[52px_minmax(0,1fr)_auto_auto] items-center gap-3 py-3">
+                <li
+                  key={item.id}
+                  className="grid min-h-[78px] grid-cols-[52px_minmax(0,1fr)_auto_auto] items-center gap-3 py-3"
+                >
                   <RealProductVisual name={item.name} className="size-[52px] rounded-[10px] p-1.5" />
-                  <div><b>{item.name}</b>{item.detail && <p className="text-[#6B6B6B] text-sm">{item.detail}</p>}<p className="font-bold tabular-nums">{formatSale(item.price)}</p></div>
-                  <div className="inline-flex h-9 items-center rounded-[10px] border border-[#E8E8E5]">
-                    <button type="button" onClick={() => updateQty(item.id, -1)} className="grid size-9 place-items-center">−</button>
-                    <span className="w-8 text-center tabular-nums">{item.quantity}</span>
-                    <button type="button" onClick={() => updateQty(item.id, 1)} className="grid size-9 place-items-center">+</button>
+                  <div>
+                    <b>{item.name}</b>
+                    {item.detail && <p className="text-[#6B6B6B] text-sm">{item.detail}</p>}
+                    <p className="font-bold tabular-nums">{formatSale(item.price)}</p>
                   </div>
-                  <button type="button" onClick={() => setCart((items) => items.filter((entry) => entry.id !== item.id))} className="grid size-10 place-items-center text-[#6B6B6B]"><Trash2 className="size-4" /></button>
+                  <div className="inline-flex h-9 items-center rounded-[10px] border border-[#E8E8E5]">
+                    <button
+                      type="button"
+                      onClick={() => updateQty(item.id, -1)}
+                      className="grid size-9 place-items-center"
+                    >
+                      −
+                    </button>
+                    <span className="w-8 text-center tabular-nums">{item.quantity}</span>
+                    <button
+                      type="button"
+                      onClick={() => updateQty(item.id, 1)}
+                      className="grid size-9 place-items-center"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCart((items) => items.filter((entry) => entry.id !== item.id))}
+                    className="grid size-10 place-items-center text-[#6B6B6B]"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
                 </li>
               ))}
             </ul>
             <dl className="mt-4 space-y-2 border-[#E8E8E5] border-t pt-4 text-sm">
-              <div className="flex justify-between"><dt>Sous-total</dt><dd>{formatSale(subtotal)}</dd></div>
-              <div className="flex justify-between"><dt>TVA</dt><dd>incluse</dd></div>
-              <div className="flex items-end justify-between pt-2"><dt className="font-black text-lg">Total TTC</dt><dd className="font-black text-[#1E7A6E] text-[34px] tabular-nums">{formatSale(total)}</dd></div>
+              <div className="flex justify-between">
+                <dt>Sous-total</dt>
+                <dd>{formatSale(subtotal)}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt>TVA</dt>
+                <dd>incluse</dd>
+              </div>
+              <div className="flex items-end justify-between pt-2">
+                <dt className="font-black text-lg">Total TTC</dt>
+                <dd className="font-black text-[#1E7A6E] text-[34px] tabular-nums">{formatSale(total)}</dd>
+              </div>
             </dl>
           </section>
           <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4">
             <h2 className="font-black text-lg">Article libre</h2>
             <div className="mt-3 grid grid-cols-[1fr_90px_90px] gap-2">
-              <CounterInput value={freeName} onChange={(e) => setFreeName(e.target.value)} placeholder="Ex : Étui AirPods" />
-              <CounterInput value={freePrice} onChange={(e) => setFreePrice(e.target.value)} placeholder={`0,00 ${saleConfig.currency}`} />
+              <CounterInput
+                value={freeName}
+                onChange={(e) => setFreeName(e.target.value)}
+                placeholder="Ex : Étui AirPods"
+              />
+              <CounterInput
+                value={freePrice}
+                onChange={(e) => setFreePrice(e.target.value)}
+                placeholder={`0,00 ${saleConfig.currency}`}
+              />
               <div className="inline-flex h-[52px] items-center rounded-[14px] border border-[#E8E8E5]">
-                <button type="button" onClick={() => setFreeQty((qty) => Math.max(1, qty - 1))} className="grid size-[52px] place-items-center">−</button>
+                <button
+                  type="button"
+                  onClick={() => setFreeQty((qty) => Math.max(1, qty - 1))}
+                  className="grid size-[52px] place-items-center"
+                >
+                  −
+                </button>
                 <span className="w-7 text-center">{freeQty}</span>
-                <button type="button" onClick={() => setFreeQty((qty) => qty + 1)} className="grid size-[52px] place-items-center">+</button>
+                <button
+                  type="button"
+                  onClick={() => setFreeQty((qty) => qty + 1)}
+                  className="grid size-[52px] place-items-center"
+                >
+                  +
+                </button>
               </div>
             </div>
-            <button type="button" onClick={() => { const amount = parseCounterMoney(freePrice); if (!freeName.trim()) return toast.error("Nom d'article requis."); if (amount <= 0) return toast.error(`Indiquez un prix supérieur à 0 ${saleConfig.currency}.`); setCart((items) => [...items, { id: `free_${Date.now()}`, name: freeName.trim(), price: amount, quantity: freeQty }]); setFreeName(""); setFreePrice(""); setFreeQty(1); setConfirmingClear(false); }} className="mt-3 h-[52px] w-full rounded-[14px] border border-[#E8E8E5] font-bold"><Plus className="mr-2 inline size-4" /> Ajouter au panier</button>
+            <button
+              type="button"
+              onClick={() => {
+                const amount = parseCounterMoney(freePrice);
+                if (!freeName.trim()) return toast.error("Nom d'article requis.");
+                if (amount <= 0) return toast.error(`Indiquez un prix supérieur à 0 ${saleConfig.currency}.`);
+                setCart((items) => [
+                  ...items,
+                  { id: `free_${Date.now()}`, name: freeName.trim(), price: amount, quantity: freeQty },
+                ]);
+                setFreeName("");
+                setFreePrice("");
+                setFreeQty(1);
+                setConfirmingClear(false);
+              }}
+              className="mt-3 h-[52px] w-full rounded-[14px] border border-[#E8E8E5] font-bold"
+            >
+              <Plus className="mr-2 inline size-4" /> Ajouter au panier
+            </button>
           </section>
           <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4">
             <h2 className="font-black text-lg">Paiement externe</h2>
@@ -3196,14 +4082,24 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
               onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}
             >
               {counterPaymentMethods(saleCountry, workshopInfo.twintEnabled !== false).map((method) => (
-                <option key={method} value={method}>{method}</option>
+                <option key={method} value={method}>
+                  {method}
+                </option>
               ))}
             </select>
           </section>
           <p className="rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] px-4 py-3 text-[#6B6B6B] text-xs leading-relaxed">
             Le règlement est géré hors Behar Tech Pro via votre prestataire externe.
           </p>
-          <button type="button" disabled={cart.length === 0 || (mode === "repair" && !linkedRepair) || (mode === "client" && !customerId)} onClick={handleCheckout} className="h-[58px] w-full rounded-[14px] bg-[#2A9D8F] font-black text-white disabled:cursor-not-allowed disabled:bg-[#FFFFFF]"><CreditCard className="mr-2 inline size-5" /> Paiement externe enregistré {total > 0 ? `· ${formatSale(total)}` : ""}</button>
+          <button
+            type="button"
+            disabled={cart.length === 0 || (mode === "repair" && !linkedRepair) || (mode === "client" && !customerId)}
+            onClick={handleCheckout}
+            className="h-[58px] w-full rounded-[14px] bg-[#2A9D8F] font-black text-white disabled:cursor-not-allowed disabled:bg-[#FFFFFF]"
+          >
+            <CreditCard className="mr-2 inline size-5" /> Paiement externe enregistré{" "}
+            {total > 0 ? `· ${formatSale(total)}` : ""}
+          </button>
           <button
             type="button"
             disabled={cart.length === 0}
@@ -3221,7 +4117,8 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
               confirmingClear ? "border-[#B42318] bg-[#B42318] text-white" : "border-[#F2C8C3] bg-white text-[#C7493B]",
             )}
           >
-            <Trash2 className="mr-2 inline size-4" /> {confirmingClear ? "Confirmer : vider le panier" : "Vider le panier"}
+            <Trash2 className="mr-2 inline size-4" />{" "}
+            {confirmingClear ? "Confirmer : vider le panier" : "Vider le panier"}
           </button>
         </aside>
       </div>
@@ -3276,7 +4173,10 @@ function CounterAppointmentsScreen({
     return customer?.phone || apt.clientPhone || "Non renseigné";
   };
   const linkedRepairOf = (apt?: Appointment) =>
-    apt ? repairs.find((repair) => repair.id === apt.repairId) ?? repairs.find((repair) => repair.appointmentId === apt.id) : undefined;
+    apt
+      ? (repairs.find((repair) => repair.id === apt.repairId) ??
+        repairs.find((repair) => repair.appointmentId === apt.id))
+      : undefined;
 
   const matchesSearch = (apt: Appointment) => {
     const q = compactText(search);
@@ -3343,9 +4243,32 @@ function CounterAppointmentsScreen({
             </span>
           </div>
           <div className="mt-4 grid grid-cols-[42px_1fr_42px_260px] gap-2">
-            <button type="button" onClick={() => setSelectedDay((d) => isoAddDays(d, -1))} className="grid h-11 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white active:scale-95" aria-label="Jour précédent"><ChevronLeft className="size-5" /></button>
-            <button type="button" onClick={() => setSelectedDay(today)} className={cn("h-11 rounded-[12px] border font-bold", selectedDay === today ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white")}>Aujourd'hui</button>
-            <button type="button" onClick={() => setSelectedDay((d) => isoAddDays(d, 1))} className="grid h-11 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white active:scale-95" aria-label="Jour suivant"><ChevronRight className="size-5" /></button>
+            <button
+              type="button"
+              onClick={() => setSelectedDay((d) => isoAddDays(d, -1))}
+              className="grid h-11 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white active:scale-95"
+              aria-label="Jour précédent"
+            >
+              <ChevronLeft className="size-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedDay(today)}
+              className={cn(
+                "h-11 rounded-[12px] border font-bold",
+                selectedDay === today ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white",
+              )}
+            >
+              Aujourd'hui
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedDay((d) => isoAddDays(d, 1))}
+              className="grid h-11 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white active:scale-95"
+              aria-label="Jour suivant"
+            >
+              <ChevronRight className="size-5" />
+            </button>
             <div className="relative">
               <Search className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3 size-4 text-[#6B6B6B]" />
               <CounterInput
@@ -3356,7 +4279,15 @@ function CounterAppointmentsScreen({
               />
             </div>
           </div>
-          <CounterWeekStrip selectedDay={selectedDay} onSelect={(iso) => { setSelectedDay(iso); setSelectedId(""); }} appointments={appointments} className="mt-3 shadow-[0_10px_26px_rgba(26,25,22,0.04)]" />
+          <CounterWeekStrip
+            selectedDay={selectedDay}
+            onSelect={(iso) => {
+              setSelectedDay(iso);
+              setSelectedId("");
+            }}
+            appointments={appointments}
+            className="mt-3 shadow-[0_10px_26px_rgba(26,25,22,0.04)]"
+          />
         </div>
 
         <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
@@ -3365,7 +4296,11 @@ function CounterAppointmentsScreen({
               <div>
                 <CalendarPlus className="mx-auto size-8 text-[#6B6B6B]" />
                 <p className="mt-3 font-bold">Aucun rendez-vous ce jour.</p>
-                <p className="mt-1 text-[#6B6B6B] text-sm">{search.trim().length >= 2 ? "Aucun résultat pour cette recherche." : "Les rendez-vous liés aux dossiers apparaîtront ici."}</p>
+                <p className="mt-1 text-[#6B6B6B] text-sm">
+                  {search.trim().length >= 2
+                    ? "Aucun résultat pour cette recherche."
+                    : "Les rendez-vous liés aux dossiers apparaîtront ici."}
+                </p>
               </div>
             </div>
           ) : (
@@ -3389,9 +4324,24 @@ function CounterAppointmentsScreen({
                         <b className="block truncate text-[15px]">{customerName(apt)}</b>
                         <span className="block truncate text-[#6B6B6B] text-[12.5px]">{customerPhone(apt)}</span>
                         <span className="block truncate text-[#6B6B6B] text-[13px]">{appointmentDeviceLabel(apt)}</span>
-                        <span className="block truncate text-[#6B6B6B] text-[13px]">{apt.interventionLabel || apt.issueDescription || apt.issue}</span>
-                        <span className={cn("mt-1 inline-flex rounded-full px-2 py-0.5 font-bold text-[11.5px]", appointmentPriceLabel(apt) === "Prix à confirmer" ? "bg-[#FFFFFF] text-[#6B6B6B]" : "bg-[#FFFFFF] text-[#1E7A6E]")}>{appointmentPriceLabel(apt)}</span>
-                        {linked && <span className="ml-2 inline-flex rounded-full bg-[#FFFFFF] px-2 py-0.5 font-bold text-[#1E7A6E] text-[11.5px]">{linked.number}</span>}
+                        <span className="block truncate text-[#6B6B6B] text-[13px]">
+                          {apt.interventionLabel || apt.issueDescription || apt.issue}
+                        </span>
+                        <span
+                          className={cn(
+                            "mt-1 inline-flex rounded-full px-2 py-0.5 font-bold text-[11.5px]",
+                            appointmentPriceLabel(apt) === "Prix à confirmer"
+                              ? "bg-[#FFFFFF] text-[#6B6B6B]"
+                              : "bg-[#FFFFFF] text-[#1E7A6E]",
+                          )}
+                        >
+                          {appointmentPriceLabel(apt)}
+                        </span>
+                        {linked && (
+                          <span className="ml-2 inline-flex rounded-full bg-[#FFFFFF] px-2 py-0.5 font-bold text-[#1E7A6E] text-[11.5px]">
+                            {linked.number}
+                          </span>
+                        )}
                       </span>
                       <span className="flex items-center gap-2">
                         <CounterApptStatusPill apt={apt} converted={Boolean(linked)} />
@@ -3410,16 +4360,35 @@ function CounterAppointmentsScreen({
             <div className="grid grid-cols-[1fr_auto] gap-3">
               <div className="min-w-0">
                 <p className="font-bold">{customerName(selected)}</p>
-                <p className="truncate text-[#6B6B6B] text-sm">{customerPhone(selected)} · {appointmentDeviceLabel(selected)}</p>
-                <p className="truncate text-[#6B6B6B] text-sm">{selected.interventionLabel || selected.issueDescription || selected.issue} · {appointmentPriceLabel(selected)}</p>
+                <p className="truncate text-[#6B6B6B] text-sm">
+                  {customerPhone(selected)} · {appointmentDeviceLabel(selected)}
+                </p>
+                <p className="truncate text-[#6B6B6B] text-sm">
+                  {selected.interventionLabel || selected.issueDescription || selected.issue} ·{" "}
+                  {appointmentPriceLabel(selected)}
+                </p>
               </div>
               {selectedRepair ? (
-                <button type="button" onClick={() => onOpenRepairDetail(selectedRepair.id)} className="h-12 rounded-[14px] bg-[#1A1916] px-4 font-black text-white active:scale-[0.98]">Continuer</button>
+                <button
+                  type="button"
+                  onClick={() => onOpenRepairDetail(selectedRepair.id)}
+                  className="h-12 rounded-[14px] bg-[#1A1916] px-4 font-black text-white active:scale-[0.98]"
+                >
+                  Continuer
+                </button>
               ) : (
-                <button type="button" onClick={() => transform(selected)} className="h-12 rounded-[14px] bg-[#2A9D8F] px-4 font-black text-white active:scale-[0.98]">Transformer</button>
+                <button
+                  type="button"
+                  onClick={() => transform(selected)}
+                  className="h-12 rounded-[14px] bg-[#2A9D8F] px-4 font-black text-white active:scale-[0.98]"
+                >
+                  Transformer
+                </button>
               )}
             </div>
-            {selectedRepair && <p className="mt-2 font-bold text-[#1E7A6E] text-sm">Dossier créé · {selectedRepair.number}</p>}
+            {selectedRepair && (
+              <p className="mt-2 font-bold text-[#1E7A6E] text-sm">Dossier créé · {selectedRepair.number}</p>
+            )}
           </div>
         )}
       </section>
@@ -3447,18 +4416,42 @@ function CounterAppointmentsScreen({
               </div>
             </div>
             <dl className="space-y-3 text-sm">
-              <CounterApptInfoRow icon={<Smartphone className="size-4" />} label="Appareil" value={appointmentDeviceLabel(selected)} />
-              <CounterApptInfoRow icon={<ClipboardCheck className="size-4" />} label="Motif" value={selected.interventionLabel || selected.issueDescription || selected.issue || "Non renseigné"} />
-              <CounterApptInfoRow icon={<CreditCard className="size-4" />} label="Tarif estimé" value={appointmentPriceLabel(selected)} />
+              <CounterApptInfoRow
+                icon={<Smartphone className="size-4" />}
+                label="Appareil"
+                value={appointmentDeviceLabel(selected)}
+              />
+              <CounterApptInfoRow
+                icon={<ClipboardCheck className="size-4" />}
+                label="Motif"
+                value={selected.interventionLabel || selected.issueDescription || selected.issue || "Non renseigné"}
+              />
+              <CounterApptInfoRow
+                icon={<CreditCard className="size-4" />}
+                label="Tarif estimé"
+                value={appointmentPriceLabel(selected)}
+              />
               <CounterApptInfoRow icon={<Clock className="size-4" />} label="Statut" value={selectedStatus} />
-              <CounterApptInfoRow icon={<FileText className="size-4" />} label="Notes" value={selected.notes || "Aucune note"} />
+              <CounterApptInfoRow
+                icon={<FileText className="size-4" />}
+                label="Notes"
+                value={selected.notes || "Aucune note"}
+              />
             </dl>
             {selectedRepair ? (
-              <button type="button" onClick={() => onOpenRepairDetail(selectedRepair.id)} className="inline-flex h-[54px] w-full items-center justify-center gap-2 rounded-[14px] bg-[#1A1916] font-black text-white active:scale-[0.98]">
+              <button
+                type="button"
+                onClick={() => onOpenRepairDetail(selectedRepair.id)}
+                className="inline-flex h-[54px] w-full items-center justify-center gap-2 rounded-[14px] bg-[#1A1916] font-black text-white active:scale-[0.98]"
+              >
                 <Wrench className="size-5" /> Continuer la prise en charge
               </button>
             ) : (
-              <button type="button" onClick={() => transform(selected)} className="inline-flex h-[54px] w-full items-center justify-center gap-2 rounded-[14px] bg-[#2A9D8F] font-black text-white active:scale-[0.98]">
+              <button
+                type="button"
+                onClick={() => transform(selected)}
+                className="inline-flex h-[54px] w-full items-center justify-center gap-2 rounded-[14px] bg-[#2A9D8F] font-black text-white active:scale-[0.98]"
+              >
                 <ClipboardCheck className="size-5" /> Transformer en prise en charge
               </button>
             )}
@@ -3484,7 +4477,8 @@ function CounterAppointmentsScreen({
 }
 
 function CounterApptStatusPill({ apt, converted }: Readonly<{ apt: Appointment; converted: boolean }>) {
-  if (converted) return <CounterMockPill tone="green">{apt.source === "repair" ? "Lié" : "Transformé"}</CounterMockPill>;
+  if (converted)
+    return <CounterMockPill tone="green">{apt.source === "repair" ? "Lié" : "Transformé"}</CounterMockPill>;
   const status = normalizeAppointmentStatus(apt.status, apt.confirmed);
   if (status === "Confirmé" || status === "Arrivé") return <CounterMockPill tone="green">{status}</CounterMockPill>;
   return <CounterMockPill tone="orange">{status}</CounterMockPill>;
@@ -3493,7 +4487,9 @@ function CounterApptStatusPill({ apt, converted }: Readonly<{ apt: Appointment; 
 function CounterApptInfoRow({ icon, label, value }: Readonly<{ icon: React.ReactNode; label: string; value: string }>) {
   return (
     <div className="flex items-start gap-3">
-      <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#6B6B6B]">{icon}</span>
+      <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#6B6B6B]">
+        {icon}
+      </span>
       <div className="min-w-0">
         <p className="text-[#6B6B6B] text-[12px]">{label}</p>
         <p className="font-semibold text-[#1A1916] text-[14px] leading-snug">{value}</p>
@@ -3572,7 +4568,13 @@ function CounterWeekStrip({
               >
                 {isoToDate(iso).getDate()}
               </span>
-              <span className={cn("size-1.5 rounded-full", hasEvents(iso) ? (isSel ? "bg-white" : "bg-[#2A9D8F]") : "bg-transparent")} aria-hidden />
+              <span
+                className={cn(
+                  "size-1.5 rounded-full",
+                  hasEvents(iso) ? (isSel ? "bg-white" : "bg-[#2A9D8F]") : "bg-transparent",
+                )}
+                aria-hidden
+              />
             </button>
           );
         })}
@@ -3616,21 +4618,26 @@ function CounterAppointmentForm({
   const updateAppointment = useBeharStore((s) => s.updateAppointment);
 
   const today = localDateValue();
-  const editingCustomer = editing?.customerId ? customers.find((customer) => customer.id === editing.customerId) : undefined;
+  const editingCustomer = editing?.customerId
+    ? customers.find((customer) => customer.id === editing.customerId)
+    : undefined;
   const initialMode: CounterClientMode = editing
     ? editingCustomer?.type === "counter"
       ? "counter"
       : "existing"
-    : prefill?.clientMode ?? (prefill?.customerId ? "existing" : "existing");
+    : (prefill?.clientMode ?? (prefill?.customerId ? "existing" : "existing"));
   const initialModel = editing?.deviceModel || prefill?.model || "Autre";
   const initialBrand = editing?.deviceBrand || prefill?.brand || "Apple";
-  const initialDevice = editing?.device || prefill?.device || [initialBrand, initialModel === "Autre" ? "" : initialModel].filter(Boolean).join(" ");
+  const initialDevice =
+    editing?.device ||
+    prefill?.device ||
+    [initialBrand, initialModel === "Autre" ? "" : initialModel].filter(Boolean).join(" ");
   const prefillPrice = toMoney(prefill?.price ?? "");
   const [mode, setMode] = useState<CounterClientMode>(initialMode);
   const [customerId, setCustomerId] = useState(editing?.customerId ?? prefill?.customerId ?? "");
-  const [newName, setNewName] = useState(initialMode === "new" ? prefill?.clientName ?? "" : "");
-  const [newPhone, setNewPhone] = useState(initialMode === "new" ? prefill?.clientPhone ?? "" : "");
-  const [newEmail, setNewEmail] = useState(initialMode === "new" ? prefill?.clientEmail ?? "" : "");
+  const [newName, setNewName] = useState(initialMode === "new" ? (prefill?.clientName ?? "") : "");
+  const [newPhone, setNewPhone] = useState(initialMode === "new" ? (prefill?.clientPhone ?? "") : "");
+  const [newEmail, setNewEmail] = useState(initialMode === "new" ? (prefill?.clientEmail ?? "") : "");
   const [deviceState, setDeviceState] = useState({
     deviceType: editing?.deviceType || prefill?.deviceType || "Smartphone",
     brand: initialBrand,
@@ -3645,9 +4652,26 @@ function CounterAppointmentForm({
 
   const slots = useMemo(() => buildCounterTimeSlots(dateValue), [dateValue]);
   const selectedCustomer = customers.find((c) => c.id === customerId);
-  const counterCustomer = customers.find((customer) => customer.type === "counter" || customer.name.startsWith("Client comptoir"));
-  const finalModelLabel = deviceState.model === "Autre" ? deviceState.customModel.trim() || initialModel : deviceState.model;
-  const device = deviceState.deviceLabel.trim() || [deviceState.brand, finalModelLabel === "Autre" ? "" : finalModelLabel].filter(Boolean).join(" ").trim();
+  const counterCustomer = customers.find(
+    (customer) => customer.type === "counter" || customer.name.startsWith("Client comptoir"),
+  );
+  const duplicateCustomer = useMemo(() => {
+    if (mode !== "new") return undefined;
+    const phoneDigits = compactPhone(newPhone);
+    const emailKey = newEmail.trim().toLowerCase();
+    if (!phoneDigits && !emailKey) return undefined;
+    return customers.find(
+      (customer) =>
+        customer.type !== "counter" &&
+        ((phoneDigits && compactPhone(customer.phone) === phoneDigits) ||
+          (emailKey && customer.email.trim().toLowerCase() === emailKey)),
+    );
+  }, [customers, mode, newEmail, newPhone]);
+  const finalModelLabel =
+    deviceState.model === "Autre" ? deviceState.customModel.trim() || initialModel : deviceState.model;
+  const device =
+    deviceState.deviceLabel.trim() ||
+    [deviceState.brand, finalModelLabel === "Autre" ? "" : finalModelLabel].filter(Boolean).join(" ").trim();
 
   const submit = () => {
     let resolvedId = customerId;
@@ -3661,12 +4685,8 @@ function CounterAppointmentForm({
       clientEmail = prefill?.clientEmail?.trim() || "";
     } else if (mode === "new") {
       const name = newName.trim() || "Client comptoir";
-      const existing =
-        name !== "Client comptoir"
-          ? customers.find((c) => c.type !== "counter" && compactText(c.name) === compactText(name))
-          : undefined;
       resolvedId =
-        existing?.id ??
+        duplicateCustomer?.id ??
         addCustomer({
           name,
           phone: newPhone.trim() || "Non renseigné",
@@ -3763,12 +4783,21 @@ function CounterAppointmentForm({
       <div className="flex min-h-svh w-full max-w-none flex-col bg-white md:max-h-[calc(100svh-2.5rem)] md:min-h-0 md:w-[600px] md:max-w-[600px] md:rounded-[22px] md:bg-white md:shadow-[0_30px_80px_rgba(26,25,22,0.22)]">
         <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-[#E8E8E5] border-b bg-white px-5 py-4 md:rounded-t-[22px]">
           <div>
-            <h2 className="font-black text-[22px] tracking-tight">{editing ? "Modifier le rendez-vous" : "Nouveau rendez-vous"}</h2>
+            <h2 className="font-black text-[22px] tracking-tight">
+              {editing ? "Modifier le rendez-vous" : "Nouveau rendez-vous"}
+            </h2>
             <p className="mt-0.5 text-[#6B6B6B] text-[13px]">
-              {prefilledFromIntake ? "Choisissez uniquement la date et le créneau." : "Client, appareil, motif et créneau en une fois."}
+              {prefilledFromIntake
+                ? "Choisissez uniquement la date et le créneau."
+                : "Client, appareil, motif et créneau en une fois."}
             </p>
           </div>
-          <button type="button" onClick={onClose} className="grid size-10 shrink-0 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white text-[#1A1916] transition active:scale-90" aria-label="Fermer">
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid size-10 shrink-0 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white text-[#1A1916] transition active:scale-90"
+            aria-label="Fermer"
+          >
             <X className="size-5" />
           </button>
         </div>
@@ -3785,7 +4814,10 @@ function CounterAppointmentForm({
                         key={value}
                         type="button"
                         onClick={() => setMode(value)}
-                        className={cn("h-8 rounded-[8px] px-3 font-bold text-[12.5px] transition", mode === value ? "bg-white text-[#1A1916] shadow-sm" : "text-[#6B6B6B]")}
+                        className={cn(
+                          "h-8 rounded-[8px] px-3 font-bold text-[12.5px] transition",
+                          mode === value ? "bg-white text-[#1A1916] shadow-sm" : "text-[#6B6B6B]",
+                        )}
                       >
                         {value === "counter" ? "Comptoir" : value === "existing" ? "Existant" : "Nouveau"}
                       </button>
@@ -3801,11 +4833,46 @@ function CounterAppointmentForm({
                   <ExistingCustomerSearch value={customerId} onChange={setCustomerId} />
                 ) : (
                   <div className="grid gap-2.5">
-                    <CounterInput value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nom du client" />
+                    <CounterInput
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      placeholder="Nom du client"
+                    />
                     <div className="grid gap-2.5 sm:grid-cols-2">
-                      <CounterInput value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="Téléphone" inputMode="tel" />
-                      <CounterInput value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Email" type="email" />
+                      <CounterInput
+                        value={newPhone}
+                        onChange={(e) => setNewPhone(e.target.value)}
+                        placeholder="Téléphone"
+                        inputMode="tel"
+                      />
+                      <CounterInput
+                        value={newEmail}
+                        onChange={(e) => setNewEmail(e.target.value)}
+                        placeholder="Email"
+                        type="email"
+                      />
                     </div>
+                    {duplicateCustomer ? (
+                      <div className="flex flex-col gap-3 rounded-[14px] border border-[#D7EFEA] bg-[#FFFFFF] p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                        <span className="text-[#1A1916]">
+                          <b>Client déjà connu</b>
+                          <span className="block text-[#6B6B6B]">
+                            {duplicateCustomer.name}
+                            {duplicateCustomer.phone ? ` · ${duplicateCustomer.phone}` : ""}
+                          </span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCustomerId(duplicateCustomer.id);
+                            setMode("existing");
+                          }}
+                          className="h-10 rounded-[12px] bg-[#2A9D8F] px-4 font-bold text-white active:scale-[0.98]"
+                        >
+                          Reprendre ce client
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 )}
                 {mode === "existing" && selectedCustomer && (
@@ -3832,7 +4899,9 @@ function CounterAppointmentForm({
                   }
                 />
                 {editing && device && (
-                  <p className="mt-2 text-[#6B6B6B] text-[12.5px]">Appareil actuel : <b className="text-[#1A1916]">{device}</b></p>
+                  <p className="mt-2 text-[#6B6B6B] text-[12.5px]">
+                    Appareil actuel : <b className="text-[#1A1916]">{device}</b>
+                  </p>
                 )}
               </section>
 
@@ -3846,14 +4915,21 @@ function CounterAppointmentForm({
                       onClick={() => setIssue(motif === "Autre" ? "" : motif)}
                       className={cn(
                         "h-10 rounded-[12px] border px-3.5 font-semibold text-[13.5px] transition active:scale-[0.97]",
-                        issue === motif ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#1A1916]",
+                        issue === motif
+                          ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
+                          : "border-[#E8E8E5] bg-white text-[#1A1916]",
                       )}
                     >
                       {motif}
                     </button>
                   ))}
                 </div>
-                <ProblemSelector deviceType={deviceState.deviceType} value={issue} onChange={setIssue} label="Motif précis (ou libre)" />
+                <ProblemSelector
+                  deviceType={deviceState.deviceType}
+                  value={issue}
+                  onChange={setIssue}
+                  label="Motif précis (ou libre)"
+                />
               </section>
             </>
           )}
@@ -3872,7 +4948,9 @@ function CounterAppointmentForm({
             />
             <span className="mb-2 block font-bold text-[14px]">Créneau — {frLongDate(dateValue)}</span>
             {slots.length === 0 ? (
-              <p className="rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] px-4 py-5 text-center text-[#6B6B6B] text-sm">Aucun créneau disponible pour cette date.</p>
+              <p className="rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] px-4 py-5 text-center text-[#6B6B6B] text-sm">
+                Aucun créneau disponible pour cette date.
+              </p>
             ) : (
               <div className="grid max-h-[176px] grid-cols-4 gap-2 overflow-y-auto">
                 {slots.map((slot) => (
@@ -3882,7 +4960,9 @@ function CounterAppointmentForm({
                     onClick={() => setTime(slot)}
                     className={cn(
                       "h-11 rounded-[12px] border font-semibold tabular-nums transition active:scale-[0.97]",
-                      time === slot ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#1A1916] hover:bg-[#FFFFFF]",
+                      time === slot
+                        ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
+                        : "border-[#E8E8E5] bg-white text-[#1A1916] hover:bg-[#FFFFFF]",
                     )}
                   >
                     {slot}
@@ -3895,14 +4975,28 @@ function CounterAppointmentForm({
           {!prefilledFromIntake && (
             <section className="rounded-[16px] border border-[#E8E8E5] bg-white p-4">
               <h3 className="mb-3 font-black text-[15px]">Notes (optionnel)</h3>
-              <CounterTextarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ajouter une note courte…" />
+              <CounterTextarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Ajouter une note courte…"
+              />
             </section>
           )}
         </div>
 
         <div className="sticky bottom-0 z-10 grid grid-cols-[1fr_1.4fr] gap-3 border-[#E8E8E5] border-t bg-white px-5 py-4 md:rounded-b-[22px]">
-          <button type="button" onClick={onClose} className="h-[54px] rounded-[14px] border border-[#E8E8E5] font-bold active:scale-[0.98]">Annuler</button>
-          <button type="button" onClick={submit} className="inline-flex h-[54px] items-center justify-center gap-2 rounded-[14px] bg-[#2A9D8F] font-black text-white active:scale-[0.98]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-[54px] rounded-[14px] border border-[#E8E8E5] font-bold active:scale-[0.98]"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            onClick={submit}
+            className="inline-flex h-[54px] items-center justify-center gap-2 rounded-[14px] bg-[#2A9D8F] font-black text-white active:scale-[0.98]"
+          >
             <Check className="size-5" /> {editing ? "Enregistrer" : "Créer le rendez-vous"}
           </button>
         </div>
@@ -3943,7 +5037,9 @@ function capitalizeFr(value: string) {
 }
 
 function frLongDate(iso: string) {
-  return capitalizeFr(new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" }).format(isoToDate(iso)));
+  return capitalizeFr(
+    new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" }).format(isoToDate(iso)),
+  );
 }
 
 function CounterClientsScreen({
@@ -3968,7 +5064,10 @@ function CounterClientsScreen({
   // Vrais clients du dashboard (on masque le client comptoir anonyme).
   const clients = useMemo(() => customersAll.filter((c) => c.type !== "counter"), [customersAll]);
   const filtered = useMemo(
-    () => clients.filter((client) => compactText(`${client.name} ${client.phone ?? ""} ${client.email ?? ""}`).includes(compactText(query))),
+    () =>
+      clients.filter((client) =>
+        compactText(`${client.name} ${client.phone ?? ""} ${client.email ?? ""}`).includes(compactText(query)),
+      ),
     [clients, query],
   );
   const selected = clients.find((client) => client.id === selectedId) ?? filtered[0] ?? clients[0];
@@ -3991,7 +5090,13 @@ function CounterClientsScreen({
         <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-10 text-center shadow-[0_10px_30px_rgba(26,25,22,0.04)]">
           <p className="font-black text-lg">Aucun client pour le moment</p>
           <p className="mt-2 text-[#6B6B6B]">Créez une prise en charge pour enregistrer votre premier client.</p>
-          <button type="button" onClick={() => onCreateRepair({})} className="mt-5 inline-flex h-[52px] items-center gap-2 rounded-[14px] bg-[#2A9D8F] px-6 font-black text-white"><Plus className="size-5" /> Ajouter un client</button>
+          <button
+            type="button"
+            onClick={() => onCreateRepair({})}
+            className="mt-5 inline-flex h-[52px] items-center gap-2 rounded-[14px] bg-[#2A9D8F] px-6 font-black text-white"
+          >
+            <Plus className="size-5" /> Ajouter un client
+          </button>
         </div>
       </div>
     );
@@ -4001,35 +5106,138 @@ function CounterClientsScreen({
     <div className="mx-auto grid max-w-[1180px] gap-7 lg:grid-cols-[380px_1fr]">
       <aside className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_10px_30px_rgba(26,25,22,0.04)]">
         <CounterScreenTitle title="Clients" subtitle="Rechercher et gérer vos clients" onClose={onClose} />
-        <div className="grid grid-cols-[1fr_52px] gap-3"><CounterInput value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Nom, téléphone ou email" /><button type="button" className="rounded-[14px] border border-[#E8E8E5]"><Search className="mx-auto size-5" /></button></div>
+        <div className="grid grid-cols-[1fr_52px] gap-3">
+          <CounterInput
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Nom, téléphone ou email"
+          />
+          <button type="button" className="rounded-[14px] border border-[#E8E8E5]">
+            <Search className="mx-auto size-5" />
+          </button>
+        </div>
         <p className="mt-4 text-[#6B6B6B] text-sm">{filtered.length} clients trouvés</p>
         <ul className="mt-3 space-y-2">
           {filtered.map((client) => (
-            <li key={client.id}><button type="button" onClick={() => setSelectedId(client.id)} className={cn("grid min-h-[62px] w-full grid-cols-[42px_1fr_auto] items-center gap-3 rounded-[13px] border px-3 text-left transition active:scale-[0.99]", client.id === selected?.id ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white")}><span className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] font-bold text-[#1E7A6E]">{counterInitials(client.name)}</span><span><b>{client.name}</b><span className="block text-[#6B6B6B] text-sm">{client.phone || "Non renseigné"}</span></span><ChevronRight className="size-4 text-[#6B6B6B]" /></button></li>
+            <li key={client.id}>
+              <button
+                type="button"
+                onClick={() => setSelectedId(client.id)}
+                className={cn(
+                  "grid min-h-[62px] w-full grid-cols-[42px_1fr_auto] items-center gap-3 rounded-[13px] border px-3 text-left transition active:scale-[0.99]",
+                  client.id === selected?.id ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white",
+                )}
+              >
+                <span className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] font-bold text-[#1E7A6E]">
+                  {counterInitials(client.name)}
+                </span>
+                <span>
+                  <b>{client.name}</b>
+                  <span className="block text-[#6B6B6B] text-sm">{client.phone || "Non renseigné"}</span>
+                </span>
+                <ChevronRight className="size-4 text-[#6B6B6B]" />
+              </button>
+            </li>
           ))}
         </ul>
-        <button type="button" onClick={() => onCreateRepair({})} className="mt-3 h-[52px] w-full rounded-[14px] border border-[#E8E8E5] font-bold"><Plus className="mr-2 inline size-4" /> Ajouter un client</button>
+        <button
+          type="button"
+          onClick={() => onCreateRepair({})}
+          className="mt-3 h-[52px] w-full rounded-[14px] border border-[#E8E8E5] font-bold"
+        >
+          <Plus className="mr-2 inline size-4" /> Ajouter un client
+        </button>
       </aside>
       <section className="p-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-5"><span className="grid size-16 place-items-center rounded-full bg-[#FFFFFF] font-black text-[#1E7A6E] text-2xl">{counterInitials(selected?.name ?? "")}</span><div><div className="flex items-center gap-3"><h1 className="font-black text-[26px]">{selected?.name}</h1><CounterMockPill>Client actif</CounterMockPill></div><p className="mt-1 text-[#6B6B6B]"><span className="mr-4">{selected?.phone || "Non renseigné"}</span>{selected?.email || ""}</p></div></div>
+          <div className="flex items-center gap-5">
+            <span className="grid size-16 place-items-center rounded-full bg-[#FFFFFF] font-black text-[#1E7A6E] text-2xl">
+              {counterInitials(selected?.name ?? "")}
+            </span>
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="font-black text-[26px]">{selected?.name}</h1>
+                <CounterMockPill>Client actif</CounterMockPill>
+              </div>
+              <p className="mt-1 text-[#6B6B6B]">
+                <span className="mr-4">{selected?.phone || "Non renseigné"}</span>
+                {selected?.email || ""}
+              </p>
+            </div>
+          </div>
         </div>
         <div className="mt-8 grid grid-cols-4 gap-4">
-          <ClientQuickAction icon={<Plus className="size-8" />} label="Nouvelle prise en charge" onClick={() => onCreateRepair({ customerId: selected?.id, notes: `Client : ${selected?.name}${selected?.phone ? ` — ${selected.phone}` : ""}` })} primary />
+          <ClientQuickAction
+            icon={<Plus className="size-8" />}
+            label="Nouvelle prise en charge"
+            onClick={() =>
+              onCreateRepair({
+                customerId: selected?.id,
+                notes: `Client : ${selected?.name}${selected?.phone ? ` — ${selected.phone}` : ""}`,
+              })
+            }
+            primary
+          />
           <ClientQuickAction icon={<FileText className="size-7" />} label="Nouveau devis" onClick={onCreateQuote} />
-          <ClientQuickAction icon={<CreditCard className="size-7" />} label="Indiquer règlement" onClick={() => onPay(unpaidRepairId)} />
-          <ClientQuickAction icon={<ClipboardCheck className="size-7" />} label="Voir les dossiers" onClick={() => customerRepairs[0] && onOpenRepairDetail(customerRepairs[0].id)} />
+          <ClientQuickAction
+            icon={<CreditCard className="size-7" />}
+            label="Indiquer règlement"
+            onClick={() => onPay(unpaidRepairId)}
+          />
+          <ClientQuickAction
+            icon={<ClipboardCheck className="size-7" />}
+            label="Voir les dossiers"
+            onClick={() => customerRepairs[0] && onOpenRepairDetail(customerRepairs[0].id)}
+          />
         </div>
-        <div className="mt-8 flex items-center justify-between"><h2 className="font-black text-xl">Derniers dossiers</h2></div>
+        <div className="mt-8 flex items-center justify-between">
+          <h2 className="font-black text-xl">Derniers dossiers</h2>
+        </div>
         {customerRepairs.length === 0 && customerQuotes.length === 0 ? (
-          <p className="mt-4 rounded-[14px] border border-[#E8E8E5] bg-white px-4 py-8 text-center text-[#6B6B6B]">Aucun dossier pour ce client.</p>
+          <p className="mt-4 rounded-[14px] border border-[#E8E8E5] bg-white px-4 py-8 text-center text-[#6B6B6B]">
+            Aucun dossier pour ce client.
+          </p>
         ) : (
           <ul className="mt-4 space-y-3">
             {customerRepairs.map((r) => (
-              <li key={r.id}><button type="button" onClick={() => onOpenRepairDetail(r.id)} className="grid min-h-[74px] w-full grid-cols-[52px_1fr_110px_90px] items-center rounded-[14px] border border-[#E8E8E5] bg-white px-4 text-left shadow-sm"><span className="grid size-10 place-items-center rounded-full bg-[#FFFFFF] text-[#1E7A6E]"><Wrench className="size-5" /></span><span><b>Réparation — {r.deviceModel || r.device}</b><span className="block text-[#6B6B6B] text-sm">{r.issue || "Non renseigné"}</span></span><CounterMockPill tone={counterDossierTone(r.status)}>{r.status}</CounterMockPill><b className="text-right">{formatEuro(repairAmount(r))}</b></button></li>
+              <li key={r.id}>
+                <button
+                  type="button"
+                  onClick={() => onOpenRepairDetail(r.id)}
+                  className="grid min-h-[74px] w-full grid-cols-[52px_1fr_110px_90px] items-center rounded-[14px] border border-[#E8E8E5] bg-white px-4 text-left shadow-sm"
+                >
+                  <span className="grid size-10 place-items-center rounded-full bg-[#FFFFFF] text-[#1E7A6E]">
+                    <Wrench className="size-5" />
+                  </span>
+                  <span>
+                    <b>Réparation — {r.deviceModel || r.device}</b>
+                    <span className="block text-[#6B6B6B] text-sm">{r.issue || "Non renseigné"}</span>
+                  </span>
+                  <CounterMockPill tone={counterDossierTone(r.status)}>{r.status}</CounterMockPill>
+                  <b className="text-right">{formatEuro(repairAmount(r))}</b>
+                </button>
+              </li>
             ))}
             {customerQuotes.map((q) => (
-              <li key={q.id}><button type="button" onClick={onCreateQuote} className="grid min-h-[74px] w-full grid-cols-[52px_1fr_110px_90px] items-center rounded-[14px] border border-[#E8E8E5] bg-white px-4 text-left shadow-sm"><span className="grid size-10 place-items-center rounded-full bg-[#FFFFFF] text-[#1E7A6E]"><FileText className="size-5" /></span><span><b>Devis — {q.deviceModel || q.device || "Appareil"}</b><span className="block text-[#6B6B6B] text-sm">{q.issue || q.number}</span></span><CounterMockPill tone={q.status === "Accepté" || q.status === "Facturé" ? "green" : "orange"}>{q.status}</CounterMockPill><b className="text-right">{formatEuro(q.totalTtc ?? q.totalAmount ?? 0)}</b></button></li>
+              <li key={q.id}>
+                <button
+                  type="button"
+                  onClick={onCreateQuote}
+                  className="grid min-h-[74px] w-full grid-cols-[52px_1fr_110px_90px] items-center rounded-[14px] border border-[#E8E8E5] bg-white px-4 text-left shadow-sm"
+                >
+                  <span className="grid size-10 place-items-center rounded-full bg-[#FFFFFF] text-[#1E7A6E]">
+                    <FileText className="size-5" />
+                  </span>
+                  <span>
+                    <b>Devis — {q.deviceModel || q.device || "Appareil"}</b>
+                    <span className="block text-[#6B6B6B] text-sm">{q.issue || q.number}</span>
+                  </span>
+                  <CounterMockPill tone={q.status === "Accepté" || q.status === "Facturé" ? "green" : "orange"}>
+                    {q.status}
+                  </CounterMockPill>
+                  <b className="text-right">{formatEuro(q.totalTtc ?? q.totalAmount ?? 0)}</b>
+                </button>
+              </li>
             ))}
           </ul>
         )}
@@ -4038,8 +5246,29 @@ function CounterClientsScreen({
   );
 }
 
-function ClientQuickAction({ icon, label, onClick, primary }: Readonly<{ icon: React.ReactNode; label: string; onClick: () => void; primary?: boolean }>) {
-  return <button type="button" onClick={onClick} className="flex min-h-[142px] flex-col items-center justify-center rounded-[16px] border border-[#E8E8E5] bg-white p-4 text-center font-black shadow-[0_10px_26px_rgba(26,25,22,0.04)] active:scale-[0.98]"><span className={cn("grid size-14 place-items-center rounded-full", primary ? "bg-[#2A9D8F] text-white" : "bg-[#FFFFFF] text-[#1E7A6E]")}>{icon}</span><span className="mt-4 leading-tight">{label}</span></button>;
+function ClientQuickAction({
+  icon,
+  label,
+  onClick,
+  primary,
+}: Readonly<{ icon: React.ReactNode; label: string; onClick: () => void; primary?: boolean }>) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex min-h-[142px] flex-col items-center justify-center rounded-[16px] border border-[#E8E8E5] bg-white p-4 text-center font-black shadow-[0_10px_26px_rgba(26,25,22,0.04)] active:scale-[0.98]"
+    >
+      <span
+        className={cn(
+          "grid size-14 place-items-center rounded-full",
+          primary ? "bg-[#2A9D8F] text-white" : "bg-[#FFFFFF] text-[#1E7A6E]",
+        )}
+      >
+        {icon}
+      </span>
+      <span className="mt-4 leading-tight">{label}</span>
+    </button>
+  );
 }
 
 const COUNTER_DOSSIER_FILTERS: Array<Repair["status"] | "all"> = [
@@ -4140,7 +5369,16 @@ function CounterDossiersScreen({
         const db = new Date(b.repair.updatedAt || b.repair.droppedAt || b.repair.createdAt || 0).getTime();
         return db - da;
       });
-  }, [store.repairs, store.customers, store.appointments, store.quotes, store.invoices, query, filter, visibleStatuses]);
+  }, [
+    store.repairs,
+    store.customers,
+    store.appointments,
+    store.quotes,
+    store.invoices,
+    query,
+    filter,
+    visibleStatuses,
+  ]);
 
   const counts = useMemo(() => {
     const map = new Map<Repair["status"] | "all", number>();
@@ -4157,7 +5395,11 @@ function CounterDossiersScreen({
   return (
     <div className="mx-auto max-w-[1180px]">
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-        <CounterScreenTitle title="Dossiers" subtitle="Recherche, filtres et accès rapide aux dossiers comptoir." onClose={onClose} />
+        <CounterScreenTitle
+          title="Dossiers"
+          subtitle="Recherche, filtres et accès rapide aux dossiers comptoir."
+          onClose={onClose}
+        />
         <button
           type="button"
           onClick={onCreate}
@@ -4212,7 +5454,9 @@ function CounterDossiersScreen({
             onClick={() => setFilter(entry)}
             className={cn(
               "inline-flex h-[44px] items-center gap-2 rounded-full border px-4 font-semibold active:scale-[0.98]",
-              filter === entry ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : "border-[#E8E8E5] bg-white text-[#1A1916]",
+              filter === entry
+                ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
+                : "border-[#E8E8E5] bg-white text-[#1A1916]",
             )}
           >
             {entry === "all" ? "Tous" : entry}
@@ -4244,7 +5488,12 @@ function CounterDossiersScreen({
                 onClick={() => onOpenRepairDetail(repair.id)}
                 className="flex w-full items-center gap-4 rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition hover:border-[#2A9D8F]/40 hover:shadow-[0_10px_28px_rgba(26,25,22,0.06)] active:scale-[0.995]"
               >
-                <RealDeviceVisual brand={repair.brandName} model={repairDeviceLabel(repair, repair.device)} type={repair.deviceType} className="size-[66px] rounded-[12px] border border-[#E8E8E5] p-1.5" />
+                <RealDeviceVisual
+                  brand={repair.brandName}
+                  model={repairDeviceLabel(repair, repair.device)}
+                  type={repair.deviceType}
+                  className="size-[66px] rounded-[12px] border border-[#E8E8E5] p-1.5"
+                />
                 <span className="grid size-12 shrink-0 place-items-center rounded-[14px] bg-[#FFFFFF] font-black text-[#1E7A6E]">
                   {counterInitials(name)}
                 </span>
@@ -4276,7 +5525,9 @@ function CounterDossiersScreen({
                 </div>
                 <div className="hidden shrink-0 text-right sm:block">
                   <p className="font-black text-[#1A1916] text-lg tabular-nums">{formatEuro(amount)}</p>
-                  <p className="mt-0.5 text-[#6B6B6B] text-xs">{formatCounterDateTime(repair.droppedAt || repair.createdAt)}</p>
+                  <p className="mt-0.5 text-[#6B6B6B] text-xs">
+                    {formatCounterDateTime(repair.droppedAt || repair.createdAt)}
+                  </p>
                 </div>
                 <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#2A9D8F] text-white">
                   <ChevronRight className="size-5" />
@@ -4297,22 +5548,30 @@ function CounterRepairDetailScreen({
 }: Readonly<{ repairId: string; onClose: () => void; onOpenDocuments?: () => void }>) {
   const store = useBeharStore();
   const { print } = useDocument();
+  const settlement = useSettlementModal();
   const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
   const [selectedQrRepairId, setSelectedQrRepairId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
-  const repair = store.repairs.find((r) => r.id === repairId) ?? store.repairs.find((r) => !isTerminalRepairStatus(r.status)) ?? store.repairs[0];
+  const repair =
+    store.repairs.find((r) => r.id === repairId) ??
+    store.repairs.find((r) => !isTerminalRepairStatus(r.status)) ??
+    store.repairs[0];
   if (!repair) return <EmptyCounter title="Dossier réparation" message="Aucun dossier à afficher." onClose={onClose} />;
   const customer = store.customers.find((c) => c.id === repair.customerId);
-  const linkedAppointment = repair.appointmentId ? store.appointments.find((appointment) => appointment.id === repair.appointmentId) : undefined;
-  const customerLabel = customer?.type === "counter"
-    ? linkedAppointment?.clientName || customer.name || "Client comptoir"
-    : customer?.name || linkedAppointment?.clientName || "Non renseigné";
-  const customerPhone = customer?.type === "counter"
-    ? linkedAppointment?.clientPhone || "Non renseigné"
-    : customer?.phone || linkedAppointment?.clientPhone || "Non renseigné";
+  const linkedAppointment = repair.appointmentId
+    ? store.appointments.find((appointment) => appointment.id === repair.appointmentId)
+    : undefined;
+  const customerLabel =
+    customer?.type === "counter"
+      ? linkedAppointment?.clientName || customer.name || "Client comptoir"
+      : customer?.name || linkedAppointment?.clientName || "Non renseigné";
+  const customerPhone =
+    customer?.type === "counter"
+      ? linkedAppointment?.clientPhone || "Non renseigné"
+      : customer?.phone || linkedAppointment?.clientPhone || "Non renseigné";
   const invoice = store.invoices.find((i) => i.repairId === repair.id);
   const repairPayment = store.payments.find((p) => p.repairId === repair.id && p.status === "Payé");
   const paid = Boolean(repairPayment) || invoice?.status === "Payée";
@@ -4345,12 +5604,11 @@ function CounterRepairDetailScreen({
     store.changeRepairStatus(repair.id, nextStep.next);
     toast.success(`Dossier passé en « ${nextStep.next} ».`);
   };
-  // Clôture le DOSSIER ATELIER uniquement.
+  // Restitution = règlement obligatoire, puis clôture du dossier.
   const confirmCloseDossier = () => {
     if (isTerminalRepairStatus(repair.status)) return toast.info("Dossier déjà terminé.");
-    store.changeRepairStatus(repair.id, "Rendu");
     setCloseConfirmOpen(false);
-    toast.success("Dossier marqué rendu — règlement géré hors Behar Tech Pro.");
+    settlement.open(repair.id, { closeAfterSubmit: true });
   };
   // Génère le vrai bon de prise en charge via le système Documents existant.
   const validatePriseEnCharge = () => {
@@ -4398,36 +5656,179 @@ function CounterRepairDetailScreen({
   };
   return (
     <div className="mx-auto max-w-[1160px]">
-      <div className="mb-5 flex items-start justify-between"><CounterScreenTitle title="Dossier réparation" subtitle={repairDeviceLabel(repair)} onClose={onClose} /><div className="pt-4"><CounterMockPill tone={counterDossierTone(repair.status)}>{repair.status}</CounterMockPill></div></div>
-      <div className="mb-5 flex items-center gap-3"><span className="rounded-[9px] bg-[#FFFFFF] px-4 py-2 font-black text-[#1E7A6E]">#{repair.number}</span></div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <TopInfoCard label="Client" title={customerLabel} detail={customerPhone} icon={<span className="grid size-10 place-items-center rounded-full bg-[#2A9D8F] font-bold text-white">{counterInitials(customerLabel)}</span>} />
-        <TopInfoCard label="Appareil" title={repairDeviceLabel(repair)} detail={repair.imei ? `IMEI ${repair.imei}` : repair.model || ""} icon={<RealDeviceVisual brand={repair.brandName} model={repairDeviceLabel(repair, repair.device)} type={repair.deviceType} className="size-12 rounded-[10px] border border-[#E8E8E5] p-1" />} />
-        <TopInfoCard label="Réception" title={formatCounterDateTime(repair.droppedAt || repair.createdAt)} detail={repair.technician ? `Par ${repair.technician}` : ""} icon={<Calendar className="size-7 text-[#1E7A6E]" />} />
+      <div className="mb-5 flex items-start justify-between">
+        <CounterScreenTitle title="Dossier réparation" subtitle={repairDeviceLabel(repair)} onClose={onClose} />
+        <div className="pt-4">
+          <CounterMockPill tone={counterDossierTone(repair.status)}>{repair.status}</CounterMockPill>
+        </div>
       </div>
-      <CounterTimeline className="mt-5" activeIndex={counterTimelineIndex(repair.status)} labels={["Reçu", "Diagnostic", "Devis", "Réparation", "Prêt"]} details={[formatCounterDateTime(repair.droppedAt || repair.createdAt, ""), "", "", "", ""]} />
+      <div className="mb-5 flex items-center gap-3">
+        <span className="rounded-[9px] bg-[#FFFFFF] px-4 py-2 font-black text-[#1E7A6E]">#{repair.number}</span>
+      </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <TopInfoCard
+          label="Client"
+          title={customerLabel}
+          detail={customerPhone}
+          icon={
+            <span className="grid size-10 place-items-center rounded-full bg-[#2A9D8F] font-bold text-white">
+              {counterInitials(customerLabel)}
+            </span>
+          }
+        />
+        <TopInfoCard
+          label="Appareil"
+          title={repairDeviceLabel(repair)}
+          detail={repair.imei ? `IMEI ${repair.imei}` : repair.model || ""}
+          icon={
+            <RealDeviceVisual
+              brand={repair.brandName}
+              model={repairDeviceLabel(repair, repair.device)}
+              type={repair.deviceType}
+              className="size-12 rounded-[10px] border border-[#E8E8E5] p-1"
+            />
+          }
+        />
+        <TopInfoCard
+          label="Réception"
+          title={formatCounterDateTime(repair.droppedAt || repair.createdAt)}
+          detail={repair.technician ? `Par ${repair.technician}` : ""}
+          icon={<Calendar className="size-7 text-[#1E7A6E]" />}
+        />
+      </div>
+      <CounterTimeline
+        className="mt-5"
+        activeIndex={counterTimelineIndex(repair.status)}
+        labels={["Reçu", "Diagnostic", "Devis", "Réparation", "Prêt"]}
+        details={[formatCounterDateTime(repair.droppedAt || repair.createdAt, ""), "", "", "", ""]}
+      />
       {repair.status === "Reçu" && (
         <section className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[#D7EFEA] bg-[#FFFFFF] p-5">
           <div>
             <p className="font-black text-[#1A1916]">Valider la prise en charge</p>
-            <p className="text-[#6B6B6B] text-sm">{displayIntakeBonCode(repair, store.repairs)} · {intakeDoc ? "Bon déjà généré — vous pouvez le régénérer si besoin." : "Génère le bon de prise en charge et l'ajoute aux Documents."}</p>
+            <p className="text-[#6B6B6B] text-sm">
+              {displayIntakeBonCode(repair, store.repairs)} ·{" "}
+              {intakeDoc
+                ? "Bon déjà généré — vous pouvez le régénérer si besoin."
+                : "Génère le bon de prise en charge et l'ajoute aux Documents."}
+            </p>
           </div>
-          <button type="button" onClick={validatePriseEnCharge} className="inline-flex h-[52px] items-center gap-2 rounded-[14px] bg-[#2A9D8F] px-6 font-black text-white active:scale-[0.98]"><FileSignature className="size-5" /> {intakeDoc ? "Régénérer le bon" : "Générer le bon de prise en charge"}</button>
+          <button
+            type="button"
+            onClick={validatePriseEnCharge}
+            className="inline-flex h-[52px] items-center gap-2 rounded-[14px] bg-[#2A9D8F] px-6 font-black text-white active:scale-[0.98]"
+          >
+            <FileSignature className="size-5" /> {intakeDoc ? "Régénérer le bon" : "Générer le bon de prise en charge"}
+          </button>
         </section>
       )}
       <div className="mt-5 grid gap-4 lg:grid-cols-[310px_1fr_240px]">
-        <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4"><h2 className="font-black">Photos</h2>{photos.length === 0 ? (<p className="mt-4 rounded-[12px] bg-[#FFFFFF] px-3 py-6 text-center text-[#6B6B6B] text-sm">Aucune photo ajoutée</p>) : (<div className="mt-4 grid grid-cols-3 gap-2">{photos.slice(0, 6).map((photo) => <img key={photo.id} src={photo.dataUrl} alt={photo.name} className="aspect-square rounded-[12px] object-cover" />)}</div>)}</section>
+        <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4">
+          <h2 className="font-black">Photos</h2>
+          {photos.length === 0 ? (
+            <p className="mt-4 rounded-[12px] bg-[#FFFFFF] px-3 py-6 text-center text-[#6B6B6B] text-sm">
+              Aucune photo ajoutée
+            </p>
+          ) : (
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {photos.slice(0, 6).map((photo) => (
+                <img
+                  key={photo.id}
+                  src={photo.dataUrl}
+                  alt={photo.name}
+                  className="aspect-square rounded-[12px] object-cover"
+                />
+              ))}
+            </div>
+          )}
+        </section>
         <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5">
           <DetailBlock title="Problème signalé">{repair.issue || "Non renseigné"}</DetailBlock>
-          <DetailBlock title="Intervention prévue">{prestations.length ? prestations.map((p) => <span key={p.label} className="block">{p.label}</span>) : "Non renseigné"}</DetailBlock>
+          <DetailBlock title="Intervention prévue">
+            {prestations.length
+              ? prestations.map((p) => (
+                  <span key={p.label} className="block">
+                    {p.label}
+                  </span>
+                ))
+              : "Non renseigné"}
+          </DetailBlock>
           <DetailBlock title="Messages client">
             {(repair.messages ?? []).filter((message) => message.visibility === "client").length
-              ? (repair.messages ?? []).filter((message) => message.visibility === "client").slice(-3).map((message) => <span key={message.id} className="mb-2 block last:mb-0"><b>{message.authorName}</b> · {message.body}</span>)
+              ? (repair.messages ?? [])
+                  .filter((message) => message.visibility === "client")
+                  .slice(-3)
+                  .map((message) => (
+                    <span key={message.id} className="mb-2 block last:mb-0">
+                      <b>{message.authorName}</b> · {message.body}
+                    </span>
+                  ))
               : "Aucun message client."}
           </DetailBlock>
           <DetailBlock title="Garantie">Selon conditions de l'atelier</DetailBlock>
         </section>
-        <aside className="space-y-4"><section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4"><p>Montant devis</p><p className="font-black text-2xl">{formatEuro(amount)} <span className="text-[#6B6B6B] text-sm">TTC</span></p><div className="mt-4 border-[#E8E8E5] border-t pt-4"><p>Statut de facture</p><b className={paid ? "text-[#1E7A6E]" : "text-[#6B6B6B]"}>{paid ? "Réglée" : "À régler"}</b><p className="mt-3 text-[#6B6B6B] text-sm">Moyen indiqué<br />{repairPayment?.method ?? invoice?.paymentMethod ?? "Non renseigné"}</p><p className="mt-3 text-[#6B6B6B] text-sm">Facture<br /><b className="text-[#1A1916]">{invoice ? `#${invoice.number}` : "Non renseigné"}</b></p><p className="mt-4 rounded-[12px] bg-[#FFFFFF] px-3 py-2.5 text-[#6B6B6B] text-xs leading-relaxed">Le règlement est géré hors Behar Tech Pro via votre TPE ou prestataire externe.</p></div></section><section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-center"><h2 className="font-black text-left">QR Code dossier</h2><div className="cursor-pointer" onClick={() => setSelectedQrRepairId(repair.id)}><CounterRepairQr repair={repair} className="mx-auto mt-3 w-28" /></div><p className="mt-2 text-[#6B6B6B] text-xs">Scannez pour suivre l'avancement</p><div className="mt-3 flex flex-col gap-2"><button type="button" onClick={() => setSelectedQrRepairId(repair.id)} className="inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-xs active:scale-[0.98]">Afficher QR Code</button><button type="button" onClick={() => { const url = getCustomerTrackingUrl(repair, store.workshopSettings ?? store.workshopInfo); if (url) void shareCounterLink(url, "Lien de suivi copié pour le client."); }} className="inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-xs active:scale-[0.98]">Copier le lien client</button><button type="button" onClick={openClientTracking} className="mt-3 inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#D7EFEA] bg-[#FFFFFF] font-bold text-[#1E7A6E] active:scale-[0.98]"><Eye className="size-4" /> Ouvrir le suivi client</button></div></section><section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-sm"><h2 className="font-black">Notes internes</h2><p className="mt-2 whitespace-pre-line">{repair.notes || "Aucune note interne."}</p></section></aside>
+        <aside className="space-y-4">
+          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4">
+            <p>Montant devis</p>
+            <p className="font-black text-2xl">
+              {formatEuro(amount)} <span className="text-[#6B6B6B] text-sm">TTC</span>
+            </p>
+            <div className="mt-4 border-[#E8E8E5] border-t pt-4">
+              <p>Statut de facture</p>
+              <b className={paid ? "text-[#1E7A6E]" : "text-[#6B6B6B]"}>{paid ? "Réglée" : "À régler"}</b>
+              <p className="mt-3 text-[#6B6B6B] text-sm">
+                Moyen indiqué
+                <br />
+                {repairPayment?.method ?? invoice?.paymentMethod ?? "Non renseigné"}
+              </p>
+              <p className="mt-3 text-[#6B6B6B] text-sm">
+                Facture
+                <br />
+                <b className="text-[#1A1916]">{invoice ? `#${invoice.number}` : "Non renseigné"}</b>
+              </p>
+              <p className="mt-4 rounded-[12px] bg-[#FFFFFF] px-3 py-2.5 text-[#6B6B6B] text-xs leading-relaxed">
+                Le règlement est géré hors Behar Tech Pro via votre TPE ou prestataire externe.
+              </p>
+            </div>
+          </section>
+          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-center">
+            <h2 className="font-black text-left">QR Code dossier</h2>
+            <div className="cursor-pointer" onClick={() => setSelectedQrRepairId(repair.id)}>
+              <CounterRepairQr repair={repair} className="mx-auto mt-3 w-28" />
+            </div>
+            <p className="mt-2 text-[#6B6B6B] text-xs">Scannez pour suivre l'avancement</p>
+            <div className="mt-3 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedQrRepairId(repair.id)}
+                className="inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-xs active:scale-[0.98]"
+              >
+                Afficher QR Code
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const url = getCustomerTrackingUrl(repair, store.workshopSettings ?? store.workshopInfo);
+                  if (url) void shareCounterLink(url, "Lien de suivi copié pour le client.");
+                }}
+                className="inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-xs active:scale-[0.98]"
+              >
+                Copier le lien client
+              </button>
+              <button
+                type="button"
+                onClick={openClientTracking}
+                className="mt-3 inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#D7EFEA] bg-[#FFFFFF] font-bold text-[#1E7A6E] active:scale-[0.98]"
+              >
+                <Eye className="size-4" /> Ouvrir le suivi client
+              </button>
+            </div>
+          </section>
+          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-sm">
+            <h2 className="font-black">Notes internes</h2>
+            <p className="mt-2 whitespace-pre-line">{repair.notes || "Aucune note interne."}</p>
+          </section>
+        </aside>
       </div>
       {/* Actions principales — gros boutons tactiles (min 56px) */}
       {nextStep ? (
@@ -4442,13 +5843,29 @@ function CounterRepairDetailScreen({
       <section className="mt-5 rounded-[18px] border border-[#E8E8E5] bg-white p-4">
         <h2 className="font-black">Ajouter une note interne</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_190px]">
-          <CounterInput value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} placeholder="Information utile pour l'équipe" />
-          <button type="button" onClick={addInternalNote} disabled={!noteDraft.trim()} className="h-[52px] rounded-[14px] bg-[#1A1916] px-4 font-bold text-white disabled:cursor-not-allowed disabled:bg-[#FFFFFF]">
+          <CounterInput
+            value={noteDraft}
+            onChange={(event) => setNoteDraft(event.target.value)}
+            placeholder="Information utile pour l'équipe"
+          />
+          <button
+            type="button"
+            onClick={addInternalNote}
+            disabled={!noteDraft.trim()}
+            className="h-[52px] rounded-[14px] bg-[#1A1916] px-4 font-bold text-white disabled:cursor-not-allowed disabled:bg-[#FFFFFF]"
+          >
             Ajouter la note
           </button>
         </div>
       </section>
-      <input ref={photoInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(event) => addPhoto(event.target.files?.[0])} />
+      <input
+        ref={photoInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(event) => addPhoto(event.target.files?.[0])}
+      />
       <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_1fr_64px]">
         <button
           type="button"
@@ -4511,7 +5928,7 @@ function CounterRepairDetailScreen({
                 disabled={isTerminalRepairStatus(repair.status)}
                 className="flex h-12 w-full items-center gap-3 rounded-[12px] px-3 font-bold text-[#B42318] hover:bg-[#FFFFFF] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <X className="size-4" /> Marquer comme rendu
+                <X className="size-4" /> Clôturer / règlement
               </button>
             </div>
           ) : null}
@@ -4531,10 +5948,7 @@ function CounterRepairDetailScreen({
         />
       )}
       {closeConfirmOpen && (
-        <CloseDossierConfirmModal
-          onCancel={() => setCloseConfirmOpen(false)}
-          onConfirm={confirmCloseDossier}
-        />
+        <CloseDossierConfirmModal onCancel={() => setCloseConfirmOpen(false)} onConfirm={confirmCloseDossier} />
       )}
       {selectedQrRepairId && (
         <TrackingQrModal
@@ -4543,6 +5957,14 @@ function CounterRepairDetailScreen({
           repairId={selectedQrRepairId}
         />
       )}
+      <SettlementModal
+        draft={settlement.draft}
+        isOpen={settlement.isOpen}
+        onClose={settlement.close}
+        onDraftChange={settlement.setDraft}
+        onSubmit={settlement.submit}
+        total={settlement.total}
+      />
     </div>
   );
 }
@@ -4638,22 +6060,47 @@ function RepairAppointmentModal({
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="font-black text-[22px] tracking-tight">Nouveau rendez-vous</h2>
-            <p className="mt-1 text-[#6B6B6B] text-sm">{displayRepairCode(repair)} · {repairDeviceLabel(repair)}</p>
+            <p className="mt-1 text-[#6B6B6B] text-sm">
+              {displayRepairCode(repair)} · {repairDeviceLabel(repair)}
+            </p>
           </div>
-          <button type="button" onClick={onClose} className="grid size-10 place-items-center rounded-full bg-[#FFFFFF]" aria-label="Fermer">
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid size-10 place-items-center rounded-full bg-[#FFFFFF]"
+            aria-label="Fermer"
+          >
             <X className="size-5" />
           </button>
         </div>
         <div className="mt-5 min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
           <section>
             <p className="mb-2 font-bold text-sm">Date</p>
-            <CounterWeekStrip selectedDay={dateValue} onSelect={(iso) => { setDateValue(iso); setTime(""); }} appointments={store.appointments} allowPast={false} />
+            <CounterWeekStrip
+              selectedDay={dateValue}
+              onSelect={(iso) => {
+                setDateValue(iso);
+                setTime("");
+              }}
+              appointments={store.appointments}
+              allowPast={false}
+            />
           </section>
           <section>
             <p className="mb-2 font-bold text-sm">Heure</p>
             <div className="grid max-h-[132px] grid-cols-4 gap-2 overflow-y-auto">
               {slots.map((slot) => (
-                <button key={slot} type="button" onClick={() => setTime(slot)} className={cn("h-11 rounded-[12px] border font-semibold tabular-nums active:scale-[0.98]", time === slot ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white")}>{slot}</button>
+                <button
+                  key={slot}
+                  type="button"
+                  onClick={() => setTime(slot)}
+                  className={cn(
+                    "h-11 rounded-[12px] border font-semibold tabular-nums active:scale-[0.98]",
+                    time === slot ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white",
+                  )}
+                >
+                  {slot}
+                </button>
               ))}
             </div>
           </section>
@@ -4661,41 +6108,57 @@ function RepairAppointmentModal({
             <p className="mb-2 font-bold text-sm">Motif</p>
             <div className="grid grid-cols-3 gap-2">
               {REPAIR_APPOINTMENT_REASONS.map((entry) => (
-                <ChipButton key={entry.value} active={reason === entry.value} onClick={() => setReason(entry.value)}>{entry.label}</ChipButton>
+                <ChipButton key={entry.value} active={reason === entry.value} onClick={() => setReason(entry.value)}>
+                  {entry.label}
+                </ChipButton>
               ))}
             </div>
           </section>
           <section>
             <p className="mb-2 font-bold text-sm">Notes optionnelles</p>
-            <CounterTextarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Pièce à commander, retour client, récupération…" />
+            <CounterTextarea
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              placeholder="Pièce à commander, retour client, récupération…"
+            />
           </section>
         </div>
         <div className="mt-5 grid shrink-0 grid-cols-[1fr_1.4fr] gap-3 border-[#E8E8E5] border-t pt-4">
-          <button type="button" onClick={onClose} className="h-[52px] rounded-[14px] border border-[#E8E8E5] font-bold">Annuler</button>
-          <button type="button" onClick={submit} className="h-[52px] rounded-[14px] bg-[#2A9D8F] font-black text-white">Créer rendez-vous</button>
+          <button type="button" onClick={onClose} className="h-[52px] rounded-[14px] border border-[#E8E8E5] font-bold">
+            Annuler
+          </button>
+          <button type="button" onClick={submit} className="h-[52px] rounded-[14px] bg-[#2A9D8F] font-black text-white">
+            Créer rendez-vous
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
-function CloseDossierConfirmModal({
-  onCancel,
-  onConfirm,
-}: Readonly<{ onCancel: () => void; onConfirm: () => void }>) {
+function CloseDossierConfirmModal({ onCancel, onConfirm }: Readonly<{ onCancel: () => void; onConfirm: () => void }>) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-[#1A1916]/35 p-5">
       <section className="w-full max-w-[460px] rounded-[22px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
         <h2 className="font-black text-[#1D1D1F] text-[22px] tracking-tight">Marquer ce dossier comme rendu ?</h2>
         <p className="mt-3 text-[#6B6B6B] leading-relaxed">
-          Cette action finalise le dossier. Vous pourrez toujours le consulter, mais il ne sera plus considéré comme actif.
+          Cette action finalise le dossier. Vous pourrez toujours le consulter, mais il ne sera plus considéré comme
+          actif.
         </p>
         <div className="mt-6 grid grid-cols-[1fr_1.4fr] gap-3">
-          <button type="button" onClick={onCancel} className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold"
+          >
             Annuler
           </button>
-          <button type="button" onClick={onConfirm} className="h-[52px] rounded-[14px] bg-[#B42318] font-black text-white">
-            Marquer rendu
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="h-[52px] rounded-[14px] bg-[#B42318] font-black text-white"
+          >
+            Clôturer / règlement
           </button>
         </div>
       </section>
@@ -4703,19 +6166,74 @@ function CloseDossierConfirmModal({
   );
 }
 
-function TopInfoCard({ label, title, detail, icon }: Readonly<{ label: string; title: string; detail: string; icon: React.ReactNode }>) {
+function TopInfoCard({
+  label,
+  title,
+  detail,
+  icon,
+}: Readonly<{ label: string; title: string; detail: string; icon: React.ReactNode }>) {
   const cleanTitle = String(title ?? "").trim();
   const cleanDetail = String(detail ?? "").trim();
   if (!cleanTitle && !cleanDetail) return null;
-  return <section className="grid min-h-[92px] grid-cols-[54px_1fr] items-center gap-4 rounded-[16px] border border-[#E8E8E5] bg-white p-4 shadow-sm">{icon}<div><p className="text-[#6B6B6B] text-sm">{label}</p><b>{cleanTitle || "Non renseigné"}</b>{cleanDetail ? <p className="text-[#6B6B6B] text-sm">{cleanDetail}</p> : null}</div></section>;
+  return (
+    <section className="grid min-h-[92px] grid-cols-[54px_1fr] items-center gap-4 rounded-[16px] border border-[#E8E8E5] bg-white p-4 shadow-sm">
+      {icon}
+      <div>
+        <p className="text-[#6B6B6B] text-sm">{label}</p>
+        <b>{cleanTitle || "Non renseigné"}</b>
+        {cleanDetail ? <p className="text-[#6B6B6B] text-sm">{cleanDetail}</p> : null}
+      </div>
+    </section>
+  );
 }
 
-function CounterTimeline({ labels, details, activeIndex, className = "" }: Readonly<{ labels: string[]; details: string[]; activeIndex: number; className?: string }>) {
-  return <section className={cn("rounded-[18px] border border-[#E8E8E5] bg-white p-5", className)}><div className="grid grid-cols-5">{labels.map((label, index) => <div key={label} className="relative text-center"><div className={cn("absolute left-0 right-0 top-4 h-px", index === 0 ? "left-1/2" : "", index === labels.length - 1 ? "right-1/2" : "", index <= activeIndex ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]")} /><span className={cn("relative z-10 mx-auto grid size-8 place-items-center rounded-full border bg-white", index < activeIndex ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : index === activeIndex ? "border-[#2A9D8F] text-[#2A9D8F]" : "border-[#C9C9C4] text-[#9A9AA0]")}>{index < activeIndex ? <Check className="size-4" /> : ""}</span><b className="mt-3 block">{label}</b><span className="text-[#6B6B6B] text-xs">{details[index]}</span></div>)}</div></section>;
+function CounterTimeline({
+  labels,
+  details,
+  activeIndex,
+  className = "",
+}: Readonly<{ labels: string[]; details: string[]; activeIndex: number; className?: string }>) {
+  return (
+    <section className={cn("rounded-[18px] border border-[#E8E8E5] bg-white p-5", className)}>
+      <div className="grid grid-cols-5">
+        {labels.map((label, index) => (
+          <div key={label} className="relative text-center">
+            <div
+              className={cn(
+                "absolute left-0 right-0 top-4 h-px",
+                index === 0 ? "left-1/2" : "",
+                index === labels.length - 1 ? "right-1/2" : "",
+                index <= activeIndex ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]",
+              )}
+            />
+            <span
+              className={cn(
+                "relative z-10 mx-auto grid size-8 place-items-center rounded-full border bg-white",
+                index < activeIndex
+                  ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
+                  : index === activeIndex
+                    ? "border-[#2A9D8F] text-[#2A9D8F]"
+                    : "border-[#C9C9C4] text-[#9A9AA0]",
+              )}
+            >
+              {index < activeIndex ? <Check className="size-4" /> : ""}
+            </span>
+            <b className="mt-3 block">{label}</b>
+            <span className="text-[#6B6B6B] text-xs">{details[index]}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 function DetailBlock({ title, children }: Readonly<{ title: string; children: React.ReactNode }>) {
-  return <div className="border-[#E8E8E5] border-b py-4 first:pt-0 last:border-0"><h3 className="font-bold text-[#6B6B6B] text-sm">{title}</h3><p className="mt-2 leading-relaxed">{children}</p></div>;
+  return (
+    <div className="border-[#E8E8E5] border-b py-4 first:pt-0 last:border-0">
+      <h3 className="font-bold text-[#6B6B6B] text-sm">{title}</h3>
+      <p className="mt-2 leading-relaxed">{children}</p>
+    </div>
+  );
 }
 
 function counterStatusMessage(status: Repair["status"]) {
@@ -4737,7 +6255,11 @@ function counterStatusMessage(status: Repair["status"]) {
   }
 }
 
-function CounterTrackingScreen({ initialRepairId, onClose, onOpenRepairDetail }: Readonly<{ initialRepairId?: string; onClose: () => void; onOpenRepairDetail: (repairId: string) => void }>) {
+function CounterTrackingScreen({
+  initialRepairId,
+  onClose,
+  onOpenRepairDetail,
+}: Readonly<{ initialRepairId?: string; onClose: () => void; onOpenRepairDetail: (repairId: string) => void }>) {
   const repairs = useBeharStore((s) => s.repairs);
   const customers = useBeharStore((s) => s.customers);
   const invoices = useBeharStore((s) => s.invoices);
@@ -4751,19 +6273,23 @@ function CounterTrackingScreen({ initialRepairId, onClose, onOpenRepairDetail }:
   const [defaultActionFired, setDefaultActionFired] = useState(false);
   const customerOf = (id: string) => customers.find((c) => c.id === id);
   const recents = useMemo(
-    () => [...repairs].sort((a, b) => ((a.createdAt ?? a.droppedAt ?? "") > (b.createdAt ?? b.droppedAt ?? "") ? -1 : 1)),
+    () =>
+      [...repairs].sort((a, b) => ((a.createdAt ?? a.droppedAt ?? "") > (b.createdAt ?? b.droppedAt ?? "") ? -1 : 1)),
     [repairs],
   );
   const filtered = useMemo(
     () =>
       recents.filter((r) => {
         const c = customers.find((entry) => entry.id === r.customerId);
-        return compactText(`${r.number} ${r.device} ${r.deviceModel ?? ""} ${r.issue ?? ""} ${c?.name ?? ""} ${c?.phone ?? ""}`).includes(compactText(query));
+        return compactText(
+          `${r.number} ${r.device} ${r.deviceModel ?? ""} ${r.issue ?? ""} ${c?.name ?? ""} ${c?.phone ?? ""}`,
+        ).includes(compactText(query));
       }),
     [recents, customers, query],
   );
   const selected = recents.find((r) => r.id === selectedId) ?? filtered[0] ?? recents[0];
-  if (!selected) return <EmptyCounter title="Suivi du dossier" message="Aucun dossier à suivre pour le moment." onClose={onClose} />;
+  if (!selected)
+    return <EmptyCounter title="Suivi du dossier" message="Aucun dossier à suivre pour le moment." onClose={onClose} />;
   const customer = customerOf(selected.customerId);
   const invoice = invoices.find((i) => i.repairId === selected.id);
   const paid = payments.some((p) => p.repairId === selected.id && p.status === "Payé") || invoice?.status === "Payée";
@@ -4797,34 +6323,142 @@ function CounterTrackingScreen({ initialRepairId, onClose, onOpenRepairDetail }:
 
   return (
     <div className="mx-auto max-w-[1180px]">
-      <CounterScreenTitle title="Suivi du dossier" subtitle="Retrouvez rapidement l'état d'une réparation pour informer le client." onClose={onClose} />
+      <CounterScreenTitle
+        title="Suivi du dossier"
+        subtitle="Retrouvez rapidement l'état d'une réparation pour informer le client."
+        onClose={onClose}
+      />
       <div className="grid gap-6 lg:grid-cols-[430px_1fr]">
         <aside className="space-y-4">
-          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5"><CounterInput value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher par nom, téléphone, numéro de dossier ou appareil" /><p className="mt-3 text-[#6B6B6B] text-sm">La liste est filtrée automatiquement pendant la saisie.</p></section>
-          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4"><h2 className="font-black">Dossiers récents</h2>{filtered.length === 0 ? (<p className="mt-3 rounded-[12px] bg-[#FFFFFF] px-3 py-6 text-center text-[#6B6B6B] text-sm">Aucun dossier trouvé.</p>) : (<ul className="mt-3 space-y-2">{filtered.slice(0, 12).map((r) => { const c = customers.find((entry) => entry.id === r.customerId); return <li key={r.id}><button type="button" onClick={() => setSelectedId(r.id)} className={cn("w-full rounded-[14px] border p-4 text-left", selected.id === r.id ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white")}><div className="flex justify-between"><b>#{displayRepairCode(r)}</b><CounterMockPill tone={counterDossierTone(r.status)}>{r.status}</CounterMockPill></div><p className="mt-1 font-bold">{c?.name ?? "Non renseigné"}</p><p className="text-[#6B6B6B] text-sm">{repairDeviceLabel(r)} — {r.issue || "Non renseigné"}</p></button></li>; })}</ul>)}</section>
+          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5">
+            <CounterInput
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Rechercher par nom, téléphone, numéro de dossier ou appareil"
+            />
+            <p className="mt-3 text-[#6B6B6B] text-sm">La liste est filtrée automatiquement pendant la saisie.</p>
+          </section>
+          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4">
+            <h2 className="font-black">Dossiers récents</h2>
+            {filtered.length === 0 ? (
+              <p className="mt-3 rounded-[12px] bg-[#FFFFFF] px-3 py-6 text-center text-[#6B6B6B] text-sm">
+                Aucun dossier trouvé.
+              </p>
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {filtered.slice(0, 12).map((r) => {
+                  const c = customers.find((entry) => entry.id === r.customerId);
+                  return (
+                    <li key={r.id}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedId(r.id)}
+                        className={cn(
+                          "w-full rounded-[14px] border p-4 text-left",
+                          selected.id === r.id ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white",
+                        )}
+                      >
+                        <div className="flex justify-between">
+                          <b>#{displayRepairCode(r)}</b>
+                          <CounterMockPill tone={counterDossierTone(r.status)}>{r.status}</CounterMockPill>
+                        </div>
+                        <p className="mt-1 font-bold">{c?.name ?? "Non renseigné"}</p>
+                        <p className="text-[#6B6B6B] text-sm">
+                          {repairDeviceLabel(r)} — {r.issue || "Non renseigné"}
+                        </p>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
         </aside>
         <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-6 shadow-[0_10px_30px_rgba(26,25,22,0.04)]">
-          <div className="flex items-start justify-between"><div><h2 className="font-black text-2xl">Dossier #{selected.number}</h2><CounterMockPill tone={counterDossierTone(selected.status)}>{selected.status}</CounterMockPill></div><button type="button" onClick={() => onOpenRepairDetail(selected.id)} className="h-[44px] rounded-[12px] border border-[#E8E8E5] px-4 font-bold">Ouvrir dossier</button></div>
-          <dl className="mt-5 grid grid-cols-2 gap-x-8 gap-y-3 text-sm"><DetailRowLite label="Client" value={customer?.name ?? "Non renseigné"} /><DetailRowLite label="Téléphone" value={customer?.phone || "Non renseigné"} /><DetailRowLite label="Appareil" value={repairDeviceLabel(selected)} /><DetailRowLite label="Paiement" value={paid ? "Payé" : "À payer"} /><DetailRowLite label="Problème" value={selected.issue || "Non renseigné"} /><DetailRowLite label="Montant" value={`${formatEuro(repairAmount(selected))} TTC`} /></dl>
-          <CounterTimeline className="mt-6" activeIndex={counterTimelineIndex(selected.status)} labels={["Reçu", "Diagnostic", "Devis accepté", "En réparation", "Prêt"]} details={["", "", "", "", ""]} />
-          <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_250px]"><section className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-5"><h3 className="font-black">Message client</h3><p className="mt-2 text-[#6B6B6B]">{counterStatusMessage(selected.status)}</p></section><section className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-5"><h3 className="font-black">Estimation</h3><p className="mt-2 text-sm">Temps estimé : {formatCounterDateTime(selected.estimatedDoneAt)}<br />Technicien : {selected.technician || "Non renseigné"}</p></section></div>
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="font-black text-2xl">Dossier #{selected.number}</h2>
+              <CounterMockPill tone={counterDossierTone(selected.status)}>{selected.status}</CounterMockPill>
+            </div>
+            <button
+              type="button"
+              onClick={() => onOpenRepairDetail(selected.id)}
+              className="h-[44px] rounded-[12px] border border-[#E8E8E5] px-4 font-bold"
+            >
+              Ouvrir dossier
+            </button>
+          </div>
+          <dl className="mt-5 grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+            <DetailRowLite label="Client" value={customer?.name ?? "Non renseigné"} />
+            <DetailRowLite label="Téléphone" value={customer?.phone || "Non renseigné"} />
+            <DetailRowLite label="Appareil" value={repairDeviceLabel(selected)} />
+            <DetailRowLite label="Paiement" value={paid ? "Payé" : "À payer"} />
+            <DetailRowLite label="Problème" value={selected.issue || "Non renseigné"} />
+            <DetailRowLite label="Montant" value={`${formatEuro(repairAmount(selected))} TTC`} />
+          </dl>
+          <CounterTimeline
+            className="mt-6"
+            activeIndex={counterTimelineIndex(selected.status)}
+            labels={["Reçu", "Diagnostic", "Devis accepté", "En réparation", "Prêt"]}
+            details={["", "", "", "", ""]}
+          />
+          <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_250px]">
+            <section className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-5">
+              <h3 className="font-black">Message client</h3>
+              <p className="mt-2 text-[#6B6B6B]">{counterStatusMessage(selected.status)}</p>
+            </section>
+            <section className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-5">
+              <h3 className="font-black">Estimation</h3>
+              <p className="mt-2 text-sm">
+                Temps estimé : {formatCounterDateTime(selected.estimatedDoneAt)}
+                <br />
+                Technicien : {selected.technician || "Non renseigné"}
+              </p>
+            </section>
+          </div>
           <section className="mt-5 grid grid-cols-[120px_1fr] gap-4 rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
             <div className="cursor-pointer shrink-0" onClick={() => setSelectedQrRepairId(selected.id)}>
               <CounterRepairQr repair={selected} className="size-[112px]" />
             </div>
             <div>
               <h3 className="font-black">Lien de suivi client</h3>
-              <p className="mt-1 text-[#6B6B6B]">Le client peut suivre son dossier depuis son téléphone en scannant ce QR code.</p>
-              {selected.publicAccess ? <p className="mt-2 break-all text-[#1E7A6E] text-xs">{publicAbsoluteUrl(selected.publicAccess.url)}</p> : null}
+              <p className="mt-1 text-[#6B6B6B]">
+                Le client peut suivre son dossier depuis son téléphone en scannant ce QR code.
+              </p>
+              {selected.publicAccess ? (
+                <p className="mt-2 break-all text-[#1E7A6E] text-xs">{publicAbsoluteUrl(selected.publicAccess.url)}</p>
+              ) : null}
               <div className="mt-3 flex gap-2">
-                <button type="button" onClick={() => setSelectedQrRepairId(selected.id)} className="inline-flex h-[44px] items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold text-[#1A1916] text-xs active:scale-[0.98]">Afficher QR Code</button>
-                <button type="button" onClick={copyClientTracking} className="inline-flex h-[44px] items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold text-[#1A1916] text-xs active:scale-[0.98]">Copier le lien</button>
-                <button type="button" onClick={openClientTracking} className="inline-flex h-[44px] items-center gap-2 rounded-[12px] border border-[#D7EFEA] bg-white px-4 font-bold text-[#1E7A6E] active:scale-[0.98]"><Eye className="size-4" /> Ouvrir le suivi client</button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedQrRepairId(selected.id)}
+                  className="inline-flex h-[44px] items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold text-[#1A1916] text-xs active:scale-[0.98]"
+                >
+                  Afficher QR Code
+                </button>
+                <button
+                  type="button"
+                  onClick={copyClientTracking}
+                  className="inline-flex h-[44px] items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold text-[#1A1916] text-xs active:scale-[0.98]"
+                >
+                  Copier le lien
+                </button>
+                <button
+                  type="button"
+                  onClick={openClientTracking}
+                  className="inline-flex h-[44px] items-center gap-2 rounded-[12px] border border-[#D7EFEA] bg-white px-4 font-bold text-[#1E7A6E] active:scale-[0.98]"
+                >
+                  <Eye className="size-4" /> Ouvrir le suivi client
+                </button>
               </div>
             </div>
           </section>
           <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
-            <button type="button" onClick={() => download("intake", selected.id)} className="h-[52px] rounded-[14px] border border-[#E8E8E5] font-bold active:scale-[0.98]">
+            <button
+              type="button"
+              onClick={() => download("intake", selected.id)}
+              className="h-[52px] rounded-[14px] border border-[#E8E8E5] font-bold active:scale-[0.98]"
+            >
               <Download className="mr-2 inline size-4" /> Télécharger le bon
             </button>
             <button
@@ -4849,7 +6483,11 @@ function CounterTrackingScreen({ initialRepairId, onClose, onOpenRepairDetail }:
               <QrCode className="mr-2 inline size-4" /> Imprimer QR Code
             </button>
             {workshopSettings.counterShowCopyLink !== false && (
-              <button type="button" onClick={copyClientTracking} className="h-[52px] rounded-[14px] border border-[#E8E8E5] font-bold active:scale-[0.98]">
+              <button
+                type="button"
+                onClick={copyClientTracking}
+                className="h-[52px] rounded-[14px] border border-[#E8E8E5] font-bold active:scale-[0.98]"
+              >
                 <Copy className="mr-2 inline size-4" /> Copier lien suivi
               </button>
             )}
@@ -4888,7 +6526,10 @@ function CounterLiveScanner({ onDetected }: Readonly<{ onDetected: (value: strin
         return;
       }
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: "environment" } } });
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: { facingMode: { ideal: "environment" } },
+        });
         if (!videoRef.current || stopped) return;
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
@@ -4926,18 +6567,33 @@ function CounterLiveScanner({ onDetected }: Readonly<{ onDetected: (value: strin
   return (
     <div className="relative grid min-h-[360px] place-items-center overflow-hidden rounded-[18px] bg-[#1A1916] text-white shadow-[0_18px_44px_rgba(26,25,22,0.18)]">
       <video ref={videoRef} className="absolute inset-0 size-full object-cover" muted playsInline />
-      <div className="pointer-events-none absolute inset-0 grid place-items-center"><div className="size-40 rounded-[20px] border-2 border-white/80 shadow-[0_0_0_999px_rgba(15,23,42,0.32)]" /></div>
-      <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2 rounded-[14px] bg-white px-3 py-2 text-[#1A1916] text-[12px]"><Camera className="size-4 shrink-0 text-[#2A9D8F]" /><div className="min-w-0"><p className="font-semibold">{status}</p>{error ? <p className="text-[#B42318]">{error}</p> : null}</div></div>
+      <div className="pointer-events-none absolute inset-0 grid place-items-center">
+        <div className="size-40 rounded-[20px] border-2 border-white/80 shadow-[0_0_0_999px_rgba(15,23,42,0.32)]" />
+      </div>
+      <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2 rounded-[14px] bg-white px-3 py-2 text-[#1A1916] text-[12px]">
+        <Camera className="size-4 shrink-0 text-[#2A9D8F]" />
+        <div className="min-w-0">
+          <p className="font-semibold">{status}</p>
+          {error ? <p className="text-[#B42318]">{error}</p> : null}
+        </div>
+      </div>
     </div>
   );
 }
 
-function CounterScannerScreen({ onClose, onCreateNew, onOpenTracking }: Readonly<{ onClose: () => void; onCreateNew: () => void; onOpenTracking: (repairId?: string) => void }>) {
+function CounterScannerScreen({
+  onClose,
+  onCreateNew,
+  onOpenTracking,
+}: Readonly<{ onClose: () => void; onCreateNew: () => void; onOpenTracking: (repairId?: string) => void }>) {
   const repairs = useBeharStore((s) => s.repairs);
   const customers = useBeharStore((s) => s.customers);
   const [manualCode, setManualCode] = useState("");
   const recents = useMemo(
-    () => [...repairs].sort((a, b) => ((a.createdAt ?? a.droppedAt ?? "") > (b.createdAt ?? b.droppedAt ?? "") ? -1 : 1)).slice(0, 5),
+    () =>
+      [...repairs]
+        .sort((a, b) => ((a.createdAt ?? a.droppedAt ?? "") > (b.createdAt ?? b.droppedAt ?? "") ? -1 : 1))
+        .slice(0, 5),
     [repairs],
   );
   // Traite un QR/numéro lu : ouvre le vrai dossier (REP, IMEI ou téléphone client).
@@ -4966,16 +6622,31 @@ function CounterScannerScreen({ onClose, onCreateNew, onOpenTracking }: Readonly
   );
   return (
     <div className="mx-auto max-w-[1120px]">
-      <CounterScreenTitle title="Scanner un dossier" subtitle="Scannez une étiquette dossier ou recherchez un numéro REP." onClose={onClose} />
+      <CounterScreenTitle
+        title="Scanner un dossier"
+        subtitle="Scannez une étiquette dossier ou recherchez un numéro REP."
+        onClose={onClose}
+      />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_390px]">
         <section>
           <CounterLiveScanner onDetected={handleQrResult} />
           <section className="mt-5 rounded-[18px] border border-[#E8E8E5] bg-white p-5">
             <h2 className="font-black">Recherche manuelle</h2>
-            <p className="mt-1 text-[#6B6B6B] text-sm">Saisissez un numéro de dossier, un IMEI ou un téléphone client si la caméra n'est pas disponible.</p>
+            <p className="mt-1 text-[#6B6B6B] text-sm">
+              Saisissez un numéro de dossier, un IMEI ou un téléphone client si la caméra n'est pas disponible.
+            </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_180px]">
-              <CounterInput value={manualCode} onChange={(event) => setManualCode(event.target.value)} placeholder="N° de dossier, IMEI ou téléphone" />
-              <button type="button" onClick={() => handleQrResult(manualCode)} disabled={!manualCode.trim()} className="h-[52px] rounded-[14px] bg-[#2A9D8F] px-5 font-black text-white disabled:cursor-not-allowed disabled:bg-[#FFFFFF]">
+              <CounterInput
+                value={manualCode}
+                onChange={(event) => setManualCode(event.target.value)}
+                placeholder="N° de dossier, IMEI ou téléphone"
+              />
+              <button
+                type="button"
+                onClick={() => handleQrResult(manualCode)}
+                disabled={!manualCode.trim()}
+                className="h-[52px] rounded-[14px] bg-[#2A9D8F] px-5 font-black text-white disabled:cursor-not-allowed disabled:bg-[#FFFFFF]"
+              >
                 Ouvrir le dossier
               </button>
             </div>
@@ -4987,30 +6658,90 @@ function CounterScannerScreen({ onClose, onCreateNew, onOpenTracking }: Readonly
             onClick={onCreateNew}
             className="flex min-h-[64px] w-full items-center gap-3 rounded-[18px] border border-[#2A9D8F]/30 bg-[#FFFFFF] px-5 text-left font-black text-[#1E7A6E] transition active:scale-[0.99]"
           >
-            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#2A9D8F] text-white"><Plus className="size-5" /></span>
+            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#2A9D8F] text-white">
+              <Plus className="size-5" />
+            </span>
             Créer un nouveau dossier
           </button>
-          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5"><div className="flex justify-between"><h2 className="font-black">Dossiers récents</h2><button type="button" onClick={() => onOpenTracking()} className="font-bold text-[#1E7A6E] text-sm">Voir tout</button></div>{recents.length === 0 ? (<p className="mt-3 rounded-[12px] bg-[#FFFFFF] px-3 py-6 text-center text-[#6B6B6B] text-sm">Aucun dossier.</p>) : (<ul className="mt-3 divide-y divide-[#E8E8E5]">{recents.map((r) => <li key={r.id}><button type="button" onClick={() => onOpenTracking(r.id)} className="grid min-h-[72px] w-full grid-cols-[46px_1fr_auto] items-center gap-2 text-left"><RealDeviceVisual brand={r.brandName} model={r.deviceModel || r.device} type={r.deviceType} className="size-11 rounded-[9px] border border-[#E8E8E5] p-1" /><span><b>#{r.number}</b><span className="block text-[#6B6B6B] text-sm">{r.deviceModel || r.device}</span></span><CounterMockPill tone={counterDossierTone(r.status)}>{r.status}</CounterMockPill></button></li>)}</ul>)}</section>
+          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5">
+            <div className="flex justify-between">
+              <h2 className="font-black">Dossiers récents</h2>
+              <button type="button" onClick={() => onOpenTracking()} className="font-bold text-[#1E7A6E] text-sm">
+                Voir tout
+              </button>
+            </div>
+            {recents.length === 0 ? (
+              <p className="mt-3 rounded-[12px] bg-[#FFFFFF] px-3 py-6 text-center text-[#6B6B6B] text-sm">
+                Aucun dossier.
+              </p>
+            ) : (
+              <ul className="mt-3 divide-y divide-[#E8E8E5]">
+                {recents.map((r) => (
+                  <li key={r.id}>
+                    <button
+                      type="button"
+                      onClick={() => onOpenTracking(r.id)}
+                      className="grid min-h-[72px] w-full grid-cols-[46px_1fr_auto] items-center gap-2 text-left"
+                    >
+                      <RealDeviceVisual
+                        brand={r.brandName}
+                        model={r.deviceModel || r.device}
+                        type={r.deviceType}
+                        className="size-11 rounded-[9px] border border-[#E8E8E5] p-1"
+                      />
+                      <span>
+                        <b>#{r.number}</b>
+                        <span className="block text-[#6B6B6B] text-sm">{r.deviceModel || r.device}</span>
+                      </span>
+                      <CounterMockPill tone={counterDossierTone(r.status)}>{r.status}</CounterMockPill>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </aside>
       </div>
     </div>
   );
 }
 
-function CounterCheckoutScreen({ initialRepairId, onClose }: Readonly<{ initialRepairId: string; onClose: () => void }>) {
+function CounterCheckoutScreen({
+  initialRepairId,
+  onClose,
+}: Readonly<{ initialRepairId: string; onClose: () => void }>) {
   const store = useBeharStore();
-  const unpaid = store.repairs.filter((repair) => repair.status !== "Annulé" && repair.status !== "Irréparable" && !store.payments.some((payment) => payment.repairId === repair.id && payment.status === "Payé") && repairAmount(repair) > 0);
+  const unpaid = store.repairs.filter(
+    (repair) =>
+      repair.status !== "Annulé" &&
+      repair.status !== "Irréparable" &&
+      !store.payments.some((payment) => payment.repairId === repair.id && payment.status === "Payé") &&
+      repairAmount(repair) > 0,
+  );
   const [selectedId, setSelectedId] = useState(initialRepairId || unpaid[0]?.id || "");
   const [method, setMethod] = useState<PaymentMethod>("TPE externe");
   const [lastPaymentId, setLastPaymentId] = useState("");
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [externalReference, setExternalReference] = useState("");
   const [confirmExternal, setConfirmExternal] = useState(false);
+  const settlement = useSettlementModal();
   const repair = store.repairs.find((entry) => entry.id === selectedId) ?? unpaid[0];
-  useEffect(() => { if (initialRepairId) setSelectedId(initialRepairId); }, [initialRepairId]);
+  useEffect(() => {
+    if (initialRepairId) setSelectedId(initialRepairId);
+  }, [initialRepairId]);
   if (!repair) return <EmptyCounter title="Indiquer règlement" message="Aucun dossier à régler." onClose={onClose} />;
   const customer = store.customers.find((entry) => entry.id === repair.customerId);
-  const lines: QuoteLine[] = (repair.counterPrestations?.length ? repair.counterPrestations : [{ label: repair.issue, prixClient: repairAmount(repair) }]).map((line, index) => ({ id: `line_${index}`, description: line.label, quantity: 1, unitPrice: line.prixClient, total: line.prixClient }));
+  const lines: QuoteLine[] = (
+    repair.counterPrestations?.length
+      ? repair.counterPrestations
+      : [{ label: repair.issue, prixClient: repairAmount(repair) }]
+  ).map((line, index) => ({
+    id: `line_${index}`,
+    description: line.label,
+    quantity: 1,
+    unitPrice: line.prixClient,
+    total: line.prixClient,
+  }));
   const vat = getVatSummary(lines, store.workshopInfo);
   const amount = repairAmount(repair);
   // Marquage administratif uniquement : aucune app externe / TPE n'est ouverte.
@@ -5053,40 +6784,231 @@ function CounterCheckoutScreen({ initialRepairId, onClose }: Readonly<{ initialR
   const printInvoice = () => {
     const invoice = store.invoices.find((entry) => entry.repairId === repair.id);
     if (!invoice) return toast.info("Indiquez d'abord le règlement pour générer la facture.");
-    const doc =
-      store.documents.find((d) => d.type === "invoice" && d.invoiceId === invoice.id) ??
-      { id: `doc_${invoice.id}`, type: "invoice" as const };
+    const doc = store.documents.find((d) => d.type === "invoice" && d.invoiceId === invoice.id) ?? {
+      id: `doc_${invoice.id}`,
+      type: "invoice" as const,
+    };
     if (!printDocument(doc)) toast.error("Facture introuvable.");
   };
   return (
     <div className="mx-auto max-w-[1180px]">
-      <button type="button" onClick={onClose} className="mb-4 inline-flex h-[52px] items-center gap-2 rounded-full bg-white px-4 shadow-sm"><ArrowLeft className="size-5" /> Retour</button>
+      <button
+        type="button"
+        onClick={onClose}
+        className="mb-4 inline-flex h-[52px] items-center gap-2 rounded-full bg-white px-4 shadow-sm"
+      >
+        <ArrowLeft className="size-5" /> Retour
+      </button>
       <h1 className="mb-5 text-center font-black text-[32px]">Indiquer règlement</h1>
       <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
-        <aside className="rounded-[20px] border border-[#E8E8E5] bg-white p-4"><h2 className="mb-4 font-bold">À régler <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2">{unpaid.length}</span></h2><ul className="space-y-3">{unpaid.map((entry) => { const c = store.customers.find((customer) => customer.id === entry.customerId); return <li key={entry.id}><button type="button" onClick={() => setSelectedId(entry.id)} className={cn("w-full rounded-[14px] border p-4 text-left", entry.id === repair.id ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white")}><div className="flex justify-between"><b>{c?.name ?? "Comptoir"}</b><span className="text-[#6B6B6B]">À régler</span></div><b>{formatEuro(repairAmount(entry))}</b><p>{repairDeviceLabel(entry)}</p><p>Dossier #{displayRepairCode(entry)}</p></button></li>; })}</ul></aside>
+        <aside className="rounded-[20px] border border-[#E8E8E5] bg-white p-4">
+          <h2 className="mb-4 font-bold">
+            À régler <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2">{unpaid.length}</span>
+          </h2>
+          <ul className="space-y-3">
+            {unpaid.map((entry) => {
+              const c = store.customers.find((customer) => customer.id === entry.customerId);
+              return (
+                <li key={entry.id}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedId(entry.id)}
+                    className={cn(
+                      "w-full rounded-[14px] border p-4 text-left",
+                      entry.id === repair.id ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white",
+                    )}
+                  >
+                    <div className="flex justify-between">
+                      <b>{c?.name ?? "Comptoir"}</b>
+                      <span className="text-[#6B6B6B]">À régler</span>
+                    </div>
+                    <b>{formatEuro(repairAmount(entry))}</b>
+                    <p>{repairDeviceLabel(entry)}</p>
+                    <p>Dossier #{displayRepairCode(entry)}</p>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </aside>
         <section className="space-y-5">
-          <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5"><div className="grid gap-5 lg:grid-cols-[1fr_350px]"><div><h2 className="font-black text-[20px]">{customer?.name ?? "Client comptoir"}</h2><p className="text-[#6E6E73]">{customer?.phone}<br />{customer?.email}</p><dl className="mt-8 grid grid-cols-[120px_1fr] gap-y-5"><dt>Dossier</dt><dd><b>#{displayRepairCode(repair)}</b></dd><dt>Intervention</dt><dd><b>{repair.issue}</b></dd><dt>Appareil</dt><dd><b>{repairDeviceLabel(repair)}</b></dd><dt>Statut</dt><dd><StatusPillCounter tone="orange">À régler</StatusPillCounter></dd></dl></div><div><p>Total à régler</p><p className="font-black text-[#1E7A6E] text-[42px] tabular-nums">{formatEuro(amount)} <span className="text-[15px] text-[#6E6E73]">{store.workshopInfo.vatApplicable ? "TTC" : ""}</span></p><MiniInvoice repair={repair} lines={lines} vat={vat} /></div></div></div>
-          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5"><h2 className="font-bold">Choisir le moyen de paiement externe</h2><div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">{counterPaymentMethods(store.workshopInfo.country, store.workshopInfo.twintEnabled !== false).map((entry) => <SelectTile key={entry} active={method === entry} onClick={() => setMethod(entry)}>{entry}</SelectTile>)}</div><input className="mt-4 h-[48px] w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]" onChange={(event) => setExternalReference(event.target.value)} placeholder="Référence externe facultative" value={externalReference} /><label className="mt-3 flex items-start gap-3 rounded-[12px] border border-[#E8E8E5] bg-white p-3 text-sm font-semibold"><input checked={confirmExternal} className="mt-1 accent-[#2A9D8F]" onChange={(event) => setConfirmExternal(event.target.checked)} type="checkbox" />Je confirme que le paiement a été encaissé hors Behar Tech Pro.</label></section>
-          <div className="flex flex-wrap gap-3 [&>button]:min-w-[150px] [&>button]:flex-1"><button type="button" onClick={pay} className="h-[56px] rounded-[14px] bg-[#2A9D8F] font-bold text-white">Indiquer {formatEuro(amount)}</button><button type="button" onClick={printReceipt} className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold"><Printer className="mr-2 inline size-4" /> Imprimer confirmation</button><button type="button" onClick={printInvoice} className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold"><Receipt className="mr-2 inline size-4" /> Imprimer la facture</button><button type="button" onClick={sendReceipt} className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold">Marquer confirmation transmise</button><button type="button" onClick={() => setCloseConfirmOpen(true)} className="h-[56px] rounded-[14px] border border-[#F2C8C3] bg-white font-bold text-[#C7493B]">Marquer rendu</button></div>
+          <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5">
+            <div className="grid gap-5 lg:grid-cols-[1fr_350px]">
+              <div>
+                <h2 className="font-black text-[20px]">{customer?.name ?? "Client comptoir"}</h2>
+                <p className="text-[#6E6E73]">
+                  {customer?.phone}
+                  <br />
+                  {customer?.email}
+                </p>
+                <dl className="mt-8 grid grid-cols-[120px_1fr] gap-y-5">
+                  <dt>Dossier</dt>
+                  <dd>
+                    <b>#{displayRepairCode(repair)}</b>
+                  </dd>
+                  <dt>Intervention</dt>
+                  <dd>
+                    <b>{repair.issue}</b>
+                  </dd>
+                  <dt>Appareil</dt>
+                  <dd>
+                    <b>{repairDeviceLabel(repair)}</b>
+                  </dd>
+                  <dt>Statut</dt>
+                  <dd>
+                    <StatusPillCounter tone="orange">À régler</StatusPillCounter>
+                  </dd>
+                </dl>
+              </div>
+              <div>
+                <p>Total à régler</p>
+                <p className="font-black text-[#1E7A6E] text-[42px] tabular-nums">
+                  {formatEuro(amount)}{" "}
+                  <span className="text-[15px] text-[#6E6E73]">{store.workshopInfo.vatApplicable ? "TTC" : ""}</span>
+                </p>
+                <MiniInvoice repair={repair} lines={lines} vat={vat} />
+              </div>
+            </div>
+          </div>
+          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5">
+            <h2 className="font-bold">Choisir le moyen de paiement externe</h2>
+            <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
+              {counterPaymentMethods(store.workshopInfo.country, store.workshopInfo.twintEnabled !== false).map(
+                (entry) => (
+                  <SelectTile key={entry} active={method === entry} onClick={() => setMethod(entry)}>
+                    {entry}
+                  </SelectTile>
+                ),
+              )}
+            </div>
+            <input
+              className="mt-4 h-[48px] w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]"
+              onChange={(event) => setExternalReference(event.target.value)}
+              placeholder="Référence externe facultative"
+              value={externalReference}
+            />
+            <label className="mt-3 flex items-start gap-3 rounded-[12px] border border-[#E8E8E5] bg-white p-3 text-sm font-semibold">
+              <input
+                checked={confirmExternal}
+                className="mt-1 accent-[#2A9D8F]"
+                onChange={(event) => setConfirmExternal(event.target.checked)}
+                type="checkbox"
+              />
+              Je confirme que le paiement a été encaissé hors Behar Tech Pro.
+            </label>
+          </section>
+          <div className="flex flex-wrap gap-3 [&>button]:min-w-[150px] [&>button]:flex-1">
+            <button type="button" onClick={pay} className="h-[56px] rounded-[14px] bg-[#2A9D8F] font-bold text-white">
+              Indiquer {formatEuro(amount)}
+            </button>
+            <button
+              type="button"
+              onClick={printReceipt}
+              className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold"
+            >
+              <Printer className="mr-2 inline size-4" /> Imprimer confirmation
+            </button>
+            <button
+              type="button"
+              onClick={printInvoice}
+              className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold"
+            >
+              <Receipt className="mr-2 inline size-4" /> Imprimer la facture
+            </button>
+            <button
+              type="button"
+              onClick={sendReceipt}
+              className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold"
+            >
+              Marquer confirmation transmise
+            </button>
+            <button
+              type="button"
+              onClick={() => setCloseConfirmOpen(true)}
+              className="h-[56px] rounded-[14px] border border-[#F2C8C3] bg-white font-bold text-[#C7493B]"
+            >
+              Clôturer / règlement
+            </button>
+          </div>
           {closeConfirmOpen && (
             <CloseDossierConfirmModal
               onCancel={() => setCloseConfirmOpen(false)}
               onConfirm={() => {
-                store.changeRepairStatus(repair.id, "Rendu");
                 setCloseConfirmOpen(false);
-                toast.success("Dossier marqué comme rendu.");
+                settlement.open(repair.id, { closeAfterSubmit: true });
               }}
             />
           )}
+          <SettlementModal
+            draft={settlement.draft}
+            isOpen={settlement.isOpen}
+            onClose={settlement.close}
+            onDraftChange={settlement.setDraft}
+            onSubmit={settlement.submit}
+            total={settlement.total}
+          />
         </section>
       </div>
     </div>
   );
 }
 
-function MiniInvoice({ repair, lines, vat }: Readonly<{ repair: Repair; lines: QuoteLine[]; vat: ReturnType<typeof getVatSummary> }>) {
+function MiniInvoice({
+  repair,
+  lines,
+  vat,
+}: Readonly<{ repair: Repair; lines: QuoteLine[]; vat: ReturnType<typeof getVatSummary> }>) {
   const ws = useBeharStore((s) => s.workshopInfo);
-  return <div className="mt-5 rounded-[14px] border border-[#E8E8E5] bg-white p-4 text-[12px]"><div className="flex justify-between"><b>{ws.commercialName || ws.name}</b><span>Dossier #{displayRepairCode(repair)}<br />{new Date().toLocaleDateString("fr-FR")}</span></div><p className="mt-1 text-[#6E6E73]">{ws.address}<br />{ws.phone}</p><div className="my-3 border-t border-[#E8E8E5]" />{lines.map((line) => <div key={line.id} className="flex justify-between py-1"><span>{line.description}</span><span>{formatEuro(line.total)}</span></div>)}<div className="mt-2 border-t border-[#E8E8E5] pt-2">{ws.vatApplicable ? <><div className="flex justify-between"><span>Sous-total HT</span><span>{formatEuro(vat.ht)}</span></div><div className="flex justify-between"><span>TVA ({Math.round(vat.rate * 1000) / 10}%)</span><span>{formatEuro(vat.tva)}</span></div><div className="flex justify-between font-bold"><span>Total TTC</span><span className="text-[#1E7A6E]">{formatEuro(vat.ttc)}</span></div></> : <><p className="text-[#6E6E73]">{ws.tvaMention || "TVA non applicable, art. 293 B du CGI"}</p><div className="flex justify-between font-bold"><span>Total</span><span className="text-[#1E7A6E]">{formatEuro(vat.ttc)}</span></div></>}</div></div>;
+  return (
+    <div className="mt-5 rounded-[14px] border border-[#E8E8E5] bg-white p-4 text-[12px]">
+      <div className="flex justify-between">
+        <b>{ws.commercialName || ws.name}</b>
+        <span>
+          Dossier #{displayRepairCode(repair)}
+          <br />
+          {new Date().toLocaleDateString("fr-FR")}
+        </span>
+      </div>
+      <p className="mt-1 text-[#6E6E73]">
+        {ws.address}
+        <br />
+        {ws.phone}
+      </p>
+      <div className="my-3 border-t border-[#E8E8E5]" />
+      {lines.map((line) => (
+        <div key={line.id} className="flex justify-between py-1">
+          <span>{line.description}</span>
+          <span>{formatEuro(line.total)}</span>
+        </div>
+      ))}
+      <div className="mt-2 border-t border-[#E8E8E5] pt-2">
+        {ws.vatApplicable ? (
+          <>
+            <div className="flex justify-between">
+              <span>Sous-total HT</span>
+              <span>{formatEuro(vat.ht)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>TVA ({Math.round(vat.rate * 1000) / 10}%)</span>
+              <span>{formatEuro(vat.tva)}</span>
+            </div>
+            <div className="flex justify-between font-bold">
+              <span>Total TTC</span>
+              <span className="text-[#1E7A6E]">{formatEuro(vat.ttc)}</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-[#6E6E73]">{ws.tvaMention || "TVA non applicable, art. 293 B du CGI"}</p>
+            <div className="flex justify-between font-bold">
+              <span>Total</span>
+              <span className="text-[#1E7A6E]">{formatEuro(vat.ttc)}</span>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function quoteNumberCounter(quote: Quote) {
@@ -5145,10 +7067,14 @@ function CounterQuotesScreen({
       .filter((quote) => {
         if (statusFilter !== "all" && quoteStatusLabelCounter(quote.status) !== statusFilter) return false;
         if (!q) return true;
-        const needle = compactText(`${quote.number} ${quoteClientNameCounter(quote, store.customers)} ${quoteClientPhoneCounter(quote, store.customers)} ${quoteDeviceSummaryCounter(quote)}`);
+        const needle = compactText(
+          `${quote.number} ${quoteClientNameCounter(quote, store.customers)} ${quoteClientPhoneCounter(quote, store.customers)} ${quoteDeviceSummaryCounter(quote)}`,
+        );
         return needle.includes(q);
       })
-      .sort((a, b) => new Date(b.date || b.createdAt || "").getTime() - new Date(a.date || a.createdAt || "").getTime());
+      .sort(
+        (a, b) => new Date(b.date || b.createdAt || "").getTime() - new Date(a.date || a.createdAt || "").getTime(),
+      );
   }, [search, statusFilter, store.customers, store.quotes]);
   const selected = store.quotes.find((quote) => quote.id === selectedId);
 
@@ -5170,12 +7096,22 @@ function CounterQuotesScreen({
       total: device.subtotalTtc,
       notes: [
         `Depuis le devis ${quoteNumberCounter(quote)}.`,
-        devices.length > 1 ? `Le devis contient ${devices.length} appareils. Appareil pré-rempli : ${device.model || device.brand || "Appareil 1"}.` : "",
+        devices.length > 1
+          ? `Le devis contient ${devices.length} appareils. Appareil pré-rempli : ${device.model || device.brand || "Appareil 1"}.`
+          : "",
         accessoryLabels.length ? `Accessoires devis : ${accessoryLabels.join(", ")}.` : "",
-      ].filter(Boolean).join(" "),
+      ]
+        .filter(Boolean)
+        .join(" "),
       counterPrestations: [
-        ...device.services.map((service) => ({ label: service.label, prixClient: service.priceTtc * service.quantity })),
-        ...device.accessories.map((accessory) => ({ label: accessory.label, prixClient: accessory.included ? 0 : accessory.priceTtc ?? 0 })),
+        ...device.services.map((service) => ({
+          label: service.label,
+          prixClient: service.priceTtc * service.quantity,
+        })),
+        ...device.accessories.map((accessory) => ({
+          label: accessory.label,
+          prixClient: accessory.included ? 0 : (accessory.priceTtc ?? 0),
+        })),
       ],
     });
     toast.success("Devis repris dans la prise en charge.");
@@ -5188,7 +7124,14 @@ function CounterQuotesScreen({
     return (
       <div className="mx-auto max-w-[1180px]">
         <div className="mb-6 flex items-center gap-4">
-          <button type="button" onClick={() => { setSelectedId(""); setConfirmingRefusal(false); }} className="grid size-[52px] place-items-center rounded-full bg-white shadow-sm active:scale-[0.97]">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedId("");
+              setConfirmingRefusal(false);
+            }}
+            className="grid size-[52px] place-items-center rounded-full bg-white shadow-sm active:scale-[0.97]"
+          >
             <ArrowLeft className="size-5" />
           </button>
           <h1 className="font-black text-[30px] tracking-tight">Devis {quoteNumberCounter(selected)}</h1>
@@ -5199,19 +7142,32 @@ function CounterQuotesScreen({
             <div className="mb-5 flex min-h-[52px] items-center gap-3 text-[17px]">
               <User className="size-6" />
               <b>{quoteClientNameCounter(selected, store.customers)}</b>
-              {quoteClientPhoneCounter(selected, store.customers) && <span className="text-[#6E6E73]">· {quoteClientPhoneCounter(selected, store.customers)}</span>}
+              {quoteClientPhoneCounter(selected, store.customers) && (
+                <span className="text-[#6E6E73]">· {quoteClientPhoneCounter(selected, store.customers)}</span>
+              )}
             </div>
             <div className="space-y-3">
               {devices.map((device, index) => (
                 <article key={device.id} className="rounded-[16px] border border-[#E8E8E5] bg-white p-4">
                   <div className="grid grid-cols-[76px_minmax(0,1fr)_auto] items-center gap-4">
-                    <RealDeviceVisual brand={device.brand} model={device.model} type={device.type} className="size-[76px] rounded-[12px] border border-[#E8E8E5] p-1" />
+                    <RealDeviceVisual
+                      brand={device.brand}
+                      model={device.model}
+                      type={device.type}
+                      className="size-[76px] rounded-[12px] border border-[#E8E8E5] p-1"
+                    />
                     <div>
                       <p className="text-[#6E6E73] text-sm">Appareil {index + 1}</p>
-                      <h2 className="mt-1 font-black text-[18px]">{formatBrandModel(device.brand, device.model, `Appareil ${index + 1}`)}</h2>
+                      <h2 className="mt-1 font-black text-[18px]">
+                        {formatBrandModel(device.brand, device.model, `Appareil ${index + 1}`)}
+                      </h2>
                       <ul className="mt-3 list-disc space-y-1 pl-5 text-[14px]">
-                        {device.services.map((service) => <li key={service.id}>{service.label}</li>)}
-                        {device.accessories.map((accessory) => <li key={accessory.id}>{accessory.label}</li>)}
+                        {device.services.map((service) => (
+                          <li key={service.id}>{service.label}</li>
+                        ))}
+                        {device.accessories.map((accessory) => (
+                          <li key={accessory.id}>{accessory.label}</li>
+                        ))}
                       </ul>
                     </div>
                     <b className="font-black text-[20px] tabular-nums">{formatEuro(device.subtotalTtc)}</b>
@@ -5235,7 +7191,11 @@ function CounterQuotesScreen({
           <aside className="space-y-5">
             <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-6">
               <h2 className="font-bold text-[18px]">Actions</h2>
-              <button type="button" onClick={() => transformQuote(selected)} className="mt-5 h-[62px] w-full rounded-[14px] bg-[#2A9D8F] font-bold text-white shadow-[0_14px_30px_rgba(42,157,143,0.18)] active:scale-[0.98]">
+              <button
+                type="button"
+                onClick={() => transformQuote(selected)}
+                className="mt-5 h-[62px] w-full rounded-[14px] bg-[#2A9D8F] font-bold text-white shadow-[0_14px_30px_rgba(42,157,143,0.18)] active:scale-[0.98]"
+              >
                 <Wrench className="mr-2 inline size-5" /> Transformer en prise en charge
               </button>
               <button
@@ -5282,13 +7242,24 @@ function CounterQuotesScreen({
                   setConfirmingRefusal(false);
                   toast.success("Devis marqué comme refusé.");
                 }}
-                className={cn("mt-3 h-[56px] w-full rounded-[14px] border font-bold active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50", confirmingRefusal ? "border-[#B42318] bg-[#B42318] text-white" : "border-[#F2C8C3] bg-white text-[#C7493B]")}
+                className={cn(
+                  "mt-3 h-[56px] w-full rounded-[14px] border font-bold active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50",
+                  confirmingRefusal
+                    ? "border-[#B42318] bg-[#B42318] text-white"
+                    : "border-[#F2C8C3] bg-white text-[#C7493B]",
+                )}
               >
-                <X className="mr-2 inline size-5" /> {statusLabel === "Refusé" ? "Devis refusé" : confirmingRefusal ? "Confirmer le refus" : "Marquer refusé"}
+                <X className="mr-2 inline size-5" />{" "}
+                {statusLabel === "Refusé"
+                  ? "Devis refusé"
+                  : confirmingRefusal
+                    ? "Confirmer le refus"
+                    : "Marquer refusé"}
               </button>
             </section>
             <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 text-[#6E6E73]">
-              Devis valable 30 jours · émis le {new Date(selected.date || selected.createdAt || Date.now()).toLocaleDateString("fr-FR")}
+              Devis valable 30 jours · émis le{" "}
+              {new Date(selected.date || selected.createdAt || Date.now()).toLocaleDateString("fr-FR")}
             </section>
           </aside>
         </div>
@@ -5300,7 +7271,11 @@ function CounterQuotesScreen({
     <div className="mx-auto max-w-[1180px]">
       <div className="mb-5 flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <button type="button" onClick={onClose} className="grid size-[52px] place-items-center rounded-full bg-white shadow-sm active:scale-[0.97]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid size-[52px] place-items-center rounded-full bg-white shadow-sm active:scale-[0.97]"
+          >
             <ArrowLeft className="size-5" />
           </button>
           <div>
@@ -5308,12 +7283,20 @@ function CounterQuotesScreen({
             <p className="text-[#6E6E73]">Retrouvez et gérez vos devis</p>
           </div>
         </div>
-        <button type="button" onClick={onCreate} className="h-[56px] rounded-[14px] bg-[#2A9D8F] px-6 font-bold text-white shadow-[0_12px_26px_rgba(42,157,143,0.18)] active:scale-[0.98]">
+        <button
+          type="button"
+          onClick={onCreate}
+          className="h-[56px] rounded-[14px] bg-[#2A9D8F] px-6 font-bold text-white shadow-[0_12px_26px_rgba(42,157,143,0.18)] active:scale-[0.98]"
+        >
           <Plus className="mr-2 inline size-5" /> Nouveau devis
         </button>
       </div>
       <div className="mb-4">
-        <CounterInput placeholder="Rechercher un devis (n°, client, téléphone…)" value={search} onChange={(event) => setSearch(event.target.value)} />
+        <CounterInput
+          placeholder="Rechercher un devis (n°, client, téléphone…)"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
       </div>
       <div className="mb-5 flex flex-wrap gap-2">
         {(["all", "En attente", "Accepté", "Refusé"] as const).map((entry) => (
@@ -5321,7 +7304,12 @@ function CounterQuotesScreen({
             key={entry}
             type="button"
             onClick={() => setStatusFilter(entry)}
-            className={cn("h-[40px] rounded-full border px-4 font-semibold text-sm", statusFilter === entry ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#6B6B6B]")}
+            className={cn(
+              "h-[40px] rounded-full border px-4 font-semibold text-sm",
+              statusFilter === entry
+                ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
+                : "border-[#E8E8E5] bg-white text-[#6B6B6B]",
+            )}
           >
             {entry === "all" ? "Tous" : entry}
           </button>
@@ -5329,7 +7317,9 @@ function CounterQuotesScreen({
       </div>
       <section className="space-y-3">
         {quotes.length === 0 ? (
-          <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-8 text-center text-[#6E6E73]">Aucun devis pour le moment.</div>
+          <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-8 text-center text-[#6E6E73]">
+            Aucun devis pour le moment.
+          </div>
         ) : (
           quotes.map((quote) => {
             const status = quoteStatusLabelCounter(quote.status);
@@ -5337,23 +7327,39 @@ function CounterQuotesScreen({
               <button
                 key={quote.id}
                 type="button"
-                onClick={() => { setSelectedId(quote.id); setConfirmingRefusal(false); }}
+                onClick={() => {
+                  setSelectedId(quote.id);
+                  setConfirmingRefusal(false);
+                }}
                 className="grid min-h-[92px] w-full grid-cols-[1fr_auto] items-center gap-x-4 gap-y-3 rounded-[18px] border border-[#E8E8E5] bg-white px-5 py-4 text-left shadow-[0_8px_26px_rgba(29,29,31,0.035)] transition active:scale-[0.99] xl:grid-cols-[140px_minmax(0,1fr)_180px_110px_130px_160px] xl:px-6 xl:py-0"
               >
-                <b className="order-1 font-black text-[#1E7A6E] text-[20px] xl:order-none">{quoteNumberCounter(quote)}</b>
+                <b className="order-1 font-black text-[#1E7A6E] text-[20px] xl:order-none">
+                  {quoteNumberCounter(quote)}
+                </b>
                 <span className="order-3 col-span-2 min-w-0 xl:order-none xl:col-span-1">
                   <b className="block">{quoteClientNameCounter(quote, store.customers)}</b>
                   <span className="text-[#6E6E73] text-sm">{quoteClientPhoneCounter(quote, store.customers)}</span>
                 </span>
                 <span className="order-4 col-span-2 flex min-w-0 items-center gap-3 xl:order-none xl:col-span-1">
-                  <RealDeviceVisual brand={getQuoteDevices(quote)[0]?.brand} model={getQuoteDevices(quote)[0]?.model} type={getQuoteDevices(quote)[0]?.type} className="size-12 rounded-[9px] border border-[#E8E8E5] p-1" />
+                  <RealDeviceVisual
+                    brand={getQuoteDevices(quote)[0]?.brand}
+                    model={getQuoteDevices(quote)[0]?.model}
+                    type={getQuoteDevices(quote)[0]?.type}
+                    className="size-12 rounded-[9px] border border-[#E8E8E5] p-1"
+                  />
                   <span className="min-w-0">
                     <b className="block truncate">{quoteDeviceSummaryCounter(quote)}</b>
-                    <span className="text-[#6E6E73] text-sm">{getQuoteDevices(quote).length} appareil{getQuoteDevices(quote).length > 1 ? "s" : ""}</span>
+                    <span className="text-[#6E6E73] text-sm">
+                      {getQuoteDevices(quote).length} appareil{getQuoteDevices(quote).length > 1 ? "s" : ""}
+                    </span>
                   </span>
                 </span>
-                <span className="order-5 text-[#6E6E73] xl:order-none">{quoteRelativeDateCounter(quote.date || quote.createdAt)}</span>
-                <b className="order-2 text-right text-[#1E7A6E] text-[20px] tabular-nums xl:order-none xl:text-left">{formatEuro(getQuoteTotal(quote))}</b>
+                <span className="order-5 text-[#6E6E73] xl:order-none">
+                  {quoteRelativeDateCounter(quote.date || quote.createdAt)}
+                </span>
+                <b className="order-2 text-right text-[#1E7A6E] text-[20px] tabular-nums xl:order-none xl:text-left">
+                  {formatEuro(getQuoteTotal(quote))}
+                </b>
                 <span className="order-6 flex items-center justify-end gap-4 xl:order-none xl:justify-start">
                   <StatusPillCounter tone={status === "Accepté" ? "green" : "orange"}>{status}</StatusPillCounter>
                   <ChevronRight className="size-5" />
@@ -5414,11 +7420,17 @@ function quoteAccessoryLabelForDevice(label: string, model: string) {
   const cleanModel = model.trim();
   if (!cleanModel) return cleanLabel;
   if (compactText(cleanLabel).includes(compactText(cleanModel))) return cleanLabel;
-  const baseLabel = cleanLabel.replace(/\s+iPhone$/i, "").replace(/\s+Samsung$/i, "").trim();
+  const baseLabel = cleanLabel
+    .replace(/\s+iPhone$/i, "")
+    .replace(/\s+Samsung$/i, "")
+    .trim();
   return `${baseLabel} ${cleanModel}`;
 }
 
-function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => void; onTransform: (prefill: Partial<Repair>) => void }>) {
+function CounterQuoteScreen({
+  onClose,
+  onTransform,
+}: Readonly<{ onClose: () => void; onTransform: (prefill: Partial<Repair>) => void }>) {
   const store = useBeharStore();
   const [clientMode, setClientMode] = useState<CounterClientMode>("counter");
   const [customerId, setCustomerId] = useState("");
@@ -5434,9 +7446,12 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
   const [sendOpen, setSendOpen] = useState(false);
   const [sendChannel, setSendChannel] = useState<"Email" | "SMS">("Email");
   const [sendTarget, setSendTarget] = useState("");
-  const counterCustomer = store.customers.find((entry) => entry.type === "counter" || entry.name.startsWith("Client comptoir"));
+  const counterCustomer = store.customers.find(
+    (entry) => entry.type === "counter" || entry.name.startsWith("Client comptoir"),
+  );
   const customer = clientMode === "existing" ? store.customers.find((entry) => entry.id === customerId) : undefined;
-  const quoteCustomerLabel = clientMode === "counter" ? "Client comptoir" : clientMode === "existing" ? customer?.name ?? "" : name.trim();
+  const quoteCustomerLabel =
+    clientMode === "counter" ? "Client comptoir" : clientMode === "existing" ? (customer?.name ?? "") : name.trim();
   const activeDevice = devicePages.find((page) => page.id === activeDeviceId) ?? devicePages[0];
   const deviceType = activeDevice.deviceType;
   const brand = activeDevice.brand;
@@ -5496,19 +7511,23 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
     brand: page.brand,
     model: page.model,
     services: [
-      ...page.prestations.filter((label) => label !== "Autre").map((label, index, normalPrestations) => ({
-        id: `${page.id}_service_${index}`,
-        label,
-        priceTtc: normalPrestations.length ? toMoney(page.price) / normalPrestations.length : toMoney(page.price),
-        quantity: 1,
-      })),
+      ...page.prestations
+        .filter((label) => label !== "Autre")
+        .map((label, index, normalPrestations) => ({
+          id: `${page.id}_service_${index}`,
+          label,
+          priceTtc: normalPrestations.length ? toMoney(page.price) / normalPrestations.length : toMoney(page.price),
+          quantity: 1,
+        })),
       ...(page.prestations.includes("Autre")
-        ? [{
-            id: `${page.id}_service_custom`,
-            label: page.customProblemLabel.trim() || "Autre panne",
-            priceTtc: toMoney(page.customProblemPrice),
-            quantity: 1,
-          }]
+        ? [
+            {
+              id: `${page.id}_service_custom`,
+              label: page.customProblemLabel.trim() || "Autre panne",
+              priceTtc: toMoney(page.customProblemPrice),
+              quantity: 1,
+            },
+          ]
         : []),
     ],
     accessories: page.accessories.map((accessory, index) => ({
@@ -5547,7 +7566,10 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
   const vat = getVatSummary(lines, store.workshopInfo);
   useEffect(() => {
     if (!model.trim() || prestations.length === 0) return;
-    const foundPrice = prestations.reduce((sum, entry) => sum + findCataloguePrice(store.priceBookItems, brand, model, entry), 0);
+    const foundPrice = prestations.reduce(
+      (sum, entry) => sum + findCataloguePrice(store.priceBookItems, brand, model, entry),
+      0,
+    );
     if (foundPrice > 0 && String(foundPrice) !== price) updateActiveDevice({ price: String(foundPrice) });
   }, [activeDevice.id, brand, model, prestations, price, store.priceBookItems]);
   const selectQuoteCataloguePrestation = (entry: { label: string; prixClient: number }) => {
@@ -5629,7 +7651,8 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
   };
   const resolveTransformCustomerId = () => {
     if (created?.customerId) return created.customerId;
-    if (clientMode === "counter") return counterCustomer?.id ?? store.addCustomer({ name: "Client comptoir", type: "counter" });
+    if (clientMode === "counter")
+      return counterCustomer?.id ?? store.addCustomer({ name: "Client comptoir", type: "counter" });
     if (clientMode === "existing") return customerId || undefined;
     return undefined;
   };
@@ -5657,8 +7680,12 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
     toast.success("Devis généré.");
   };
   const created = store.quotes.find((quote) => quote.id === createdId);
-  const resolvedCustomerId = created?.customerId ?? (clientMode === "existing" ? customerId : clientMode === "counter" ? counterCustomer?.id ?? "" : "");
-  const resolvedCustomer = resolvedCustomerId ? store.customers.find((entry) => entry.id === resolvedCustomerId) : undefined;
+  const resolvedCustomerId =
+    created?.customerId ??
+    (clientMode === "existing" ? customerId : clientMode === "counter" ? (counterCustomer?.id ?? "") : "");
+  const resolvedCustomer = resolvedCustomerId
+    ? store.customers.find((entry) => entry.id === resolvedCustomerId)
+    : undefined;
   const handlePrintQuote = () => {
     if (!created) return toast.info("Générez d'abord le devis avant de l'imprimer.");
     const document = store.documents.find((entry) => entry.type === "quote" && entry.quoteId === created.id);
@@ -5668,7 +7695,8 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
     const quote = created ?? store.quotes.find((entry) => entry.id === createdId);
     const cid = quote?.customerId || resolvedCustomerId;
     if (!cid) return toast.error("Générez le devis avec un client avant l'envoi.");
-    const target = sendTarget.trim() || (sendChannel === "Email" ? resolvedCustomer?.email : resolvedCustomer?.phone) || "";
+    const target =
+      sendTarget.trim() || (sendChannel === "Email" ? resolvedCustomer?.email : resolvedCustomer?.phone) || "";
     if (!target) return toast.error(`Renseignez ${sendChannel === "Email" ? "un email" : "un numéro SMS"}.`);
     store.sendMessage({
       customerId: cid,
@@ -5682,15 +7710,25 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
   };
   return (
     <div className="mx-auto max-w-[1180px]">
-      <h1 className="font-black text-[32px] tracking-tight">Nouveau devis</h1><p className="text-[#6E6E73]">Créer un devis rapidement</p>
+      <h1 className="font-black text-[32px] tracking-tight">Nouveau devis</h1>
+      <p className="text-[#6E6E73]">Créer un devis rapidement</p>
       <CounterStepper steps={["Client & appareil", "Prestations", "Aperçu"]} current={created ? 2 : 0} />
       <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section className="space-y-4 rounded-[20px] border border-[#E8E8E5] bg-white p-5">
           <h2 className="font-bold">1. Client</h2>
           <div className="grid grid-cols-3 gap-3">
-            <SelectTile active={clientMode === "counter"} onClick={() => setClientMode("counter")}><User className="size-5" />Client comptoir</SelectTile>
-            <SelectTile active={clientMode === "new"} onClick={() => setClientMode("new")}><User className="size-5" />Nouveau client</SelectTile>
-            <SelectTile active={clientMode === "existing"} onClick={() => setClientMode("existing")}><Users className="size-5" />Client existant</SelectTile>
+            <SelectTile active={clientMode === "counter"} onClick={() => setClientMode("counter")}>
+              <User className="size-5" />
+              Client comptoir
+            </SelectTile>
+            <SelectTile active={clientMode === "new"} onClick={() => setClientMode("new")}>
+              <User className="size-5" />
+              Nouveau client
+            </SelectTile>
+            <SelectTile active={clientMode === "existing"} onClick={() => setClientMode("existing")}>
+              <Users className="size-5" />
+              Client existant
+            </SelectTile>
           </div>
           {clientMode === "counter" && (
             <div className="rounded-[14px] border border-[#DDEFEA] bg-[#FFFFFF] px-4 py-3 text-sm font-semibold text-[#1E7A6E]">
@@ -5706,7 +7744,11 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
           {clientMode === "existing" && <ExistingCustomerSearch value={customerId} onChange={setCustomerId} />}
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-bold">2. Appareil</h2>
-            <button type="button" onClick={addQuoteDevicePage} className="h-11 rounded-[12px] border border-[#2A9D8F] px-4 font-bold text-[#1E7A6E] active:scale-[0.97]">
+            <button
+              type="button"
+              onClick={addQuoteDevicePage}
+              className="h-11 rounded-[12px] border border-[#2A9D8F] px-4 font-bold text-[#1E7A6E] active:scale-[0.97]"
+            >
               <Plus className="mr-2 inline size-4" /> Ajouter un appareil
             </button>
           </div>
@@ -5717,27 +7759,48 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
                   key={page.id}
                   type="button"
                   onClick={() => setActiveDeviceId(page.id)}
-                  className={cn("min-h-[52px] shrink-0 rounded-[14px] border px-4 text-left transition active:scale-[0.97]", page.id === activeDevice.id ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white")}
+                  className={cn(
+                    "min-h-[52px] shrink-0 rounded-[14px] border px-4 text-left transition active:scale-[0.97]",
+                    page.id === activeDevice.id
+                      ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
+                      : "border-[#E8E8E5] bg-white",
+                  )}
                 >
                   <b>{page.label}</b>
                   <span className="ml-2 text-[#6E6E73] text-[12px]">{page.model || "À choisir"}</span>
                 </button>
               ))}
-              <button type="button" onClick={() => removeQuoteDevicePage(activeDevice.id)} className="min-h-[52px] shrink-0 rounded-[14px] border border-[#F2C8C3] px-4 font-bold text-[#C7493B]">
+              <button
+                type="button"
+                onClick={() => removeQuoteDevicePage(activeDevice.id)}
+                className="min-h-[52px] shrink-0 rounded-[14px] border border-[#F2C8C3] px-4 font-bold text-[#C7493B]"
+              >
                 Supprimer
               </button>
             </div>
           )}
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {counterTypes.map((entry) => (
-              <SelectTile key={entry} active={deviceType === entry} onClick={() => updateActiveDevice({ deviceType: entry, model: "", prestations: [], accessories: [], price: "" })}>
+              <SelectTile
+                key={entry}
+                active={deviceType === entry}
+                onClick={() =>
+                  updateActiveDevice({ deviceType: entry, model: "", prestations: [], accessories: [], price: "" })
+                }
+              >
                 {entry}
               </SelectTile>
             ))}
           </div>
           <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-8">
             {counterBrands.map((entry) => (
-              <SelectTile key={entry} active={brand === entry} onClick={() => updateActiveDevice({ brand: entry, model: "", prestations: [], accessories: [], price: "" })}>
+              <SelectTile
+                key={entry}
+                active={brand === entry}
+                onClick={() =>
+                  updateActiveDevice({ brand: entry, model: "", prestations: [], accessories: [], price: "" })
+                }
+              >
                 {entry}
               </SelectTile>
             ))}
@@ -5756,7 +7819,12 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
               })
             }
           />
-          <CounterInput placeholder="IMEI / numéro de série (optionnel)" inputMode="numeric" value={activeDevice.imei} onChange={(event) => updateActiveDevice({ imei: event.target.value })} />
+          <CounterInput
+            placeholder="IMEI / numéro de série (optionnel)"
+            inputMode="numeric"
+            value={activeDevice.imei}
+            onChange={(event) => updateActiveDevice({ imei: event.target.value })}
+          />
           <h2 className="font-bold">3. Problème / Prestation</h2>
           {quoteCataloguePrestations.length > 0 && (
             <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
@@ -5765,10 +7833,17 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
                   key={entry.label}
                   type="button"
                   onClick={() => selectQuoteCataloguePrestation(entry)}
-                  className={cn("min-h-[62px] rounded-[14px] border px-3 text-left transition active:scale-[0.97]", prestations.includes(entry.label) ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#DDEFEA] bg-[#FFFFFF]")}
+                  className={cn(
+                    "min-h-[62px] rounded-[14px] border px-3 text-left transition active:scale-[0.97]",
+                    prestations.includes(entry.label)
+                      ? "border-[#2A9D8F] bg-[#FFFFFF]"
+                      : "border-[#DDEFEA] bg-[#FFFFFF]",
+                  )}
                 >
                   <span className="block font-bold text-[13px]">{entry.label}</span>
-                  <span className="block text-[#1E7A6E] text-[12px] font-black">{entry.prixClient > 0 ? formatEuro(entry.prixClient) : "Prix à saisir"}</span>
+                  <span className="block text-[#1E7A6E] text-[12px] font-black">
+                    {entry.prixClient > 0 ? formatEuro(entry.prixClient) : "Prix à saisir"}
+                  </span>
                 </button>
               ))}
             </div>
@@ -5781,24 +7856,51 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
                   key={entry}
                   active={prestations.includes(entry)}
                   onClick={() => {
-                    const nextPrestations = prestations.includes(entry) ? prestations.filter((item) => item !== entry) : [...prestations, entry];
-                    const nextPrice = nextPrestations.filter((item) => item !== "Autre").reduce((sum, item) => sum + findCataloguePrice(store.priceBookItems, brand, model, item), 0);
-                    updateActiveDevice({ prestations: nextPrestations, price: nextPrice > 0 ? String(nextPrice) : price });
+                    const nextPrestations = prestations.includes(entry)
+                      ? prestations.filter((item) => item !== entry)
+                      : [...prestations, entry];
+                    const nextPrice = nextPrestations
+                      .filter((item) => item !== "Autre")
+                      .reduce((sum, item) => sum + findCataloguePrice(store.priceBookItems, brand, model, item), 0);
+                    updateActiveDevice({
+                      prestations: nextPrestations,
+                      price: nextPrice > 0 ? String(nextPrice) : price,
+                    });
                   }}
                 >
-                  <span>{entry}{cataloguePrice > 0 && <span className="mt-1 block text-[#1E7A6E] text-[12px] tabular-nums">{formatEuro(cataloguePrice)}</span>}</span>
+                  <span>
+                    {entry}
+                    {cataloguePrice > 0 && (
+                      <span className="mt-1 block text-[#1E7A6E] text-[12px] tabular-nums">
+                        {formatEuro(cataloguePrice)}
+                      </span>
+                    )}
+                  </span>
                 </SelectTile>
               );
             })}
           </div>
           {prestations.includes("Autre") && (
             <div className="grid gap-3 md:grid-cols-[1fr_180px]">
-              <CounterInput placeholder="Décrire la panne" value={activeDevice.customProblemLabel} onChange={(event) => updateActiveDevice({ customProblemLabel: event.target.value })} />
-              <CounterInput inputMode="decimal" placeholder="Prix" value={activeDevice.customProblemPrice} onChange={(event) => updateActiveDevice({ customProblemPrice: event.target.value })} />
+              <CounterInput
+                placeholder="Décrire la panne"
+                value={activeDevice.customProblemLabel}
+                onChange={(event) => updateActiveDevice({ customProblemLabel: event.target.value })}
+              />
+              <CounterInput
+                inputMode="decimal"
+                placeholder="Prix"
+                value={activeDevice.customProblemPrice}
+                onChange={(event) => updateActiveDevice({ customProblemPrice: event.target.value })}
+              />
             </div>
           )}
           <div className="grid gap-3 md:grid-cols-[1fr_180px]">
-            <CounterInput placeholder="Prix client" value={price} onChange={(event) => updateActiveDevice({ price: event.target.value })} />
+            <CounterInput
+              placeholder="Prix client"
+              value={price}
+              onChange={(event) => updateActiveDevice({ price: event.target.value })}
+            />
             <div className="flex min-h-[52px] items-center justify-end rounded-[14px] bg-[#FFFFFF] px-4 font-black text-[#1E7A6E] tabular-nums">
               {formatEuro(pageTotal(activeDevice))}
             </div>
@@ -5809,7 +7911,13 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
                 <h3 className="font-bold">Vente additionnelle</h3>
                 <p className="text-[#6E6E73] text-sm">Coque, chargeur, câble, verre trempé adaptés au modèle.</p>
               </div>
-              <button type="button" onClick={() => setAddLineMode("accessoire")} className="grid size-[52px] place-items-center rounded-[14px] border border-[#2A9D8F] bg-white text-[#1E7A6E] active:scale-[0.96]"><ShoppingBag className="size-6" /></button>
+              <button
+                type="button"
+                onClick={() => setAddLineMode("accessoire")}
+                className="grid size-[52px] place-items-center rounded-[14px] border border-[#2A9D8F] bg-white text-[#1E7A6E] active:scale-[0.96]"
+              >
+                <ShoppingBag className="size-6" />
+              </button>
             </div>
             <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
               {quoteAccessoryOptions.slice(0, 8).map((option) => {
@@ -5819,7 +7927,12 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
                     key={option.id}
                     type="button"
                     onClick={() => togglePageAccessory(activeDevice, option)}
-                    className={cn("min-h-[52px] shrink-0 rounded-[14px] border px-4 font-semibold transition active:scale-[0.97]", selected ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#1D1D1F]")}
+                    className={cn(
+                      "min-h-[52px] shrink-0 rounded-[14px] border px-4 font-semibold transition active:scale-[0.97]",
+                      selected
+                        ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
+                        : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
+                    )}
                   >
                     {selected && <Check className="mr-2 inline size-4" />}
                     {quoteAccessoryLabelForDevice(option.label, model)}
@@ -5830,7 +7943,10 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
             {activeDevice.accessories.length > 0 && (
               <div className="mt-3 space-y-2">
                 {activeDevice.accessories.map((accessory) => (
-                  <div key={accessory.id} className="grid grid-cols-[1fr_130px_42px] items-center gap-2 rounded-[14px] border border-[#E8E8E5] bg-white p-2">
+                  <div
+                    key={accessory.id}
+                    className="grid grid-cols-[1fr_130px_42px] items-center gap-2 rounded-[14px] border border-[#E8E8E5] bg-white p-2"
+                  >
                     <span className="truncate pl-2 font-semibold text-[13px]">{accessory.label}</span>
                     <CounterInput
                       className="h-10 rounded-[12px] px-3 text-right text-[13px]"
@@ -5839,11 +7955,21 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
                       value={accessory.price}
                       onChange={(event) =>
                         updateActiveDevice({
-                          accessories: activeDevice.accessories.map((entry) => entry.id === accessory.id ? { ...entry, price: event.target.value } : entry),
+                          accessories: activeDevice.accessories.map((entry) =>
+                            entry.id === accessory.id ? { ...entry, price: event.target.value } : entry,
+                          ),
                         })
                       }
                     />
-                    <button type="button" onClick={() => updateActiveDevice({ accessories: activeDevice.accessories.filter((entry) => entry.id !== accessory.id) })} className="grid size-10 place-items-center rounded-full text-[#C7493B] active:scale-[0.96]">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateActiveDevice({
+                          accessories: activeDevice.accessories.filter((entry) => entry.id !== accessory.id),
+                        })
+                      }
+                      className="grid size-10 place-items-center rounded-full text-[#C7493B] active:scale-[0.96]"
+                    >
                       <X className="size-4" />
                     </button>
                   </div>
@@ -5853,18 +7979,98 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
           </section>
           <section className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
             <div className="flex items-center justify-between gap-3">
-              <div><h3 className="font-bold">Ajouter une ligne</h3><p className="text-[#6E6E73] text-sm">Champ libre, accessoire ou autre téléphone.</p></div>
-              <button type="button" onClick={() => setAddLineMode(addLineMode ? null : "libre")} className="grid size-[52px] place-items-center rounded-[14px] bg-[#2A9D8F] text-white active:scale-[0.96]"><Plus className="size-6" /></button>
-            </div>
-            {addLineMode && <div className="mt-4 space-y-3">
-              <div className="grid grid-cols-3 gap-2">
-                <ChipButton active={addLineMode === "libre"} onClick={() => setAddLineMode("libre")}>Champ libre</ChipButton>
-                <ChipButton active={addLineMode === "accessoire"} onClick={() => setAddLineMode("accessoire")}>Accessoire</ChipButton>
-                <ChipButton active={addLineMode === "telephone"} onClick={addQuoteDevicePage}>Autre téléphone</ChipButton>
+              <div>
+                <h3 className="font-bold">Ajouter une ligne</h3>
+                <p className="text-[#6E6E73] text-sm">Champ libre, accessoire ou autre téléphone.</p>
               </div>
-              {addLineMode === "accessoire" ? <AccessoryDrawer options={quoteAccessoryOptions.map((option) => ({ ...option, label: quoteAccessoryLabelForDevice(option.label, activeDevice.model) }))} selected={selectedAccessories} onToggle={toggleQuoteAccessory} onClose={() => setAddLineMode(null)} /> : addLineMode === "libre" ? <div className="grid grid-cols-[1fr_140px_130px] gap-2"><CounterInput placeholder="Libellé libre" value={freeLineLabel} onChange={(e) => setFreeLineLabel(e.target.value)} /><CounterInput placeholder="Prix" inputMode="decimal" value={freeLinePrice} onChange={(e) => setFreeLinePrice(e.target.value)} /><button type="button" onClick={() => addExtraLine("libre", freeLineLabel, toMoney(freeLinePrice))} className="rounded-[14px] bg-[#1D1D1F] font-bold text-white">Ajouter</button></div> : <button type="button" onClick={addQuoteDevicePage} className="h-[52px] w-full rounded-[14px] border border-[#2A9D8F] bg-white font-bold text-[#1E7A6E]">Créer la page du 2e appareil</button>}
-            </div>}
-            {extraLines.length > 0 && <ul className="mt-4 space-y-2">{extraLines.map((line) => <li key={line.id} className="flex min-h-[52px] items-center justify-between gap-3 rounded-[14px] border border-[#E8E8E5] bg-white px-4"><span><b>{line.description}</b><span className="ml-2 text-[#6E6E73] text-[12px]">{line.kind}</span></span><span className="flex items-center gap-3"><b>{formatEuro(line.prixClient)}</b><button type="button" onClick={() => setExtraLines((prev) => prev.filter((entry) => entry.id !== line.id))} className="grid size-9 place-items-center rounded-full text-[#C7493B]"><Trash2 className="size-4" /></button></span></li>)}</ul>}
+              <button
+                type="button"
+                onClick={() => setAddLineMode(addLineMode ? null : "libre")}
+                className="grid size-[52px] place-items-center rounded-[14px] bg-[#2A9D8F] text-white active:scale-[0.96]"
+              >
+                <Plus className="size-6" />
+              </button>
+            </div>
+            {addLineMode && (
+              <div className="mt-4 space-y-3">
+                <div className="grid grid-cols-3 gap-2">
+                  <ChipButton active={addLineMode === "libre"} onClick={() => setAddLineMode("libre")}>
+                    Champ libre
+                  </ChipButton>
+                  <ChipButton active={addLineMode === "accessoire"} onClick={() => setAddLineMode("accessoire")}>
+                    Accessoire
+                  </ChipButton>
+                  <ChipButton active={addLineMode === "telephone"} onClick={addQuoteDevicePage}>
+                    Autre téléphone
+                  </ChipButton>
+                </div>
+                {addLineMode === "accessoire" ? (
+                  <AccessoryDrawer
+                    options={quoteAccessoryOptions.map((option) => ({
+                      ...option,
+                      label: quoteAccessoryLabelForDevice(option.label, activeDevice.model),
+                    }))}
+                    selected={selectedAccessories}
+                    onToggle={toggleQuoteAccessory}
+                    onClose={() => setAddLineMode(null)}
+                  />
+                ) : addLineMode === "libre" ? (
+                  <div className="grid grid-cols-[1fr_140px_130px] gap-2">
+                    <CounterInput
+                      placeholder="Libellé libre"
+                      value={freeLineLabel}
+                      onChange={(e) => setFreeLineLabel(e.target.value)}
+                    />
+                    <CounterInput
+                      placeholder="Prix"
+                      inputMode="decimal"
+                      value={freeLinePrice}
+                      onChange={(e) => setFreeLinePrice(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => addExtraLine("libre", freeLineLabel, toMoney(freeLinePrice))}
+                      className="rounded-[14px] bg-[#1D1D1F] font-bold text-white"
+                    >
+                      Ajouter
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={addQuoteDevicePage}
+                    className="h-[52px] w-full rounded-[14px] border border-[#2A9D8F] bg-white font-bold text-[#1E7A6E]"
+                  >
+                    Créer la page du 2e appareil
+                  </button>
+                )}
+              </div>
+            )}
+            {extraLines.length > 0 && (
+              <ul className="mt-4 space-y-2">
+                {extraLines.map((line) => (
+                  <li
+                    key={line.id}
+                    className="flex min-h-[52px] items-center justify-between gap-3 rounded-[14px] border border-[#E8E8E5] bg-white px-4"
+                  >
+                    <span>
+                      <b>{line.description}</b>
+                      <span className="ml-2 text-[#6E6E73] text-[12px]">{line.kind}</span>
+                    </span>
+                    <span className="flex items-center gap-3">
+                      <b>{formatEuro(line.prixClient)}</b>
+                      <button
+                        type="button"
+                        onClick={() => setExtraLines((prev) => prev.filter((entry) => entry.id !== line.id))}
+                        className="grid size-9 place-items-center rounded-full text-[#C7493B]"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         </section>
         <aside className="space-y-4">
@@ -5887,13 +8093,23 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
               {devicePages.map((page, index) => (
                 <div key={page.id}>
                   <div className="flex justify-between gap-3 font-bold">
-                    <span>Appareil {index + 1} : {page.model || "À choisir"}</span>
+                    <span>
+                      Appareil {index + 1} : {page.model || "À choisir"}
+                    </span>
                     <span>{formatEuro(pageTotal(page))}</span>
                   </div>
                   <ul className="mt-1 list-disc pl-4 text-[#6E6E73]">
-                    {page.prestations.filter((item) => item !== "Autre").map((item) => <li key={item}>{item}</li>)}
+                    {page.prestations
+                      .filter((item) => item !== "Autre")
+                      .map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
                     {page.prestations.includes("Autre") && <li>{page.customProblemLabel || "Autre panne"}</li>}
-                    {page.accessories.map((item) => <li key={item.id}>{item.label} · {formatEuro(toMoney(item.price))}</li>)}
+                    {page.accessories.map((item) => (
+                      <li key={item.id}>
+                        {item.label} · {formatEuro(toMoney(item.price))}
+                      </li>
+                    ))}
                   </ul>
                 </div>
               ))}
@@ -5913,17 +8129,29 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
                 </>
               ) : (
                 <>
-                  <p className="text-[#6E6E73]">{store.workshopInfo.tvaMention || "TVA non applicable, art. 293 B du CGI"}</p>
+                  <p className="text-[#6E6E73]">
+                    {store.workshopInfo.tvaMention || "TVA non applicable, art. 293 B du CGI"}
+                  </p>
                   <DetailRowLite label="Total" value={formatEuro(amount)} green />
                 </>
               )}
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <button onClick={handlePrintQuote} className="h-11 rounded-[12px] border border-[#E8E8E5] font-semibold" type="button">
-                <Printer className="mr-2 inline size-4" />Imprimer
+              <button
+                onClick={handlePrintQuote}
+                className="h-11 rounded-[12px] border border-[#E8E8E5] font-semibold"
+                type="button"
+              >
+                <Printer className="mr-2 inline size-4" />
+                Imprimer
               </button>
-              <button onClick={() => setSendOpen(true)} className="h-11 rounded-[12px] border border-[#E8E8E5] font-semibold" type="button">
-                <Send className="mr-2 inline size-4" />Envoyer
+              <button
+                onClick={() => setSendOpen(true)}
+                className="h-11 rounded-[12px] border border-[#E8E8E5] font-semibold"
+                type="button"
+              >
+                <Send className="mr-2 inline size-4" />
+                Envoyer
               </button>
             </div>
             <button
@@ -5947,7 +8175,22 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
             <div className="mt-3 rounded-[12px] bg-[#FFFFFF] py-3 text-center font-bold text-[#6B6B6B]">En attente</div>
           </section>
         </aside>
-        <div className="lg:col-span-2 grid grid-cols-[180px_1fr] gap-4"><button type="button" onClick={onClose} className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-semibold">Annuler</button><button type="button" onClick={generate} className="h-[52px] rounded-[14px] bg-[#2A9D8F] font-bold text-white">Générer le devis</button></div>
+        <div className="lg:col-span-2 grid grid-cols-[180px_1fr] gap-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-semibold"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            onClick={generate}
+            className="h-[52px] rounded-[14px] bg-[#2A9D8F] font-bold text-white"
+          >
+            Générer le devis
+          </button>
+        </div>
       </div>
       {sendOpen && (
         <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/35 p-4">
@@ -5957,13 +8200,21 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
                 <h2 className="font-black text-[20px]">Enregistrer l'envoi du devis</h2>
                 <p className="text-[#6E6E73] text-sm">Conserve le canal et le destinataire dans l'historique client.</p>
               </div>
-              <button type="button" onClick={() => setSendOpen(false)} className="grid size-11 place-items-center rounded-[12px] border border-[#E8E8E5]">
+              <button
+                type="button"
+                onClick={() => setSendOpen(false)}
+                className="grid size-11 place-items-center rounded-[12px] border border-[#E8E8E5]"
+              >
                 <X className="size-5" />
               </button>
             </div>
             <div className="mt-5 grid grid-cols-2 gap-3">
-              <SelectTile active={sendChannel === "Email"} onClick={() => setSendChannel("Email")}>Email</SelectTile>
-              <SelectTile active={sendChannel === "SMS"} onClick={() => setSendChannel("SMS")}>SMS</SelectTile>
+              <SelectTile active={sendChannel === "Email"} onClick={() => setSendChannel("Email")}>
+                Email
+              </SelectTile>
+              <SelectTile active={sendChannel === "SMS"} onClick={() => setSendChannel("SMS")}>
+                SMS
+              </SelectTile>
             </div>
             <div className="mt-4">
               <CounterInput
@@ -5972,7 +8223,11 @@ function CounterQuoteScreen({ onClose, onTransform }: Readonly<{ onClose: () => 
                 onChange={(event) => setSendTarget(event.target.value)}
               />
             </div>
-            <button type="button" onClick={handleSendQuote} className="mt-5 h-[52px] w-full rounded-[14px] bg-[#2A9D8F] font-bold text-white">
+            <button
+              type="button"
+              onClick={handleSendQuote}
+              className="mt-5 h-[52px] w-full rounded-[14px] bg-[#2A9D8F] font-bold text-white"
+            >
               Enregistrer l'envoi par {sendChannel}
             </button>
           </section>
@@ -6000,14 +8255,19 @@ function CounterInvoicesScreen({ onClose }: Readonly<{ onClose: () => void }>) {
         if (!q) return true;
         const customer = store.customers.find((entry) => entry.id === invoice.customerId);
         const repair = invoice.repairId ? store.repairs.find((entry) => entry.id === invoice.repairId) : undefined;
-        const needle = compactText(`${invoice.number} ${customer?.name ?? ""} ${customer?.phone ?? ""} ${repair?.deviceModel ?? repair?.device ?? ""}`);
+        const needle = compactText(
+          `${invoice.number} ${customer?.name ?? ""} ${customer?.phone ?? ""} ${repair?.deviceModel ?? repair?.device ?? ""}`,
+        );
         return needle.includes(q);
       })
       .sort((a, b) => new Date(b.date || "").getTime() - new Date(a.date || "").getTime());
   }, [search, store.invoices, store.customers, store.repairs]);
 
   const invoiceDoc = (invoice: Invoice) =>
-    store.documents.find((doc) => doc.type === "invoice" && doc.invoiceId === invoice.id) ?? { id: `doc_${invoice.id}`, type: "invoice" as const };
+    store.documents.find((doc) => doc.type === "invoice" && doc.invoiceId === invoice.id) ?? {
+      id: `doc_${invoice.id}`,
+      type: "invoice" as const,
+    };
   const printInvoice = (invoice: Invoice) => {
     if (!printDocument(invoiceDoc(invoice))) toast.error("Facture introuvable.");
   };
@@ -6017,10 +8277,22 @@ function CounterInvoicesScreen({ onClose }: Readonly<{ onClose: () => void }>) {
 
   return (
     <div className="mx-auto max-w-[1180px]">
-      <CounterScreenTitle title="Factures" subtitle="Retrouvez et imprimez une facture pour le client." onClose={onClose} />
-      <div className="mb-5"><CounterInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher une facture (n°, client, téléphone, appareil…)" /></div>
+      <CounterScreenTitle
+        title="Factures"
+        subtitle="Retrouvez et imprimez une facture pour le client."
+        onClose={onClose}
+      />
+      <div className="mb-5">
+        <CounterInput
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Rechercher une facture (n°, client, téléphone, appareil…)"
+        />
+      </div>
       {invoices.length === 0 ? (
-        <p className="rounded-[16px] border border-dashed border-[#D9D6CF] bg-white px-4 py-12 text-center text-[#6B6B6B]">Aucune facture pour le moment.</p>
+        <p className="rounded-[16px] border border-dashed border-[#D9D6CF] bg-white px-4 py-12 text-center text-[#6B6B6B]">
+          Aucune facture pour le moment.
+        </p>
       ) : (
         <ul className="space-y-3">
           {invoices.map((invoice) => {
@@ -6028,15 +8300,37 @@ function CounterInvoicesScreen({ onClose }: Readonly<{ onClose: () => void }>) {
             const repair = invoice.repairId ? store.repairs.find((entry) => entry.id === invoice.repairId) : undefined;
             const paid = invoice.status === "Payée";
             return (
-              <li key={invoice.id} className="grid grid-cols-1 gap-3 rounded-[16px] border border-[#E8E8E5] bg-white p-4 md:grid-cols-[1fr_auto] md:items-center">
+              <li
+                key={invoice.id}
+                className="grid grid-cols-1 gap-3 rounded-[16px] border border-[#E8E8E5] bg-white p-4 md:grid-cols-[1fr_auto] md:items-center"
+              >
                 <div className="min-w-0">
-                  <div className="flex items-center gap-3"><b className="text-[16px]">{invoice.number}</b><StatusPillCounter tone={paid ? "green" : "orange"}>{paid ? "Payée" : "À payer"}</StatusPillCounter></div>
-                  <p className="mt-1 truncate text-[#6B6B6B] text-sm">{customer?.name ?? "Client"} · {repair?.deviceModel || repair?.device || "—"}</p>
+                  <div className="flex items-center gap-3">
+                    <b className="text-[16px]">{invoice.number}</b>
+                    <StatusPillCounter tone={paid ? "green" : "orange"}>{paid ? "Payée" : "À payer"}</StatusPillCounter>
+                  </div>
+                  <p className="mt-1 truncate text-[#6B6B6B] text-sm">
+                    {customer?.name ?? "Client"} · {repair?.deviceModel || repair?.device || "—"}
+                  </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
-                  <b className="mr-1 text-[18px] tabular-nums text-[#1E7A6E]">{formatEuro(counterInvoiceTotal(invoice))}</b>
-                  <button type="button" onClick={() => openInvoice(invoice)} className="h-[48px] rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold"><FileText className="mr-2 inline size-4" /> Ouvrir</button>
-                  <button type="button" onClick={() => printInvoice(invoice)} className="h-[48px] rounded-[12px] bg-[#2A9D8F] px-5 font-bold text-white"><Printer className="mr-2 inline size-4" /> Imprimer la facture</button>
+                  <b className="mr-1 text-[18px] tabular-nums text-[#1E7A6E]">
+                    {formatEuro(counterInvoiceTotal(invoice))}
+                  </b>
+                  <button
+                    type="button"
+                    onClick={() => openInvoice(invoice)}
+                    className="h-[48px] rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold"
+                  >
+                    <FileText className="mr-2 inline size-4" /> Ouvrir
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => printInvoice(invoice)}
+                    className="h-[48px] rounded-[12px] bg-[#2A9D8F] px-5 font-bold text-white"
+                  >
+                    <Printer className="mr-2 inline size-4" /> Imprimer la facture
+                  </button>
                 </div>
               </li>
             );
@@ -6081,7 +8375,14 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
     const payment = doc.paymentId ? store.payments.find((entry) => entry.id === doc.paymentId) : undefined;
     const sale = doc.saleId ? store.sales.find((entry) => entry.id === doc.saleId) : undefined;
     if (doc.type === "intake" && repair) return displayIntakeBonCode(repair, store.repairs);
-    return sale?.number ?? invoice?.number ?? quote?.number ?? payment?.paymentNumber ?? repair?.number ?? doc.id.slice(-6).toUpperCase();
+    return (
+      sale?.number ??
+      invoice?.number ??
+      quote?.number ??
+      payment?.paymentNumber ??
+      repair?.number ??
+      doc.id.slice(-6).toUpperCase()
+    );
   };
   const repairIdForDocument = (doc: BeharDocument) => {
     if (doc.repairId) return doc.repairId;
@@ -6097,11 +8398,24 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
       if (filter !== "all" && doc.type !== filter) return false;
       if (!q) return true;
       const customer = store.customers.find((entry) => entry.id === doc.customerId);
-      const needle = compactText(`${COUNTER_DOC_LABEL[doc.type] ?? ""} ${docNumberLabel(doc)} ${customer?.name ?? ""} ${doc.title}`);
+      const needle = compactText(
+        `${COUNTER_DOC_LABEL[doc.type] ?? ""} ${docNumberLabel(doc)} ${customer?.name ?? ""} ${doc.title}`,
+      );
       return needle.includes(q);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, filter, repairId, store.documents, store.customers, store.invoices, store.quotes, store.repairs, store.payments, store.sales]);
+  }, [
+    search,
+    filter,
+    repairId,
+    store.documents,
+    store.customers,
+    store.invoices,
+    store.quotes,
+    store.repairs,
+    store.payments,
+    store.sales,
+  ]);
 
   return (
     <div className="mx-auto max-w-[1180px]">
@@ -6114,14 +8428,34 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
         }
         onClose={onClose}
       />
-      <div className="mb-4"><CounterInput value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Rechercher un document (type, n°, client…)" /></div>
+      <div className="mb-4">
+        <CounterInput
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Rechercher un document (type, n°, client…)"
+        />
+      </div>
       <div className="mb-5 flex flex-wrap gap-2">
         {COUNTER_DOC_FILTERS.map((entry) => (
-          <button key={entry.key} type="button" onClick={() => setFilter(entry.key)} className={cn("h-[40px] rounded-full border px-4 font-semibold text-sm", filter === entry.key ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#6B6B6B]")}>{entry.label}</button>
+          <button
+            key={entry.key}
+            type="button"
+            onClick={() => setFilter(entry.key)}
+            className={cn(
+              "h-[40px] rounded-full border px-4 font-semibold text-sm",
+              filter === entry.key
+                ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
+                : "border-[#E8E8E5] bg-white text-[#6B6B6B]",
+            )}
+          >
+            {entry.label}
+          </button>
         ))}
       </div>
       {documents.length === 0 ? (
-        <p className="rounded-[16px] border border-dashed border-[#D9D6CF] bg-white px-4 py-12 text-center text-[#6B6B6B]">Aucun document à afficher.</p>
+        <p className="rounded-[16px] border border-dashed border-[#D9D6CF] bg-white px-4 py-12 text-center text-[#6B6B6B]">
+          Aucun document à afficher.
+        </p>
       ) : (
         <ul className="space-y-3">
           {documents.map((doc) => {
@@ -6130,10 +8464,20 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
             const linkedRepairId = repairIdForDocument(doc);
             const documentUnavailable = !target;
             return (
-              <li key={doc.id} className="grid grid-cols-1 gap-3 rounded-[16px] border border-[#E8E8E5] bg-white p-4 md:grid-cols-[1fr_auto] md:items-center">
+              <li
+                key={doc.id}
+                className="grid grid-cols-1 gap-3 rounded-[16px] border border-[#E8E8E5] bg-white p-4 md:grid-cols-[1fr_auto] md:items-center"
+              >
                 <div className="min-w-0">
-                  <div className="flex items-center gap-3"><span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2.5 py-0.5 text-[#6B6B6B] text-[11px] font-semibold uppercase tracking-wide">{COUNTER_DOC_LABEL[doc.type] ?? "Document"}</span><b className="font-mono text-[13px]">{docNumberLabel(doc)}</b></div>
-                  <p className="mt-1 truncate text-[#6B6B6B] text-sm">{customer?.name ?? "Client"} · {formatCounterDateTime(doc.createdAt)}</p>
+                  <div className="flex items-center gap-3">
+                    <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2.5 py-0.5 text-[#6B6B6B] text-[11px] font-semibold uppercase tracking-wide">
+                      {COUNTER_DOC_LABEL[doc.type] ?? "Document"}
+                    </span>
+                    <b className="font-mono text-[13px]">{docNumberLabel(doc)}</b>
+                  </div>
+                  <p className="mt-1 truncate text-[#6B6B6B] text-sm">
+                    {customer?.name ?? "Client"} · {formatCounterDateTime(doc.createdAt)}
+                  </p>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   {documentUnavailable ? (
@@ -6188,7 +8532,8 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
                       const linkedRepair = store.repairs.find((entry) => entry.id === linkedRepairId);
                       if (!linkedRepair) return;
                       const access = linkedRepair.publicAccess ?? store.ensureRepairPublicAccess(linkedRepair.id);
-                      if (access) void shareCounterLink(publicAbsoluteUrl(access.url), "Lien de suivi copié pour le client.");
+                      if (access)
+                        void shareCounterLink(publicAbsoluteUrl(access.url), "Lien de suivi copié pour le client.");
                     }}
                     className="inline-flex h-[44px] items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold text-[#1A1916] text-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-[#F7F7F4] disabled:text-[#777]"
                   >
@@ -6205,7 +8550,19 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
 }
 
 function EmptyCounter({ title, message, onClose }: Readonly<{ title: string; message: string; onClose: () => void }>) {
-  return <div className="mx-auto max-w-xl rounded-[20px] border border-[#E8E8E5] bg-white p-8 text-center"><h1 className="font-black text-[30px]">{title}</h1><p className="mt-2 text-[#6E6E73]">{message}</p><button type="button" onClick={onClose} className="mt-6 h-[52px] rounded-[14px] bg-[#2A9D8F] px-8 font-bold text-white">Retour accueil</button></div>;
+  return (
+    <div className="mx-auto max-w-xl rounded-[20px] border border-[#E8E8E5] bg-white p-8 text-center">
+      <h1 className="font-black text-[30px]">{title}</h1>
+      <p className="mt-2 text-[#6E6E73]">{message}</p>
+      <button
+        type="button"
+        onClick={onClose}
+        className="mt-6 h-[52px] rounded-[14px] bg-[#2A9D8F] px-8 font-bold text-white"
+      >
+        Retour accueil
+      </button>
+    </div>
+  );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
@@ -6225,9 +8582,7 @@ function TodayStat({
 }>) {
   return (
     <div className="flex min-h-[92px] items-center gap-4 rounded-[16px] border border-[#E8E8E5] bg-white px-5 py-4 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
-      <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#FFFFFF] text-[#1E7A6E]">
-        {icon}
-      </span>
+      <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#FFFFFF] text-[#1E7A6E]">{icon}</span>
       <div className="min-w-0">
         <p className="truncate font-bold text-[#1A1916] text-[20px] leading-none tabular-nums tracking-tight">
           {value}

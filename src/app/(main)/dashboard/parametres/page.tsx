@@ -28,11 +28,7 @@ import { PageShell } from "@/components/behar/page-shell";
 import { Panel, PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
 import { UpdateChecker } from "@/components/behar/update-checker";
 import { useBeharStore, type WorkshopSettings } from "@/lib/behar-store";
-import {
-  createBillingProfile,
-  getLegalFieldsByCountry,
-  getWorkshopCountryConfig,
-} from "@/lib/workshop-country";
+import { createBillingProfile, getLegalFieldsByCountry, getWorkshopCountryConfig } from "@/lib/workshop-country";
 import {
   hydrateStoreFromCloud,
   loadSnapshotByLicenseKey,
@@ -46,6 +42,7 @@ const TABS = [
   { key: "atelier", label: "Informations atelier", href: "/dashboard/parametres" },
   { key: "appareils", label: "Catalogue appareils", href: "/dashboard/parametres/appareils" },
   { key: "catalogue", label: "Tarifs & prestations", href: "/dashboard/parametres/catalogue" },
+  { key: "reconditionnement", label: "Reconditionnement", href: "/dashboard/parametres/reconditionnement" },
   { key: "equipe", label: "Équipe & permissions", href: "/dashboard/parametres/equipe" },
 ] as const;
 
@@ -282,7 +279,8 @@ export default function SettingsPage() {
     if (draft.vatApplicable && (!Number.isFinite(Number(draft.vatRate)) || Number(draft.vatRate) <= 0)) {
       e.vatRate = "Renseignez un taux de TVA valide.";
     }
-    if (draft.country === "FR" && draft.tvaNumber && isWeakText(draft.tvaNumber, 4)) e.tvaNumber = "Numéro TVA invalide.";
+    if (draft.country === "FR" && draft.tvaNumber && isWeakText(draft.tvaNumber, 4))
+      e.tvaNumber = "Numéro TVA invalide.";
     if (draft.tvaMention && isWeakText(draft.tvaMention, 8)) e.tvaMention = "Mention TVA trop courte ou invalide.";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -304,7 +302,10 @@ export default function SettingsPage() {
     store.saveWorkshopSettings({
       ...draft,
       defaultMarket: draft.defaultMarket || (isSwiss ? "CH" : "FR"),
-      allowedMarkets: draft.allowedMarkets && draft.allowedMarkets.length > 0 ? draft.allowedMarkets : [draft.defaultMarket || (isSwiss ? "CH" : "FR")],
+      allowedMarkets:
+        draft.allowedMarkets && draft.allowedMarkets.length > 0
+          ? draft.allowedMarkets
+          : [draft.defaultMarket || (isSwiss ? "CH" : "FR")],
       name: normalizeSpaces(draft.name),
       commercialName: normalizeSpaces(draft.commercialName),
       phone: normalizeSpaces(draft.phone),
@@ -841,7 +842,7 @@ export default function SettingsPage() {
                       "tvaMention",
                       isSwiss
                         ? "TVA non facturée — entreprise non assujettie à la TVA suisse."
-                        : "TVA non applicable, art. 293 B du CGI"
+                        : "TVA non applicable, art. 293 B du CGI",
                     );
                   }
                   setSaved(false);

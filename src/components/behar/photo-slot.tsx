@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 
 import { Camera, Loader2, RotateCcw, X } from "lucide-react";
+import { toast } from "sonner";
 
 import { fileToCompressedDataUrl } from "@/lib/image-capture";
 import { cn } from "@/lib/utils";
@@ -31,11 +32,24 @@ export function PhotoSlot({
     const file = event.target.files?.[0];
     event.target.value = ""; // autorise re-sélection du même fichier
     if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      toast.error("Format refusé : utilisez JPG, PNG ou WebP.");
+      return;
+    }
+    if (file.size <= 0) {
+      toast.error("Image vide refusée.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image trop lourde (10 Mo maximum).");
+      return;
+    }
     setBusy(true);
     try {
       onChange(await fileToCompressedDataUrl(file));
+      toast.success("Photo sauvegardée.");
     } catch {
-      /* lecture impossible */
+      toast.error("Upload impossible, réessayez.");
     } finally {
       setBusy(false);
     }
@@ -43,7 +57,14 @@ export function PhotoSlot({
 
   return (
     <div className={cn("relative aspect-square", className)}>
-      <input accept="image/*" capture="environment" className="hidden" onChange={onFile} ref={inputRef} type="file" />
+      <input
+        accept="image/jpeg,image/png,image/webp"
+        capture="environment"
+        className="hidden"
+        onChange={onFile}
+        ref={inputRef}
+        type="file"
+      />
 
       {value ? (
         <div className="group relative size-full overflow-hidden rounded-[14px] border border-[#E8E8E5]">

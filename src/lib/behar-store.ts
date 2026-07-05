@@ -34,6 +34,7 @@ import {
   type WorkshopLocale,
 } from "@/lib/workshop-country";
 import { ensureTrackingCode, getCustomerTrackingPath, getTrackingCode } from "@/lib/customer-tracking";
+import { publishDomainEvent } from "@/lib/domain-events";
 
 export type RepairStatus =
   | "Reçu"
@@ -270,6 +271,8 @@ export type RepairPart = {
   salePrice: number;
   quantity: number;
   confirmed?: boolean;
+  /** true dès que le stock a été décrémenté pour cette pièce (à l'ajout). Évite le double décrément. */
+  stockDecremented?: boolean;
   margin?: number;
   currency?: WorkshopCurrency;
   supplier?: string;
@@ -829,6 +832,53 @@ export type StockItem = {
   createdByName?: string;
   updatedBy?: string;
   updatedByName?: string;
+  /** Dossier de reconditionnement source quand l'article est un appareil remis en vente. */
+  reconditioningFileId?: string;
+};
+
+export type StockMovementType =
+  | "supplier_purchase_received"
+  | "manual_adjustment"
+  | "repair_part_used"
+  | "reconditioning_part_used"
+  | "counter_sale_sold"
+  | "reconditioned_device_sold"
+  | "reservation_created"
+  | "reservation_released"
+  | "return_to_supplier"
+  | "stock_transfer_out"
+  | "stock_transfer_in"
+  | "correction";
+
+export type StockMovementSourceModule =
+  | "stock"
+  | "achats"
+  | "atelier_reparation"
+  | "reconditionnement"
+  | "vente_comptoir";
+
+export type StockMovement = {
+  id: string;
+  organizationId?: string;
+  shopId: string;
+  stockItemId: string;
+  movementType: StockMovementType;
+  quantityDelta: number;
+  quantityBefore: number;
+  quantityAfter: number;
+  unitCost?: number;
+  totalCost?: number;
+  reason?: string;
+  sourceModule: StockMovementSourceModule;
+  sourceId?: string;
+  linkedRepairId?: string;
+  linkedReconditioningDeviceId?: string;
+  linkedSaleId?: string;
+  linkedPurchaseId?: string;
+  linkedSupplierInvoiceId?: string;
+  actorId?: string;
+  createdAt: string;
+  metadata?: Record<string, unknown>;
 };
 
 export type StockItemType = "part" | "accessory" | "product";
@@ -939,6 +989,8 @@ export type SaleLine = {
   total: number;
   purchasePriceInternal?: number;
   supplierInternal?: string;
+  /** Dossier reconditionnement vendu via cette ligne, si connu. */
+  reconditioningFileId?: string;
 };
 
 export type Sale = {
@@ -963,6 +1015,50 @@ export type Sale = {
   createdAt: string;
   createdByUserId?: string;
   createdByName?: string;
+};
+
+/**
+ * §Achats — registre unifié des achats (entrées).
+ * Source de vérité centrale consultée par l'onglet Achats. Alimenté par :
+ * - réapprovisionnement / création de pièces (stock),
+ * - rachat client direct (module Conditionné),
+ * - acquisition d'un téléphone reconditionné publié en stock.
+ * Reste local-first : ce n'est pas un flux de trésorerie, juste la traçabilité des entrées.
+ */
+export type PurchaseKind = "piece" | "telephone" | "accessoire" | "autre";
+export type PurchaseSource =
+  | "Réapprovisionnement"
+  | "Création pièce"
+  | "Rachat client"
+  | "Reconditionnement"
+  | "Reprise"
+  | "Manuel";
+export type Purchase = {
+  id: string;
+  shopId: string;
+  number: string;
+  kind: PurchaseKind;
+  source: PurchaseSource;
+  label: string;
+  reference?: string;
+  supplier?: string;
+  quantity: number;
+  unitCost: number;
+  total: number;
+  currency?: WorkshopCurrency;
+  date: string;
+  /** Article de stock créé / réapprovisionné par cet achat. */
+  stockItemId?: string;
+  /** Dossier réparation lié (le cas échéant). */
+  repairId?: string;
+  /** Dossier de reconditionnement lié. */
+  reconditioningFileId?: string;
+  /** Fiche de reprise (module Conditionné) liée. */
+  conditionneRecordId?: string;
+  note?: string;
+  createdBy?: string;
+  createdByName?: string;
+  createdAt?: string;
 };
 
 export type BeharDocument = {
@@ -1054,6 +1150,7 @@ export type StoreState = {
   selectedDocumentId: string;
   selectedSaleId: string;
   sales: Sale[];
+  stockMovements: StockMovement[];
   deviceBrands: DeviceBrand[];
   deviceModels: DeviceModel[];
   partCategories: PartCategory[];
@@ -1064,6 +1161,7 @@ export type StoreState = {
   payments: Payment[];
   appointments: Appointment[];
   stockItems: StockItem[];
+  purchases: Purchase[];
   documents: BeharDocument[];
   messageLogs: MessageLog[];
   priceBookItems: PriceBookItem[];
@@ -1238,7 +1336,30 @@ export type StoreState = {
   deleteStockItem: (id: string) => void;
   confirmPartUsage: (repairId: string, stockItemId: string) => boolean;
   restockItem: (id: string, quantity: number) => void;
+  /** Ajuste la quantité d'un article (delta négatif = consommation). Utilisé par le reconditionnement. */
+  adjustStock: (id: string, delta: number, reason?: string) => void;
+  createStockMovement: (input: {
+    stockItemId: string;
+    movementType: StockMovementType;
+    quantityDelta: number;
+    quantityBefore?: number;
+    quantityAfter?: number;
+    unitCost?: number;
+    totalCost?: number;
+    reason?: string;
+    sourceModule: StockMovementSourceModule;
+    sourceId?: string;
+    linkedRepairId?: string;
+    linkedReconditioningDeviceId?: string;
+    linkedSaleId?: string;
+    linkedPurchaseId?: string;
+    linkedSupplierInvoiceId?: string;
+    metadata?: Record<string, unknown>;
+  }) => string;
   importStockItems: (items: StockInput[]) => void;
+  // Achats — registre unifié des entrées (pièces + téléphones).
+  addPurchase: (input: PurchaseInput) => string;
+  deletePurchase: (id: string) => void;
   sendMessage: (input: MessageInput) => void;
   updateWorkshopInfo: (patch: Partial<WorkshopInfo>) => void;
   saveWorkshopSettings: (settings: Partial<WorkshopSettings>) => void;
@@ -1433,12 +1554,33 @@ type StockInput = Pick<StockItem, "purchasePrice" | "threshold" | "supplier"> &
       | "active"
       | "productCategory"
       | "counterVisible"
+      | "reconditioningFileId"
     >
   > & {
     skipModelInference?: boolean;
+    /** N'enregistre pas d'entrée dans le registre Achats (l'appelant s'en charge). */
+    skipPurchaseLog?: boolean;
   };
 type MessageInput = Pick<MessageLog, "customerId" | "channel" | "subject" | "body"> &
   Partial<Pick<MessageLog, "repairId">>;
+
+type PurchaseInput = Pick<Purchase, "kind" | "source" | "label" | "unitCost"> &
+  Partial<
+    Pick<
+      Purchase,
+      | "quantity"
+      | "reference"
+      | "supplier"
+      | "currency"
+      | "date"
+      | "total"
+      | "stockItemId"
+      | "repairId"
+      | "reconditioningFileId"
+      | "conditionneRecordId"
+      | "note"
+    >
+  >;
 
 const shopId = "shop_atelier_belmin";
 
@@ -2259,7 +2401,13 @@ const normalizeText = (value: unknown, fallback = "") => {
   const text = value.trim();
   return text || fallback;
 };
-const normalizePhone = (value: unknown) => String(value ?? "").replace(/\D/g, "");
+const normalizePhone = (value: unknown) => {
+  const digits = String(value ?? "").replace(/\D/g, "");
+  if (digits.startsWith("0033") && digits.length >= 13) return `0${digits.slice(4)}`;
+  if (digits.startsWith("33") && digits.length === 11) return `0${digits.slice(2)}`;
+  return digits;
+};
+const normalizeEmail = (value: unknown) => (typeof value === "string" ? value.trim().toLowerCase() : "");
 const counterCustomerId = "customer_counter";
 const createCounterCustomer = (createdAt = nowLabel(), id = counterCustomerId, name = "Client comptoir"): Customer => ({
   id,
@@ -2368,9 +2516,13 @@ const hasFinalTestClearance = (repair: Pick<Repair, "finalTest">) =>
   Boolean(
     repair.finalTest?.validatedAt ||
       repair.finalTest?.testImpossibleReason ||
-      ["Téléphone prêt", "Test final validé", "Test non applicable", "Test impossible", "Test refusé par le client"].includes(
-        repair.finalTest?.status ?? "",
-      ),
+      [
+        "Téléphone prêt",
+        "Test final validé",
+        "Test non applicable",
+        "Test impossible",
+        "Test refusé par le client",
+      ].includes(repair.finalTest?.status ?? ""),
   );
 export const repairHasConfirmedPayment = (
   repair: Pick<Repair, "id" | "paymentStatus" | "paymentId" | "paymentIds">,
@@ -2380,8 +2532,7 @@ export const repairHasConfirmedPayment = (
   if (repair.paymentStatus === "Partiellement réglée" || repair.paymentStatus === "À régler") return false;
   const repairPaymentIds = new Set([...(repair.paymentIds ?? []), repair.paymentId].filter(Boolean));
   return payments.some(
-    (payment) =>
-      payment.status === "Payé" && (repairPaymentIds.has(payment.id) || payment.repairId === repair.id),
+    (payment) => payment.status === "Payé" && (repairPaymentIds.has(payment.id) || payment.repairId === repair.id),
   );
 };
 export const getRepairReadyDisplayLabel = (
@@ -3472,6 +3623,7 @@ const normalizeSale = (sale: Partial<Sale>, customers: Customer[], repairs: Repa
       total: clampMoney(line.total ?? quantity * unitPrice),
       purchasePriceInternal: clampMoney(line.purchasePriceInternal),
       supplierInternal: normalizeText(line.supplierInternal) || undefined,
+      reconditioningFileId: normalizeText(line.reconditioningFileId) || undefined,
     };
   });
   const customerId =
@@ -3724,6 +3876,7 @@ const normalizeStockItem = (item: Partial<StockItem> & { skipModelInference?: bo
     createdAt: normalizeText(item.createdAt, now),
     updatedAt: normalizeText(item.updatedAt, now),
     priceBookItemId: item.priceBookItemId,
+    reconditioningFileId: normalizeText(item.reconditioningFileId) || undefined,
   };
 };
 
@@ -4185,8 +4338,14 @@ const normalizePersistedState = (state: unknown) => {
       payments,
       appointments,
       stockItems,
+      purchases: Array.isArray((persisted as any).purchases)
+        ? ((persisted as any).purchases as Purchase[])
+        : seed.purchases,
       documents: Array.isArray(persisted.documents) ? persisted.documents : seed.documents,
       sales,
+      stockMovements: Array.isArray((persisted as any).stockMovements)
+        ? ((persisted as any).stockMovements as StockMovement[])
+        : [],
       selectedSaleId: typeof (persisted as any).selectedSaleId === "string" ? (persisted as any).selectedSaleId : "",
       messageLogs: Array.isArray(persisted.messageLogs) ? persisted.messageLogs : seed.messageLogs,
       priceBookItems: (() => {
@@ -4323,6 +4482,7 @@ function createSeed() {
     selectedDocumentId: "",
     selectedSaleId: "",
     sales: [] as Sale[],
+    stockMovements: [] as StockMovement[],
     deviceBrands: deviceBrandsList,
     deviceModels: deviceModelsList,
     partCategories: partCategoriesList,
@@ -4335,6 +4495,7 @@ function createSeed() {
     // État zéro à la 1re ouverture : pas de stock de démo.
     // Les mocks restent dispo dans @/mock/stock pour les tests internes.
     stockItems: [] as StockItem[],
+    purchases: [] as Purchase[],
     documents: [] as BeharDocument[],
     messageLogs: [] as MessageLog[],
     priceBookItems: [] as PriceBookItem[],
@@ -4938,14 +5099,24 @@ export const useBeharStore = create<StoreState>()(
         const actor = get().currentUser ?? defaultCurrentUser;
         const cleanName = normalizeText(input.name, "Client comptoir");
         const cleanPhone = normalizePhone(input.phone);
-        if (cleanName !== "Client comptoir" && cleanPhone) {
+        const cleanEmail = normalizeEmail(input.email);
+        if (cleanName !== "Client comptoir" && (cleanPhone || cleanEmail)) {
           const existing = get().customers.find(
             (customer) =>
               customer.type !== "counter" &&
-              customer.name.toLowerCase() === cleanName.toLowerCase() &&
-              normalizePhone(customer.phone) === cleanPhone,
+              ((cleanPhone && normalizePhone(customer.phone) === cleanPhone) ||
+                (cleanEmail && normalizeEmail(customer.email) === cleanEmail)),
           );
-          if (existing) return existing.id;
+          if (existing) {
+            set({ selectedCustomerId: existing.id });
+            get().addAuditLog({
+              action: "client.duplicate_reused",
+              targetType: "client",
+              targetId: existing.id,
+              message: `${actor.name} a repris le client existant ${existing.name}`,
+            });
+            return existing.id;
+          }
         }
         if (cleanName === "Anonyme" || cleanName === "Client comptoir" || input.type === "counter") {
           const id = uid("customer_counter");
@@ -5120,7 +5291,10 @@ export const useBeharStore = create<StoreState>()(
           originalRepairId: input.originalRepairId,
           sav: input.sav,
           // Lien public sécurisé + QR généré automatiquement à la création.
-          publicAccess: makeRepairPublicAccess({ ...created, id, number: docNumber(ws.repairPrefix, ws.nextRepairNumber ?? 1, "REP") }, ws),
+          publicAccess: makeRepairPublicAccess(
+            { ...created, id, number: docNumber(ws.repairPrefix, ws.nextRepairNumber ?? 1, "REP") },
+            ws,
+          ),
           // Message public d'accueil visible côté client dès la création.
           messages: [
             {
@@ -5401,7 +5575,8 @@ export const useBeharStore = create<StoreState>()(
         }
         set((state) => ({
           repairs: state.repairs.map((repair) =>
-            repair.id === repairId && (repair.publicAccess?.token !== access.token || repair.publicAccess?.url !== access.url)
+            repair.id === repairId &&
+            (repair.publicAccess?.token !== access.token || repair.publicAccess?.url !== access.url)
               ? { ...repair, publicAccess: access }
               : repair,
           ),
@@ -5528,7 +5703,9 @@ export const useBeharStore = create<StoreState>()(
         const cleaned = normalizeChecklistItems(items);
         const cleanComment = normalizeText(comment);
         const blocking = cleaned.some((item) => item.result === "Défaut constaté" || item.result === "KO");
-        const missingUntestedNote = cleaned.some((item) => item.result === "Non testé" && !normalizeText(item.comment) && !cleanComment);
+        const missingUntestedNote = cleaned.some(
+          (item) => item.result === "Non testé" && !normalizeText(item.comment) && !cleanComment,
+        );
         if (blocking || missingUntestedNote) {
           get().addNotification({
             type: "warning",
@@ -5660,22 +5837,23 @@ export const useBeharStore = create<StoreState>()(
               outcomeAt: now,
               outcomeBy: actor.name,
             };
-            const messages = readyOutcomes.includes(outcome) || outcome === "Pièce en attente" || outcome === "Irréparable"
-              ? [
-                  ...(entry.messages ?? []),
-                  {
-                    id: uid("msg"),
-                    repairId: entry.id,
-                    authorType: "system" as const,
-                    authorName: "Atelier",
-                    visibility: "client" as const,
-                    body: clientMessage,
-                    createdAt: now,
-                    readByClient: false,
-                    readByStaff: true,
-                  },
-                ]
-              : entry.messages;
+            const messages =
+              readyOutcomes.includes(outcome) || outcome === "Pièce en attente" || outcome === "Irréparable"
+                ? [
+                    ...(entry.messages ?? []),
+                    {
+                      id: uid("msg"),
+                      repairId: entry.id,
+                      authorType: "system" as const,
+                      authorName: "Atelier",
+                      visibility: "client" as const,
+                      body: clientMessage,
+                      createdAt: now,
+                      readByClient: false,
+                      readByStaff: true,
+                    },
+                  ]
+                : entry.messages;
             return {
               ...entry,
               status: nextStatus,
@@ -5799,6 +5977,7 @@ export const useBeharStore = create<StoreState>()(
         const wanted = clampQuantity(quantity);
         if (wanted <= 0) return false;
         const state = get();
+        const actor = state.currentUser ?? defaultCurrentUser;
         const item = state.stockItems.find((stockItem) => stockItem.id === stockItemId);
         const repair = state.repairs.find((entry) => entry.id === repairId);
         // We still check if stock is available, but we don't decrement yet
@@ -5815,7 +5994,9 @@ export const useBeharStore = create<StoreState>()(
             const existing = repair.parts.find((part) => part.stockItemId === stockItemId);
             const parts = existing
               ? repair.parts.map((part) =>
-                  part.stockItemId === stockItemId ? { ...part, quantity: part.quantity + wanted } : part,
+                  part.stockItemId === stockItemId
+                    ? { ...part, quantity: part.quantity + wanted, stockDecremented: true }
+                    : part,
                 )
               : [
                   ...repair.parts,
@@ -5828,7 +6009,8 @@ export const useBeharStore = create<StoreState>()(
                     purchasePrice: currentItem.purchasePrice,
                     salePrice: clientSalePrice,
                     quantity: wanted,
-                    confirmed: false, // Explicitly not confirmed yet
+                    confirmed: false, // Réservée pour le dossier (pas encore "utilisée")
+                    stockDecremented: true, // …mais le stock disponible est décrémenté dès l'ajout.
                     margin: clientSalePrice - currentItem.purchasePrice,
                     currency: repair.currency,
                     supplier: currentItem.supplier || "Non renseigné",
@@ -5842,13 +6024,52 @@ export const useBeharStore = create<StoreState>()(
               amount,
               total: amount,
               parts,
-              history: [...repair.history, `Pièce ajoutée (en attente) : ${currentItem.name} x${wanted}`],
+              history: [...repair.history, `Pièce sortie du stock : ${currentItem.name} x${wanted} (stock -${wanted})`],
             };
           });
 
-          // DO NOT decrement stockItems here anymore as per USER_REQUEST
-          return { repairs };
+          // Décrément immédiat du stock disponible : ajouter une pièce = la sortir du stock.
+          const stockItems = current.stockItems.map((stockItem) =>
+            stockItem.id === stockItemId
+              ? {
+                  ...stockItem,
+                  quantity: Math.max(0, stockItem.quantity - wanted),
+                  stock: Math.max(0, stockItem.stock - wanted),
+                }
+              : stockItem,
+          );
+          return { repairs, stockItems };
         });
+        get().addAuditLog({
+          action: "stock.item_used",
+          targetType: "stock",
+          targetId: stockItemId,
+          message: `${actor.name} a sorti ${item.name} du stock pour un dossier`,
+          metadata: { repairId, quantity: wanted },
+        });
+        const afterItem = get().stockItems.find((stockItem) => stockItem.id === stockItemId);
+        if (afterItem) {
+          get().createStockMovement({
+            stockItemId,
+            movementType: "reservation_created",
+            quantityDelta: -wanted,
+            quantityBefore: item.stock,
+            quantityAfter: afterItem.stock,
+            reason: `Réservation pièce dossier ${repair.number}`,
+            sourceModule: "atelier_reparation",
+            sourceId: repairId,
+            linkedRepairId: repairId,
+          });
+        }
+        if (afterItem && afterItem.stock <= afterItem.threshold) {
+          get().addNotification({
+            type: "warning",
+            title: "Stock bas",
+            message: `${afterItem.name} est sous le seuil d'alerte`,
+            targetType: "stock",
+            targetId: stockItemId,
+          });
+        }
         return true;
       },
       confirmPartUsage: (repairId: string, stockItemId: string) => {
@@ -5858,9 +6079,11 @@ export const useBeharStore = create<StoreState>()(
           const repair = current.repairs.find((r) => r.id === repairId);
           const part = repair?.parts.find((p) => p.stockItemId === stockItemId);
           if (!repair || !part || part.confirmed) return current;
+          // Le stock est décrémenté dès l'ajout : on ne re-décrémente pas ici (sinon double comptage).
+          const alreadyDecremented = part.stockDecremented === true;
 
           const stockItem = current.stockItems.find((s) => s.id === stockItemId);
-          if (!stockItem || stockItem.stock < part.quantity) return current;
+          if (!stockItem || (!alreadyDecremented && stockItem.stock < part.quantity)) return current;
 
           const nextRepairs = current.repairs.map((r) =>
             r.id === repairId
@@ -5872,11 +6095,17 @@ export const useBeharStore = create<StoreState>()(
               : r,
           );
 
-          const nextStock = current.stockItems.map((s) =>
-            s.id === stockItemId
-              ? { ...s, quantity: Math.max(0, s.quantity - part.quantity), stock: Math.max(0, s.stock - part.quantity) }
-              : s,
-          );
+          const nextStock = alreadyDecremented
+            ? current.stockItems
+            : current.stockItems.map((s) =>
+                s.id === stockItemId
+                  ? {
+                      ...s,
+                      quantity: Math.max(0, s.quantity - part.quantity),
+                      stock: Math.max(0, s.stock - part.quantity),
+                    }
+                  : s,
+              );
 
           const audit = {
             action: "stock.item_used",
@@ -5885,17 +6114,16 @@ export const useBeharStore = create<StoreState>()(
             message: `${actor.name} a utilisé ${part.name} dans ${repair.number}`,
             metadata: { repairId, quantity: part.quantity },
           };
-          const lowStockNotification = nextStock.find(
-            (entry) => entry.id === stockItemId && entry.stock <= entry.threshold,
-          )
-            ? {
-                type: "warning" as const,
-                title: "Stock bas",
-                message: `${stockItem.name} est sous le seuil d'alerte`,
-                targetType: "stock",
-                targetId: stockItemId,
-              }
-            : undefined;
+          const lowStockNotification =
+            !alreadyDecremented && nextStock.find((entry) => entry.id === stockItemId && entry.stock <= entry.threshold)
+              ? {
+                  type: "warning" as const,
+                  title: "Stock bas",
+                  message: `${stockItem.name} est sous le seuil d'alerte`,
+                  targetType: "stock",
+                  targetId: stockItemId,
+                }
+              : undefined;
           return {
             repairs: nextRepairs,
             stockItems: nextStock,
@@ -6026,6 +6254,20 @@ export const useBeharStore = create<StoreState>()(
               : item,
           ),
         }));
+        const afterItem = get().stockItems.find((item) => item.id === line.stockItemId);
+        if (afterItem) {
+          get().createStockMovement({
+            stockItemId: line.stockItemId,
+            movementType: "repair_part_used",
+            quantityDelta: -line.quantity,
+            quantityBefore: stockItem.stock,
+            quantityAfter: afterItem.stock,
+            reason: `Accessoire remis dossier ${repair.number}`,
+            sourceModule: "atelier_reparation",
+            sourceId: repairId,
+            linkedRepairId: repairId,
+          });
+        }
         return true;
       },
       removePartFromRepair: (repairId, stockItemId) => {
@@ -6038,8 +6280,9 @@ export const useBeharStore = create<StoreState>()(
           const currentPart = currentRepair?.parts.find((entry) => entry.stockItemId === stockItemId);
           if (!(currentRepair && currentPart)) return current;
 
-          // Increment stock ONLY if it was confirmed
-          const nextStock = currentPart.confirmed
+          // On restaure le stock dès lors qu'il avait été décrémenté (réservé à l'ajout OU confirmé).
+          const wasDecremented = currentPart.stockDecremented === true || currentPart.confirmed === true;
+          const nextStock = wasDecremented
             ? current.stockItems.map((item) =>
                 item.id === stockItemId
                   ? {
@@ -6072,6 +6315,21 @@ export const useBeharStore = create<StoreState>()(
             ),
           };
         });
+        if (part.stockDecremented === true || part.confirmed === true) {
+          const afterItem = get().stockItems.find((item) => item.id === stockItemId);
+          const beforeStock = afterItem ? Math.max(0, afterItem.stock - part.quantity) : 0;
+          get().createStockMovement({
+            stockItemId,
+            movementType: "reservation_released",
+            quantityDelta: part.quantity,
+            quantityBefore: beforeStock,
+            quantityAfter: afterItem?.stock ?? beforeStock + part.quantity,
+            reason: `Pièce retirée du dossier ${repair.number}`,
+            sourceModule: "atelier_reparation",
+            sourceId: repairId,
+            linkedRepairId: repairId,
+          });
+        }
         return true;
       },
       addQuote: (input) => {
@@ -7027,48 +7285,47 @@ export const useBeharStore = create<StoreState>()(
         const paymentId = amount > 0 ? uid("payment") : "";
         const paymentNumber = amount > 0 ? docNumber("CONF", ws.nextReceiptNumber ?? 1, "CONF") : "";
         const paymentBillingConfig = getWorkshopCountryConfig(repair.billingCountry);
-        const payment: Payment | null =
-          paidMethod
-            ? {
-                id: paymentId,
-                billingCountry: paymentBillingConfig.country,
-                currency: paymentBillingConfig.currency,
-                locale: paymentBillingConfig.locale,
-                shopId,
-                invoiceId: invoice?.id,
-                customerId: repair.customerId,
-                repairId,
-                quoteId: repair.quoteId,
-                paymentNumber,
-                reference: externalReference || paymentNumber,
-                externalReference: externalReference || undefined,
-                method: paidMethod,
-                mode: paidMethod,
-                status: "Payé",
-                amount,
-                date,
-                note: [
-                  note,
-                  "Paiement enregistré manuellement.",
-                  "Ce document ne remplace pas une facture. La facture reste le document comptable officiel.",
-                ]
-                  .filter(Boolean)
-                  .join("\n"),
-                twintReference: paidMethod === "TWINT" ? externalReference || note || undefined : undefined,
-                createdAt: timestamp,
-                updatedAt: timestamp,
-                createdBy: actor.id,
-                createdByName: actor.name,
-                updatedBy: actor.id,
-                updatedByName: actor.name,
-              }
-            : null;
+        const payment: Payment | null = paidMethod
+          ? {
+              id: paymentId,
+              billingCountry: paymentBillingConfig.country,
+              currency: paymentBillingConfig.currency,
+              locale: paymentBillingConfig.locale,
+              shopId,
+              invoiceId: invoice?.id,
+              customerId: repair.customerId,
+              repairId,
+              quoteId: repair.quoteId,
+              paymentNumber,
+              reference: externalReference || paymentNumber,
+              externalReference: externalReference || undefined,
+              method: paidMethod,
+              mode: paidMethod,
+              status: "Payé",
+              amount,
+              date,
+              note: [
+                note,
+                "Paiement enregistré manuellement.",
+                "Ce document ne remplace pas une facture. La facture reste le document comptable officiel.",
+              ]
+                .filter(Boolean)
+                .join("\n"),
+              twintReference: paidMethod === "TWINT" ? externalReference || note || undefined : undefined,
+              createdAt: timestamp,
+              updatedAt: timestamp,
+              createdBy: actor.id,
+              createdByName: actor.name,
+              updatedBy: actor.id,
+              updatedByName: actor.name,
+            }
+          : null;
 
         set((current) => {
           const payments = payment ? [payment, ...current.payments] : current.payments;
           const relatedPayments = payments.filter((entry) => entry.repairId === repairId && entry.status === "Payé");
           const paidAmount = relatedPayments.reduce((sum, entry) => sum + entry.amount, 0);
-          const invoiceTotalValue = invoice ? invoiceTotal(invoice) : repair.total ?? repair.amount ?? paidAmount;
+          const invoiceTotalValue = invoice ? invoiceTotal(invoice) : (repair.total ?? repair.amount ?? paidAmount);
           const isPaid = nextRepairStatus === "Réglée" || (invoiceTotalValue > 0 && paidAmount >= invoiceTotalValue);
           const paymentIds = uniqueIds([...(repair.paymentIds ?? []), repair.paymentId, payment?.id]);
           const invoices = current.invoices.map((entry) => {
@@ -7089,12 +7346,11 @@ export const useBeharStore = create<StoreState>()(
               paymentId: payment?.id ?? entry.paymentId,
               paymentIds,
               paymentStatus: nextRepairStatus,
-              paymentMethodNote:
-                isOffert
-                  ? `Dossier clôturé sans encaissement — Offert / Garantie / SAV — ${date}`
-                  : nextRepairStatus === "À régler" || !method
-                    ? undefined
-                    : `Réglé manuellement — ${method} — ${date}`,
+              paymentMethodNote: isOffert
+                ? `Dossier clôturé sans encaissement — Offert / Garantie / SAV — ${date}`
+                : nextRepairStatus === "À régler" || !method
+                  ? undefined
+                  : `Réglé manuellement — ${method} — ${date}`,
               paymentCustomMethod: input.customMethod || entry.paymentCustomMethod,
               paymentAmount: amount || entry.paymentAmount,
               paymentPaidAt: nextRepairStatus !== "À régler" ? date : entry.paymentPaidAt,
@@ -7205,8 +7461,8 @@ export const useBeharStore = create<StoreState>()(
           });
         }
 
-        // Change status to Rendu
-        state.changeRepairStatus(repairId, "Rendu");
+        // Restitution finalise le dossier côté atelier/comptoir.
+        state.changeRepairStatus(repairId, "Clôturé");
 
         // Add specific audit log for closure with settlement
         const actor = state.currentUser ?? defaultCurrentUser;
@@ -7480,6 +7736,41 @@ export const useBeharStore = create<StoreState>()(
         }
         return repairId;
       },
+      createStockMovement: (input) => {
+        const state = get();
+        const item = state.stockItems.find((entry) => entry.id === input.stockItemId);
+        if (!item) return "";
+        const actor = state.currentUser ?? defaultCurrentUser;
+        const id = uid("mov");
+        const quantityBefore = input.quantityBefore ?? item.stock;
+        const quantityAfter = input.quantityAfter ?? Math.max(0, quantityBefore + input.quantityDelta);
+        const unitCost = input.unitCost ?? item.purchasePrice;
+        const movement: StockMovement = {
+          id,
+          shopId,
+          stockItemId: input.stockItemId,
+          movementType: input.movementType,
+          quantityDelta: input.quantityDelta,
+          quantityBefore,
+          quantityAfter,
+          unitCost,
+          totalCost: input.totalCost ?? Math.round(unitCost * Math.abs(input.quantityDelta) * 100) / 100,
+          reason: input.reason,
+          sourceModule: input.sourceModule,
+          sourceId: input.sourceId,
+          linkedRepairId: input.linkedRepairId,
+          linkedReconditioningDeviceId: input.linkedReconditioningDeviceId ?? item.reconditioningFileId,
+          linkedSaleId: input.linkedSaleId,
+          linkedPurchaseId: input.linkedPurchaseId,
+          linkedSupplierInvoiceId: input.linkedSupplierInvoiceId,
+          actorId: actor.id,
+          createdAt: nowLabel(),
+          metadata: input.metadata,
+        };
+        set((current) => ({ stockMovements: [movement, ...current.stockMovements].slice(0, 2000) }));
+        publishDomainEvent({ type: "stock.movement_created", movementId: id, occurredAt: movement.createdAt });
+        return id;
+      },
       addStockItem: (input) => {
         if (!get().requirePermission("canManageStock", "Créer une pièce")) return "";
         const actor = get().currentUser ?? defaultCurrentUser;
@@ -7516,6 +7807,33 @@ export const useBeharStore = create<StoreState>()(
           targetId: id,
           message: `${actor.name} a créé la pièce ${item.name}`,
         });
+        // Traçabilité achat : création d'une pièce avec stock initial = une entrée.
+        // (sauf si l'appelant enregistre lui-même l'achat, ex. reconditionnement.)
+        if (!input.skipPurchaseLog && (item.stock ?? 0) > 0 && item.purchasePrice > 0) {
+          get().addPurchase({
+            kind: item.itemType === "accessory" ? "accessoire" : item.itemType === "product" ? "autre" : "piece",
+            source: "Création pièce",
+            label: item.name,
+            reference: item.sku || item.reference,
+            supplier: item.supplier,
+            quantity: item.stock,
+            unitCost: item.purchasePrice,
+            stockItemId: id,
+          });
+        }
+        if ((item.stock ?? 0) > 0) {
+          get().createStockMovement({
+            stockItemId: id,
+            movementType: "supplier_purchase_received",
+            quantityDelta: item.stock,
+            quantityBefore: 0,
+            quantityAfter: item.stock,
+            reason: "Création stock initial",
+            sourceModule: "stock",
+            sourceId: id,
+            linkedReconditioningDeviceId: item.reconditioningFileId,
+          });
+        }
         return id;
       },
       updateStockItem: (id, patch) => {
@@ -7630,6 +7948,85 @@ export const useBeharStore = create<StoreState>()(
           message: `${actor.name} a réapprovisionné ${item?.name ?? id}`,
           metadata: { quantity },
         });
+        // Traçabilité achat : un réapprovisionnement est une entrée pièce.
+        if (item) {
+          get().addPurchase({
+            kind: item.itemType === "accessory" ? "accessoire" : item.itemType === "product" ? "autre" : "piece",
+            source: "Réapprovisionnement",
+            label: item.name,
+            reference: item.sku || item.reference,
+            supplier: item.supplier,
+            quantity: clampQuantity(quantity),
+            unitCost: item.purchasePrice,
+            stockItemId: id,
+          });
+          get().createStockMovement({
+            stockItemId: id,
+            movementType: "supplier_purchase_received",
+            quantityDelta: clampQuantity(quantity),
+            quantityBefore: Math.max(0, item.stock - clampQuantity(quantity)),
+            quantityAfter: item.stock,
+            reason: "Réapprovisionnement",
+            sourceModule: "achats",
+            sourceId: id,
+          });
+        }
+      },
+      adjustStock: (id, delta, reason) => {
+        if (!delta) return;
+        const beforeItem = get().stockItems.find((entry) => entry.id === id);
+        set((state) => ({
+          stockItems: state.stockItems.map((item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  quantity: Math.max(0, item.quantity + delta),
+                  stock: Math.max(0, item.stock + delta),
+                }
+              : item,
+          ),
+        }));
+        const item = get().stockItems.find((entry) => entry.id === id);
+        if (!item) return;
+        const sourceModule: StockMovementSourceModule = reason?.toLowerCase().includes("reconditionnement")
+          ? "reconditionnement"
+          : reason?.toLowerCase().includes("réparation") || reason?.toLowerCase().includes("reparation")
+            ? "atelier_reparation"
+            : "stock";
+        const movementType: StockMovementType =
+          sourceModule === "reconditionnement" && delta < 0
+            ? "reconditioning_part_used"
+            : sourceModule === "atelier_reparation" && delta < 0
+              ? "repair_part_used"
+              : delta > 0
+                ? "correction"
+                : "manual_adjustment";
+        get().createStockMovement({
+          stockItemId: id,
+          movementType,
+          quantityDelta: delta,
+          quantityBefore: beforeItem?.stock ?? Math.max(0, item.stock - delta),
+          quantityAfter: item.stock,
+          reason,
+          sourceModule,
+          linkedReconditioningDeviceId: item.reconditioningFileId,
+        });
+        get().addAuditLog({
+          action: delta < 0 ? "stock.item_used" : "stock.quantity_changed",
+          targetType: "stock",
+          targetId: id,
+          message: `${reason ?? "Ajustement stock"} : ${item.name} (${delta > 0 ? "+" : ""}${delta})`,
+          metadata: { delta },
+        });
+        if (delta < 0 && item.stock <= item.threshold) {
+          get().addNotification({
+            type: "warning",
+            title: "Stock bas",
+            message: `${item.name} est sous le seuil d'alerte`,
+            targetType: "stock",
+            targetId: id,
+          });
+        }
       },
       importStockItems: (items) =>
         set((state) => {
@@ -7652,6 +8049,50 @@ export const useBeharStore = create<StoreState>()(
           }
           return { stockItems };
         }),
+      addPurchase: (input) => {
+        const actor = get().currentUser ?? defaultCurrentUser;
+        const id = uid("pur");
+        const year = new Date().getFullYear();
+        const seq = get().purchases.filter((entry) => (entry.number || "").includes(`ACH-${year}`)).length + 1;
+        const quantity = Math.max(1, clampQuantity(input.quantity ?? 1));
+        const unitCost = Number.isFinite(input.unitCost) ? Number(input.unitCost) : 0;
+        const total = typeof input.total === "number" ? input.total : Math.round(unitCost * quantity * 100) / 100;
+        const purchase: Purchase = {
+          id,
+          shopId,
+          number: `ACH-${year}-${String(seq).padStart(6, "0")}`,
+          kind: input.kind,
+          source: input.source,
+          label: input.label,
+          reference: input.reference,
+          supplier: input.supplier,
+          quantity,
+          unitCost,
+          total,
+          currency: input.currency,
+          date: input.date ?? getNowIso(),
+          stockItemId: input.stockItemId,
+          repairId: input.repairId,
+          reconditioningFileId: input.reconditioningFileId,
+          conditionneRecordId: input.conditionneRecordId,
+          note: input.note,
+          createdBy: actor.id,
+          createdByName: actor.name,
+          createdAt: getNowIso(),
+        };
+        set((state) => ({ purchases: [purchase, ...state.purchases] }));
+        get().addAuditLog({
+          action: "purchase.created",
+          targetType: "purchase",
+          targetId: id,
+          message: `${actor.name} a enregistré un achat (${input.source}) : ${input.label}`,
+          metadata: { total, kind: input.kind },
+        });
+        return id;
+      },
+      deletePurchase: (id) => {
+        set((state) => ({ purchases: state.purchases.filter((entry) => entry.id !== id) }));
+      },
       sendMessage: (input) => {
         const log: MessageLog = {
           id: uid("message"),
@@ -8066,6 +8507,26 @@ export const useBeharStore = create<StoreState>()(
           } as WorkshopSettings),
         }));
 
+        for (const line of sale.lines) {
+          const beforeItem = state.stockItems.find((item) => item.id === line.stockItemId);
+          const afterItem = updatedStock.find((item) => item.id === line.stockItemId);
+          if (!beforeItem || !afterItem) continue;
+          const linkedReconditioningDeviceId = line.reconditioningFileId || beforeItem.reconditioningFileId;
+          get().createStockMovement({
+            stockItemId: line.stockItemId,
+            movementType: linkedReconditioningDeviceId ? "reconditioned_device_sold" : "counter_sale_sold",
+            quantityDelta: -line.quantity,
+            quantityBefore: beforeItem.stock,
+            quantityAfter: afterItem.stock,
+            reason: `Vente comptoir ${sale.number}`,
+            sourceModule: "vente_comptoir",
+            sourceId: sale.id,
+            linkedSaleId: sale.id,
+            linkedReconditioningDeviceId,
+            metadata: { saleNumber: sale.number, lineId: line.id, itemKind: line.itemKind },
+          });
+        }
+
         get().addAuditLog({
           action: "sale.paid",
           targetType: "sale",
@@ -8080,6 +8541,7 @@ export const useBeharStore = create<StoreState>()(
           targetType: "sale",
           targetId: saleId,
         });
+        publishDomainEvent({ type: "counter_sale.completed", sale: updatedSale, paymentId, occurredAt: timestamp });
 
         return paymentId;
       },
@@ -8103,6 +8565,29 @@ export const useBeharStore = create<StoreState>()(
           sales: s.sales.map((x) => (x.id === saleId ? { ...x, status: "Annulée" as SaleStatus } : x)),
           stockItems: updatedStock,
         }));
+
+        if (sale.status === "Payée") {
+          for (const line of sale.lines) {
+            const beforeItem = state.stockItems.find((item) => item.id === line.stockItemId);
+            const afterItem = updatedStock.find((item) => item.id === line.stockItemId);
+            if (!beforeItem || !afterItem) continue;
+            const linkedReconditioningDeviceId = line.reconditioningFileId || beforeItem.reconditioningFileId;
+            get().createStockMovement({
+              stockItemId: line.stockItemId,
+              movementType: "reservation_released",
+              quantityDelta: line.quantity,
+              quantityBefore: beforeItem.stock,
+              quantityAfter: afterItem.stock,
+              reason: `Annulation vente comptoir ${sale.number}`,
+              sourceModule: "vente_comptoir",
+              sourceId: sale.id,
+              linkedSaleId: sale.id,
+              linkedReconditioningDeviceId,
+              metadata: { saleNumber: sale.number, lineId: line.id, cancelledSale: true },
+            });
+          }
+          publishDomainEvent({ type: "counter_sale.cancelled", sale, occurredAt: nowLabel() });
+        }
 
         const actor = state.currentUser ?? defaultCurrentUser;
         get().addAuditLog({

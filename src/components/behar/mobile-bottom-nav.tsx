@@ -14,7 +14,9 @@ import {
   MoreHorizontal,
   Package,
   Receipt,
+  RefreshCw,
   Settings,
+  ShoppingCart,
   Store,
   Users,
   Wrench,
@@ -37,6 +39,8 @@ const moreItems = [
   { label: "Factures", href: "/dashboard/factures", icon: Receipt },
   { label: "Rendez-vous", href: "/dashboard/rendez-vous", icon: CalendarDays },
   { label: "Stock", href: "/dashboard/stock", icon: Package },
+  { label: "Achats", href: "/dashboard/achats", icon: ShoppingCart },
+  { label: "Recond.", href: "/dashboard/reconditionnement", icon: RefreshCw },
   { label: "Documents", href: "/dashboard/documents", icon: Files },
   { label: "Paramètres", href: "/dashboard/parametres", icon: Settings },
   { label: "Catalogue prix", href: "/dashboard/parametres/catalogue", icon: FileText },
@@ -46,7 +50,9 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const currentUser = useBeharStore((s) => s.currentUser);
+  const canViewPurchases = useBeharStore((s) => s.hasPermission("canViewPurchasePrice"));
   const logout = useBeharStore((s) => s.logout);
+  const visibleMoreItems = moreItems.filter((item) => item.href !== "/dashboard/achats" || canViewPurchases);
 
   const moreActive = moreItems.some((m) => pathname.startsWith(m.href));
   const roleLabel =
@@ -143,7 +149,7 @@ export function MobileBottomNav() {
             </div>
 
             <div className="grid grid-cols-2 gap-3 px-4 pb-6">
-              {moreItems.map((item) => {
+              {visibleMoreItems.map((item) => {
                 const Icon = item.icon;
                 const active = pathname.startsWith(item.href);
                 return (
