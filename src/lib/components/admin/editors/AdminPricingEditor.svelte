@@ -33,7 +33,7 @@
 				name: 'Nouveau plan',
 				description: '',
 				buttonText: 'Choisir',
-				buttonHref: 'https://app.behartechpro.fr/dashboard',
+				buttonHref: '/dashboard',
 				features: [],
 				monthlyPrice: 0,
 				yearlyPrice: 0,

@@ -5,17 +5,270 @@
   "outputDirectory": "build",
   "installCommand": "npm install",
   "rewrites": [
-    { "source": "/suivi/:path*", "destination": "https://app.behartechpro.fr/suivi/:path*" },
-    { "source": "/devis/:path*", "destination": "https://app.behartechpro.fr/devis/:path*" },
-    { "source": "/facture/:path*", "destination": "https://app.behartechpro.fr/facture/:path*" },
-    { "source": "/recu/:path*", "destination": "https://app.behartechpro.fr/recu/:path*" },
-    { "source": "/vente/:path*", "destination": "https://app.behartechpro.fr/vente/:path*" },
-    { "source": "/p/:path*", "destination": "https://app.behartechpro.fr/p/:path*" },
-    { "source": "/document/:path*", "destination": "https://app.behartechpro.fr/document/:path*" },
-    { "source": "/telecharger/:path*", "destination": "https://app.behartechpro.fr/telecharger/:path*" },
-    { "source": "/certificat/:path*", "destination": "https://app.behartechpro.fr/certificat/:path*" },
-    { "source": "/print/:path*", "destination": "https://app.behartechpro.fr/print/:path*" },
-    { "source": "/capture/:path*", "destination": "https://app.behartechpro.fr/capture/:path*" },
-    { "source": "/dashboard/:path*", "destination": "https://app.behartechpro.fr/dashboard/:path*" }
-  ]
+    {
+      "source": "/suivi",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/suivi/"
+    },
+    {
+      "source": "/suivi/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/suivi/"
+    },
+    {
+      "source": "/suivi/:path*",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/suivi/:path*"
+    },
+    {
+      "source": "/suivi/:path*/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/suivi/:path*/"
+    },
+    {
+      "source": "/devis",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/devis/"
+    },
+    {
+      "source": "/devis/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/devis/"
+    },
+    {
+      "source": "/devis/:path*",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/devis/:path*"
+    },
+    {
+      "source": "/devis/:path*/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/devis/:path*/"
+    },
+    {
+      "source": "/facture",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/facture/"
+    },
+    {
+      "source": "/facture/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/facture/"
+    },
+    {
+      "source": "/facture/:path*",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/facture/:path*"
+    },
+    {
+      "source": "/facture/:path*/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/facture/:path*/"
+    },
+    {
+      "source": "/recu",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/recu/"
+    },
+    {
+      "source": "/recu/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/recu/"
+    },
+    {
+      "source": "/recu/:path*",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/recu/:path*"
+    },
+    {
+      "source": "/recu/:path*/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/recu/:path*/"
+    },
+    {
+      "source": "/vente",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/vente/"
+    },
+    {
+      "source": "/vente/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/vente/"
+    },
+    {
+      "source": "/vente/:path*",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/vente/:path*"
+    },
+    {
+      "source": "/vente/:path*/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/vente/:path*/"
+    },
+    {
+      "source": "/p",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/p/"
+    },
+    {
+      "source": "/p/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/p/"
+    },
+    {
+      "source": "/p/:path*",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/p/:path*"
+    },
+    {
+      "source": "/p/:path*/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/p/:path*/"
+    },
+    {
+      "source": "/document",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/document/"
+    },
+    {
+      "source": "/document/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/document/"
+    },
+    {
+      "source": "/document/:path*",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/document/:path*"
+    },
+    {
+      "source": "/document/:path*/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/document/:path*/"
+    },
+    {
+      "source": "/telecharger",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/telecharger/"
+    },
+    {
+      "source": "/telecharger/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/telecharger/"
+    },
+    {
+      "source": "/telecharger/:path*",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/telecharger/:path*"
+    },
+    {
+      "source": "/telecharger/:path*/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/telecharger/:path*/"
+    },
+    {
+      "source": "/certificat",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/certificat/"
+    },
+    {
+      "source": "/certificat/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/certificat/"
+    },
+    {
+      "source": "/certificat/:path*",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/certificat/:path*"
+    },
+    {
+      "source": "/certificat/:path*/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/certificat/:path*/"
+    },
+    {
+      "source": "/print",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/print/"
+    },
+    {
+      "source": "/print/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/print/"
+    },
+    {
+      "source": "/print/:path*",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/print/:path*"
+    },
+    {
+      "source": "/print/:path*/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/print/:path*/"
+    },
+    {
+      "source": "/capture",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/capture/"
+    },
+    {
+      "source": "/capture/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/capture/"
+    },
+    {
+      "source": "/capture/:path*",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/capture/:path*"
+    },
+    {
+      "source": "/capture/:path*/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/capture/:path*/"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/dashboard/"
+    },
+    {
+      "source": "/dashboard/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/dashboard/"
+    },
+    {
+      "source": "/dashboard/:path*",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/dashboard/:path*"
+    },
+    {
+      "source": "/dashboard/:path*/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/dashboard/:path*/"
+    },
+    {
+      "source": "/comptoir",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/comptoir/"
+    },
+    {
+      "source": "/comptoir/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/comptoir/"
+    },
+    {
+      "source": "/comptoir/:path*",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/comptoir/:path*"
+    },
+    {
+      "source": "/comptoir/:path*/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/comptoir/:path*/"
+    },
+    {
+      "source": "/atelier",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/atelier/"
+    },
+    {
+      "source": "/atelier/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/atelier/"
+    },
+    {
+      "source": "/atelier/:path*",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/atelier/:path*"
+    },
+    {
+      "source": "/atelier/:path*/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/atelier/:path*/"
+    },
+    {
+      "source": "/admin",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/admin/"
+    },
+    {
+      "source": "/admin/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/admin/"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/admin/:path*"
+    },
+    {
+      "source": "/admin/:path*/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/admin/:path*/"
+    },
+    {
+      "source": "/formation",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/formation/"
+    },
+    {
+      "source": "/formation/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/formation/"
+    },
+    {
+      "source": "/formation/:path*",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/formation/:path*"
+    },
+    {
+      "source": "/formation/:path*/",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/formation/:path*/"
+    },
+    {
+      "source": "/_next/:path*",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/_next/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://behar-tech-saa-s-pro.vercel.app/api/:path*"
+    }
+  ],
+  "trailingSlash": true
 }

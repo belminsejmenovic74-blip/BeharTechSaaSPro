@@ -40,9 +40,9 @@ export const DEFAULT_CONTENT = {
 			{ label: 'Ressources', href: '#' }
 		],
 		loginLabel: 'Connexion',
-		loginHref: 'https://app.behartechpro.fr/dashboard',
+		loginHref: '/dashboard',
 		ctaLabel: 'Essayer gratuitement',
-		ctaHref: 'https://app.behartechpro.fr/dashboard?plan=gratuit'
+		ctaHref: '/dashboard?plan=gratuit'
 	},
 
 	hero: {
@@ -50,7 +50,7 @@ export const DEFAULT_CONTENT = {
 		title: 'Transformez votre atelier.',
 		subtitle: 'Gagnez du temps. Gagnez des clients.\nCentralisez votre atelier dans un seul outil.',
 		ctaLabel: 'Essayer gratuitement',
-		ctaHref: 'https://app.behartechpro.fr/dashboard?plan=gratuit',
+		ctaHref: '/dashboard?plan=gratuit',
 		showImage: false,
 		image: '/imgs/mockup-dashboard.png'
 	},
@@ -303,7 +303,7 @@ export const DEFAULT_CONTENT = {
 				name: 'Gratuit',
 				description: 'Pour démarrer et tester l’outil sur un premier appareil.',
 				buttonText: 'Commencer',
-				buttonHref: 'https://app.behartechpro.fr/dashboard?plan=gratuit',
+				buttonHref: '/dashboard?plan=gratuit',
 				features: ['1 appareil connecté', '10 réparations / mois', '10 SMS inclus', 'Suivi client & QR Code', 'Devis & Factures', 'Support email'],
 				monthlyPrice: 0,
 				yearlyPrice: 0,
@@ -315,7 +315,7 @@ export const DEFAULT_CONTENT = {
 				name: 'Starter',
 				description: 'Pour les petits ateliers qui veulent l’essentiel.',
 				buttonText: 'Choisir Starter',
-				buttonHref: 'https://app.behartechpro.fr/dashboard?plan=starter',
+				buttonHref: '/dashboard?plan=starter',
 				features: ['2 appareils connectés', 'Réparations illimitées', '30 SMS inclus', 'Suivi client & QR Code', 'Devis & Factures', 'Support prioritaire'],
 				monthlyPrice: 2900,
 				yearlyPrice: 29000,
@@ -327,7 +327,7 @@ export const DEFAULT_CONTENT = {
 				name: 'Pro',
 				description: 'Le plus choisi par les ateliers en croissance.',
 				buttonText: 'Choisir Pro',
-				buttonHref: 'https://app.behartechpro.fr/dashboard?plan=pro',
+				buttonHref: '/dashboard?plan=pro',
 				features: ['4 appareils connectés', 'Réparations illimitées', '150 SMS inclus', 'Suivi client & QR Code', 'Devis & Factures', 'Support prioritaire', 'Export comptable'],
 				monthlyPrice: 4900,
 				yearlyPrice: 49000,
@@ -339,7 +339,7 @@ export const DEFAULT_CONTENT = {
 				name: 'Business',
 				description: 'Pour les ateliers multi-postes et le volume.',
 				buttonText: 'Choisir Business',
-				buttonHref: 'https://app.behartechpro.fr/dashboard?plan=business',
+				buttonHref: '/dashboard?plan=business',
 				features: ['Appareils illimités', 'Réparations illimitées', '250 SMS inclus', 'Suivi client & QR Code', 'Devis & Factures', 'Support dédié', 'Export comptable'],
 				monthlyPrice: 9900,
 				yearlyPrice: 99000,
