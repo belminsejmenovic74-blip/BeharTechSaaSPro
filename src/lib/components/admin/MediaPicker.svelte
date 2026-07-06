@@ -8,29 +8,26 @@
 	let uploading = false;
 	let open = false;
 
-	async function upload(e: Event) {
+	// Site statique : pas de serveur → l'image est lue en data URL (aperçu direct).
+	// Pour la prod, mieux vaut déposer le fichier dans static/imgs et référencer /imgs/....
+	function upload(e: Event) {
 		const input = e.target as HTMLInputElement;
 		const file = input.files?.[0];
 		if (!file) return;
 		uploading = true;
-		try {
-			const fd = new FormData();
-			fd.append('file', file);
-			const res = await fetch('/admin/api/upload', { method: 'POST', body: fd });
-			const data = await res.json();
-			if (data.ok) {
-				if (!media.includes(data.url)) media = [...media, data.url];
-				value = data.url;
-				toast.success('Image importée');
-			} else {
-				toast.error('Échec de l’import');
-			}
-		} catch {
-			toast.error('Échec de l’import');
-		} finally {
+		const reader = new FileReader();
+		reader.onload = () => {
+			value = String(reader.result);
+			if (!media.includes(value)) media = [value, ...media];
+			toast.success('Image importée (aperçu)');
 			uploading = false;
 			input.value = '';
-		}
+		};
+		reader.onerror = () => {
+			toast.error('Échec de l’import');
+			uploading = false;
+		};
+		reader.readAsDataURL(file);
 	}
 </script>
 
