@@ -1,0 +1,3 @@
+import{P as x,Q as u,R as C}from"./scheduler.ClyjVq2j.js";function _(n){const t=n-1;return t*t*t+1}function U(){return x("cms")}function V(n,{delay:t=0,duration:o=400,easing:s=C}={}){const c=+getComputedStyle(n).opacity;return{delay:t,duration:o,easing:s,css:a=>`opacity: ${a*c}`}}function b(n,{delay:t=0,duration:o=400,easing:s=_,x:c=0,y:a=0,opacity:f=0}={}){const e=getComputedStyle(n),r=+e.opacity,y=e.transform==="none"?"":e.transform,m=r*(1-f),[p,l]=u(c),[$,g]=u(a);return{delay:t,duration:o,easing:s,css:(i,d)=>`
+			transform: ${y} translate(${(1-i)*p}${l}, ${(1-i)*$}${g});
+			opacity: ${r-m*d}`}}export{V as a,b as f,U as g};

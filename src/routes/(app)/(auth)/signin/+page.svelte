@@ -22,12 +22,12 @@
 		onUpdate: ({ result }) => {
 			isFormLoading = false;
 			if (result.status === 200) {
-				toast.success('Check your email', {
-					description: 'We have sent you a login link. Be sure to check your spam too.'
+				toast.success('Consultez votre e-mail', {
+					description: 'Nous vous avons envoyé un lien de connexion. Pensez à vérifier vos spams.'
 				});
 			} else {
-				toast.error('Something went wrong', {
-					description: 'Your sign in request failed. Please try again.'
+				toast.error('Une erreur est survenue', {
+					description: 'Votre demande de connexion a échoué. Veuillez réessayer.'
 				});
 			}
 		}
@@ -45,26 +45,26 @@
 </script>
 
 <svelte:head>
-	<title>Sign In | Svee UI</title>
-	<meta name="description" content="Sign In for Svee UI" />
+	<title>Connexion | Behar Tech Pro</title>
+	<meta name="description" content="Connexion à Behar Tech Pro" />
 </svelte:head>
 
 <div class="container flex h-screen w-screen flex-col items-center justify-center">
 	<Button variant="ghost" href="/" class="absolute left-4 top-4 md:left-8 md:top-8">
 		<ChevronLeftIcon class="mr-2 size-4" />
-		Back
+		Retour
 	</Button>
 	<div class="mx-auto flex w-full flex-col justify-center gap-6 sm:w-[350px]">
 		<div class="flex flex-col gap-2 text-center">
 			<!-- {/* <Icons.logo class="mx-auto h-6 w-6" /> */} -->
-			<h1 class="text-2xl font-semibold tracking-tight">Welcome back</h1>
-			<p class="text-sm text-muted-foreground">Login to your account</p>
+			<h1 class="text-2xl font-semibold tracking-tight">Bon retour</h1>
+			<p class="text-sm text-muted-foreground">Connectez-vous à votre compte</p>
 		</div>
 		<!-- Form -->
 		<form method="POST" use:enhance>
 			<Form.Field {form} name="email" class="mb-4">
 				<Form.Control let:attrs>
-					<Input placeholder="name@example.com" {...attrs} bind:value={$formData.email} />
+					<Input placeholder="nom@exemple.com" {...attrs} bind:value={$formData.email} />
 				</Form.Control>
 				<!-- <Form.Description>This is your email address.</Form.Description> -->
 				<Form.FieldErrors />
@@ -73,7 +73,7 @@
 				{#if isFormLoading}
 					<Loader class="mr-2 size-4 animate-spin" />
 				{/if}
-				Sign In with Email</Form.Button
+				Se connecter par e-mail</Form.Button
 			>
 		</form>
 		<!-- Separator -->
@@ -82,7 +82,7 @@
 				<span class="w-full border-t" />
 			</div>
 			<div class="relative flex justify-center text-xs uppercase">
-				<span class="bg-background px-2 text-muted-foreground"> Or continue with </span>
+				<span class="bg-background px-2 text-muted-foreground"> Ou continuer avec </span>
 			</div>
 		</div>
 		<Button on:click={githubSignIn} variant="outline" disabled={loading}>
@@ -95,7 +95,7 @@
 		>
 		<p class="px-8 text-center text-sm text-muted-foreground">
 			<a href="/signup" class="hover:text-brand underline underline-offset-4">
-				Don&apos;t have an account? Sign Up
+				Pas encore de compte ? Inscrivez-vous
 			</a>
 		</p>
 	</div>
