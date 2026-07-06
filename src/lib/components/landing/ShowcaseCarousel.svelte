@@ -5,6 +5,7 @@
 	import type { ShowcaseContent } from '$lib/cms/types';
 
 	export let config: ShowcaseContent;
+	export let id: string | undefined = undefined;
 
 	let active = 0;
 	$: slides = config.slides.filter((s) => s.visible !== false);
@@ -38,6 +39,7 @@
 </script>
 
 <section
+	{id}
 	class="relative scroll-mt-24 overflow-hidden px-5 py-24 md:py-28"
 	tabindex="0"
 	role="group"

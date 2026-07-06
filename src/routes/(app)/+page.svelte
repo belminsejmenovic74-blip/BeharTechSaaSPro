@@ -37,7 +37,7 @@
 			<ClientSection />
 		{:else if section.id === 'showcaseA'}
 			<SphereMask />
-			<ShowcaseCarousel config={content.showcases.A} />
+			<ShowcaseCarousel id="pense" config={content.showcases.A} />
 		{:else if section.id === 'showcaseB'}
 			<ShowcaseCarousel config={content.showcases.B} />
 		{:else if section.id === 'showcaseC'}
