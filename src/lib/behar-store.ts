@@ -35,6 +35,7 @@ import {
 } from "@/lib/workshop-country";
 import { ensureTrackingCode, getCustomerTrackingPath, getTrackingCode } from "@/lib/customer-tracking";
 import { publishDomainEvent } from "@/lib/domain-events";
+import { checkRepairQuota, checkSmsQuota, countSmsThisMonth, countThisMonth } from "@/lib/plan-limits";
 
 export type RepairStatus =
   | "Reçu"
@@ -1134,6 +1135,8 @@ export type StoreState = {
     stateVersion?: number;
     lastSyncedStateVersion?: number;
     lastDeviceId?: string;
+    /** Appareils connus de l'atelier (limite selon l'offre). */
+    devices?: { id: string; label?: string; lastSeenAt: string }[];
   };
   workshopInfo: WorkshopInfo;
   workshopSettings: WorkshopSettings;
@@ -5242,6 +5245,18 @@ export const useBeharStore = create<StoreState>()(
       addRepair: (input) => {
         if (!get().requirePermission("canCreateRepair", "Créer une réparation")) return "";
         const state = get();
+        // Quota d'abonnement : réparations créées ce mois-ci (plans limités uniquement).
+        const repairQuota = checkRepairQuota(state.licensePlan, countThisMonth(state.repairs));
+        if (!repairQuota.allowed) {
+          get().addNotification({
+            type: "warning",
+            title: "Limite de l'offre atteinte",
+            message: repairQuota.reason ?? "Limite de réparations mensuelles atteinte.",
+            targetType: "settings",
+            targetId: shopId,
+          });
+          return "";
+        }
         const actor = state.currentUser ?? defaultCurrentUser;
         const ws = state.workshopSettings ?? defaultWorkshopSettings;
         const appointment = input.appointmentId
@@ -8094,6 +8109,20 @@ export const useBeharStore = create<StoreState>()(
         set((state) => ({ purchases: state.purchases.filter((entry) => entry.id !== id) }));
       },
       sendMessage: (input) => {
+        // Quota d'abonnement : SMS envoyés ce mois-ci (plans limités uniquement).
+        if (input.channel === "SMS") {
+          const smsQuota = checkSmsQuota(get().licensePlan, countSmsThisMonth(get().messageLogs));
+          if (!smsQuota.allowed) {
+            get().addNotification({
+              type: "warning",
+              title: "Limite SMS atteinte",
+              message: smsQuota.reason ?? "Quota SMS mensuel atteint.",
+              targetType: "settings",
+              targetId: shopId,
+            });
+            return;
+          }
+        }
         const log: MessageLog = {
           id: uid("message"),
           shopId,

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 import { type StoreState, useBeharStore } from "@/lib/behar-store";
+import { checkDeviceQuota } from "@/lib/plan-limits";
 import { syncPublicTrackingRepairsToCloud } from "@/lib/public-tracking-sync";
 import { installReconditioningSalesBridge } from "@/lib/reconditioning-store";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -224,13 +225,34 @@ export function AutoSyncProvider() {
 
       saveTimer = setTimeout(() => {
         const current = useBeharStore.getState();
+
+        // Limite d'appareils connectés selon l'offre : un appareil hors quota
+        // peut consulter, mais n'écrase pas les données de l'atelier.
+        const knownDevices = (current.cloudSync?.devices ?? []).filter(
+          (device) => Date.now() - new Date(device.lastSeenAt).getTime() < 30 * 24 * 60 * 60 * 1000,
+        );
+        const deviceQuota = checkDeviceQuota(
+          current.licensePlan,
+          knownDevices.map((device) => device.id),
+          deviceId,
+        );
+        if (!deviceQuota.allowed) {
+          markSyncStatus("error", { lastError: deviceQuota.reason });
+          return;
+        }
+        const nowIso = new Date().toISOString();
+        const devices = knownDevices.some((device) => device.id === deviceId)
+          ? knownDevices.map((device) => (device.id === deviceId ? { ...device, lastSeenAt: nowIso } : device))
+          : [...knownDevices, { id: deviceId, label: navigator.userAgent.slice(0, 60), lastSeenAt: nowIso }];
+
         const saveState = {
           ...current,
           cloudSync: {
             ...(current.cloudSync ?? {}),
             lastDeviceId: deviceId,
-            localUpdatedAt: new Date().toISOString(),
+            localUpdatedAt: nowIso,
             stateVersion: nextStateVersion,
+            devices,
           },
         } as Partial<StoreState> & Record<string, unknown>;
 
