@@ -178,8 +178,40 @@ export interface SectionRef {
 	visible: boolean;
 }
 
+/* ---- Page builder (blocs libres) --------------------------------------- */
+export type BlockType = 'heading' | 'text' | 'button' | 'image' | 'icon' | 'divider' | 'spacer';
+
+export interface Block {
+	id: string;
+	type: BlockType;
+	text?: string;
+	href?: string;
+	src?: string;
+	icon?: string;
+	fontSize?: number;
+	fontWeight?: number;
+	color?: string;
+	bg?: string;
+	align?: 'left' | 'center' | 'right';
+	paddingY?: number;
+	paddingX?: number;
+	radius?: number;
+	width?: number; // % (image/bouton)
+	height?: number; // px (espace)
+}
+
+export interface BuilderPage {
+	id: string;
+	slug: string;
+	title: string;
+	bg: string;
+	maxWidth: number;
+	blocks: Block[];
+}
+
 export interface SiteContent {
 	theme: Theme;
+	pages: BuilderPage[];
 	seo: Seo;
 	header: HeaderContent;
 	hero: HeroContent;

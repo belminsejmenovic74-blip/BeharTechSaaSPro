@@ -3,5 +3,19 @@
   "framework": null,
   "buildCommand": "npm run build",
   "outputDirectory": "build",
-  "installCommand": "npm install"
+  "installCommand": "npm install",
+  "rewrites": [
+    { "source": "/suivi/:path*", "destination": "https://app.behartechpro.fr/suivi/:path*" },
+    { "source": "/devis/:path*", "destination": "https://app.behartechpro.fr/devis/:path*" },
+    { "source": "/facture/:path*", "destination": "https://app.behartechpro.fr/facture/:path*" },
+    { "source": "/recu/:path*", "destination": "https://app.behartechpro.fr/recu/:path*" },
+    { "source": "/vente/:path*", "destination": "https://app.behartechpro.fr/vente/:path*" },
+    { "source": "/p/:path*", "destination": "https://app.behartechpro.fr/p/:path*" },
+    { "source": "/document/:path*", "destination": "https://app.behartechpro.fr/document/:path*" },
+    { "source": "/telecharger/:path*", "destination": "https://app.behartechpro.fr/telecharger/:path*" },
+    { "source": "/certificat/:path*", "destination": "https://app.behartechpro.fr/certificat/:path*" },
+    { "source": "/print/:path*", "destination": "https://app.behartechpro.fr/print/:path*" },
+    { "source": "/capture/:path*", "destination": "https://app.behartechpro.fr/capture/:path*" },
+    { "source": "/dashboard/:path*", "destination": "https://app.behartechpro.fr/dashboard/:path*" }
+  ]
 }
