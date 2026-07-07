@@ -4,7 +4,8 @@
 	import { goto } from '$app/navigation';
 	import {
 		Palette, LayoutList, PanelTop, Sparkles, BarChart3, LayoutGrid, Puzzle,
-		CreditCard, PanelBottom, Search, ExternalLink, RotateCcw, Save, LogOut, Download
+		CreditCard, PanelBottom, Search, ExternalLink, RotateCcw, Save, LogOut, Download,
+		FileStack
 	} from 'lucide-svelte';
 	import type { SiteContent } from '$lib/cms/types';
 	import { DEFAULT_CONTENT } from '$lib/cms/default-content';
@@ -20,6 +21,7 @@
 	import AdminPricingEditor from '$lib/components/admin/editors/AdminPricingEditor.svelte';
 	import AdminFooterEditor from '$lib/components/admin/editors/AdminFooterEditor.svelte';
 	import AdminSeoEditor from '$lib/components/admin/editors/AdminSeoEditor.svelte';
+	import AdminPagesEditor from '$lib/components/admin/editors/AdminPagesEditor.svelte';
 	import LivePreview from './LivePreview.svelte';
 
 	export let data: { content: SiteContent };
@@ -50,7 +52,8 @@
 		{ id: 'integrations', label: 'Intégrations', icon: Puzzle },
 		{ id: 'pricing', label: 'Tarifs', icon: CreditCard },
 		{ id: 'footer', label: 'Pied de page', icon: PanelBottom },
-		{ id: 'seo', label: 'SEO', icon: Search }
+		{ id: 'seo', label: 'SEO', icon: Search },
+		{ id: 'pages', label: 'Pages', icon: FileStack }
 	] as const;
 
 	let tab: string = 'apparence';
@@ -137,6 +140,7 @@
 			{:else if tab === 'pricing'}<AdminPricingEditor bind:pricing={content.pricing} />
 			{:else if tab === 'footer'}<AdminFooterEditor bind:footer={content.footer} />
 			{:else if tab === 'seo'}<AdminSeoEditor bind:seo={content.seo} media={MEDIA} />
+			{:else if tab === 'pages'}<AdminPagesEditor bind:pages={content.pages} media={MEDIA} />
 			{/if}
 		</main>
 

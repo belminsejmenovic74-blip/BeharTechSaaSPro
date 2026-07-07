@@ -8,9 +8,9 @@ const config = {
     adapter: adapter({
       pages: 'build',
       assets: 'build',
-      fallback: null,
+      fallback: '200.html',
       precompress: false,
-      strict: true
+      strict: false
     }),
     // Vitrine statique : une ancre CMS pointant vers une section masquée ne doit
     // pas casser le build (avertissement au lieu d'erreur).

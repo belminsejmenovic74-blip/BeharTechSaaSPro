@@ -21,6 +21,22 @@ export const DEFAULT_CONTENT = {
 		glass: true
 	},
 
+	pages: [
+		{
+			id: 'p-demo',
+			slug: 'exemple',
+			title: 'Page exemple',
+			bg: '#FAFAF8',
+			maxWidth: 760,
+			blocks: [
+				{ id: 'b1', type: 'heading', text: 'Ma nouvelle page', fontSize: 46, fontWeight: 700, color: '#1A1916', align: 'center', paddingY: 24, paddingX: 16 },
+				{ id: 'b2', type: 'text', text: 'Clique sur un bloc pour le modifier : texte, taille, couleurs, icône, espacement…', fontSize: 18, color: '#6B6B6B', align: 'center', paddingY: 6, paddingX: 16 },
+				{ id: 'b3', type: 'icon', icon: 'sparkles', fontSize: 40, color: '#2A9D8F', align: 'center', paddingY: 16 },
+				{ id: 'b4', type: 'button', text: 'Commencer', href: '/dashboard', bg: '#2A9D8F', color: '#FFFFFF', align: 'center', radius: 12, paddingY: 20 }
+			]
+		}
+	],
+
 	seo: {
 		title: 'Behar Tech Pro — Le logiciel premium pour ateliers de réparation',
 		description:
