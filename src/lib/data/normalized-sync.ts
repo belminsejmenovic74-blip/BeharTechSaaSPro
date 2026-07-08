@@ -9,7 +9,12 @@ import type {
   Repair,
   Sale,
   StockItem,
+  StockMovement,
   StoreState,
+  Supplier,
+  SupplierInvoice,
+  SupplierInvoiceLine,
+  Purchase,
   WorkshopSettings,
 } from "@/lib/behar-store";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
@@ -26,6 +31,11 @@ export type NormalizedBusinessState = {
   sales: Sale[];
   documents: BeharDocument[];
   stockItems: StockItem[];
+  stockMovements: StockMovement[];
+  purchases: Purchase[];
+  suppliers: Supplier[];
+  supplierInvoices: SupplierInvoice[];
+  supplierInvoiceLines: SupplierInvoiceLine[];
   users: StoreState["users"];
 };
 
@@ -46,6 +56,11 @@ export function getNormalizedBusinessState(state: Partial<StoreState>): Normaliz
     sales: Array.isArray(state.sales) ? state.sales : [],
     documents: Array.isArray(state.documents) ? state.documents : [],
     stockItems: Array.isArray(state.stockItems) ? state.stockItems : [],
+    stockMovements: Array.isArray(state.stockMovements) ? state.stockMovements : [],
+    purchases: Array.isArray(state.purchases) ? state.purchases : [],
+    suppliers: Array.isArray(state.suppliers) ? state.suppliers : [],
+    supplierInvoices: Array.isArray(state.supplierInvoices) ? state.supplierInvoices : [],
+    supplierInvoiceLines: Array.isArray(state.supplierInvoiceLines) ? state.supplierInvoiceLines : [],
     users: Array.isArray(state.users) ? state.users : [],
   };
 }

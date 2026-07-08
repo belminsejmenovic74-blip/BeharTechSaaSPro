@@ -63,6 +63,7 @@ import { sendRealSms } from "@/lib/send-sms";
 import { cn } from "@/lib/utils";
 
 import { Panel, PrimaryButton, SearchBox, SecondaryButton, StatusBadge } from "./primitives";
+import { PartReferenceLink } from "./part-reference-link";
 import { useDocument } from "./print-provider";
 import { SettlementModal, useSettlementModal } from "./settlement-modal";
 import { TrackingQrModal } from "./tracking-qr-modal";
@@ -1476,7 +1477,9 @@ export function AtelierWorkspace() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-[#6B6B6B]">{item.sku}</td>
+                          <td className="px-4 py-3 text-[#6B6B6B]">
+                            <PartReferenceLink reference={item.sku || item.reference} />
+                          </td>
                           <td className="px-4 py-3">
                             <StatusBadge status={item.categoryName || "En stock"} />
                           </td>
@@ -1541,7 +1544,9 @@ export function AtelierWorkspace() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold text-[#1A1916] text-sm">{part.name}</p>
-                      <p className="text-[#6B6B6B] text-xs">{part.sku || part.reference}</p>
+                      <div className="text-[#6B6B6B] text-xs">
+                        <PartReferenceLink reference={part.sku || part.reference} />
+                      </div>
                     </div>
                     <button
                       className="text-[#B42318]"

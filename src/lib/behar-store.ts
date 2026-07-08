@@ -36,6 +36,7 @@ import {
 import { ensureTrackingCode, getCustomerTrackingPath, getTrackingCode } from "@/lib/customer-tracking";
 import { publishDomainEvent } from "@/lib/domain-events";
 import { checkRepairQuota, checkSmsQuota, countSmsThisMonth, countThisMonth } from "@/lib/plan-limits";
+import { normalizePartReference, stockReferenceKeys, stockReferenceMatches } from "@/lib/stock-reference";
 
 export type RepairStatus =
   | "Reçu"
@@ -267,6 +268,7 @@ export type RepairPart = {
   name: string;
   reference: string;
   sku?: string;
+  internalCode?: string;
   categoryName?: string;
   purchasePrice: number;
   salePrice: number;
@@ -277,6 +279,11 @@ export type RepairPart = {
   margin?: number;
   currency?: WorkshopCurrency;
   supplier?: string;
+  supplierId?: string;
+  purchaseId?: string;
+  supplierInvoiceId?: string;
+  supplierInvoiceNumber?: string;
+  supplierInvoiceLineId?: string;
   modelName?: string;
   modelId?: string;
 };
@@ -800,6 +807,9 @@ export type StockItem = {
   id: string;
   shopId: string;
   sku: string;
+  internalCode?: string;
+  rawName?: string;
+  displayName?: string;
   name: string;
   deviceType: DeviceType;
   brandId?: string;
@@ -811,12 +821,24 @@ export type StockItem = {
   part: string;
   reference: string;
   category: string;
+  quality?: string;
+  supplierBrand?: string;
+  ean?: string;
+  supplierWarranty?: string;
   purchasePrice: number;
+  averagePurchasePrice?: number;
+  lastPurchasePrice?: number;
   salePrice: number;
   quantity: number;
   stock: number;
   threshold: number;
   supplier: string;
+  primarySupplierId?: string;
+  primarySupplier?: string;
+  originPurchaseId?: string;
+  originSupplierInvoiceId?: string;
+  originSupplierInvoiceNumber?: string;
+  originSupplierInvoiceLineId?: string;
   leadTime: string;
   itemType: StockItemType;
   repairEnabled: boolean;
@@ -863,6 +885,8 @@ export type StockMovement = {
   organizationId?: string;
   shopId: string;
   stockItemId: string;
+  partReference?: string;
+  internalCode?: string;
   movementType: StockMovementType;
   quantityDelta: number;
   quantityBefore: number;
@@ -877,8 +901,11 @@ export type StockMovement = {
   linkedSaleId?: string;
   linkedPurchaseId?: string;
   linkedSupplierInvoiceId?: string;
+  linkedSupplierInvoiceLineId?: string;
   actorId?: string;
+  actorName?: string;
   createdAt: string;
+  note?: string;
   metadata?: Record<string, unknown>;
 };
 
@@ -1033,6 +1060,8 @@ export type PurchaseSource =
   | "Rachat client"
   | "Reconditionnement"
   | "Reprise"
+  | "Facture fournisseur"
+  | "Analyse IA"
   | "Manuel";
 export type Purchase = {
   id: string;
@@ -1042,14 +1071,32 @@ export type Purchase = {
   source: PurchaseSource;
   label: string;
   reference?: string;
+  internalCode?: string;
+  category?: string;
+  compatibleModel?: string;
+  quality?: string;
+  supplierId?: string;
   supplier?: string;
+  invoiceNumber?: string;
   quantity: number;
   unitCost: number;
+  taxRate?: number;
+  taxAmount?: number;
+  totalExcludingTax?: number;
+  totalIncludingTax?: number;
   total: number;
   currency?: WorkshopCurrency;
   date: string;
   /** Article de stock créé / réapprovisionné par cet achat. */
   stockItemId?: string;
+  /** Facture fournisseur source, si l'achat provient d'un import ou d'une saisie facture. */
+  supplierInvoiceId?: string;
+  /** Ligne exacte de facture fournisseur source. */
+  supplierInvoiceLineId?: string;
+  /** Document/fichier original associé à la facture fournisseur. */
+  documentId?: string;
+  originalFileName?: string;
+  originalFileUrl?: string;
   /** Dossier réparation lié (le cas échéant). */
   repairId?: string;
   /** Dossier de reconditionnement lié. */
@@ -1060,6 +1107,77 @@ export type Purchase = {
   createdBy?: string;
   createdByName?: string;
   createdAt?: string;
+};
+
+export type Supplier = {
+  id: string;
+  shopId: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  vatNumber?: string;
+  notes?: string;
+  createdBy?: string;
+  createdByName?: string;
+  createdAt: string;
+  updatedAt?: string;
+};
+
+export type SupplierPurchaseStatus = "brouillon" | "reçu" | "partiel" | "annulé";
+export type SupplierPurchaseSource = "manuel" | "textract";
+
+export type SupplierInvoice = {
+  id: string;
+  shopId: string;
+  supplierId?: string;
+  supplierName: string;
+  purchaseDate: string;
+  invoiceNumber: string;
+  originalFileName?: string;
+  originalFileUrl?: string;
+  originalDocumentId?: string;
+  totalExcludingTax: number;
+  taxAmount: number;
+  totalIncludingTax: number;
+  status: SupplierPurchaseStatus;
+  source: SupplierPurchaseSource;
+  textractJson?: Record<string, unknown>;
+  createdBy?: string;
+  createdByName?: string;
+  createdAt: string;
+  updatedAt?: string;
+};
+
+export type SupplierInvoiceLine = {
+  id: string;
+  shopId: string;
+  supplierInvoiceId: string;
+  purchaseId?: string;
+  stockItemId?: string;
+  rawName?: string;
+  displayName?: string;
+  itemName: string;
+  reference?: string;
+  sku?: string;
+  internalCode?: string;
+  category?: string;
+  compatibleModel?: string;
+  quality?: string;
+  supplierBrand?: string;
+  ean?: string;
+  supplierWarranty?: string;
+  quantityPurchased: number;
+  unitPurchasePriceExclTax: number;
+  taxRate?: number;
+  taxAmount?: number;
+  lineTotalExclTax: number;
+  lineTotalInclTax?: number;
+  supplierId?: string;
+  supplierName: string;
+  invoiceId: string;
+  createStockItem?: boolean;
+  createdAt: string;
 };
 
 export type BeharDocument = {
@@ -1165,6 +1283,9 @@ export type StoreState = {
   appointments: Appointment[];
   stockItems: StockItem[];
   purchases: Purchase[];
+  suppliers: Supplier[];
+  supplierInvoices: SupplierInvoice[];
+  supplierInvoiceLines: SupplierInvoiceLine[];
   documents: BeharDocument[];
   messageLogs: MessageLog[];
   priceBookItems: PriceBookItem[];
@@ -1337,12 +1458,15 @@ export type StoreState = {
   addStockItem: (input: StockInput) => string;
   updateStockItem: (id: string, patch: Partial<StockItem>) => void;
   deleteStockItem: (id: string) => void;
+  resolveStockItemByReference: (reference: string) => StockItem | undefined;
   confirmPartUsage: (repairId: string, stockItemId: string) => boolean;
   restockItem: (id: string, quantity: number) => void;
   /** Ajuste la quantité d'un article (delta négatif = consommation). Utilisé par le reconditionnement. */
   adjustStock: (id: string, delta: number, reason?: string) => void;
   createStockMovement: (input: {
     stockItemId: string;
+    partReference?: string;
+    internalCode?: string;
     movementType: StockMovementType;
     quantityDelta: number;
     quantityBefore?: number;
@@ -1357,10 +1481,14 @@ export type StoreState = {
     linkedSaleId?: string;
     linkedPurchaseId?: string;
     linkedSupplierInvoiceId?: string;
+    linkedSupplierInvoiceLineId?: string;
+    note?: string;
     metadata?: Record<string, unknown>;
   }) => string;
   importStockItems: (items: StockInput[]) => void;
   // Achats — registre unifié des entrées (pièces + téléphones).
+  upsertSupplier: (input: SupplierInput) => string;
+  commitSupplierInvoice: (input: SupplierInvoiceCommitInput) => string;
   addPurchase: (input: PurchaseInput) => string;
   deletePurchase: (id: string) => void;
   sendMessage: (input: MessageInput) => void;
@@ -1551,6 +1679,16 @@ type StockInput = Pick<StockItem, "purchasePrice" | "threshold" | "supplier"> &
       | "leadTime"
       | "salePrice"
       | "priceBookItemId"
+      | "internalCode"
+      | "quality"
+      | "averagePurchasePrice"
+      | "lastPurchasePrice"
+      | "primarySupplierId"
+      | "primarySupplier"
+      | "originPurchaseId"
+      | "originSupplierInvoiceId"
+      | "originSupplierInvoiceNumber"
+      | "originSupplierInvoiceLineId"
       | "itemType"
       | "repairEnabled"
       | "counterSaleEnabled"
@@ -1573,17 +1711,77 @@ type PurchaseInput = Pick<Purchase, "kind" | "source" | "label" | "unitCost"> &
       Purchase,
       | "quantity"
       | "reference"
+      | "internalCode"
+      | "category"
+      | "compatibleModel"
+      | "quality"
+      | "supplierId"
       | "supplier"
+      | "invoiceNumber"
+      | "taxRate"
+      | "taxAmount"
+      | "totalExcludingTax"
+      | "totalIncludingTax"
       | "currency"
       | "date"
       | "total"
       | "stockItemId"
+      | "supplierInvoiceId"
+      | "supplierInvoiceLineId"
+      | "documentId"
+      | "originalFileName"
+      | "originalFileUrl"
       | "repairId"
       | "reconditioningFileId"
       | "conditionneRecordId"
       | "note"
     >
   >;
+
+type SupplierInput = Pick<Supplier, "name"> &
+  Partial<Pick<Supplier, "id" | "email" | "phone" | "address" | "vatNumber" | "notes">>;
+
+type SupplierInvoiceLineInput = {
+  itemName: string;
+  rawName?: string;
+  displayName?: string;
+  reference?: string;
+  sku?: string;
+  internalCode?: string;
+  category?: string;
+  compatibleModel?: string;
+  quality?: string;
+  supplierBrand?: string;
+  ean?: string;
+  supplierWarranty?: string;
+  quantityPurchased: number;
+  unitPurchasePriceExclTax: number;
+  taxRate?: number;
+  taxAmount?: number;
+  lineTotalExclTax?: number;
+  lineTotalInclTax?: number;
+  stockItemId?: string;
+  createStockItem?: boolean;
+  stockMinimum?: number;
+  salePrice?: number;
+};
+
+type SupplierInvoiceCommitInput = {
+  supplier: string | SupplierInput;
+  purchaseDate?: string;
+  invoiceNumber: string;
+  originalFileName?: string;
+  originalFileUrl?: string;
+  originalDocumentId?: string;
+  totalExcludingTax?: number;
+  taxAmount?: number;
+  totalIncludingTax?: number;
+  status?: SupplierPurchaseStatus;
+  source?: SupplierPurchaseSource;
+  textractJson?: Record<string, unknown>;
+  lines: SupplierInvoiceLineInput[];
+  note?: string;
+};
 
 const shopId = "shop_atelier_belmin";
 
@@ -3794,10 +3992,106 @@ const normalizeStockItemType = (value: unknown, category: StockProductCategory):
   return itemTypeFromProductCategory(category);
 };
 
+const normalizeInternalCode = (value: unknown) =>
+  normalizeText(value)
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 32);
+
+const makeUniqueInternalCode = (base: unknown, existingCodes: Set<string>, fallback: string) => {
+  const normalized = normalizeInternalCode(base) || fallback;
+  let candidate = normalized;
+  let index = 2;
+  while (existingCodes.has(candidate)) {
+    candidate = `${normalized}-${index}`;
+    index += 1;
+  }
+  existingCodes.add(candidate);
+  return candidate;
+};
+
+const compactSupplierPartName = (itemName: string, category?: string, quality?: string) => {
+  const normalized = normalizeText(itemName)
+    .replace(/EAN\s*\d+/gi, "")
+    .replace(/\/\s*Garantie\s*:?.*$/gi, "")
+    .replace(/\([^)]*\)/g, "")
+    .replace(/\biPhone\s+[0-9A-Za-z\s/]+?(?=\s|$)/gi, "")
+    .replace(/\bUTOPYA\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const value = normalized.toLowerCase();
+  let base = normalized;
+  if (category === "Écran" || /(écran|ecran|display|screen)/i.test(value)) base = "Écran complet";
+  if (category === "Caméra" && /lentille/i.test(value)) base = "Lentille caméra";
+  else if (category === "Caméra") base = "Caméra";
+  if (category === "Batterie") base = "Batterie";
+  if (category === "Connecteur") base = "Connecteur de charge";
+  if (!base) base = category || "Pièce";
+  return base.trim();
+};
+
+const extractSupplierEan = (itemName: string) => /\bEAN\s*([0-9]{8,14})\b/i.exec(itemName)?.[1] ?? "";
+
+const extractSupplierWarranty = (itemName: string) =>
+  /Garantie\s*:?\s*([^/()]+(?:\([^)]*\))?)/i.exec(itemName)?.[1]?.replace(/\s+/g, " ").trim() ?? "";
+
+const extractSupplierBrand = (itemName: string) => {
+  const values = Array.from(itemName.matchAll(/\(([^)]+)\)/g)).map((match) => normalizeText(match[1]));
+  return values.find((value) => value && !inferSupplierPartQuality(value) && !/utopya/i.test(value)) ?? "";
+};
+
+const inferSupplierPartQuality = (itemName: string) => {
+  if (/\bltps\b/i.test(itemName)) return "LTPS";
+  if (/\bpiec\b/i.test(itemName)) return "PIEC";
+  if (/\bsoft\s*oled\b/i.test(itemName)) return "Soft OLED";
+  if (/\bhard\s*oled\b/i.test(itemName)) return "Hard OLED";
+  if (/\bincell\b/i.test(itemName)) return "Incell";
+  if (/\boled\b/i.test(itemName)) return "OLED";
+  if (/\blcd\b/i.test(itemName)) return "LCD";
+  return "";
+};
+
+const inferSupplierIphoneModels = (itemName: string) => {
+  const match = /\biPhone\s+([0-9A-Za-z\s/]+?)(?=\s*\(|\s+EAN\b|\s+Garantie\b|$)/i.exec(itemName);
+  if (!match?.[1]) return [];
+  const rawParts = match[1]
+    .split("/")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const models: string[] = [];
+  let previousNumber = "";
+  for (const part of rawParts) {
+    const number = /\b(SE|XR|XS|X|\d{1,2})\b/i.exec(part)?.[1] ?? previousNumber;
+    if (number) previousNumber = number;
+    const suffix = part.replace(/\b(SE|XR|XS|X|\d{1,2})\b/i, "").trim();
+    if (number) models.push(`iPhone ${number}${suffix ? ` ${suffix}` : ""}`.replace(/\s+/g, " ").trim());
+  }
+  return uniqueIds(models);
+};
+
+const splitCompatibleModelNames = (value?: string) =>
+  uniqueIds(
+    normalizeText(value)
+      .split(/\s*[,;]\s*/)
+      .map((entry) => normalizeText(entry))
+      .filter(Boolean),
+  );
+
+const findDuplicateStockItem = (items: StockItem[], input: Partial<StockItem>) => {
+  const keys = stockReferenceKeys(input);
+  if (!keys.length) return undefined;
+  return items.find((item) => keys.some((key) => stockReferenceMatches(item, key)));
+};
+
 const normalizeStockItem = (item: Partial<StockItem> & { skipModelInference?: boolean }): StockItem => {
   const id = normalizeText(item.id, uid("stock"));
+  const rawName = normalizeText(item.rawName, normalizeText(item.name, normalizeText(item.part, "Pièce")));
   const name = normalizeText(item.name, normalizeText(item.part, "Pièce"));
   const sku = normalizeText(item.sku, normalizeText(item.reference, `REF-${Date.now()}`));
+  const internalCode = normalizeText(item.internalCode, sku);
   const category = item.categoryId
     ? partCategories.find((entry) => entry.id === item.categoryId)
     : getCategoryByName(item.categoryName ?? item.category ?? name);
@@ -3810,8 +4104,12 @@ const normalizeStockItem = (item: Partial<StockItem> & { skipModelInference?: bo
         : findBrandByName(name);
   const rawModelIds = Array.isArray(item.modelIds) ? item.modelIds : [];
   const modelFromName = inferModelFromPartName(name, item.brandName);
+  const supplierModels = /EAN\s*\d+|Garantie|UTOPYA|\biPhone\s+[0-9A-Za-z\s/]+/i.test(rawName || name)
+    ? inferSupplierIphoneModels(rawName || name)
+    : [];
   const compatibleModelInputs = uniqueIds([
     modelFromName,
+    ...supplierModels,
     ...(Array.isArray(item.compatibleModels) ? item.compatibleModels : []),
   ]);
   const modelIds = uniqueIds([
@@ -3846,28 +4144,55 @@ const normalizeStockItem = (item: Partial<StockItem> & { skipModelInference?: bo
       : typeof item.counterVisible === "boolean"
         ? item.counterVisible && itemType !== "part"
         : itemType !== "part";
+  const quality = normalizeText(item.quality, inferSupplierPartQuality(rawName || name));
+  const categoryName = category?.name ?? normalizeText(item.categoryName, normalizeText(item.category, "Autre"));
+  const displayName = normalizeText(
+    item.displayName,
+    /EAN\s*\d+|Garantie|UTOPYA/i.test(rawName || name)
+      ? compactSupplierPartName(rawName || name, categoryName, quality)
+      : name,
+  );
   const now = todayLabel();
   return {
     id,
     shopId: normalizeText(item.shopId, shopId),
     sku,
-    name,
+    internalCode,
+    rawName,
+    displayName,
+    name: displayName,
     deviceType,
     brandId: effectiveBrand?.id ?? item.brandId,
     brandName: normalizeText(item.brandName, effectiveBrand?.name),
     modelIds: finalModelIds,
     compatibleModels,
     categoryId: category?.id ?? "cat_other",
-    categoryName: category?.name ?? normalizeText(item.categoryName, normalizeText(item.category, "Autre")),
-    part: name,
+    categoryName,
+    part: displayName,
     reference: sku,
-    category: category?.name ?? normalizeText(item.category, "Autre"),
+    category: categoryName,
+    quality,
+    supplierBrand: normalizeText(item.supplierBrand, extractSupplierBrand(rawName)),
+    ean: normalizeText(item.ean, extractSupplierEan(rawName)),
+    supplierWarranty: normalizeText(item.supplierWarranty, extractSupplierWarranty(rawName)),
     purchasePrice: clampMoney(item.purchasePrice),
+    averagePurchasePrice:
+      typeof item.averagePurchasePrice === "number"
+        ? clampMoney(item.averagePurchasePrice)
+        : clampMoney(item.purchasePrice),
+    lastPurchasePrice:
+      typeof item.lastPurchasePrice === "number" ? clampMoney(item.lastPurchasePrice) : clampMoney(item.purchasePrice),
     salePrice: clampMoney(item.salePrice),
     quantity,
     stock: quantity,
     threshold: clampQuantity(item.threshold),
     supplier: normalizeText(item.supplier, "Non renseigné"),
+    primarySupplierId: normalizeText(item.primarySupplierId),
+    primarySupplier: normalizeText(item.primarySupplier, normalizeText(item.supplier)),
+    originPurchaseId: normalizeText(item.originPurchaseId),
+    originSupplierInvoiceId: normalizeText(item.originSupplierInvoiceId),
+    originSupplierInvoiceNumber: normalizeText(item.originSupplierInvoiceNumber),
+    originSupplierInvoiceLineId: normalizeText(item.originSupplierInvoiceLineId),
     leadTime: normalizeText(item.leadTime, "2 à 3 jours"),
     itemType,
     repairEnabled,
@@ -4344,6 +4669,13 @@ const normalizePersistedState = (state: unknown) => {
       purchases: Array.isArray((persisted as any).purchases)
         ? ((persisted as any).purchases as Purchase[])
         : seed.purchases,
+      suppliers: Array.isArray((persisted as any).suppliers) ? ((persisted as any).suppliers as Supplier[]) : [],
+      supplierInvoices: Array.isArray((persisted as any).supplierInvoices)
+        ? ((persisted as any).supplierInvoices as SupplierInvoice[])
+        : [],
+      supplierInvoiceLines: Array.isArray((persisted as any).supplierInvoiceLines)
+        ? ((persisted as any).supplierInvoiceLines as SupplierInvoiceLine[])
+        : [],
       documents: Array.isArray(persisted.documents) ? persisted.documents : seed.documents,
       sales,
       stockMovements: Array.isArray((persisted as any).stockMovements)
@@ -4499,6 +4831,9 @@ function createSeed() {
     // Les mocks restent dispo dans @/mock/stock pour les tests internes.
     stockItems: [] as StockItem[],
     purchases: [] as Purchase[],
+    suppliers: [] as Supplier[],
+    supplierInvoices: [] as SupplierInvoice[],
+    supplierInvoiceLines: [] as SupplierInvoiceLine[],
     documents: [] as BeharDocument[],
     messageLogs: [] as MessageLog[],
     priceBookItems: [] as PriceBookItem[],
@@ -6020,6 +6355,7 @@ export const useBeharStore = create<StoreState>()(
                     name: currentItem.name,
                     reference: currentItem.sku,
                     sku: currentItem.sku,
+                    internalCode: currentItem.internalCode,
                     categoryName: currentItem.categoryName,
                     purchasePrice: currentItem.purchasePrice,
                     salePrice: clientSalePrice,
@@ -6029,6 +6365,11 @@ export const useBeharStore = create<StoreState>()(
                     margin: clientSalePrice - currentItem.purchasePrice,
                     currency: repair.currency,
                     supplier: currentItem.supplier || "Non renseigné",
+                    supplierId: currentItem.primarySupplierId,
+                    purchaseId: currentItem.originPurchaseId,
+                    supplierInvoiceId: currentItem.originSupplierInvoiceId,
+                    supplierInvoiceNumber: currentItem.originSupplierInvoiceNumber,
+                    supplierInvoiceLineId: currentItem.originSupplierInvoiceLineId,
                     modelName: currentItem.compatibleModels?.[0],
                     modelId: currentItem.modelIds?.[0],
                   },
@@ -6074,6 +6415,9 @@ export const useBeharStore = create<StoreState>()(
             sourceModule: "atelier_reparation",
             sourceId: repairId,
             linkedRepairId: repairId,
+            linkedPurchaseId: item.originPurchaseId,
+            linkedSupplierInvoiceId: item.originSupplierInvoiceId,
+            linkedSupplierInvoiceLineId: item.originSupplierInvoiceLineId,
           });
         }
         if (afterItem && afterItem.stock <= afterItem.threshold) {
@@ -7764,6 +8108,8 @@ export const useBeharStore = create<StoreState>()(
           id,
           shopId,
           stockItemId: input.stockItemId,
+          partReference: input.partReference ?? item.sku ?? item.reference,
+          internalCode: input.internalCode ?? item.internalCode,
           movementType: input.movementType,
           quantityDelta: input.quantityDelta,
           quantityBefore,
@@ -7776,10 +8122,13 @@ export const useBeharStore = create<StoreState>()(
           linkedRepairId: input.linkedRepairId,
           linkedReconditioningDeviceId: input.linkedReconditioningDeviceId ?? item.reconditioningFileId,
           linkedSaleId: input.linkedSaleId,
-          linkedPurchaseId: input.linkedPurchaseId,
-          linkedSupplierInvoiceId: input.linkedSupplierInvoiceId,
+          linkedPurchaseId: input.linkedPurchaseId ?? item.originPurchaseId,
+          linkedSupplierInvoiceId: input.linkedSupplierInvoiceId ?? item.originSupplierInvoiceId,
+          linkedSupplierInvoiceLineId: input.linkedSupplierInvoiceLineId ?? item.originSupplierInvoiceLineId,
           actorId: actor.id,
+          actorName: actor.name,
           createdAt: nowLabel(),
+          note: input.note,
           metadata: input.metadata,
         };
         set((current) => ({ stockMovements: [movement, ...current.stockMovements].slice(0, 2000) }));
@@ -7802,6 +8151,85 @@ export const useBeharStore = create<StoreState>()(
               compatibleModels: [inferredModel],
             }
           : input;
+        const duplicate = findDuplicateStockItem(get().stockItems, enrichedInput);
+        if (duplicate) {
+          const stockToAdd = clampQuantity(enrichedInput.quantity ?? enrichedInput.stock);
+          get().updateStockItem(duplicate.id, {
+            name: enrichedInput.name || enrichedInput.part || duplicate.name,
+            part: enrichedInput.name || enrichedInput.part || duplicate.part,
+            sku: duplicate.sku || enrichedInput.sku || enrichedInput.reference,
+            reference: duplicate.reference || enrichedInput.reference || enrichedInput.sku,
+            internalCode: enrichedInput.internalCode || duplicate.internalCode,
+            categoryName: enrichedInput.categoryName || enrichedInput.category || duplicate.categoryName,
+            category: enrichedInput.categoryName || enrichedInput.category || duplicate.category,
+            quality: enrichedInput.quality || duplicate.quality,
+            supplier: enrichedInput.supplier || duplicate.supplier,
+            primarySupplierId: enrichedInput.primarySupplierId || duplicate.primarySupplierId,
+            primarySupplier: enrichedInput.primarySupplier || enrichedInput.supplier || duplicate.primarySupplier,
+            purchasePrice:
+              enrichedInput.purchasePrice === undefined
+                ? duplicate.purchasePrice
+                : clampMoney(enrichedInput.purchasePrice),
+            lastPurchasePrice:
+              enrichedInput.lastPurchasePrice ??
+              (enrichedInput.purchasePrice === undefined
+                ? duplicate.lastPurchasePrice
+                : clampMoney(enrichedInput.purchasePrice)),
+            salePrice:
+              enrichedInput.salePrice === undefined ? duplicate.salePrice : clampMoney(enrichedInput.salePrice),
+            threshold:
+              enrichedInput.threshold === undefined ? duplicate.threshold : clampQuantity(enrichedInput.threshold),
+            originPurchaseId: enrichedInput.originPurchaseId || duplicate.originPurchaseId,
+            originSupplierInvoiceId: enrichedInput.originSupplierInvoiceId || duplicate.originSupplierInvoiceId,
+            originSupplierInvoiceNumber:
+              enrichedInput.originSupplierInvoiceNumber || duplicate.originSupplierInvoiceNumber,
+            originSupplierInvoiceLineId:
+              enrichedInput.originSupplierInvoiceLineId || duplicate.originSupplierInvoiceLineId,
+          });
+          if (stockToAdd > 0) {
+            if (input.skipPurchaseLog) {
+              const before = get().stockItems.find((entry) => entry.id === duplicate.id) ?? duplicate;
+              set((state) => ({
+                stockItems: state.stockItems.map((entry) =>
+                  entry.id === duplicate.id
+                    ? { ...entry, quantity: entry.quantity + stockToAdd, stock: entry.stock + stockToAdd }
+                    : entry,
+                ),
+              }));
+              const after = get().stockItems.find((entry) => entry.id === duplicate.id);
+              if (after) {
+                get().createStockMovement({
+                  stockItemId: duplicate.id,
+                  movementType: "supplier_purchase_received",
+                  quantityDelta: stockToAdd,
+                  quantityBefore: before.stock,
+                  quantityAfter: after.stock,
+                  reason: "Fusion doublon référence",
+                  sourceModule: "stock",
+                  sourceId: duplicate.id,
+                  linkedPurchaseId: after.originPurchaseId,
+                  linkedSupplierInvoiceId: after.originSupplierInvoiceId,
+                  linkedSupplierInvoiceLineId: after.originSupplierInvoiceLineId,
+                });
+              }
+            } else {
+              get().restockItem(duplicate.id, stockToAdd);
+            }
+          }
+          set((state) => ({ selectedStockItemId: duplicate.id }));
+          get().addAuditLog({
+            action: "stock.duplicate_reference_merged",
+            targetType: "stock",
+            targetId: duplicate.id,
+            message: `${actor.name} a fusionné une référence déjà existante (${duplicate.sku || duplicate.reference})`,
+            metadata: {
+              reference: enrichedInput.sku || enrichedInput.reference,
+              internalCode: enrichedInput.internalCode,
+              quantity: stockToAdd,
+            },
+          });
+          return duplicate.id;
+        }
         const item = normalizeStockItem({
           id,
           shopId,
@@ -7824,16 +8252,25 @@ export const useBeharStore = create<StoreState>()(
         });
         // Traçabilité achat : création d'une pièce avec stock initial = une entrée.
         // (sauf si l'appelant enregistre lui-même l'achat, ex. reconditionnement.)
+        let purchaseId = item.originPurchaseId;
         if (!input.skipPurchaseLog && (item.stock ?? 0) > 0 && item.purchasePrice > 0) {
-          get().addPurchase({
+          purchaseId = get().addPurchase({
             kind: item.itemType === "accessory" ? "accessoire" : item.itemType === "product" ? "autre" : "piece",
             source: "Création pièce",
             label: item.name,
             reference: item.sku || item.reference,
+            internalCode: item.internalCode,
+            category: item.categoryName || item.category,
+            compatibleModel: item.compatibleModels?.[0],
+            quality: item.quality,
+            supplierId: item.primarySupplierId,
             supplier: item.supplier,
+            invoiceNumber: item.originSupplierInvoiceNumber,
             quantity: item.stock,
             unitCost: item.purchasePrice,
             stockItemId: id,
+            supplierInvoiceId: item.originSupplierInvoiceId,
+            supplierInvoiceLineId: item.originSupplierInvoiceLineId,
           });
         }
         if ((item.stock ?? 0) > 0) {
@@ -7846,14 +8283,49 @@ export const useBeharStore = create<StoreState>()(
             reason: "Création stock initial",
             sourceModule: "stock",
             sourceId: id,
+            linkedPurchaseId: purchaseId,
+            linkedSupplierInvoiceId: item.originSupplierInvoiceId,
+            linkedSupplierInvoiceLineId: item.originSupplierInvoiceLineId,
             linkedReconditioningDeviceId: item.reconditioningFileId,
           });
         }
         return id;
       },
+      resolveStockItemByReference: (reference) => {
+        const key = normalizePartReference(reference);
+        if (!key) return undefined;
+        return get().stockItems.find((item) => stockReferenceMatches(item, key));
+      },
       updateStockItem: (id, patch) => {
         if (!get().requirePermission("canManageStock", "Modifier le stock")) return;
         const actor = get().currentUser ?? defaultCurrentUser;
+        const currentItem = get().stockItems.find((entry) => entry.id === id);
+        if (
+          currentItem &&
+          (patch.sku !== undefined || patch.reference !== undefined || patch.internalCode !== undefined)
+        ) {
+          const candidate = {
+            ...currentItem,
+            ...patch,
+            sku: patch.sku ?? patch.reference ?? currentItem.sku,
+            reference: patch.reference ?? patch.sku ?? currentItem.reference,
+            internalCode: patch.internalCode ?? currentItem.internalCode,
+          };
+          const duplicate = get().stockItems.find(
+            (entry) =>
+              entry.id !== id && stockReferenceKeys(candidate).some((key) => stockReferenceMatches(entry, key)),
+          );
+          if (duplicate) {
+            get().addNotification({
+              type: "warning",
+              title: "Référence déjà utilisée",
+              message: `${candidate.sku || candidate.reference || candidate.internalCode} existe déjà sur ${duplicate.name}.`,
+              targetType: "stock",
+              targetId: duplicate.id,
+            });
+            return;
+          }
+        }
         set((state) => {
           const stockItems = state.stockItems.map((item) =>
             item.id === id
@@ -7965,15 +8437,23 @@ export const useBeharStore = create<StoreState>()(
         });
         // Traçabilité achat : un réapprovisionnement est une entrée pièce.
         if (item) {
-          get().addPurchase({
+          const purchaseId = get().addPurchase({
             kind: item.itemType === "accessory" ? "accessoire" : item.itemType === "product" ? "autre" : "piece",
             source: "Réapprovisionnement",
             label: item.name,
             reference: item.sku || item.reference,
+            internalCode: item.internalCode,
+            category: item.categoryName || item.category,
+            compatibleModel: item.compatibleModels?.[0],
+            quality: item.quality,
+            supplierId: item.primarySupplierId,
             supplier: item.supplier,
+            invoiceNumber: item.originSupplierInvoiceNumber,
             quantity: clampQuantity(quantity),
             unitCost: item.purchasePrice,
             stockItemId: id,
+            supplierInvoiceId: item.originSupplierInvoiceId,
+            supplierInvoiceLineId: item.originSupplierInvoiceLineId,
           });
           get().createStockMovement({
             stockItemId: id,
@@ -7984,6 +8464,9 @@ export const useBeharStore = create<StoreState>()(
             reason: "Réapprovisionnement",
             sourceModule: "achats",
             sourceId: id,
+            linkedPurchaseId: purchaseId,
+            linkedSupplierInvoiceId: item.originSupplierInvoiceId,
+            linkedSupplierInvoiceLineId: item.originSupplierInvoiceLineId,
           });
         }
       },
@@ -8043,27 +8526,475 @@ export const useBeharStore = create<StoreState>()(
           });
         }
       },
-      importStockItems: (items) =>
+      importStockItems: (items) => {
+        const actor = get().currentUser ?? defaultCurrentUser;
+        const createdAt = nowLabel();
         set((state) => {
           const byReference = new Map(state.stockItems.map((item) => [item.reference, item]));
           const stockItems = [...state.stockItems];
+          const stockMovements = [...state.stockMovements];
           for (const input of items) {
             const existing = byReference.get(input.reference ?? input.sku ?? "");
             if (existing) {
               const index = stockItems.findIndex((item) => item.id === existing.id);
-              stockItems[index] = normalizeStockItem({
+              const nextItem = normalizeStockItem({
                 ...existing,
                 ...input,
                 leadTime: input.leadTime || existing.leadTime,
               });
+              stockItems[index] = nextItem;
+              const delta = nextItem.stock - existing.stock;
+              if (delta !== 0) {
+                stockMovements.unshift({
+                  id: uid("mov"),
+                  shopId,
+                  stockItemId: nextItem.id,
+                  partReference: nextItem.sku || nextItem.reference,
+                  internalCode: nextItem.internalCode,
+                  movementType: delta > 0 ? "supplier_purchase_received" : "correction",
+                  quantityDelta: delta,
+                  quantityBefore: existing.stock,
+                  quantityAfter: nextItem.stock,
+                  unitCost: nextItem.purchasePrice,
+                  totalCost: clampMoney(nextItem.purchasePrice * Math.abs(delta)),
+                  reason: "Import stock",
+                  sourceModule: "stock",
+                  sourceId: nextItem.id,
+                  linkedPurchaseId: nextItem.originPurchaseId,
+                  linkedSupplierInvoiceId: nextItem.originSupplierInvoiceId,
+                  linkedSupplierInvoiceLineId: nextItem.originSupplierInvoiceLineId,
+                  actorId: actor.id,
+                  actorName: actor.name,
+                  createdAt,
+                  metadata: { importSource: "stock_file" },
+                });
+              }
             } else {
-              stockItems.unshift(
-                normalizeStockItem({ id: uid("stock"), shopId, leadTime: input.leadTime || "2 à 3 jours", ...input }),
-              );
+              const item = normalizeStockItem({
+                id: uid("stock"),
+                shopId,
+                leadTime: input.leadTime || "2 à 3 jours",
+                ...input,
+              });
+              stockItems.unshift(item);
+              if (item.stock > 0) {
+                stockMovements.unshift({
+                  id: uid("mov"),
+                  shopId,
+                  stockItemId: item.id,
+                  partReference: item.sku || item.reference,
+                  internalCode: item.internalCode,
+                  movementType: "supplier_purchase_received",
+                  quantityDelta: item.stock,
+                  quantityBefore: 0,
+                  quantityAfter: item.stock,
+                  unitCost: item.purchasePrice,
+                  totalCost: clampMoney(item.purchasePrice * item.stock),
+                  reason: "Import stock",
+                  sourceModule: "stock",
+                  sourceId: item.id,
+                  linkedPurchaseId: item.originPurchaseId,
+                  linkedSupplierInvoiceId: item.originSupplierInvoiceId,
+                  linkedSupplierInvoiceLineId: item.originSupplierInvoiceLineId,
+                  actorId: actor.id,
+                  actorName: actor.name,
+                  createdAt,
+                  metadata: { importSource: "stock_file" },
+                });
+              }
             }
           }
-          return { stockItems };
-        }),
+          return { stockItems, stockMovements: stockMovements.slice(0, 2000) };
+        });
+      },
+      upsertSupplier: (input) => {
+        const name = normalizeText(input.name);
+        if (!name) return "";
+        const actor = get().currentUser ?? defaultCurrentUser;
+        const existing = get().suppliers.find((supplier) => supplier.name.trim().toLowerCase() === name.toLowerCase());
+        if (existing) {
+          set((state) => ({
+            suppliers: state.suppliers.map((supplier) =>
+              supplier.id === existing.id
+                ? {
+                    ...supplier,
+                    email: normalizeText(input.email, supplier.email),
+                    phone: normalizeText(input.phone, supplier.phone),
+                    address: normalizeText(input.address, supplier.address),
+                    vatNumber: normalizeText(input.vatNumber, supplier.vatNumber),
+                    notes: normalizeText(input.notes, supplier.notes),
+                    updatedAt: getNowIso(),
+                  }
+                : supplier,
+            ),
+          }));
+          return existing.id;
+        }
+        const id = normalizeText(input.id, uid("supplier"));
+        const supplier: Supplier = {
+          id,
+          shopId,
+          name,
+          email: normalizeText(input.email),
+          phone: normalizeText(input.phone),
+          address: normalizeText(input.address),
+          vatNumber: normalizeText(input.vatNumber),
+          notes: normalizeText(input.notes),
+          createdBy: actor.id,
+          createdByName: actor.name,
+          createdAt: getNowIso(),
+          updatedAt: getNowIso(),
+        };
+        set((state) => ({ suppliers: [supplier, ...state.suppliers] }));
+        return id;
+      },
+      commitSupplierInvoice: (input) => {
+        if (!get().requirePermission("canManageStock", "Importer une facture fournisseur")) return "";
+        const invoiceNumber = normalizeText(input.invoiceNumber);
+        const rawSupplier = typeof input.supplier === "string" ? { name: input.supplier } : input.supplier;
+        const supplierName = normalizeText(rawSupplier.name);
+        const cleanLines = (input.lines ?? [])
+          .map((line) => {
+            const quantityPurchased = Math.max(0, clampQuantity(line.quantityPurchased));
+            const unitPurchasePriceExclTax = clampMoney(line.unitPurchasePriceExclTax);
+            const lineTotalExclTax = clampMoney(line.lineTotalExclTax ?? quantityPurchased * unitPurchasePriceExclTax);
+            const taxRate = typeof line.taxRate === "number" ? Math.max(0, line.taxRate) : undefined;
+            const taxAmount = clampMoney(line.taxAmount ?? (taxRate ? lineTotalExclTax * (taxRate / 100) : 0));
+            const rawName = normalizeText(line.rawName, normalizeText(line.itemName));
+            const category = normalizeText(line.category);
+            const quality = normalizeText(line.quality, inferSupplierPartQuality(rawName));
+            const displayName = normalizeText(line.displayName, compactSupplierPartName(rawName, category, quality));
+            return {
+              ...line,
+              rawName,
+              itemName: displayName || normalizeText(line.itemName),
+              displayName,
+              reference: normalizeText(line.reference, normalizeText(line.sku)),
+              sku: normalizeText(line.sku, normalizeText(line.reference)),
+              internalCode: normalizeText(line.internalCode),
+              category,
+              compatibleModel: normalizeText(line.compatibleModel),
+              quality,
+              supplierBrand: normalizeText(line.supplierBrand, extractSupplierBrand(rawName)),
+              ean: normalizeText(line.ean, extractSupplierEan(rawName)),
+              supplierWarranty: normalizeText(line.supplierWarranty, extractSupplierWarranty(rawName)),
+              quantityPurchased,
+              unitPurchasePriceExclTax,
+              taxRate,
+              taxAmount,
+              lineTotalExclTax,
+              lineTotalInclTax: clampMoney(line.lineTotalInclTax ?? lineTotalExclTax + taxAmount),
+            };
+          })
+          .filter((line) => line.itemName && line.quantityPurchased > 0);
+        if (!invoiceNumber || !supplierName || !cleanLines.length) return "";
+
+        const supplierId = get().upsertSupplier(rawSupplier);
+        if (!supplierId) return "";
+
+        const actor = get().currentUser ?? defaultCurrentUser;
+        const now = getNowIso();
+        const invoiceId = uid("supplier_invoice");
+        const computedTotalExcludingTax = cleanLines.reduce((sum, line) => sum + line.lineTotalExclTax, 0);
+        const computedTaxAmount = cleanLines.reduce((sum, line) => sum + (line.taxAmount ?? 0), 0);
+        const totalExcludingTax = clampMoney(input.totalExcludingTax ?? computedTotalExcludingTax);
+        const taxAmount = clampMoney(input.taxAmount ?? computedTaxAmount);
+        const totalIncludingTax = clampMoney(input.totalIncludingTax ?? totalExcludingTax + taxAmount);
+        const invoice: SupplierInvoice = {
+          id: invoiceId,
+          shopId,
+          supplierId,
+          supplierName,
+          purchaseDate: input.purchaseDate ?? now,
+          invoiceNumber,
+          originalFileName: normalizeText(input.originalFileName),
+          originalFileUrl: normalizeText(input.originalFileUrl),
+          originalDocumentId: normalizeText(input.originalDocumentId),
+          totalExcludingTax,
+          taxAmount,
+          totalIncludingTax,
+          status: input.status ?? "reçu",
+          source: input.source ?? "manuel",
+          textractJson: input.textractJson,
+          createdBy: actor.id,
+          createdByName: actor.name,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        set((state) => {
+          const stockItems = [...state.stockItems];
+          const purchases = [...state.purchases];
+          const stockMovements = [...state.stockMovements];
+          const supplierInvoiceLines: SupplierInvoiceLine[] = [];
+          const existingCodes = new Set(
+            stockItems.map((item) => normalizePartReference(item.internalCode)).filter(Boolean),
+          );
+          let purchaseSeq = purchases.filter((entry) =>
+            (entry.number || "").includes(`ACH-${new Date().getFullYear()}`),
+          ).length;
+
+          cleanLines.forEach((line, index) => {
+            const lineId = uid(`supplier_invoice_line_${index}`);
+            const createsStock = line.createStockItem !== false;
+            const lookup = [line.stockItemId, line.internalCode, line.sku, line.reference]
+              .map((value) => normalizePartReference(value))
+              .filter(Boolean);
+            const stockIndex = createsStock
+              ? stockItems.findIndex(
+                  (item) =>
+                    lookup.includes(normalizePartReference(item.id)) ||
+                    lookup.some((key) => stockReferenceMatches(item, key)),
+                )
+              : -1;
+            const existingItem = stockIndex >= 0 ? stockItems[stockIndex] : undefined;
+            const beforeStock = existingItem?.stock ?? 0;
+            const afterStock = beforeStock + line.quantityPurchased;
+            const fallbackCode = `PIECE-${String(stockItems.length + index + 1).padStart(4, "0")}`;
+            const internalCode = createsStock
+              ? existingItem?.internalCode
+                ? existingItem.internalCode
+                : makeUniqueInternalCode(
+                    line.internalCode || line.sku || line.reference || line.itemName,
+                    existingCodes,
+                    fallbackCode,
+                  )
+              : line.internalCode;
+            const stockItemId = createsStock ? (existingItem?.id ?? uid("stock")) : undefined;
+            purchaseSeq += 1;
+            const purchaseId = uid("pur");
+            const purchaseNumber = `ACH-${new Date().getFullYear()}-${String(purchaseSeq).padStart(6, "0")}`;
+            const weightedAverage =
+              afterStock > 0
+                ? clampMoney(
+                    ((existingItem?.averagePurchasePrice ?? existingItem?.purchasePrice ?? 0) * beforeStock +
+                      line.unitPurchasePriceExclTax * line.quantityPurchased) /
+                      afterStock,
+                  )
+                : line.unitPurchasePriceExclTax;
+
+            const stockPatch: Partial<StockItem> = {
+              rawName: line.rawName || existingItem?.rawName || line.itemName,
+              displayName:
+                line.displayName || compactSupplierPartName(line.rawName || line.itemName, line.category, line.quality),
+              quantity: afterStock,
+              stock: afterStock,
+              purchasePrice: line.unitPurchasePriceExclTax,
+              averagePurchasePrice: weightedAverage,
+              lastPurchasePrice: line.unitPurchasePriceExclTax,
+              supplier: supplierName,
+              primarySupplierId: supplierId,
+              primarySupplier: supplierName,
+              originPurchaseId: purchaseId,
+              originSupplierInvoiceId: invoiceId,
+              originSupplierInvoiceNumber: invoiceNumber,
+              originSupplierInvoiceLineId: lineId,
+              internalCode,
+              quality: line.quality || existingItem?.quality,
+              supplierBrand: line.supplierBrand || existingItem?.supplierBrand,
+              ean: line.ean || existingItem?.ean,
+              supplierWarranty: line.supplierWarranty || existingItem?.supplierWarranty,
+              ...updateActorFields(actor),
+            };
+
+            if (createsStock && existingItem) {
+              const lineModels = splitCompatibleModelNames(line.compatibleModel);
+              stockItems[stockIndex] = normalizeStockItem({
+                ...existingItem,
+                ...stockPatch,
+                name: stockPatch.displayName,
+                part: stockPatch.displayName,
+                categoryName: line.category || existingItem.categoryName,
+                category: line.category || existingItem.category,
+                compatibleModels: lineModels.length
+                  ? uniqueIds([...(existingItem.compatibleModels ?? []), ...lineModels])
+                  : existingItem.compatibleModels,
+              });
+            } else if (createsStock && stockItemId) {
+              stockItems.unshift(
+                normalizeStockItem({
+                  id: stockItemId,
+                  shopId,
+                  sku: line.sku || line.reference || internalCode,
+                  reference: line.reference || line.sku || internalCode,
+                  internalCode,
+                  rawName: line.rawName || line.itemName,
+                  displayName:
+                    line.displayName ||
+                    compactSupplierPartName(line.rawName || line.itemName, line.category, line.quality),
+                  name:
+                    line.displayName ||
+                    compactSupplierPartName(line.rawName || line.itemName, line.category, line.quality),
+                  part:
+                    line.displayName ||
+                    compactSupplierPartName(line.rawName || line.itemName, line.category, line.quality),
+                  categoryName: line.category || "Autre",
+                  category: line.category || "Autre",
+                  compatibleModels: splitCompatibleModelNames(line.compatibleModel),
+                  quality: line.quality,
+                  supplierBrand: line.supplierBrand,
+                  ean: line.ean,
+                  supplierWarranty: line.supplierWarranty,
+                  purchasePrice: line.unitPurchasePriceExclTax,
+                  averagePurchasePrice: line.unitPurchasePriceExclTax,
+                  lastPurchasePrice: line.unitPurchasePriceExclTax,
+                  salePrice: line.salePrice ?? clampMoney(line.unitPurchasePriceExclTax * 1.8),
+                  quantity: line.quantityPurchased,
+                  stock: line.quantityPurchased,
+                  threshold: line.stockMinimum ?? 1,
+                  supplier: supplierName,
+                  primarySupplierId: supplierId,
+                  primarySupplier: supplierName,
+                  originPurchaseId: purchaseId,
+                  originSupplierInvoiceId: invoiceId,
+                  originSupplierInvoiceNumber: invoiceNumber,
+                  originSupplierInvoiceLineId: lineId,
+                  itemType: "part",
+                  repairEnabled: true,
+                  counterSaleEnabled: false,
+                  active: true,
+                  productCategory: "Pièces détachées",
+                  counterVisible: false,
+                  leadTime: "2 à 3 jours",
+                  ...actorFields(actor),
+                }),
+              );
+            }
+
+            const purchase: Purchase = {
+              id: purchaseId,
+              shopId,
+              number: purchaseNumber,
+              kind: createsStock ? "piece" : "autre",
+              source: input.source === "textract" ? "Analyse IA" : "Facture fournisseur",
+              label: line.itemName,
+              reference: line.reference || line.sku,
+              internalCode,
+              category: line.category,
+              compatibleModel: line.compatibleModel,
+              quality: line.quality,
+              supplierId,
+              supplier: supplierName,
+              invoiceNumber,
+              quantity: line.quantityPurchased,
+              unitCost: line.unitPurchasePriceExclTax,
+              taxRate: line.taxRate,
+              taxAmount: line.taxAmount,
+              totalExcludingTax: line.lineTotalExclTax,
+              totalIncludingTax: line.lineTotalInclTax,
+              total: line.lineTotalInclTax ?? line.lineTotalExclTax,
+              date: invoice.purchaseDate,
+              stockItemId,
+              supplierInvoiceId: invoiceId,
+              supplierInvoiceLineId: lineId,
+              documentId: invoice.originalDocumentId,
+              originalFileName: invoice.originalFileName,
+              originalFileUrl: invoice.originalFileUrl,
+              note: input.note,
+              createdBy: actor.id,
+              createdByName: actor.name,
+              createdAt: now,
+            };
+            purchases.unshift(purchase);
+
+            supplierInvoiceLines.push({
+              id: lineId,
+              shopId,
+              supplierInvoiceId: invoiceId,
+              purchaseId,
+              stockItemId,
+              rawName: line.rawName,
+              displayName:
+                line.displayName || compactSupplierPartName(line.rawName || line.itemName, line.category, line.quality),
+              itemName: line.itemName,
+              reference: line.reference || line.sku,
+              sku: line.sku || line.reference,
+              internalCode,
+              category: line.category,
+              compatibleModel: line.compatibleModel,
+              quality: line.quality,
+              supplierBrand: line.supplierBrand,
+              ean: line.ean,
+              supplierWarranty: line.supplierWarranty,
+              quantityPurchased: line.quantityPurchased,
+              unitPurchasePriceExclTax: line.unitPurchasePriceExclTax,
+              taxRate: line.taxRate,
+              taxAmount: line.taxAmount,
+              lineTotalExclTax: line.lineTotalExclTax,
+              lineTotalInclTax: line.lineTotalInclTax,
+              supplierId,
+              supplierName,
+              invoiceId,
+              createStockItem: createsStock,
+              createdAt: now,
+            });
+
+            if (!createsStock || !stockItemId) return;
+
+            const movement: StockMovement = {
+              id: uid("mov"),
+              shopId,
+              stockItemId,
+              partReference: line.sku || line.reference,
+              internalCode,
+              movementType: "supplier_purchase_received",
+              quantityDelta: line.quantityPurchased,
+              quantityBefore: beforeStock,
+              quantityAfter: afterStock,
+              unitCost: line.unitPurchasePriceExclTax,
+              totalCost: line.lineTotalExclTax,
+              reason: `Facture fournisseur ${invoiceNumber}`,
+              sourceModule: "achats",
+              sourceId: invoiceId,
+              linkedPurchaseId: purchaseId,
+              linkedSupplierInvoiceId: invoiceId,
+              linkedSupplierInvoiceLineId: lineId,
+              actorId: actor.id,
+              actorName: actor.name,
+              createdAt: now,
+              note: input.note,
+              metadata: {
+                invoiceNumber,
+                supplierId,
+                supplierName,
+                lineId,
+                purchaseNumber,
+              },
+            };
+            stockMovements.unshift(movement);
+          });
+
+          return {
+            stockItems,
+            purchases,
+            stockMovements: stockMovements.slice(0, 2000),
+            supplierInvoices: [invoice, ...state.supplierInvoices],
+            supplierInvoiceLines: [...supplierInvoiceLines, ...state.supplierInvoiceLines],
+          };
+        });
+
+        get().addAuditLog({
+          action: "supplier_invoice.committed",
+          targetType: "supplier_invoice",
+          targetId: invoiceId,
+          message: `${actor.name} a validé la facture fournisseur ${invoiceNumber} (${supplierName})`,
+          metadata: {
+            supplierId,
+            invoiceNumber,
+            totalIncludingTax,
+            lineCount: cleanLines.length,
+            source: invoice.source,
+          },
+        });
+        get().addNotification({
+          type: "success",
+          title: "Facture fournisseur intégrée",
+          message: `${invoiceNumber} — ${cleanLines.length} ligne(s) ajoutée(s) au stock`,
+          targetType: "supplier_invoice",
+          targetId: invoiceId,
+        });
+        return invoiceId;
+      },
       addPurchase: (input) => {
         const actor = get().currentUser ?? defaultCurrentUser;
         const id = uid("pur");
@@ -8080,13 +9011,28 @@ export const useBeharStore = create<StoreState>()(
           source: input.source,
           label: input.label,
           reference: input.reference,
+          internalCode: input.internalCode,
+          category: input.category,
+          compatibleModel: input.compatibleModel,
+          quality: input.quality,
+          supplierId: input.supplierId,
           supplier: input.supplier,
+          invoiceNumber: input.invoiceNumber,
           quantity,
           unitCost,
+          taxRate: input.taxRate,
+          taxAmount: input.taxAmount,
+          totalExcludingTax: input.totalExcludingTax,
+          totalIncludingTax: input.totalIncludingTax,
           total,
           currency: input.currency,
           date: input.date ?? getNowIso(),
           stockItemId: input.stockItemId,
+          supplierInvoiceId: input.supplierInvoiceId,
+          supplierInvoiceLineId: input.supplierInvoiceLineId,
+          documentId: input.documentId,
+          originalFileName: input.originalFileName,
+          originalFileUrl: input.originalFileUrl,
           repairId: input.repairId,
           reconditioningFileId: input.reconditioningFileId,
           conditionneRecordId: input.conditionneRecordId,

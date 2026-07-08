@@ -70,6 +70,7 @@ import { generateQrDataUrl, publicAbsoluteUrl } from "@/lib/public-link";
 import { cn } from "@/lib/utils";
 
 import { useDocument } from "./print-provider";
+import { PartReferenceLink } from "./part-reference-link";
 import { Modal, PrimaryButton, SecondaryButton, StatusBadge } from "./primitives";
 import { TrackingQrModal } from "./tracking-qr-modal";
 
@@ -3282,9 +3283,10 @@ function MobilePartsSection({
             >
               <div className="min-w-0 flex-1">
                 <h4 className="text-[13px] font-bold text-[#1A1916] truncate">{item.name}</h4>
-                <p className="text-[11px] text-[#6B6B6B] mt-0.5 truncate">
-                  Réf. {item.sku || "N/A"} · Stock : <span className="font-bold text-[#1A1916]">{item.stock}</span>
-                </p>
+                <div className="text-[11px] text-[#6B6B6B] mt-0.5 truncate">
+                  Réf. <PartReferenceLink reference={item.sku || item.reference} /> · Stock :{" "}
+                  <span className="font-bold text-[#1A1916]">{item.stock}</span>
+                </div>
                 <p className="text-xs font-bold text-[#167B70] mt-1">{formatPartsCurrency(item.salePrice)}</p>
               </div>
               <button
@@ -3319,9 +3321,9 @@ function MobilePartsSection({
               <li key={part.stockItemId} className="py-2.5 flex items-center justify-between text-sm">
                 <div>
                   <p className="font-bold text-[#1A1916]">{part.name}</p>
-                  <p className="text-[11px] text-[#6B6B6B] mt-0.5">
-                    Réf. {part.sku} · Qté : {part.quantity}
-                  </p>
+                  <div className="text-[11px] text-[#6B6B6B] mt-0.5">
+                    Réf. <PartReferenceLink reference={part.sku || part.reference} /> · Qté : {part.quantity}
+                  </div>
                 </div>
                 <span className="rounded-full bg-[#FFFFFF] px-2.5 py-0.5 font-bold text-[#936100] text-[10px]">
                   {part.confirmed ? "Utilisée" : "Réservée"}

@@ -1,11 +1,26 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { useRouter } from "next/navigation";
 
 import type { LucideIcon } from "lucide-react";
-import { AlertTriangle, Check, Filter, Package, Plus, Search, Trash2, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  FileText,
+  Filter,
+  History,
+  Package,
+  Plus,
+  Printer,
+  Search,
+  Tags,
+  Trash2,
+  Wrench,
+  X,
+} from "lucide-react";
+import QRCode from "qrcode";
 import { toast } from "sonner";
 
 import {
@@ -15,8 +30,10 @@ import {
   type StockItem,
   type StockItemType,
   type StockProductCategory,
+  type StockMovementType,
   useBeharStore,
 } from "@/lib/behar-store";
+import { getPartTraceability } from "@/lib/part-traceability";
 import type { PriceBookItem } from "@/lib/price-book";
 import {
   findPriceBookBySelection,
@@ -27,11 +44,13 @@ import {
   suggestStockName,
   suggestStockSku,
 } from "@/lib/stock-catalog-link";
+import { stockPrimaryReference } from "@/lib/stock-reference";
 import { cn } from "@/lib/utils";
 import { stockKpis } from "@/mock/stock";
 
 import { type DeviceCategory, getDeviceBrands, getModelsByBrand } from "../../data/deviceCatalog";
 import { PageShell } from "./page-shell";
+import { PartReferenceLink } from "./part-reference-link";
 import {
   DetailRow,
   Panel,
@@ -45,6 +64,7 @@ import {
   tableHeadClassName,
 } from "./primitives";
 import { StockImportModal } from "./stock-import-modal";
+import { SupplierInvoiceImportModal } from "./supplier-invoice-import-modal";
 
 function findLinkedTariff(item: StockItem, priceBookItems: PriceBookItem[]) {
   return (
@@ -57,14 +77,16 @@ function tariffPriceLabel(item: StockItem, priceBookItems: PriceBookItem[]) {
   const tariff = findLinkedTariff(item, priceBookItems);
   if (tariff) return formatEuro(tariff.prixVentePiece || tariff.prixClientTotal);
   // §4 — article comptoir (accessoire/consommable) : prix de vente direct.
-  if (item.salePrice > 0) return formatEuro(item.salePrice);
+  if (item.counterSaleEnabled && item.salePrice > 0) return formatEuro(item.salePrice);
+  if (item.repairEnabled) return "Pièce atelier";
   return "Prix à définir";
 }
 
 function tariffHelperLabel(item: StockItem, priceBookItems: PriceBookItem[]) {
   const tariff = findLinkedTariff(item, priceBookItems);
   if (!tariff) {
-    if (item.salePrice > 0) return "Prix de vente comptoir";
+    if (item.counterSaleEnabled && item.salePrice > 0) return "Prix de vente comptoir";
+    if (item.repairEnabled) return "Non vendu comptoir";
     return "Prix requis avant vente";
   }
   if (tariff.prixClientTotal > 0 && tariff.prixClientTotal !== tariff.prixVentePiece) {
@@ -83,6 +105,104 @@ function stockItemKindLabel(item: StockItem) {
   if (item.itemType === "accessory") return "Accessoire comptoir";
   if (item.itemType === "product") return "Produit boutique";
   return "Pièce atelier";
+}
+
+const MOVEMENT_LABELS: Record<StockMovementType, string> = {
+  supplier_purchase_received: "Achat fournisseur",
+  manual_adjustment: "Ajustement manuel",
+  repair_part_used: "Sortie réparation",
+  reconditioning_part_used: "Reconditionnement",
+  counter_sale_sold: "Vente comptoir",
+  reconditioned_device_sold: "Vente reconditionné",
+  reservation_created: "Réservation atelier",
+  reservation_released: "Annulation / retour",
+  return_to_supplier: "Retour fournisseur",
+  stock_transfer_out: "Transfert sortant",
+  stock_transfer_in: "Transfert entrant",
+  correction: "Correction",
+};
+
+function shortDate(value?: string) {
+  return value ? value.slice(0, 10) : "—";
+}
+
+function firstNonEmpty(...values: Array<string | undefined>) {
+  return values.find((value) => typeof value === "string" && value.trim().length > 0)?.trim() ?? "";
+}
+
+function displayText(value: string | undefined, fallback = "—") {
+  return typeof value === "string" && value.trim().length > 0 ? value : fallback;
+}
+
+function stockStatusLabel(item: StockItem) {
+  if (item.stock === 0) return "Rupture";
+  if (item.stock <= item.threshold) return "Stock faible";
+  return "En stock";
+}
+
+function TracePanel({
+  title,
+  icon: Icon,
+  children,
+}: Readonly<{ title: string; icon: LucideIcon; children: ReactNode }>) {
+  return (
+    <section className="rounded-[12px] border border-[#E8E8E5] bg-white">
+      <div className="flex items-center gap-2 border-[#E8E8E5] border-b px-3 py-2.5">
+        <Icon className="size-4 text-[#2A9D8F]" />
+        <h3 className="font-semibold text-[#1A1916] text-sm">{title}</h3>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function EmptyLinkedState({ children }: Readonly<{ children: ReactNode }>) {
+  return <p className="p-3 text-[#6B6B6B] text-xs">{children}</p>;
+}
+
+function openStockLabel(item: StockItem, qrDataUrl: string, print: boolean) {
+  const reference = firstNonEmpty(stockPrimaryReference(item), item.sku, item.reference, item.internalCode, item.id);
+  const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Étiquette ${reference}</title>
+  <style>
+    body { margin: 0; padding: 18px; background: #FAFAF8; color: #1A1916; font-family: Arial, sans-serif; }
+    .label { width: 320px; min-height: 190px; border: 1px solid #E8E8E5; border-radius: 10px; background: #fff; padding: 16px; }
+    .top { display: flex; gap: 12px; align-items: flex-start; }
+    img { width: 86px; height: 86px; }
+    h1 { margin: 0; font-size: 16px; line-height: 1.2; }
+    p { margin: 6px 0 0; font-size: 12px; color: #6B6B6B; }
+    .code { margin-top: 14px; font-family: monospace; font-size: 15px; font-weight: 700; letter-spacing: 0.04em; }
+    .bars { margin-top: 10px; height: 28px; background: repeating-linear-gradient(90deg, #1A1916 0 2px, transparent 2px 5px, #1A1916 5px 7px, transparent 7px 11px); }
+    @media print { body { background: #fff; padding: 0; } .label { border-color: #1A1916; } }
+  </style>
+</head>
+<body>
+  <div class="label">
+    <div class="top">
+      ${qrDataUrl ? `<img src="${qrDataUrl}" alt="QR" />` : ""}
+      <div>
+        <h1>${item.name}</h1>
+        <p>${item.categoryName || item.category || "Catégorie"}</p>
+        <p>${item.compatibleModels?.join(", ") || "Modèle compatible"}</p>
+      </div>
+    </div>
+    <div class="code">${reference}</div>
+    <p>${item.internalCode ?? ""}</p>
+    <div class="bars"></div>
+  </div>
+  ${print ? "<script>window.addEventListener('load', () => window.print());</script>" : ""}
+</body>
+</html>`;
+  const win = window.open("", "_blank", "noopener,noreferrer,width=420,height=360");
+  if (!win) {
+    toast.error("Ouverture de l'étiquette bloquée par le navigateur.");
+    return;
+  }
+  win.document.write(html);
+  win.document.close();
 }
 
 /** Model selector: type freely or pick from suggestions, adds as chips */
@@ -189,6 +309,10 @@ export function StockWorkspace() {
     const matchesSearch =
       item.name.toLowerCase().includes(q) ||
       item.sku.toLowerCase().includes(q) ||
+      item.reference.toLowerCase().includes(q) ||
+      (item.internalCode || "").toLowerCase().includes(q) ||
+      item.categoryName.toLowerCase().includes(q) ||
+      item.compatibleModels.join(" ").toLowerCase().includes(q) ||
       item.supplier.toLowerCase().includes(q);
 
     if (filterLowStock && item.quantity > item.threshold) return false;
@@ -197,9 +321,7 @@ export function StockWorkspace() {
 
   const selected = filteredItems.find((item) => item.id === store.selectedStockItemId) ?? filteredItems[0];
   const canManageStock = store.hasPermission("canManageStock");
-  const canUseStockItem = store.hasPermission("canUseStockItem");
   const canViewPurchasePrice = store.hasPermission("canViewPurchasePrice");
-  const canViewSupplier = store.hasPermission("canViewSupplier");
   const stockValue = store.stockItems.reduce((total, item) => total + item.purchasePrice * item.quantity, 0);
   const lowStockCount = store.stockItems.filter((item) => item.quantity > 0 && item.quantity <= item.threshold).length;
   const outCount = store.stockItems.filter((item) => item.quantity === 0).length;
@@ -273,6 +395,7 @@ export function StockWorkspace() {
                 <Plus className="size-4" />
                 <span>Nouvelle pièce</span>
               </PrimaryButton>
+              <SupplierInvoiceImportModal buttonLabel="Import facture" />
               <span className="hidden 2xl:inline-flex">
                 <StockImportModal />
               </span>
@@ -284,25 +407,22 @@ export function StockWorkspace() {
                 {filterLowStock ? "Stock faible uniquement" : "Tous les stocks"}
               </SecondaryButton>
             </div>
-            <table className={`${tableClassName} hidden md:table min-w-[1320px]`}>
+            <table className={`${tableClassName} hidden md:table min-w-[980px]`}>
               <thead className={tableHeadClassName}>
                 <tr>
-                  <th className="px-4 py-3">Pièce</th>
-                  <th className="px-4 py-3">SKU</th>
-                  <th className="px-4 py-3">Usage</th>
-                  <th className="px-4 py-3">Marque</th>
-                  <th className="px-4 py-3">Modèles</th>
+                  <th className="px-4 py-3">Nom pièce</th>
+                  <th className="px-4 py-3">Référence / SKU</th>
+                  <th className="px-4 py-3">Modèle compatible</th>
                   <th className="px-4 py-3">Catégorie</th>
-                  {canViewPurchasePrice && <th className="px-4 py-3">Prix d'achat</th>}
-                  <th className="px-4 py-3">Prix client indicatif</th>
-                  <th className="px-4 py-3">Stock</th>
-                  <th className="px-4 py-3">Seuil</th>
-                  {canViewSupplier && <th className="px-4 py-3">Fournisseur</th>}
+                  <th className="px-4 py-3 text-right">Stock disponible</th>
+                  {canViewPurchasePrice && <th className="px-4 py-3 text-right">Prix moyen</th>}
+                  <th className="px-4 py-3">Statut</th>
+                  <th className="px-4 py-3 text-right">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredItems.map((item) => {
-                  const tariff = findLinkedTariff(item, store.priceBookItems);
+                  const status = stockStatusLabel(item);
                   return (
                     <tr
                       className={`cursor-pointer transition hover:bg-[#FFFFFF] ${item.id === selected?.id ? "bg-[#FFFFFF]" : ""}`}
@@ -314,57 +434,43 @@ export function StockWorkspace() {
                           <span className="grid size-9 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#2A9D8F]">
                             <span className="block h-6 w-3 rounded-sm bg-[#1A1916]/80" />
                           </span>
-                          {item.name}
+                          <div className="min-w-0">
+                            <p className="truncate text-[#1A1916]">{item.displayName ?? item.name}</p>
+                            {item.quality && <p className="mt-0.5 text-[#6B6B6B] text-[11px]">{item.quality}</p>}
+                          </div>
                         </div>
                       </td>
-                      <td className={`${tableCellClassName} py-2.5`}>{item.sku}</td>
                       <td className={`${tableCellClassName} py-2.5`}>
-                        <div className="flex flex-col">
-                          <span className="font-semibold text-[#1A1916]">{stockItemKindLabel(item)}</span>
-                          <span className="mt-1 text-[#6B6B6B] text-[10px]">
-                            {item.repairEnabled ? "Atelier" : "Hors atelier"} · {item.counterSaleEnabled ? "Vente comptoir" : "Pas en comptoir"}
-                          </span>
+                        <div className="flex flex-col gap-1">
+                          <PartReferenceLink reference={item.sku || item.reference} />
+                          {item.internalCode && (
+                            <span className="font-mono text-[#8A8A85] text-[10.5px]">{item.internalCode}</span>
+                          )}
                         </div>
                       </td>
-                      <td className={`${tableCellClassName} py-2.5`}>{item.brandName || "Non défini"}</td>
                       <td className={`${tableCellClassName} max-w-[220px] py-2.5`}>
-                        {item.compatibleModels.length ? item.compatibleModels.join(", ") : "Non défini"}
+                        {item.compatibleModels.length ? item.compatibleModels.join(" / ") : "Non défini"}
                       </td>
                       <td className={`${tableCellClassName} py-2.5`}>{item.categoryName}</td>
-                      {canViewPurchasePrice && (
-                        <td className={`${tableCellClassName} py-2.5`}>{formatEuro(item.purchasePrice)}</td>
-                      )}
-                      <td className={`${tableCellClassName} py-2.5`}>
-                        <div className="flex flex-col">
-                          <span className={cn("font-semibold", tariff ? "text-[#1A1916]" : "text-[#6B6B6B]")}>
-                            {tariffPriceLabel(item, store.priceBookItems)}
-                          </span>
-                          <span className="mt-1 text-[10px] font-medium text-[#167B70]">
-                            {tariffHelperLabel(item, store.priceBookItems)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className={`${tableCellClassName} py-2.5`}>
+                      <td className={`${tableCellClassName} py-2.5 text-right tabular-nums`}>
                         <span className="font-semibold">{item.quantity}</span>
-                        {item.quantity === 0 && <StatusBadge className="ml-2 h-6 px-2 text-[11px]" status="Rupture" />}
-                        {item.quantity > 0 && item.quantity <= item.threshold && (
-                          <StatusBadge className="ml-2 h-6 px-2 text-[11px]" status="Stock faible" />
-                        )}
                       </td>
-                      <td className={`${tableCellClassName} py-2.5`}>{item.threshold}</td>
-                      {canViewSupplier && (
-                        <td className={`${tableCellClassName} py-2.5`}>
-                          <div className="flex flex-col">
-                            <span>{item.supplier}</span>
-                            {item.priceBookItemId && (
-                              <span className="text-[10px] text-[#167B70] font-medium flex items-center gap-1 mt-1">
-                                <span className="size-1.5 rounded-full bg-[#167B70]" />
-                                Catalogue Prix lié
-                              </span>
-                            )}
-                          </div>
+                      {canViewPurchasePrice && (
+                        <td className={`${tableCellClassName} py-2.5 text-right tabular-nums`}>
+                          {formatEuro(item.averagePurchasePrice ?? item.purchasePrice)}
                         </td>
                       )}
+                      <td className={`${tableCellClassName} py-2.5`}>
+                        <StatusBadge className="h-6 px-2 text-[11px]" status={status} />
+                      </td>
+                      <td className={`${tableCellClassName} py-2.5 text-right`}>
+                        <SecondaryButton
+                          className="h-8 px-3 text-xs"
+                          onClick={() => store.setSelected("stockItem", item.id)}
+                        >
+                          Voir détail
+                        </SecondaryButton>
+                      </td>
                     </tr>
                   );
                 })}
@@ -378,18 +484,26 @@ export function StockWorkspace() {
                 </p>
               ) : (
                 filteredItems.map((item) => {
-                  const tariff = findLinkedTariff(item, store.priceBookItems);
                   const isOut = item.quantity === 0;
                   const isLow = item.quantity > 0 && item.quantity <= item.threshold;
+                  const openItem = () => {
+                    store.setSelected("stockItem", item.id);
+                    setMobileDetailOpen(true);
+                  };
                   return (
-                    <button
+                    // biome-ignore lint/a11y/useSemanticElements: la carte contient une référence cliquable, éviter un bouton imbriqué.
+                    <div
                       key={item.id}
                       className="block w-full rounded-[18px] bg-white p-3.5 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
-                      onClick={() => {
-                        store.setSelected("stockItem", item.id);
-                        setMobileDetailOpen(true);
+                      onClick={openItem}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          openItem();
+                        }
                       }}
-                      type="button"
+                      role="button"
+                      tabIndex={0}
                     >
                       <div className="flex items-start gap-3">
                         <span
@@ -417,9 +531,10 @@ export function StockWorkspace() {
                               </span>
                             )}
                           </div>
-                          <p className="mt-0.5 truncate text-[#6B6B6B] text-[11.5px]">
-                            SKU {item.sku} · {stockItemKindLabel(item)}
-                          </p>
+                          <div className="mt-0.5 truncate text-[#6B6B6B] text-[11.5px]">
+                            SKU <PartReferenceLink reference={item.sku || item.reference} /> ·{" "}
+                            {stockItemKindLabel(item)}
+                          </div>
                           <div className="mt-2.5 grid grid-cols-3 gap-2">
                             <div>
                               <p className="text-[#6B6B6B] text-[10px] font-medium uppercase tracking-wider">Stock</p>
@@ -441,23 +556,20 @@ export function StockWorkspace() {
                               </div>
                             )}
                             <div className="min-w-0">
-                              <p className="text-[#6B6B6B] text-[10px] font-medium uppercase tracking-wider">Tarif</p>
-                              <p
-                                className={cn(
-                                  "mt-0.5 truncate font-semibold text-[13px] tabular-nums",
-                                  tariff ? "text-[#1A1916]" : "text-[#6B6B6B]",
-                                )}
-                              >
-                                {tariff ? tariffPriceLabel(item, store.priceBookItems) : "Non défini"}
+                              <p className="text-[#6B6B6B] text-[10px] font-medium uppercase tracking-wider">
+                                Catégorie
+                              </p>
+                              <p className="mt-0.5 truncate font-semibold text-[#1A1916] text-[13px]">
+                                {item.categoryName}
                               </p>
                             </div>
                           </div>
-                          <p className="mt-2 text-[#2A9D8F] text-[11px] font-medium">
-                            {tariffHelperLabel(item, store.priceBookItems)}
+                          <p className="mt-2 truncate text-[#6B6B6B] text-[11px]">
+                            {item.compatibleModels.length ? item.compatibleModels.join(" / ") : "Modèle non défini"}
                           </p>
                         </div>
                       </div>
-                    </button>
+                    </div>
                   );
                 })
               )}
@@ -521,11 +633,14 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
   const store = useBeharStore();
   const router = useRouter();
   const [targetRepairId, setTargetRepairId] = useState(store.selectedRepairId || "");
+  const [qrDataUrl, setQrDataUrl] = useState("");
   const canManageStock = store.hasPermission("canManageStock");
   const canUseStockItem = store.hasPermission("canUseStockItem");
   const canViewPurchasePrice = store.hasPermission("canViewPurchasePrice");
   const canViewSupplier = store.hasPermission("canViewSupplier");
   const tariff = findLinkedTariff(item, store.priceBookItems);
+  const reference = firstNonEmpty(stockPrimaryReference(item), item.sku, item.reference, item.internalCode, item.id);
+  const trace = useMemo(() => getPartTraceability(store, reference), [store, reference]);
   const categoryMapping: Record<string, DeviceCategory> = {
     Smartphone: "smartphone",
     Tablette: "tablet",
@@ -534,7 +649,7 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
   };
   const category = categoryMapping[item.deviceType] || "smartphone";
   const availableBrands = getDeviceBrands(category);
-  const availableModels = getModelsByBrand(item.brandName || "", category);
+  const availableModels = getModelsByBrand(item.brandName ?? "", category);
   const availableCategories = store.partCategories.filter((cat) => cat.deviceTypes.includes(item.deviceType));
 
   const inputClass =
@@ -543,6 +658,20 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
     "h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[15px] text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
   const rowClass = "flex items-start justify-between gap-3 py-3 border-b border-[#FFFFFF] last:border-0";
   const labelClass = "shrink-0 w-[110px] text-[#6B6B6B] text-[13px] pt-2.5 font-medium";
+
+  useEffect(() => {
+    let cancelled = false;
+    QRCode.toDataURL(reference, { margin: 1, width: 148, color: { dark: "#1A1916", light: "#FFFFFF" } })
+      .then((url) => {
+        if (!cancelled) setQrDataUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setQrDataUrl("");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reference]);
 
   return (
     <div className="px-4 pb-10 pt-3">
@@ -557,6 +686,28 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
       )}
 
       <PartPlaceholder className="h-36 rounded-[16px] mb-4" />
+      <div className="mb-4 grid grid-cols-[1fr_116px] gap-3">
+        <div className="rounded-[16px] border border-[#FFFFFF] bg-[#FFFFFF] p-4">
+          <p className="text-[#6B6B6B] text-[11px] font-semibold uppercase tracking-[0.12em]">Référence centrale</p>
+          <p className="mt-2 font-mono font-semibold text-[#1A1916] text-sm">
+            <PartReferenceLink reference={reference} />
+          </p>
+          <p className="mt-1 font-mono text-[#8A8A85] text-[11px]">
+            {displayText(item.internalCode, "Code interne à compléter")}
+          </p>
+        </div>
+        <div className="rounded-[16px] border border-[#FFFFFF] bg-[#FFFFFF] p-2 text-center">
+          {qrDataUrl ? (
+            // biome-ignore lint/performance/noImgElement: QR généré localement en data URL pour impression d'étiquette.
+            <img alt={`QR ${reference}`} className="mx-auto size-[88px]" src={qrDataUrl} />
+          ) : (
+            <div className="mx-auto grid size-[88px] place-items-center rounded-[8px] bg-[#FAFAF8] text-[#6B6B6B] text-xs">
+              QR
+            </div>
+          )}
+          <p className="mt-1 text-[#6B6B6B] text-[10px]">Étiquette</p>
+        </div>
+      </div>
 
       {/* Fields */}
       <div className="rounded-[16px] border border-[#FFFFFF] bg-[#FFFFFF] px-4 divide-y divide-[#FFFFFF] mb-4">
@@ -768,8 +919,70 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
         </div>
       </div>
 
+      <div className="mb-4 space-y-3">
+        <div className="rounded-[16px] border border-[#FFFFFF] bg-[#FFFFFF] p-4">
+          <h3 className="font-semibold text-[#1A1916] text-sm">Traçabilité liée</h3>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {[
+              ["Entrées", String(trace.supplierInvoiceLines.length || trace.purchases.length)],
+              ["Sorties", String(trace.repairUsages.length)],
+              ["Mouvements", String(trace.movements.length)],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-[12px] bg-[#FAFAF8] px-3 py-2">
+                <p className="text-[#6B6B6B] text-[10px]">{label}</p>
+                <p className="mt-0.5 font-semibold text-[#1A1916] text-sm">{value}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-3 space-y-2">
+            {trace.movements.slice(0, 4).map((movement) => (
+              <div
+                key={movement.id}
+                className="flex items-center justify-between rounded-[12px] border border-[#E8E8E5] px-3 py-2"
+              >
+                <div>
+                  <p className="font-semibold text-[#1A1916] text-xs">{MOVEMENT_LABELS[movement.movementType]}</p>
+                  <p className="text-[#6B6B6B] text-[11px]">{shortDate(movement.createdAt)}</p>
+                </div>
+                <p
+                  className={cn(
+                    "font-semibold text-sm tabular-nums",
+                    movement.quantityDelta < 0 ? "text-[#B42318]" : "text-[#167B70]",
+                  )}
+                >
+                  {movement.quantityDelta > 0 ? "+" : ""}
+                  {movement.quantityDelta}
+                </p>
+              </div>
+            ))}
+            {!trace.movements.length && <p className="text-[#6B6B6B] text-xs">Aucun mouvement relié.</p>}
+          </div>
+        </div>
+      </div>
+
       {/* Actions */}
       <div className="grid gap-2">
+        <div className="grid grid-cols-2 gap-2">
+          <SecondaryButton
+            className="h-11 w-full"
+            disabled={!canManageStock}
+            onClick={() => {
+              const delta = Number(window.prompt("Ajustement stock (+ ou -)", "1") || 0);
+              if (!Number.isFinite(delta) || delta === 0) {
+                toast.error("Ajustement invalide");
+                return;
+              }
+              store.adjustStock(item.id, delta, "Ajustement depuis fiche pièce");
+              toast.success("Ajustement stock enregistré");
+            }}
+          >
+            Ajuster
+          </SecondaryButton>
+          <SecondaryButton className="h-11 w-full" onClick={() => openStockLabel(item, qrDataUrl, true)}>
+            <Printer className="size-4" />
+            Imprimer
+          </SecondaryButton>
+        </div>
         <PrimaryButton
           className="h-12 w-full text-[15px]"
           disabled={!canManageStock}
@@ -848,11 +1061,42 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
   const store = useBeharStore();
   const router = useRouter();
   const [targetRepairId, setTargetRepairId] = useState(store.selectedRepairId || "");
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const canManageStock = store.hasPermission("canManageStock");
   const canUseStockItem = store.hasPermission("canUseStockItem");
   const canViewPurchasePrice = store.hasPermission("canViewPurchasePrice");
   const canViewSupplier = store.hasPermission("canViewSupplier");
   const tariff = findLinkedTariff(item, store.priceBookItems);
+  const reference = firstNonEmpty(stockPrimaryReference(item), item.sku, item.reference, item.internalCode, item.id);
+  const trace = useMemo(() => getPartTraceability(store, reference), [store, reference]);
+  const entries = trace.supplierInvoiceLines.length
+    ? trace.supplierInvoiceLines.map((line) => ({
+        id: line.id,
+        date:
+          trace.supplierInvoices.find((invoice) => invoice.id === line.supplierInvoiceId)?.purchaseDate ??
+          line.createdAt,
+        supplier:
+          trace.supplierInvoices.find((invoice) => invoice.id === line.supplierInvoiceId)?.supplierName ??
+          line.supplierName,
+        invoiceNumber: trace.supplierInvoices.find((invoice) => invoice.id === line.supplierInvoiceId)?.invoiceNumber,
+        invoiceUrl: trace.supplierInvoices.find((invoice) => invoice.id === line.supplierInvoiceId)?.originalFileUrl,
+        purchaseId: line.purchaseId,
+        quantity: line.quantityPurchased,
+        unitCost: line.unitPurchasePriceExclTax,
+        supplierInvoiceId: line.supplierInvoiceId,
+      }))
+    : trace.purchases.map((purchase) => ({
+        id: purchase.id,
+        date: purchase.date || purchase.createdAt,
+        supplier: purchase.supplier,
+        invoiceNumber: purchase.invoiceNumber,
+        invoiceUrl: purchase.originalFileUrl,
+        purchaseId: purchase.id,
+        quantity: purchase.quantity,
+        unitCost: purchase.unitCost,
+        supplierInvoiceId: purchase.supplierInvoiceId,
+      }));
   const categoryMapping: Record<string, DeviceCategory> = {
     Smartphone: "smartphone",
     Tablette: "tablet",
@@ -861,26 +1105,35 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
   };
   const category = categoryMapping[item.deviceType] || "smartphone";
   const availableBrands = getDeviceBrands(category);
-  const availableModels = getModelsByBrand(item.brandName || "", category);
+  const availableModels = getModelsByBrand(item.brandName ?? "", category);
   const availableCategories = store.partCategories.filter((cat) => cat.deviceTypes.includes(item.deviceType));
 
   const inputClass =
     "h-9 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-right text-sm text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
   const textInputClass =
     "h-9 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-sm text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+
+  useEffect(() => {
+    let cancelled = false;
+    QRCode.toDataURL(reference, { margin: 1, width: 164, color: { dark: "#1A1916", light: "#FFFFFF" } })
+      .then((url) => {
+        if (!cancelled) setQrDataUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setQrDataUrl("");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reference]);
+
   return (
     <Panel className="overflow-y-auto rounded-[14px] p-4 md:max-h-[calc(100vh-11rem)]">
       <div className="mb-4">
-        <input
-          className={`${textInputClass} h-11 font-semibold text-xl`}
-          onChange={(event) => store.updateStockItem(item.id, { name: event.target.value })}
-          readOnly={!canManageStock}
-          value={item.name}
-        />
-        <StatusBadge
-          className="mt-3"
-          status={item.stock === 0 ? "Rupture" : item.stock <= item.threshold ? "Stock faible" : "En stock"}
-        />
+        <h2 className="font-semibold text-[#1A1916] text-xl leading-tight tracking-tight">
+          {item.displayName ?? item.name}
+        </h2>
+        <StatusBadge className="mt-3" status={stockStatusLabel(item)} />
         {item.stock <= item.threshold && (
           <p className="mt-2 rounded-[10px] bg-[#FFFFFF] px-3 py-2 text-[#6B6B6B] text-sm">
             Alerte stock bas : réapprovisionnement conseillé.
@@ -888,258 +1141,564 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
         )}
       </div>
       <PartPlaceholder className="h-36 rounded-[14px]" />
-      <dl className="mt-4 divide-y divide-[#E8E8E5]">
-        <DetailRow
-          className="py-2"
-          label="Référence"
-          value={
-            <input
-              className={textInputClass}
-              onChange={(event) => store.updateStockItem(item.id, { sku: event.target.value })}
-              readOnly={!canManageStock}
-              value={item.sku}
-            />
-          }
-        />
-        <DetailRow
-          className="py-2"
-          label="Type"
-          value={
-            <select
-              className={textInputClass}
-              onChange={(event) =>
-                store.updateStockItem(item.id, {
-                  deviceType: event.target.value as StockItem["deviceType"],
-                  brandId: undefined,
-                  brandName: undefined,
-                  modelIds: [],
-                  compatibleModels: [],
-                })
-              }
-              disabled={!canManageStock}
-              value={item.deviceType}
-            >
-              {["Smartphone", "Tablette", "Ordinateur", "Console"].map((type) => (
-                <option key={type}>{type}</option>
-              ))}
-            </select>
-          }
-        />
-        <DetailRow
-          className="py-2"
-          label="Marque"
-          value={
-            <select
-              className={textInputClass}
-              onChange={(event) => {
-                store.updateStockItem(item.id, {
-                  brandId: event.target.value,
-                  brandName: event.target.value,
-                  modelIds: [],
-                  compatibleModels: [],
-                });
-              }}
-              disabled={!canManageStock}
-              value={item.brandName ?? ""}
-            >
-              <option value="">Générique</option>
-              {availableBrands.map((b) => (
-                <option key={b.brand} value={b.brand}>
-                  {b.brand}
-                </option>
-              ))}
-              <option value="Autre">Autre</option>
-            </select>
-          }
-        />
-        <DetailRow
-          className="py-2"
-          label="Modèles"
-          value={
-            <ModelSelector
-              availableModels={availableModels}
-              selected={item.compatibleModels}
-              disabled={!canManageStock}
-              onChange={(models) => store.updateStockItem(item.id, { modelIds: models, compatibleModels: models })}
-            />
-          }
-        />
-        <DetailRow
-          className="py-2"
-          label="Catégorie"
-          value={
-            <select
-              className={textInputClass}
-              onChange={(event) => {
-                const category = store.partCategories.find((entry) => entry.id === event.target.value);
-                store.updateStockItem(item.id, { categoryId: category?.id, categoryName: category?.name });
-              }}
-              disabled={!canManageStock}
-              value={item.categoryId}
-            >
-              {availableCategories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          }
-        />
-        <DetailRow
-          className="py-2"
-          label="Type de produit"
-          value={
-            <select
-              className={textInputClass}
-              disabled={!canManageStock}
-              onChange={(event) => {
-                const productCategory = event.target.value as StockProductCategory;
-                const itemType = productCategoryToItemType(productCategory);
-                const counterSaleEnabled = itemType !== "part";
-                store.updateStockItem(item.id, {
-                  productCategory,
-                  itemType,
-                  repairEnabled: itemType === "part",
-                  counterSaleEnabled,
-                  counterVisible: counterSaleEnabled,
-                });
-              }}
-              value={item.productCategory ?? "Pièces détachées"}
-            >
-              {STOCK_PRODUCT_CATEGORIES.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-          }
-        />
-        <DetailRow
-          className="py-2"
-          label="Vente comptoir"
-          value={
-            <button
-              className={cn(
-                "flex w-full items-center justify-between rounded-[12px] border px-3 py-2 text-left text-sm transition",
-                item.counterSaleEnabled
-                  ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]"
-                  : "border-[#E8E8E5] bg-white text-[#6B6B6B]",
-                !canManageStock && "cursor-not-allowed opacity-60",
-              )}
-              disabled={!canManageStock}
-              onClick={() => {
-                const counterSaleEnabled = !item.counterSaleEnabled;
-                store.updateStockItem(item.id, { counterSaleEnabled, counterVisible: counterSaleEnabled });
-              }}
-              type="button"
-            >
-              <span>{item.counterSaleEnabled ? "Visible" : "Masqué"}</span>
-              <span
-                className={cn(
-                  "grid size-5 shrink-0 place-items-center rounded-full border transition",
-                  item.counterSaleEnabled
-                    ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
-                    : "border-[#C4C2BB] text-transparent",
-                )}
-              >
-                <Check className="size-3.5" />
-              </span>
-            </button>
-          }
-        />
-        {canViewPurchasePrice && (
+      <div className="mt-4 grid gap-3 md:grid-cols-[1fr_132px]">
+        <div className="rounded-[12px] border border-[#E8E8E5] bg-white p-3">
+          <p className="text-[#6B6B6B] text-xs font-semibold uppercase tracking-[0.12em]">Référence centrale</p>
+          <p className="mt-2 font-mono font-semibold text-[#1A1916] text-sm">
+            <PartReferenceLink reference={reference} />
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {[
+              ["Code interne", displayText(item.internalCode)],
+              ["Qualité", displayText(item.quality)],
+              ["Prix moyen", formatEuro(item.averagePurchasePrice ?? item.purchasePrice ?? 0)],
+              ["Dernier prix", formatEuro(item.lastPurchasePrice ?? item.purchasePrice ?? 0)],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-[10px] bg-[#FAFAF8] px-2.5 py-2">
+                <p className="text-[#6B6B6B] text-[10.5px]">{label}</p>
+                <p className="mt-0.5 truncate font-semibold text-[#1A1916] text-xs">{value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-[12px] border border-[#E8E8E5] bg-white p-3 text-center">
+          {qrDataUrl ? (
+            // biome-ignore lint/performance/noImgElement: QR généré localement en data URL pour impression d'étiquette.
+            <img alt={`QR ${reference}`} className="mx-auto size-[104px]" src={qrDataUrl} />
+          ) : (
+            <div className="mx-auto grid size-[104px] place-items-center rounded-[8px] bg-[#FAFAF8] text-[#6B6B6B] text-xs">
+              QR
+            </div>
+          )}
+          <p className="mt-2 font-mono text-[#6B6B6B] text-[10px]">{reference}</p>
+        </div>
+      </div>
+      <div className="mt-4 rounded-[12px] border border-[#E8E8E5] bg-white p-3">
+        <dl className="grid gap-2">
+          {[
+            ["Modèle", item.compatibleModels.length ? item.compatibleModels.join(" / ") : "Non défini"],
+            ["Catégorie", item.categoryName || item.category || "Non défini"],
+            ["Qualité", displayText(item.quality)],
+            ["Stock actuel", String(item.stock)],
+            [
+              "Prix moyen",
+              canViewPurchasePrice ? formatEuro(item.averagePurchasePrice ?? item.purchasePrice ?? 0) : "Masqué",
+            ],
+            ["Fournisseur", canViewSupplier ? displayText(item.primarySupplier ?? item.supplier) : "Masqué"],
+            ["Dernière facture", displayText(item.originSupplierInvoiceNumber)],
+          ].map(([label, value]) => (
+            <div key={label} className="flex items-start justify-between gap-3 py-1.5">
+              <dt className="text-[#6B6B6B] text-xs">{label}</dt>
+              <dd className="min-w-0 text-right font-medium text-[#1A1916] text-xs">{value}</dd>
+            </div>
+          ))}
+        </dl>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <PartReferenceLink
+            reference={reference}
+            className="h-9 justify-center rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-center font-sans text-[#1A1916] text-xs no-underline hover:border-[#2A9D8F]/50 hover:no-underline"
+          >
+            Voir fiche complète
+          </PartReferenceLink>
+          <SecondaryButton className="h-9 w-full text-xs" onClick={() => openStockLabel(item, qrDataUrl, true)}>
+            <Printer className="size-3.5" />
+            Imprimer étiquette
+          </SecondaryButton>
+        </div>
+      </div>
+      <button
+        className="mt-4 flex h-10 w-full items-center justify-between rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-left font-semibold text-[#1A1916] text-xs transition hover:border-[#2A9D8F]/45"
+        onClick={() => setAdvancedOpen((value) => !value)}
+        type="button"
+      >
+        <span>Paramètres avancés</span>
+        <span className="text-[#6B6B6B]">{advancedOpen ? "Masquer" : "Afficher"}</span>
+      </button>
+      {advancedOpen && (
+        <dl className="mt-3 divide-y divide-[#E8E8E5] rounded-[12px] border border-[#E8E8E5] bg-white px-3">
           <DetailRow
             className="py-2"
-            label="Prix d'achat"
+            label="Nom court"
+            value={
+              <input
+                className={textInputClass}
+                onChange={(event) =>
+                  store.updateStockItem(item.id, { name: event.target.value, displayName: event.target.value })
+                }
+                readOnly={!canManageStock}
+                value={item.displayName ?? item.name}
+              />
+            }
+          />
+          <DetailRow
+            className="py-2"
+            label="Référence"
+            value={
+              <input
+                className={textInputClass}
+                onChange={(event) => store.updateStockItem(item.id, { sku: event.target.value })}
+                readOnly={!canManageStock}
+                value={item.sku}
+              />
+            }
+          />
+          <DetailRow
+            className="py-2"
+            label="Type"
+            value={
+              <select
+                className={textInputClass}
+                onChange={(event) =>
+                  store.updateStockItem(item.id, {
+                    deviceType: event.target.value as StockItem["deviceType"],
+                    brandId: undefined,
+                    brandName: undefined,
+                    modelIds: [],
+                    compatibleModels: [],
+                  })
+                }
+                disabled={!canManageStock}
+                value={item.deviceType}
+              >
+                {["Smartphone", "Tablette", "Ordinateur", "Console"].map((type) => (
+                  <option key={type}>{type}</option>
+                ))}
+              </select>
+            }
+          />
+          <DetailRow
+            className="py-2"
+            label="Marque"
+            value={
+              <select
+                className={textInputClass}
+                onChange={(event) => {
+                  store.updateStockItem(item.id, {
+                    brandId: event.target.value,
+                    brandName: event.target.value,
+                    modelIds: [],
+                    compatibleModels: [],
+                  });
+                }}
+                disabled={!canManageStock}
+                value={item.brandName ?? ""}
+              >
+                <option value="">Générique</option>
+                {availableBrands.map((b) => (
+                  <option key={b.brand} value={b.brand}>
+                    {b.brand}
+                  </option>
+                ))}
+                <option value="Autre">Autre</option>
+              </select>
+            }
+          />
+          <DetailRow
+            className="py-2"
+            label="Modèles"
+            value={
+              <ModelSelector
+                availableModels={availableModels}
+                selected={item.compatibleModels}
+                disabled={!canManageStock}
+                onChange={(models) => store.updateStockItem(item.id, { modelIds: models, compatibleModels: models })}
+              />
+            }
+          />
+          <DetailRow
+            className="py-2"
+            label="Catégorie"
+            value={
+              <select
+                className={textInputClass}
+                onChange={(event) => {
+                  const category = store.partCategories.find((entry) => entry.id === event.target.value);
+                  store.updateStockItem(item.id, { categoryId: category?.id, categoryName: category?.name });
+                }}
+                disabled={!canManageStock}
+                value={item.categoryId}
+              >
+                {availableCategories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            }
+          />
+          <DetailRow
+            className="py-2"
+            label="Type de produit"
+            value={
+              <select
+                className={textInputClass}
+                disabled={!canManageStock}
+                onChange={(event) => {
+                  const productCategory = event.target.value as StockProductCategory;
+                  const itemType = productCategoryToItemType(productCategory);
+                  const counterSaleEnabled = itemType !== "part";
+                  store.updateStockItem(item.id, {
+                    productCategory,
+                    itemType,
+                    repairEnabled: itemType === "part",
+                    counterSaleEnabled,
+                    counterVisible: counterSaleEnabled,
+                  });
+                }}
+                value={item.productCategory ?? "Pièces détachées"}
+              >
+                {STOCK_PRODUCT_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            }
+          />
+          <DetailRow
+            className="py-2"
+            label="Vente comptoir"
+            value={
+              <button
+                className={cn(
+                  "flex w-full items-center justify-between rounded-[12px] border px-3 py-2 text-left text-sm transition",
+                  item.counterSaleEnabled
+                    ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]"
+                    : "border-[#E8E8E5] bg-white text-[#6B6B6B]",
+                  !canManageStock && "cursor-not-allowed opacity-60",
+                )}
+                disabled={!canManageStock}
+                onClick={() => {
+                  const counterSaleEnabled = !item.counterSaleEnabled;
+                  store.updateStockItem(item.id, { counterSaleEnabled, counterVisible: counterSaleEnabled });
+                }}
+                type="button"
+              >
+                <span>{item.counterSaleEnabled ? "Visible" : "Masqué"}</span>
+                <span
+                  className={cn(
+                    "grid size-5 shrink-0 place-items-center rounded-full border transition",
+                    item.counterSaleEnabled
+                      ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
+                      : "border-[#C4C2BB] text-transparent",
+                  )}
+                >
+                  <Check className="size-3.5" />
+                </span>
+              </button>
+            }
+          />
+          {canViewPurchasePrice && (
+            <DetailRow
+              className="py-2"
+              label="Prix d'achat"
+              value={
+                <input
+                  className={inputClass}
+                  min={0}
+                  onChange={(event) =>
+                    store.updateStockItem(item.id, { purchasePrice: Math.max(0, Number(event.target.value)) })
+                  }
+                  readOnly={!canManageStock}
+                  step="0.01"
+                  type="number"
+                  value={item.purchasePrice}
+                />
+              }
+            />
+          )}
+          <DetailRow
+            className="py-2"
+            label="Prix client"
+            value={
+              <div className="rounded-[10px] border border-[#E8E8E5] bg-white px-3 py-2 text-right">
+                <p className={cn("text-sm font-semibold", tariff ? "text-[#1A1916]" : "text-[#6B6B6B]")}>
+                  {tariffPriceLabel(item, store.priceBookItems)}
+                </p>
+                <p className="mt-0.5 text-[11px] font-medium text-[#167B70]">
+                  {tariffHelperLabel(item, store.priceBookItems)}
+                </p>
+              </div>
+            }
+          />
+          <DetailRow
+            className="py-2"
+            label="Stock actuel"
             value={
               <input
                 className={inputClass}
                 min={0}
                 onChange={(event) =>
-                  store.updateStockItem(item.id, { purchasePrice: Math.max(0, Number(event.target.value)) })
+                  store.updateStockItem(item.id, { quantity: Math.max(0, Number(event.target.value)) })
                 }
                 readOnly={!canManageStock}
-                step="0.01"
                 type="number"
-                value={item.purchasePrice}
+                value={item.quantity}
               />
             }
           />
-        )}
-        <DetailRow
-          className="py-2"
-          label="Prix client"
-          value={
-            <div className="rounded-[10px] border border-[#E8E8E5] bg-white px-3 py-2 text-right">
-              <p className={cn("text-sm font-semibold", tariff ? "text-[#1A1916]" : "text-[#6B6B6B]")}>
-                {tariffPriceLabel(item, store.priceBookItems)}
-              </p>
-              <p className="mt-0.5 text-[11px] font-medium text-[#167B70]">
-                {tariffHelperLabel(item, store.priceBookItems)}
-              </p>
-            </div>
-          }
-        />
-        <DetailRow
-          className="py-2"
-          label="Stock actuel"
-          value={
-            <input
-              className={inputClass}
-              min={0}
-              onChange={(event) =>
-                store.updateStockItem(item.id, { quantity: Math.max(0, Number(event.target.value)) })
-              }
-              readOnly={!canManageStock}
-              type="number"
-              value={item.quantity}
-            />
-          }
-        />
-        <DetailRow
-          className="py-2"
-          label="Seuil d'alerte"
-          value={
-            <input
-              className={inputClass}
-              min={0}
-              onChange={(event) =>
-                store.updateStockItem(item.id, { threshold: Math.max(0, Number(event.target.value)) })
-              }
-              readOnly={!canManageStock}
-              type="number"
-              value={item.threshold}
-            />
-          }
-        />
-        {canViewSupplier && (
           <DetailRow
             className="py-2"
-            label="Fournisseur"
+            label="Seuil d'alerte"
+            value={
+              <input
+                className={inputClass}
+                min={0}
+                onChange={(event) =>
+                  store.updateStockItem(item.id, { threshold: Math.max(0, Number(event.target.value)) })
+                }
+                readOnly={!canManageStock}
+                type="number"
+                value={item.threshold}
+              />
+            }
+          />
+          {canViewSupplier && (
+            <DetailRow
+              className="py-2"
+              label="Fournisseur"
+              value={
+                <input
+                  className={textInputClass}
+                  onChange={(event) => store.updateStockItem(item.id, { supplier: event.target.value })}
+                  readOnly={!canManageStock}
+                  value={item.supplier}
+                />
+              }
+            />
+          )}
+          <DetailRow
+            className="py-2"
+            label="Délai moyen"
             value={
               <input
                 className={textInputClass}
-                onChange={(event) => store.updateStockItem(item.id, { supplier: event.target.value })}
+                onChange={(event) => store.updateStockItem(item.id, { leadTime: event.target.value })}
                 readOnly={!canManageStock}
-                value={item.supplier}
+                value={item.leadTime}
               />
             }
           />
-        )}
-        <DetailRow
-          className="py-2"
-          label="Délai moyen"
-          value={
-            <input
-              className={textInputClass}
-              onChange={(event) => store.updateStockItem(item.id, { leadTime: event.target.value })}
-              readOnly={!canManageStock}
-              value={item.leadTime}
-            />
-          }
-        />
-      </dl>
+        </dl>
+      )}
+      <div className="mt-4 space-y-4 border-[#E8E8E5] border-t pt-4">
+        <TracePanel title="Données fournisseur" icon={Package}>
+          <dl className="divide-y divide-[#E8E8E5] px-3 py-1">
+            {[
+              ["Nom brut fournisseur", displayText(item.rawName)],
+              ["EAN", displayText(item.ean)],
+              ["Garantie fournisseur", displayText(item.supplierWarranty)],
+              ["Marque fournisseur", displayText(item.supplierBrand)],
+            ].map(([label, value]) => (
+              <div key={label} className="grid grid-cols-[120px_minmax(0,1fr)] gap-3 py-2">
+                <dt className="text-[#6B6B6B] text-xs">{label}</dt>
+                <dd className="min-w-0 break-words text-[#1A1916] text-xs font-medium">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </TracePanel>
+        <TracePanel title="Origine des pièces" icon={FileText}>
+          {entries.length ? (
+            <div className="overflow-x-auto">
+              <table className={`${tableClassName} min-w-[760px]`}>
+                <thead className={tableHeadClassName}>
+                  <tr>
+                    <th className="px-3 py-2">Date</th>
+                    <th className="px-3 py-2">Fournisseur</th>
+                    <th className="px-3 py-2">Facture</th>
+                    <th className="px-3 py-2">Achat</th>
+                    <th className="px-3 py-2 text-right">Qté entrée</th>
+                    {canViewPurchasePrice && <th className="px-3 py-2 text-right">Prix achat</th>}
+                    <th className="px-3 py-2 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.map((entry) => (
+                    <tr key={entry.id}>
+                      <td className={cn(tableCellClassName, "px-3 py-2 text-xs")}>{shortDate(entry.date)}</td>
+                      <td className={cn(tableCellClassName, "px-3 py-2 text-xs")}>
+                        {canViewSupplier ? entry.supplier || "—" : "Masqué"}
+                      </td>
+                      <td className={cn(tableCellClassName, "px-3 py-2 font-mono text-xs")}>
+                        {entry.invoiceNumber || "—"}
+                      </td>
+                      <td className={cn(tableCellClassName, "px-3 py-2 font-mono text-xs")}>
+                        {entry.purchaseId || "—"}
+                      </td>
+                      <td className={cn(tableCellClassName, "px-3 py-2 text-right tabular-nums")}>{entry.quantity}</td>
+                      {canViewPurchasePrice && (
+                        <td className={cn(tableCellClassName, "px-3 py-2 text-right tabular-nums")}>
+                          {formatEuro(entry.unitCost ?? 0)}
+                        </td>
+                      )}
+                      <td className={cn(tableCellClassName, "px-3 py-2 text-right")}>
+                        <div className="flex justify-end gap-1.5">
+                          <button
+                            className="rounded-full border border-[#E8E8E5] px-2 py-1 text-[#1A1916] text-[11px] disabled:opacity-40"
+                            disabled={!entry.invoiceUrl}
+                            onClick={() => entry.invoiceUrl && window.open(entry.invoiceUrl, "_blank")}
+                            type="button"
+                          >
+                            Facture
+                          </button>
+                          <button
+                            className="rounded-full border border-[#E8E8E5] px-2 py-1 text-[#1A1916] text-[11px]"
+                            onClick={() => router.push("/dashboard/achats")}
+                            type="button"
+                          >
+                            Achat
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <EmptyLinkedState>Aucune entrée fournisseur reliée à cette référence.</EmptyLinkedState>
+          )}
+        </TracePanel>
+
+        <TracePanel title="Historique des sorties atelier" icon={Wrench}>
+          {trace.repairUsages.length ? (
+            <div className="overflow-x-auto">
+              <table className={`${tableClassName} min-w-[860px]`}>
+                <thead className={tableHeadClassName}>
+                  <tr>
+                    <th className="px-3 py-2">Date</th>
+                    <th className="px-3 py-2">Réparation</th>
+                    <th className="px-3 py-2">Client</th>
+                    <th className="px-3 py-2">Appareil</th>
+                    <th className="px-3 py-2">IMEI</th>
+                    <th className="px-3 py-2 text-right">Qté sortie</th>
+                    <th className="px-3 py-2">Technicien</th>
+                    <th className="px-3 py-2">Statut</th>
+                    <th className="px-3 py-2 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {trace.repairUsages.map(({ repair, customer, part, usedAt, technician }) => (
+                    <tr key={`${repair.id}-${part.stockItemId}-${part.name}`}>
+                      <td className={cn(tableCellClassName, "px-3 py-2 text-xs")}>{shortDate(usedAt)}</td>
+                      <td className={cn(tableCellClassName, "px-3 py-2 font-mono text-xs")}>{repair.number}</td>
+                      <td className={cn(tableCellClassName, "px-3 py-2 text-xs")}>{customer?.name || "—"}</td>
+                      <td className={cn(tableCellClassName, "px-3 py-2 text-xs")}>{repair.device}</td>
+                      <td className={cn(tableCellClassName, "px-3 py-2 font-mono text-[11px]")}>
+                        {repair.imei || "—"}
+                      </td>
+                      <td className={cn(tableCellClassName, "px-3 py-2 text-right tabular-nums")}>{part.quantity}</td>
+                      <td className={cn(tableCellClassName, "px-3 py-2 text-xs")}>{technician || "—"}</td>
+                      <td className={cn(tableCellClassName, "px-3 py-2 text-xs")}>{repair.status}</td>
+                      <td className={cn(tableCellClassName, "px-3 py-2 text-right")}>
+                        <button
+                          className="rounded-full border border-[#E8E8E5] px-2 py-1 text-[#1A1916] text-[11px]"
+                          onClick={() => {
+                            store.setSelected("repair", repair.id);
+                            router.push(`/dashboard/dossiers/${repair.id}`);
+                          }}
+                          type="button"
+                        >
+                          Dossier
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <EmptyLinkedState>Aucune sortie atelier liée à cette pièce.</EmptyLinkedState>
+          )}
+        </TracePanel>
+
+        <TracePanel title="Mouvements" icon={History}>
+          {trace.movements.length || trace.saleUsages.length ? (
+            <div className="space-y-2 p-3">
+              {trace.movements.map((movement) => (
+                <div key={movement.id} className="rounded-[10px] border border-[#E8E8E5] bg-white px-3 py-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-[#1A1916] text-xs">{MOVEMENT_LABELS[movement.movementType]}</p>
+                      <p className="mt-0.5 text-[#6B6B6B] text-[11px]">
+                        {movement.reason || movement.note || movement.sourceModule}
+                      </p>
+                      <p className="mt-1 font-mono text-[#8A8A85] text-[10.5px]">{shortDate(movement.createdAt)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p
+                        className={cn(
+                          "font-semibold text-sm tabular-nums",
+                          movement.quantityDelta < 0 ? "text-[#B42318]" : "text-[#167B70]",
+                        )}
+                      >
+                        {movement.quantityDelta > 0 ? "+" : ""}
+                        {movement.quantityDelta}
+                      </p>
+                      <p className="text-[#6B6B6B] text-[11px]">
+                        {movement.quantityBefore} → {movement.quantityAfter}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {trace.saleUsages.map(({ sale, line, customer }) => (
+                <div
+                  key={`${sale.id}-${line.stockItemId}`}
+                  className="rounded-[10px] border border-[#E8E8E5] bg-white px-3 py-2"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-[#1A1916] text-xs">Vente comptoir</p>
+                      <p className="mt-0.5 text-[#6B6B6B] text-[11px]">
+                        {sale.number} · {customer?.name || sale.customerName}
+                      </p>
+                      <p className="mt-1 font-mono text-[#8A8A85] text-[10.5px]">{shortDate(sale.createdAt)}</p>
+                    </div>
+                    <p className="font-semibold text-[#B42318] text-sm tabular-nums">-{line.quantity}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyLinkedState>Aucun mouvement stock lié à cette référence.</EmptyLinkedState>
+          )}
+        </TracePanel>
+      </div>
       <div className="mt-4 grid gap-2 border-[#E8E8E5] border-t pt-4">
+        <div className="grid grid-cols-2 gap-2">
+          <SecondaryButton
+            className="h-10 w-full"
+            disabled={!canManageStock}
+            onClick={() => {
+              const delta = Number(window.prompt("Ajustement stock (+ ou -)", "1") || 0);
+              if (!Number.isFinite(delta) || delta === 0) {
+                toast.error("Ajustement invalide");
+                return;
+              }
+              store.adjustStock(item.id, delta, "Ajustement depuis fiche pièce");
+              toast.success("Ajustement stock enregistré");
+            }}
+          >
+            Ajuster stock
+          </SecondaryButton>
+          <SecondaryButton className="h-10 w-full" onClick={() => openStockLabel(item, qrDataUrl, false)}>
+            <Tags className="size-4" />
+            Étiquette
+          </SecondaryButton>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <SecondaryButton className="h-10 w-full" onClick={() => openStockLabel(item, qrDataUrl, true)}>
+            <Printer className="size-4" />
+            Imprimer
+          </SecondaryButton>
+          <SecondaryButton
+            className="h-10 w-full"
+            onClick={() => router.push(trace.repairUsages.length ? "/dashboard/reparations" : "/dashboard/achats")}
+          >
+            Voir liens
+          </SecondaryButton>
+        </div>
         <PrimaryButton
           className="h-10 w-full"
           disabled={!canManageStock}
@@ -1248,19 +1807,24 @@ function StockMetricCard({
 }>) {
   return (
     <Panel className="h-[116px] p-5">
-      <div className="flex h-full flex-col justify-center gap-1">
-        <p className="text-[#6B6B6B] text-[13px]">{label}</p>
-        <p className="mt-1 font-semibold text-[28px] text-[#1A1916] leading-none tracking-tight">{value}</p>
-        {trend ? (
-          <p
-            className={
-              negative ? "mt-1 font-medium text-[#C84848] text-[13px]" : "mt-1 font-medium text-[#2A9D8F] text-[13px]"
-            }
-          >
-            {trend}
-          </p>
-        ) : null}
-        <p className="mt-0.5 text-[#8A8A8A] text-[12px]">{helper}</p>
+      <div className="flex h-full items-center gap-3">
+        <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#2A9D8F]">
+          <Icon className="size-4" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-[#6B6B6B] text-[13px]">{label}</p>
+          <p className="mt-1 font-semibold text-[28px] text-[#1A1916] leading-none tracking-tight">{value}</p>
+          {trend ? (
+            <p
+              className={
+                negative ? "mt-1 font-medium text-[#C84848] text-[13px]" : "mt-1 font-medium text-[#2A9D8F] text-[13px]"
+              }
+            >
+              {trend}
+            </p>
+          ) : null}
+          <p className="mt-0.5 text-[#8A8A8A] text-[12px]">{helper}</p>
+        </div>
       </div>
     </Panel>
   );
@@ -1374,7 +1938,9 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
         threshold: Math.max(0, Number(threshold) || 0),
         skipModelInference: true,
       });
-      toast.success(sale > 0 ? "Article ajouté au stock." : "Article ajouté au stock — prix à définir avant encaissement.");
+      toast.success(
+        sale > 0 ? "Article ajouté au stock." : "Article ajouté au stock — prix à définir avant encaissement.",
+      );
       onClose();
       return;
     }
@@ -1501,167 +2067,167 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
               {/* Type d'appareil */}
               <label className="block">
                 <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Type</span>
-            <select
-              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
-              value={deviceType}
-              onChange={(event) => {
-                const nextType = event.target.value;
-                const nextCategory = categoryMapping[nextType] || "smartphone";
-                const brands = getDeviceBrands(nextCategory);
-                const firstBrand = brands[0]?.brand || "Autre";
-                const firstCategory = store.partCategories.find((cat) =>
-                  cat.deviceTypes.includes(nextType as DeviceType),
-                );
-                setDeviceType(nextType);
-                setBrandName(firstBrand);
-                setCategoryId(firstCategory?.id ?? "cat_other");
-                setSelectedModel("");
-                // La nouvelle catégorie peut être incompatible avec la qualité actuelle.
-                const nextCategoryName = firstCategory?.name ?? "";
-                if (!isQualityValidForCategory(quality, nextCategoryName)) {
-                  setQuality(getDefaultQualityForCategory(nextCategoryName));
-                  setCustomQuality("");
-                }
-              }}
-            >
-              {["Smartphone", "Tablette", "Ordinateur", "Console"].map((type) => (
-                <option key={type}>{type}</option>
-              ))}
-            </select>
-          </label>
-
-          {/* Marque */}
-          <label className="block">
-            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Marque</span>
-            <select
-              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
-              value={brandName}
-              onChange={(event) => {
-                setBrandName(event.target.value);
-                setSelectedModel("");
-              }}
-            >
-              {availableBrands.map((b) => (
-                <option key={b.brand} value={b.brand}>
-                  {b.brand}
-                </option>
-              ))}
-              <option value="Autre">Autre</option>
-            </select>
-          </label>
-
-          {/* Modèle (sélection guidée — pas de saisie libre) */}
-          <label className="block md:col-span-2">
-            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Modèle</span>
-            <select
-              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
-              value={selectedModel}
-              onChange={(event) => setSelectedModel(event.target.value)}
-              required
-            >
-              <option value="">Sélectionnez un modèle…</option>
-              {availableModels.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {/* Catégorie */}
-          <label className="block">
-            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Catégorie</span>
-            <select
-              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
-              value={categoryId}
-              onChange={(event) => {
-                const nextId = event.target.value;
-                const nextCategory = store.partCategories.find((c) => c.id === nextId);
-                const nextName = nextCategory?.name ?? "";
-                setCategoryId(nextId);
-                // Si l'ancienne qualité n'est plus valide pour la nouvelle catégorie
-                // (ex: "Hard OLED" + "Batterie"), on reset au défaut. Sinon on
-                // conserve le choix utilisateur.
-                if (!isQualityValidForCategory(quality, nextName)) {
-                  setQuality(getDefaultQualityForCategory(nextName));
-                  setCustomQuality("");
-                }
-              }}
-            >
-              {availableCategories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {/* Gamme / Qualité (contextuelle selon la catégorie) */}
-          <label className="block">
-            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Gamme</span>
-            <select
-              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
-              value={quality}
-              onChange={(event) => setQuality(event.target.value)}
-            >
-              {quality === "" && <option value="">Choisir une qualité…</option>}
-              {availableQualities.map((q) => (
-                <option key={q} value={q}>
-                  {q}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {/* Champ libre quand la qualité = "Autre" */}
-          {quality === "Autre" && (
-            <label className="block md:col-span-2">
-              <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">
-                Préciser la qualité
-              </span>
-              <input
-                type="text"
-                className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
-                placeholder="Ex : Service Pack"
-                value={customQuality}
-                onChange={(e) => setCustomQuality(e.target.value)}
-              />
-            </label>
-          )}
-
-          {/* Aperçu auto-rempli (nom / SKU) avec override possible */}
-          <div className="rounded-xl border border-[#E8E8E5] bg-[#FFFFFF] p-3 md:col-span-2">
-            <p className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Auto-rempli</p>
-            <div className="mt-2 grid gap-2 md:grid-cols-2">
-              <label className="block">
-                <span className="text-[#6B6B6B] text-[11px]">Nom (modifiable)</span>
-                <input
-                  type="text"
-                  className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[13.5px] outline-none focus:border-[#2A9D8F]"
-                  placeholder={suggestedName || "Sélectionnez un modèle"}
-                  value={nameOverride}
-                  onChange={(e) => setNameOverride(e.target.value)}
-                />
+                <select
+                  className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+                  value={deviceType}
+                  onChange={(event) => {
+                    const nextType = event.target.value;
+                    const nextCategory = categoryMapping[nextType] || "smartphone";
+                    const brands = getDeviceBrands(nextCategory);
+                    const firstBrand = brands[0]?.brand || "Autre";
+                    const firstCategory = store.partCategories.find((cat) =>
+                      cat.deviceTypes.includes(nextType as DeviceType),
+                    );
+                    setDeviceType(nextType);
+                    setBrandName(firstBrand);
+                    setCategoryId(firstCategory?.id ?? "cat_other");
+                    setSelectedModel("");
+                    // La nouvelle catégorie peut être incompatible avec la qualité actuelle.
+                    const nextCategoryName = firstCategory?.name ?? "";
+                    if (!isQualityValidForCategory(quality, nextCategoryName)) {
+                      setQuality(getDefaultQualityForCategory(nextCategoryName));
+                      setCustomQuality("");
+                    }
+                  }}
+                >
+                  {["Smartphone", "Tablette", "Ordinateur", "Console"].map((type) => (
+                    <option key={type}>{type}</option>
+                  ))}
+                </select>
               </label>
-              <label className="block">
-                <span className="text-[#6B6B6B] text-[11px]">SKU (modifiable)</span>
-                <input
-                  type="text"
-                  className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[13.5px] font-mono outline-none focus:border-[#2A9D8F]"
-                  placeholder={suggestedSku || "Sélectionnez un modèle"}
-                  value={skuOverride}
-                  onChange={(e) => setSkuOverride(e.target.value)}
-                />
-              </label>
-            </div>
-          </div>
 
-          {!linkedPriceBook && selectedModel && (
-            <div className="rounded-xl border border-[#E8E8E5] bg-white p-3 text-[12px] text-[#6B6B6B] md:col-span-2">
-              Aucun tarif client lié pour cette sélection. Vous pourrez en créer un dans Paramètres → Tarifs /
-              Prestations.
-            </div>
-          )}
+              {/* Marque */}
+              <label className="block">
+                <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Marque</span>
+                <select
+                  className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+                  value={brandName}
+                  onChange={(event) => {
+                    setBrandName(event.target.value);
+                    setSelectedModel("");
+                  }}
+                >
+                  {availableBrands.map((b) => (
+                    <option key={b.brand} value={b.brand}>
+                      {b.brand}
+                    </option>
+                  ))}
+                  <option value="Autre">Autre</option>
+                </select>
+              </label>
+
+              {/* Modèle (sélection guidée — pas de saisie libre) */}
+              <label className="block md:col-span-2">
+                <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Modèle</span>
+                <select
+                  className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+                  value={selectedModel}
+                  onChange={(event) => setSelectedModel(event.target.value)}
+                  required
+                >
+                  <option value="">Sélectionnez un modèle…</option>
+                  {availableModels.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {/* Catégorie */}
+              <label className="block">
+                <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Catégorie</span>
+                <select
+                  className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+                  value={categoryId}
+                  onChange={(event) => {
+                    const nextId = event.target.value;
+                    const nextCategory = store.partCategories.find((c) => c.id === nextId);
+                    const nextName = nextCategory?.name ?? "";
+                    setCategoryId(nextId);
+                    // Si l'ancienne qualité n'est plus valide pour la nouvelle catégorie
+                    // (ex: "Hard OLED" + "Batterie"), on reset au défaut. Sinon on
+                    // conserve le choix utilisateur.
+                    if (!isQualityValidForCategory(quality, nextName)) {
+                      setQuality(getDefaultQualityForCategory(nextName));
+                      setCustomQuality("");
+                    }
+                  }}
+                >
+                  {availableCategories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {/* Gamme / Qualité (contextuelle selon la catégorie) */}
+              <label className="block">
+                <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Gamme</span>
+                <select
+                  className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+                  value={quality}
+                  onChange={(event) => setQuality(event.target.value)}
+                >
+                  {quality === "" && <option value="">Choisir une qualité…</option>}
+                  {availableQualities.map((q) => (
+                    <option key={q} value={q}>
+                      {q}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {/* Champ libre quand la qualité = "Autre" */}
+              {quality === "Autre" && (
+                <label className="block md:col-span-2">
+                  <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">
+                    Préciser la qualité
+                  </span>
+                  <input
+                    type="text"
+                    className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+                    placeholder="Ex : Service Pack"
+                    value={customQuality}
+                    onChange={(e) => setCustomQuality(e.target.value)}
+                  />
+                </label>
+              )}
+
+              {/* Aperçu auto-rempli (nom / SKU) avec override possible */}
+              <div className="rounded-xl border border-[#E8E8E5] bg-[#FFFFFF] p-3 md:col-span-2">
+                <p className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Auto-rempli</p>
+                <div className="mt-2 grid gap-2 md:grid-cols-2">
+                  <label className="block">
+                    <span className="text-[#6B6B6B] text-[11px]">Nom (modifiable)</span>
+                    <input
+                      type="text"
+                      className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[13.5px] outline-none focus:border-[#2A9D8F]"
+                      placeholder={suggestedName || "Sélectionnez un modèle"}
+                      value={nameOverride}
+                      onChange={(e) => setNameOverride(e.target.value)}
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-[#6B6B6B] text-[11px]">SKU (modifiable)</span>
+                    <input
+                      type="text"
+                      className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[13.5px] font-mono outline-none focus:border-[#2A9D8F]"
+                      placeholder={suggestedSku || "Sélectionnez un modèle"}
+                      value={skuOverride}
+                      onChange={(e) => setSkuOverride(e.target.value)}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {!linkedPriceBook && selectedModel && (
+                <div className="rounded-xl border border-[#E8E8E5] bg-white p-3 text-[12px] text-[#6B6B6B] md:col-span-2">
+                  Aucun tarif client lié pour cette sélection. Vous pourrez en créer un dans Paramètres → Tarifs /
+                  Prestations.
+                </div>
+              )}
             </>
           )}
 

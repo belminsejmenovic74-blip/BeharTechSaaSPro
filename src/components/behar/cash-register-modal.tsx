@@ -52,6 +52,7 @@ import { getInternalDocumentUrl } from "@/lib/documents/document-actions";
 import { realProductImage } from "@/lib/real-product-images";
 import { getWorkshopCountryConfig } from "@/lib/workshop-country";
 
+import { PartReferenceLink } from "./part-reference-link";
 import { useDocument } from "./print-provider";
 
 type CartLine = Omit<SaleLine, "id">;
@@ -1090,9 +1091,16 @@ function ProductCard({ item, onClick }: Readonly<{ item: StockItem; onClick: () 
   const lowStock = item.stock <= (item.threshold || 0);
   const hasPrice = item.salePrice > 0;
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onClick();
+        }
+      }}
       aria-label={hasPrice ? `Ajouter ${item.name} au panier` : `${item.name} - Prix à définir`}
       className={`group flex min-h-[236px] flex-col overflow-hidden rounded-[8px] border bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.03)] transition hover:-translate-y-0.5 active:scale-[0.99] ${
         hasPrice
@@ -1116,11 +1124,13 @@ function ProductCard({ item, onClick }: Readonly<{ item: StockItem; onClick: () 
           <Layers className="size-3 text-[#8A8A8A]" strokeWidth={1.8} />
           <span className={lowStock ? "text-[#B42318]" : "text-[#6B6B6B]"}>Stock {item.stock}</span>
           {item.sku ? (
-            <span className="ml-auto truncate font-mono text-[#8A8A8A] text-[10.5px]">{item.sku}</span>
+            <span className="ml-auto truncate text-[10.5px]">
+              <PartReferenceLink reference={item.sku} />
+            </span>
           ) : null}
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 

@@ -67,6 +67,7 @@ import {
   selectCls,
   StatusBadge,
 } from "./reconditioning-ui";
+import { PartReferenceLink } from "./part-reference-link";
 
 export function ReconditioningDeviceDetail({ fileId, onBack }: Readonly<{ fileId: string; onBack: () => void }>) {
   const file = useReconditioningStore((s) => s.files.find((f) => f.id === fileId));
@@ -1044,7 +1045,11 @@ function TraceabilitySection({ file }: Readonly<{ file: ReconditioningFile }>) {
               <span className="min-w-0 truncate font-medium text-[#1A1916]">
                 {part.label || "Pièce atelier"}
                 <span className="block truncate font-normal text-[#9B9B96]">
-                  {part.sku || part.reference || "Réf. non renseignée"}
+                  {part.sku || part.reference ? (
+                    <PartReferenceLink reference={part.sku || part.reference} />
+                  ) : (
+                    "Réf. non renseignée"
+                  )}
                 </span>
               </span>
               <span className="truncate text-[#6B6B6B]">{part.supplier || file.supplierName || "Interne"}</span>

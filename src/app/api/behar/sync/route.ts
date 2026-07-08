@@ -6,6 +6,7 @@ import type { NormalizedBusinessState } from "@/lib/data/normalized-sync";
 import { getCustomerTrackingPath, getTrackingCode } from "@/lib/customer-tracking";
 import { makePublicUrl } from "@/lib/public-access";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { normalizePartReference } from "@/lib/stock-reference";
 
 export const dynamic = "force-dynamic";
 
@@ -482,27 +483,161 @@ export async function POST(request: Request) {
     name: text(item.name || item.part, "Article"),
     category: text(item.categoryName || item.category) || null,
     item_type: stockItemType(item.itemType, item.productCategory || item.categoryName || item.category),
+    canonical_reference: normalizePartReference(item.sku || item.reference || item.internalCode) || null,
+    internal_code: text(item.internalCode) || null,
+    quality: text(item.quality) || null,
     repair_enabled: item.repairEnabled !== false,
     counter_sale_enabled: item.counterSaleEnabled === true,
     active: item.active !== false,
     purchase_price: money(item.purchasePrice),
+    average_purchase_price: money(item.averagePurchasePrice),
+    last_purchase_price: money(item.lastPurchasePrice),
     sale_price: money(item.salePrice),
     quantity: money(item.stock ?? item.quantity) ?? 0,
     threshold: money(item.threshold),
     supplier: text(item.supplier) || null,
+    primary_supplier_id: item.primarySupplierId ? stableUuid(`supplier:${workshopId}:${item.primarySupplierId}`) : null,
+    primary_supplier_name: text(item.primarySupplier || item.supplier) || null,
+    origin_purchase_id: item.originPurchaseId ? stableUuid(`purchase:${workshopId}:${item.originPurchaseId}`) : null,
+    origin_supplier_invoice_id: item.originSupplierInvoiceId
+      ? stableUuid(`supplier_invoice:${workshopId}:${item.originSupplierInvoiceId}`)
+      : null,
+    origin_supplier_invoice_number: text(item.originSupplierInvoiceNumber) || null,
+    origin_supplier_invoice_line_id: item.originSupplierInvoiceLineId
+      ? stableUuid(`supplier_invoice_line:${workshopId}:${item.originSupplierInvoiceLineId}`)
+      : null,
     reconditioning_file_id: text(item.reconditioningFileId) || null,
     created_at: cleanIso(item.createdAt),
     updated_at: cleanIso(item.updatedAt),
   }));
   if (stockItems.length) await supabase.from("stock_items").upsert(stockItems, { onConflict: "id" });
 
-  const stockMovements = ((payload as any).stockMovements ?? []).map((movement: any) => ({
+  const suppliers = (payload.suppliers ?? []).map((supplier) => ({
+    id: stableUuid(`supplier:${workshopId}:${supplier.id}`),
+    workshop_id: workshopId,
+    name: text(supplier.name, "Fournisseur"),
+    email: text(supplier.email) || null,
+    phone: text(supplier.phone) || null,
+    address: text(supplier.address) || null,
+    vat_number: text(supplier.vatNumber) || null,
+    notes: text(supplier.notes) || null,
+    created_by: text(supplier.createdBy) || null,
+    created_by_name: text(supplier.createdByName) || null,
+    created_at: cleanIso(supplier.createdAt),
+    updated_at: cleanIso(supplier.updatedAt),
+  }));
+  if (suppliers.length) await supabase.from("suppliers").upsert(suppliers, { onConflict: "id" });
+
+  const supplierInvoices = (payload.supplierInvoices ?? []).map((invoice) => ({
+    id: stableUuid(`supplier_invoice:${workshopId}:${invoice.id}`),
+    workshop_id: workshopId,
+    supplier_id: invoice.supplierId ? stableUuid(`supplier:${workshopId}:${invoice.supplierId}`) : null,
+    supplier_name: text(invoice.supplierName, "Fournisseur"),
+    purchase_date: cleanIso(invoice.purchaseDate),
+    invoice_number: text(invoice.invoiceNumber),
+    original_file_name: text(invoice.originalFileName) || null,
+    original_file_url: text(invoice.originalFileUrl) || null,
+    original_document_id: invoice.originalDocumentId
+      ? stableUuid(`document:${workshopId}:${invoice.originalDocumentId}`)
+      : null,
+    total_ht: money(invoice.totalExcludingTax) ?? 0,
+    tax_amount: money(invoice.taxAmount) ?? 0,
+    total_ttc: money(invoice.totalIncludingTax) ?? 0,
+    status: text(invoice.status, "reçu"),
+    source: text(invoice.source, "manuel"),
+    textract_json: invoice.textractJson && typeof invoice.textractJson === "object" ? invoice.textractJson : null,
+    created_by: text(invoice.createdBy) || null,
+    created_by_name: text(invoice.createdByName) || null,
+    created_at: cleanIso(invoice.createdAt),
+    updated_at: cleanIso(invoice.updatedAt),
+  }));
+  if (supplierInvoices.length) await supabase.from("supplier_invoices").upsert(supplierInvoices, { onConflict: "id" });
+
+  const purchases = (payload.purchases ?? []).map((purchase) => ({
+    id: stableUuid(`purchase:${workshopId}:${purchase.id}`),
+    workshop_id: workshopId,
+    shop_id: text(purchase.shopId) || null,
+    number: text(purchase.number),
+    kind: text(purchase.kind, "piece"),
+    source: text(purchase.source, "Manuel"),
+    label: text(purchase.label, "Achat"),
+    reference: text(purchase.reference) || null,
+    canonical_reference: normalizePartReference(purchase.reference || purchase.internalCode) || null,
+    internal_code: text(purchase.internalCode) || null,
+    category: text(purchase.category) || null,
+    compatible_model: text(purchase.compatibleModel) || null,
+    quality: text(purchase.quality) || null,
+    supplier_id: purchase.supplierId ? stableUuid(`supplier:${workshopId}:${purchase.supplierId}`) : null,
+    supplier_name: text(purchase.supplier) || null,
+    invoice_number: text(purchase.invoiceNumber) || null,
+    quantity: money(purchase.quantity) ?? 0,
+    unit_cost: money(purchase.unitCost) ?? 0,
+    tax_rate: money(purchase.taxRate),
+    tax_amount: money(purchase.taxAmount),
+    total_ht: money(purchase.totalExcludingTax),
+    total_ttc: money(purchase.totalIncludingTax ?? purchase.total),
+    total: money(purchase.total) ?? 0,
+    currency: text(purchase.currency) || null,
+    purchase_date: cleanIso(purchase.date),
+    stock_item_id: purchase.stockItemId ? stableUuid(`stock:${workshopId}:${purchase.stockItemId}`) : null,
+    supplier_invoice_id: purchase.supplierInvoiceId
+      ? stableUuid(`supplier_invoice:${workshopId}:${purchase.supplierInvoiceId}`)
+      : null,
+    supplier_invoice_line_id: purchase.supplierInvoiceLineId
+      ? stableUuid(`supplier_invoice_line:${workshopId}:${purchase.supplierInvoiceLineId}`)
+      : null,
+    document_id: purchase.documentId ? stableUuid(`document:${workshopId}:${purchase.documentId}`) : null,
+    original_file_name: text(purchase.originalFileName) || null,
+    original_file_url: text(purchase.originalFileUrl) || null,
+    repair_id: purchase.repairId ? stableUuid(`repair:${workshopId}:${purchase.repairId}`) : null,
+    reconditioning_file_id: text(purchase.reconditioningFileId) || null,
+    conditionne_record_id: text(purchase.conditionneRecordId) || null,
+    note: text(purchase.note) || null,
+    created_by: text(purchase.createdBy) || null,
+    created_by_name: text(purchase.createdByName) || null,
+    created_at: cleanIso(purchase.createdAt),
+  }));
+  if (purchases.length) await supabase.from("purchases").upsert(purchases, { onConflict: "id" });
+
+  const supplierInvoiceLines = (payload.supplierInvoiceLines ?? []).map((line) => ({
+    id: stableUuid(`supplier_invoice_line:${workshopId}:${line.id}`),
+    workshop_id: workshopId,
+    supplier_invoice_id: stableUuid(`supplier_invoice:${workshopId}:${line.supplierInvoiceId}`),
+    purchase_id: line.purchaseId ? stableUuid(`purchase:${workshopId}:${line.purchaseId}`) : null,
+    stock_item_id: line.stockItemId ? stableUuid(`stock:${workshopId}:${line.stockItemId}`) : null,
+    item_name: text(line.itemName, "Article"),
+    reference: text(line.reference) || null,
+    sku: text(line.sku) || null,
+    canonical_reference: normalizePartReference(line.sku || line.reference || line.internalCode) || null,
+    internal_code: text(line.internalCode) || null,
+    category: text(line.category) || null,
+    compatible_model: text(line.compatibleModel) || null,
+    quality: text(line.quality) || null,
+    quantity_purchased: money(line.quantityPurchased) ?? 0,
+    unit_purchase_price_ht: money(line.unitPurchasePriceExclTax) ?? 0,
+    tax_rate: money(line.taxRate),
+    tax_amount: money(line.taxAmount),
+    line_total_ht: money(line.lineTotalExclTax) ?? 0,
+    line_total_ttc: money(line.lineTotalInclTax),
+    supplier_id: line.supplierId ? stableUuid(`supplier:${workshopId}:${line.supplierId}`) : null,
+    supplier_name: text(line.supplierName) || null,
+    invoice_id: stableUuid(`supplier_invoice:${workshopId}:${line.invoiceId || line.supplierInvoiceId}`),
+    created_at: cleanIso(line.createdAt),
+  }));
+  if (supplierInvoiceLines.length) {
+    await supabase.from("supplier_invoice_lines").upsert(supplierInvoiceLines, { onConflict: "id" });
+  }
+
+  const stockMovements = (payload.stockMovements ?? []).map((movement) => ({
     id: stableUuid(`stock_movement:${workshopId}:${movement.id}`),
     organization_id: workshopId,
     shop_id: text(movement.shopId) || null,
     stock_item_id: movement.stockItemId
       ? stableUuid(`stock:${workshopId}:${movement.stockItemId}`)
       : text(movement.stockItemId),
+    part_reference: text(movement.partReference) || null,
+    canonical_reference: normalizePartReference(movement.partReference || movement.internalCode) || null,
+    internal_code: text(movement.internalCode) || null,
     movement_type: text(movement.movementType, "manual_adjustment"),
     quantity_delta: money(movement.quantityDelta) ?? 0,
     quantity_before: money(movement.quantityBefore) ?? 0,
@@ -519,8 +654,13 @@ export async function POST(request: Request) {
       ? stableUuid(`purchase:${workshopId}:${movement.linkedPurchaseId}`)
       : null,
     linked_supplier_invoice_id: text(movement.linkedSupplierInvoiceId) || null,
+    linked_supplier_invoice_line_id: movement.linkedSupplierInvoiceLineId
+      ? stableUuid(`supplier_invoice_line:${workshopId}:${movement.linkedSupplierInvoiceLineId}`)
+      : null,
     actor_id: text(movement.actorId) || null,
+    actor_name: text(movement.actorName) || null,
     created_at: cleanIso(movement.createdAt),
+    note: text(movement.note) || null,
     metadata: movement.metadata && typeof movement.metadata === "object" ? movement.metadata : {},
   }));
   if (stockMovements.length) await supabase.from("stock_movements").upsert(stockMovements, { onConflict: "id" });
