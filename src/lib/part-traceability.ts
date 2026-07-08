@@ -51,6 +51,30 @@ export function findStockItemByPartReference(
   return state.stockItems.find((item) => stockReferenceMatches(item, query));
 }
 
+function stockMovementUniqueKey(movement: StockMovement) {
+  return [
+    movement.movementType,
+    movement.linkedPurchaseId,
+    movement.linkedSupplierInvoiceId,
+    movement.linkedSupplierInvoiceLineId,
+    normalizePartReference(movement.partReference),
+    movement.stockItemId,
+    movement.quantityDelta,
+    movement.quantityBefore,
+    movement.quantityAfter,
+  ].join("|");
+}
+
+function uniqueStockMovements(movements: StockMovement[]) {
+  const seen = new Set<string>();
+  return movements.filter((movement) => {
+    const key = stockMovementUniqueKey(movement);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export function getPartTraceability(
   state: Pick<
     StoreState,
@@ -90,12 +114,14 @@ export function getPartTraceability(
   );
   const supplierInvoices = state.supplierInvoices.filter((invoice) => invoiceIds.has(invoice.id));
 
-  const movements = state.stockMovements.filter((movement) => {
-    if (stockItemId && movement.stockItemId === stockItemId) return true;
-    return [movement.partReference, movement.internalCode].some((value) =>
-      references.has(normalizePartReference(value)),
-    );
-  });
+  const movements = uniqueStockMovements(
+    state.stockMovements.filter((movement) => {
+      if (stockItemId && movement.stockItemId === stockItemId) return true;
+      return [movement.partReference, movement.internalCode].some((value) =>
+        references.has(normalizePartReference(value)),
+      );
+    }),
+  );
 
   const repairUsages = state.repairs.flatMap((repair) =>
     repair.parts

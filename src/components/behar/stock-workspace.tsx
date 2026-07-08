@@ -67,10 +67,58 @@ import { StockImportModal } from "./stock-import-modal";
 import { SupplierInvoiceImportModal } from "./supplier-invoice-import-modal";
 
 function findLinkedTariff(item: StockItem, priceBookItems: PriceBookItem[]) {
-  return (
-    priceBookItems.find((entry) => entry.id === item.priceBookItemId || entry.stockItemId === item.id) ??
-    priceBookItems.find((entry) => Boolean(item.sku) && entry.sku === item.sku)
+  return findLinkedTariffs(item, priceBookItems)[0];
+}
+
+function comparable(value?: string) {
+  return (value ?? "")
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function categoryMatchesStock(item: StockItem, tariff: PriceBookItem) {
+  const stockCategory = comparable(item.categoryName || item.category);
+  const tariffCategory = comparable(`${tariff.reparation} ${tariff.piece}`);
+  return Boolean(stockCategory && tariffCategory.includes(stockCategory));
+}
+
+function modelMatchesStock(item: StockItem, tariff: PriceBookItem) {
+  const tariffModel = comparable(tariff.modele);
+  return item.compatibleModels.some((model) => comparable(model) === tariffModel);
+}
+
+function findLinkedTariffs(item: StockItem, priceBookItems: PriceBookItem[]) {
+  const activeItems = priceBookItems.filter((entry) => entry.isActive !== false);
+  const sku = comparable(item.sku || item.reference);
+  const direct = activeItems.filter(
+    (entry) =>
+      entry.id === item.priceBookItemId || entry.stockItemId === item.id || (sku && comparable(entry.sku) === sku),
   );
+  if (direct.length) return direct;
+
+  const stockBrand = comparable(item.brandName);
+  const stockQuality = comparable(item.quality);
+  const precise = activeItems.filter(
+    (entry) =>
+      (!stockBrand || comparable(entry.marque) === stockBrand) &&
+      modelMatchesStock(item, entry) &&
+      categoryMatchesStock(item, entry) &&
+      (!stockQuality || comparable(entry.qualite) === stockQuality),
+  );
+  if (precise.length) return precise;
+
+  return activeItems.filter((entry) => modelMatchesStock(item, entry) && categoryMatchesStock(item, entry));
+}
+
+function priceBookDeviceTypeFromStock(item: StockItem): PriceBookItem["typeAppareil"] {
+  if (item.deviceType === "Smartphone") return "smartphone";
+  if (item.deviceType === "Tablette") return "tablet";
+  if (item.deviceType === "Ordinateur") return "computer";
+  if (item.deviceType === "Console") return "console";
+  return "other";
 }
 
 function tariffPriceLabel(item: StockItem, priceBookItems: PriceBookItem[]) {
@@ -171,6 +219,9 @@ function openStockLabel(item: StockItem, qrDataUrl: string, print: boolean) {
     body { margin: 0; padding: 18px; background: #FAFAF8; color: #1A1916; font-family: Arial, sans-serif; }
     .label { width: 320px; min-height: 190px; border: 1px solid #E8E8E5; border-radius: 10px; background: #fff; padding: 16px; }
     .top { display: flex; gap: 12px; align-items: flex-start; }
+    .brand { display: flex; align-items: center; gap: 7px; margin-bottom: 12px; font-weight: 800; font-size: 13px; letter-spacing: .02em; }
+    .dot { width: 6px; height: 6px; border-radius: 999px; background: #2A9D8F; display: inline-block; }
+    .pro { margin-left: 4px; border: 1px solid #2A9D8F; border-radius: 6px; padding: 2px 5px; color: #167B70; font-size: 10px; }
     img { width: 86px; height: 86px; }
     h1 { margin: 0; font-size: 16px; line-height: 1.2; }
     p { margin: 6px 0 0; font-size: 12px; color: #6B6B6B; }
@@ -181,6 +232,7 @@ function openStockLabel(item: StockItem, qrDataUrl: string, print: boolean) {
 </head>
 <body>
   <div class="label">
+    <div class="brand">BEHAR <span class="dot"></span> TECH <span class="pro">PRO</span></div>
     <div class="top">
       ${qrDataUrl ? `<img src="${qrDataUrl}" alt="QR" />` : ""}
       <div>
@@ -638,7 +690,8 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
   const canUseStockItem = store.hasPermission("canUseStockItem");
   const canViewPurchasePrice = store.hasPermission("canViewPurchasePrice");
   const canViewSupplier = store.hasPermission("canViewSupplier");
-  const tariff = findLinkedTariff(item, store.priceBookItems);
+  const linkedTariffs = findLinkedTariffs(item, store.priceBookItems);
+  const tariff = linkedTariffs[0];
   const reference = firstNonEmpty(stockPrimaryReference(item), item.sku, item.reference, item.internalCode, item.id);
   const trace = useMemo(() => getPartTraceability(store, reference), [store, reference]);
   const categoryMapping: Record<string, DeviceCategory> = {
@@ -658,6 +711,34 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
     "h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[15px] text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
   const rowClass = "flex items-start justify-between gap-3 py-3 border-b border-[#FFFFFF] last:border-0";
   const labelClass = "shrink-0 w-[110px] text-[#6B6B6B] text-[13px] pt-2.5 font-medium";
+  const createTariffFromItem = () => {
+    const purchasePrice = item.averagePurchasePrice ?? item.lastPurchasePrice ?? item.purchasePrice;
+    const salePrice = item.salePrice > 0 ? item.salePrice : Math.round(purchasePrice * 1.8 * 100) / 100;
+    const id = store.addPriceBookItem({
+      source: "manual",
+      typeAppareil: priceBookDeviceTypeFromStock(item),
+      marque: firstNonEmpty(item.brandName, "Apple"),
+      modele: firstNonEmpty(item.compatibleModels[0], "Modèle à compléter"),
+      reparation: firstNonEmpty(item.categoryName, item.category, "Réparation"),
+      piece: firstNonEmpty(item.displayName, item.name),
+      qualite: firstNonEmpty(item.quality, "Standard"),
+      sku: firstNonEmpty(item.sku, item.reference),
+      prixAchat: purchasePrice,
+      mainOeuvre: 0,
+      prixVentePiece: salePrice,
+      prixClientTotal: salePrice,
+      marge: Math.max(0, salePrice - purchasePrice),
+      fournisseur: firstNonEmpty(item.primarySupplier, item.supplier),
+      stockDisponible: item.stock,
+      stockItemId: item.id,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+    });
+    store.updateStockItem(item.id, { priceBookItemId: id });
+    toast.success("Tarif créé depuis cette pièce.");
+    router.push("/dashboard/parametres/catalogue");
+    onClose();
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -1027,17 +1108,39 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
         >
           Utiliser dans une réparation
         </SecondaryButton>
-        {item.priceBookItemId && (
-          <SecondaryButton
-            className="h-11 w-full"
-            onClick={() => {
-              router.push("/dashboard/parametres/catalogue");
-              onClose();
-            }}
-          >
-            Voir dans Catalogue Prix
-          </SecondaryButton>
-        )}
+        <div className="rounded-[16px] border border-[#FFFFFF] bg-[#FFFFFF] p-4">
+          <h3 className="font-semibold text-[#1A1916] text-sm">Tarifs liés</h3>
+          {linkedTariffs.length ? (
+            <div className="mt-3 space-y-2">
+              {linkedTariffs.slice(0, 3).map((entry) => (
+                <div key={entry.id} className="rounded-[12px] bg-[#FAFAF8] px-3 py-2">
+                  <p className="font-medium text-[#1A1916] text-xs">
+                    {entry.modele} · {entry.reparation}
+                  </p>
+                  <p className="mt-0.5 text-[#6B6B6B] text-xs">
+                    Prix client {formatEuro(entry.prixClientTotal)} · Marge {formatEuro(entry.marge)}
+                  </p>
+                </div>
+              ))}
+              <SecondaryButton
+                className="h-11 w-full"
+                onClick={() => {
+                  router.push("/dashboard/parametres/catalogue");
+                  onClose();
+                }}
+              >
+                Voir dans Catalogue Prix
+              </SecondaryButton>
+            </div>
+          ) : (
+            <div className="mt-3">
+              <p className="text-[#6B6B6B] text-xs">Aucun tarif client lié pour cette pièce.</p>
+              <SecondaryButton className="mt-3 h-11 w-full" onClick={createTariffFromItem}>
+                Créer un tarif depuis cette pièce
+              </SecondaryButton>
+            </div>
+          )}
+        </div>
         <SecondaryButton
           className="h-11 w-full text-[#B42318]"
           disabled={!canManageStock}
@@ -1067,7 +1170,8 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
   const canUseStockItem = store.hasPermission("canUseStockItem");
   const canViewPurchasePrice = store.hasPermission("canViewPurchasePrice");
   const canViewSupplier = store.hasPermission("canViewSupplier");
-  const tariff = findLinkedTariff(item, store.priceBookItems);
+  const linkedTariffs = findLinkedTariffs(item, store.priceBookItems);
+  const tariff = linkedTariffs[0];
   const reference = firstNonEmpty(stockPrimaryReference(item), item.sku, item.reference, item.internalCode, item.id);
   const trace = useMemo(() => getPartTraceability(store, reference), [store, reference]);
   const entries = trace.supplierInvoiceLines.length
@@ -1112,6 +1216,33 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
     "h-9 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-right text-sm text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
   const textInputClass =
     "h-9 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-sm text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+  const createTariffFromItem = () => {
+    const purchasePrice = item.averagePurchasePrice ?? item.lastPurchasePrice ?? item.purchasePrice;
+    const salePrice = item.salePrice > 0 ? item.salePrice : Math.round(purchasePrice * 1.8 * 100) / 100;
+    const id = store.addPriceBookItem({
+      source: "manual",
+      typeAppareil: priceBookDeviceTypeFromStock(item),
+      marque: firstNonEmpty(item.brandName, "Apple"),
+      modele: firstNonEmpty(item.compatibleModels[0], "Modèle à compléter"),
+      reparation: firstNonEmpty(item.categoryName, item.category, "Réparation"),
+      piece: firstNonEmpty(item.displayName, item.name),
+      qualite: firstNonEmpty(item.quality, "Standard"),
+      sku: firstNonEmpty(item.sku, item.reference),
+      prixAchat: purchasePrice,
+      mainOeuvre: 0,
+      prixVentePiece: salePrice,
+      prixClientTotal: salePrice,
+      marge: Math.max(0, salePrice - purchasePrice),
+      fournisseur: firstNonEmpty(item.primarySupplier, item.supplier),
+      stockDisponible: item.stock,
+      stockItemId: item.id,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+    });
+    store.updateStockItem(item.id, { priceBookItemId: id });
+    toast.success("Tarif créé depuis cette pièce.");
+    router.push("/dashboard/parametres/catalogue");
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -1482,6 +1613,43 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
         </dl>
       )}
       <div className="mt-4 space-y-4 border-[#E8E8E5] border-t pt-4">
+        <TracePanel title="Tarifs liés" icon={Tags}>
+          {linkedTariffs.length ? (
+            <div className="space-y-2 p-3">
+              {linkedTariffs.map((entry) => (
+                <div key={entry.id} className="rounded-[10px] border border-[#E8E8E5] bg-white px-3 py-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-[#1A1916] text-xs">
+                        {entry.modele} · {entry.reparation}
+                      </p>
+                      <p className="mt-0.5 text-[#6B6B6B] text-[11px]">
+                        {entry.piece} · {entry.qualite || "Qualité standard"}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-[#1A1916] text-xs">{formatEuro(entry.prixClientTotal)}</p>
+                      <p className="text-[#167B70] text-[11px]">Marge {formatEuro(entry.marge)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <SecondaryButton
+                className="h-9 w-full text-xs"
+                onClick={() => router.push("/dashboard/parametres/catalogue")}
+              >
+                Voir dans Catalogue Prix
+              </SecondaryButton>
+            </div>
+          ) : (
+            <div className="p-3">
+              <p className="text-[#6B6B6B] text-xs">Aucun tarif client lié pour cette pièce.</p>
+              <SecondaryButton className="mt-3 h-9 w-full text-xs" onClick={createTariffFromItem}>
+                Créer un tarif depuis cette pièce
+              </SecondaryButton>
+            </div>
+          )}
+        </TracePanel>
         <TracePanel title="Données fournisseur" icon={Package}>
           <dl className="divide-y divide-[#E8E8E5] px-3 py-1">
             {[
@@ -1757,20 +1925,11 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
             Sélectionnez une réparation avant d’utiliser cette pièce.
           </p>
         ) : null}
-        {item.priceBookItemId && (
-          <div className="rounded-[10px] bg-[#FFFFFF] px-3 py-2 text-[#167B70] text-sm flex items-center gap-2">
-            <span className="size-2 rounded-full bg-[#167B70] shrink-0" />
-            <span className="font-medium">Prix catalogue lié</span>
-          </div>
-        )}
         <SecondaryButton
           className="h-10 w-full"
-          disabled={!item.priceBookItemId}
-          onClick={() => {
-            router.push("/dashboard/parametres/catalogue");
-          }}
+          onClick={linkedTariffs.length ? () => router.push("/dashboard/parametres/catalogue") : createTariffFromItem}
         >
-          Voir dans Catalogue Prix
+          {linkedTariffs.length ? "Voir dans Catalogue Prix" : "Créer un tarif depuis cette pièce"}
         </SecondaryButton>
         <SecondaryButton
           className="h-10 w-full text-[#B42318]"

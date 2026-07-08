@@ -101,7 +101,7 @@ export async function POST(request: Request) {
   if (!isTextractConfigured()) {
     return jsonError(
       "aws_not_configured",
-      "L'analyse automatique n'est pas configurée côté serveur. Vous pouvez saisir la facture manuellement.",
+      "L'analyse automatique n'est pas disponible pour le moment. Vous pouvez compléter la facture manuellement.",
       503,
     );
   }
@@ -148,6 +148,6 @@ export async function POST(request: Request) {
       return jsonError(error.code, error.message, error.status);
     }
     console.error("[behar:textract] Erreur serveur non attendue", { durationMs: Date.now() - startedAt });
-    return jsonError("textract_server_error", "Analyse impossible. Vous pouvez saisir la facture manuellement.", 500);
+    return jsonError("analysis_unavailable", "Analyse impossible. Vous pouvez compléter la facture manuellement.", 500);
   }
 }

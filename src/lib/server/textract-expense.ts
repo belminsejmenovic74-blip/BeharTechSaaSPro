@@ -117,7 +117,7 @@ function mapAwsMessage(code: string): string {
   if (code === "UnsupportedDocumentException") return "Format de document non supporté.";
   if (code === "BadDocumentException") return "L'analyse automatique n'a pas pu lire cette facture.";
   if (code === "DocumentTooLargeException") return "Facture trop volumineuse pour l'analyse automatique.";
-  if (code === "AccessDeniedException") return "L'analyse automatique n'est pas autorisée côté serveur.";
+  if (code === "AccessDeniedException") return "L'analyse automatique n'est pas disponible pour le moment.";
   if (code === "ProvisionedThroughputExceededException" || code === "ThrottlingException") {
     return "L'analyse automatique est temporairement indisponible. Réessayez dans quelques instants.";
   }
@@ -132,7 +132,7 @@ export async function analyzeSupplierInvoiceWithTextract(input: {
   if (!config) {
     throw new TextractServiceError(
       "aws_not_configured",
-      "L'analyse automatique n'est pas configurée côté serveur. La saisie manuelle reste disponible.",
+      "L'analyse automatique n'est pas disponible pour le moment. Vous pouvez compléter la facture manuellement.",
       503,
     );
   }

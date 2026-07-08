@@ -48,7 +48,7 @@ export function OcrDocumentsSection() {
   return (
     <section id="ocr" style={{ padding: "clamp(64px,9vw,120px) 24px", scrollMarginTop: 96 }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", position: "relative" }}>
-        {/* Badge « Grâce à l'IA Amazon » */}
+        {/* Badge IA */}
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
           <span
             style={{
@@ -65,7 +65,7 @@ export function OcrDocumentsSection() {
             }}
           >
             <span style={{ fontWeight: 800, color: "#111" }}>a</span>
-            <span style={{ color: DA.muted }}>Grâce à l’IA Amazon</span>
+            <span style={{ color: DA.muted }}>Analyse intelligente</span>
           </span>
         </div>
 
@@ -110,7 +110,7 @@ export function OcrDocumentsSection() {
                   IA &amp; documents OCR
                 </h2>
                 <p style={{ color: DA.muted, fontSize: 15, marginTop: 6, maxWidth: 620, lineHeight: 1.5 }}>
-                  Déposez votre facture fournisseur et créez votre stock automatiquement grâce à l’IA Amazon.
+                  Déposez votre facture fournisseur et créez votre stock automatiquement avec l’analyse intelligente.
                 </p>
               </div>
             </div>
@@ -227,7 +227,7 @@ export function OcrDocumentsSection() {
 
             {/* Colonne 2 — Extraction */}
             <div>
-              <Step n={2} title="Les données sont extraites grâce à l’IA Amazon" />
+              <Step n={2} title="Les données utiles sont extraites automatiquement" />
               <Panel>
                 {[
                   ["Fournisseur", "GSM Parts"],

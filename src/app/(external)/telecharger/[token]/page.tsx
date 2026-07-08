@@ -1,14 +1,13 @@
 import { notFound } from "next/navigation";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
-import crypto from "crypto";
+import crypto from "node:crypto";
 import { BeharLogo } from "@/components/behar/behar-logo";
 import { Monitor, Apple, Smartphone, CheckCircle2 } from "lucide-react";
-import Link from "next/link";
 
 // Server action style page
 export default async function DownloadPage({ params }: { params: { token: string } }) {
   const token = params.token;
-  if (!token || typeof token !== 'string') {
+  if (!token || typeof token !== "string") {
     return notFound();
   }
 
@@ -16,17 +15,17 @@ export default async function DownloadPage({ params }: { params: { token: string
   if (!supabase) {
     return (
       <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
-        <p className="text-[#6B6B6B]">Erreur de configuration serveur.</p>
+        <p className="text-[#6B6B6B]">Téléchargement indisponible pour le moment.</p>
       </div>
     );
   }
 
-  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 
   const { data, error } = await supabase
-    .from('license_keys')
-    .select('id, status, created_at, plan, download_count')
-    .eq('download_token_hash', tokenHash)
+    .from("license_keys")
+    .select("id, status, created_at, plan, download_count")
+    .eq("download_token_hash", tokenHash)
     .single();
 
   if (error || !data) {
@@ -43,7 +42,7 @@ export default async function DownloadPage({ params }: { params: { token: string
     );
   }
 
-  if (data.status !== 'active') {
+  if (data.status !== "active") {
     return (
       <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center p-6">
         <div className="bg-white rounded-[24px] border border-[#E8E8E5] p-8 max-w-md w-full text-center shadow-sm">
@@ -60,12 +59,12 @@ export default async function DownloadPage({ params }: { params: { token: string
   // Si on est là, la licence est bonne.
   // Increment download count (this happens on page load, which is fine since the user "accessed" the download page)
   await supabase
-    .from('license_keys')
-    .update({ 
+    .from("license_keys")
+    .update({
       download_count: data.download_count + 1,
-      last_downloaded_at: new Date().toISOString()
+      last_downloaded_at: new Date().toISOString(),
     })
-    .eq('id', data.id);
+    .eq("id", data.id);
 
   const RELEASES_BASE_URL = "https://github.com/belminsejmenovic74-blip/BeharTechSaaSPro/releases/latest/download";
 
@@ -95,7 +94,7 @@ export default async function DownloadPage({ params }: { params: { token: string
             </div>
 
             <div className="grid md:grid-cols-3 gap-6">
-              <a 
+              <a
                 href={`${RELEASES_BASE_URL}/Behar-Tech-Pro-Windows.exe`}
                 className="group border border-[#E8E8E5] rounded-2xl p-6 flex flex-col items-center text-center hover:border-[#2A9D8F] hover:shadow-lg transition-all"
               >
@@ -109,7 +108,7 @@ export default async function DownloadPage({ params }: { params: { token: string
                 </span>
               </a>
 
-              <a 
+              <a
                 href={`${RELEASES_BASE_URL}/Behar-Tech-Pro-macOS.dmg`}
                 className="group border border-[#E8E8E5] rounded-2xl p-6 flex flex-col items-center text-center hover:border-[#2A9D8F] hover:shadow-lg transition-all"
               >
@@ -123,7 +122,7 @@ export default async function DownloadPage({ params }: { params: { token: string
                 </span>
               </a>
 
-              <a 
+              <a
                 href={`${RELEASES_BASE_URL}/Behar-Tech-Pro-Android.apk`}
                 className="group border border-[#E8E8E5] rounded-2xl p-6 flex flex-col items-center text-center hover:border-[#2A9D8F] hover:shadow-lg transition-all"
               >
@@ -137,7 +136,7 @@ export default async function DownloadPage({ params }: { params: { token: string
                 </span>
               </a>
             </div>
-            
+
             <div className="mt-8 text-center text-xs text-[#A3A3A3]">
               En téléchargeant Behar Tech Pro, vous acceptez nos conditions générales d'utilisation.
             </div>

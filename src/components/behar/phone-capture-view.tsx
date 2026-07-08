@@ -59,10 +59,18 @@ export function PhoneCaptureView({ token }: Readonly<{ token: string }>) {
   };
 
   if (!token) {
-    return <CenterMessage icon={AlertTriangle} text="Lien de capture invalide. Rescannez le QR code depuis l'ordinateur." title="Lien invalide" />;
+    return (
+      <CenterMessage
+        icon={AlertTriangle}
+        text="Lien de capture invalide. Rescannez le QR code depuis l'ordinateur."
+        title="Lien invalide"
+      />
+    );
   }
   if (!configured) {
-    return <CenterMessage icon={WifiOff} text="Le relais photo n'est pas disponible (connexion serveur non configurée)." title="Indisponible" />;
+    return (
+      <CenterMessage icon={WifiOff} text="Le relais photo n'est pas disponible pour le moment." title="Indisponible" />
+    );
   }
 
   return (
@@ -82,7 +90,9 @@ export function PhoneCaptureView({ token }: Readonly<{ token: string }>) {
         </div>
 
         <h1 className="mt-5 font-semibold text-[22px] leading-tight tracking-tight">Photos de l'appareil</h1>
-        <p className="mt-1 text-[#6B6B6B] text-sm">Prenez les photos : elles s'ajoutent automatiquement sur l'ordinateur.</p>
+        <p className="mt-1 text-[#6B6B6B] text-sm">
+          Prenez les photos : elles s'ajoutent automatiquement sur l'ordinateur.
+        </p>
 
         <div className="mt-5 space-y-3">
           {SLOTS.map((slot) => {
@@ -96,7 +106,13 @@ export function PhoneCaptureView({ token }: Readonly<{ token: string }>) {
                 )}
                 key={slot.key}
               >
-                <input accept="image/*" capture="environment" className="hidden" onChange={(e) => onFile(slot.key, e)} type="file" />
+                <input
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => onFile(slot.key, e)}
+                  type="file"
+                />
                 <span className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF]">
                   {thumb ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -109,7 +125,9 @@ export function PhoneCaptureView({ token }: Readonly<{ token: string }>) {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block font-semibold text-[#1A1916] text-sm">{slot.label}</span>
-                  <span className="block text-[#6B6B6B] text-xs">{thumb ? "Envoyée — touchez pour reprendre" : isBusy ? "Envoi…" : "Toucher pour photographier"}</span>
+                  <span className="block text-[#6B6B6B] text-xs">
+                    {thumb ? "Envoyée — touchez pour reprendre" : isBusy ? "Envoi…" : "Toucher pour photographier"}
+                  </span>
                 </span>
                 {thumb && (
                   <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#FFFFFF] text-[#147065]">
@@ -129,7 +147,11 @@ export function PhoneCaptureView({ token }: Readonly<{ token: string }>) {
   );
 }
 
-function CenterMessage({ icon: Icon, title, text }: Readonly<{ icon: typeof AlertTriangle; title: string; text: string }>) {
+function CenterMessage({
+  icon: Icon,
+  title,
+  text,
+}: Readonly<{ icon: typeof AlertTriangle; title: string; text: string }>) {
   return (
     <div className="grid min-h-svh place-items-center bg-[#FFFFFF] px-6 text-center">
       <div className="max-w-xs">

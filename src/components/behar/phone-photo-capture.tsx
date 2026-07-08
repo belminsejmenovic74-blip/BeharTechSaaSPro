@@ -75,7 +75,8 @@ export function PhonePhotoCapture({
 
         <h2 className="mt-4 font-semibold text-[#1A1916] text-lg tracking-tight">Photographier avec le téléphone</h2>
         <p className="mt-1 text-[#6B6B6B] text-sm">
-          Scannez ce QR code avec votre téléphone, prenez les photos de {deviceLabel || "l'appareil"} : elles s'ajoutent ici automatiquement.
+          Scannez ce QR code avec votre téléphone, prenez les photos de {deviceLabel || "l'appareil"} : elles s'ajoutent
+          ici automatiquement.
         </p>
 
         {configured ? (
@@ -125,13 +126,15 @@ export function PhonePhotoCapture({
               })}
             </div>
 
-            <p className="mt-4 break-all rounded-[10px] bg-[#FFFFFF] px-3 py-2 text-center text-[#6B6B6B] text-[11px]">{url}</p>
+            <p className="mt-4 break-all rounded-[10px] bg-[#FFFFFF] px-3 py-2 text-center text-[#6B6B6B] text-[11px]">
+              {url}
+            </p>
           </>
         ) : (
           <div className="mt-5 flex items-start gap-3 rounded-[14px] border border-[#F0D2CD] bg-[#FFFFFF] p-4 text-[#C0564D]">
             <WifiOff className="mt-0.5 size-5 shrink-0" />
             <p className="text-sm">
-              Le relais photo nécessite la connexion serveur (Supabase). Sur ce poste, importez les photos directement depuis l'ordinateur.
+              Le relais photo n'est pas disponible sur ce poste. Importez les photos directement depuis l'ordinateur.
             </p>
           </div>
         )}

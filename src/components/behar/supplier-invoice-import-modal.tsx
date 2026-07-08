@@ -301,6 +301,15 @@ function buildPreviewUrl(file: File | null) {
   return URL.createObjectURL(file);
 }
 
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.onerror = () => reject(new Error("Lecture du fichier impossible."));
+    reader.readAsDataURL(file);
+  });
+}
+
 export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: Readonly<{ buttonLabel?: string }>) {
   const commitSupplierInvoice = useBeharStore((state) => state.commitSupplierInvoice);
   const canManageStock = useBeharStore((state) => state.hasPermission("canManageStock"));
@@ -308,6 +317,7 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<ImportStep>("upload");
   const [file, setFile] = useState<File | null>(null);
+  const [fileDataUrl, setFileDataUrl] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
   const [progress, setProgress] = useState(0);
   const [invoice, setInvoice] = useState<InvoiceForm>(EMPTY_INVOICE_FORM);
@@ -413,6 +423,7 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
   function resetImport() {
     setStep("upload");
     setFile(null);
+    setFileDataUrl("");
     setProgress(0);
     setInvoice(EMPTY_INVOICE_FORM);
     setLines([newLine()]);
@@ -470,10 +481,13 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
     }
 
     setFile(selectedFile);
+    setFileDataUrl("");
     setError("");
     setStep("analyzing");
 
     try {
+      const originalFileUrl = await fileToDataUrl(selectedFile);
+      setFileDataUrl(originalFileUrl);
       const data = new FormData();
       data.append("file", selectedFile);
       const response = await fetch("/api/achats/textract", { method: "POST", body: data });
@@ -588,6 +602,7 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
       purchaseDate: invoice.invoiceDate || undefined,
       invoiceNumber,
       originalFileName: file?.name,
+      originalFileUrl: fileDataUrl || previewUrl || undefined,
       totalExcludingTax: toMoney(invoice.totalExcludingTax) || totals.ht,
       taxAmount: toMoney(invoice.taxAmount),
       totalIncludingTax: toMoney(invoice.totalIncludingTax) || totals.ttc,
@@ -707,9 +722,9 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
               <h3 className="font-semibold text-[#1A1916] text-sm">Comment ça fonctionne ?</h3>
               <ol className="mt-4 space-y-3">
                 {[
-                  "Uploadez votre facture fournisseur",
-                  "L'analyse intelligente lit automatiquement le document",
-                  "Vérifiez et corrigez les informations",
+                  "Importez votre facture fournisseur",
+                  "L'IA extrait les informations utiles",
+                  "Vérifiez et corrigez les données",
                   "Validez pour créer l'achat et mettre à jour le stock",
                 ].map((item, index) => (
                   <li key={item} className="flex gap-3 text-sm">
@@ -721,7 +736,8 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
                 ))}
               </ol>
               <div className="mt-6 rounded-[12px] border border-[#E8E8E5] bg-[#FAFAF8] p-4 text-[#6B6B6B] text-xs leading-5">
-                Si l'analyse échoue, la saisie manuelle reste disponible. Les clés AWS restent côté serveur.
+                Votre facture reste attachée à l'achat. Les pièces restent traçables depuis leur facture jusqu'à la
+                réparation.
               </div>
             </Panel>
           </div>
@@ -778,7 +794,7 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
                 )}
                 {!previewUrl && (
                   <div className="grid h-full place-items-center rounded-[12px] border border-[#E8E8E5] bg-[#FAFAF8] text-[#6B6B6B] text-sm">
-                    La saisie manuelle reste disponible.
+                    Vous pouvez compléter ou corriger les informations à tout moment.
                   </div>
                 )}
               </div>

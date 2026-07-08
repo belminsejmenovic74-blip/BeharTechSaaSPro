@@ -8961,7 +8961,24 @@ export const useBeharStore = create<StoreState>()(
                 purchaseNumber,
               },
             };
-            stockMovements.unshift(movement);
+            const movementKey = [
+              movement.movementType,
+              movement.linkedPurchaseId,
+              movement.linkedSupplierInvoiceId,
+              movement.linkedSupplierInvoiceLineId,
+              normalizePartReference(movement.partReference),
+            ].join("|");
+            const alreadyExists = stockMovements.some(
+              (entry) =>
+                [
+                  entry.movementType,
+                  entry.linkedPurchaseId,
+                  entry.linkedSupplierInvoiceId,
+                  entry.linkedSupplierInvoiceLineId,
+                  normalizePartReference(entry.partReference),
+                ].join("|") === movementKey,
+            );
+            if (!alreadyExists) stockMovements.unshift(movement);
           });
 
           return {

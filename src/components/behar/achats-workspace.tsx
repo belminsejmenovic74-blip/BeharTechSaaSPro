@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import { Download, Eye, FileJson, FileText, Package, Plus, Search, ShoppingCart, Trash2, X } from "lucide-react";
+import { Download, Eye, FileText, Package, Plus, Search, ShoppingCart, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -110,6 +110,151 @@ function downloadTextFile(fileName: string, content: string, type: string) {
   URL.revokeObjectURL(url);
 }
 
+function invoiceFileType(invoice: SupplierInvoice) {
+  const fileName = invoice.originalFileName?.toLowerCase() ?? "";
+  if (fileName.endsWith(".pdf")) return "PDF";
+  if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) return "JPG";
+  if (fileName.endsWith(".png")) return "PNG";
+  if (invoice.originalFileUrl?.startsWith("data:image/png")) return "PNG";
+  if (invoice.originalFileUrl?.startsWith("data:image/jpeg")) return "JPG";
+  if (invoice.originalFileUrl?.startsWith("data:application/pdf")) return "PDF";
+  return "Document";
+}
+
+function downloadOriginalInvoice(invoice: SupplierInvoice) {
+  if (!invoice.originalFileUrl) {
+    toast.error("Aucun fichier original attaché.");
+    return;
+  }
+  const link = document.createElement("a");
+  link.href = invoice.originalFileUrl;
+  link.download = invoice.originalFileName ?? `facture-${invoice.invoiceNumber ?? invoice.id}`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+function openOriginalInvoice(invoice: SupplierInvoice) {
+  if (!invoice.originalFileUrl) {
+    toast.error("Aucun fichier original attaché.");
+    return;
+  }
+  window.open(invoice.originalFileUrl, "_blank", "noopener,noreferrer");
+}
+
+function exportLinesCsv(invoice: SupplierInvoice, lines: SupplierInvoiceLine[]) {
+  const headers = ["Article", "Référence", "Modèle", "Catégorie", "Quantité", "Prix HT", "TVA", "Total HT"];
+  const rows = lines.map((line) => [
+    line.itemName,
+    line.reference || line.sku || "",
+    line.compatibleModel || "",
+    line.category || "",
+    String(line.quantityPurchased),
+    String(line.unitPurchasePriceExclTax).replace(".", ","),
+    line.taxRate ? `${line.taxRate}%` : String(line.taxAmount ?? 0).replace(".", ","),
+    String(line.lineTotalExclTax).replace(".", ","),
+  ]);
+  const escapeCell = (value: string) => `"${value.replace(/"/g, '""')}"`;
+  const csv = [headers, ...rows].map((row) => row.map(escapeCell).join(";")).join("\n");
+  downloadTextFile(`lignes-achat-${invoice.invoiceNumber || invoice.id}.csv`, csv, "text/csv;charset=utf-8");
+}
+
+function escapeHtml(value: string | number | undefined) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function exportSummaryPdf(invoice: SupplierInvoice, lines: SupplierInvoiceLine[], movements: StockMovement[]) {
+  const rows = lines
+    .map(
+      (line) => `
+        <tr>
+          <td>${escapeHtml(line.itemName)}</td>
+          <td>${escapeHtml(line.reference || line.sku || "—")}</td>
+          <td>${escapeHtml(line.quantityPurchased)}</td>
+          <td>${escapeHtml(formatEuro(line.unitPurchasePriceExclTax))}</td>
+          <td>${escapeHtml(formatEuro(line.lineTotalExclTax))}</td>
+        </tr>`,
+    )
+    .join("");
+  const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Achat ${escapeHtml(invoice.invoiceNumber)}</title>
+  <style>
+    body { margin: 0; padding: 28px; background: #FAFAF8; color: #1A1916; font-family: Arial, sans-serif; }
+    h1 { margin: 0 0 8px; font-size: 24px; }
+    p { margin: 4px 0; color: #6B6B6B; }
+    .card { margin-top: 18px; border: 1px solid #E8E8E5; border-radius: 12px; background: #fff; padding: 16px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
+    th, td { border-bottom: 1px solid #E8E8E5; padding: 8px; text-align: left; }
+    th { color: #6B6B6B; font-weight: 600; }
+    .totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+    .total { border: 1px solid #E8E8E5; border-radius: 10px; padding: 12px; background: #fff; }
+    .total strong { display: block; margin-top: 4px; font-size: 18px; }
+    @media print { body { background: #fff; } }
+  </style>
+</head>
+<body>
+  <h1>Récapitulatif achat fournisseur</h1>
+  <p>${escapeHtml(invoice.supplierName)} · ${escapeHtml(invoice.invoiceNumber || "Facture")} · ${escapeHtml(isoDate(invoice.purchaseDate))}</p>
+  <div class="totals">
+    <div class="total">Total HT<strong>${formatEuro(invoice.totalExcludingTax)}</strong></div>
+    <div class="total">TVA<strong>${formatEuro(invoice.taxAmount)}</strong></div>
+    <div class="total">Total TTC<strong>${formatEuro(invoice.totalIncludingTax)}</strong></div>
+  </div>
+  <div class="card">
+    <strong>Lignes achetées</strong>
+    <table>
+      <thead><tr><th>Article</th><th>Référence</th><th>Qté</th><th>Prix HT</th><th>Total HT</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>
+  <div class="card">
+    <strong>Traçabilité créée</strong>
+    <p>${lines.length} ligne(s) d'achat · ${movements.length} mouvement(s) de stock.</p>
+  </div>
+  <script>window.addEventListener("load", () => window.print());</script>
+</body>
+</html>`;
+  const win = window.open("", "_blank", "noopener,noreferrer,width=900,height=700");
+  if (!win) {
+    toast.error("Ouverture du récapitulatif bloquée par le navigateur.");
+    return;
+  }
+  win.document.write(html);
+  win.document.close();
+}
+
+function movementDisplayKey(movement: StockMovement) {
+  return [
+    movement.movementType,
+    movement.linkedPurchaseId,
+    movement.linkedSupplierInvoiceId,
+    movement.linkedSupplierInvoiceLineId,
+    movement.partReference,
+    movement.stockItemId,
+    movement.quantityDelta,
+    movement.quantityBefore,
+    movement.quantityAfter,
+  ].join("|");
+}
+
+function uniqueMovements(movements: StockMovement[]) {
+  const seen = new Set<string>();
+  return movements.filter((movement) => {
+    const key = movementDisplayKey(movement);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function Kpi({
   label,
   value,
@@ -188,20 +333,6 @@ function FilterSelect({
 
 function DetailModal({ detail, onClose }: Readonly<{ detail: DetailPayload; onClose: () => void }>) {
   const invoice = detail.invoice;
-  const exportPayload = {
-    invoice,
-    lines: detail.lines,
-    stockMovements: detail.movements,
-    documentTitle: detail.documentTitle,
-  };
-
-  function downloadOriginal() {
-    if (!invoice.originalFileUrl) {
-      toast.error("Aucun fichier original téléchargeable pour cette facture.");
-      return;
-    }
-    window.open(invoice.originalFileUrl, "_blank", "noopener,noreferrer");
-  }
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1A1916]/24 p-0 md:p-4">
@@ -240,22 +371,43 @@ function DetailModal({ detail, onClose }: Readonly<{ detail: DetailPayload; onCl
           ))}
         </div>
 
+        <Panel className="mt-5 p-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h3 className="font-semibold text-[#1A1916] text-sm">Facture originale</h3>
+              {invoice.originalFileName || detail.documentTitle ? (
+                <p className="mt-1 text-[#6B6B6B] text-xs">
+                  {invoice.originalFileName || detail.documentTitle} · {invoiceFileType(invoice)} · Importée le{" "}
+                  {isoDate(invoice.createdAt)}
+                </p>
+              ) : (
+                <p className="mt-1 text-[#6B6B6B] text-xs">Aucun fichier original attaché</p>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <SecondaryButton onClick={() => openOriginalInvoice(invoice)} disabled={!invoice.originalFileUrl}>
+                <Eye className="size-4" />
+                Voir la facture
+              </SecondaryButton>
+              <SecondaryButton onClick={() => downloadOriginalInvoice(invoice)} disabled={!invoice.originalFileUrl}>
+                <Download className="size-4" />
+                Télécharger la facture
+              </SecondaryButton>
+              <SecondaryButton disabled>
+                {invoice.originalFileUrl ? "Remplacer le fichier" : "Ajouter une facture"}
+              </SecondaryButton>
+            </div>
+          </div>
+        </Panel>
+
         <div className="mt-5 flex flex-wrap gap-2">
-          <SecondaryButton onClick={downloadOriginal}>
-            <Download className="size-4" />
-            Télécharger facture
+          <SecondaryButton onClick={() => exportSummaryPdf(invoice, detail.lines, detail.movements)}>
+            <FileText className="size-4" />
+            Exporter le récapitulatif PDF
           </SecondaryButton>
-          <SecondaryButton
-            onClick={() =>
-              downloadTextFile(
-                `achat-${invoice.invoiceNumber || invoice.id}.json`,
-                JSON.stringify(exportPayload, null, 2),
-                "application/json",
-              )
-            }
-          >
-            <FileJson className="size-4" />
-            Exporter
+          <SecondaryButton onClick={() => exportLinesCsv(invoice, detail.lines)}>
+            <Download className="size-4" />
+            Exporter les lignes CSV
           </SecondaryButton>
         </div>
 
@@ -365,17 +517,6 @@ function DetailModal({ detail, onClose }: Readonly<{ detail: DetailPayload; onCl
             </Panel>
           </div>
         </div>
-
-        {invoice.source === "textract" && (
-          <Panel className="mt-5 overflow-hidden">
-            <div className="border-[#E8E8E5] border-b p-4">
-              <h3 className="font-semibold text-[#1A1916] text-sm">Données d'analyse brutes</h3>
-            </div>
-            <pre className="max-h-80 overflow-auto bg-white p-4 text-[#1A1916] text-xs">
-              {JSON.stringify(invoice.textractJson ?? {}, null, 2)}
-            </pre>
-          </Panel>
-        )}
       </Panel>
     </div>
   );
@@ -409,7 +550,7 @@ export function AchatsWorkspace() {
     return supplierInvoices.map((invoice) => ({
       invoice,
       lines: supplierInvoiceLines.filter((line) => line.supplierInvoiceId === invoice.id),
-      movements: stockMovements.filter((movement) => movement.linkedSupplierInvoiceId === invoice.id),
+      movements: uniqueMovements(stockMovements.filter((movement) => movement.linkedSupplierInvoiceId === invoice.id)),
     }));
   }, [stockMovements, supplierInvoiceLines, supplierInvoices]);
 
