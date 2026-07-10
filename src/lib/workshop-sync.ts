@@ -176,6 +176,17 @@ function createWorkshopId(): string {
   });
 }
 
+/**
+ * Code de récupération déterministe dérivé du workshop_id (colonne NOT NULL de
+ * workshop_snapshots sur la base live). Déterministe => un ré-upsert ne l'écrase
+ * jamais par du vide.
+ */
+function recoveryCodeFromWorkshopId(workshopId: string): string {
+  const hex = workshopId.replace(/-/g, "").toUpperCase();
+  const padded = (hex + "0".repeat(16)).slice(0, 16);
+  return `${padded.slice(0, 4)}-${padded.slice(4, 8)}-${padded.slice(8, 12)}-${padded.slice(12, 16)}`;
+}
+
 export function getWorkshopStateVersion(
   state: (Partial<StoreState> & Record<string, unknown>) | null | undefined,
 ): number {
@@ -272,8 +283,16 @@ export async function loadSnapshotByLicenseKey(key: string): Promise<WorkshopSna
 
   markSyncStatus("loading");
   try {
+    // Accès direct à la table (la base live n'expose pas encore les RPC snapshot_*
+    // introduits par la migration 0019 — voir upsertSnapshot). Match insensible à
+    // la casse sur license_key, la ligne la plus récente d'abord.
+    const selectColumns = "id, workshop_id, license_key, workshop_name, state, state_size_bytes, updated_at";
     const { data, error } = await supabase
-      .rpc("snapshot_pull", { p_license_key: normalizedKey })
+      .from("workshop_snapshots")
+      .select(selectColumns)
+      .ilike("license_key", normalizedKey)
+      .order("updated_at", { ascending: false })
+      .limit(1)
       .maybeSingle<WorkshopSnapshotRow>();
 
     if (error) {
@@ -340,16 +359,24 @@ async function upsertSnapshot(
     sizeBytes,
   });
 
+  // UPSERT direct sur workshop_id (contrainte unique) — la base live n'a pas les
+  // RPC snapshot_* (migrations 0004/0019 non déployées). recovery_code déterministe
+  // dérivé du workshop_id, donc jamais écrasé par une valeur vide.
+  const payload: Record<string, unknown> = {
+    workshop_id: workshopId,
+    recovery_code: recoveryCodeFromWorkshopId(workshopId),
+    license_key: normalizedKey,
+    workshop_name: mergedState.workshopSettings?.name || mergedState.workshopInfo?.name || null,
+    device_label: detectDeviceLabel(),
+    state: stateForUpload,
+    state_size_bytes: sizeBytes,
+    schema_version: WORKSHOP_SCHEMA_VERSION,
+  };
+
   const { data, error } = await supabase
-    .rpc("snapshot_push", {
-      p_license_key: normalizedKey,
-      p_workshop_id: workshopId,
-      p_workshop_name: mergedState.workshopSettings?.name || mergedState.workshopInfo?.name || null,
-      p_device_label: detectDeviceLabel(),
-      p_state: stateForUpload,
-      p_state_size_bytes: sizeBytes,
-      p_schema_version: WORKSHOP_SCHEMA_VERSION,
-    })
+    .from("workshop_snapshots")
+    .upsert(payload, { onConflict: "workshop_id" })
+    .select("id, workshop_id, license_key, workshop_name, state, state_size_bytes, updated_at")
     .single<WorkshopSnapshotRow>();
 
   if (error) {
