@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { Download, FileText, Phone, Printer, ShieldCheck } from "lucide-react";
+import { Download, FileText, Printer, ShieldCheck } from "lucide-react";
 
 import { useBeharStore } from "@/lib/behar-store";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
@@ -56,6 +56,11 @@ function title(kind: PublicCommercialDocumentDto["kind"]) {
   if (kind === "receipt") return "Confirmation de règlement";
   if (kind === "intake") return "Bon de prise en charge";
   return "Justificatif de vente";
+}
+
+function dateLabel(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("fr-FR").format(date);
 }
 
 export function PublicDocumentView({ kind, token }: { kind: PublicCommercialDocumentDto["kind"]; token: string }) {
@@ -132,162 +137,149 @@ export function PublicDocumentView({ kind, token }: { kind: PublicCommercialDocu
   };
 
   return (
-    <div className="min-h-screen pb-16" style={{ background: COLORS.bg, color: COLORS.text }}>
-      <div className="print-document mx-auto w-full max-w-[680px] px-4 py-6">
-        <div
-          className="no-print mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[16px] border bg-white p-3 shadow-[0_1px_3px_rgba(26,25,22,0.04)]"
-          style={{ borderColor: COLORS.border }}
-        >
-          <div className="flex items-center gap-2">
-            <FileText className="size-5" style={{ color: COLORS.accent }} />
-            <div>
-              <p className="font-bold text-[14px]">{title(kind)}</p>
-              <p className="text-[12px]" style={{ color: COLORS.sub }}>
-                {data.document.number}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => window.print()}
-              className="inline-flex h-10 items-center gap-2 rounded-[12px] px-3 font-semibold text-white"
-              style={{ background: COLORS.accent }}
-            >
-              <Printer className="size-4" /> Imprimer
-            </button>
-            <button
-              type="button"
-              disabled={downloading}
-              onClick={() => void downloadPdf()}
-              className="inline-flex h-10 items-center gap-2 rounded-[12px] border bg-white px-3 font-semibold text-[13px] disabled:opacity-50"
-              style={{ borderColor: COLORS.border }}
-            >
-              <Download className="size-4" /> {downloading ? "PDF..." : "Télécharger PDF"}
-            </button>
-          </div>
+    <div className="min-h-screen bg-[#F7F7F5] px-4 py-6 print:bg-white print:p-0" style={{ color: COLORS.text }}>
+      <div className="no-print mx-auto mb-4 flex w-full max-w-[794px] flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-[#6B6B6B] text-sm">
+          <FileText className="size-4" style={{ color: COLORS.accent }} />
+          {title(kind)}
         </div>
+        <div className="flex items-center gap-2">
+          <button
+            className="inline-flex h-10 items-center gap-2 rounded-[10px] px-3.5 font-semibold text-[13px] text-white"
+            onClick={() => window.print()}
+            style={{ background: COLORS.accent }}
+            type="button"
+          >
+            <Printer className="size-4" /> Imprimer
+          </button>
+          <button
+            className="inline-flex h-10 items-center gap-2 rounded-[10px] border bg-white px-3.5 font-semibold text-[13px] disabled:opacity-50"
+            disabled={downloading}
+            onClick={() => void downloadPdf()}
+            style={{ borderColor: COLORS.border }}
+            type="button"
+          >
+            <Download className="size-4" /> {downloading ? "PDF..." : "Télécharger PDF"}
+          </button>
+        </div>
+      </div>
 
-        <div ref={documentRef} className="print-document">
-          <header className="mb-6 flex items-start justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-2.5">
+      <article
+        className="print-document pdf-page mx-auto flex min-h-[1123px] w-full max-w-[794px] flex-col border border-[#E8E8E8] bg-white p-8 print:min-h-0 print:border-0 print:p-0"
+        data-pdf-paginate="true"
+        ref={documentRef}
+      >
+        <header className="flex flex-col items-start justify-between gap-5 border-[#E8E8E8] border-b pb-5 sm:flex-row sm:gap-8">
+          <div className="min-w-0 text-[#6B6B6B] text-[12px] leading-relaxed">
+            <div className="mb-3 flex items-center gap-2.5">
               {data.workshop.logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                // biome-ignore lint/performance/noImgElement: standard image tag is fine for document logo
+                // biome-ignore lint/performance/noImgElement: logo document externe
                 <img
-                  src={data.workshop.logoUrl}
                   alt={data.workshop.name}
-                  className="h-9 w-auto max-w-[150px] rounded-md object-contain"
+                  className="h-10 max-w-[160px] object-contain"
+                  src={data.workshop.logoUrl}
                 />
               ) : (
                 <span
-                  className="grid size-9 place-items-center rounded-[10px] text-white"
+                  className="grid size-10 place-items-center rounded-[10px] text-white"
                   style={{ background: COLORS.accent }}
                 >
                   <ShieldCheck className="size-5" />
                 </span>
               )}
-              <div className="min-w-0">
-                <span className="block truncate font-bold tracking-tight">{data.workshop.name}</span>
-                <p className="mt-1 text-[11px] leading-relaxed" style={{ color: COLORS.sub }}>
-                  {[data.workshop.address, data.workshop.postalCode, data.workshop.city].filter(Boolean).join(" · ")}
-                  {data.workshop.canton ? ` · Canton ${data.workshop.canton}` : ""}
-                  {data.workshop.businessId
-                    ? ` · ${data.workshop.country === "CH" ? "IDE / UID" : "SIRET"} ${data.workshop.businessId}`
-                    : ""}
-                </p>
-              </div>
+              <p className="font-bold text-[#1A1916] text-[16px] tracking-tight">{data.workshop.name}</p>
             </div>
-            {data.workshop.phone ? (
-              <a
-                href={`tel:${data.workshop.phone}`}
-                className="inline-flex h-10 shrink-0 items-center gap-2 rounded-[10px] border bg-white px-4 font-medium text-[14px]"
-                style={{ borderColor: COLORS.border }}
-              >
-                <Phone className="size-4" style={{ color: COLORS.accent }} /> Appeler
-              </a>
+            {data.workshop.address ? <p>{data.workshop.address}</p> : null}
+            {data.workshop.city ? (
+              <p>{[data.workshop.postalCode, data.workshop.city].filter(Boolean).join(" ")}</p>
             ) : null}
-          </header>
-
-          <section
-            className="print-document rounded-[16px] border bg-white p-5 shadow-[0_1px_3px_rgba(26,25,22,0.04)] print:rounded-none print:border-0 print:shadow-none"
-            style={{ borderColor: COLORS.border }}
-          >
-            <p className="text-[13px] font-semibold" style={{ color: COLORS.accent }}>
-              {title(kind)}
+            {data.workshop.canton ? <p>Canton : {data.workshop.canton}</p> : null}
+            {data.workshop.businessId ? (
+              <p>
+                {data.workshop.country === "CH" ? "IDE / UID" : "SIRET"} : {data.workshop.businessId}
+              </p>
+            ) : null}
+            {data.workshop.email ? <p>{data.workshop.email}</p> : null}
+            {data.workshop.phone ? <p>{data.workshop.phone}</p> : null}
+          </div>
+          <div className="min-w-0 text-left sm:min-w-[200px] sm:text-right">
+            <p className="font-bold text-[#1A1916] text-[15px] uppercase tracking-wide">{title(kind)}</p>
+            <p className="mt-1 font-mono font-semibold text-[#1A1916] text-[16px] tracking-tight">
+              {data.document.number}
             </p>
-            <div className="mt-1 flex items-start justify-between gap-4">
-              <div>
-                <h1 className="font-bold text-[28px] leading-tight tracking-tight">{data.document.number}</h1>
-                <p className="mt-1 text-[14px]" style={{ color: COLORS.sub }}>
-                  {data.client.displayName}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-[24px]">{formatMoney(data.document.totalTtc, data.workshop.currency)}</p>
-                <p className="text-[12px]" style={{ color: COLORS.sub }}>
-                  {data.document.status}
-                </p>
-              </div>
+            <p className="mt-1 text-[#6B6B6B] text-[11px]">Émis le {dateLabel(data.document.createdAt)}</p>
+            <p className="mt-1.5 font-semibold text-[#2A9D8F] text-[11px] uppercase tracking-wider">
+              {data.document.status}
+            </p>
+          </div>
+        </header>
+
+        <main className="flex-1 space-y-5 py-5">
+          <section className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-[6px] border border-[#E8E8E8] p-4">
+              <h2 className="font-bold text-[#2A9D8F] text-[10.5px] uppercase tracking-wider">Client</h2>
+              <p className="mt-3 font-semibold text-[#1A1916] text-[13px]">{data.client.displayName}</p>
+            </div>
+            <div className="rounded-[6px] border border-[#E8E8E8] p-4">
+              <h2 className="font-bold text-[#2A9D8F] text-[10.5px] uppercase tracking-wider">Dossier</h2>
+              <p className="mt-3 text-[#6B6B6B] text-[12px]">
+                Référence :{" "}
+                <span className="font-semibold text-[#1A1916]">
+                  {data.relatedRepair?.number ?? data.document.number}
+                </span>
+              </p>
+              <p className="mt-1 text-[#6B6B6B] text-[12px]">Statut : {data.document.status}</p>
             </div>
           </section>
 
-          <section
-            className="mt-4 overflow-hidden rounded-[16px] border bg-white shadow-[0_1px_3px_rgba(26,25,22,0.04)]"
-            style={{ borderColor: COLORS.border }}
-          >
-            <div
-              className="grid grid-cols-[1fr_72px_100px_100px] gap-3 border-b px-5 py-3 font-semibold text-[12px]"
-              style={{ borderColor: COLORS.border, color: COLORS.sub }}
-            >
-              <span>Ligne</span>
-              <span>Qté</span>
-              <span>PU TTC</span>
+          <section className="overflow-hidden rounded-[6px] border border-[#E8E8E8]">
+            <div className="grid grid-cols-[minmax(0,1fr)_42px_90px] border-[#E8E8E8] border-b px-3 py-2.5 font-bold text-[#6B6B6B] text-[10px] uppercase tracking-wider sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 print:grid-cols-[1fr_70px_112px_112px] print:px-4">
+              <span>Désignation</span>
+              <span className="text-center">Qté</span>
+              <span className="hidden text-right sm:block print:block">Prix unitaire</span>
               <span className="text-right">Total</span>
             </div>
-            {data.lines.map((line, index) => (
-              <div
-                key={`${line.label}-${index}`}
-                className="grid grid-cols-[1fr_72px_100px_100px] gap-3 px-5 py-3 text-[14px]"
-              >
-                <span className="min-w-0 truncate font-medium">{line.label}</span>
-                <span>{line.quantity}</span>
-                <span>{formatMoney(line.unitPriceTtc, data.workshop.currency)}</span>
-                <span className="text-right font-semibold">{formatMoney(line.totalTtc, data.workshop.currency)}</span>
-              </div>
-            ))}
+            <div className="divide-y divide-[#E8E8E8]">
+              {data.lines.map((line) => (
+                <div
+                  className="grid grid-cols-[minmax(0,1fr)_42px_90px] items-center px-3 py-3.5 text-[11.5px] sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 print:grid-cols-[1fr_70px_112px_112px] print:px-4"
+                  key={`${line.label}-${line.quantity}-${line.totalTtc}`}
+                >
+                  <span className="font-medium">{line.label}</span>
+                  <span className="text-center text-[#6B6B6B]">{line.quantity}</span>
+                  <span className="hidden text-right text-[#6B6B6B] sm:block print:block">
+                    {formatMoney(line.unitPriceTtc, data.workshop.currency)}
+                  </span>
+                  <span className="text-right font-semibold">{formatMoney(line.totalTtc, data.workshop.currency)}</span>
+                </div>
+              ))}
+            </div>
           </section>
 
-          {data.relatedRepair ? (
-            <section
-              className="mt-4 rounded-[16px] border bg-white p-5 text-[14px] shadow-[0_1px_3px_rgba(26,25,22,0.04)]"
-              style={{ borderColor: COLORS.border }}
-            >
-              <span style={{ color: COLORS.sub }}>Dossier lié : </span>
-              {data.relatedRepair.url ? (
-                <a href={data.relatedRepair.url} className="font-semibold" style={{ color: COLORS.accent }}>
-                  {data.relatedRepair.number}
-                </a>
-              ) : (
-                <span className="font-semibold">{data.relatedRepair.number}</span>
-              )}
+          <section className="ml-auto w-full max-w-[360px] rounded-[6px] border border-[#E8E8E8] p-4">
+            <div className="flex items-center justify-between gap-4 font-bold text-[#1A1916]">
+              <span>Total TTC</span>
+              <span className="text-[22px]">{formatMoney(data.document.totalTtc, data.workshop.currency)}</span>
+            </div>
+          </section>
+
+          {kind === "intake" ? (
+            <section className="rounded-[6px] border border-[#E8E8E8] p-4 text-[#6B6B6B] text-[10px] leading-relaxed">
+              <p>
+                <strong className="text-[#1A1916]">Prise en charge.</strong> Le client confie l'appareil à l'atelier
+                pour diagnostic ou intervention. Une sauvegarde préalable des données est recommandée.
+              </p>
             </section>
           ) : null}
+          {data.workshop.vatMention ? <p className="text-[#6B6B6B] text-[10px]">{data.workshop.vatMention}</p> : null}
+        </main>
 
-          {data.workshop.vatMention ? (
-            <p
-              className="mt-4 rounded-[12px] border bg-white p-3 text-[11px]"
-              style={{ borderColor: COLORS.border, color: COLORS.sub }}
-            >
-              {data.workshop.vatMention}
-            </p>
-          ) : null}
-
-          <footer className="mt-8 text-center text-[11px]" style={{ color: "#8A8A8A" }}>
-            Document transmis par {data.workshop.name}
-          </footer>
-        </div>
-      </div>
+        <footer className="mt-auto border-[#E8E8E8] border-t pt-4 text-[#6B6B6B] text-[9px] leading-relaxed">
+          <p>{data.workshop.name} · Document client imprimable</p>
+          <p>Document transmis par {data.workshop.name}</p>
+        </footer>
+      </article>
     </div>
   );
 }

@@ -4,7 +4,7 @@
 // Header (statut, grade, marge, action principale) + Résumé financier + Diagnostic
 // + Atelier (pièces reliées au stock réel) + Vente + Documents.
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import {
   AlertTriangle,
@@ -26,6 +26,7 @@ import {
 
 import { PhotoSlot } from "@/components/behar/photo-slot";
 import { useBeharStore } from "@/lib/behar-store";
+import { fileToCompressedDataUrl } from "@/lib/image-capture";
 import { publicAbsoluteUrl } from "@/lib/public-access";
 import {
   buildCertificateData,
@@ -316,9 +317,9 @@ function DeviceDetailInner({ file, onBack }: Readonly<{ file: ReconditioningFile
                 value={file.saleLocation ?? ""}
               />
             </FieldLabel>
-            <FieldLabel label="Photo vente">
-              <PhotoSlot label="Photo" onChange={(v) => setPhoto(file.id, "cote", v)} value={file.photos.cote} />
-            </FieldLabel>
+            <div className="sm:col-span-2">
+              <PublicSalePhotoGallery file={file} />
+            </div>
           </div>
           <div className="mt-4 grid gap-x-6 gap-y-1 text-[13px] sm:grid-cols-2">
             <InfoRow
@@ -1327,6 +1328,122 @@ function InfoRow({ label, value }: Readonly<{ label: string; value: string }>) {
     <div className="flex items-center justify-between gap-2 border-[#F7F7F5] border-b py-1 last:border-0">
       <span className="text-[#6B6B6B]">{label}</span>
       <span className="font-medium text-[#1A1916]">{value}</span>
+    </div>
+  );
+}
+
+function PublicSalePhotoGallery({ file }: Readonly<{ file: ReconditioningFile }>) {
+  const addMedia = useReconditioningStore((s) => s.addMedia);
+  const deleteMedia = useReconditioningStore((s) => s.deleteMedia);
+  const setPrimaryMedia = useReconditioningStore((s) => s.setPrimaryMedia);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const publicPhotos = (file.media ?? [])
+    .filter((item) => item.visibility === "public_sale" && item.isPublic)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+  const primary = publicPhotos.find((item) => item.isPrimary) ?? publicPhotos[0];
+  const displayPrimary = primary?.dataUrl ?? file.photos.cote;
+
+  const addPhoto = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const photo = event.target.files?.[0];
+    event.target.value = "";
+    if (!photo) return;
+    if (
+      !["image/jpeg", "image/png", "image/webp"].includes(photo.type) ||
+      photo.size <= 0 ||
+      photo.size > 10 * 1024 * 1024
+    ) {
+      window.alert("Utilisez une photo JPG, PNG ou WebP de 10 Mo maximum.");
+      return;
+    }
+    setBusy(true);
+    try {
+      addMedia(file.id, {
+        dataUrl: await fileToCompressedDataUrl(photo, 1400, 0.74),
+        visibility: "public_sale",
+        isPublic: true,
+        isPrimary: false,
+        fileName: photo.name,
+        fileSize: photo.size,
+        mimeType: photo.type,
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="rounded-[14px] border border-[#E8E5DF] bg-[#FAFAF8] p-3.5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="font-semibold text-[#1A1916] text-[13px]">Photos de vente</p>
+          <p className="mt-0.5 text-[#6B6B6B] text-[12px]">
+            Une photo principale en haut, puis vos photos de détail sur la page client.
+          </p>
+        </div>
+        <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-[9px] border border-[#E8E5DF] bg-white px-3 font-semibold text-[#1A1916] text-[12px] transition hover:border-[#2A9D8F]/45">
+          <Plus className="size-3.5 text-[#2A9D8F]" />
+          {busy ? "Ajout…" : "Ajouter une photo"}
+          <input
+            accept="image/jpeg,image/png,image/webp"
+            capture="environment"
+            className="hidden"
+            disabled={busy}
+            onChange={(event) => void addPhoto(event)}
+            ref={inputRef}
+            type="file"
+          />
+        </label>
+      </div>
+
+      {displayPrimary ? (
+        <div className="mt-3 overflow-hidden rounded-[12px] border border-[#E8E5DF] bg-white">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            alt={`Photo principale de ${deviceTitle(file)}`}
+            className="aspect-[16/9] w-full object-cover"
+            src={displayPrimary}
+          />
+          <p className="px-3 py-2 font-semibold text-[#147065] text-[11px]">Photo principale affichée en haut</p>
+        </div>
+      ) : (
+        <div className="mt-3 grid min-h-32 place-items-center rounded-[12px] border border-[#E8E5DF] border-dashed bg-white px-4 text-center text-[#6B6B6B] text-[12px]">
+          Ajoutez la photo principale du téléphone.
+        </div>
+      )}
+
+      {publicPhotos.length > 0 && (
+        <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
+          {publicPhotos.map((photo) => (
+            <div
+              className="group relative overflow-hidden rounded-[10px] border border-[#E8E5DF] bg-white"
+              key={photo.id}
+            >
+              <button className="block w-full" onClick={() => setPrimaryMedia(file.id, photo.id)} type="button">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  alt={photo.fileName || "Photo de détail"}
+                  className="aspect-square w-full object-cover"
+                  src={photo.dataUrl}
+                />
+              </button>
+              <div className="flex items-center justify-between gap-1 px-1.5 py-1">
+                <span className="truncate font-semibold text-[#147065] text-[9px]">
+                  {photo.isPrimary ? "Principale" : "Détail"}
+                </span>
+                <button
+                  aria-label="Supprimer cette photo"
+                  className="grid size-5 place-items-center rounded text-[#B4342A] hover:bg-[#FCF4F3]"
+                  onClick={() => deleteMedia(file.id, photo.id)}
+                  type="button"
+                >
+                  <Trash2 className="size-3" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
