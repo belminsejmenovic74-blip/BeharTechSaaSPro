@@ -13,26 +13,25 @@ export function normalizeBaseUrl(url?: string | null): string {
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
+// Domaine public STABLE du SaaS. Tous les liens et QR codes partagés au client
+// (page de suivi, reçus, factures…) DOIVENT pointer ici, quel que soit l'endroit
+// où ils sont générés : production, déploiement « preview » Vercel (xxx.vercel.app),
+// ou app desktop. Un QR généré depuis une URL de preview renvoyait un « 404
+// NOT_FOUND » Vercel chez le client. On force donc systématiquement ce domaine
+// (sauf en dev localhost, où l'on teste le suivi sur la même machine).
+export const CANONICAL_PUBLIC_APP_URL = "https://app.behartechpro.fr";
+
 export function getPublicAppUrl() {
-  // 1. Priorité aux variables d'environnement Vite
-  const viteUrl =
-    typeof import.meta !== "undefined" &&
-    (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_PUBLIC_APP_URL;
-  if (viteUrl) return normalizeBaseUrl(viteUrl);
-
-  // 2. Fallback Next.js
-  const nextUrl = typeof process !== "undefined" ? process.env?.NEXT_PUBLIC_APP_URL : undefined;
-  if (nextUrl) return normalizeBaseUrl(nextUrl);
-
-  // 3. Fallback sur window.location.origin si exécuté côté navigateur
-  if (typeof window !== "undefined" && window.location?.origin) {
-    if (!window.location.origin.startsWith("tauri:")) {
-      return normalizeBaseUrl(window.location.origin);
+  if (typeof window !== "undefined" && window.location?.hostname) {
+    const { hostname, origin } = window.location;
+    // Dev local uniquement : on conserve l'origine courante (le suivi lit alors
+    // le store local du navigateur).
+    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") {
+      return normalizeBaseUrl(origin);
     }
   }
-
-  // 4. Fallback vide pour forcer un chemin relatif si rien n'est disponible
-  return "";
+  // Production, preview, desktop : toujours le domaine canonique stable.
+  return CANONICAL_PUBLIC_APP_URL;
 }
 
 export function buildTrackingUrl({ shopSlug, trackingToken }: { shopSlug: string; trackingToken: string }) {
@@ -109,10 +108,10 @@ export function getCustomerTrackingPath(repair: Partial<TrackingRepair>, shop?: 
 export function getCustomerTrackingUrl(repair: Partial<TrackingRepair>, shop?: TrackingShop | null) {
   const path = getCustomerTrackingPath(repair, shop);
   if (!path) return "";
-  
+
   const envBase = getPublicAppUrl();
   if (!envBase) return path;
-  
+
   return `${envBase}${path}`;
 }
 

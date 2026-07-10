@@ -1,7 +1,6 @@
 import type { BeharDocument, Repair, StoreState, WorkshopInfo } from "@/lib/behar-store";
 import { getBillingWorkshopInfo, getRepairReadyDisplayLabel, repairHasConfirmedPayment } from "@/lib/behar-store";
 import { getTrackingCode } from "@/lib/customer-tracking";
-import { getPublicDocumentUrl } from "@/lib/documents/document-actions";
 import type { PublicRepairDto } from "@/lib/public-dtos";
 import { PUBLIC_REPAIR_TIMELINE_STEPS, publicRepairProgress, publicRepairStatusLabel } from "@/lib/repair-status";
 import { getWorkshopCountryConfig } from "@/lib/workshop-country";
@@ -89,17 +88,6 @@ function publicDocumentTitle(document: BeharDocument, number?: string) {
   return number ? `${base} ${number}` : base;
 }
 
-function hasPublicPreviewTarget(document: BeharDocument): boolean {
-  if (document.type === "intake" || document.type === "summary" || document.type === "diagnostic_report") {
-    return Boolean(document.repairId);
-  }
-  if (document.type === "quote") return Boolean(document.quoteId);
-  if (document.type === "invoice") return Boolean(document.invoiceId);
-  if (document.type === "payment") return Boolean(document.paymentId);
-  if (document.type === "sale-receipt" || document.type === "sale-invoice") return Boolean(document.saleId);
-  return false;
-}
-
 function documentNumber(
   document: BeharDocument,
   state: Pick<StoreState, "quotes" | "invoices" | "payments">,
@@ -183,19 +171,25 @@ export function buildPublicRepairDtoFromLocalState(
     },
     client: { displayName: customer?.name || "Client" },
     timeline: publicTimeline(repair),
-    documents: documents.map((document) => {
-      const number = documentNumber(document, state, repair);
-      return {
-        type: document.type,
-        title: publicDocumentTitle(document, number),
-        number,
-        status: "ready",
-        previewUrl:
-          commercialDocumentPath(document) ??
-          (hasPublicPreviewTarget(document) ? getPublicDocumentUrl(document) : undefined),
-        downloadUrl: document.fileUrl || undefined,
-      };
-    }),
+    documents: documents
+      // On n'expose au client QUE les documents réellement consultables à distance :
+      // ceux qui ont une page publique cloud (devis/facture/reçu, via
+      // commercialDocumentPath) ou un PDF hébergé (fileUrl). L'« intake » (Bon de
+      // prise en charge) n'a qu'un rendu LOCAL (/print/document…) illisible depuis
+      // le téléphone du client → on l'exclut : toutes ses infos sont déjà sur la
+      // page de suivi, et la section affiche alors « documents à venir ».
+      .filter((document) => Boolean(commercialDocumentPath(document) || document.fileUrl))
+      .map((document) => {
+        const number = documentNumber(document, state, repair);
+        return {
+          type: document.type,
+          title: publicDocumentTitle(document, number),
+          number,
+          status: "ready",
+          previewUrl: commercialDocumentPath(document) ?? document.fileUrl ?? undefined,
+          downloadUrl: document.fileUrl || undefined,
+        };
+      }),
     messages: (repair.messages ?? [])
       .filter((message) => message.visibility === "client")
       .map((message) => ({
