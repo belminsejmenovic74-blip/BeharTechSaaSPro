@@ -1,5 +1,7 @@
 "use client";
 
+import { CANONICAL_PUBLIC_APP_URL } from "@/lib/customer-tracking";
+
 export const STOCK_APP_URL_ENV = "NEXT_PUBLIC_APP_URL";
 
 export class StockLabelUrlConfigurationError extends Error {
@@ -53,7 +55,13 @@ export function validateStockAppUrl(value: string | undefined): { url: string; e
 }
 
 export function getStockLabelUrlConfiguration() {
-  return validateStockAppUrl(process.env.NEXT_PUBLIC_APP_URL);
+  // Une étiquette stock est imprimée (permanente) : elle doit TOUJOURS pointer
+  // vers le domaine de production stable. On exigeait NEXT_PUBLIC_APP_URL, mais
+  // cette variable est souvent absente/mal configurée sur Vercel (ex. ancien
+  // domaine .com mort) → la génération d'étiquette plantait (throw) ou pointait
+  // vers un domaine mort. On force donc le domaine canonique, exactement comme
+  // getPublicAppUrl() pour le suivi client, pour garantir la cohérence.
+  return validateStockAppUrl(CANONICAL_PUBLIC_APP_URL);
 }
 
 export function buildScannedPartUrl(scanToken: string) {
