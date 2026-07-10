@@ -15,6 +15,7 @@ import {
   type StockMovement,
   useBeharStore,
 } from "@/lib/behar-store";
+import { useReconditioningStore } from "@/lib/reconditioning-store";
 import { cn } from "@/lib/utils";
 
 import { PageShell } from "./page-shell";
@@ -524,6 +525,9 @@ function DetailModal({ detail, onClose }: Readonly<{ detail: DetailPayload; onCl
 
 export function AchatsWorkspace() {
   const purchases = useBeharStore((s) => s.purchases);
+  const updatePurchase = useBeharStore((s) => s.updatePurchase);
+  const deletePurchase = useBeharStore((s) => s.deletePurchase);
+  const updateReconditioningFile = useReconditioningStore((s) => s.updateFile);
   const commitSupplierInvoice = useBeharStore((s) => s.commitSupplierInvoice);
   const canViewPurchases = useBeharStore((s) => s.hasPermission("canViewPurchasePrice"));
   const supplierInvoices = useBeharStore((s) => s.supplierInvoices);
@@ -985,21 +989,73 @@ export function AchatsWorkspace() {
 
       {purchases.length > 0 && (
         <Panel className="mt-4 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="font-semibold text-[#1A1916] text-sm">Anciennes entrées achats</p>
-              <p className="text-[#6B6B6B] text-xs">
-                Conservées pour compatibilité. Les nouveaux achats fournisseurs passent par les factures ci-dessus.
-              </p>
-            </div>
-            <button
-              className="inline-flex items-center gap-1 rounded-full border border-[#E8E8E5] bg-white px-3 py-1.5 font-semibold text-[#6B6B6B] text-xs"
-              onClick={() => toast.info("Les anciennes lignes restent disponibles dans l'export interne.")}
-              type="button"
-            >
-              <Trash2 className="size-3.5" />
-              {purchases.length} entrée(s)
-            </button>
+          <div className="mb-3">
+            <p className="font-semibold text-[#1A1916] text-sm">Achats directs (téléphones, reprises…)</p>
+            <p className="text-[#6B6B6B] text-xs">
+              Entrées issues du comptoir et du reconditionnement. Ajustez ici votre prix d'achat.
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] border-collapse text-sm">
+              <thead>
+                <tr className="border-[#E8E8E5] border-b text-left text-[#6B6B6B] text-xs">
+                  <th className="py-2 pr-3 font-semibold">Article</th>
+                  <th className="py-2 pr-3 font-semibold">Source</th>
+                  <th className="py-2 pr-3 font-semibold">Date</th>
+                  <th className="py-2 pr-3 text-right font-semibold">Qté</th>
+                  <th className="py-2 pr-3 text-right font-semibold">Prix d'achat unitaire</th>
+                  <th className="py-2 pr-3 text-right font-semibold">Total</th>
+                  <th className="py-2" />
+                </tr>
+              </thead>
+              <tbody>
+                {purchases.map((purchase) => (
+                  <tr key={purchase.id} className="border-[#F0F0ED] border-b last:border-0">
+                    <td className="py-2 pr-3 font-medium text-[#1A1916]">{purchase.label || "—"}</td>
+                    <td className="py-2 pr-3 text-[#6B6B6B]">{purchase.source}</td>
+                    <td className="py-2 pr-3 text-[#6B6B6B]">
+                      {purchase.date ? new Date(purchase.date).toLocaleDateString("fr-FR") : "—"}
+                    </td>
+                    <td className="py-2 pr-3 text-right tabular-nums">{purchase.quantity}</td>
+                    <td className="py-2 pr-3 text-right">
+                      {canViewPurchases ? (
+                        <input
+                          aria-label={`Prix d'achat de ${purchase.label || "l'article"}`}
+                          className="w-24 rounded-[8px] border border-[#E8E8E5] px-2 py-1 text-right tabular-nums outline-none focus:border-[#2A9D8F]"
+                          min={0}
+                          onChange={(event) => {
+                            const unitCost = Math.max(0, Number(event.target.value) || 0);
+                            updatePurchase(purchase.id, { unitCost });
+                            if (purchase.reconditioningFileId) {
+                              updateReconditioningFile(purchase.reconditioningFileId, { prixAchat: unitCost });
+                            }
+                          }}
+                          type="number"
+                          value={purchase.unitCost || 0}
+                        />
+                      ) : (
+                        <span className="text-[#6B6B6B]">Masqué</span>
+                      )}
+                    </td>
+                    <td className="py-2 pr-3 text-right font-semibold tabular-nums">
+                      {canViewPurchases
+                        ? formatEuro(purchase.total ?? (purchase.unitCost || 0) * (purchase.quantity || 1))
+                        : "Masqué"}
+                    </td>
+                    <td className="py-2 text-right">
+                      <button
+                        aria-label="Supprimer l'achat"
+                        className="grid size-8 place-items-center rounded-[8px] text-[#B4342A] transition hover:bg-[#FCF4F3]"
+                        onClick={() => deletePurchase(purchase.id)}
+                        type="button"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </Panel>
       )}

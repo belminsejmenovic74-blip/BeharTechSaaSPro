@@ -167,6 +167,36 @@ export function buildPublicCommercialDtoFromLocalState(
     };
   }
 
+  if (kind === "intake") {
+    // Bon de prise en charge : construit depuis la réparation (token = repair.id).
+    const repair = state.repairs.find((entry) => entry.id === cleanToken);
+    if (!repair) return null;
+    const workshop = getBillingWorkshopInfo(workshopInfo, repair.billingCountry);
+    const device = [repair.brandName, repair.deviceModel || repair.device].filter(Boolean).join(" ").trim();
+    const amount = Number(repair.amount ?? 0);
+    return {
+      kind,
+      workshop: publicWorkshop(workshop),
+      client: { displayName: clientDisplayName(state, repair.customerId) },
+      document: {
+        number: repair.number,
+        status: "Pris en charge",
+        totalTtc: amount,
+        createdAt: repair.droppedAt || repair.createdAt || new Date().toISOString(),
+      },
+      lines: [
+        {
+          label: [device, repair.issue].filter(Boolean).join(" — ") || "Prise en charge de l'appareil",
+          quantity: 1,
+          unitPriceTtc: amount,
+          totalTtc: amount,
+        },
+      ],
+      relatedRepair: relatedRepair(state, repair.id, workshop),
+      documents: [],
+    };
+  }
+
   // kind === "sale"
   const sale = state.sales.find((entry) => entry.id === cleanToken);
   if (!sale) return null;

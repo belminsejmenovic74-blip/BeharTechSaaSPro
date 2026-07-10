@@ -502,6 +502,7 @@ function SupplierModal({ onClose, onOpenFile }: Readonly<{ onClose: () => void; 
   const createFile = useReconditioningStore((s) => s.createFile);
   const updateFile = useReconditioningStore((s) => s.updateFile);
   const appendEvent = useReconditioningStore((s) => s.appendEvent);
+  const addPurchase = useBeharStore((s) => s.addPurchase);
   const activeGrades = settings.grades.filter((g) => g.active);
 
   const brands = getDeviceBrands();
@@ -532,6 +533,7 @@ function SupplierModal({ onClose, onOpenFile }: Readonly<{ onClose: () => void; 
     }
     const id = createFile();
     const buyPrice = Math.max(0, Number(form.buyPrice) || 0);
+    const label = [form.brand, form.model, form.storage].filter(Boolean).join(" ") || "Téléphone fournisseur";
     updateFile(id, {
       brand: form.brand,
       model: form.model,
@@ -542,9 +544,22 @@ function SupplierModal({ onClose, onOpenFile }: Readonly<{ onClose: () => void; 
       supplierName: form.supplier.trim() || undefined,
       supplierInvoice: form.invoice.trim() || undefined,
       prixAchat: buyPrice,
+      prixVentePrevu: Math.max(0, Number(form.salePrice) || 0),
       warrantyMonths: Math.max(0, Number(form.warranty) || 0),
       observations: form.workNote.trim(),
       step: 5,
+      purchaseLogged: true,
+    });
+    addPurchase({
+      kind: "telephone",
+      source: "Reconditionnement",
+      label,
+      reference: form.imei.trim() || undefined,
+      supplier: form.supplier.trim() || "Fournisseur non renseigné",
+      invoiceNumber: form.invoice.trim() || undefined,
+      quantity: 1,
+      unitCost: buyPrice,
+      reconditioningFileId: id,
     });
     if (mode === "ready") {
       updateFile(id, {
@@ -697,17 +712,17 @@ function SupplierModal({ onClose, onOpenFile }: Readonly<{ onClose: () => void; 
                 value={form.buyPrice}
               />
             </Field>
+            <Field label="Prix de vente prévu">
+              <input
+                className={inputCls}
+                min={0}
+                onChange={(e) => patch({ salePrice: e.target.value })}
+                type="number"
+                value={form.salePrice}
+              />
+            </Field>
             {mode === "ready" && (
               <>
-                <Field label="Prix de vente">
-                  <input
-                    className={inputCls}
-                    min={0}
-                    onChange={(e) => patch({ salePrice: e.target.value })}
-                    type="number"
-                    value={form.salePrice}
-                  />
-                </Field>
                 <Field label="Grade">
                   <select
                     className={selectCls}

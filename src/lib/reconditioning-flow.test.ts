@@ -165,6 +165,31 @@ describe("Test 1 — Achat comptoir iPhone 13 écran cassé, prix manuel", () =>
   });
 });
 
+describe("Achat B2C — Comptoir et reconditionnement", () => {
+  it("enregistre immédiatement la reprise client dans Achats", () => {
+    const store = useReconditioningStore.getState;
+    const id = store().createFile();
+    store().updateFile(id, {
+      ...COMPLETE_FILE_PATCH,
+      source: "Rachat client",
+      provenance: "client",
+      customerName: "Marie Dupont",
+    });
+
+    store().acceptIntake(id);
+
+    const file = store().files.find((entry) => entry.id === id);
+    const purchase = useBeharStore.getState().purchases.find((entry) => entry.reconditioningFileId === id);
+    expect(file?.purchaseLogged).toBe(true);
+    expect(purchase).toMatchObject({
+      kind: "telephone",
+      source: "Rachat client",
+      supplier: "Marie Dupont",
+      unitCost: 100,
+    });
+  });
+});
+
 /* ───────────────── Test 2 — Utilisation d'une pièce en atelier ───────────────── */
 
 describe("Test 2 — Pièce « écran iPhone 13 » utilisée en atelier", () => {

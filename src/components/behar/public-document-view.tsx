@@ -54,6 +54,7 @@ function title(kind: PublicCommercialDocumentDto["kind"]) {
   if (kind === "quote") return "Devis";
   if (kind === "invoice") return "Facture";
   if (kind === "receipt") return "Confirmation de règlement";
+  if (kind === "intake") return "Bon de prise en charge";
   return "Justificatif de vente";
 }
 

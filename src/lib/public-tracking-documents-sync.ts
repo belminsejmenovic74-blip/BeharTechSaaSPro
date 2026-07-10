@@ -59,6 +59,12 @@ export async function syncPublicTrackingDocumentsToCloud(state: DocumentSyncStat
     if (SKIPPED_STATUSES.has(sale.status)) continue;
     entries.push({ kind: "sale", id: sale.id, number: sale.number });
   }
+  // Bon de prise en charge : un « intake » par réparation active (token = repair.id),
+  // pour que le client puisse le consulter/télécharger depuis la page de suivi.
+  for (const repair of state.repairs ?? []) {
+    if (repair?.publicAccess?.active === false) continue;
+    entries.push({ kind: "intake", id: repair.id, number: repair.number });
+  }
 
   const payload = entries
     .map((entry) => {

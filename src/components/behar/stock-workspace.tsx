@@ -2267,14 +2267,15 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
                       )}
                       <td className={cn(tableCellClassName, "px-3 py-2 text-right")}>
                         <div className="flex justify-end gap-1.5">
-                          <button
-                            className="rounded-full border border-[#E8E8E5] px-2 py-1 text-[#1A1916] text-[11px] disabled:opacity-40"
-                            disabled={!entry.invoiceUrl}
-                            onClick={() => entry.invoiceUrl && window.open(entry.invoiceUrl, "_blank")}
-                            type="button"
-                          >
-                            Facture
-                          </button>
+                          {entry.invoiceUrl ? (
+                            <button
+                              className="rounded-full border border-[#E8E8E5] px-2 py-1 text-[#1A1916] text-[11px]"
+                              onClick={() => window.open(entry.invoiceUrl, "_blank")}
+                              type="button"
+                            >
+                              Facture
+                            </button>
+                          ) : null}
                           <button
                             className="rounded-full border border-[#E8E8E5] px-2 py-1 text-[#1A1916] text-[11px]"
                             onClick={() => router.push("/dashboard/achats")}
@@ -2536,7 +2537,7 @@ function StockDetailCard({
   action,
 }: Readonly<{ title: string; children: ReactNode; action?: ReactNode }>) {
   return (
-    <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5 shadow-[0_18px_45px_rgba(26,25,22,0.035)]">
+    <section className="min-w-0 rounded-[18px] border border-[#E8E8E5] bg-white p-5 shadow-[0_18px_45px_rgba(26,25,22,0.035)]">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="font-semibold text-[#1A1916] text-base">{title}</h2>
         {action}
@@ -2729,14 +2730,17 @@ export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string
               <StatusBadge status={invoice.status} />
             </td>
             <td className="px-4 py-3 text-right">
-              <button
-                className="font-semibold text-[#167B70] text-xs disabled:text-[#B7B7B2]"
-                disabled={!invoice.originalFileUrl}
-                onClick={() => invoice.originalFileUrl && window.open(invoice.originalFileUrl, "_blank")}
-                type="button"
-              >
-                Voir facture
-              </button>
+              {invoice.originalFileUrl ? (
+                <button
+                  className="font-semibold text-[#167B70] text-xs"
+                  onClick={() => window.open(invoice.originalFileUrl, "_blank")}
+                  type="button"
+                >
+                  Voir facture
+                </button>
+              ) : (
+                <span className="text-[#B7B7B2] text-xs">—</span>
+              )}
             </td>
           </tr>
         ))}
@@ -2837,8 +2841,8 @@ export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string
       </div>
 
       {activeTab === "overview" && (
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
-          <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="grid min-w-0 gap-4 lg:grid-cols-2">
             <StockDetailCard title="Informations générales">
               <dl className="divide-y divide-[#F0F0ED]">
                 <StockDetailDataRow label="Catégorie" value={item.categoryName || item.category} />

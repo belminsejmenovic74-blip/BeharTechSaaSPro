@@ -55,7 +55,7 @@ export type PublicRepairDto = {
 };
 
 export type PublicCommercialDocumentDto = {
-  kind: "quote" | "invoice" | "receipt" | "sale";
+  kind: "quote" | "invoice" | "receipt" | "sale" | "intake";
   workshop: PublicWorkshopDto;
   client: { displayName: string };
   document: {

@@ -405,7 +405,9 @@ export function PublicTrackingView({
   if (!data) return notFound(shopSlug);
 
   const shopName = resolveShopName([data.workshop.name]);
-  const trackingCode = token || data.repair.number;
+  // On affiche le numéro de dossier lisible (ex. REP-0009) plutôt que le token
+  // technique (ex. repair_1783…_94a6ec) qui sert uniquement à l'URL.
+  const trackingCode = data.repair.number || token;
   const initials = shopInitials(shopName);
   const progress = publicRepairProgress(data.repair.status);
   const active = progress.activeStepIndex;

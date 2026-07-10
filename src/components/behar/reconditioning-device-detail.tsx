@@ -52,7 +52,12 @@ import {
   type TestState,
   useReconditioningStore,
 } from "@/lib/reconditioning-store";
-import { canPublishPublicCertificate, getReadyForSaleChecklist } from "@/lib/reconditioning-validation";
+import {
+  canGenerateSaleLabel,
+  canPublishPublicCertificate,
+  getReadyForSaleChecklist,
+  hasFinalDiagnostic,
+} from "@/lib/reconditioning-validation";
 import { isStockItemCompatibleWithModel } from "@/lib/stock-parts";
 import { cn } from "@/lib/utils";
 
@@ -95,6 +100,7 @@ function DeviceDetailInner({ file, onBack }: Readonly<{ file: ReconditioningFile
   const markSold = useReconditioningStore((s) => s.markSold);
   const reopenFile = useReconditioningStore((s) => s.reopenFile);
   const setPhoto = useReconditioningStore((s) => s.setPhoto);
+  const appendEvent = useReconditioningStore((s) => s.appendEvent);
   const workshopSettings = useBeharStore((s) => s.workshopSettings);
 
   const costs = computeMargin(file);
@@ -136,6 +142,20 @@ function DeviceDetailInner({ file, onBack }: Readonly<{ file: ReconditioningFile
     if (answer == null) return;
     const price = Number(answer);
     if (Number.isFinite(price) && price >= 0) markSold(file.id, price);
+  };
+
+  const generateSaleLabel = () => {
+    if (!canGenerateSaleLabel(file)) {
+      window.alert(
+        "L'étiquette de vente sera disponible après le diagnostic final, le prix de vente, la batterie, la garantie et la photo.",
+      );
+      return;
+    }
+    if (!file.saleLabelGeneratedAt) {
+      updateFile(file.id, { saleLabelGeneratedAt: new Date().toISOString() });
+      appendEvent(file.id, "Étiquette de vente générée", "Atelier");
+    }
+    openDoc(file.id, "etiquette");
   };
 
   const mainAction = (() => {
@@ -212,7 +232,7 @@ function DeviceDetailInner({ file, onBack }: Readonly<{ file: ReconditioningFile
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {mainAction && <AccentButton onClick={mainAction.run}>{mainAction.label}</AccentButton>}
-            <GhostButton onClick={() => openDoc(file.id, "etiquette")}>
+            <GhostButton onClick={generateSaleLabel}>
               <Tag className="size-4 text-[#2A9D8F]" />
               Étiquette de vente
             </GhostButton>
@@ -247,6 +267,7 @@ function DeviceDetailInner({ file, onBack }: Readonly<{ file: ReconditioningFile
           publicUrl={publicUrl}
           realCosts={realCosts}
           workshopSynced={workshopSynced}
+          onGenerateSaleLabel={generateSaleLabel}
         />
         <InitialDiagnosticSection file={file} />
         <SectionCard subtitle="Photos reprises et photos de vente." title="Photos">
@@ -357,10 +378,10 @@ function DeviceDetailInner({ file, onBack }: Readonly<{ file: ReconditioningFile
             <DocButton doc="interne" fileId={file.id} label="Étiquette interne" />
             <DocButton doc="certificat" fileId={file.id} label="Fiche reconditionnement" />
             <DocButton doc="sortie" fileId={file.id} label="Certificat de test" />
-            <DocButton doc="etiquette" fileId={file.id} label="Étiquette de vente" />
+            <DocButton doc="etiquette" fileId={file.id} label="Étiquette de vente" onOpen={generateSaleLabel} />
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            <GhostButton onClick={() => openDoc(file.id, "etiquette")}>
+            <GhostButton onClick={generateSaleLabel}>
               <Tag className="size-4 text-[#2A9D8F]" />
               Imprimer étiquette
             </GhostButton>
@@ -592,6 +613,7 @@ function FinalQualityControlSection({
   publicUrl,
   realCosts,
   workshopSynced,
+  onGenerateSaleLabel,
 }: Readonly<{
   certificateData: CertificateData;
   estMargin: { amount: number; pct: number | null } | null;
@@ -600,6 +622,7 @@ function FinalQualityControlSection({
   publicUrl: string;
   realCosts: number;
   workshopSynced: boolean;
+  onGenerateSaleLabel: () => void;
 }>) {
   const updateFile = useReconditioningStore((s) => s.updateFile);
   const setPhoto = useReconditioningStore((s) => s.setPhoto);
@@ -741,8 +764,12 @@ function FinalQualityControlSection({
           </SectionCard>
 
           <SectionCard
-            subtitle={`${totalScore.treated} / ${totalScore.total} points contrôlés. Un point vide reste Non testé.`}
-            title="Points de contrôle final"
+            subtitle={
+              hasFinalDiagnostic(file)
+                ? "Diagnostic déjà validé en mode Atelier : ces mêmes données sont réutilisées pour la vente, le QR et l'étiquette."
+                : `${totalScore.treated} / ${totalScore.total} points contrôlés. Un point vide reste Non testé.`
+            }
+            title={hasFinalDiagnostic(file) ? "Diagnostic atelier synchronisé" : "Points de contrôle final"}
           >
             <div className="space-y-2">
               {QA_GROUPS.map((group, index) => {
@@ -898,7 +925,7 @@ function FinalQualityControlSection({
               <GhostButton
                 className="disabled:cursor-not-allowed disabled:opacity-55"
                 disabled={!publicReady}
-                onClick={() => openDoc(file.id, "etiquette")}
+                onClick={onGenerateSaleLabel}
               >
                 <Tag className="size-4 text-[#2A9D8F]" />
                 Générer étiquette vente
@@ -1320,12 +1347,19 @@ function FinRow({ label, value, tone }: Readonly<{ label: string; value: string;
   );
 }
 
-function DocButton({ fileId, doc, label }: Readonly<{ fileId: string; doc: string; label: string }>) {
+function DocButton({
+  fileId,
+  doc,
+  label,
+  onOpen,
+}: Readonly<{ fileId: string; doc: string; label: string; onOpen?: () => void }>) {
   return (
     <button
       className="flex flex-col items-center gap-1.5 rounded-[14px] border border-[#E8E5DF] bg-white px-2 py-3.5 font-semibold text-[#1A1916] text-[12px] transition hover:border-[#2A9D8F]/45"
-      onClick={() =>
-        window.open(`/print/reconditionnement?id=${encodeURIComponent(fileId)}&doc=${doc}`, "_blank", "noopener")
+      onClick={
+        onOpen ??
+        (() =>
+          window.open(`/print/reconditionnement?id=${encodeURIComponent(fileId)}&doc=${doc}`, "_blank", "noopener"))
       }
       type="button"
     >

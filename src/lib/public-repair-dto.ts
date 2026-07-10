@@ -116,6 +116,7 @@ function documentNumber(
  * `/print/document/...` qui n'est lisible qu'en local (cassée à distance).
  */
 function commercialDocumentPath(document: BeharDocument): string | undefined {
+  if (document.type === "intake" && document.repairId) return `/bon/${document.repairId}`;
   if (document.type === "quote" && document.quoteId) return `/devis/${document.quoteId}`;
   if (document.type === "invoice" && document.invoiceId) return `/facture/${document.invoiceId}`;
   if (document.type === "payment" && document.paymentId) return `/recu/${document.paymentId}`;

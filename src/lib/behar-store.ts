@@ -1507,6 +1507,10 @@ export type StoreState = {
   upsertSupplier: (input: SupplierInput) => string;
   commitSupplierInvoice: (input: SupplierInvoiceCommitInput) => string;
   addPurchase: (input: PurchaseInput) => string;
+  updatePurchase: (
+    id: string,
+    patch: Partial<Pick<Purchase, "label" | "unitCost" | "quantity" | "supplier" | "reference" | "note">>,
+  ) => void;
   deletePurchase: (id: string) => void;
   sendMessage: (input: MessageInput) => void;
   updateWorkshopInfo: (patch: Partial<WorkshopInfo>) => void;
@@ -9146,6 +9150,31 @@ export const useBeharStore = create<StoreState>()(
           metadata: { total, kind: input.kind },
         });
         return id;
+      },
+      updatePurchase: (id, patch) => {
+        const actor = get().currentUser ?? defaultCurrentUser;
+        set((state) => ({
+          purchases: state.purchases.map((entry) => {
+            if (entry.id !== id) return entry;
+            const next: Purchase = { ...entry, ...patch };
+            // Recalcule le total dès que le prix unitaire ou la quantité changent.
+            if (patch.unitCost !== undefined || patch.quantity !== undefined) {
+              const quantity = Math.max(1, Math.round(Number(next.quantity) || 1));
+              const unitCost = Number.isFinite(Number(next.unitCost)) ? Number(next.unitCost) : 0;
+              next.quantity = quantity;
+              next.unitCost = unitCost;
+              next.total = Math.round(unitCost * quantity * 100) / 100;
+            }
+            return next;
+          }),
+        }));
+        get().addAuditLog({
+          action: "purchase.updated",
+          targetType: "purchase",
+          targetId: id,
+          message: `${actor.name} a modifié un achat`,
+          metadata: {},
+        });
       },
       deletePurchase: (id) => {
         set((state) => ({ purchases: state.purchases.filter((entry) => entry.id !== id) }));

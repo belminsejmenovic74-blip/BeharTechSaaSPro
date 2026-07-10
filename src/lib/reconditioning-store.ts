@@ -1274,40 +1274,49 @@ export const useReconditioningStore = create<ReconditioningState>()(
       acceptIntake: (id) => {
         const file = get().files.find((entry) => entry.id === id);
         if (!file || file.purchaseLogged) return;
-        const label = getDeviceDisplayName(file);
+        const label = isDeviceComplete(file)
+          ? getDeviceDisplayName(file)
+          : [file.brand, file.model, file.storage].filter((value) => value.trim()).join(" ") || "Téléphone B2C";
+        const isB2cBuyback =
+          file.provenance === "client" || file.source === "Rachat client" || file.source === "Achat comptoir";
+        let logged = false;
+        try {
+          useBeharStore.getState().addPurchase({
+            kind: "telephone",
+            source: isB2cBuyback ? "Rachat client" : "Reconditionnement",
+            label,
+            reference: file.imei || file.serial || undefined,
+            supplier: isB2cBuyback ? file.customerName || "Client B2C" : file.supplierName || file.source,
+            invoiceNumber: file.supplierInvoice,
+            quantity: 1,
+            unitCost: Math.max(0, file.prixAchat),
+            reconditioningFileId: file.id,
+          });
+          logged = true;
+        } catch {
+          /* pas de permission achats : la fiche reste valide */
+        }
         if (!isDeviceComplete(file)) {
           set((state) => ({
             files: state.files.map((entry) =>
               entry.id === id
                 ? touch(entry, {
                     status: "À compléter",
+                    purchaseLogged: logged,
                     history: [
                       ...entry.history,
-                      { id: uid("evt"), at: nowIso(), title: "Reprise incomplète — fiche à compléter", by: "Comptoir" },
+                      {
+                        id: uid("evt"),
+                        at: nowIso(),
+                        title: "Reprise incomplète — achat enregistré, fiche à compléter",
+                        by: "Comptoir",
+                      },
                     ],
                   })
                 : entry,
             ),
           }));
           return;
-        }
-        let logged = false;
-        if (file.prixAchat > 0) {
-          try {
-            useBeharStore.getState().addPurchase({
-              kind: "telephone",
-              source: "Reconditionnement",
-              label,
-              reference: file.imei || file.serial || undefined,
-              supplier: file.customerName || file.source,
-              quantity: 1,
-              unitCost: file.prixAchat,
-              reconditioningFileId: file.id,
-            });
-            logged = true;
-          } catch {
-            /* pas de permission achats : la fiche reste valide */
-          }
         }
         set((state) => ({
           files: state.files.map((entry) =>
