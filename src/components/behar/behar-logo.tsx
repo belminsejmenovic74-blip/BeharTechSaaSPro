@@ -26,28 +26,36 @@ const sizeClasses: Record<BeharLogoSize, { word: string; dot: string; badge: str
 export function BeharLogo({
   size = "md",
   className,
+  showBadge = true,
 }: Readonly<{
   size?: BeharLogoSize;
   className?: string;
+  showBadge?: boolean;
 }>) {
   const classes = sizeClasses[size];
 
   return (
     <span
-      className={cn("inline-flex select-none items-center whitespace-nowrap font-bold tracking-[-0.02em]", classes.gap, className)}
+      className={cn(
+        "inline-flex select-none items-center whitespace-nowrap font-bold tracking-[-0.02em]",
+        classes.gap,
+        className,
+      )}
       aria-label="Behar Tech Pro"
     >
       <span className={cn("leading-none text-[#1D1D1F]", classes.word)}>BEHAR</span>
       <span className={cn("shrink-0 rounded-full bg-[#2A9D8F]", classes.dot)} aria-hidden />
       <span className={cn("leading-none text-[#1D1D1F]", classes.word)}>TECH</span>
-      <span
-        className={cn(
-          "ml-1 inline-flex shrink-0 items-center rounded-[8px] border border-[#2A9D8F] font-bold leading-none text-[#1D7F73]",
-          classes.badge,
-        )}
-      >
-        PRO
-      </span>
+      {showBadge && (
+        <span
+          className={cn(
+            "ml-1 inline-flex shrink-0 items-center rounded-[8px] border border-[#2A9D8F] font-bold leading-none text-[#1D7F73]",
+            classes.badge,
+          )}
+        >
+          PRO
+        </span>
+      )}
     </span>
   );
 }

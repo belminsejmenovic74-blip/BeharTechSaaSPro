@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import crypto from "crypto";
 import type { GenerateLicensesResult, LicenseKeyStatus } from "@/lib/supabase/license-types";
@@ -8,6 +9,49 @@ import type { GenerateLicensesResult, LicenseKeyStatus } from "@/lib/supabase/li
 // Hash functions
 function sha256(content: string) {
   return crypto.createHash("sha256").update(content).digest("hex");
+}
+
+const ADMIN_COOKIE = "btp_admin";
+
+/** Empreinte attendue dans le cookie de session admin, dérivée du secret serveur. */
+function adminSessionHash(): string | null {
+  const secret = process.env.ADMIN_ACCESS_TOKEN;
+  if (!secret) return null;
+  return sha256(`btp-admin:${secret}`);
+}
+
+async function isAdmin(): Promise<boolean> {
+  const expected = adminSessionHash();
+  if (!expected) return false;
+  const cookieStore = await cookies();
+  return cookieStore.get(ADMIN_COOKIE)?.value === expected;
+}
+
+/** Ouvre une session admin si le mot de passe correspond au secret serveur. */
+export async function loginAdmin(password: string): Promise<{ success: boolean; message?: string }> {
+  const secret = process.env.ADMIN_ACCESS_TOKEN;
+  if (!secret) {
+    return { success: false, message: "Accès administrateur non configuré sur le serveur." };
+  }
+  const provided = (password || "").trim();
+  const a = Buffer.from(sha256(provided));
+  const b = Buffer.from(sha256(secret));
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return { success: false, message: "Mot de passe incorrect." };
+  }
+  const cookieStore = await cookies();
+  cookieStore.set(ADMIN_COOKIE, sha256(`btp-admin:${secret}`), {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    path: "/",
+    maxAge: 60 * 60 * 8,
+  });
+  return { success: true };
+}
+
+export async function isAdminAuthed(): Promise<boolean> {
+  return isAdmin();
 }
 
 function generateRandomKey() {
@@ -21,18 +65,8 @@ function generateToken() {
   return crypto.randomBytes(32).toString("hex");
 }
 
-// Validation : check if the caller is authorized
-// (In a real app, verify a JWT or session cookie here.
-// For this MVP, we assume the server action is protected by the UI / admin pin layer,
-// but we should still be careful).
-async function checkAdminAuth() {
-  // TODO: Add real auth verification. For now, we allow it.
-  return true;
-}
-
 export async function generateLicenses(count = 50): Promise<GenerateLicensesResult> {
-  const isAuth = await checkAdminAuth();
-  if (!isAuth) {
+  if (!(await isAdmin())) {
     return { success: false, message: "Non autorisé" };
   }
 
@@ -96,6 +130,8 @@ export async function generateLicenses(count = 50): Promise<GenerateLicensesResu
 }
 
 export async function deactivateLicense(id: string) {
+  if (!(await isAdmin())) return { success: false, message: "Non autorisé" };
+
   const supabase = getSupabaseAdmin();
   if (!supabase) return { success: false, message: "Supabase error" };
 
@@ -110,6 +146,8 @@ export async function deactivateLicense(id: string) {
 }
 
 export async function fetchLicenses() {
+  if (!(await isAdmin())) return [];
+
   const supabase = getSupabaseAdmin();
   if (!supabase) return [];
 

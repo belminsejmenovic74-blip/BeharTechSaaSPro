@@ -702,7 +702,7 @@ function nextAction(file: ReconditioningFile): { title: string; description: str
     case "Vendu":
       return {
         title: "Dossier terminé",
-        description: "Consultez l'historique complet et la marge réelle.",
+        description: "Historique complet et marge réelle.",
         tab: "history",
       };
     default:

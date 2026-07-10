@@ -47,6 +47,7 @@ import {
   type RepairSubStatus,
   type RepairTestResult,
   type StockItem,
+  type SupplierInvoice,
   type DeviceModel,
   formatEuro,
   formatIsoToDisplay,
@@ -58,8 +59,10 @@ import {
 import { displayCustomerName } from "@/lib/customer-display";
 import { getCustomerTrackingUrl } from "@/lib/customer-tracking";
 import { formatDeviceLabel } from "@/lib/format-device";
+import { getPartTraceability } from "@/lib/part-traceability";
 import { repairReadyStatusLabel } from "@/lib/repair-status";
 import { sendRealSms } from "@/lib/send-sms";
+import { normalizePartReference, stockPrimaryReference, stockReferenceMatches } from "@/lib/stock-reference";
 import { cn } from "@/lib/utils";
 
 import { Panel, PrimaryButton, SearchBox, SecondaryButton, StatusBadge } from "./primitives";
@@ -306,6 +309,59 @@ function customerFor(repair: Repair | undefined, customers: Customer[]) {
   return repair ? customers.find((customer) => customer.id === repair.customerId) : undefined;
 }
 
+function searchable(value?: string) {
+  return (value ?? "")
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function parsePartReferenceInput(value: string) {
+  const input = value.trim();
+  if (!input) return "";
+  try {
+    const url = new URL(input, window.location.origin);
+    const pathSegments = url.pathname.split("/");
+    const pieceIndex = pathSegments.indexOf("piece");
+    const pathReference = pieceIndex >= 0 ? pathSegments[pieceIndex + 1] : "";
+    const queryReference = url.searchParams.get("ref") || url.searchParams.get("sku") || url.searchParams.get("q");
+    return decodeURIComponent(pathReference || queryReference || input).trim();
+  } catch {
+    return input;
+  }
+}
+
+function stockItemMatchesQuery(item: StockItem, query: string) {
+  const normalizedReference = normalizePartReference(query);
+  if (normalizedReference && stockReferenceMatches(item, normalizedReference)) return true;
+  const q = searchable(query);
+  if (!q) return true;
+  return [
+    item.displayName,
+    item.name,
+    item.rawName,
+    item.categoryName,
+    item.category,
+    item.quality,
+    item.supplier,
+    item.primarySupplier,
+    item.supplierBrand,
+    ...item.compatibleModels,
+  ].some((value) => searchable(value).includes(q));
+}
+
+function originInvoiceForStockItem(
+  item: StockItem | undefined,
+  trace: ReturnType<typeof getPartTraceability>,
+): SupplierInvoice | undefined {
+  if (!item) return trace.supplierInvoices[0];
+  return (
+    trace.supplierInvoices.find((invoice) => invoice.id === item.originSupplierInvoiceId) ?? trace.supplierInvoices[0]
+  );
+}
+
 function inferModelFromPieceNameStrict(
   pieceName: string,
   brandId?: string,
@@ -420,6 +476,11 @@ export function AtelierWorkspace() {
     repairs,
     customers,
     stockItems,
+    purchases,
+    supplierInvoices,
+    supplierInvoiceLines,
+    stockMovements,
+    sales,
     documents,
     quotes,
     invoices,
@@ -448,6 +509,11 @@ export function AtelierWorkspace() {
       repairs: s.repairs,
       customers: s.customers,
       stockItems: s.stockItems,
+      purchases: s.purchases,
+      supplierInvoices: s.supplierInvoices,
+      supplierInvoiceLines: s.supplierInvoiceLines,
+      stockMovements: s.stockMovements,
+      sales: s.sales,
       documents: s.documents,
       quotes: s.quotes,
       invoices: s.invoices,
@@ -488,6 +554,8 @@ export function AtelierWorkspace() {
   const [noteTag, setNoteTag] = useState<NoteTag>("Général");
   const [clientDraft, setClientDraft] = useState("");
   const [selectedQrRepairId, setSelectedQrRepairId] = useState<string | null>(null);
+  const [partSearch, setPartSearch] = useState("");
+  const [focusedStockItemId, setFocusedStockItemId] = useState("");
 
   // Génération/téléchargement PDF réel (bon de dépôt, fiche d'intervention, devis, facture…).
   const { download: downloadDocument, uploadToCloud: uploadDocumentToCloud } = useDocument();
@@ -501,10 +569,106 @@ export function AtelierWorkspace() {
     return stockItems.filter((item) => isStockItemCompatibleWithRepair(item, selectedRepair, deviceModels));
   }, [stockItems, selectedRepair, deviceModels]);
 
+  const partCandidates = useMemo(() => {
+    const parsedQuery = parsePartReferenceInput(partSearch);
+    const baseItems = parsedQuery ? stockItems : showAllStock ? stockItems : compatibleItems;
+    return baseItems
+      .filter((item) => item.active !== false && item.repairEnabled !== false)
+      .filter((item) => !parsedQuery || stockItemMatchesQuery(item, parsedQuery))
+      .sort((a, b) => {
+        const aCompatible = selectedRepair ? isStockItemCompatibleWithRepair(a, selectedRepair, deviceModels) : false;
+        const bCompatible = selectedRepair ? isStockItemCompatibleWithRepair(b, selectedRepair, deviceModels) : false;
+        if (aCompatible !== bCompatible) return aCompatible ? -1 : 1;
+        return (b.stock > 0 ? 1 : 0) - (a.stock > 0 ? 1 : 0);
+      });
+  }, [compatibleItems, deviceModels, partSearch, selectedRepair, showAllStock, stockItems]);
+
+  const focusedStockItem = partCandidates.find((item) => item.id === focusedStockItemId) ?? partCandidates[0];
+  const focusedPartTrace = useMemo(
+    () =>
+      focusedStockItem
+        ? getPartTraceability(
+            {
+              stockItems,
+              purchases,
+              supplierInvoiceLines,
+              supplierInvoices,
+              stockMovements,
+              repairs,
+              customers,
+              sales,
+            },
+            stockPrimaryReference(focusedStockItem),
+          )
+        : undefined,
+    [
+      customers,
+      focusedStockItem,
+      purchases,
+      repairs,
+      sales,
+      stockItems,
+      stockMovements,
+      supplierInvoiceLines,
+      supplierInvoices,
+    ],
+  );
+  const focusedOriginInvoice =
+    focusedStockItem && focusedPartTrace ? originInvoiceForStockItem(focusedStockItem, focusedPartTrace) : undefined;
+  const focusedOriginLine =
+    focusedPartTrace?.supplierInvoiceLines.find((line) => line.id === focusedStockItem?.originSupplierInvoiceLineId) ??
+    focusedPartTrace?.supplierInvoiceLines[0];
+
   const canViewMoney = hasPermission("canViewMargin");
   const canViewPurchasePrice = hasPermission("canViewPurchasePrice");
   const canViewSupplier = hasPermission("canViewSupplier");
+  const canUseStockItem = hasPermission("canUseStockItem");
   const isManager = currentUser.role === "admin";
+
+  const selectPartFromSearch = () => {
+    const parsed = parsePartReferenceInput(partSearch);
+    if (!parsed) {
+      toast.error("Tapez ou scannez une référence pièce.");
+      return;
+    }
+    const exact = stockItems.find((item) => stockReferenceMatches(item, parsed));
+    const match = exact ?? stockItems.find((item) => stockItemMatchesQuery(item, parsed));
+    if (!match) {
+      toast.error("Aucune pièce trouvée pour cette référence.");
+      return;
+    }
+    setFocusedStockItemId(match.id);
+    setPartSearch(stockPrimaryReference(match));
+    setShowAllStock(true);
+  };
+
+  const useStockItemInRepair = (item: StockItem) => {
+    if (!selectedRepair) return;
+    const existingPart = selectedRepair.parts.find((part) => part.stockItemId === item.id);
+    if (existingPart?.confirmed) {
+      toast.info("Cette pièce est déjà utilisée dans le dossier.");
+      return;
+    }
+    const compatible = isStockItemCompatibleWithRepair(item, selectedRepair, deviceModels);
+    if (!compatible) {
+      const confirmed = window.confirm(
+        `La pièce "${item.displayName ?? item.name}" n'est pas marquée compatible avec ${selectedRepair.brandName} ${selectedRepair.deviceModel || selectedRepair.model}. L'utiliser quand même ?`,
+      );
+      if (!confirmed) return;
+    }
+    if (!existingPart && item.stock <= 0) {
+      toast.error("Stock indisponible pour cette pièce.");
+      return;
+    }
+    const added = existingPart ? true : addPartToRepair(selectedRepair.id, item.id, 1);
+    const used = added ? confirmPartUsage(selectedRepair.id, item.id) : false;
+    if (!added || !used) {
+      toast.error("Impossible d'utiliser cette pièce. Vérifiez le stock et les permissions.");
+      return;
+    }
+    setFocusedStockItemId(item.id);
+    toast.success("Pièce utilisée, stock décrémenté et mouvement lié au dossier.");
+  };
 
   const filteredRepairs = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -1412,43 +1576,69 @@ export function AtelierWorkspace() {
           <Panel className="overflow-hidden">
             <div className="flex flex-wrap items-center justify-between border-[#E8E8E5] border-b p-5 gap-3">
               <div>
-                <SectionTitle
-                  title={`Pièces compatibles avec ${selectedRepair.brandName} ${selectedRepair.deviceModel || selectedRepair.model}`}
-                />
+                <SectionTitle title="Pièces utilisées" />
                 <span className="text-[#6B6B6B] text-xs font-normal mt-0.5 block">
-                  {showAllStock
-                    ? `${stockItems.length} références stock totales`
-                    : `${compatibleItems.length} références compatibles`}
+                  Tapez une référence, scannez un QR code ou cherchez par nom/modèle compatible.
                 </span>
               </div>
               <SecondaryButton className="h-9 text-xs px-3" onClick={() => setShowAllStock(!showAllStock)}>
                 {showAllStock ? "Voir uniquement compatibles" : "Voir tout le stock"}
               </SecondaryButton>
             </div>
+            <div className="border-[#E8E8E5] border-b bg-[#FFFFFF] p-4">
+              <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
+                <div className="relative">
+                  <QrCode className="-translate-y-1/2 absolute top-1/2 left-3 size-4 text-[#6B6B6B]" />
+                  <input
+                    className="h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-white pr-3 pl-10 text-[#1A1916] text-sm outline-none transition placeholder:text-[#8A8A85] focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
+                    onChange={(event) => setPartSearch(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") selectPartFromSearch();
+                    }}
+                    placeholder="Référence, QR, nom de pièce ou modèle compatible..."
+                    value={partSearch}
+                  />
+                </div>
+                <PrimaryButton className="h-11" onClick={selectPartFromSearch}>
+                  <Search className="size-4" />
+                  Rechercher
+                </PrimaryButton>
+                <SecondaryButton
+                  className="h-11"
+                  onClick={() => {
+                    setPartSearch("");
+                    setFocusedStockItemId("");
+                  }}
+                >
+                  Réinitialiser
+                </SecondaryButton>
+              </div>
+              <p className="mt-2 text-[#6B6B6B] text-xs">
+                Un scanner douchette peut saisir directement l'URL QR ou la référence lue sur l'étiquette.
+              </p>
+            </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[840px] text-sm">
+              <table className="w-full min-w-[980px] text-sm">
                 <thead className="bg-[#FFFFFF] text-left text-[#6B6B6B] text-xs">
                   <tr>
                     <th className="px-4 py-3">Pièce</th>
                     <th className="px-4 py-3">Référence</th>
-                    <th className="px-4 py-3">Qualité</th>
+                    <th className="px-4 py-3">Modèle</th>
+                    <th className="px-4 py-3">Catégorie</th>
                     <th className="px-4 py-3">Stock</th>
                     {canViewSupplier && <th className="px-4 py-3">Fournisseur</th>}
-                    {canViewPurchasePrice && <th className="px-4 py-3">Prix achat</th>}
-                    <th className="px-4 py-3">Prix client</th>
-                    {canViewMoney && <th className="px-4 py-3">Marge</th>}
+                    {canViewPurchasePrice && <th className="px-4 py-3">Prix moyen</th>}
                     <th className="px-4 py-3">Action</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {compatibleItems.length === 0 && !showAllStock ? (
+                  {partCandidates.length === 0 ? (
                     <tr>
                       <td colSpan={12} className="px-4 py-8 text-center">
                         <div className="flex flex-col items-center justify-center gap-3">
                           <Package className="size-8 text-[#A3A3A3]" />
                           <p className="text-[#6B6B6B] text-sm font-medium">
-                            Aucune pièce compatible trouvée pour {selectedRepair.brandName}{" "}
-                            {selectedRepair.deviceModel || selectedRepair.model}.
+                            Aucune pièce trouvée pour ce dossier ou cette recherche.
                           </p>
                           <SecondaryButton className="h-9 text-xs px-4 mt-1" onClick={() => setShowAllStock(true)}>
                             Voir tout le stock
@@ -1457,28 +1647,35 @@ export function AtelierWorkspace() {
                       </td>
                     </tr>
                   ) : (
-                    (showAllStock ? stockItems : compatibleItems).map((item) => {
+                    partCandidates.map((item) => {
                       const selectedPart = selectedRepair.parts.find((part) => part.stockItemId === item.id);
-                      const margin = item.salePrice - item.purchasePrice;
                       return (
-                        <tr className="border-[#E8E8E5] border-t" key={item.id}>
+                        <tr
+                          className={cn(
+                            "cursor-pointer border-[#E8E8E5] border-t transition hover:bg-[#FAFAF8]",
+                            focusedStockItem?.id === item.id && "bg-[#FAFAF8]",
+                          )}
+                          key={item.id}
+                          onClick={() => setFocusedStockItemId(item.id)}
+                        >
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
                               <RealProductVisual
                                 category={item.categoryName}
                                 className="size-10 rounded-[10px] border border-[#E8E8E5]"
-                                name={item.name}
+                                name={item.displayName || item.name}
                               />
                               <div>
-                                <p className="font-semibold text-[#1A1916]">{item.name}</p>
-                                <p className="text-[#6B6B6B] text-xs">
-                                  {item.compatibleModels.join(", ") || "Compatibilité à vérifier"}
-                                </p>
+                                <p className="font-semibold text-[#1A1916]">{item.displayName || item.name}</p>
+                                <p className="text-[#6B6B6B] text-xs">{item.quality || "Qualité à compléter"}</p>
                               </div>
                             </div>
                           </td>
                           <td className="px-4 py-3 text-[#6B6B6B]">
                             <PartReferenceLink reference={item.sku || item.reference} />
+                          </td>
+                          <td className="px-4 py-3 text-[#6B6B6B]">
+                            {item.compatibleModels.join(" / ") || "Compatibilité à vérifier"}
                           </td>
                           <td className="px-4 py-3">
                             <StatusBadge status={item.categoryName || "En stock"} />
@@ -1492,40 +1689,36 @@ export function AtelierWorkspace() {
                               {item.stock}
                             </span>
                           </td>
-                          {canViewSupplier && <td className="px-4 py-3 text-[#6B6B6B]">{item.supplier}</td>}
-                          {canViewPurchasePrice && <td className="px-4 py-3">{formatEuro(item.purchasePrice)}</td>}
-                          <td className="px-4 py-3 font-semibold">{formatEuro(item.salePrice)}</td>
-                          {canViewMoney && <td className="px-4 py-3 text-[#167B70]">{formatEuro(margin)}</td>}
+                          {canViewSupplier && (
+                            <td className="px-4 py-3 text-[#6B6B6B]">{item.primarySupplier || item.supplier}</td>
+                          )}
+                          {canViewPurchasePrice && (
+                            <td className="px-4 py-3">{formatEuro(item.averagePurchasePrice ?? item.purchasePrice)}</td>
+                          )}
                           <td className="px-4 py-3">
                             {selectedPart?.confirmed ? (
-                              <StatusBadge status="Pièce reçue" />
+                              <StatusBadge status="Pièce utilisée" />
                             ) : selectedPart ? (
                               <PrimaryButton
                                 className="h-9 px-3"
-                                onClick={() => confirmPartUsage(selectedRepair.id, item.id)}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  useStockItemInRepair(item);
+                                }}
                               >
                                 Utiliser
                               </PrimaryButton>
                             ) : (
-                              <SecondaryButton
+                              <PrimaryButton
                                 className="h-9 px-3"
-                                onClick={() => {
-                                  const isCompatible = isStockItemCompatibleWithRepair(
-                                    item,
-                                    selectedRepair,
-                                    deviceModels,
-                                  );
-                                  if (!isCompatible) {
-                                    const confirm = window.confirm(
-                                      `Attention : La pièce "${item.name}" n'est pas marquée compatible avec ${selectedRepair.brandName} ${selectedRepair.deviceModel || selectedRepair.model}. Voulez-vous tout de même la réserver pour ce dossier ?`,
-                                    );
-                                    if (!confirm) return;
-                                  }
-                                  addPartToRepair(selectedRepair.id, item.id, 1);
+                                disabled={!canUseStockItem || item.stock <= 0}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  useStockItemInRepair(item);
                                 }}
                               >
-                                Réserver
-                              </SecondaryButton>
+                                Utiliser
+                              </PrimaryButton>
                             )}
                           </td>
                         </tr>
@@ -1537,48 +1730,145 @@ export function AtelierWorkspace() {
             </div>
           </Panel>
           <Panel className="p-5">
-            <SectionTitle title={`Pièces du dossier (${selectedRepair.parts.length})`} />
-            <div className="mt-4 space-y-3">
-              {selectedRepair.parts.map((part) => (
-                <div className="rounded-[14px] border border-[#E8E8E5] p-3" key={part.stockItemId}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-[#1A1916] text-sm">{part.name}</p>
-                      <div className="text-[#6B6B6B] text-xs">
-                        <PartReferenceLink reference={part.sku || part.reference} />
-                      </div>
+            <SectionTitle title="Pièce sélectionnée" />
+            {focusedStockItem ? (
+              <div className="mt-4 rounded-[16px] border border-[#E8E8E5] bg-white p-4">
+                <div className="flex items-start gap-3">
+                  <RealProductVisual
+                    category={focusedStockItem.categoryName}
+                    className="size-12 rounded-[12px] border border-[#E8E8E5]"
+                    name={focusedStockItem.displayName || focusedStockItem.name}
+                  />
+                  <div className="min-w-0">
+                    <p className="font-semibold text-[#1A1916] text-sm">
+                      {focusedStockItem.displayName || focusedStockItem.name}
+                    </p>
+                    <div className="mt-1 text-[#6B6B6B] text-xs">
+                      <PartReferenceLink reference={focusedStockItem.sku || focusedStockItem.reference} />
                     </div>
-                    <button
-                      className="text-[#B42318]"
-                      onClick={() => removePartFromRepair(selectedRepair.id, part.stockItemId)}
-                      type="button"
-                    >
-                      <X className="size-4" />
-                    </button>
-                  </div>
-                  <div className="mt-3 flex items-center justify-between text-sm">
-                    <StatusBadge status={part.confirmed ? "Pièce reçue" : "En attente pièce"} />
-                    <span className="font-semibold">{formatEuro(part.salePrice * part.quantity)}</span>
                   </div>
                 </div>
-              ))}
-              {!selectedRepair.parts.length && (
-                <p className="text-[#6B6B6B] text-sm">Aucune pièce réservée pour ce dossier.</p>
+                <dl className="mt-4 grid gap-2">
+                  {[
+                    ["Stock disponible", String(focusedStockItem.stock)],
+                    [
+                      "Modèle compatible",
+                      focusedStockItem.compatibleModels.length
+                        ? focusedStockItem.compatibleModels.join(" / ")
+                        : "Compatibilité à vérifier",
+                    ],
+                    ["Catégorie", focusedStockItem.categoryName || focusedStockItem.category || "Non défini"],
+                    ...(canViewPurchasePrice
+                      ? [
+                          [
+                            "Prix achat moyen",
+                            formatEuro(focusedStockItem.averagePurchasePrice ?? focusedStockItem.purchasePrice),
+                          ],
+                          [
+                            "Dernier prix achat",
+                            formatEuro(focusedStockItem.lastPurchasePrice ?? focusedStockItem.purchasePrice),
+                          ],
+                        ]
+                      : []),
+                    ...(canViewSupplier
+                      ? [
+                          [
+                            "Fournisseur",
+                            focusedStockItem.primarySupplier || focusedStockItem.supplier || "Non renseigné",
+                          ],
+                          ["Facture origine", focusedOriginInvoice?.invoiceNumber || "Non renseignée"],
+                        ]
+                      : []),
+                  ].map(([label, value]) => (
+                    <div
+                      key={label}
+                      className="flex items-start justify-between gap-3 rounded-[10px] bg-[#FAFAF8] px-3 py-2"
+                    >
+                      <dt className="text-[#6B6B6B] text-xs">{label}</dt>
+                      <dd className="max-w-[58%] text-right font-semibold text-[#1A1916] text-xs">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                {focusedOriginLine && canViewSupplier && (
+                  <p className="mt-3 text-[#6B6B6B] text-xs">
+                    Origine : {focusedOriginLine.supplierName} · {focusedOriginLine.quantityPurchased} achetée(s)
+                  </p>
+                )}
+                <div className="mt-4 grid gap-2">
+                  <PrimaryButton
+                    disabled={!canUseStockItem || focusedStockItem.stock <= 0}
+                    onClick={() => useStockItemInRepair(focusedStockItem)}
+                  >
+                    <Package className="size-4" />
+                    Utiliser dans la réparation
+                  </PrimaryButton>
+                  <SecondaryButton
+                    onClick={() => {
+                      window.location.href = `/dashboard/stock?ref=${encodeURIComponent(stockPrimaryReference(focusedStockItem))}`;
+                    }}
+                  >
+                    Voir fiche pièce
+                  </SecondaryButton>
+                  {canViewSupplier && focusedOriginInvoice?.originalFileUrl && (
+                    <SecondaryButton
+                      onClick={() => window.open(focusedOriginInvoice.originalFileUrl, "_blank", "noopener,noreferrer")}
+                    >
+                      <FileText className="size-4" />
+                      Voir facture
+                    </SecondaryButton>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="mt-4 rounded-[14px] bg-[#FAFAF8] p-4 text-[#6B6B6B] text-sm">
+                Cherchez ou scannez une référence pour afficher la traçabilité de la pièce.
+              </p>
+            )}
+
+            <div className="mt-6 border-[#E8E8E5] border-t pt-5">
+              <SectionTitle title={`Pièces du dossier (${selectedRepair.parts.length})`} />
+              <div className="mt-4 space-y-3">
+                {selectedRepair.parts.map((part) => (
+                  <div className="rounded-[14px] border border-[#E8E8E5] p-3" key={part.stockItemId}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-[#1A1916] text-sm">{part.name}</p>
+                        <div className="text-[#6B6B6B] text-xs">
+                          <PartReferenceLink reference={part.sku || part.reference} />
+                        </div>
+                      </div>
+                      <button
+                        className="text-[#B42318]"
+                        onClick={() => removePartFromRepair(selectedRepair.id, part.stockItemId)}
+                        type="button"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between text-sm">
+                      <StatusBadge status={part.confirmed ? "Pièce utilisée" : "En attente pièce"} />
+                      <span className="font-semibold">{formatEuro(part.salePrice * part.quantity)}</span>
+                    </div>
+                  </div>
+                ))}
+                {!selectedRepair.parts.length && (
+                  <p className="text-[#6B6B6B] text-sm">Aucune pièce utilisée pour ce dossier.</p>
+                )}
+              </div>
+              {canViewMoney && (
+                <div className="mt-5 rounded-[16px] bg-[#FFFFFF] p-4">
+                  <p className="text-[#6B6B6B] text-xs">Marge brute pièces</p>
+                  <p className="mt-1 font-semibold text-[#167B70] text-[24px]">
+                    {formatEuro(
+                      selectedRepair.parts.reduce(
+                        (sum, part) => sum + (part.salePrice - part.purchasePrice) * part.quantity,
+                        0,
+                      ),
+                    )}
+                  </p>
+                </div>
               )}
             </div>
-            {canViewMoney && (
-              <div className="mt-5 rounded-[16px] bg-[#FFFFFF] p-4">
-                <p className="text-[#6B6B6B] text-xs">Marge brute pièces</p>
-                <p className="mt-1 font-semibold text-[#167B70] text-[24px]">
-                  {formatEuro(
-                    selectedRepair.parts.reduce(
-                      (sum, part) => sum + (part.salePrice - part.purchasePrice) * part.quantity,
-                      0,
-                    ),
-                  )}
-                </p>
-              </div>
-            )}
           </Panel>
         </div>
       )}

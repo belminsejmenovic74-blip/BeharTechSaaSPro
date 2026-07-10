@@ -1149,7 +1149,7 @@ function SelectTile({
       type="button"
       onClick={onClick}
       className={cn(
-        "relative flex min-h-[68px] items-center justify-center gap-2 rounded-[14px] border bg-white px-4 py-3 text-center font-semibold text-[14px] transition active:scale-[0.97]",
+        "relative flex min-h-[72px] flex-col items-center justify-center gap-1.5 rounded-[14px] border bg-white px-3 py-3 text-center font-semibold text-[13.5px] leading-tight transition active:scale-[0.97]",
         active
           ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
           : "border-[#E8E8E5] text-[#1D1D1F] hover:border-[#D9D6CF]",
@@ -6323,11 +6323,7 @@ function CounterTrackingScreen({
 
   return (
     <div className="mx-auto max-w-[1180px]">
-      <CounterScreenTitle
-        title="Suivi du dossier"
-        subtitle="Retrouvez rapidement l'état d'une réparation pour informer le client."
-        onClose={onClose}
-      />
+      <CounterScreenTitle title="Suivi du dossier" subtitle="État d'avancement de la réparation." onClose={onClose} />
       <div className="grid gap-6 lg:grid-cols-[430px_1fr]">
         <aside className="space-y-4">
           <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5">
@@ -8277,11 +8273,7 @@ function CounterInvoicesScreen({ onClose }: Readonly<{ onClose: () => void }>) {
 
   return (
     <div className="mx-auto max-w-[1180px]">
-      <CounterScreenTitle
-        title="Factures"
-        subtitle="Retrouvez et imprimez une facture pour le client."
-        onClose={onClose}
-      />
+      <CounterScreenTitle title="Factures" subtitle="Éditer, imprimer et remettre au client." onClose={onClose} />
       <div className="mb-5">
         <CounterInput
           value={search}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Copy, Download, KeyRound, Ban, CheckCircle2 } from "lucide-react";
 import { PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
-import { generateLicenses, deactivateLicense, fetchLicenses } from "./actions";
+import { generateLicenses, deactivateLicense, fetchLicenses, isAdminAuthed, loginAdmin } from "./actions";
 import type { LicenseKey } from "@/lib/supabase/license-types";
 import { toast } from "sonner";
 
@@ -11,14 +11,34 @@ export default function AdminLicensesPage() {
   const [licenses, setLicenses] = useState<LicenseKey[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedBatch, setGeneratedBatch] = useState<any[] | null>(null);
+  const [authState, setAuthState] = useState<"checking" | "locked" | "unlocked">("checking");
+  const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    loadLicenses();
+    isAdminAuthed().then((ok) => {
+      setAuthState(ok ? "unlocked" : "locked");
+      if (ok) loadLicenses();
+    });
   }, []);
 
   async function loadLicenses() {
     const data = await fetchLicenses();
     setLicenses(data as LicenseKey[]);
+  }
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setIsSubmitting(true);
+    const res = await loginAdmin(password);
+    setIsSubmitting(false);
+    if (res.success) {
+      setPassword("");
+      setAuthState("unlocked");
+      loadLicenses();
+    } else {
+      toast.error(res.message || "Accès refusé");
+    }
   }
 
   async function handleGenerate() {
@@ -67,6 +87,34 @@ export default function AdminLicensesPage() {
     document.body.removeChild(link);
 
     toast.success("Export CSV téléchargé");
+  }
+
+  if (authState !== "unlocked") {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center p-6">
+        <form
+          onSubmit={handleLogin}
+          className="w-full max-w-sm rounded-2xl border border-[#EAE8E3] bg-white p-8 shadow-sm"
+        >
+          <div className="flex items-center gap-2 text-[#1A1916]">
+            <KeyRound className="size-5 text-[#2A9D8F]" />
+            <h1 className="text-lg font-semibold">Espace administrateur</h1>
+          </div>
+          <p className="mt-1 text-sm text-[#6B6B6B]">Cet espace gère les licences clients. L'accès est réservé.</p>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Mot de passe"
+            autoFocus
+            className="mt-6 w-full rounded-xl border border-[#EAE8E3] bg-white px-4 py-2.5 text-[#1A1916] outline-none focus:border-[#2A9D8F]"
+          />
+          <PrimaryButton type="submit" disabled={isSubmitting || authState === "checking"} className="mt-4 w-full">
+            {isSubmitting ? "Vérification…" : "Accéder"}
+          </PrimaryButton>
+        </form>
+      </div>
+    );
   }
 
   return (

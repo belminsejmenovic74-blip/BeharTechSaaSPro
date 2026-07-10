@@ -504,7 +504,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <PageShell title="Réglages" subtitle="Gérez les informations de votre atelier et vos préférences.">
+    <PageShell title="Réglages" subtitle="Identité de l'atelier, fiscalité et préférences.">
       {/* Tabs + Save bar */}
       <div className="mb-6 flex min-w-0 flex-wrap items-start justify-between gap-4">
         <nav className="flex w-full min-w-0 max-w-full gap-1 overflow-x-auto border-b border-[#FFFFFF] lg:w-auto">

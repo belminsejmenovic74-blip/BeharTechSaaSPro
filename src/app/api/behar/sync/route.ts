@@ -6,6 +6,7 @@ import type { NormalizedBusinessState } from "@/lib/data/normalized-sync";
 import { getCustomerTrackingPath, getTrackingCode } from "@/lib/customer-tracking";
 import { makePublicUrl } from "@/lib/public-access";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { isLicenseActive } from "@/lib/server/verify-license";
 import { normalizePartReference } from "@/lib/stock-reference";
 
 export const dynamic = "force-dynamic";
@@ -191,6 +192,10 @@ export async function POST(request: Request) {
   const workshopId = payload.workshopId && /^[0-9a-f-]{36}$/i.test(payload.workshopId) ? payload.workshopId : "";
   if (!workshopId) {
     return NextResponse.json({ error: "workshopId UUID requis." }, { status: 400 });
+  }
+
+  if (!(await isLicenseActive(payload.licenseKey))) {
+    return NextResponse.json({ error: "Licence invalide ou inactive." }, { status: 401 });
   }
 
   const ws = payload.workshopSettings;

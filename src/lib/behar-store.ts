@@ -37,6 +37,7 @@ import { ensureTrackingCode, getCustomerTrackingPath, getTrackingCode } from "@/
 import { publishDomainEvent } from "@/lib/domain-events";
 import { checkRepairQuota, checkSmsQuota, countSmsThisMonth, countThisMonth } from "@/lib/plan-limits";
 import { normalizePartReference, stockReferenceKeys, stockReferenceMatches } from "@/lib/stock-reference";
+import { pickStockLotForQuantity } from "@/lib/stock-lots";
 
 export type RepairStatus =
   | "Reçu"
@@ -6330,21 +6331,32 @@ export const useBeharStore = create<StoreState>()(
         const actor = state.currentUser ?? defaultCurrentUser;
         const item = state.stockItems.find((stockItem) => stockItem.id === stockItemId);
         const repair = state.repairs.find((entry) => entry.id === repairId);
-        // We still check if stock is available, but we don't decrement yet
+        // Ajouter une pièce au dossier atelier la sort immédiatement du stock disponible.
         if (!repair || !item || item.active === false || item.repairEnabled === false || item.stock < wanted)
           return false;
+        const selectedLot = pickStockLotForQuantity(state, item, wanted);
         set((current) => {
           const currentItem = current.stockItems.find((stockItem) => stockItem.id === stockItemId);
           const currentRepair = current.repairs.find((entry) => entry.id === repairId);
           if (!currentRepair || !currentItem) return current;
           const clientSalePrice = getStockClientPrice(currentItem, current.priceBookItems);
+          const lotInvoice = selectedLot?.supplierInvoiceId
+            ? current.supplierInvoices.find((invoice) => invoice.id === selectedLot.supplierInvoiceId)
+            : undefined;
 
           const repairs = current.repairs.map((repair) => {
             if (repair.id !== repairId) return repair;
-            const existing = repair.parts.find((part) => part.stockItemId === stockItemId);
+            const existing = repair.parts.find(
+              (part) =>
+                part.stockItemId === stockItemId &&
+                (part.supplierInvoiceLineId || "") ===
+                  (selectedLot?.supplierInvoiceLineId || currentItem.originSupplierInvoiceLineId || ""),
+            );
             const parts = existing
               ? repair.parts.map((part) =>
-                  part.stockItemId === stockItemId
+                  part.stockItemId === stockItemId &&
+                  (part.supplierInvoiceLineId || "") ===
+                    (selectedLot?.supplierInvoiceLineId || currentItem.originSupplierInvoiceLineId || "")
                     ? { ...part, quantity: part.quantity + wanted, stockDecremented: true }
                     : part,
                 )
@@ -6352,24 +6364,32 @@ export const useBeharStore = create<StoreState>()(
                   ...repair.parts,
                   {
                     stockItemId: currentItem.id,
-                    name: currentItem.name,
-                    reference: currentItem.sku,
+                    name: currentItem.displayName || currentItem.name,
+                    reference: currentItem.sku || currentItem.reference,
                     sku: currentItem.sku,
                     internalCode: currentItem.internalCode,
                     categoryName: currentItem.categoryName,
-                    purchasePrice: currentItem.purchasePrice,
+                    purchasePrice: currentItem.averagePurchasePrice ?? currentItem.purchasePrice,
                     salePrice: clientSalePrice,
                     quantity: wanted,
                     confirmed: false, // Réservée pour le dossier (pas encore "utilisée")
                     stockDecremented: true, // …mais le stock disponible est décrémenté dès l'ajout.
                     margin: clientSalePrice - currentItem.purchasePrice,
                     currency: repair.currency,
-                    supplier: currentItem.supplier || "Non renseigné",
+                    supplier:
+                      selectedLot?.supplierName ||
+                      currentItem.primarySupplier ||
+                      currentItem.supplier ||
+                      "Non renseigné",
                     supplierId: currentItem.primarySupplierId,
-                    purchaseId: currentItem.originPurchaseId,
-                    supplierInvoiceId: currentItem.originSupplierInvoiceId,
-                    supplierInvoiceNumber: currentItem.originSupplierInvoiceNumber,
-                    supplierInvoiceLineId: currentItem.originSupplierInvoiceLineId,
+                    purchaseId: selectedLot?.purchaseId || currentItem.originPurchaseId,
+                    supplierInvoiceId: selectedLot?.supplierInvoiceId || currentItem.originSupplierInvoiceId,
+                    supplierInvoiceNumber:
+                      selectedLot?.invoiceNumber ||
+                      lotInvoice?.invoiceNumber ||
+                      currentItem.originSupplierInvoiceNumber,
+                    supplierInvoiceLineId:
+                      selectedLot?.supplierInvoiceLineId || currentItem.originSupplierInvoiceLineId,
                     modelName: currentItem.compatibleModels?.[0],
                     modelId: currentItem.modelIds?.[0],
                   },
@@ -6380,7 +6400,10 @@ export const useBeharStore = create<StoreState>()(
               amount,
               total: amount,
               parts,
-              history: [...repair.history, `Pièce sortie du stock : ${currentItem.name} x${wanted} (stock -${wanted})`],
+              history: [
+                ...repair.history,
+                `Pièce utilisée depuis le stock : ${currentItem.displayName || currentItem.name} x${wanted} (stock -${wanted})`,
+              ],
             };
           });
 
@@ -6407,17 +6430,17 @@ export const useBeharStore = create<StoreState>()(
         if (afterItem) {
           get().createStockMovement({
             stockItemId,
-            movementType: "reservation_created",
+            movementType: "repair_part_used",
             quantityDelta: -wanted,
             quantityBefore: item.stock,
             quantityAfter: afterItem.stock,
-            reason: `Réservation pièce dossier ${repair.number}`,
+            reason: `Sortie réparation dossier ${repair.number}`,
             sourceModule: "atelier_reparation",
             sourceId: repairId,
             linkedRepairId: repairId,
-            linkedPurchaseId: item.originPurchaseId,
-            linkedSupplierInvoiceId: item.originSupplierInvoiceId,
-            linkedSupplierInvoiceLineId: item.originSupplierInvoiceLineId,
+            linkedPurchaseId: selectedLot?.purchaseId || item.originPurchaseId,
+            linkedSupplierInvoiceId: selectedLot?.supplierInvoiceId || item.originSupplierInvoiceId,
+            linkedSupplierInvoiceLineId: selectedLot?.supplierInvoiceLineId || item.originSupplierInvoiceLineId,
           });
         }
         if (afterItem && afterItem.stock <= afterItem.threshold) {

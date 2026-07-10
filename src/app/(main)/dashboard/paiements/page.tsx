@@ -6,7 +6,7 @@ export default function PaymentsPage() {
     <PageShell
       searchPlaceholder="Rechercher un paiement..."
       title="Paiements"
-      subtitle="Consultez les règlements indiqués sur les factures."
+      subtitle="Règlements encaissés et restes à payer."
     >
       <PaymentsWorkspace />
     </PageShell>

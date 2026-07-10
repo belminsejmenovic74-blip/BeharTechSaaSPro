@@ -18,16 +18,6 @@ import {
   type WorkshopSnapshot,
 } from "@/lib/workshop-sync";
 
-type RealtimeSnapshotRow = {
-  id?: unknown;
-  workshop_id?: unknown;
-  license_key?: unknown;
-  workshop_name?: unknown;
-  state?: unknown;
-  state_size_bytes?: unknown;
-  updated_at?: unknown;
-};
-
 const DEVICE_KEY = "behar-device-id";
 const SAVE_DEBOUNCE_MS = 800;
 const POLLING_FALLBACK_MS = 4000;
@@ -116,17 +106,12 @@ export function AutoSyncProvider() {
     let activeLicense = "";
     let saveTimer: ReturnType<typeof setTimeout> | null = null;
     let pollTimer: number | null = null;
-    let channel: ReturnType<NonNullable<typeof supabase>["channel"]> | null = null;
     let lastKnownVersion = getWorkshopStateVersion(useBeharStore.getState());
 
     const stopRealtime = () => {
       if (pollTimer) {
         window.clearInterval(pollTimer);
         pollTimer = null;
-      }
-      if (channel && supabase) {
-        void supabase.removeChannel(channel);
-        channel = null;
       }
     };
 
@@ -166,43 +151,12 @@ export function AutoSyncProvider() {
       applyRemoteSnapshot(snapshot, force);
     };
 
+    // Les snapshots ne sont plus lisibles directement côté client (accès
+    // verrouillé au profit d'un accès par licence). La reprise des modifications
+    // faites sur un autre poste passe donc par une relève périodique.
     const startRealtime = (license: string) => {
       stopRealtime();
       if (!supabase) return;
-
-      channel = supabase
-        .channel(`workshop-sync:${license}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "workshop_snapshots",
-            filter: `license_key=eq.${license}`,
-          },
-          (payload) => {
-            const row = payload.new as RealtimeSnapshotRow;
-            if (!row.state || typeof row.state !== "object") return;
-            applyRemoteSnapshot({
-              id: String(row.id ?? ""),
-              workshopId: String(row.workshop_id ?? ""),
-              licenseKey: normalizeLicenseKey(String(row.license_key ?? license)),
-              workshopName: typeof row.workshop_name === "string" ? row.workshop_name : undefined,
-              state: row.state as Partial<StoreState> & Record<string, unknown>,
-              stateSizeBytes: typeof row.state_size_bytes === "number" ? row.state_size_bytes : 0,
-              updatedAt: typeof row.updated_at === "string" ? row.updated_at : new Date().toISOString(),
-            });
-          },
-        )
-        .subscribe((status) => {
-          if (status === "SUBSCRIBED") {
-            markSyncStatus("synced", {
-              lastSyncedAt: useBeharStore.getState().cloudSync?.lastSyncedAt,
-              lastError: undefined,
-            });
-          }
-        });
-
       pollTimer = window.setInterval(() => {
         void fetchAndApplyRemote(license);
       }, POLLING_FALLBACK_MS);

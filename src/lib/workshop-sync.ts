@@ -176,18 +176,6 @@ function createWorkshopId(): string {
   });
 }
 
-/**
- * Recovery code dérivé du workshop_id (UUID).
- * Même workshop_id → même recovery_code à vie. Comme ça l'UPSERT peut
- * toujours envoyer la valeur sans risquer d'écraser celle de la BDD,
- * et la colonne NOT NULL est toujours satisfaite à l'INSERT.
- */
-function recoveryCodeFromWorkshopId(workshopId: string): string {
-  const hex = workshopId.replace(/-/g, "").toUpperCase();
-  const padded = (hex + "0".repeat(16)).slice(0, 16);
-  return `${padded.slice(0, 4)}-${padded.slice(4, 8)}-${padded.slice(8, 12)}-${padded.slice(12, 16)}`;
-}
-
 export function getWorkshopStateVersion(
   state: (Partial<StoreState> & Record<string, unknown>) | null | undefined,
 ): number {
@@ -284,14 +272,9 @@ export async function loadSnapshotByLicenseKey(key: string): Promise<WorkshopSna
 
   markSyncStatus("loading");
   try {
-    const selectColumns = "id, workshop_id, license_key, workshop_name, state, state_size_bytes, updated_at";
     const { data, error } = await supabase
-      .from("workshop_snapshots")
-      .select(selectColumns)
-      .ilike("license_key", normalizedKey)
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .rpc("snapshot_pull", { p_license_key: normalizedKey })
+      .maybeSingle<WorkshopSnapshotRow>();
 
     if (error) {
       markSyncStatus(isNetworkError(error.message) ? "offline" : "error", { lastError: error.message });
@@ -357,23 +340,17 @@ async function upsertSnapshot(
     sizeBytes,
   });
 
-  const payload: Record<string, unknown> = {
-    workshop_id: workshopId,
-    // Toujours fourni — dérivé du workshop_id donc déterministe (pas d'écrasement).
-    recovery_code: recoveryCodeFromWorkshopId(workshopId),
-    license_key: normalizedKey,
-    workshop_name: mergedState.workshopSettings?.name || mergedState.workshopInfo?.name || null,
-    device_label: detectDeviceLabel(),
-    state: stateForUpload,
-    state_size_bytes: sizeBytes,
-    schema_version: WORKSHOP_SCHEMA_VERSION,
-  };
-
   const { data, error } = await supabase
-    .from("workshop_snapshots")
-    .upsert(payload, { onConflict: "workshop_id" })
-    .select("id, workshop_id, license_key, workshop_name, state, state_size_bytes, updated_at")
-    .single();
+    .rpc("snapshot_push", {
+      p_license_key: normalizedKey,
+      p_workshop_id: workshopId,
+      p_workshop_name: mergedState.workshopSettings?.name || mergedState.workshopInfo?.name || null,
+      p_device_label: detectDeviceLabel(),
+      p_state: stateForUpload,
+      p_state_size_bytes: sizeBytes,
+      p_schema_version: WORKSHOP_SCHEMA_VERSION,
+    })
+    .single<WorkshopSnapshotRow>();
 
   if (error) {
     const pgError = error as { code?: string; message?: string; details?: string; hint?: string };

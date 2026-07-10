@@ -56,6 +56,7 @@ import {
   type Invoice,
   type PaymentMethod,
   type Repair,
+  type RepairPart,
   type RepairStatus,
   type SettlementStatus,
   type StockItem,
@@ -66,6 +67,7 @@ import { isStockItemCompatibleWithRepair } from "./atelier-workspace";
 import { displayCustomerName } from "@/lib/customer-display";
 import { getCustomerTrackingUrl } from "@/lib/customer-tracking";
 import { formatDeviceLabel } from "@/lib/format-device";
+import { getPartTraceability } from "@/lib/part-traceability";
 import { generateQrDataUrl, publicAbsoluteUrl } from "@/lib/public-link";
 import { cn } from "@/lib/utils";
 
@@ -1010,6 +1012,7 @@ function OverviewTab({
       <ActivityCard repair={repair} />
       <div className="space-y-4">
         <DiagnosticNotesCard repair={repair} />
+        <RepairPartsTraceabilitySection repair={repair} />
         <DocumentsLiesCard documents={documents} invoices={invoices} quotes={quotes} />
         <SuiviClientCard repair={repair} />
       </div>
@@ -1157,6 +1160,277 @@ function FactBlock({ label, value }: Readonly<{ label: string; value?: string }>
       <p className="mt-0.5 whitespace-pre-line font-medium text-[#1A1916] text-sm">{value || "Non renseigné"}</p>
     </div>
   );
+}
+
+function partReference(part: RepairPart) {
+  return part.sku || part.reference || part.internalCode || part.stockItemId;
+}
+
+function traceDate(value?: string) {
+  return value ? formatIsoToDisplay(value) : "—";
+}
+
+function partStockStatus(part: RepairPart) {
+  if (part.stockDecremented) return "Stock prélevé";
+  if (part.confirmed) return "Utilisée";
+  return "Réservée";
+}
+
+function RepairPartsTraceabilitySection({ compact = false, repair }: Readonly<{ compact?: boolean; repair: Repair }>) {
+  const router = useRouter();
+  const store = useBeharStore();
+  const canViewPurchasePrice = store.hasPermission("canViewPurchasePrice");
+  const canViewSupplier = store.hasPermission("canViewSupplier");
+
+  const rows = useMemo(
+    () =>
+      repair.parts.map((part) => {
+        const reference = partReference(part);
+        const trace = getPartTraceability(store, reference);
+        const stockItem = trace.stockItem ?? store.stockItems.find((item) => item.id === part.stockItemId);
+        const invoice =
+          trace.supplierInvoices.find((entry) => entry.id === part.supplierInvoiceId) ??
+          store.supplierInvoices.find(
+            (entry) => entry.id === part.supplierInvoiceId || entry.invoiceNumber === part.supplierInvoiceNumber,
+          ) ??
+          trace.supplierInvoices[0];
+        const invoiceLine =
+          trace.supplierInvoiceLines.find(
+            (entry) => entry.id === part.supplierInvoiceLineId || entry.stockItemId === part.stockItemId,
+          ) ?? trace.supplierInvoiceLines[0];
+        const purchase =
+          trace.purchases.find((entry) => entry.id === part.purchaseId || entry.stockItemId === part.stockItemId) ??
+          trace.purchases[0];
+        const entryMovement = trace.movements.find(
+          (entry) =>
+            entry.movementType === "supplier_purchase_received" &&
+            (entry.stockItemId === part.stockItemId || entry.linkedSupplierInvoiceId === invoice?.id),
+        );
+        const repairMovement =
+          trace.movements.find(
+            (entry) =>
+              entry.linkedRepairId === repair.id &&
+              (entry.stockItemId === part.stockItemId || entry.partReference === reference),
+          ) ??
+          store.stockMovements.find(
+            (entry) =>
+              entry.linkedRepairId === repair.id &&
+              (entry.stockItemId === part.stockItemId || entry.partReference === reference),
+          );
+        const supplierName = invoice?.supplierName || part.supplier || purchase?.supplier;
+        const purchaseDate = invoice?.purchaseDate || purchase?.date || invoiceLine?.createdAt;
+        const technician =
+          repairMovement?.actorName || repair.technician || repair.updatedByName || repair.createdByName;
+        const repairDone = isTerminalRepairStatus(repair.status);
+        const documentsLinked = store.documents.some(
+          (doc) => doc.repairId === repair.id || doc.id === invoice?.originalDocumentId,
+        );
+
+        return {
+          documentsLinked,
+          entryMovement,
+          invoice,
+          invoiceLine,
+          part,
+          purchase,
+          purchaseDate,
+          reference,
+          repairDone,
+          repairMovement,
+          stockItem,
+          supplierName,
+          technician,
+        };
+      }),
+    [repair, store],
+  );
+
+  const openInvoice = (row: (typeof rows)[number]) => {
+    if (row.invoice?.originalFileUrl) {
+      window.open(row.invoice.originalFileUrl, "_blank");
+      return;
+    }
+    const doc = row.invoice?.originalDocumentId
+      ? store.documents.find((entry) => entry.id === row.invoice?.originalDocumentId)
+      : undefined;
+    if (doc) {
+      router.push(getInternalDocumentUrl(doc));
+      return;
+    }
+    toast.info("Document fournisseur non disponible pour cette pièce.");
+  };
+
+  const openStockCard = (reference: string) => {
+    router.push(`/dashboard/stock?ref=${encodeURIComponent(reference)}`);
+  };
+
+  return (
+    <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="font-semibold text-[#1A1916]">Pièces utilisées</h3>
+          <p className="mt-1 text-[#6B6B6B] text-xs">
+            Traçabilité stock, facture fournisseur et dossier client reliés par référence.
+          </p>
+        </div>
+        <span className="rounded-full border border-[#D6EFEB] bg-[#F2FAF8] px-3 py-1 font-semibold text-[#167B70] text-xs">
+          {repair.parts.length} pièce(s)
+        </span>
+      </div>
+
+      {rows.length === 0 ? (
+        <div className="mt-4 rounded-[12px] border border-dashed border-[#E8E8E5] bg-[#FAFAF8] px-4 py-5 text-center text-[#6B6B6B] text-sm">
+          Aucune pièce utilisée sur ce dossier.
+        </div>
+      ) : (
+        <div className="mt-4 space-y-3">
+          {rows.map((row) => {
+            const timeline = [
+              {
+                done: Boolean(row.invoice),
+                label: "Facture fournisseur",
+                meta: row.invoice
+                  ? `${row.invoice.invoiceNumber} · ${row.supplierName || "Fournisseur"}`
+                  : "Facture d'origine à relier",
+                date: row.purchaseDate,
+              },
+              {
+                done: Boolean(row.entryMovement || row.invoiceLine || row.purchase),
+                label: "Entrée stock",
+                meta: row.entryMovement
+                  ? `${row.entryMovement.quantityBefore} → ${row.entryMovement.quantityAfter}`
+                  : row.invoiceLine || row.purchase
+                    ? `${row.part.quantity} pièce(s) reliée(s) à l'achat`
+                    : "Mouvement d'entrée à retrouver",
+                date: row.entryMovement?.createdAt || row.purchaseDate,
+              },
+              {
+                done: Boolean(row.repairMovement || row.part.stockDecremented || row.part.confirmed),
+                label: "Affectation réparation",
+                meta: `${repair.number} · ${row.part.quantity} pièce(s)`,
+                date: row.repairMovement?.createdAt || repair.updatedAt || repair.droppedAt,
+              },
+              {
+                done: row.repairDone,
+                label: "Réparation terminée",
+                meta: row.repairDone ? repair.status : "En cours",
+                date: repair.closedAt || repair.updatedAt,
+              },
+              {
+                done: Boolean(repair.customerId),
+                label: "Dossier client mis à jour",
+                meta: row.documentsLinked ? "Documents liés disponibles" : "Historique client enrichi",
+                date: repair.updatedAt || repair.createdAt || repair.droppedAt,
+              },
+            ];
+
+            return (
+              <article
+                className={cn(
+                  "rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] p-4",
+                  compact ? "space-y-3" : "space-y-4",
+                )}
+                key={`${row.part.stockItemId}-${row.reference}`}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-[#1A1916] text-sm">{row.part.name}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-[#6B6B6B] text-xs">
+                      <span>
+                        Réf. <PartReferenceLink reference={row.reference} />
+                      </span>
+                      {row.part.internalCode ? <span className="font-mono">{row.part.internalCode}</span> : null}
+                      {row.part.modelName || row.stockItem?.compatibleModels?.length ? (
+                        <span>{row.part.modelName || row.stockItem?.compatibleModels?.join(" / ")}</span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <span
+                    className={cn(
+                      "rounded-full px-2.5 py-1 font-semibold text-[11px]",
+                      row.part.stockDecremented ? "bg-[#E9F4F3] text-[#167B70]" : "bg-[#FFF8E5] text-[#936100]",
+                    )}
+                  >
+                    {partStockStatus(row.part)}
+                  </span>
+                </div>
+
+                <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                  <TraceMetric label="Quantité utilisée" value={`×${row.part.quantity}`} />
+                  {canViewPurchasePrice && (
+                    <TraceMetric label="Prix d'achat" value={formatEuro(row.part.purchasePrice || 0)} />
+                  )}
+                  {canViewSupplier && <TraceMetric label="Fournisseur" value={row.supplierName || "—"} />}
+                  <TraceMetric label="Technicien" value={row.technician || "Atelier"} />
+                  <TraceMetric
+                    label="Facture origine"
+                    value={row.invoice?.invoiceNumber || row.part.supplierInvoiceNumber || "—"}
+                  />
+                  <TraceMetric label="Date achat" value={traceDate(row.purchaseDate)} />
+                  <TraceMetric label="Catégorie" value={row.part.categoryName || row.stockItem?.categoryName || "—"} />
+                  <TraceMetric
+                    label="Stock après sortie"
+                    value={String(row.repairMovement?.quantityAfter ?? row.stockItem?.stock ?? "—")}
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <SecondaryButton
+                    className="h-9 px-3 text-xs"
+                    disabled={!row.invoice?.originalFileUrl && !row.invoice?.originalDocumentId}
+                    onClick={() => openInvoice(row)}
+                  >
+                    <ExternalLink className="size-3.5" />
+                    Voir facture
+                  </SecondaryButton>
+                  <SecondaryButton className="h-9 px-3 text-xs" onClick={() => openStockCard(row.reference)}>
+                    <PackageIcon />
+                    Voir fiche pièce
+                  </SecondaryButton>
+                </div>
+
+                <ol className="grid gap-2 lg:grid-cols-5">
+                  {timeline.map((step, index) => (
+                    <li
+                      className="rounded-[12px] border border-[#E8E8E5] bg-white p-3"
+                      key={`${row.reference}-${step.label}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            "grid size-6 shrink-0 place-items-center rounded-full text-[11px] font-semibold",
+                            step.done ? "bg-[#2A9D8F] text-white" : "bg-[#F1F1EE] text-[#6B6B6B]",
+                          )}
+                        >
+                          {step.done ? <Check className="size-3.5" /> : index + 1}
+                        </span>
+                        <p className="font-semibold text-[#1A1916] text-xs">{step.label}</p>
+                      </div>
+                      <p className="mt-2 line-clamp-2 text-[#6B6B6B] text-[11px]">{step.meta}</p>
+                      <p className="mt-1 font-mono text-[#8A8A85] text-[10px]">{traceDate(step.date)}</p>
+                    </li>
+                  ))}
+                </ol>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function TraceMetric({ label, value }: Readonly<{ label: string; value: string }>) {
+  return (
+    <div className="rounded-[10px] border border-[#E8E8E5] bg-white px-3 py-2">
+      <p className="text-[#6B6B6B] text-[11px]">{label}</p>
+      <p className="mt-0.5 truncate font-semibold text-[#1A1916] text-xs">{value}</p>
+    </div>
+  );
+}
+
+function PackageIcon() {
+  return <ShoppingCart className="size-3.5" />;
 }
 
 function DocumentsLiesCard({
@@ -1667,33 +1941,36 @@ function RepairTab({ onAdvance, repair }: Readonly<{ repair: Repair; onAdvance: 
     toast.success("Réparation mise à jour.");
   };
   return (
-    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-      <EditorGrid
-        actionLabel="Enregistrer la réparation"
-        fields={[
-          { label: "Intervention en cours", value: repair.issue },
-          { label: "Technicien assigné", value: repair.technician || "Atelier principal" },
-          { label: "Notes réparation", value: notes, onChange: setNotes },
-        ]}
-        onSave={save}
-      />
-      <aside className="space-y-3">
-        <TextBlock
-          label="Pièces utilisées / réservées"
-          value={repair.parts.map((part) => `${part.name} x${part.quantity}`).join("\n")}
+    <div className="space-y-5">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <EditorGrid
+          actionLabel="Enregistrer la réparation"
+          fields={[
+            { label: "Intervention en cours", value: repair.issue },
+            { label: "Technicien assigné", value: repair.technician || "Atelier principal" },
+            { label: "Notes réparation", value: notes, onChange: setNotes },
+          ]}
+          onSave={save}
         />
-        <TextBlock
-          label="Statut pièce"
-          value={
-            repair.parts.length
-              ? repair.parts.map((part) => `${part.name} : ${part.confirmed ? "utilisée" : "réservée"}`).join("\n")
-              : "Aucune pièce réservée."
-          }
-        />
-        <PrimaryButton className="w-full" onClick={onAdvance}>
-          Passer à l'étape suivante
-        </PrimaryButton>
-      </aside>
+        <aside className="space-y-3">
+          <TextBlock
+            label="Pièces utilisées / réservées"
+            value={repair.parts.map((part) => `${part.name} x${part.quantity}`).join("\n")}
+          />
+          <TextBlock
+            label="Statut pièce"
+            value={
+              repair.parts.length
+                ? repair.parts.map((part) => `${part.name} : ${part.confirmed ? "utilisée" : "réservée"}`).join("\n")
+                : "Aucune pièce réservée."
+            }
+          />
+          <PrimaryButton className="w-full" onClick={onAdvance}>
+            Passer à l'étape suivante
+          </PrimaryButton>
+        </aside>
+      </div>
+      <RepairPartsTraceabilitySection repair={repair} />
     </div>
   );
 }
@@ -3311,28 +3588,7 @@ function MobilePartsSection({
         </button>
       )}
 
-      <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-3.5">
-        <h3 className="text-[15px] font-bold text-[#1A1916]">Pièces réservées sur le dossier</h3>
-        {repair.parts.length === 0 ? (
-          <p className="text-xs text-[#6B6B6B] italic">Aucune pièce réservée pour le moment.</p>
-        ) : (
-          <ul className="divide-y divide-[#FFFFFF]">
-            {repair.parts.map((part) => (
-              <li key={part.stockItemId} className="py-2.5 flex items-center justify-between text-sm">
-                <div>
-                  <p className="font-bold text-[#1A1916]">{part.name}</p>
-                  <div className="text-[11px] text-[#6B6B6B] mt-0.5">
-                    Réf. <PartReferenceLink reference={part.sku || part.reference} /> · Qté : {part.quantity}
-                  </div>
-                </div>
-                <span className="rounded-full bg-[#FFFFFF] px-2.5 py-0.5 font-bold text-[#936100] text-[10px]">
-                  {part.confirmed ? "Utilisée" : "Réservée"}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <RepairPartsTraceabilitySection compact repair={repair} />
     </div>
   );
 }

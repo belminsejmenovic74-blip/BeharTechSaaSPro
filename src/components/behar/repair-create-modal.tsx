@@ -247,9 +247,7 @@ export function RepairModal({
   const [newPostalCode, setNewPostalCode] = useState("");
   const [newCity, setNewCity] = useState("");
   const [newCountry, setNewCountry] = useState<(typeof countryOptions)[number]>("France");
-  const [billingCountry, setBillingCountry] = useState<WorkshopCountry>(
-    source?.billingCountry ?? defaultMarket,
-  );
+  const [billingCountry, setBillingCountry] = useState<WorkshopCountry>(source?.billingCountry ?? defaultMarket);
   const billingConfig = getWorkshopCountryConfig(billingCountry);
   const currency = billingConfig.currency;
   const formatDossier = (value: number) => formatCurrency(value, currency);
@@ -499,8 +497,7 @@ export function RepairModal({
       // Keep cheapest or first found
       if (
         !existing ||
-        (marketPrice.prixClientTotal > 0 &&
-          (existing.price <= 0 || marketPrice.prixClientTotal < existing.price))
+        (marketPrice.prixClientTotal > 0 && (existing.price <= 0 || marketPrice.prixClientTotal < existing.price))
       ) {
         map.set(label, {
           label,
@@ -732,7 +729,8 @@ export function RepairModal({
     if (fromCatalog) histCreate.push("Tarif issu du catalogue atelier");
     else histCreate.push("Tarif saisi manuellement");
     if (saveToCatalog) histCreate.push("Tarif enregistré dans le catalogue");
-    if (appointmentId) histCreate.push(prefill?.appointmentId ? "Prise en charge créée depuis un rendez-vous" : "Rendez-vous lié");
+    if (appointmentId)
+      histCreate.push(prefill?.appointmentId ? "Prise en charge créée depuis un rendez-vous" : "Rendez-vous lié");
 
     const basePayload = {
       customerId,
@@ -818,8 +816,7 @@ export function RepairModal({
 
     // Étape 5 — on garde le modal ouvert sur l'écran de suite logique au lieu de
     // naviguer immédiatement. L'utilisateur choisit l'action suivante.
-    const repairNumber =
-      useBeharStore.getState().repairs.find((r) => r.id === repairId)?.number ?? "Nouveau dossier";
+    const repairNumber = useBeharStore.getState().repairs.find((r) => r.id === repairId)?.number ?? "Nouveau dossier";
     setSelected("repair", repairId);
     setCreated({
       repairId,
@@ -909,11 +906,7 @@ export function RepairModal({
     >
       {!initial && view === "form" ? (
         <div className="w-full md:hidden">
-          <MobileRepairIntakeWizard
-            initialStatus={initialStatus}
-            onClose={onClose}
-            prefill={prefill}
-          />
+          <MobileRepairIntakeWizard initialStatus={initialStatus} onClose={onClose} prefill={prefill} />
         </div>
       ) : null}
       <div
@@ -1109,9 +1102,7 @@ export function RepairModal({
               Autre accessoire / précision
               <input
                 className="h-11 rounded-xl border border-[#E8E8E5] px-3 text-sm outline-none focus:border-[#2A9D8F]"
-                onChange={(e) =>
-                  setIntakeDraft((prev) => ({ ...(prev ?? {}), accessoriesOther: e.target.value }))
-                }
+                onChange={(e) => setIntakeDraft((prev) => ({ ...(prev ?? {}), accessoriesOther: e.target.value }))}
                 placeholder="Ex. carte SIM Free, coque transparente…"
                 value={intakeDraft?.accessoriesOther ?? ""}
               />
@@ -1796,7 +1787,7 @@ export function RepairModal({
                             setSelectedQuality("");
                             setPrixPiece(e.target.value);
                           }}
-                          placeholder="0.00"
+                          placeholder="0,00"
                           value={prixPiece}
                         />
                       </label>
@@ -1810,7 +1801,7 @@ export function RepairModal({
                             setSelectedQuality("");
                             setMainOeuvre(e.target.value);
                           }}
-                          placeholder="0.00"
+                          placeholder="0,00"
                           value={mainOeuvre}
                         />
                       </label>

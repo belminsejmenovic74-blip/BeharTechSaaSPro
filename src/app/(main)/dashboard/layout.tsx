@@ -17,7 +17,7 @@ export default function Layout({ children }: Readonly<{ children: ReactNode }>) 
           <AutoSyncProvider />
           <div className="behar-app min-h-svh bg-[#FFFFFF] text-[#1A1916]">
             <DashboardSidebar />
-            <div className="flex min-h-svh flex-col md:pl-[var(--behar-sidebar-width,230px)]">
+            <div className="flex min-h-svh flex-col md:pl-[var(--behar-sidebar-width,234px)]">
               <div className="hidden md:block">
                 <Topbar />
               </div>

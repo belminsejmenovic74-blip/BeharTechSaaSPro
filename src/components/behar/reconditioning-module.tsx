@@ -45,9 +45,7 @@ export function ReconditioningModule({
   };
 
   const subtitle =
-    tab === "settings"
-      ? "Mode de calcul, marges, grades et blocages — ces réglages pilotent le prix proposé."
-      : "Suivez vos reprises, vos appareils en atelier et vos marges.";
+    tab === "settings" ? "Mode de calcul, marges, grades et blocages." : "Reprises, appareils en atelier et marges.";
 
   return (
     <PageShell

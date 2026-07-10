@@ -196,7 +196,7 @@ export default function TeamPage() {
   return (
     <PageShell
       title="Équipe & permissions"
-      subtitle="Gérez les membres, leurs rôles et leurs autorisations."
+      subtitle="Membres, rôles et autorisations."
       actions={
         <>
           <SecondaryButton className="h-10" onClick={() => setMode("greetings")}>

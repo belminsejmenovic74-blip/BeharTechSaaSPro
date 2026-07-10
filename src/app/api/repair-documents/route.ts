@@ -38,10 +38,7 @@ export async function POST(request: Request) {
   try {
     const admin = getSupabaseAdmin();
     if (!admin) {
-      return NextResponse.json(
-        { error: "Supabase Storage non configuré (mode local uniquement)." },
-        { status: 503 },
-      );
+      return NextResponse.json({ error: "Supabase Storage non configuré (mode local uniquement)." }, { status: 503 });
     }
 
     const body = await request.json().catch(() => ({}));
@@ -62,18 +59,21 @@ export async function POST(request: Request) {
     const path = `${folder}/${documentId}-${fileName.endsWith(".pdf") ? fileName : `${fileName}.pdf`}`;
     const { error: uploadError } = await admin.storage.from(BUCKET).upload(path, buffer, {
       contentType: "application/pdf",
-      upsert: true, // un document peut être régénéré → on écrase
+      upsert: false,
     });
+
+    // Un document émis est immuable : s'il existe déjà, on renvoie l'original
+    // au lieu de l'écraser. Une nouvelle version doit porter un nouvel identifiant.
     if (uploadError) {
-      return NextResponse.json({ error: uploadError.message }, { status: 502 });
+      const alreadyExists = /exists|409|duplicate/i.test(uploadError.message || "");
+      if (!alreadyExists) {
+        return NextResponse.json({ error: uploadError.message }, { status: 502 });
+      }
     }
 
     const { data } = admin.storage.from(BUCKET).getPublicUrl(path);
     return NextResponse.json({ storagePath: path, url: data.publicUrl });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Erreur serveur" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Erreur serveur" }, { status: 500 });
   }
 }

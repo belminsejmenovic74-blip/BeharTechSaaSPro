@@ -72,7 +72,7 @@ export function DashboardSidebar() {
   useEffect(() => {
     const saved = window.localStorage.getItem("behar-sidebar-collapsed") === "true";
     setCollapsed(saved);
-    document.documentElement.style.setProperty("--behar-sidebar-width", saved ? "78px" : "230px");
+    document.documentElement.style.setProperty("--behar-sidebar-width", saved ? "78px" : "234px");
   }, []);
 
   function toggleCollapsed() {
@@ -86,10 +86,10 @@ export function DashboardSidebar() {
     <aside
       className={cn(
         "fixed inset-y-0 left-0 z-30 hidden border-[#E8E8E5] border-r bg-white py-6 transition-[width,padding] duration-200 md:flex md:flex-col",
-        collapsed ? "w-[78px] px-2.5" : "w-[230px] px-3.5",
+        collapsed ? "w-[78px] px-2.5" : "w-[234px] px-3",
       )}
     >
-      <div className={cn("flex h-10 items-center gap-2", collapsed ? "justify-center" : "px-2")}>
+      <div className={cn("flex h-10 items-center", collapsed ? "justify-center" : "gap-1.5")}>
         {!collapsed && (
           <Link className="min-w-0 flex-1" href="/dashboard" prefetch={false}>
             <BeharLogo size="sm" />
@@ -98,7 +98,7 @@ export function DashboardSidebar() {
         <button
           type="button"
           onClick={toggleCollapsed}
-          className="grid size-9 shrink-0 place-items-center rounded-[11px] border border-[#E8E8E5] bg-white text-[#6B6B6B] transition hover:border-[#2A9D8F]/45 hover:text-[#1A1916]"
+          className="grid size-8 shrink-0 place-items-center rounded-[10px] border border-[#E8E8E5] bg-white text-[#6B6B6B] transition hover:border-[#2A9D8F]/45 hover:text-[#1A1916]"
           aria-label={collapsed ? "Afficher le menu" : "Masquer le menu"}
           title={collapsed ? "Afficher le menu" : "Masquer le menu"}
         >

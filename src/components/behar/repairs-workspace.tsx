@@ -8,6 +8,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   CalendarDays,
+  Camera,
+  Check,
+  ChevronRight,
   CreditCard,
   Edit3,
   FileText,
@@ -20,6 +23,7 @@ import {
   ReceiptText,
   Search,
   Send,
+  Smartphone,
   Trash2,
   WalletCards,
   Wrench,
@@ -1210,10 +1214,10 @@ export function RepairsWorkspace() {
                   </div>
 
                   <Link
-                    className="flex h-11 w-full items-center justify-center gap-2 rounded-[14px] border border-[#2A9D8F]/35 bg-white px-4 font-semibold text-[#167B70] text-sm transition hover:bg-[#FFFFFF]"
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-[14px] border border-[#2A9D8F]/45 bg-[#F4FBF9] px-4 font-semibold text-[#167B70] text-[15px] transition hover:border-[#2A9D8F]/70 hover:bg-[#E9F6F3]"
                     href={`/dashboard/dossiers/_/?id=${selectedRepair.id}`}
                   >
-                    <FolderOpen className="size-4" />
+                    <FolderOpen className="size-[18px]" />
                     Ouvrir le dossier complet
                   </Link>
 

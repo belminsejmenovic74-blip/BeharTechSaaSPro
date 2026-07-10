@@ -204,71 +204,30 @@ export async function uploadSnapshot(opts?: { silent?: boolean }): Promise<Uploa
   };
 
   try {
-    // Stratégie sans ON CONFLICT (pas de migration obligatoire) :
-    // 1) on cherche la ligne par license_key
-    // 2) si elle existe → update
-    // 3) sinon → insert
-    const { data: existing, error: selectError } = await supabase
-      .from("workshop_snapshots")
-      .select("workshop_id")
-      .eq("license_key", licenseKey)
-      .maybeSingle();
+    const { data, error } = await supabase
+      .rpc("snapshot_push", {
+        p_license_key: licenseKey,
+        p_workshop_id: workshopId,
+        p_workshop_name: rowBase.workshop_name,
+        p_device_label: rowBase.device_label,
+        p_state: rowBase.state,
+        p_state_size_bytes: rowBase.state_size_bytes,
+        p_schema_version: rowBase.schema_version,
+      })
+      .maybeSingle<{ workshop_id: string; updated_at: string }>();
 
-    if (selectError) {
-      const isNetwork = selectError.message?.includes("fetch") || selectError.message?.includes("Network");
-      setSyncState({ status: isNetwork ? "offline" : "error", lastError: selectError.message });
-      return { ok: false, error: selectError.message || "Erreur Supabase." };
+    if (error) {
+      const isNetwork = error.message?.includes("fetch") || error.message?.includes("Network");
+      setSyncState({ status: isNetwork ? "offline" : "error", lastError: error.message });
+      return { ok: false, error: error.message || "Erreur Supabase." };
     }
 
-    let updatedAt: string | undefined;
-    if (existing?.workshop_id) {
-      const { error, data } = await supabase
-        .from("workshop_snapshots")
-        .update({ ...rowBase, workshop_id: existing.workshop_id })
-        .eq("license_key", licenseKey)
-        .select("updated_at")
-        .single();
-      if (error) {
-        const isNetwork = error.message?.includes("fetch") || error.message?.includes("Network");
-        setSyncState({ status: isNetwork ? "offline" : "error", lastError: error.message });
-        return { ok: false, error: error.message || "Erreur Supabase." };
-      }
-      updatedAt = data?.updated_at;
-      // Synchronise l'id local si Supabase a son propre id
-      if (existing.workshop_id !== workshopId) {
-        workshopId = existing.workshop_id;
-      }
-    } else {
-      const { error, data } = await supabase.from("workshop_snapshots").insert(rowBase).select("updated_at").single();
-      if (error) {
-        // Course : un autre poste a inséré la ligne entre notre SELECT et notre INSERT.
-        // Code 23505 = unique_violation (si la contrainte UNIQUE existe).
-        const isDuplicate =
-          (error as any).code === "23505" || /duplicate key|unique constraint/i.test(error.message || "");
-        if (isDuplicate) {
-          const retry = await supabase
-            .from("workshop_snapshots")
-            .update(rowBase)
-            .eq("license_key", licenseKey)
-            .select("updated_at")
-            .single();
-          if (retry.error) {
-            const isNetwork = retry.error.message?.includes("fetch") || retry.error.message?.includes("Network");
-            setSyncState({ status: isNetwork ? "offline" : "error", lastError: retry.error.message });
-            return { ok: false, error: retry.error.message || "Erreur Supabase." };
-          }
-          updatedAt = retry.data?.updated_at;
-        } else {
-          const isNetwork = error.message?.includes("fetch") || error.message?.includes("Network");
-          setSyncState({ status: isNetwork ? "offline" : "error", lastError: error.message });
-          return { ok: false, error: error.message || "Erreur Supabase." };
-        }
-      } else {
-        updatedAt = data?.updated_at;
-      }
+    // Le serveur fait autorité sur l'id de l'atelier : on aligne le local dessus.
+    if (data?.workshop_id && data.workshop_id !== workshopId) {
+      workshopId = data.workshop_id;
     }
 
-    const finalUpdatedAt = updatedAt || new Date().toISOString();
+    const finalUpdatedAt = data?.updated_at || new Date().toISOString();
     // Met à jour le timestamp local
     const fresh = readLocalState() || state;
     fresh.cloudSync = { ...(fresh.cloudSync || {}), workshopId, lastSyncedAt: finalUpdatedAt };
@@ -302,10 +261,8 @@ export async function downloadSnapshotByLicense(rawKey: string): Promise<Downloa
 
   try {
     const { data, error } = await supabase
-      .from("workshop_snapshots")
-      .select("state, state_size_bytes, workshop_name, updated_at")
-      .eq("license_key", license)
-      .maybeSingle();
+      .rpc("snapshot_pull", { p_license_key: license })
+      .maybeSingle<{ state: any; state_size_bytes: number; workshop_name: string | null; updated_at: string }>();
 
     if (error) return { ok: false, error: "network", details: error.message };
     if (!data) return { ok: false, error: "not_found" };
@@ -571,10 +528,8 @@ export async function checkCloudFresher(): Promise<{
 
   try {
     const { data, error } = await supabase
-      .from("workshop_snapshots")
-      .select("updated_at, workshop_name")
-      .eq("license_key", license)
-      .maybeSingle();
+      .rpc("snapshot_meta", { p_license_key: license })
+      .maybeSingle<{ updated_at: string; workshop_name: string | null }>();
     if (error || !data) return null;
 
     const localSyncedAt = state.cloudSync?.lastSyncedAt;

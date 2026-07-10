@@ -3,7 +3,19 @@
 import { useEffect, useMemo, useRef, useState, type InputHTMLAttributes, type ReactNode } from "react";
 
 import { createPortal } from "react-dom";
-import { ArrowLeft, ArrowRight, CheckCircle2, FileText, Loader2, Plus, Trash2, UploadCloud, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  FileText,
+  Loader2,
+  Plus,
+  Tags,
+  Trash2,
+  UploadCloud,
+  X,
+} from "lucide-react";
+import QRCode from "qrcode";
 import { toast } from "sonner";
 
 import {
@@ -13,6 +25,7 @@ import {
   validateTextractInvoiceFile,
 } from "@/lib/textract-expense-parser";
 import { formatEuro, type StockItem, useBeharStore } from "@/lib/behar-store";
+import { buildScannedPartUrl } from "@/lib/stock-label-url";
 import { normalizePartReference, stockReferenceMatches } from "@/lib/stock-reference";
 import { cn } from "@/lib/utils";
 
@@ -308,6 +321,92 @@ function fileToDataUrl(file: File): Promise<string> {
     reader.onerror = () => reject(new Error("Lecture du fichier impossible."));
     reader.readAsDataURL(file);
   });
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+async function openPreparedStockLabelSheet(
+  preparations: Array<{
+    reference: string;
+    itemName: string;
+    internalCode: string;
+    compatibleModel: string;
+    quantityAdded: number;
+    labelReady: boolean;
+  }>,
+) {
+  const printable = preparations.filter((preparation) => preparation.labelReady && preparation.reference);
+  if (!printable.length) {
+    toast.error("Complétez les références avant de générer les étiquettes.");
+    return;
+  }
+
+  const labels = await Promise.all(
+    printable.flatMap((preparation) =>
+      Array.from({ length: Math.max(1, Math.min(20, Math.round(preparation.quantityAdded))) }, async () => ({
+        ...preparation,
+        qrDataUrl: await QRCode.toDataURL(buildScannedPartUrl(preparation.reference), {
+          margin: 1,
+          width: 150,
+          color: { dark: "#1A1916", light: "#FFFFFF" },
+        }),
+      })),
+    ),
+  );
+
+  const htmlLabels = labels
+    .map((label) => {
+      const cleanName = [label.itemName, label.compatibleModel].filter(Boolean).join(" ");
+      return `<div class="label">
+        <div class="brand">BEHAR <span></span> TECH <b>PRO</b></div>
+        <div class="body">
+          <div class="text">
+            <strong>${escapeHtml(label.reference)}</strong>
+            <p>${escapeHtml(cleanName || "Pièce")}</p>
+            <small>${escapeHtml(label.internalCode || "Code interne")}</small>
+          </div>
+          <img src="${label.qrDataUrl}" alt="QR ${escapeHtml(label.reference)}" />
+        </div>
+      </div>`;
+    })
+    .join("");
+
+  const win = window.open("", "_blank", "noopener,noreferrer,width=860,height=760");
+  if (!win) {
+    toast.error("Ouverture de la planche bloquée par le navigateur.");
+    return;
+  }
+  win.document.write(`<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Planche étiquettes stock</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF8; color: #1A1916; font-family: Arial, sans-serif; }
+    .sheet { width: 210mm; min-height: 297mm; padding: 8mm; display: grid; grid-template-columns: repeat(3, 60mm); grid-auto-rows: 30mm; gap: 5mm 4mm; background: #fff; }
+    .label { width: 60mm; height: 30mm; padding: 2.8mm; overflow: hidden; border: 1px solid #1A1916; background: #fff; }
+    .brand { display: flex; align-items: center; gap: 1.4mm; font-weight: 800; font-size: 5.5px; line-height: 1; }
+    .brand span { width: 1.8mm; height: 1.8mm; border-radius: 50%; background: #2A9D8F; display: inline-block; }
+    .brand b { border: 1px solid #2A9D8F; border-radius: 1.5mm; padding: .4mm 1mm; color: #167B70; }
+    .body { margin-top: 1.5mm; display: flex; gap: 2mm; align-items: stretch; }
+    .text { min-width: 0; flex: 1; }
+    strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; font-size: 17px; line-height: 1; }
+    p { margin: 1.2mm 0 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-weight: 700; font-size: 8px; line-height: 1.15; }
+    small { display: block; margin-top: 1mm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #6B6B6B; font-family: monospace; font-size: 7px; }
+    img { width: 17mm; height: 17mm; object-fit: contain; }
+    @page { size: A4; margin: 8mm; }
+    @media print { body { background: #fff; } .sheet { padding: 0; } }
+  </style>
+</head>
+<body>
+  <main class="sheet">${htmlLabels}</main>
+  <script>window.addEventListener('load', () => { window.focus(); window.print(); });</script>
+</body>
+</html>`);
+  win.document.close();
 }
 
 export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: Readonly<{ buttonLabel?: string }>) {
@@ -1050,7 +1149,17 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
                     ))}
                   </div>
                   <div className="mt-5 rounded-[14px] border border-[#E8E8E5] bg-white p-4">
-                    <p className="mb-3 font-semibold text-[#1A1916] text-sm">Impact stock préparé</p>
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                      <p className="font-semibold text-[#1A1916] text-sm">Impact stock préparé</p>
+                      <SecondaryButton
+                        className="h-9"
+                        disabled={!stockPreparations.some((preparation) => preparation.labelReady)}
+                        onClick={() => void openPreparedStockLabelSheet(stockPreparations)}
+                      >
+                        <Tags className="size-4" />
+                        Planche étiquettes
+                      </SecondaryButton>
+                    </div>
                     <div className="grid gap-2 md:grid-cols-4">
                       {[
                         ["Références existantes", String(stockSummary.existingCount)],

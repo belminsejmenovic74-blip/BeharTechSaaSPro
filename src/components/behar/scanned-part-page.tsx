@@ -1,0 +1,358 @@
+"use client";
+
+import { useMemo, type ReactNode } from "react";
+
+import { useRouter } from "next/navigation";
+
+import type { LucideIcon } from "lucide-react";
+import { AlertTriangle, ArrowRight, FileText, History, Package, Plus, ShieldCheck, Wrench } from "lucide-react";
+import { toast } from "sonner";
+
+import { BeharLogo } from "@/components/behar/behar-logo";
+import { PrimaryButton, SecondaryButton, StatusBadge } from "@/components/behar/primitives";
+import { formatEuro, type StockMovementType, useBeharStore } from "@/lib/behar-store";
+import { getPartTraceability } from "@/lib/part-traceability";
+import { buildScannedPartPath } from "@/lib/stock-label-url";
+import { stockPrimaryReference } from "@/lib/stock-reference";
+import { cn } from "@/lib/utils";
+
+const MOVEMENT_LABELS: Record<StockMovementType, string> = {
+  supplier_purchase_received: "Entrée depuis facture fournisseur",
+  manual_adjustment: "Ajustement manuel",
+  repair_part_used: "Sortie vers réparation",
+  reconditioning_part_used: "Reconditionnement",
+  counter_sale_sold: "Vente comptoir",
+  reconditioned_device_sold: "Vente reconditionné",
+  reservation_created: "Réservation atelier",
+  reservation_released: "Annulation / retour",
+  return_to_supplier: "Retour fournisseur",
+  stock_transfer_out: "Transfert sortant",
+  stock_transfer_in: "Transfert entrant",
+  correction: "Correction stock",
+};
+
+function displayText(value?: string, fallback = "—") {
+  return typeof value === "string" && value.trim().length > 0 ? value : fallback;
+}
+
+function shortDate(value?: string) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value.slice(0, 10);
+  return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "short", year: "numeric" }).format(date);
+}
+
+function scannedStatus(stock: number, threshold: number) {
+  if (stock === 0) return "Rupture";
+  if (stock <= threshold) return "Stock faible";
+  return "En stock";
+}
+
+function InfoRow({
+  label,
+  value,
+  mono,
+}: Readonly<{
+  label: string;
+  value: string;
+  mono?: boolean;
+}>) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-[#E8E8E5] border-b py-3 last:border-0">
+      <dt className="text-[#6B6B6B] text-sm">{label}</dt>
+      <dd className={cn("min-w-0 text-right font-semibold text-[#1A1916] text-sm", mono && "font-mono")}>{value}</dd>
+    </div>
+  );
+}
+
+function Section({
+  title,
+  icon: Icon,
+  children,
+}: Readonly<{
+  title: string;
+  icon: LucideIcon;
+  children: ReactNode;
+}>) {
+  return (
+    <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+      <div className="mb-3 flex items-center gap-2">
+        <Icon className="size-4 text-[#2A9D8F]" />
+        <h2 className="font-semibold text-[#1A1916] text-base">{title}</h2>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function PublicLimitedNotice() {
+  return (
+    <div className="rounded-[16px] border border-[#D7EFEA] bg-[#ECF8F5] p-4">
+      <div className="flex gap-3">
+        <ShieldCheck className="mt-0.5 size-5 shrink-0 text-[#167B70]" />
+        <div>
+          <p className="font-semibold text-[#1A1916] text-sm">Vue publique limitée</p>
+          <p className="mt-1 text-[#6B6B6B] text-sm">
+            Connectez-vous à Behar Tech Pro pour voir les prix d'achat, fournisseurs, factures, mouvements et dossiers
+            liés.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ScannedPartPage({ reference }: Readonly<{ reference: string }>) {
+  const store = useBeharStore();
+  const router = useRouter();
+  const connected = Boolean(store._hasHydrated && store.sessionUserId);
+  const canViewPurchasePrice = connected && store.hasPermission("canViewPurchasePrice");
+  const canViewSupplier = connected && store.hasPermission("canViewSupplier");
+  const canManageStock = connected && store.hasPermission("canManageStock");
+  const trace = useMemo(() => getPartTraceability(store, reference), [store, reference]);
+  const item = trace.stockItem;
+  const primaryReference = item ? stockPrimaryReference(item) : reference;
+  const originInvoice =
+    trace.supplierInvoices.find((invoice) => invoice.id === item?.originSupplierInvoiceId) ?? trace.supplierInvoices[0];
+  const originLine =
+    trace.supplierInvoiceLines.find((line) => line.id === item?.originSupplierInvoiceLineId) ??
+    trace.supplierInvoiceLines[0];
+  const originDate = originInvoice?.purchaseDate ?? originLine?.createdAt ?? item?.createdAt;
+
+  function goStock() {
+    if (item) store.setSelected("stockItem", item.id);
+    router.push(`/dashboard/stock?ref=${encodeURIComponent(primaryReference)}`);
+  }
+
+  function useInRepair() {
+    if (!item) return;
+    store.setSelected("stockItem", item.id);
+    router.push("/dashboard/reparations");
+    toast.success("Pièce sélectionnée. Ouvrez le dossier réparation pour l'ajouter.");
+  }
+
+  function adjustStock() {
+    if (!item) return;
+    const delta = Number(window.prompt("Ajustement stock (+ ou -)", "1") || 0);
+    if (!Number.isFinite(delta) || delta === 0) {
+      toast.error("Ajustement invalide");
+      return;
+    }
+    store.adjustStock(item.id, delta, "Ajustement depuis QR étiquette");
+    toast.success("Ajustement stock enregistré.");
+  }
+
+  if (!store._hasHydrated) {
+    return (
+      <main className="min-h-screen bg-[#FAFAF8] px-4 py-5 text-[#1A1916]">
+        <BeharLogo size="md" />
+        <div className="mt-12 rounded-[18px] border border-[#E8E8E5] bg-white p-5 text-[#6B6B6B] text-sm">
+          Chargement de la pièce scannée…
+        </div>
+      </main>
+    );
+  }
+
+  if (!item) {
+    return (
+      <main className="min-h-screen bg-[#FAFAF8] px-4 py-5 text-[#1A1916]">
+        <BeharLogo size="md" />
+        <section className="mt-8 rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+          <div className="grid size-12 place-items-center rounded-[14px] bg-[#FBEBEB] text-[#B42318]">
+            <AlertTriangle className="size-6" />
+          </div>
+          <h1 className="mt-5 font-semibold text-[#1A1916] text-2xl tracking-tight">Pièce introuvable</h1>
+          <p className="mt-2 text-[#6B6B6B] text-sm">
+            La référence scannée ne correspond à aucune pièce stockée sur cet appareil.
+          </p>
+          <p className="mt-4 rounded-[12px] bg-[#FAFAF8] px-3 py-2 font-mono text-[#1A1916] text-sm">
+            {displayText(reference)}
+          </p>
+          <SecondaryButton className="mt-5 w-full" onClick={() => router.push("/dashboard/stock")}>
+            Voir le stock
+            <ArrowRight className="size-4" />
+          </SecondaryButton>
+        </section>
+      </main>
+    );
+  }
+
+  const status = scannedStatus(item.stock, item.threshold);
+  const invoiceUrl = originInvoice?.originalFileUrl;
+
+  return (
+    <main className="min-h-screen bg-[#FAFAF8] px-4 py-5 text-[#1A1916]">
+      <div className="mx-auto max-w-2xl">
+        <header className="flex items-center justify-between gap-3">
+          <BeharLogo size="md" />
+          <span className="rounded-full border border-[#E8E8E5] bg-white px-3 py-1 font-medium text-[#6B6B6B] text-xs">
+            Scan pièce
+          </span>
+        </header>
+
+        <section className="mt-6 rounded-[22px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+          <div className="flex items-start gap-4">
+            <div className="grid size-14 shrink-0 place-items-center rounded-[16px] bg-[#ECF8F5] text-[#167B70]">
+              <Package className="size-7" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-[#6B6B6B] text-sm">Pièce scannée</p>
+              <h1 className="mt-1 font-semibold text-[#1A1916] text-2xl leading-tight tracking-tight">
+                {item.displayName ?? item.name}
+              </h1>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <StatusBadge status={status} />
+                {!connected && <StatusBadge status="Lecture publique" />}
+              </div>
+            </div>
+          </div>
+
+          <dl className="mt-5 rounded-[16px] bg-[#FAFAF8] px-4">
+            <InfoRow label="Référence / SKU" mono value={displayText(primaryReference)} />
+            <InfoRow label="Code interne" mono value={displayText(item.internalCode)} />
+            <InfoRow
+              label="Modèle compatible"
+              value={item.compatibleModels.length ? item.compatibleModels.join(" / ") : "Non défini"}
+            />
+            <InfoRow label="Catégorie" value={displayText(item.categoryName || item.category)} />
+            <InfoRow label="Qualité" value={displayText(item.quality)} />
+            {connected && <InfoRow label="Stock actuel" value={String(item.stock)} />}
+            {canViewPurchasePrice && (
+              <InfoRow label="Prix d'achat moyen" value={formatEuro(item.averagePurchasePrice ?? item.purchasePrice)} />
+            )}
+            {canViewSupplier && (
+              <InfoRow label="Fournisseur principal" value={displayText(item.primarySupplier ?? item.supplier)} />
+            )}
+            {connected && <InfoRow label="Facture d'origine" value={displayText(originInvoice?.invoiceNumber)} />}
+            {connected && <InfoRow label="Date d'achat" value={shortDate(originDate)} />}
+          </dl>
+        </section>
+
+        <div className="mt-4 grid gap-3">
+          {!connected && <PublicLimitedNotice />}
+
+          {connected && (
+            <Section icon={FileText} title="Origine">
+              <dl className="rounded-[14px] bg-[#FAFAF8] px-3">
+                <InfoRow
+                  label="Fournisseur"
+                  value={displayText(originInvoice?.supplierName ?? originLine?.supplierName)}
+                />
+                <InfoRow label="Facture" value={displayText(originInvoice?.invoiceNumber)} />
+                <InfoRow label="Date achat" value={shortDate(originDate)} />
+              </dl>
+              <SecondaryButton
+                className="mt-3 w-full"
+                disabled={!invoiceUrl}
+                onClick={() => invoiceUrl && window.open(invoiceUrl, "_blank", "noopener,noreferrer")}
+              >
+                <FileText className="size-4" />
+                Voir la facture
+              </SecondaryButton>
+            </Section>
+          )}
+
+          {connected && (
+            <Section icon={History} title="Historique">
+              <div className="space-y-2">
+                {trace.movements.slice(0, 8).map((movement) => (
+                  <div key={movement.id} className="rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] px-3 py-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-[#1A1916] text-sm">{MOVEMENT_LABELS[movement.movementType]}</p>
+                        <p className="mt-1 text-[#6B6B6B] text-xs">
+                          {movement.reason || movement.note || "Mouvement stock"}
+                        </p>
+                        <p className="mt-1 font-mono text-[#8A8A85] text-[11px]">{shortDate(movement.createdAt)}</p>
+                      </div>
+                      <p
+                        className={cn(
+                          "font-semibold text-sm tabular-nums",
+                          movement.quantityDelta < 0 ? "text-[#B42318]" : "text-[#167B70]",
+                        )}
+                      >
+                        {movement.quantityDelta > 0 ? "+" : ""}
+                        {movement.quantityDelta}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                {!trace.movements.length && (
+                  <p className="rounded-[14px] bg-[#FAFAF8] px-3 py-4 text-[#6B6B6B] text-sm">
+                    Aucun mouvement stock lié à cette référence.
+                  </p>
+                )}
+              </div>
+            </Section>
+          )}
+
+          {connected && (
+            <Section icon={Wrench} title="Réparations liées">
+              <div className="space-y-2">
+                {trace.repairUsages.map(({ repair, customer, part, usedAt }) => (
+                  <div
+                    key={`${repair.id}-${part.stockItemId}-${part.reference}`}
+                    className="rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] p-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-[#1A1916] text-sm">{repair.number}</p>
+                        <p className="mt-1 text-[#6B6B6B] text-xs">
+                          {customer?.name || "Client"} · {repair.device || repair.model || "Appareil"}
+                        </p>
+                        <p className="mt-1 text-[#6B6B6B] text-xs">{shortDate(usedAt)}</p>
+                      </div>
+                      <StatusBadge status={repair.status} />
+                    </div>
+                    <SecondaryButton
+                      className="mt-3 h-9 w-full text-xs"
+                      onClick={() => router.push(`/dashboard/dossiers/${repair.id}`)}
+                    >
+                      Voir dossier
+                    </SecondaryButton>
+                  </div>
+                ))}
+                {!trace.repairUsages.length && (
+                  <p className="rounded-[14px] bg-[#FAFAF8] px-3 py-4 text-[#6B6B6B] text-sm">
+                    Aucune réparation liée à cette pièce.
+                  </p>
+                )}
+              </div>
+            </Section>
+          )}
+        </div>
+
+        <div className="sticky bottom-0 -mx-4 mt-4 border-[#E8E8E5] border-t bg-[#FAFAF8]/95 px-4 py-3 backdrop-blur">
+          <div className="mx-auto grid max-w-2xl gap-2">
+            {connected && (
+              <PrimaryButton onClick={useInRepair}>
+                <Plus className="size-4" />
+                Utiliser dans une réparation
+              </PrimaryButton>
+            )}
+            <SecondaryButton onClick={goStock}>
+              <Package className="size-4" />
+              Voir fiche stock
+            </SecondaryButton>
+            {canManageStock && (
+              <SecondaryButton onClick={adjustStock}>
+                <History className="size-4" />
+                Ajuster stock
+              </SecondaryButton>
+            )}
+            {connected && invoiceUrl && (
+              <SecondaryButton onClick={() => window.open(invoiceUrl, "_blank", "noopener,noreferrer")}>
+                <FileText className="size-4" />
+                Voir la facture
+              </SecondaryButton>
+            )}
+          </div>
+        </div>
+
+        <p className="mt-4 pb-5 text-center text-[#8A8A85] text-xs">
+          QR dynamique : {buildScannedPartPath(primaryReference)}
+        </p>
+      </div>
+    </main>
+  );
+}

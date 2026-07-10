@@ -1,22 +1,37 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 import { useRouter } from "next/navigation";
 
 import type { LucideIcon } from "lucide-react";
 import {
   AlertTriangle,
+  ArrowLeft,
+  ArrowUpRight,
+  Battery,
+  Boxes,
+  Camera,
+  ChevronDown,
   Check,
+  Copy,
+  Download,
+  EllipsisVertical,
   FileText,
   Filter,
   History,
+  Layers,
   Package,
   Plus,
   Printer,
+  ReceiptText,
+  ScanQrCode,
   Search,
+  SlidersHorizontal,
+  Smartphone,
   Tags,
   Trash2,
+  Truck,
   Wrench,
   X,
 } from "lucide-react";
@@ -35,6 +50,9 @@ import {
 } from "@/lib/behar-store";
 import { getPartTraceability } from "@/lib/part-traceability";
 import type { PriceBookItem } from "@/lib/price-book";
+import { buildScannedPartUrl } from "@/lib/stock-label-url";
+import { downloadStockLabelPdf } from "@/lib/stock-label-pdf";
+import { getStockLotsForItem } from "@/lib/stock-lots";
 import {
   findPriceBookBySelection,
   findStockBySelection,
@@ -46,7 +64,6 @@ import {
 } from "@/lib/stock-catalog-link";
 import { stockPrimaryReference } from "@/lib/stock-reference";
 import { cn } from "@/lib/utils";
-import { stockKpis } from "@/mock/stock";
 
 import { type DeviceCategory, getDeviceBrands, getModelsByBrand } from "../../data/deviceCatalog";
 import { PageShell } from "./page-shell";
@@ -58,7 +75,6 @@ import {
   PrimaryButton,
   SecondaryButton,
   StatusBadge,
-  TableShell,
   tableCellClassName,
   tableClassName,
   tableHeadClassName,
@@ -208,53 +224,262 @@ function EmptyLinkedState({ children }: Readonly<{ children: ReactNode }>) {
   return <p className="p-3 text-[#6B6B6B] text-xs">{children}</p>;
 }
 
-function openStockLabel(item: StockItem, qrDataUrl: string, print: boolean) {
-  const reference = firstNonEmpty(stockPrimaryReference(item), item.sku, item.reference, item.internalCode, item.id);
-  const html = `<!doctype html>
+type StockLabelFormat = "thermal40" | "standard60" | "a4";
+
+const STOCK_LABEL_FORMATS: Record<
+  Exclude<StockLabelFormat, "a4">,
+  { label: string; widthMm: number; heightMm: number; qrMm: number; paddingMm: number }
+> = {
+  thermal40: { label: "40 × 25 mm", widthMm: 40, heightMm: 25, qrMm: 11.5, paddingMm: 2.2 },
+  standard60: { label: "60 × 30 mm", widthMm: 60, heightMm: 30, qrMm: 17, paddingMm: 2.8 },
+};
+
+function stockLabelName(item: StockItem) {
+  const name = firstNonEmpty(item.displayName, item.name, item.categoryName, item.category, "Pièce");
+  const model = item.compatibleModels.length ? item.compatibleModels.join(" / ") : "";
+  if (!model || name.toLowerCase().includes(model.toLowerCase())) return name;
+  return `${name} ${model}`;
+}
+
+function printElement(element: HTMLElement, title: string) {
+  const win = window.open("", "_blank", "noopener,noreferrer,width=760,height=720");
+  if (!win) {
+    toast.error("Ouverture de l'impression bloquée par le navigateur.");
+    return;
+  }
+  win.document.write(`<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Étiquette ${reference}</title>
+  <title>${title}</title>
   <style>
-    body { margin: 0; padding: 18px; background: #FAFAF8; color: #1A1916; font-family: Arial, sans-serif; }
-    .label { width: 320px; min-height: 190px; border: 1px solid #E8E8E5; border-radius: 10px; background: #fff; padding: 16px; }
-    .top { display: flex; gap: 12px; align-items: flex-start; }
-    .brand { display: flex; align-items: center; gap: 7px; margin-bottom: 12px; font-weight: 800; font-size: 13px; letter-spacing: .02em; }
-    .dot { width: 6px; height: 6px; border-radius: 999px; background: #2A9D8F; display: inline-block; }
-    .pro { margin-left: 4px; border: 1px solid #2A9D8F; border-radius: 6px; padding: 2px 5px; color: #167B70; font-size: 10px; }
-    img { width: 86px; height: 86px; }
-    h1 { margin: 0; font-size: 16px; line-height: 1.2; }
-    p { margin: 6px 0 0; font-size: 12px; color: #6B6B6B; }
-    .code { margin-top: 14px; font-family: monospace; font-size: 15px; font-weight: 700; letter-spacing: 0.04em; }
-    .bars { margin-top: 10px; height: 28px; background: repeating-linear-gradient(90deg, #1A1916 0 2px, transparent 2px 5px, #1A1916 5px 7px, transparent 7px 11px); }
-    @media print { body { background: #fff; padding: 0; } .label { border-color: #1A1916; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #FAFAF8; color: #1A1916; font-family: Arial, sans-serif; }
+    @page { size: A4; margin: 8mm; }
+    @media print {
+      body { background: #fff; }
+      .no-print { display: none !important; }
+      .print-root { box-shadow: none !important; }
+    }
   </style>
 </head>
 <body>
-  <div class="label">
-    <div class="brand">BEHAR <span class="dot"></span> TECH <span class="pro">PRO</span></div>
-    <div class="top">
-      ${qrDataUrl ? `<img src="${qrDataUrl}" alt="QR" />` : ""}
-      <div>
-        <h1>${item.name}</h1>
-        <p>${item.categoryName || item.category || "Catégorie"}</p>
-        <p>${item.compatibleModels?.join(", ") || "Modèle compatible"}</p>
+  <div class="print-root">${element.innerHTML}</div>
+  <script>window.addEventListener('load', () => { window.focus(); window.print(); });</script>
+</body>
+</html>`);
+  win.document.close();
+}
+
+function StockLabelCard({
+  item,
+  qrDataUrl,
+  format,
+}: Readonly<{ item: StockItem; qrDataUrl: string; format: Exclude<StockLabelFormat, "a4"> }>) {
+  const config = STOCK_LABEL_FORMATS[format];
+  const reference = firstNonEmpty(stockPrimaryReference(item), item.sku, item.reference, item.internalCode, item.id);
+  const compact = format === "thermal40";
+  const style: CSSProperties = {
+    width: `${config.widthMm}mm`,
+    height: `${config.heightMm}mm`,
+    padding: `${config.paddingMm}mm`,
+  };
+
+  return (
+    <div
+      className="flex shrink-0 flex-col overflow-hidden border border-[#1A1916] bg-white text-[#1A1916]"
+      style={style}
+    >
+      <div className="flex items-center gap-[1.4mm] font-bold text-[5.5px] leading-none tracking-normal">
+        <span>BEHAR</span>
+        <span className="size-[1.8mm] rounded-full bg-[#2A9D8F]" />
+        <span>TECH</span>
+        <span className="rounded-[1.5mm] border border-[#2A9D8F] px-[1mm] py-[0.4mm] font-bold text-[#167B70]">
+          PRO
+        </span>
+      </div>
+      <div className="mt-[1.5mm] flex min-h-0 flex-1 gap-[2mm]">
+        <div className="min-w-0 flex-1">
+          <p
+            className={cn(
+              "truncate font-mono font-black leading-none tracking-normal",
+              compact ? "text-[12px]" : "text-[17px]",
+            )}
+          >
+            {reference}
+          </p>
+          <p
+            className={cn(
+              "mt-[1.2mm] line-clamp-2 font-semibold leading-tight",
+              compact ? "text-[6.5px]" : "text-[8px]",
+            )}
+          >
+            {stockLabelName(item)}
+          </p>
+          <p className={cn("mt-[1mm] truncate font-mono text-[#6B6B6B]", compact ? "text-[5.7px]" : "text-[7px]")}>
+            {displayText(item.internalCode, "Code interne")}
+          </p>
+        </div>
+        <div className="grid shrink-0 place-items-center bg-white" style={{ width: `${config.qrMm}mm` }}>
+          {qrDataUrl ? (
+            // biome-ignore lint/performance/noImgElement: QR local data URL nécessaire pour impression thermique/PDF.
+            <img alt={`QR ${reference}`} className="h-full w-full object-contain" src={qrDataUrl} />
+          ) : (
+            <span className="text-[#6B6B6B] text-[6px]">QR</span>
+          )}
+        </div>
       </div>
     </div>
-    <div class="code">${reference}</div>
-    <p>${item.internalCode ?? ""}</p>
-    <div class="bars"></div>
-  </div>
-  ${print ? "<script>window.addEventListener('load', () => window.print());</script>" : ""}
-</body>
-</html>`;
-  const win = window.open("", "_blank", "noopener,noreferrer,width=420,height=360");
-  if (!win) {
-    toast.error("Ouverture de l'étiquette bloquée par le navigateur.");
-    return;
+  );
+}
+
+function StockLabelPreview({
+  item,
+  qrDataUrl,
+  format,
+  copies,
+}: Readonly<{ item: StockItem; qrDataUrl: string; format: StockLabelFormat; copies: number }>) {
+  if (format !== "a4") {
+    return (
+      <div className="inline-flex bg-white p-4 shadow-sm">
+        <StockLabelCard format={format} item={item} qrDataUrl={qrDataUrl} />
+      </div>
+    );
   }
-  win.document.write(html);
-  win.document.close();
+
+  const safeCopies = Math.max(1, Math.min(40, copies));
+  return (
+    <div
+      className="pdf-page grid bg-white shadow-sm"
+      style={{
+        width: "210mm",
+        minHeight: "297mm",
+        padding: "8mm",
+        gridTemplateColumns: "repeat(3, 60mm)",
+        gridAutoRows: "30mm",
+        gap: "5mm 4mm",
+      }}
+    >
+      {Array.from({ length: safeCopies }, (_, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: copies d'étiquette identiques, sans état ni réordonnancement.
+        <StockLabelCard key={index} format="standard60" item={item} qrDataUrl={qrDataUrl} />
+      ))}
+    </div>
+  );
+}
+
+function StockLabelPrintModal({
+  item,
+  qrDataUrl,
+  onClose,
+}: Readonly<{ item: StockItem; qrDataUrl: string; onClose: () => void }>) {
+  const [format, setFormat] = useState<StockLabelFormat>("thermal40");
+  const [copies, setCopies] = useState(24);
+  const printRef = useRef<HTMLDivElement>(null);
+  const reference = firstNonEmpty(stockPrimaryReference(item), item.sku, item.reference, item.internalCode, item.id);
+
+  async function downloadPdf() {
+    try {
+      downloadStockLabelPdf({
+        copies,
+        filename: `etiquettes-${reference}.pdf`,
+        format,
+        item,
+        qrDataUrl,
+      });
+      toast.success("PDF des étiquettes téléchargé.");
+    } catch {
+      toast.error("Téléchargement PDF impossible.");
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[80] grid place-items-center bg-[#1A1916]/30 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[20px] border border-[#E8E8E5] bg-[#FAFAF8] shadow-2xl">
+        <div className="flex items-start justify-between gap-4 border-[#E8E8E5] border-b bg-white px-5 py-4">
+          <div>
+            <p className="font-semibold text-[#1A1916] text-lg">Étiquette pièce</p>
+            <p className="mt-1 text-[#6B6B6B] text-sm">
+              Référence, nom court, code interne et QR code. Le détail complet reste dans la fiche pièce.
+            </p>
+          </div>
+          <button
+            aria-label="Fermer"
+            className="grid size-9 place-items-center rounded-full text-[#6B6B6B] transition hover:bg-[#FAFAF8]"
+            onClick={onClose}
+            type="button"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
+        <div className="grid min-h-0 flex-1 gap-4 overflow-hidden p-5 md:grid-cols-[260px_1fr]">
+          <aside className="space-y-4 rounded-[14px] border border-[#E8E8E5] bg-white p-4">
+            <div>
+              <p className="font-semibold text-[#1A1916] text-sm">Format</p>
+              <div className="mt-3 grid gap-2">
+                {(
+                  [
+                    ["thermal40", "40 × 25 mm thermique"],
+                    ["standard60", "60 × 30 mm standard"],
+                    ["a4", "Planche A4"],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    className={cn(
+                      "h-10 rounded-[10px] border px-3 text-left font-semibold text-sm transition",
+                      format === value
+                        ? "border-[#2A9D8F] bg-[#ECF8F5] text-[#167B70]"
+                        : "border-[#E8E8E5] bg-white text-[#1A1916] hover:border-[#2A9D8F]/50",
+                    )}
+                    key={value}
+                    onClick={() => setFormat(value)}
+                    type="button"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {format === "a4" && (
+              <label className="block text-[#6B6B6B] text-xs">
+                Nombre d'étiquettes
+                <input
+                  className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-sm outline-none focus:border-[#2A9D8F]/60"
+                  max={40}
+                  min={1}
+                  onChange={(event) => setCopies(Number(event.target.value))}
+                  type="number"
+                  value={copies}
+                />
+              </label>
+            )}
+            <div className="rounded-[12px] bg-[#FAFAF8] p-3">
+              <p className="font-mono font-semibold text-[#1A1916] text-sm">{reference}</p>
+              <p className="mt-1 text-[#6B6B6B] text-xs">{stockLabelName(item)}</p>
+              <p className="mt-1 font-mono text-[#6B6B6B] text-xs">{displayText(item.internalCode)}</p>
+            </div>
+            <div className="grid gap-2">
+              <PrimaryButton
+                onClick={() => printRef.current && printElement(printRef.current, `Étiquette ${reference}`)}
+              >
+                <Printer className="size-4" />
+                Imprimer
+              </PrimaryButton>
+              <SecondaryButton onClick={downloadPdf}>
+                <Download className="size-4" />
+                Télécharger PDF
+              </SecondaryButton>
+            </div>
+          </aside>
+          <div className="min-h-0 overflow-auto rounded-[14px] border border-[#E8E8E5] bg-[#F2F2EE] p-5">
+            <div ref={printRef} data-pdf-paginate={format === "a4" ? "true" : undefined}>
+              <StockLabelPreview copies={copies} format={format} item={item} qrDataUrl={qrDataUrl} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /** Model selector: type freely or pick from suggestions, adds as chips */
@@ -349,343 +574,570 @@ function ModelSelector({
   );
 }
 
+type StockStatusFilter = "all" | "in_stock" | "low" | "out";
+type StockAvailabilityFilter = "all" | "positive" | "needs_attention";
+
+const stockStatusOptions: Array<{ value: StockStatusFilter; label: string }> = [
+  { value: "all", label: "Tous les statuts" },
+  { value: "in_stock", label: "En stock" },
+  { value: "low", label: "Stock faible" },
+  { value: "out", label: "Rupture" },
+];
+
+const stockAvailabilityOptions: Array<{ value: StockAvailabilityFilter; label: string }> = [
+  { value: "all", label: "Tous les stocks" },
+  { value: "positive", label: "Disponible" },
+  { value: "needs_attention", label: "À surveiller" },
+];
+
+function stockDetailPath(item: StockItem) {
+  return `/dashboard/stock/${encodeURIComponent(item.id)}`;
+}
+
+function stockSearchText(item: StockItem) {
+  return [
+    item.name,
+    item.displayName,
+    item.rawName,
+    item.sku,
+    item.reference,
+    item.internalCode,
+    item.categoryName,
+    item.category,
+    item.quality,
+    item.supplier,
+    item.primarySupplier,
+    item.supplierBrand,
+    item.ean,
+    ...item.compatibleModels,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function itemMatchesStatus(item: StockItem, status: StockStatusFilter) {
+  if (status === "all") return true;
+  if (status === "out") return item.stock === 0;
+  if (status === "low") return item.stock > 0 && item.stock <= item.threshold;
+  return item.stock > item.threshold;
+}
+
+function itemMatchesAvailability(item: StockItem, availability: StockAvailabilityFilter) {
+  if (availability === "all") return true;
+  if (availability === "positive") return item.stock > 0;
+  return item.stock === 0 || item.stock <= item.threshold;
+}
+
+function stockUnitLabel(quantity: number) {
+  return quantity > 1 ? "unités" : "unité";
+}
+
+function stockAveragePrice(item: StockItem) {
+  return item.averagePurchasePrice ?? item.purchasePrice ?? 0;
+}
+
+function stockTotalValue(item: StockItem) {
+  return Math.round(stockAveragePrice(item) * item.stock * 100) / 100;
+}
+
+function stockCategoryIcon(item: StockItem): LucideIcon {
+  const value = comparable(`${item.categoryName} ${item.category} ${item.displayName ?? item.name}`);
+  if (value.includes("batterie")) return Battery;
+  if (value.includes("camera") || value.includes("lentille")) return Camera;
+  if (value.includes("ecran") || value.includes("vitre")) return Smartphone;
+  if (value.includes("connecteur") || value.includes("charge")) return Boxes;
+  return Package;
+}
+
+function StockItemThumbnail({ item }: Readonly<{ item: StockItem }>) {
+  const Icon = stockCategoryIcon(item);
+  return (
+    <span className="grid size-12 shrink-0 place-items-center rounded-[12px] border border-[#E8E8E5] bg-[#FAFAF8] text-[#2A9D8F] shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]">
+      <Icon className="size-5" strokeWidth={1.8} />
+    </span>
+  );
+}
+
+function StockQualityBadge({ quality }: Readonly<{ quality?: string }>) {
+  if (!quality) return null;
+  return (
+    <span className="inline-flex h-6 items-center rounded-full border border-[#D7EFEA] bg-[#F2FAF8] px-2.5 font-semibold text-[#167B70] text-[11px]">
+      {quality.toLowerCase().includes("qualité") ? quality : `Qualité ${quality}`}
+    </span>
+  );
+}
+
+function PremiumStockKpiCard({
+  icon: Icon,
+  label,
+  value,
+  helper,
+  warning,
+}: Readonly<{ icon: LucideIcon; label: string; value: string; helper: string; warning?: boolean }>) {
+  return (
+    <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5 shadow-[0_18px_45px_rgba(26,25,22,0.04)]">
+      <div className="flex items-start justify-between gap-4">
+        <span
+          className={cn(
+            "grid size-10 place-items-center rounded-[12px]",
+            warning ? "bg-[#FFF7E8] text-[#B7791F]" : "bg-[#F0F8F6] text-[#2A9D8F]",
+          )}
+        >
+          <Icon className="size-4" />
+        </span>
+        <div className="min-w-0 text-right">
+          <p className="text-[#6B6B6B] text-[13px]">{label}</p>
+          <p className="mt-1 font-semibold text-[#1A1916] text-[30px] leading-none tracking-tight tabular-nums">
+            {value}
+          </p>
+          <p className="mt-2 text-[#6B6B6B] text-xs">{helper}</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function StockFilterSelect<T extends string>({
+  icon: Icon,
+  label,
+  value,
+  options,
+  onChange,
+}: Readonly<{
+  icon?: LucideIcon;
+  label: string;
+  value: T;
+  options: Array<{ value: T; label: string }>;
+  onChange: (value: T) => void;
+}>) {
+  return (
+    <label className="relative block">
+      {Icon && (
+        <Icon className="pointer-events-none absolute top-1/2 left-3.5 z-10 size-4 -translate-y-1/2 text-[#6B6B6B]" />
+      )}
+      <select
+        aria-label={label}
+        className={cn(
+          "h-11 min-w-[170px] appearance-none rounded-[12px] border border-[#E8E8E5] bg-white pr-10 text-[#1A1916] text-sm outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10",
+          Icon ? "pl-10" : "pl-4",
+        )}
+        onChange={(event) => onChange(event.target.value as T)}
+        value={value}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#6B6B6B]" />
+    </label>
+  );
+}
+
+function StockStatusPill({ item }: Readonly<{ item: StockItem }>) {
+  const status = stockStatusLabel(item);
+  const warning = status !== "En stock";
+  return (
+    <span
+      className={cn(
+        "inline-flex h-7 items-center gap-1.5 rounded-full border px-3 font-semibold text-xs",
+        warning ? "border-[#F2D4D1] bg-[#FFF9F8] text-[#B42318]" : "border-[#D7EFEA] bg-[#F2FAF8] text-[#167B70]",
+      )}
+    >
+      <span className={cn("size-1.5 rounded-full", warning ? "bg-[#B42318]" : "bg-[#2A9D8F]")} />
+      {status}
+    </span>
+  );
+}
+
+function StockReferenceButton({ item }: Readonly<{ item: StockItem }>) {
+  const router = useRouter();
+  const reference = firstNonEmpty(stockPrimaryReference(item), item.sku, item.reference, item.internalCode, item.id);
+  return (
+    <button
+      className="text-left font-mono font-semibold text-[#167B70] text-sm transition hover:underline"
+      onClick={(event) => {
+        event.stopPropagation();
+        router.push(stockDetailPath(item));
+      }}
+      type="button"
+    >
+      {reference}
+    </button>
+  );
+}
+
 export function StockWorkspace() {
   const store = useBeharStore();
+  const router = useRouter();
+  const resolveStockItemByReference = useBeharStore((state) => state.resolveStockItemByReference);
+  const setSelected = useBeharStore((state) => state.setSelected);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [filterLowStock, setFilterLowStock] = useState(false);
-  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [qualityFilter, setQualityFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<StockStatusFilter>("all");
+  const [availabilityFilter, setAvailabilityFilter] = useState<StockAvailabilityFilter>("all");
 
-  const filteredItems = store.stockItems.filter((item) => {
-    const q = search.toLowerCase();
-    const matchesSearch =
-      item.name.toLowerCase().includes(q) ||
-      item.sku.toLowerCase().includes(q) ||
-      item.reference.toLowerCase().includes(q) ||
-      (item.internalCode || "").toLowerCase().includes(q) ||
-      item.categoryName.toLowerCase().includes(q) ||
-      item.compatibleModels.join(" ").toLowerCase().includes(q) ||
-      item.supplier.toLowerCase().includes(q);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const referenceParam = params.get("ref");
+    if (!referenceParam) return;
+    setSearch(referenceParam);
+    const match = resolveStockItemByReference(referenceParam);
+    if (match) {
+      setSelected("stockItem", match.id);
+      router.replace(stockDetailPath(match));
+    }
+  }, [resolveStockItemByReference, router, setSelected]);
 
-    if (filterLowStock && item.quantity > item.threshold) return false;
-    return matchesSearch;
-  });
+  const activeItems = useMemo(() => store.stockItems.filter((item) => item.active !== false), [store.stockItems]);
+  const categories = useMemo(
+    () =>
+      Array.from(
+        new Set(activeItems.map((item) => item.categoryName || item.category || "Autre").filter(Boolean)),
+      ).sort((a, b) => a.localeCompare(b)),
+    [activeItems],
+  );
+  const qualities = useMemo(
+    () => Array.from(new Set(activeItems.map((item) => item.quality).filter(Boolean) as string[])).sort(),
+    [activeItems],
+  );
+  const filteredItems = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return activeItems.filter((item) => {
+      const matchesSearch = !q || stockSearchText(item).includes(q);
+      const matchesCategory = categoryFilter === "all" || (item.categoryName || item.category) === categoryFilter;
+      const matchesQuality = qualityFilter === "all" || item.quality === qualityFilter;
+      return (
+        matchesSearch &&
+        matchesCategory &&
+        matchesQuality &&
+        itemMatchesStatus(item, statusFilter) &&
+        itemMatchesAvailability(item, availabilityFilter)
+      );
+    });
+  }, [activeItems, availabilityFilter, categoryFilter, qualityFilter, search, statusFilter]);
 
-  const selected = filteredItems.find((item) => item.id === store.selectedStockItemId) ?? filteredItems[0];
   const canManageStock = store.hasPermission("canManageStock");
   const canViewPurchasePrice = store.hasPermission("canViewPurchasePrice");
-  const stockValue = store.stockItems.reduce((total, item) => total + item.purchasePrice * item.quantity, 0);
-  const lowStockCount = store.stockItems.filter((item) => item.quantity > 0 && item.quantity <= item.threshold).length;
-  const outCount = store.stockItems.filter((item) => item.quantity === 0).length;
-  const linkedTariffCount = store.stockItems.filter((item) => findLinkedTariff(item, store.priceBookItems)).length;
-  const dynamicKpis = stockKpis.map((kpi) => {
-    // On neutralise les tendances factices "vs mois dernier" — pas de comparaison réelle disponible.
-    const base = { ...kpi, trend: "" };
-    if (kpi.label === "Références")
-      return { ...base, value: String(store.stockItems.length), helper: "références suivies" };
-    if (kpi.label === "Valeur du stock")
-      return { ...base, value: canViewPurchasePrice ? formatEuro(stockValue) : "Masqué", helper: "au prix d'achat" };
-    if (kpi.label === "Ruptures")
-      return { ...base, value: String(outCount), helper: `${lowStockCount} stock faible`, negative: outCount > 0 };
-    if (kpi.label === "Marge moyenne")
-      return { ...base, label: "Tarifs liés", value: String(linkedTariffCount), helper: "prix client dans Tarifs" };
-    return base;
-  });
+  const stockValue = activeItems.reduce((total, item) => total + stockTotalValue(item), 0);
+  const totalUnits = activeItems.reduce((total, item) => total + item.stock, 0);
+  const lowStockCount = activeItems.filter((item) => item.stock > 0 && item.stock <= item.threshold).length;
+  const outCount = activeItems.filter((item) => item.stock === 0).length;
+  const recentMovementCount = store.stockMovements.slice(0, 30).length;
+  const categoryPills = [
+    { label: "Toutes les catégories", value: "all", count: activeItems.length, icon: Layers },
+    ...categories.map((category) => {
+      const sample = activeItems.find((item) => (item.categoryName || item.category) === category);
+      return {
+        label: category,
+        value: category,
+        count: activeItems.filter((item) => (item.categoryName || item.category) === category).length,
+        icon: sample ? stockCategoryIcon(sample) : Package,
+      };
+    }),
+  ];
+
+  function openItem(item: StockItem) {
+    setSelected("stockItem", item.id);
+    router.push(stockDetailPath(item));
+  }
+
+  function exportStockCsv() {
+    const headers = [
+      "Nom pièce",
+      "SKU",
+      "Code interne",
+      "Modèle",
+      "Catégorie",
+      "Qualité",
+      "Stock",
+      "Prix moyen",
+      "Statut",
+    ];
+    const rows = filteredItems.map((item) => [
+      item.displayName || item.name,
+      stockPrimaryReference(item),
+      item.internalCode || "",
+      item.compatibleModels.join(" / "),
+      item.categoryName || item.category,
+      item.quality || "",
+      String(item.stock),
+      String(stockAveragePrice(item)).replace(".", ","),
+      stockStatusLabel(item),
+    ]);
+    const escapeCell = (value: string) => `"${value.replace(/"/g, '""')}"`;
+    const csv = [headers, ...rows].map((row) => row.map(escapeCell).join(";")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `stock-behar-tech-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <PageShell
-      searchPlaceholder="Rechercher..."
       title="Stock"
-      subtitle="Pièces, composants et fournisseurs de votre atelier."
+      subtitle="Pièces, quantités et seuils d'alerte."
+      actions={
+        <>
+          <SecondaryButton className="h-11" onClick={exportStockCsv}>
+            <Download className="size-4" />
+            Exporter
+          </SecondaryButton>
+          <SupplierInvoiceImportModal buttonLabel="Import facture" />
+          <PrimaryButton className="h-11" onClick={() => setOpen(true)} disabled={!canManageStock}>
+            <Plus className="size-4" />
+            Nouvelle pièce
+          </PrimaryButton>
+        </>
+      }
     >
-      <div className="flex flex-col gap-4">
-        {/* Mobile : strip horizontal de KPI compacts */}
-        <section className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 md:hidden scrollbar-none">
-          {dynamicKpis.map((kpi) => (
-            <div
-              key={kpi.label}
-              className="w-[42%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]"
-            >
-              <span
+      <div className="space-y-5">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <PremiumStockKpiCard
+            icon={Package}
+            label="Valeur du stock"
+            value={canViewPurchasePrice ? formatEuro(stockValue) : "Masqué"}
+            helper="au prix moyen d'achat"
+          />
+          <PremiumStockKpiCard
+            icon={Layers}
+            label="Références en stock"
+            value={String(activeItems.length)}
+            helper={`${totalUnits} ${stockUnitLabel(totalUnits)} suivie(s)`}
+          />
+          <PremiumStockKpiCard
+            icon={AlertTriangle}
+            label="Stock faible"
+            value={String(lowStockCount + outCount)}
+            helper={`${outCount} rupture(s), ${lowStockCount} seuil bas`}
+            warning={lowStockCount + outCount > 0}
+          />
+          <PremiumStockKpiCard
+            icon={History}
+            label="Mouvements récents"
+            value={String(recentMovementCount)}
+            helper="dernières écritures du ledger"
+          />
+        </section>
+
+        <Panel className="overflow-hidden rounded-[20px]">
+          <div className="flex gap-2 overflow-x-auto border-[#E8E8E5] border-b bg-white px-4 py-3">
+            {categoryPills.map(({ label, value, count, icon: Icon }) => (
+              <button
                 className={cn(
-                  "grid size-9 place-items-center rounded-[10px]",
-                  kpi.negative ? "bg-[#FFFFFF] text-[#B42318]" : "bg-[#FFFFFF] text-[#2A9D8F]",
+                  "inline-flex h-10 shrink-0 items-center gap-2 rounded-[12px] border px-3.5 font-semibold text-sm transition",
+                  categoryFilter === value
+                    ? "border-[#D7EFEA] bg-[#F2FAF8] text-[#167B70]"
+                    : "border-transparent bg-white text-[#6B6B6B] hover:border-[#E8E8E5] hover:text-[#1A1916]",
                 )}
+                key={value}
+                onClick={() => setCategoryFilter(value)}
+                type="button"
               >
-                <Package className="size-[18px]" strokeWidth={2} />
-              </span>
-              <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium leading-tight tracking-tight">{kpi.label}</p>
-              <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tracking-tight tabular-nums">
-                {kpi.value}
-              </p>
-              {kpi.helper && <p className="mt-1.5 truncate text-[#6B6B6B] text-[10px] font-medium">{kpi.helper}</p>}
-            </div>
-          ))}
-        </section>
+                <Icon className="size-4" />
+                {label}
+                <span className="rounded-full border border-[#E8E8E5] bg-white px-2 py-0.5 text-[#1A1916] text-xs">
+                  {count}
+                </span>
+              </button>
+            ))}
+          </div>
 
-        {/* Desktop : grille KPI standard */}
-        <section className="hidden md:grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
-          {dynamicKpis.map((kpi) => (
-            <StockMetricCard {...kpi} key={kpi.label} />
-          ))}
-        </section>
+          <div className="grid gap-3 border-[#E8E8E5] border-b bg-white px-4 py-4 lg:grid-cols-[minmax(320px,1fr)_auto_auto_auto]">
+            <label className="relative block">
+              <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6B6B6B]" />
+              <input
+                className="h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-white pr-4 pl-10 text-[#1A1916] text-sm outline-none transition placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+                placeholder="Rechercher une pièce, référence, SKU ou modèle..."
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </label>
+            <StockFilterSelect
+              icon={Filter}
+              label="Catégorie"
+              value={categoryFilter}
+              options={[
+                { value: "all", label: "Catégorie" },
+                ...categories.map((category) => ({ value: category, label: category })),
+              ]}
+              onChange={setCategoryFilter}
+            />
+            <StockFilterSelect
+              icon={SlidersHorizontal}
+              label="Statut"
+              value={statusFilter}
+              options={stockStatusOptions}
+              onChange={setStatusFilter}
+            />
+            <StockFilterSelect
+              icon={Package}
+              label="Stock"
+              value={availabilityFilter}
+              options={stockAvailabilityOptions}
+              onChange={setAvailabilityFilter}
+            />
+            {qualities.length > 0 && (
+              <StockFilterSelect
+                label="Qualité"
+                value={qualityFilter}
+                options={[
+                  { value: "all", label: "Toutes les qualités" },
+                  ...qualities.map((quality) => ({ value: quality, label: quality })),
+                ]}
+                onChange={setQualityFilter}
+              />
+            )}
+            <span className="hidden lg:inline-flex">
+              <StockImportModal />
+            </span>
+          </div>
 
-        <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_330px] 2xl:grid-cols-[minmax(0,1fr)_350px]">
-          <TableShell className="min-h-[400px]">
-            <div className="sticky top-0 z-10 flex items-center gap-3 border-[#E8E8E5] border-b bg-white p-3">
-              <label className="relative block flex-1">
-                <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6B6B6B]" />
-                <input
-                  className="h-10 w-full rounded-[13px] border border-[#E8E8E5] bg-white pr-4 pl-10 text-[#1A1916] text-sm outline-none transition placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
-                  placeholder="Rechercher une pièce, référence, fournisseur..."
-                  type="search"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </label>
-              <PrimaryButton className="h-10 shrink-0" onClick={() => setOpen(true)} disabled={!canManageStock}>
-                <Plus className="size-4" />
-                <span>Nouvelle pièce</span>
-              </PrimaryButton>
-              <SupplierInvoiceImportModal buttonLabel="Import facture" />
-              <span className="hidden 2xl:inline-flex">
-                <StockImportModal />
-              </span>
-              <SecondaryButton
-                className={filterLowStock ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1A1916]" : ""}
-                onClick={() => setFilterLowStock(!filterLowStock)}
-              >
-                <Filter className="size-4" />
-                {filterLowStock ? "Stock faible uniquement" : "Tous les stocks"}
-              </SecondaryButton>
-            </div>
-            <table className={`${tableClassName} hidden md:table min-w-[980px]`}>
-              <thead className={tableHeadClassName}>
+          <div className="overflow-x-auto bg-white">
+            <table className={`${tableClassName} min-w-[1060px]`}>
+              <thead className="border-[#E8E8E5] border-b bg-[#FAFAF8] text-left font-semibold text-[#6B6B6B] text-xs">
                 <tr>
-                  <th className="px-4 py-3">Nom pièce</th>
-                  <th className="px-4 py-3">Référence / SKU</th>
-                  <th className="px-4 py-3">Modèle compatible</th>
-                  <th className="px-4 py-3">Catégorie</th>
-                  <th className="px-4 py-3 text-right">Stock disponible</th>
-                  {canViewPurchasePrice && <th className="px-4 py-3 text-right">Prix moyen</th>}
-                  <th className="px-4 py-3">Statut</th>
-                  <th className="px-4 py-3 text-right">Action</th>
+                  <th className="px-5 py-4">Pièce</th>
+                  <th className="px-5 py-4">Référence / SKU</th>
+                  <th className="px-5 py-4">Modèle compatible</th>
+                  <th className="px-5 py-4">Catégorie</th>
+                  <th className="px-5 py-4 text-right">Stock disponible</th>
+                  {canViewPurchasePrice && <th className="px-5 py-4 text-right">Prix moyen</th>}
+                  <th className="px-5 py-4">Statut</th>
+                  <th className="px-5 py-4 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-[#E8E8E5]">
                 {filteredItems.map((item) => {
-                  const status = stockStatusLabel(item);
                   return (
                     <tr
-                      className={`cursor-pointer transition hover:bg-[#FFFFFF] ${item.id === selected?.id ? "bg-[#FFFFFF]" : ""}`}
+                      className="group cursor-pointer bg-white transition hover:bg-[#FAFAF8]"
                       key={item.id}
-                      onClick={() => store.setSelected("stockItem", item.id)}
+                      onClick={() => openItem(item)}
                     >
-                      <td className={`${tableCellClassName} py-2.5 font-semibold`}>
-                        <div className="flex items-center gap-3">
-                          <span className="grid size-9 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#2A9D8F]">
-                            <span className="block h-6 w-3 rounded-sm bg-[#1A1916]/80" />
-                          </span>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-4">
+                          <StockItemThumbnail item={item} />
                           <div className="min-w-0">
-                            <p className="truncate text-[#1A1916]">{item.displayName ?? item.name}</p>
-                            {item.quality && <p className="mt-0.5 text-[#6B6B6B] text-[11px]">{item.quality}</p>}
+                            <p className="truncate font-semibold text-[#1A1916] text-[15px]">
+                              {item.displayName ?? item.name}
+                            </p>
+                            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                              {item.supplierBrand && (
+                                <span className="text-[#6B6B6B] text-xs">{item.supplierBrand}</span>
+                              )}
+                              <StockQualityBadge quality={item.quality} />
+                            </div>
                           </div>
                         </div>
                       </td>
-                      <td className={`${tableCellClassName} py-2.5`}>
+                      <td className="px-5 py-4">
                         <div className="flex flex-col gap-1">
-                          <PartReferenceLink reference={item.sku || item.reference} />
+                          <StockReferenceButton item={item} />
                           {item.internalCode && (
                             <span className="font-mono text-[#8A8A85] text-[10.5px]">{item.internalCode}</span>
                           )}
                         </div>
                       </td>
-                      <td className={`${tableCellClassName} max-w-[220px] py-2.5`}>
+                      <td className="max-w-[220px] px-5 py-4 text-[#1A1916] text-sm">
                         {item.compatibleModels.length ? item.compatibleModels.join(" / ") : "Non défini"}
                       </td>
-                      <td className={`${tableCellClassName} py-2.5`}>{item.categoryName}</td>
-                      <td className={`${tableCellClassName} py-2.5 text-right tabular-nums`}>
-                        <span className="font-semibold">{item.quantity}</span>
+                      <td className="px-5 py-4">
+                        <span className="inline-flex h-9 items-center gap-2 rounded-[10px] bg-[#F2FAF8] px-3 text-[#6B6B6B] text-sm">
+                          {(() => {
+                            const Icon = stockCategoryIcon(item);
+                            return <Icon className="size-4 text-[#2A9D8F]" />;
+                          })()}
+                          {item.categoryName || item.category || "Autre"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-right tabular-nums">
+                        <span className="font-semibold text-[#1A1916] text-lg">{item.stock}</span>
+                        <span className="block text-[#6B6B6B] text-xs">{stockUnitLabel(item.stock)}</span>
                       </td>
                       {canViewPurchasePrice && (
-                        <td className={`${tableCellClassName} py-2.5 text-right tabular-nums`}>
-                          {formatEuro(item.averagePurchasePrice ?? item.purchasePrice)}
+                        <td className="px-5 py-4 text-right font-semibold text-[#1A1916] text-sm tabular-nums">
+                          {formatEuro(stockAveragePrice(item))}
                         </td>
                       )}
-                      <td className={`${tableCellClassName} py-2.5`}>
-                        <StatusBadge className="h-6 px-2 text-[11px]" status={status} />
+                      <td className="px-5 py-4">
+                        <StockStatusPill item={item} />
                       </td>
-                      <td className={`${tableCellClassName} py-2.5 text-right`}>
-                        <SecondaryButton
-                          className="h-8 px-3 text-xs"
-                          onClick={() => store.setSelected("stockItem", item.id)}
+                      <td className="px-5 py-4 text-right">
+                        <button
+                          aria-label={`Actions ${item.displayName || item.name}`}
+                          className="inline-grid size-8 place-items-center rounded-full text-[#6B6B6B] transition hover:bg-white hover:text-[#1A1916]"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openItem(item);
+                          }}
+                          type="button"
                         >
-                          Voir détail
-                        </SecondaryButton>
+                          <EllipsisVertical className="size-4" />
+                        </button>
                       </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
-            {/* Vue cartes mobile premium */}
-            <div className="md:hidden space-y-2.5 p-3 bg-[#FFFFFF]">
-              {filteredItems.length === 0 ? (
-                <p className="rounded-[16px] bg-white px-4 py-10 text-center text-[#6B6B6B] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-                  Aucune pièce.
-                </p>
-              ) : (
-                filteredItems.map((item) => {
-                  const isOut = item.quantity === 0;
-                  const isLow = item.quantity > 0 && item.quantity <= item.threshold;
-                  const openItem = () => {
-                    store.setSelected("stockItem", item.id);
-                    setMobileDetailOpen(true);
-                  };
-                  return (
-                    // biome-ignore lint/a11y/useSemanticElements: la carte contient une référence cliquable, éviter un bouton imbriqué.
-                    <div
-                      key={item.id}
-                      className="block w-full rounded-[18px] bg-white p-3.5 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
-                      onClick={openItem}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          openItem();
-                        }
-                      }}
-                      role="button"
-                      tabIndex={0}
-                    >
-                      <div className="flex items-start gap-3">
-                        <span
-                          className={cn(
-                            "grid size-12 shrink-0 place-items-center rounded-[14px]",
-                            isOut ? "bg-[#FFFFFF] text-[#B42318]" : "bg-[#FFFFFF] text-[#1A1916]",
-                          )}
-                        >
-                          <Package className="size-[20px]" strokeWidth={1.8} />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-baseline justify-between gap-2">
-                            <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
-                              {item.name}
-                            </p>
-                            {(isOut || isLow) && (
-                              <span
-                                className={cn(
-                                  "shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
-                                  isOut ? "bg-[#FFFFFF] text-[#B42318]" : "bg-[#FFFFFF] text-[#6B6B6B]",
-                                )}
-                              >
-                                {isOut ? <AlertTriangle className="size-3" /> : null}
-                                {isOut ? "Rupture" : "Stock bas"}
-                              </span>
-                            )}
-                          </div>
-                          <div className="mt-0.5 truncate text-[#6B6B6B] text-[11.5px]">
-                            SKU <PartReferenceLink reference={item.sku || item.reference} /> ·{" "}
-                            {stockItemKindLabel(item)}
-                          </div>
-                          <div className="mt-2.5 grid grid-cols-3 gap-2">
-                            <div>
-                              <p className="text-[#6B6B6B] text-[10px] font-medium uppercase tracking-wider">Stock</p>
-                              <p
-                                className={cn(
-                                  "mt-0.5 font-semibold text-[14px] tabular-nums",
-                                  isOut ? "text-[#B42318]" : isLow ? "text-[#6B6B6B]" : "text-[#2A9D8F]",
-                                )}
-                              >
-                                {item.quantity}
-                              </p>
-                            </div>
-                            {canViewPurchasePrice && (
-                              <div>
-                                <p className="text-[#6B6B6B] text-[10px] font-medium uppercase tracking-wider">Achat</p>
-                                <p className="mt-0.5 font-semibold text-[#1A1916] text-[14px] tabular-nums">
-                                  {formatEuro(item.purchasePrice)}
-                                </p>
-                              </div>
-                            )}
-                            <div className="min-w-0">
-                              <p className="text-[#6B6B6B] text-[10px] font-medium uppercase tracking-wider">
-                                Catégorie
-                              </p>
-                              <p className="mt-0.5 truncate font-semibold text-[#1A1916] text-[13px]">
-                                {item.categoryName}
-                              </p>
-                            </div>
-                          </div>
-                          <p className="mt-2 truncate text-[#6B6B6B] text-[11px]">
-                            {item.compatibleModels.length ? item.compatibleModels.join(" / ") : "Modèle non défini"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </TableShell>
-
-          {/* Desktop detail panel — sticky so it stays in view while the page scrolls */}
-          {selected && (
-            <div className="hidden md:block">
-              <div className="sticky top-6">
-                <StockDetail item={selected} />
+            {filteredItems.length === 0 && (
+              <div className="px-5 py-16 text-center">
+                <p className="font-semibold text-[#1A1916] text-sm">Aucune pièce trouvée</p>
+                <p className="mt-1 text-[#6B6B6B] text-sm">Essayez une autre recherche ou retirez un filtre.</p>
+              </div>
+            )}
+            <div className="flex items-center justify-between border-[#E8E8E5] border-t bg-white px-5 py-4 text-[#6B6B6B] text-sm">
+              <span>
+                1 à {filteredItems.length} sur {activeItems.length} pièces
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  className="grid size-9 place-items-center rounded-[10px] border border-[#E8E8E5] text-[#B7B7B2]"
+                  disabled
+                  type="button"
+                >
+                  <ChevronDown className="size-4 rotate-90" />
+                </button>
+                <span className="grid size-9 place-items-center rounded-[10px] border border-[#E8E8E5] font-semibold text-[#1A1916]">
+                  1
+                </span>
+                <button
+                  className="grid size-9 place-items-center rounded-[10px] border border-[#E8E8E5] text-[#B7B7B2]"
+                  disabled
+                  type="button"
+                >
+                  <ChevronDown className="size-4 -rotate-90" />
+                </button>
               </div>
             </div>
-          )}
-        </section>
+          </div>
+        </Panel>
       </div>
 
       {open && <StockModal onClose={() => setOpen(false)} />}
-
-      {/* Mobile bottom sheet drawer */}
-      {mobileDetailOpen && selected && (
-        <div className="fixed inset-0 z-[60] md:hidden" role="dialog" aria-modal="true">
-          {/* Backdrop */}
-          <button
-            type="button"
-            className="absolute inset-0 bg-[#1A1916]/40 animate-in fade-in duration-200"
-            onClick={() => setMobileDetailOpen(false)}
-            aria-label="Fermer"
-          />
-          {/* Sheet */}
-          <div className="absolute inset-x-0 bottom-0 max-h-[92vh] flex flex-col rounded-t-[28px] bg-white shadow-[0_-20px_60px_rgba(26,25,22,0.18)] animate-in slide-in-from-bottom duration-300">
-            {/* Handle */}
-            <div className="flex justify-center pt-2.5 pb-1 shrink-0">
-              <span className="h-1 w-9 rounded-full bg-[#FFFFFF]" aria-hidden />
-            </div>
-            {/* Header */}
-            <div className="flex items-center justify-between gap-3 px-5 pt-2 pb-3 shrink-0 border-b border-[#FFFFFF]">
-              <p className="font-semibold text-[#1A1916] text-[17px] truncate">{selected.name}</p>
-              <button
-                type="button"
-                onClick={() => setMobileDetailOpen(false)}
-                className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#6B6B6B] active:scale-90 shrink-0"
-                aria-label="Fermer"
-              >
-                <X className="size-4" strokeWidth={2.2} />
-              </button>
-            </div>
-            {/* Scrollable content */}
-            <div className="flex-1 overflow-y-auto">
-              <StockDetailMobile item={selected} onClose={() => setMobileDetailOpen(false)} />
-            </div>
-          </div>
-        </div>
-      )}
     </PageShell>
   );
 }
 
 /** Mobile version — inside a scrollable bottom sheet, no fixed height constraints */
+// biome-ignore lint/correctness/noUnusedVariables: ancien détail mobile conservé temporairement pendant la transition vers la fiche dédiée.
 function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClose: () => void }>) {
   const store = useBeharStore();
   const router = useRouter();
   const [targetRepairId, setTargetRepairId] = useState(store.selectedRepairId || "");
   const [qrDataUrl, setQrDataUrl] = useState("");
+  const [labelOpen, setLabelOpen] = useState(false);
   const canManageStock = store.hasPermission("canManageStock");
   const canUseStockItem = store.hasPermission("canUseStockItem");
   const canViewPurchasePrice = store.hasPermission("canViewPurchasePrice");
@@ -742,7 +1194,11 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
 
   useEffect(() => {
     let cancelled = false;
-    QRCode.toDataURL(reference, { margin: 1, width: 148, color: { dark: "#1A1916", light: "#FFFFFF" } })
+    QRCode.toDataURL(buildScannedPartUrl(reference), {
+      margin: 1,
+      width: 148,
+      color: { dark: "#1A1916", light: "#FFFFFF" },
+    })
       .then((url) => {
         if (!cancelled) setQrDataUrl(url);
       })
@@ -1059,7 +1515,7 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
           >
             Ajuster
           </SecondaryButton>
-          <SecondaryButton className="h-11 w-full" onClick={() => openStockLabel(item, qrDataUrl, true)}>
+          <SecondaryButton className="h-11 w-full" onClick={() => setLabelOpen(true)}>
             <Printer className="size-4" />
             Imprimer
           </SecondaryButton>
@@ -1156,16 +1612,19 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
           Supprimer la pièce
         </SecondaryButton>
       </div>
+      {labelOpen && <StockLabelPrintModal item={item} qrDataUrl={qrDataUrl} onClose={() => setLabelOpen(false)} />}
     </div>
   );
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: ancien panneau latéral conservé temporairement pendant la transition vers la fiche dédiée.
 function StockDetail({ item }: Readonly<{ item: StockItem }>) {
   const store = useBeharStore();
   const router = useRouter();
   const [targetRepairId, setTargetRepairId] = useState(store.selectedRepairId || "");
   const [qrDataUrl, setQrDataUrl] = useState("");
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [labelOpen, setLabelOpen] = useState(false);
   const canManageStock = store.hasPermission("canManageStock");
   const canUseStockItem = store.hasPermission("canUseStockItem");
   const canViewPurchasePrice = store.hasPermission("canViewPurchasePrice");
@@ -1174,33 +1633,19 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
   const tariff = linkedTariffs[0];
   const reference = firstNonEmpty(stockPrimaryReference(item), item.sku, item.reference, item.internalCode, item.id);
   const trace = useMemo(() => getPartTraceability(store, reference), [store, reference]);
-  const entries = trace.supplierInvoiceLines.length
-    ? trace.supplierInvoiceLines.map((line) => ({
-        id: line.id,
-        date:
-          trace.supplierInvoices.find((invoice) => invoice.id === line.supplierInvoiceId)?.purchaseDate ??
-          line.createdAt,
-        supplier:
-          trace.supplierInvoices.find((invoice) => invoice.id === line.supplierInvoiceId)?.supplierName ??
-          line.supplierName,
-        invoiceNumber: trace.supplierInvoices.find((invoice) => invoice.id === line.supplierInvoiceId)?.invoiceNumber,
-        invoiceUrl: trace.supplierInvoices.find((invoice) => invoice.id === line.supplierInvoiceId)?.originalFileUrl,
-        purchaseId: line.purchaseId,
-        quantity: line.quantityPurchased,
-        unitCost: line.unitPurchasePriceExclTax,
-        supplierInvoiceId: line.supplierInvoiceId,
-      }))
-    : trace.purchases.map((purchase) => ({
-        id: purchase.id,
-        date: purchase.date || purchase.createdAt,
-        supplier: purchase.supplier,
-        invoiceNumber: purchase.invoiceNumber,
-        invoiceUrl: purchase.originalFileUrl,
-        purchaseId: purchase.id,
-        quantity: purchase.quantity,
-        unitCost: purchase.unitCost,
-        supplierInvoiceId: purchase.supplierInvoiceId,
-      }));
+  const stockLots = useMemo(() => getStockLotsForItem(store, item), [store, item]);
+  const entries = stockLots.map((lot) => ({
+    id: lot.id,
+    date: lot.purchaseDate || lot.createdAt,
+    supplier: lot.supplierName,
+    invoiceNumber: lot.invoiceNumber,
+    invoiceUrl: lot.invoiceUrl,
+    purchaseId: lot.purchaseId,
+    quantity: lot.quantityPurchased,
+    remainingQuantity: lot.quantityRemaining,
+    unitCost: lot.unitCost,
+    supplierInvoiceId: lot.supplierInvoiceId,
+  }));
   const categoryMapping: Record<string, DeviceCategory> = {
     Smartphone: "smartphone",
     Tablette: "tablet",
@@ -1246,7 +1691,11 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
 
   useEffect(() => {
     let cancelled = false;
-    QRCode.toDataURL(reference, { margin: 1, width: 164, color: { dark: "#1A1916", light: "#FFFFFF" } })
+    QRCode.toDataURL(buildScannedPartUrl(reference), {
+      margin: 1,
+      width: 164,
+      color: { dark: "#1A1916", light: "#FFFFFF" },
+    })
       .then((url) => {
         if (!cancelled) setQrDataUrl(url);
       })
@@ -1271,7 +1720,32 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
           </p>
         )}
       </div>
-      <PartPlaceholder className="h-36 rounded-[14px]" />
+      <div className="rounded-[14px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.03)]">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-[#6B6B6B] text-[11px] font-semibold uppercase tracking-[0.12em]">Pièce atelier</p>
+            <p className="mt-1 truncate font-semibold text-[#1A1916] text-sm">{stockLabelName(item)}</p>
+            <p className="mt-1 text-[#6B6B6B] text-xs">
+              {item.compatibleModels.length ? item.compatibleModels.join(" / ") : "Modèle à compléter"}
+            </p>
+          </div>
+          <span className="rounded-full border border-[#D6EFEB] bg-[#F2FAF8] px-3 py-1 font-semibold text-[#167B70] text-xs">
+            {entries.length || 1} lot(s)
+          </span>
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {[
+            ["Stock", String(item.stock)],
+            ["Réservé", String(Math.max(0, entries.reduce((sum, entry) => sum + entry.quantity, 0) - item.stock))],
+            ["Factures", String(new Set(entries.map((entry) => entry.invoiceNumber).filter(Boolean)).size || 0)],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-[10px] bg-[#FAFAF8] px-3 py-2 text-center">
+              <p className="text-[#6B6B6B] text-[10.5px]">{label}</p>
+              <p className="mt-1 font-semibold text-[#1A1916] text-sm tabular-nums">{value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
       <div className="mt-4 grid gap-3 md:grid-cols-[1fr_132px]">
         <div className="rounded-[12px] border border-[#E8E8E5] bg-white p-3">
           <p className="text-[#6B6B6B] text-xs font-semibold uppercase tracking-[0.12em]">Référence centrale</p>
@@ -1331,7 +1805,7 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
           >
             Voir fiche complète
           </PartReferenceLink>
-          <SecondaryButton className="h-9 w-full text-xs" onClick={() => openStockLabel(item, qrDataUrl, true)}>
+          <SecondaryButton className="h-9 w-full text-xs" onClick={() => setLabelOpen(true)}>
             <Printer className="size-3.5" />
             Imprimer étiquette
           </SecondaryButton>
@@ -1665,10 +2139,10 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
             ))}
           </dl>
         </TracePanel>
-        <TracePanel title="Origine des pièces" icon={FileText}>
+        <TracePanel title="Lots / factures d'origine" icon={FileText}>
           {entries.length ? (
             <div className="overflow-x-auto">
-              <table className={`${tableClassName} min-w-[760px]`}>
+              <table className={`${tableClassName} min-w-[840px]`}>
                 <thead className={tableHeadClassName}>
                   <tr>
                     <th className="px-3 py-2">Date</th>
@@ -1676,6 +2150,7 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
                     <th className="px-3 py-2">Facture</th>
                     <th className="px-3 py-2">Achat</th>
                     <th className="px-3 py-2 text-right">Qté entrée</th>
+                    <th className="px-3 py-2 text-right">Disponible lot</th>
                     {canViewPurchasePrice && <th className="px-3 py-2 text-right">Prix achat</th>}
                     <th className="px-3 py-2 text-right">Actions</th>
                   </tr>
@@ -1694,6 +2169,16 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
                         {entry.purchaseId || "—"}
                       </td>
                       <td className={cn(tableCellClassName, "px-3 py-2 text-right tabular-nums")}>{entry.quantity}</td>
+                      <td className={cn(tableCellClassName, "px-3 py-2 text-right tabular-nums")}>
+                        <span
+                          className={cn(
+                            "rounded-full px-2 py-0.5 font-semibold text-[11px]",
+                            entry.remainingQuantity > 0 ? "bg-[#E9F4F3] text-[#167B70]" : "bg-[#F1F1EE] text-[#6B6B6B]",
+                          )}
+                        >
+                          {entry.remainingQuantity}
+                        </span>
+                      </td>
                       {canViewPurchasePrice && (
                         <td className={cn(tableCellClassName, "px-3 py-2 text-right tabular-nums")}>
                           {formatEuro(entry.unitCost ?? 0)}
@@ -1850,13 +2335,13 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
           >
             Ajuster stock
           </SecondaryButton>
-          <SecondaryButton className="h-10 w-full" onClick={() => openStockLabel(item, qrDataUrl, false)}>
+          <SecondaryButton className="h-10 w-full" onClick={() => setLabelOpen(true)}>
             <Tags className="size-4" />
             Étiquette
           </SecondaryButton>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <SecondaryButton className="h-10 w-full" onClick={() => openStockLabel(item, qrDataUrl, true)}>
+          <SecondaryButton className="h-10 w-full" onClick={() => setLabelOpen(true)}>
             <Printer className="size-4" />
             Imprimer
           </SecondaryButton>
@@ -1945,10 +2430,611 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
           Supprimer la pièce
         </SecondaryButton>
       </div>
+      {labelOpen && <StockLabelPrintModal item={item} qrDataUrl={qrDataUrl} onClose={() => setLabelOpen(false)} />}
     </Panel>
   );
 }
 
+type StockDetailTab = "overview" | "lots" | "movements" | "invoices" | "labels" | "history" | "notes";
+
+const stockDetailTabs: Array<{ id: StockDetailTab; label: string }> = [
+  { id: "overview", label: "Vue d'ensemble" },
+  { id: "lots", label: "Lots" },
+  { id: "movements", label: "Mouvements" },
+  { id: "invoices", label: "Factures fournisseurs" },
+  { id: "labels", label: "Étiquettes" },
+  { id: "history", label: "Historique" },
+  { id: "notes", label: "Notes" },
+];
+
+function StockDetailCard({
+  title,
+  children,
+  action,
+}: Readonly<{ title: string; children: ReactNode; action?: ReactNode }>) {
+  return (
+    <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5 shadow-[0_18px_45px_rgba(26,25,22,0.035)]">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="font-semibold text-[#1A1916] text-base">{title}</h2>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function StockDetailDataRow({ label, value }: Readonly<{ label: string; value: ReactNode }>) {
+  return (
+    <div className="flex items-start justify-between gap-4 py-2.5 text-sm">
+      <dt className="text-[#6B6B6B]">{label}</dt>
+      <dd className="min-w-0 text-right font-medium text-[#1A1916]">{value}</dd>
+    </div>
+  );
+}
+
+function StockEmptyBlock({ children }: Readonly<{ children: ReactNode }>) {
+  return <p className="rounded-[12px] bg-[#FAFAF8] px-4 py-8 text-center text-[#6B6B6B] text-sm">{children}</p>;
+}
+
+function StockCompactTable({
+  headers,
+  children,
+  minWidth = 720,
+}: Readonly<{ headers: string[]; children: ReactNode; minWidth?: number }>) {
+  return (
+    <div className="overflow-x-auto rounded-[14px] border border-[#E8E8E5]">
+      <table className="w-full border-collapse text-sm" style={{ minWidth }}>
+        <thead className="border-[#E8E8E5] border-b bg-[#FAFAF8] text-left text-[#6B6B6B] text-xs">
+          <tr>
+            {headers.map((header) => (
+              <th className="px-4 py-3 font-semibold" key={header}>
+                {header}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[#E8E8E5] bg-white">{children}</tbody>
+      </table>
+    </div>
+  );
+}
+
+export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string }>) {
+  const store = useBeharStore();
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<StockDetailTab>("overview");
+  const [labelOpen, setLabelOpen] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const decodedId = decodeURIComponent(pieceId);
+  const item =
+    store.stockItems.find((entry) => entry.id === decodedId) ??
+    store.resolveStockItemByReference(decodedId) ??
+    store.stockItems.find((entry) => stockPrimaryReference(entry) === decodedId);
+  const canManageStock = store.hasPermission("canManageStock");
+  const canUseStockItem = store.hasPermission("canUseStockItem");
+  const canViewPurchasePrice = store.hasPermission("canViewPurchasePrice");
+  const canViewSupplier = store.hasPermission("canViewSupplier");
+
+  const reference = item
+    ? firstNonEmpty(stockPrimaryReference(item), item.sku, item.reference, item.internalCode, item.id)
+    : decodedId;
+  const trace = useMemo(() => getPartTraceability(store, reference), [store, reference]);
+  const lots = useMemo(() => (item ? getStockLotsForItem(store, item) : []), [store, item]);
+  const linkedTariffs = item ? findLinkedTariffs(item, store.priceBookItems) : [];
+  const invoiceDocumentIds = new Set(
+    trace.supplierInvoices.map((invoice) => invoice.originalDocumentId).filter(Boolean),
+  );
+  const linkedDocuments = store.documents.filter((document) => invoiceDocumentIds.has(document.id));
+  const auditEntries = store.auditLogs.filter((entry) => entry.targetType === "stock" && entry.targetId === item?.id);
+
+  useEffect(() => {
+    if (!item) return;
+    let cancelled = false;
+    QRCode.toDataURL(buildScannedPartUrl(reference), {
+      margin: 1,
+      width: 172,
+      color: { dark: "#1A1916", light: "#FFFFFF" },
+    })
+      .then((url) => {
+        if (!cancelled) setQrDataUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setQrDataUrl("");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [item, reference]);
+
+  if (!store._hasHydrated) {
+    return <Panel className="p-8 text-[#6B6B6B] text-sm">Chargement de la fiche pièce...</Panel>;
+  }
+
+  if (!item) {
+    return (
+      <Panel className="p-8 text-center">
+        <h2 className="font-semibold text-[#1A1916] text-xl">Pièce introuvable</h2>
+        <p className="mt-2 text-[#6B6B6B] text-sm">La référence demandée n'existe pas dans le stock local.</p>
+        <PrimaryButton className="mt-5" onClick={() => router.push("/dashboard/stock")}>
+          Retour au stock
+        </PrimaryButton>
+      </Panel>
+    );
+  }
+
+  const itemId = item.id;
+  const averagePrice = stockAveragePrice(item);
+  const totalValue = stockTotalValue(item);
+  const totalLotQuantity = lots.reduce((sum, lot) => sum + lot.quantityPurchased, 0);
+  const remainingLotQuantity = lots.reduce((sum, lot) => sum + lot.quantityRemaining, 0);
+  const reservedStock = Math.max(0, totalLotQuantity - item.stock);
+  const lastInvoice = trace.supplierInvoices[0];
+  const categoryIcon = stockCategoryIcon(item);
+  const CategoryIcon = categoryIcon;
+
+  function adjustStock() {
+    const delta = Number(window.prompt("Ajustement stock (+ ou -)", "1") || 0);
+    if (!Number.isFinite(delta) || delta === 0) {
+      toast.error("Ajustement invalide");
+      return;
+    }
+    store.adjustStock(itemId, delta, "Ajustement depuis fiche pièce");
+    toast.success("Ajustement stock enregistré");
+  }
+
+  function copyReference() {
+    navigator.clipboard?.writeText(reference).then(
+      () => toast.success("Référence copiée."),
+      () => toast.error("Copie impossible."),
+    );
+  }
+
+  function renderLots(limit?: number) {
+    const visibleLots = typeof limit === "number" ? lots.slice(0, limit) : lots;
+    if (!visibleLots.length) return <StockEmptyBlock>Aucun lot fournisseur relié à cette pièce.</StockEmptyBlock>;
+    return (
+      <StockCompactTable
+        headers={["Lot", "Fournisseur", "Facture", "Reçu", "Restant", "Date", "Coût unitaire"]}
+        minWidth={860}
+      >
+        {visibleLots.map((lot) => (
+          <tr key={lot.id}>
+            <td className="px-4 py-3 font-mono text-[#1A1916] text-xs">{lot.id}</td>
+            <td className="px-4 py-3 text-[#1A1916]">{canViewSupplier ? lot.supplierName || "—" : "Masqué"}</td>
+            <td className="px-4 py-3 font-mono text-[#167B70] text-xs">{lot.invoiceNumber || "—"}</td>
+            <td className="px-4 py-3 tabular-nums">{lot.quantityPurchased}</td>
+            <td className="px-4 py-3 font-semibold text-[#167B70] tabular-nums">{lot.quantityRemaining}</td>
+            <td className="px-4 py-3 text-[#6B6B6B]">{shortDate(lot.purchaseDate || lot.createdAt)}</td>
+            <td className="px-4 py-3 text-right tabular-nums">
+              {canViewPurchasePrice ? formatEuro(lot.unitCost ?? 0) : "Masqué"}
+            </td>
+          </tr>
+        ))}
+      </StockCompactTable>
+    );
+  }
+
+  function renderMovements(limit?: number) {
+    const movements = typeof limit === "number" ? trace.movements.slice(0, limit) : trace.movements;
+    if (!movements.length) return <StockEmptyBlock>Aucun mouvement stock lié à cette référence.</StockEmptyBlock>;
+    return (
+      <StockCompactTable
+        headers={["Date", "Type", "Référence", "Quantité", "Stock après", "Utilisateur"]}
+        minWidth={820}
+      >
+        {movements.map((movement) => (
+          <tr key={movement.id}>
+            <td className="px-4 py-3 text-[#6B6B6B]">{shortDate(movement.createdAt)}</td>
+            <td className="px-4 py-3">
+              <span className="rounded-full bg-[#F2FAF8] px-2.5 py-1 font-semibold text-[#167B70] text-xs">
+                {MOVEMENT_LABELS[movement.movementType]}
+              </span>
+            </td>
+            <td className="px-4 py-3 font-mono text-[#1A1916] text-xs">{movement.sourceId || movement.id}</td>
+            <td
+              className={cn(
+                "px-4 py-3 font-semibold tabular-nums",
+                movement.quantityDelta < 0 ? "text-[#B42318]" : "text-[#167B70]",
+              )}
+            >
+              {movement.quantityDelta > 0 ? "+" : ""}
+              {movement.quantityDelta}
+            </td>
+            <td className="px-4 py-3 tabular-nums">{movement.quantityAfter}</td>
+            <td className="px-4 py-3 text-[#6B6B6B]">{movement.actorName || "—"}</td>
+          </tr>
+        ))}
+      </StockCompactTable>
+    );
+  }
+
+  function renderInvoices(limit?: number) {
+    const invoices = typeof limit === "number" ? trace.supplierInvoices.slice(0, limit) : trace.supplierInvoices;
+    if (!invoices.length) return <StockEmptyBlock>Aucune facture fournisseur liée.</StockEmptyBlock>;
+    return (
+      <StockCompactTable headers={["Facture", "Fournisseur", "Date", "Montant", "Statut", "Action"]} minWidth={820}>
+        {invoices.map((invoice) => (
+          <tr key={invoice.id}>
+            <td className="px-4 py-3 font-mono text-[#167B70] text-xs">{invoice.invoiceNumber}</td>
+            <td className="px-4 py-3">{canViewSupplier ? invoice.supplierName : "Masqué"}</td>
+            <td className="px-4 py-3 text-[#6B6B6B]">{shortDate(invoice.purchaseDate)}</td>
+            <td className="px-4 py-3 font-semibold tabular-nums">
+              {canViewPurchasePrice ? formatEuro(invoice.totalIncludingTax) : "Masqué"}
+            </td>
+            <td className="px-4 py-3">
+              <StatusBadge status={invoice.status} />
+            </td>
+            <td className="px-4 py-3 text-right">
+              <button
+                className="font-semibold text-[#167B70] text-xs disabled:text-[#B7B7B2]"
+                disabled={!invoice.originalFileUrl}
+                onClick={() => invoice.originalFileUrl && window.open(invoice.originalFileUrl, "_blank")}
+                type="button"
+              >
+                Voir facture
+              </button>
+            </td>
+          </tr>
+        ))}
+      </StockCompactTable>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <button
+          className="inline-flex w-fit items-center gap-2 rounded-[10px] px-1 font-medium text-[#6B6B6B] text-sm transition hover:text-[#1A1916]"
+          onClick={() => router.push("/dashboard/stock")}
+          type="button"
+        >
+          <ArrowLeft className="size-4" />
+          Retour au stock
+        </button>
+        <div className="flex flex-wrap gap-2">
+          <SecondaryButton className="h-10" onClick={copyReference}>
+            <Copy className="size-4" />
+            Copier référence
+          </SecondaryButton>
+          <SecondaryButton className="h-10" onClick={() => setLabelOpen(true)}>
+            <Printer className="size-4" />
+            Imprimer étiquette
+          </SecondaryButton>
+          <PrimaryButton className="h-10" disabled={!canManageStock} onClick={adjustStock}>
+            Modifier la pièce
+          </PrimaryButton>
+        </div>
+      </div>
+
+      <Panel className="overflow-hidden rounded-[20px] p-0">
+        <div className="grid gap-6 p-5 lg:grid-cols-[minmax(0,1fr)_660px]">
+          <div className="flex gap-5">
+            <StockItemThumbnail item={item} />
+            <div className="min-w-0">
+              <div className="mb-3 flex flex-wrap items-center gap-2 text-[#6B6B6B] text-sm">
+                <CategoryIcon className="size-4 text-[#2A9D8F]" />
+                <span>{item.categoryName || item.category}</span>
+              </div>
+              <h1 className="font-semibold text-[#1A1916] text-3xl tracking-tight">{item.displayName || item.name}</h1>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <StockQualityBadge quality={item.quality} />
+                <span className="text-[#6B6B6B] text-sm">
+                  Référence <span className="font-mono font-semibold text-[#167B70]">{reference}</span>
+                </span>
+              </div>
+              <p className="mt-4 max-w-2xl text-[#6B6B6B] text-sm leading-6">
+                {item.displayName || item.name} compatible{" "}
+                {item.compatibleModels.length ? item.compatibleModels.join(" / ") : "modèle à compléter"}.{" "}
+                {item.quality ? `Qualité ${item.quality}.` : "Qualité à compléter."}
+              </p>
+            </div>
+          </div>
+          <div className="grid divide-y divide-[#E8E8E5] rounded-[16px] border border-[#E8E8E5] bg-[#FAFAF8] md:grid-cols-3 md:divide-x md:divide-y-0">
+            {[
+              ["Stock disponible", String(item.stock), stockUnitLabel(item.stock)],
+              ["Prix moyen", canViewPurchasePrice ? formatEuro(averagePrice) : "Masqué", "HT"],
+              ["Valeur totale stock", canViewPurchasePrice ? formatEuro(totalValue) : "Masqué", "HT"],
+            ].map(([label, value, helper]) => (
+              <div key={label} className="p-5 text-center">
+                <p className="text-[#6B6B6B] text-xs">{label}</p>
+                <p className="mt-4 font-semibold text-[#1A1916] text-2xl tabular-nums">{value}</p>
+                <p className="mt-2 text-[#6B6B6B] text-xs">{helper}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center justify-between border-[#E8E8E5] border-t px-5 py-3">
+          <StockStatusPill item={item} />
+          <button
+            className="grid size-9 place-items-center rounded-full text-[#6B6B6B] hover:bg-[#FAFAF8]"
+            type="button"
+          >
+            <EllipsisVertical className="size-4" />
+          </button>
+        </div>
+      </Panel>
+
+      <div className="overflow-x-auto border-[#E8E8E5] border-b">
+        <div className="flex min-w-max gap-2">
+          {stockDetailTabs.map((tab) => (
+            <button
+              className={cn(
+                "h-12 border-[#2A9D8F] border-b-2 px-4 font-semibold text-sm transition",
+                activeTab === tab.id ? "border-opacity-100 text-[#1A1916]" : "border-opacity-0 text-[#6B6B6B]",
+              )}
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              type="button"
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {activeTab === "overview" && (
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <StockDetailCard title="Informations générales">
+              <dl className="divide-y divide-[#F0F0ED]">
+                <StockDetailDataRow label="Catégorie" value={item.categoryName || item.category} />
+                <StockDetailDataRow label="Type de pièce" value={stockItemKindLabel(item)} />
+                <StockDetailDataRow label="Qualité" value={displayText(item.quality)} />
+                <StockDetailDataRow
+                  label="Référence interne"
+                  value={<span className="font-mono">{item.internalCode}</span>}
+                />
+                <StockDetailDataRow
+                  label="Référence fournisseur"
+                  value={<span className="font-mono">{item.sku}</span>}
+                />
+                <StockDetailDataRow
+                  label="Code EAN"
+                  value={<span className="font-mono">{displayText(item.ean)}</span>}
+                />
+                <StockDetailDataRow label="Garantie fournisseur" value={displayText(item.supplierWarranty)} />
+                <StockDetailDataRow label="Emplacement" value={displayText(item.leadTime, "À définir")} />
+              </dl>
+            </StockDetailCard>
+            <StockDetailCard title="Stock et valorisation">
+              <dl className="divide-y divide-[#F0F0ED]">
+                <StockDetailDataRow label="Stock disponible" value={`${item.stock} ${stockUnitLabel(item.stock)}`} />
+                <StockDetailDataRow label="Stock réservé" value={`${reservedStock} ${stockUnitLabel(reservedStock)}`} />
+                <StockDetailDataRow label="Stock en commande" value="0 unité" />
+                <StockDetailDataRow
+                  label="Stock total"
+                  value={`${item.stock + reservedStock} ${stockUnitLabel(item.stock + reservedStock)}`}
+                />
+                <StockDetailDataRow
+                  label="Stock minimum"
+                  value={`${item.threshold} ${stockUnitLabel(item.threshold)}`}
+                />
+                <StockDetailDataRow
+                  label="Valeur unitaire"
+                  value={canViewPurchasePrice ? formatEuro(averagePrice) : "Masqué"}
+                />
+                <StockDetailDataRow
+                  label="Valeur du stock"
+                  value={canViewPurchasePrice ? formatEuro(totalValue) : "Masqué"}
+                />
+                <StockDetailDataRow
+                  label="Dernier prix achat"
+                  value={canViewPurchasePrice ? formatEuro(item.lastPurchasePrice ?? item.purchasePrice) : "Masqué"}
+                />
+              </dl>
+            </StockDetailCard>
+            <StockDetailCard
+              title="Lots actifs / fournisseurs"
+              action={
+                lots.length > 3 ? (
+                  <button
+                    className="font-semibold text-[#167B70] text-xs"
+                    onClick={() => setActiveTab("lots")}
+                    type="button"
+                  >
+                    Voir tous les lots
+                  </button>
+                ) : null
+              }
+            >
+              {renderLots(3)}
+            </StockDetailCard>
+            <StockDetailCard
+              title="Mouvements récents"
+              action={
+                trace.movements.length > 4 ? (
+                  <button
+                    className="font-semibold text-[#167B70] text-xs"
+                    onClick={() => setActiveTab("movements")}
+                    type="button"
+                  >
+                    Voir tous les mouvements
+                  </button>
+                ) : null
+              }
+            >
+              {renderMovements(4)}
+            </StockDetailCard>
+            <StockDetailCard
+              title="Factures fournisseurs liées"
+              action={
+                trace.supplierInvoices.length > 3 ? (
+                  <button
+                    className="font-semibold text-[#167B70] text-xs"
+                    onClick={() => setActiveTab("invoices")}
+                    type="button"
+                  >
+                    Voir toutes les factures
+                  </button>
+                ) : null
+              }
+            >
+              {renderInvoices(3)}
+            </StockDetailCard>
+            <StockDetailCard title="Documents liés">
+              {linkedDocuments.length ? (
+                <div className="space-y-2">
+                  {linkedDocuments.map((document) => (
+                    <div
+                      key={document.id}
+                      className="flex items-center justify-between gap-3 rounded-[12px] border border-[#E8E8E5] px-3 py-2"
+                    >
+                      <span className="truncate text-[#1A1916] text-sm">{document.title}</span>
+                      <button
+                        className="text-[#167B70]"
+                        onClick={() => document.fileUrl && window.open(document.fileUrl, "_blank")}
+                        type="button"
+                      >
+                        <ArrowUpRight className="size-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <StockEmptyBlock>
+                  Facture originale et documents fournisseur visibles dès qu'ils sont attachés.
+                </StockEmptyBlock>
+              )}
+            </StockDetailCard>
+            <StockDetailCard title="Utilisation dans les dossiers">
+              {trace.repairUsages.length ? (
+                <div className="space-y-2">
+                  {trace.repairUsages.slice(0, 4).map(({ repair, customer, part }) => (
+                    <button
+                      className="flex w-full items-center justify-between gap-3 rounded-[12px] border border-[#E8E8E5] px-3 py-2 text-left transition hover:border-[#2A9D8F]/40"
+                      key={`${repair.id}-${part.stockItemId}`}
+                      onClick={() => router.push(`/dashboard/dossiers/${repair.id}`)}
+                      type="button"
+                    >
+                      <span>
+                        <span className="block font-mono font-semibold text-[#1A1916] text-xs">{repair.number}</span>
+                        <span className="block text-[#6B6B6B] text-xs">
+                          {customer?.name || "Client"} · {repair.device}
+                        </span>
+                      </span>
+                      <StatusBadge status={repair.status} />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <StockEmptyBlock>Aucun dossier réparation n'utilise encore cette pièce.</StockEmptyBlock>
+              )}
+            </StockDetailCard>
+          </div>
+          <StockDetailCard title="Actions rapides">
+            <div className="grid gap-2">
+              <SecondaryButton className="h-10 w-full justify-start" disabled={!canManageStock} onClick={adjustStock}>
+                <SlidersHorizontal className="size-4" />
+                Ajuster le stock
+              </SecondaryButton>
+              <SecondaryButton className="h-10 w-full justify-start" onClick={() => setLabelOpen(true)}>
+                <ScanQrCode className="size-4" />
+                Créer une étiquette
+              </SecondaryButton>
+              <SecondaryButton className="h-10 w-full justify-start" onClick={() => router.push("/dashboard/achats")}>
+                <ReceiptText className="size-4" />
+                Voir les achats
+              </SecondaryButton>
+              <SecondaryButton className="h-10 w-full justify-start" onClick={() => router.push("/dashboard/achats")}>
+                <Truck className="size-4" />
+                Commander cette pièce
+              </SecondaryButton>
+              <SecondaryButton
+                className="h-10 w-full justify-start"
+                disabled={!canUseStockItem}
+                onClick={() => router.push("/dashboard/atelier")}
+              >
+                <Wrench className="size-4" />
+                Utiliser en réparation
+              </SecondaryButton>
+              <SecondaryButton className="h-10 w-full justify-start" onClick={() => window.print()}>
+                <FileText className="size-4" />
+                Exporter la fiche
+              </SecondaryButton>
+            </div>
+          </StockDetailCard>
+        </div>
+      )}
+
+      {activeTab === "lots" && <StockDetailCard title="Lots fournisseurs">{renderLots()}</StockDetailCard>}
+      {activeTab === "movements" && <StockDetailCard title="Mouvements de stock">{renderMovements()}</StockDetailCard>}
+      {activeTab === "invoices" && <StockDetailCard title="Factures fournisseurs">{renderInvoices()}</StockDetailCard>}
+      {activeTab === "labels" && (
+        <StockDetailCard title="Étiquettes">
+          <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+            <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FAFAF8] p-4 text-center">
+              {qrDataUrl ? (
+                // biome-ignore lint/performance/noImgElement: data URL QR locale pour impression.
+                <img alt={`QR ${reference}`} className="mx-auto size-36" src={qrDataUrl} />
+              ) : (
+                <div className="mx-auto grid size-36 place-items-center rounded-[12px] bg-white text-[#6B6B6B]">QR</div>
+              )}
+              <p className="mt-3 font-mono font-semibold text-[#167B70]">{reference}</p>
+            </div>
+            <div className="space-y-3">
+              <p className="text-[#6B6B6B] text-sm">
+                L'étiquette contient uniquement le logo, la référence lisible, le nom court, le code interne et le QR
+                code.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <PrimaryButton onClick={() => setLabelOpen(true)}>
+                  <Printer className="size-4" />
+                  Générer / imprimer
+                </PrimaryButton>
+                <SecondaryButton onClick={copyReference}>
+                  <Copy className="size-4" />
+                  Copier la référence
+                </SecondaryButton>
+              </div>
+            </div>
+          </div>
+        </StockDetailCard>
+      )}
+      {activeTab === "history" && (
+        <StockDetailCard title="Historique">
+          {auditEntries.length ? (
+            <div className="space-y-2">
+              {auditEntries.map((entry) => (
+                <div key={entry.id} className="rounded-[12px] border border-[#E8E8E5] px-4 py-3">
+                  <p className="font-semibold text-[#1A1916] text-sm">{entry.message}</p>
+                  <p className="mt-1 text-[#6B6B6B] text-xs">
+                    {entry.actorName} · {shortDate(entry.createdAt)} · {entry.action}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <StockEmptyBlock>Aucune entrée d'audit spécifique à cette pièce.</StockEmptyBlock>
+          )}
+        </StockDetailCard>
+      )}
+      {activeTab === "notes" && (
+        <StockDetailCard title="Notes">
+          <dl className="divide-y divide-[#F0F0ED]">
+            <StockDetailDataRow label="Nom brut fournisseur" value={displayText(item.rawName)} />
+            <StockDetailDataRow
+              label="Fournisseur principal"
+              value={canViewSupplier ? displayText(item.primarySupplier || item.supplier) : "Masqué"}
+            />
+            <StockDetailDataRow
+              label="Dernière facture"
+              value={displayText(lastInvoice?.invoiceNumber || item.originSupplierInvoiceNumber)}
+            />
+            <StockDetailDataRow
+              label="Quantité lots restante"
+              value={`${remainingLotQuantity} ${stockUnitLabel(remainingLotQuantity)}`}
+            />
+            <StockDetailDataRow label="Tarifs liés" value={`${linkedTariffs.length} tarif(s)`} />
+          </dl>
+        </StockDetailCard>
+      )}
+
+      {labelOpen && <StockLabelPrintModal item={item} qrDataUrl={qrDataUrl} onClose={() => setLabelOpen(false)} />}
+    </div>
+  );
+}
+
+// biome-ignore lint/correctness/noUnusedVariables: ancienne carte KPI conservée temporairement pour éviter un refactor large hors scope.
 function StockMetricCard({
   label,
   value,

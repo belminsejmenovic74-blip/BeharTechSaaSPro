@@ -32,6 +32,7 @@ import { cn } from "@/lib/utils";
 
 import { DeviceSelector } from "../DeviceSelector";
 import { PageShell } from "./page-shell";
+import { PartReferenceLink } from "./part-reference-link";
 import {
   DetailRow,
   Panel,
@@ -209,6 +210,12 @@ export function CustomersWorkspace() {
     icon: any;
     type?: "repair" | "quote" | "invoice" | "payment";
     id?: string;
+    device?: string;
+    documentsCount?: number;
+    documentsLabel?: string;
+    parts?: Array<{ name: string; quantity: number; reference?: string; warranty?: string }>;
+    status?: string;
+    warranty?: string;
   };
   const [tab, setTab] = useState<"resume" | "documents" | "historique">("resume");
 
@@ -250,14 +257,44 @@ export function CustomersWorkspace() {
         [
           ...store.repairs
             .filter((repair) => repair.customerId === selectedCustomer.id)
-            .map((repair) => ({
-              detail: `${repair.device} — ${repair.issue}`,
-              icon: Wrench,
-              time: repair.droppedAt,
-              title: `Dossier ${repair.number}`,
-              type: "repair" as const,
-              id: repair.id,
-            })),
+            .map((repair) => {
+              const repairDocuments = store.documents.filter((document) => document.repairId === repair.id);
+              const repairParts = repair.parts.map((part) => {
+                const stockItem = store.stockItems.find((item) => item.id === part.stockItemId);
+                return {
+                  name: part.name,
+                  quantity: part.quantity,
+                  reference: part.sku || part.reference || part.internalCode,
+                  warranty:
+                    stockItem?.supplierWarranty || repair.diagnosticWarranty || repair.selectedPriceSnapshot?.garantie,
+                };
+              });
+              const warranty =
+                repair.diagnosticWarranty ||
+                repair.selectedPriceSnapshot?.garantie ||
+                repairParts.find((part) => part.warranty)?.warranty ||
+                "Non renseignée";
+              return {
+                detail: `${repair.device} — ${repair.issue}`,
+                device: [repair.brandName, repair.deviceModel || repair.device].filter(Boolean).join(" "),
+                documentsCount: repairDocuments.length,
+                documentsLabel:
+                  repairDocuments.length > 0
+                    ? repairDocuments
+                        .slice(0, 2)
+                        .map((document) => docLabel[document.type] ?? document.title)
+                        .join(", ")
+                    : "Aucun document lié",
+                icon: Wrench,
+                parts: repairParts,
+                status: repair.status,
+                time: repair.droppedAt,
+                title: `Dossier ${repair.number}`,
+                type: "repair" as const,
+                warranty,
+                id: repair.id,
+              };
+            }),
           ...store.appointments
             .filter((appointment) => appointment.customerId === selectedCustomer.id)
             .map((appointment) => ({
@@ -341,7 +378,7 @@ export function CustomersWorkspace() {
       searchValue={search}
       onSearchChange={setSearch}
       title="Clients"
-      subtitle="Suivez vos clients, leurs appareils et leur historique d'interventions."
+      subtitle="Fiches, appareils et historique d'interventions."
       toolbar={toolbar}
     >
       {/* Mobile : KPI strip + liste cards */}
@@ -724,37 +761,95 @@ export function CustomersWorkspace() {
                 <div className="overflow-y-auto pr-2 custom-scrollbar flex-1">
                   <div className="space-y-2">
                     {historyItems.length > 0 ? (
-                      historyItems.map(({ title, detail, time, icon: Icon, type, id }) => (
-                        <Link
-                          href={
-                            type
-                              ? type === "repair"
-                                ? `/dashboard/dossiers/_/?id=${id}`
-                                : `/dashboard/${type === "quote" ? "devis" : type === "invoice" ? "factures" : type === "payment" ? "paiements" : ""}`
-                              : "#"
-                          }
-                          onClick={() => {
-                            if (type && id) store.setSelected(type, id);
-                          }}
-                          className="group flex items-start gap-4 rounded-2xl border border-transparent bg-[#FFFFFF] p-3.5 transition-colors hover:border-[#2A9D8F]/30 hover:bg-white"
-                          key={`${title}-${detail}-${time}`}
-                        >
-                          <span className="grid size-10 shrink-0 place-items-center rounded-2xl border border-[#E8E8E5] bg-white text-[#2A9D8F] shadow-sm">
-                            <Icon className="size-4" />
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="font-semibold text-[#1A1916] text-sm leading-tight tracking-tight">
-                                {title}
-                              </p>
-                              <span className="text-[#8A8A8A] text-[9px] font-medium uppercase whitespace-nowrap">
-                                {formatIsoToDisplay(time)}
-                              </span>
+                      historyItems.map(
+                        ({
+                          title,
+                          detail,
+                          time,
+                          icon: Icon,
+                          type,
+                          id,
+                          device,
+                          documentsCount,
+                          documentsLabel,
+                          parts,
+                          status,
+                          warranty,
+                        }) => (
+                          <Link
+                            href={
+                              type
+                                ? type === "repair"
+                                  ? `/dashboard/dossiers/_/?id=${id}`
+                                  : `/dashboard/${type === "quote" ? "devis" : type === "invoice" ? "factures" : type === "payment" ? "paiements" : ""}`
+                                : "#"
+                            }
+                            onClick={() => {
+                              if (type && id) store.setSelected(type, id);
+                            }}
+                            className="group flex items-start gap-4 rounded-2xl border border-transparent bg-[#FFFFFF] p-3.5 transition-colors hover:border-[#2A9D8F]/30 hover:bg-white"
+                            key={`${title}-${detail}-${time}`}
+                          >
+                            <span className="grid size-10 shrink-0 place-items-center rounded-2xl border border-[#E8E8E5] bg-white text-[#2A9D8F] shadow-sm">
+                              <Icon className="size-4" />
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="font-semibold text-[#1A1916] text-sm leading-tight tracking-tight">
+                                  {title}
+                                </p>
+                                <span className="text-[#8A8A8A] text-[9px] font-medium uppercase whitespace-nowrap">
+                                  {formatIsoToDisplay(time)}
+                                </span>
+                              </div>
+                              <p className="mt-1 text-[#6B6B6B] text-[12px] leading-snug">{detail}</p>
+                              {type === "repair" && (
+                                <div className="mt-3 space-y-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3 py-2.5">
+                                  <div className="grid gap-2 text-[11px] sm:grid-cols-2">
+                                    <span className="text-[#6B6B6B]">
+                                      Appareil :{" "}
+                                      <b className="font-semibold text-[#1A1916]">{device || "Non renseigné"}</b>
+                                    </span>
+                                    <span className="text-[#6B6B6B]">
+                                      Statut : <b className="font-semibold text-[#1A1916]">{status || "—"}</b>
+                                    </span>
+                                    <span className="text-[#6B6B6B]">
+                                      Garantie : <b className="font-semibold text-[#1A1916]">{warranty || "—"}</b>
+                                    </span>
+                                    <span className="text-[#6B6B6B]">
+                                      Documents :{" "}
+                                      <b className="font-semibold text-[#1A1916]">
+                                        {documentsCount ?? 0} · {documentsLabel || "Aucun document lié"}
+                                      </b>
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <p className="mb-1 text-[#6B6B6B] text-[11px]">Pièces utilisées</p>
+                                    {parts?.length ? (
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {parts.map((part) => (
+                                          <span
+                                            className="inline-flex max-w-full items-center gap-1 rounded-full border border-[#D6EFEB] bg-[#F2FAF8] px-2 py-1 text-[#167B70] text-[10.5px]"
+                                            key={`${title}-${part.reference}-${part.name}`}
+                                          >
+                                            <span className="truncate">{part.name}</span>
+                                            <span>×{part.quantity}</span>
+                                            {part.reference ? (
+                                              <PartReferenceLink className="text-[10.5px]" reference={part.reference} />
+                                            ) : null}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <p className="text-[#8A8A85] text-[11px]">Aucune pièce utilisée.</p>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                            <p className="mt-1 text-[#6B6B6B] text-[12px] leading-snug">{detail}</p>
-                          </div>
-                        </Link>
-                      ))
+                          </Link>
+                        ),
+                      )
                     ) : (
                       <div className="flex flex-col items-center justify-center py-10 text-center">
                         <ReceiptText className="size-8 mb-3 text-[#A3A3A3]" />

@@ -3,6 +3,33 @@ import jsPDF from "jspdf";
 
 import { downloadPdfFile } from "@/lib/download-file.client";
 
+function sanitizePdfClone(clonedDoc: Document) {
+  const elements = clonedDoc.querySelectorAll("*");
+  elements.forEach((el) => {
+    const htmlEl = el as HTMLElement;
+    if (!htmlEl.style) return;
+    const style = window.getComputedStyle(htmlEl);
+    for (let i = 0; i < style.length; i += 1) {
+      const prop = style[i];
+      const value = style.getPropertyValue(prop);
+      if (value.includes("okl")) {
+        htmlEl.style.setProperty(prop, "#888888", "important");
+      }
+    }
+  });
+
+  const root = clonedDoc.documentElement;
+  if (!root) return;
+  const computed = window.getComputedStyle(root);
+  const vars = ["--primary", "--secondary", "--accent", "--muted", "--background", "--foreground"];
+  vars.forEach((variable) => {
+    const value = computed.getPropertyValue(variable);
+    if (value.includes("okl")) {
+      root.style.setProperty(variable, "#000000");
+    }
+  });
+}
+
 /**
  * Generates a PDF from a DOM element and triggers a download.
  * @param element The DOM element to capture.
@@ -27,7 +54,7 @@ export async function generatePdfFromElement(
       for (let index = 0; index < targets.length; index += 1) {
         // Pause pour laisser le navigateur mettre à jour l'interface (éviter le lag)
         await new Promise((resolve) => setTimeout(resolve, 50));
-        
+
         const page = targets[index];
         const canvas = await html2canvas(page, {
           scale: 2,
@@ -35,6 +62,7 @@ export async function generatePdfFromElement(
           logging: false,
           backgroundColor: "#ffffff",
           windowWidth: page.scrollWidth,
+          onclone: sanitizePdfClone,
         });
         const imgData = canvas.toDataURL("image/jpeg", 1.0);
         const imgProps = pdf.getImageProperties(imgData);
@@ -81,39 +109,7 @@ export async function generatePdfFromElement(
       logging: false,
       backgroundColor: "#ffffff",
       windowWidth: element.scrollWidth,
-      onclone: (clonedDoc) => {
-        // Fix for "oklab" / "oklch" unsupported color functions in html2canvas
-        // This scans the cloned document and removes modern color functions that cause crashes
-        const elements = clonedDoc.querySelectorAll("*");
-        elements.forEach((el) => {
-          const htmlEl = el as HTMLElement;
-          if (htmlEl.style) {
-            // Check computed styles and inline styles for oklab/oklch
-            const style = window.getComputedStyle(htmlEl);
-            for (let i = 0; i < style.length; i++) {
-              const prop = style[i];
-              const value = style.getPropertyValue(prop);
-              if (value.includes("okl")) {
-                htmlEl.style.setProperty(prop, "#888888", "important");
-              }
-            }
-          }
-        });
-
-        // Specifically target CSS variables that might contain oklch
-        const root = clonedDoc.documentElement;
-        if (root) {
-          const computed = window.getComputedStyle(root);
-          // Common Tailwind variables
-          const vars = ["--primary", "--secondary", "--accent", "--muted", "--background", "--foreground"];
-          vars.forEach((v) => {
-            const val = computed.getPropertyValue(v);
-            if (val.includes("okl")) {
-              root.style.setProperty(v, "#000000");
-            }
-          });
-        }
-      },
+      onclone: sanitizePdfClone,
     });
 
     // Pause avant le traitement PDF lourd

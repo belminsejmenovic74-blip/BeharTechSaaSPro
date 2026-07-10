@@ -1,16 +1,23 @@
 import { NextResponse } from "next/server";
 
+import { isLicenseActive } from "@/lib/server/verify-license";
+
 type SmsRequest = {
   number?: string;
   message?: string;
+  licenseKey?: string;
 };
 
 export async function POST(request: Request) {
   try {
-    const { number, message } = (await request.json()) as SmsRequest;
+    const { number, message, licenseKey } = (await request.json()) as SmsRequest;
 
     if (!number || !message) {
       return NextResponse.json({ success: false, error: "Numéro et message requis" }, { status: 400 });
+    }
+
+    if (!(await isLicenseActive(licenseKey))) {
+      return NextResponse.json({ success: false, error: "Licence invalide ou inactive." }, { status: 401 });
     }
 
     const username = process.env.CLICKSEND_USERNAME;
