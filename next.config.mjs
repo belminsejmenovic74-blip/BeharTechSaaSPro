@@ -3,6 +3,21 @@ import { fileURLToPath } from "node:url";
 
 const projectRoot = dirname(fileURLToPath(import.meta.url));
 
+function validStableAppUrl(value) {
+  try {
+    const url = new URL(value || "");
+    return url.protocol === "https:" && !url.hostname.endsWith(".vercel.app");
+  } catch {
+    return false;
+  }
+}
+
+if (process.env.NODE_ENV === "production" && !validStableAppUrl(process.env.NEXT_PUBLIC_APP_URL)) {
+  console.error(
+    "[stock-label] STOCK_APP_URL_INVALID: configurez NEXT_PUBLIC_APP_URL avec le domaine HTTPS stable du SaaS (hors *.vercel.app).",
+  );
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Export statique (dossier `out/` à glisser sur Netlify) uniquement quand
@@ -12,6 +27,7 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL ?? "",
   },
   turbopack: {
     root: projectRoot,

@@ -2,10 +2,13 @@
 
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
+import { usePathname, useRouter } from "next/navigation";
+
 import { ArrowLeft, ChevronRight, Lock, LogIn, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { type CurrentUser, useBeharStore } from "@/lib/behar-store";
+import { safeReturnTo } from "@/lib/stock-label-url";
 import { cn } from "@/lib/utils";
 
 /**
@@ -18,6 +21,8 @@ import { cn } from "@/lib/utils";
  * - Sinon, rend les enfants.
  */
 export function PinLoginGate({ children }: Readonly<{ children: ReactNode }>) {
+  const router = useRouter();
+  const pathname = usePathname();
   const sessionUserId = useBeharStore((s) => s.sessionUserId);
   const users = useBeharStore((s) => s.users);
   const workshopInfo = useBeharStore((s) => s.workshopInfo);
@@ -62,7 +67,20 @@ export function PinLoginGate({ children }: Readonly<{ children: ReactNode }>) {
         }
         return u;
       });
-    return <LoginFlow users={visibleUsers} onLogin={(userId, pin) => loginWithUserPin(userId, pin)} />;
+    return (
+      <LoginFlow
+        users={visibleUsers}
+        onLogin={(userId, pin) => {
+          const result = loginWithUserPin(userId, pin);
+          if (result.ok) {
+            const requestedReturnTo =
+              typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("returnTo");
+            router.replace(safeReturnTo(requestedReturnTo, pathname || "/dashboard"));
+          }
+          return result;
+        }}
+      />
+    );
   }
 
   return <>{children}</>;

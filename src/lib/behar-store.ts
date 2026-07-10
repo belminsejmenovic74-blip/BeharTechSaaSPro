@@ -36,7 +36,15 @@ import {
 import { ensureTrackingCode, getCustomerTrackingPath, getTrackingCode } from "@/lib/customer-tracking";
 import { publishDomainEvent } from "@/lib/domain-events";
 import { checkRepairQuota, checkSmsQuota, countSmsThisMonth, countThisMonth } from "@/lib/plan-limits";
-import { normalizePartReference, stockReferenceKeys, stockReferenceMatches } from "@/lib/stock-reference";
+import {
+  generateStockScanToken,
+  mergeLegacyReferences,
+  normalizePartReference,
+  resolveStockItem,
+  stableShortStockReference,
+  stockReferenceKeys,
+  stockReferenceMatches,
+} from "@/lib/stock-reference";
 import { pickStockLotForQuantity } from "@/lib/stock-lots";
 
 export type RepairStatus =
@@ -809,6 +817,13 @@ export type StockItem = {
   shopId: string;
   sku: string;
   internalCode?: string;
+  /** Anciennes références conservées pour les recherches et scanners clavier. */
+  legacyReferences?: string[];
+  /** Token opaque stable imprimé dans le QR. */
+  scanToken?: string;
+  scanEnabled?: boolean;
+  /** Emplacement physique (tiroir, bac, étagère…). */
+  location?: string;
   rawName?: string;
   displayName?: string;
   name: string;
@@ -1460,6 +1475,7 @@ export type StoreState = {
   updateStockItem: (id: string, patch: Partial<StockItem>) => void;
   deleteStockItem: (id: string) => void;
   resolveStockItemByReference: (reference: string) => StockItem | undefined;
+  ensureStockScanAccess: (stockItemId: string) => string;
   confirmPartUsage: (repairId: string, stockItemId: string) => boolean;
   restockItem: (id: string, quantity: number) => void;
   /** Ajuste la quantité d'un article (delta négatif = consommation). Utilisé par le reconditionnement. */
@@ -1681,6 +1697,10 @@ type StockInput = Pick<StockItem, "purchasePrice" | "threshold" | "supplier"> &
       | "salePrice"
       | "priceBookItemId"
       | "internalCode"
+      | "legacyReferences"
+      | "scanToken"
+      | "scanEnabled"
+      | "location"
       | "quality"
       | "averagePurchasePrice"
       | "lastPurchasePrice"
@@ -1749,6 +1769,7 @@ type SupplierInvoiceLineInput = {
   reference?: string;
   sku?: string;
   internalCode?: string;
+  scanToken?: string;
   category?: string;
   compatibleModel?: string;
   quality?: string;
@@ -4092,7 +4113,7 @@ const normalizeStockItem = (item: Partial<StockItem> & { skipModelInference?: bo
   const rawName = normalizeText(item.rawName, normalizeText(item.name, normalizeText(item.part, "Pièce")));
   const name = normalizeText(item.name, normalizeText(item.part, "Pièce"));
   const sku = normalizeText(item.sku, normalizeText(item.reference, `REF-${Date.now()}`));
-  const internalCode = normalizeText(item.internalCode, sku);
+  const internalCode = normalizeText(item.internalCode, stableShortStockReference(id));
   const category = item.categoryId
     ? partCategories.find((entry) => entry.id === item.categoryId)
     : getCategoryByName(item.categoryName ?? item.category ?? name);
@@ -4159,6 +4180,13 @@ const normalizeStockItem = (item: Partial<StockItem> & { skipModelInference?: bo
     shopId: normalizeText(item.shopId, shopId),
     sku,
     internalCode,
+    legacyReferences: uniqueIds([
+      ...(Array.isArray(item.legacyReferences) ? item.legacyReferences : []),
+      ...(normalizePartReference(internalCode) !== normalizePartReference(sku) ? [sku] : []),
+    ]),
+    scanToken: normalizeText(item.scanToken) || undefined,
+    scanEnabled: item.scanEnabled !== false,
+    location: normalizeText(item.location) || undefined,
     rawName,
     displayName,
     name: displayName,
@@ -8257,6 +8285,9 @@ export const useBeharStore = create<StoreState>()(
           id,
           shopId,
           leadTime: enrichedInput.leadTime || "2 à 3 jours",
+          internalCode: enrichedInput.internalCode || stableShortStockReference(id),
+          scanToken: enrichedInput.scanToken || generateStockScanToken(),
+          scanEnabled: enrichedInput.scanEnabled !== false,
           ...enrichedInput,
           ...actorFields(actor),
         });
@@ -8315,9 +8346,25 @@ export const useBeharStore = create<StoreState>()(
         return id;
       },
       resolveStockItemByReference: (reference) => {
-        const key = normalizePartReference(reference);
-        if (!key) return undefined;
-        return get().stockItems.find((item) => stockReferenceMatches(item, key));
+        return resolveStockItem(get().stockItems, reference, { allowName: true });
+      },
+      ensureStockScanAccess: (stockItemId) => {
+        const item = get().stockItems.find((entry) => entry.id === stockItemId);
+        if (!item) return "";
+        if (item.scanToken && item.scanEnabled !== false) return item.scanToken;
+        const scanToken = generateStockScanToken();
+        set((state) => ({
+          stockItems: state.stockItems.map((entry) =>
+            entry.id === stockItemId ? { ...entry, scanToken, scanEnabled: true, updatedAt: getNowIso() } : entry,
+          ),
+        }));
+        get().addAuditLog({
+          action: item.scanToken ? "stock.scan_token_regenerated" : "stock.scan_token_created",
+          targetType: "stock",
+          targetId: stockItemId,
+          message: `Accès QR sécurisé activé pour ${item.name}`,
+        });
+        return scanToken;
       },
       updateStockItem: (id, patch) => {
         if (!get().requirePermission("canManageStock", "Modifier le stock")) return;
@@ -8333,6 +8380,10 @@ export const useBeharStore = create<StoreState>()(
             sku: patch.sku ?? patch.reference ?? currentItem.sku,
             reference: patch.reference ?? patch.sku ?? currentItem.reference,
             internalCode: patch.internalCode ?? currentItem.internalCode,
+          };
+          patch = {
+            ...patch,
+            legacyReferences: mergeLegacyReferences(currentItem, candidate),
           };
           const duplicate = get().stockItems.find(
             (entry) =>
@@ -8695,6 +8746,7 @@ export const useBeharStore = create<StoreState>()(
               reference: normalizeText(line.reference, normalizeText(line.sku)),
               sku: normalizeText(line.sku, normalizeText(line.reference)),
               internalCode: normalizeText(line.internalCode),
+              scanToken: normalizeText(line.scanToken),
               category,
               compatibleModel: normalizeText(line.compatibleModel),
               quality,
@@ -8813,6 +8865,8 @@ export const useBeharStore = create<StoreState>()(
               originSupplierInvoiceNumber: invoiceNumber,
               originSupplierInvoiceLineId: lineId,
               internalCode,
+              scanToken: existingItem?.scanToken || line.scanToken || generateStockScanToken(),
+              scanEnabled: existingItem?.scanEnabled !== false,
               quality: line.quality || existingItem?.quality,
               supplierBrand: line.supplierBrand || existingItem?.supplierBrand,
               ean: line.ean || existingItem?.ean,
@@ -8841,6 +8895,8 @@ export const useBeharStore = create<StoreState>()(
                   sku: line.sku || line.reference || internalCode,
                   reference: line.reference || line.sku || internalCode,
                   internalCode,
+                  scanToken: line.scanToken || generateStockScanToken(),
+                  scanEnabled: true,
                   rawName: line.rawName || line.itemName,
                   displayName:
                     line.displayName ||

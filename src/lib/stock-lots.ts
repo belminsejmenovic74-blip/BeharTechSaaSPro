@@ -22,12 +22,15 @@ function invoiceForLine(invoices: SupplierInvoice[], line: SupplierInvoiceLine):
   return invoices.find((invoice) => invoice.id === line.supplierInvoiceId);
 }
 
-function nonEntryDeltaForLot(movements: StockMovement[], lineId?: string) {
-  if (!lineId) return 0;
+function nonEntryDeltaForLot(movements: StockMovement[], lineId?: string, purchaseId?: string) {
+  if (!lineId && !purchaseId) return 0;
   return movements
     .filter(
       (movement) =>
-        movement.linkedSupplierInvoiceLineId === lineId && movement.movementType !== "supplier_purchase_received",
+        movement.movementType !== "supplier_purchase_received" &&
+        (lineId
+          ? movement.linkedSupplierInvoiceLineId === lineId
+          : movement.linkedPurchaseId === purchaseId && !movement.linkedSupplierInvoiceLineId),
     )
     .reduce((sum, movement) => sum + movement.quantityDelta, 0);
 }
@@ -38,6 +41,7 @@ function consumeUnlinkedDeltas(lots: StockLot[], movements: StockMovement[], sto
       (movement) =>
         movement.stockItemId === stockItemId &&
         !movement.linkedSupplierInvoiceLineId &&
+        !movement.linkedPurchaseId &&
         movement.movementType !== "supplier_purchase_received",
     )
     .reduce((sum, movement) => sum + movement.quantityDelta, 0);
@@ -58,7 +62,10 @@ export function getStockLotsForItem(state: StockLotState, stockItem: StockItem |
 
   const lotsFromLines = lines.map((line) => {
     const invoice = invoiceForLine(state.supplierInvoices, line);
-    const remaining = Math.max(0, line.quantityPurchased + nonEntryDeltaForLot(state.stockMovements, line.id));
+    const remaining = Math.max(
+      0,
+      line.quantityPurchased + nonEntryDeltaForLot(state.stockMovements, line.id, line.purchaseId),
+    );
     return {
       id: line.id,
       stockItemId,
@@ -76,32 +83,38 @@ export function getStockLotsForItem(state: StockLotState, stockItem: StockItem |
     } satisfies StockLot;
   });
 
-  const lots =
-    lotsFromLines.length > 0
-      ? lotsFromLines
-      : state.purchases
-          .filter((purchase) => purchase.stockItemId === stockItemId)
-          .map((purchase) => {
-            const remaining = Math.max(
-              0,
-              purchase.quantity + nonEntryDeltaForLot(state.stockMovements, purchase.supplierInvoiceLineId),
-            );
-            return {
-              id: purchase.supplierInvoiceLineId || purchase.id,
-              stockItemId,
-              supplierInvoiceLineId: purchase.supplierInvoiceLineId,
-              supplierInvoiceId: purchase.supplierInvoiceId,
-              purchaseId: purchase.id,
-              supplierName: purchase.supplier,
-              invoiceNumber: purchase.invoiceNumber,
-              invoiceUrl: purchase.originalFileUrl,
-              purchaseDate: purchase.date || purchase.createdAt,
-              quantityPurchased: purchase.quantity,
-              quantityRemaining: remaining,
-              unitCost: purchase.unitCost,
-              createdAt: purchase.createdAt,
-            } satisfies StockLot;
-          });
+  const representedPurchaseIds = new Set(lines.map((line) => line.purchaseId).filter(Boolean));
+  const representedLineIds = new Set(lines.map((line) => line.id));
+  const lotsFromPurchases = state.purchases
+    .filter(
+      (purchase) =>
+        purchase.stockItemId === stockItemId &&
+        !representedPurchaseIds.has(purchase.id) &&
+        !representedLineIds.has(purchase.supplierInvoiceLineId ?? ""),
+    )
+    .map((purchase) => {
+      const remaining = Math.max(
+        0,
+        purchase.quantity + nonEntryDeltaForLot(state.stockMovements, purchase.supplierInvoiceLineId, purchase.id),
+      );
+      return {
+        id: purchase.supplierInvoiceLineId || purchase.id,
+        stockItemId,
+        supplierInvoiceLineId: purchase.supplierInvoiceLineId,
+        supplierInvoiceId: purchase.supplierInvoiceId,
+        purchaseId: purchase.id,
+        supplierName: purchase.supplier,
+        invoiceNumber: purchase.invoiceNumber,
+        invoiceUrl: purchase.originalFileUrl,
+        purchaseDate: purchase.date || purchase.createdAt,
+        quantityPurchased: purchase.quantity,
+        quantityRemaining: remaining,
+        unitCost: purchase.unitCost,
+        createdAt: purchase.createdAt,
+      } satisfies StockLot;
+    });
+
+  const lots = [...lotsFromLines, ...lotsFromPurchases];
 
   return consumeUnlinkedDeltas(
     [...lots].sort((a, b) =>

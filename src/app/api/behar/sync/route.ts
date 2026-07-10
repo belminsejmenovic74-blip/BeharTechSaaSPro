@@ -198,6 +198,44 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Licence invalide ou inactive." }, { status: 401 });
   }
 
+  // Une licence déjà rattachée à un snapshot ne peut écrire que dans son atelier.
+  // Le service_role reste côté serveur et ne sert jamais à contourner cette isolation.
+  const normalizedLicense = text(payload.licenseKey).toUpperCase();
+  const { data: workshopBinding, error: workshopBindingError } = await supabase
+    .from("workshop_snapshots")
+    .select("workshop_id")
+    .eq("license_key_normalized", normalizedLicense)
+    .maybeSingle();
+  if (workshopBindingError) {
+    console.error("[behar-sync] workshop binding lookup failed", {
+      code: workshopBindingError.code,
+      workshopId,
+    });
+    return NextResponse.json({ error: "Synchronisation cloud momentanément indisponible." }, { status: 503 });
+  }
+  if (workshopBinding?.workshop_id && workshopBinding.workshop_id !== workshopId) {
+    console.warn("[behar-sync] cross-workshop write rejected", { workshopId });
+    return NextResponse.json({ error: "Accès atelier refusé." }, { status: 403 });
+  }
+  if (!workshopBinding) {
+    const { data: existingWorkshop, error: existingWorkshopError } = await supabase
+      .from("workshops")
+      .select("id")
+      .eq("id", workshopId)
+      .maybeSingle();
+    if (existingWorkshopError) {
+      console.error("[behar-sync] workshop ownership check failed", {
+        code: existingWorkshopError.code,
+        workshopId,
+      });
+      return NextResponse.json({ error: "Synchronisation cloud momentanément indisponible." }, { status: 503 });
+    }
+    if (existingWorkshop) {
+      console.warn("[behar-sync] unbound license write rejected", { workshopId });
+      return NextResponse.json({ error: "Accès atelier refusé." }, { status: 403 });
+    }
+  }
+
   const ws = payload.workshopSettings;
   const workshop = {
     id: workshopId,
@@ -216,7 +254,10 @@ export async function POST(request: Request) {
   };
 
   const { error: workshopError } = await supabase.from("workshops").upsert(workshop, { onConflict: "id" });
-  if (workshopError) return NextResponse.json({ error: workshopError.message }, { status: 500 });
+  if (workshopError) {
+    console.error("[behar-sync] workshop upsert failed", { code: workshopError.code, workshopId });
+    return NextResponse.json({ error: "Synchronisation atelier impossible. Réessayez." }, { status: 500 });
+  }
 
   await supabase.from("app_settings").upsert(
     {
@@ -488,8 +529,12 @@ export async function POST(request: Request) {
     name: text(item.name || item.part, "Article"),
     category: text(item.categoryName || item.category) || null,
     item_type: stockItemType(item.itemType, item.productCategory || item.categoryName || item.category),
-    canonical_reference: normalizePartReference(item.sku || item.reference || item.internalCode) || null,
+    canonical_reference: normalizePartReference(item.internalCode || item.sku || item.reference) || null,
     internal_code: text(item.internalCode) || null,
+    legacy_references: Array.isArray(item.legacyReferences) ? item.legacyReferences.filter(Boolean) : [],
+    scan_token: text(item.scanToken) || null,
+    scan_active: item.scanEnabled !== false,
+    storage_location: text(item.location) || null,
     quality: text(item.quality) || null,
     repair_enabled: item.repairEnabled !== false,
     counter_sale_enabled: item.counterSaleEnabled === true,

@@ -5,15 +5,15 @@ import { useMemo, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 import type { LucideIcon } from "lucide-react";
-import { AlertTriangle, ArrowRight, FileText, History, Package, Plus, ShieldCheck, Wrench } from "lucide-react";
+import { AlertTriangle, ArrowRight, FileText, History, Package, Plus, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
 import { BeharLogo } from "@/components/behar/behar-logo";
 import { PrimaryButton, SecondaryButton, StatusBadge } from "@/components/behar/primitives";
 import { formatEuro, type StockMovementType, useBeharStore } from "@/lib/behar-store";
 import { getPartTraceability } from "@/lib/part-traceability";
-import { buildScannedPartPath } from "@/lib/stock-label-url";
-import { stockPrimaryReference } from "@/lib/stock-reference";
+import { getStockLotsForItem } from "@/lib/stock-lots";
+import { resolveStockItem, stockPrimaryReference } from "@/lib/stock-reference";
 import { cn } from "@/lib/utils";
 
 const MOVEMENT_LABELS: Record<StockMovementType, string> = {
@@ -38,12 +38,12 @@ function displayText(value?: string, fallback = "—") {
 function shortDate(value?: string) {
   if (!value) return "—";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value.slice(0, 10);
+  if (Number.isNaN(date.getTime()) || date.getFullYear() < 2000) return "—";
   return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "short", year: "numeric" }).format(date);
 }
 
 function scannedStatus(stock: number, threshold: number) {
-  if (stock === 0) return "Rupture";
+  if (stock === 0) return "Stock épuisé";
   if (stock <= threshold) return "Stock faible";
   return "En stock";
 }
@@ -85,33 +85,21 @@ function Section({
   );
 }
 
-function PublicLimitedNotice() {
-  return (
-    <div className="rounded-[16px] border border-[#D7EFEA] bg-[#ECF8F5] p-4">
-      <div className="flex gap-3">
-        <ShieldCheck className="mt-0.5 size-5 shrink-0 text-[#167B70]" />
-        <div>
-          <p className="font-semibold text-[#1A1916] text-sm">Vue publique limitée</p>
-          <p className="mt-1 text-[#6B6B6B] text-sm">
-            Connectez-vous à Behar Tech Pro pour voir les prix d'achat, fournisseurs, factures, mouvements et dossiers
-            liés.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function ScannedPartPage({ reference }: Readonly<{ reference: string }>) {
+export function ScannedPartPage({ scanToken }: Readonly<{ scanToken: string }>) {
   const store = useBeharStore();
   const router = useRouter();
   const connected = Boolean(store._hasHydrated && store.sessionUserId);
   const canViewPurchasePrice = connected && store.hasPermission("canViewPurchasePrice");
   const canViewSupplier = connected && store.hasPermission("canViewSupplier");
   const canManageStock = connected && store.hasPermission("canManageStock");
-  const trace = useMemo(() => getPartTraceability(store, reference), [store, reference]);
-  const item = trace.stockItem;
-  const primaryReference = item ? stockPrimaryReference(item) : reference;
+  const canUseStockItem = connected && store.hasPermission("canUseStockItem");
+  const item = useMemo(
+    () => resolveStockItem(store.stockItems, scanToken, { includeDisabledScanToken: true }),
+    [scanToken, store.stockItems],
+  );
+  const primaryReference = item ? stockPrimaryReference(item) : "";
+  const trace = useMemo(() => getPartTraceability(store, primaryReference), [store, primaryReference]);
+  const lots = useMemo(() => (item ? getStockLotsForItem(store, item) : []), [item, store]);
   const originInvoice =
     trace.supplierInvoices.find((invoice) => invoice.id === item?.originSupplierInvoiceId) ?? trace.supplierInvoices[0];
   const originLine =
@@ -166,7 +154,7 @@ export function ScannedPartPage({ reference }: Readonly<{ reference: string }>) 
             La référence scannée ne correspond à aucune pièce stockée sur cet appareil.
           </p>
           <p className="mt-4 rounded-[12px] bg-[#FAFAF8] px-3 py-2 font-mono text-[#1A1916] text-sm">
-            {displayText(reference)}
+            {scanToken.startsWith("sp_") ? "QR non reconnu" : displayText(scanToken)}
           </p>
           <SecondaryButton className="mt-5 w-full" onClick={() => router.push("/dashboard/stock")}>
             Voir le stock
@@ -177,7 +165,34 @@ export function ScannedPartPage({ reference }: Readonly<{ reference: string }>) 
     );
   }
 
-  const status = scannedStatus(item.stock, item.threshold);
+  if (item.scanEnabled === false) {
+    return (
+      <main className="min-h-screen bg-[#FAFAF8] px-4 py-5 text-[#1A1916]">
+        <BeharLogo size="md" />
+        <section className="mx-auto mt-8 max-w-2xl rounded-[20px] border border-[#E8E8E5] bg-white p-5">
+          <h1 className="font-semibold text-2xl">Pièce introuvable</h1>
+          <p className="mt-2 text-[#6B6B6B] text-sm">Ce QR code n'est plus actif.</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (item.active === false) {
+    return (
+      <main className="min-h-screen bg-[#FAFAF8] px-4 py-5 text-[#1A1916]">
+        <BeharLogo size="md" />
+        <section className="mx-auto mt-8 max-w-2xl rounded-[20px] border border-[#E8E8E5] bg-white p-5">
+          <h1 className="font-semibold text-2xl">Pièce archivée</h1>
+          <p className="mt-2 text-[#6B6B6B] text-sm">Cette référence existe mais n'est plus active dans le stock.</p>
+        </section>
+      </main>
+    );
+  }
+
+  const lotStock = lots.reduce((sum, lot) => sum + lot.quantityRemaining, 0);
+  const availableStock = lots.length ? lotStock : item.stock;
+  const reservedStock = Math.max(0, item.stock - availableStock);
+  const status = scannedStatus(availableStock, item.threshold);
   const invoiceUrl = originInvoice?.originalFileUrl;
 
   return (
@@ -202,21 +217,25 @@ export function ScannedPartPage({ reference }: Readonly<{ reference: string }>) 
               </h1>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <StatusBadge status={status} />
-                {!connected && <StatusBadge status="Lecture publique" />}
               </div>
             </div>
           </div>
 
           <dl className="mt-5 rounded-[16px] bg-[#FAFAF8] px-4">
-            <InfoRow label="Référence / SKU" mono value={displayText(primaryReference)} />
-            <InfoRow label="Code interne" mono value={displayText(item.internalCode)} />
+            <InfoRow label="Référence interne" mono value={displayText(primaryReference)} />
+            {item.internalCode && item.internalCode !== primaryReference && (
+              <InfoRow label="Code interne" mono value={displayText(item.internalCode)} />
+            )}
             <InfoRow
               label="Modèle compatible"
               value={item.compatibleModels.length ? item.compatibleModels.join(" / ") : "Non défini"}
             />
             <InfoRow label="Catégorie" value={displayText(item.categoryName || item.category)} />
             <InfoRow label="Qualité" value={displayText(item.quality)} />
-            {connected && <InfoRow label="Stock actuel" value={String(item.stock)} />}
+            <InfoRow label="Emplacement" value={displayText(item.location, "Non renseigné")} />
+            <InfoRow label="Stock disponible" value={String(availableStock)} />
+            {reservedStock > 0 && <InfoRow label="Stock réservé" value={String(reservedStock)} />}
+            <InfoRow label="Stock utilisable" value={String(Math.max(0, availableStock - reservedStock))} />
             {canViewPurchasePrice && (
               <InfoRow label="Prix d'achat moyen" value={formatEuro(item.averagePurchasePrice ?? item.purchasePrice)} />
             )}
@@ -229,8 +248,6 @@ export function ScannedPartPage({ reference }: Readonly<{ reference: string }>) 
         </section>
 
         <div className="mt-4 grid gap-3">
-          {!connected && <PublicLimitedNotice />}
-
           {connected && (
             <Section icon={FileText} title="Origine">
               <dl className="rounded-[14px] bg-[#FAFAF8] px-3">
@@ -249,6 +266,38 @@ export function ScannedPartPage({ reference }: Readonly<{ reference: string }>) 
                 <FileText className="size-4" />
                 Voir la facture
               </SecondaryButton>
+            </Section>
+          )}
+
+          {connected && (
+            <Section icon={Package} title="Lots disponibles">
+              <div className="space-y-2">
+                {lots.map((lot) => (
+                  <div className="rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] p-3" key={lot.id}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-[#1A1916] text-sm">
+                          {displayText(lot.supplierName, "Fournisseur non renseigné")}
+                        </p>
+                        <p className="mt-1 truncate text-[#6B6B6B] text-xs">
+                          {displayText(lot.invoiceNumber, "Sans facture")} · reçu le {shortDate(lot.purchaseDate)}
+                        </p>
+                      </div>
+                      <p className="font-semibold text-[#167B70] text-sm tabular-nums">
+                        {lot.quantityRemaining} / {lot.quantityPurchased}
+                      </p>
+                    </div>
+                    {canViewPurchasePrice && lot.unitCost != null && (
+                      <p className="mt-2 text-[#6B6B6B] text-xs">Prix d'achat : {formatEuro(lot.unitCost)}</p>
+                    )}
+                  </div>
+                ))}
+                {!lots.length && (
+                  <p className="rounded-[14px] bg-[#FAFAF8] px-3 py-4 text-[#6B6B6B] text-sm">
+                    Aucun lot structuré ; le stock de la pièce reste disponible.
+                  </p>
+                )}
+              </div>
             </Section>
           )}
 
@@ -325,7 +374,7 @@ export function ScannedPartPage({ reference }: Readonly<{ reference: string }>) 
         <div className="sticky bottom-0 -mx-4 mt-4 border-[#E8E8E5] border-t bg-[#FAFAF8]/95 px-4 py-3 backdrop-blur">
           <div className="mx-auto grid max-w-2xl gap-2">
             {connected && (
-              <PrimaryButton onClick={useInRepair}>
+              <PrimaryButton disabled={!canUseStockItem || availableStock <= 0} onClick={useInRepair}>
                 <Plus className="size-4" />
                 Utiliser dans une réparation
               </PrimaryButton>
@@ -349,9 +398,7 @@ export function ScannedPartPage({ reference }: Readonly<{ reference: string }>) 
           </div>
         </div>
 
-        <p className="mt-4 pb-5 text-center text-[#8A8A85] text-xs">
-          QR dynamique : {buildScannedPartPath(primaryReference)}
-        </p>
+        <p className="mt-4 pb-5 text-center text-[#8A8A85] text-xs">Accès sécurisé Behar Tech Pro</p>
       </div>
     </main>
   );

@@ -4,7 +4,7 @@ import jsPDF from "jspdf";
 
 import type { StockItem } from "@/lib/behar-store";
 import { downloadPdfFile } from "@/lib/download-file.client";
-import { stockPrimaryReference } from "@/lib/stock-reference";
+import { normalizePartReference, stockPrimaryReference } from "@/lib/stock-reference";
 
 export type StockLabelPdfFormat = "thermal40" | "standard60" | "a4";
 
@@ -13,75 +13,171 @@ type LabelConfig = {
   height: number;
   qr: number;
   pad: number;
-  refSize: number;
+  referenceSize: number;
+  referenceMinSize: number;
   nameSize: number;
-  codeSize: number;
+  secondarySize: number;
 };
 
 const LABELS: Record<Exclude<StockLabelPdfFormat, "a4">, LabelConfig> = {
-  thermal40: { width: 40, height: 25, qr: 11.5, pad: 2.2, refSize: 10.5, nameSize: 6.5, codeSize: 5.5 },
-  standard60: { width: 60, height: 30, qr: 17, pad: 2.8, refSize: 15, nameSize: 7.5, codeSize: 6.5 },
+  thermal40: {
+    width: 40,
+    height: 25,
+    qr: 11.5,
+    pad: 2.2,
+    referenceSize: 10.5,
+    referenceMinSize: 6.5,
+    nameSize: 5.8,
+    secondarySize: 4.5,
+  },
+  standard60: {
+    width: 60,
+    height: 30,
+    qr: 17,
+    pad: 2.8,
+    referenceSize: 14,
+    referenceMinSize: 8,
+    nameSize: 7,
+    secondarySize: 5.4,
+  },
 };
 
+const A4_LAYOUT = {
+  width: 210,
+  height: 297,
+  marginX: 8,
+  marginY: 9,
+  gapX: 4,
+  gapY: 5,
+  columns: 3,
+  rows: 8,
+} as const;
+
+function clean(value: string | undefined) {
+  return String(value ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function firstNonEmpty(...values: Array<string | undefined>) {
-  return values.find((value) => typeof value === "string" && value.trim().length > 0)?.trim() ?? "";
+  return values.map(clean).find(Boolean) ?? "";
 }
 
-function labelName(item: StockItem) {
-  const name = firstNonEmpty(item.displayName, item.name, item.categoryName, item.category, "Pièce");
-  const model = item.compatibleModels.length ? item.compatibleModels.join(" / ") : "";
-  if (!model || name.toLowerCase().includes(model.toLowerCase())) return name;
-  return `${name} ${model}`;
+function uniqueDisplay(values: Array<string | undefined>) {
+  const seen = new Set<string>();
+  return values.filter((value) => {
+    const text = clean(value);
+    const key = normalizePartReference(text);
+    if (!text || !key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }) as string[];
 }
 
-function cleanPdfText(value: string) {
-  return value.replace(/\s+/g, " ").trim();
+export type StockLabelContent = {
+  reference: string;
+  name: string;
+  compatibility: string;
+  secondary: string;
+  smallCode: string;
+};
+
+export function getStockLabelContent(item: StockItem): StockLabelContent {
+  const reference = firstNonEmpty(stockPrimaryReference(item), item.sku, item.reference, item.internalCode, item.id);
+  const compatibility = uniqueDisplay([item.brandName, item.compatibleModels.join(" / ")]).join(" · ");
+  const secondary = uniqueDisplay([item.quality, item.location]).join(" · ");
+  const smallCode = uniqueDisplay([
+    item.ean ? `EAN ${item.ean}` : "",
+    item.sku && normalizePartReference(item.sku) !== normalizePartReference(reference) ? `SKU ${item.sku}` : "",
+  ]).join(" · ");
+  return {
+    reference,
+    name: firstNonEmpty(item.displayName, item.name, item.categoryName, item.category, "Pièce"),
+    compatibility,
+    secondary,
+    smallCode,
+  };
+}
+
+function fitSingleLine(pdf: jsPDF, value: string, maxWidth: number, preferredSize: number, minimumSize: number) {
+  let size = preferredSize;
+  pdf.setFontSize(size);
+  while (size > minimumSize && pdf.getTextWidth(value) > maxWidth) {
+    size -= 0.5;
+    pdf.setFontSize(size);
+  }
+  if (pdf.getTextWidth(value) <= maxWidth) return { value, size };
+  let fitted = value;
+  while (fitted.length > 2 && pdf.getTextWidth(`${fitted}…`) > maxWidth) fitted = fitted.slice(0, -1);
+  return { value: `${fitted}…`, size };
+}
+
+function clippedLine(pdf: jsPDF, value: string, maxWidth: number) {
+  if (!value || pdf.getTextWidth(value) <= maxWidth) return value;
+  let fitted = value;
+  while (fitted.length > 2 && pdf.getTextWidth(`${fitted}…`) > maxWidth) fitted = fitted.slice(0, -1);
+  return `${fitted}…`;
 }
 
 function drawLabel(pdf: jsPDF, item: StockItem, qrDataUrl: string, x: number, y: number, config: LabelConfig) {
-  const reference = firstNonEmpty(stockPrimaryReference(item), item.sku, item.reference, item.internalCode, item.id);
-  const name = cleanPdfText(labelName(item));
-  const code = cleanPdfText(item.internalCode || "Code interne");
-  const contentX = x + config.pad;
-  const contentY = y + config.pad;
+  const content = getStockLabelContent(item);
   const qrX = x + config.width - config.pad - config.qr;
-  const qrY = y + config.height - config.pad - config.qr;
-  const textWidth = Math.max(1, qrX - contentX - 1.8);
+  const qrY = y + (config.height - config.qr) / 2;
+  const contentX = x + config.pad;
+  const contentWidth = Math.max(1, qrX - contentX - 2);
+  const compact = config.height <= 25;
 
   pdf.setDrawColor(26, 25, 22);
-  pdf.setLineWidth(0.22);
+  pdf.setLineWidth(0.2);
   pdf.rect(x, y, config.width, config.height);
 
   pdf.setTextColor(26, 25, 22);
   pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(5.3);
-  pdf.text("BEHAR", contentX, contentY + 2.4);
-  pdf.setFillColor(42, 157, 143);
-  pdf.circle(contentX + 12.2, contentY + 1.35, 0.75, "F");
-  pdf.setTextColor(26, 25, 22);
-  pdf.text("TECH", contentX + 14.3, contentY + 2.4);
-  pdf.setDrawColor(42, 157, 143);
-  pdf.setTextColor(22, 123, 112);
-  pdf.roundedRect(contentX + 26.8, contentY - 0.5, 6.9, 3.6, 0.9, 0.9);
-  pdf.text("PRO", contentX + 28.1, contentY + 2.3);
+  pdf.setFontSize(4.8);
+  pdf.text("BEHAR • TECH PRO", contentX, y + config.pad + 1.6);
 
-  pdf.setTextColor(26, 25, 22);
   pdf.setFont("courier", "bold");
-  pdf.setFontSize(config.refSize);
-  pdf.text(reference, contentX, contentY + (config.height <= 25 ? 10.5 : 12.5), { maxWidth: textWidth });
+  const fittedReference = fitSingleLine(
+    pdf,
+    content.reference,
+    contentWidth,
+    config.referenceSize,
+    config.referenceMinSize,
+  );
+  pdf.setFontSize(fittedReference.size);
+  const referenceY = y + config.pad + (compact ? 6.8 : 7.8);
+  pdf.text(fittedReference.value, contentX, referenceY);
 
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(config.nameSize);
-  const nameLines = pdf.splitTextToSize(name, textWidth).slice(0, 2);
-  pdf.text(nameLines, contentX, contentY + (config.height <= 25 ? 14.4 : 17.2));
+  pdf.setLineHeightFactor(1.08);
+  const nameLines = (pdf.splitTextToSize(content.name, contentWidth) as string[]).slice(0, 2);
+  const nameY = referenceY + (compact ? 3.4 : 4.2);
+  pdf.text(nameLines, contentX, nameY);
+  let cursorY = nameY + Math.max(1, nameLines.length) * (compact ? 2.1 : 2.7);
 
-  pdf.setFont("courier", "normal");
-  pdf.setFontSize(config.codeSize);
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(config.secondarySize);
   pdf.setTextColor(107, 107, 107);
-  pdf.text(code, contentX, y + config.height - config.pad - 1.4, { maxWidth: textWidth });
+  if (content.compatibility && cursorY < y + config.height - config.pad - 2.4) {
+    pdf.text(clippedLine(pdf, content.compatibility, contentWidth), contentX, cursorY);
+    cursorY += compact ? 1.9 : 2.4;
+  }
+  if (content.secondary && cursorY < y + config.height - config.pad - 1.1) {
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(22, 123, 112);
+    pdf.text(clippedLine(pdf, content.secondary, contentWidth), contentX, cursorY);
+  }
+
+  if (content.smallCode) {
+    pdf.setFont("courier", "normal");
+    pdf.setFontSize(compact ? 3.8 : 4.4);
+    pdf.setTextColor(107, 107, 107);
+    pdf.text(clippedLine(pdf, content.smallCode, contentWidth), contentX, y + config.height - config.pad - 0.4);
+  }
 
   if (qrDataUrl) {
-    pdf.addImage(qrDataUrl, "PNG", qrX, qrY, config.qr, config.qr);
+    pdf.addImage(qrDataUrl, "PNG", qrX, qrY, config.qr, config.qr, undefined, "NONE");
   }
 }
 
@@ -112,6 +208,8 @@ export function createStockLabelPdfBlob({
   item: StockItem;
   qrDataUrl: string;
 }) {
+  if (!qrDataUrl) throw new Error("QR code requis pour générer une étiquette imprimable.");
+
   if (format !== "a4") {
     const config = LABELS[format];
     const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [config.width, config.height] });
@@ -119,28 +217,22 @@ export function createStockLabelPdfBlob({
     return pdf.output("blob");
   }
 
-  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
   const config = LABELS.standard60;
-  const marginX = 8;
-  const marginY = 9;
-  const gapX = 4;
-  const gapY = 5;
-  const columns = 3;
-  const rows = 8;
-  const perPage = columns * rows;
+  const perPage = A4_LAYOUT.columns * A4_LAYOUT.rows;
   const safeCopies = Math.max(1, Math.min(80, Math.round(copies || 1)));
 
   for (let index = 0; index < safeCopies; index += 1) {
-    if (index > 0 && index % perPage === 0) pdf.addPage();
+    if (index > 0 && index % perPage === 0) pdf.addPage("a4", "portrait");
     const pageIndex = index % perPage;
-    const col = pageIndex % columns;
-    const row = Math.floor(pageIndex / columns);
+    const column = pageIndex % A4_LAYOUT.columns;
+    const row = Math.floor(pageIndex / A4_LAYOUT.columns);
     drawLabel(
       pdf,
       item,
       qrDataUrl,
-      marginX + col * (config.width + gapX),
-      marginY + row * (config.height + gapY),
+      A4_LAYOUT.marginX + column * (config.width + A4_LAYOUT.gapX),
+      A4_LAYOUT.marginY + row * (config.height + A4_LAYOUT.gapY),
       config,
     );
   }

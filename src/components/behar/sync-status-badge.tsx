@@ -7,6 +7,17 @@ import { AlertCircle, Check, CloudOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { subscribeWorkshopSyncState, type WorkshopSyncState } from "@/lib/workshop-sync";
 
+function safeSyncError(value?: string) {
+  if (!value) return "Synchronisation cloud indisponible. Réessayez dans un instant.";
+  if (/fetch|network|réseau|timeout|failed to fetch/i.test(value)) {
+    return "Réseau indisponible. Les modifications seront synchronisées automatiquement.";
+  }
+  if (/pgrst|supabase|schema|table|function|constraint|sql|duplicate key/i.test(value)) {
+    return "Synchronisation cloud momentanément indisponible.";
+  }
+  return value.length > 140 ? "Synchronisation cloud momentanément indisponible." : value;
+}
+
 /**
  * Badge de statut sync, style Notion/Drive.
  * S'affiche dans le topbar, très discret.
@@ -40,7 +51,7 @@ export function SyncStatusBadge({ className }: Readonly<{ className?: string }>)
       case "offline":
         return { icon: CloudOff, label: "Hors ligne — sera sauvegardé au retour du réseau", color: "text-[#6B6B6B]" };
       case "error":
-        return { icon: AlertCircle, label: state.lastError || "Erreur de sauvegarde", color: "text-[#B42318]" };
+        return { icon: AlertCircle, label: safeSyncError(state.lastError), color: "text-[#B42318]" };
       default:
         return { icon: Check, label: "", color: "text-[#6B6B6B]" };
     }
@@ -55,7 +66,7 @@ export function SyncStatusBadge({ className }: Readonly<{ className?: string }>)
         config.color,
         className,
       )}
-      title={state.lastError || config.label}
+      title={state.status === "error" ? safeSyncError(state.lastError) : config.label}
     >
       <Icon className={cn("size-3", config.spin && "animate-spin")} strokeWidth={2.2} />
       <span className="truncate max-w-[180px]">{config.label}</span>

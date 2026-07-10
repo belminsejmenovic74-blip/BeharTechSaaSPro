@@ -26,7 +26,7 @@ import {
 } from "@/lib/textract-expense-parser";
 import { formatEuro, type StockItem, useBeharStore } from "@/lib/behar-store";
 import { buildScannedPartUrl } from "@/lib/stock-label-url";
-import { normalizePartReference, stockReferenceMatches } from "@/lib/stock-reference";
+import { generateStockScanToken, normalizePartReference, stockReferenceMatches } from "@/lib/stock-reference";
 import { cn } from "@/lib/utils";
 
 import {
@@ -264,8 +264,8 @@ function isNonStockInvoiceLine(line: Pick<InvoiceLineForm, "itemName" | "referen
 }
 
 function nextInternalCode(stockItems: StockItem[], usedCodes: Set<string>): string {
-  const year = new Date().getFullYear();
-  const prefix = `BT-STK-${year}-`;
+  const year = String(new Date().getFullYear()).slice(-2);
+  const prefix = `PCE-${year}-`;
   const maxExisting = stockItems.reduce((max, item) => {
     const internalCode = item.internalCode ?? "";
     if (!internalCode.startsWith(prefix)) return max;
@@ -273,10 +273,10 @@ function nextInternalCode(stockItems: StockItem[], usedCodes: Set<string>): stri
     return Number.isFinite(sequence) ? Math.max(max, sequence) : max;
   }, 0);
   let next = maxExisting + 1;
-  let code = `BT-STK-${year}-${String(next).padStart(4, "0")}`;
+  let code = `${prefix}${String(next).padStart(4, "0")}`;
   while (usedCodes.has(normalizePartReference(code))) {
     next += 1;
-    code = `BT-STK-${year}-${String(next).padStart(4, "0")}`;
+    code = `${prefix}${String(next).padStart(4, "0")}`;
   }
   usedCodes.add(normalizePartReference(code));
   return code;
@@ -330,6 +330,7 @@ function escapeHtml(value: string) {
 async function openPreparedStockLabelSheet(
   preparations: Array<{
     reference: string;
+    scanToken: string;
     itemName: string;
     internalCode: string;
     compatibleModel: string;
@@ -343,18 +344,29 @@ async function openPreparedStockLabelSheet(
     return;
   }
 
-  const labels = await Promise.all(
-    printable.flatMap((preparation) =>
-      Array.from({ length: Math.max(1, Math.min(20, Math.round(preparation.quantityAdded))) }, async () => ({
-        ...preparation,
-        qrDataUrl: await QRCode.toDataURL(buildScannedPartUrl(preparation.reference), {
-          margin: 1,
-          width: 150,
-          color: { dark: "#1A1916", light: "#FFFFFF" },
-        }),
-      })),
-    ),
-  );
+  let labels: Array<(typeof printable)[number] & { qrDataUrl: string }>;
+  try {
+    labels = await Promise.all(
+      printable.flatMap((preparation) =>
+        Array.from({ length: Math.max(1, Math.min(20, Math.round(preparation.quantityAdded))) }, async () => ({
+          ...preparation,
+          qrDataUrl: await QRCode.toDataURL(buildScannedPartUrl(preparation.scanToken), {
+            errorCorrectionLevel: "M",
+            margin: 2,
+            width: 300,
+            color: { dark: "#1A1916", light: "#FFFFFF" },
+          }),
+        })),
+      ),
+    );
+  } catch (error) {
+    console.error("[stock-label] supplier import label generation failed", {
+      code: "SUPPLIER_LABEL_QR_FAILED",
+      error,
+    });
+    toast.error(error instanceof Error ? error.message : "Génération des QR impossible.");
+    return;
+  }
 
   const htmlLabels = labels
     .map((label) => {
@@ -363,11 +375,11 @@ async function openPreparedStockLabelSheet(
         <div class="brand">BEHAR <span></span> TECH <b>PRO</b></div>
         <div class="body">
           <div class="text">
-            <strong>${escapeHtml(label.reference)}</strong>
+            <strong>${escapeHtml(label.internalCode)}</strong>
             <p>${escapeHtml(cleanName || "Pièce")}</p>
-            <small>${escapeHtml(label.internalCode || "Code interne")}</small>
+            <small>${escapeHtml(label.compatibleModel || "")}</small>
           </div>
-          <img src="${label.qrDataUrl}" alt="QR ${escapeHtml(label.reference)}" />
+          <img src="${label.qrDataUrl}" alt="QR ${escapeHtml(label.internalCode)}" />
         </div>
       </div>`;
     })
@@ -387,18 +399,18 @@ async function openPreparedStockLabelSheet(
     * { box-sizing: border-box; }
     body { margin: 0; background: #FAFAF8; color: #1A1916; font-family: Arial, sans-serif; }
     .sheet { width: 210mm; min-height: 297mm; padding: 8mm; display: grid; grid-template-columns: repeat(3, 60mm); grid-auto-rows: 30mm; gap: 5mm 4mm; background: #fff; }
-    .label { width: 60mm; height: 30mm; padding: 2.8mm; overflow: hidden; border: 1px solid #1A1916; background: #fff; }
+    .label { width: 60mm; height: 30mm; padding: 2.8mm; overflow: hidden; border: 1px solid #1A1916; background: #fff; break-inside: avoid; page-break-inside: avoid; }
     .brand { display: flex; align-items: center; gap: 1.4mm; font-weight: 800; font-size: 5.5px; line-height: 1; }
     .brand span { width: 1.8mm; height: 1.8mm; border-radius: 50%; background: #2A9D8F; display: inline-block; }
     .brand b { border: 1px solid #2A9D8F; border-radius: 1.5mm; padding: .4mm 1mm; color: #167B70; }
-    .body { margin-top: 1.5mm; display: flex; gap: 2mm; align-items: stretch; }
+    .body { margin-top: 1.5mm; display: grid; grid-template-columns: minmax(0, 1fr) 17mm; gap: 2mm; align-items: center; }
     .text { min-width: 0; flex: 1; }
     strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; font-size: 17px; line-height: 1; }
     p { margin: 1.2mm 0 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-weight: 700; font-size: 8px; line-height: 1.15; }
     small { display: block; margin-top: 1mm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #6B6B6B; font-family: monospace; font-size: 7px; }
-    img { width: 17mm; height: 17mm; object-fit: contain; }
-    @page { size: A4; margin: 8mm; }
-    @media print { body { background: #fff; } .sheet { padding: 0; } }
+    img { width: 17mm; height: 17mm; padding: .7mm; object-fit: contain; image-rendering: auto; }
+    @page { size: A4; margin: 0; }
+    @media print { body { background: #fff; } }
   </style>
 </head>
 <body>
@@ -425,6 +437,7 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
   const [error, setError] = useState("");
   const [mounted, setMounted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const scanTokensRef = useRef(new Map<string, string>());
 
   useEffect(() => {
     setMounted(true);
@@ -481,11 +494,17 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
             : unitPurchasePrice;
         const internalCode =
           existing?.internalCode || line.internalCode.trim() || nextInternalCode(stockItems, usedCodes);
+        let scanToken = existing?.scanToken || scanTokensRef.current.get(line.id) || "";
+        if (!scanToken) {
+          scanToken = generateStockScanToken();
+          scanTokensRef.current.set(line.id, scanToken);
+        }
         return {
           lineId: line.id,
           itemName,
           reference,
           internalCode,
+          scanToken,
           compatibleModel:
             line.compatibleModel.trim() || existing?.compatibleModels?.join(", ") || inferCompatibleModel(rawItemName),
           category,
@@ -654,6 +673,7 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
           internalCode: nonStockLine
             ? line.internalCode.trim() || undefined
             : preparation?.internalCode || line.internalCode.trim() || undefined,
+          scanToken: nonStockLine ? undefined : preparation?.scanToken,
           compatibleModel: nonStockLine
             ? undefined
             : line.compatibleModel.trim() || preparation?.compatibleModel || undefined,

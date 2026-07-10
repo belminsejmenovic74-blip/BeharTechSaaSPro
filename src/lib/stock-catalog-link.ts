@@ -22,6 +22,7 @@ export type StockItemLite = {
   salePrice?: number;
   purchasePrice?: number;
   supplier?: string;
+  location?: string;
 };
 
 /**

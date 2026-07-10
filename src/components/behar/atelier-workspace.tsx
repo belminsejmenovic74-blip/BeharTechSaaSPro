@@ -62,7 +62,12 @@ import { formatDeviceLabel } from "@/lib/format-device";
 import { getPartTraceability } from "@/lib/part-traceability";
 import { repairReadyStatusLabel } from "@/lib/repair-status";
 import { sendRealSms } from "@/lib/send-sms";
-import { normalizePartReference, stockPrimaryReference, stockReferenceMatches } from "@/lib/stock-reference";
+import {
+  normalizePartReference,
+  resolveStockItem,
+  stockPrimaryReference,
+  stockReferenceMatches,
+} from "@/lib/stock-reference";
 import { cn } from "@/lib/utils";
 
 import { Panel, PrimaryButton, SearchBox, SecondaryButton, StatusBadge } from "./primitives";
@@ -631,8 +636,9 @@ export function AtelierWorkspace() {
       toast.error("Tapez ou scannez une référence pièce.");
       return;
     }
-    const exact = stockItems.find((item) => stockReferenceMatches(item, parsed));
-    const match = exact ?? stockItems.find((item) => stockItemMatchesQuery(item, parsed));
+    const match =
+      resolveStockItem(stockItems, parsed, { allowName: true }) ??
+      stockItems.find((item) => stockItemMatchesQuery(item, parsed));
     if (!match) {
       toast.error("Aucune pièce trouvée pour cette référence.");
       return;
@@ -1588,14 +1594,18 @@ export function AtelierWorkspace() {
             <div className="border-[#E8E8E5] border-b bg-[#FFFFFF] p-4">
               <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
                 <div className="relative">
+                  <label className="sr-only" htmlFor="atelier-part-reference">
+                    Scanner ou saisir une référence
+                  </label>
                   <QrCode className="-translate-y-1/2 absolute top-1/2 left-3 size-4 text-[#6B6B6B]" />
                   <input
+                    id="atelier-part-reference"
                     className="h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-white pr-3 pl-10 text-[#1A1916] text-sm outline-none transition placeholder:text-[#8A8A85] focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
                     onChange={(event) => setPartSearch(event.target.value)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter") selectPartFromSearch();
                     }}
-                    placeholder="Référence, QR, nom de pièce ou modèle compatible..."
+                    placeholder="Scanner ou saisir une référence"
                     value={partSearch}
                   />
                 </div>

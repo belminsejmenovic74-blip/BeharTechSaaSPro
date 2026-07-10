@@ -62,7 +62,7 @@ import {
   suggestStockName,
   suggestStockSku,
 } from "@/lib/stock-catalog-link";
-import { stockPrimaryReference } from "@/lib/stock-reference";
+import { normalizePartReference, stockPrimaryReference } from "@/lib/stock-reference";
 import { cn } from "@/lib/utils";
 
 import { type DeviceCategory, getDeviceBrands, getModelsByBrand } from "../../data/deviceCatalog";
@@ -84,6 +84,60 @@ import { SupplierInvoiceImportModal } from "./supplier-invoice-import-modal";
 
 function findLinkedTariff(item: StockItem, priceBookItems: PriceBookItem[]) {
   return findLinkedTariffs(item, priceBookItems)[0];
+}
+
+function useStockLabelQr(item: StockItem | undefined) {
+  const ensureStockScanAccess = useBeharStore((state) => state.ensureStockScanAccess);
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const [qrError, setQrError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!item) {
+      setQrDataUrl("");
+      setQrError("");
+      return;
+    }
+    const scanToken = item.scanToken || ensureStockScanAccess(item.id);
+    if (!scanToken) {
+      setQrDataUrl("");
+      setQrError("Token de scan indisponible pour cette pièce.");
+      return;
+    }
+    try {
+      const targetUrl = buildScannedPartUrl(scanToken);
+      QRCode.toDataURL(targetUrl, {
+        errorCorrectionLevel: "M",
+        margin: 2,
+        width: 320,
+        color: { dark: "#1A1916", light: "#FFFFFF" },
+      })
+        .then((url) => {
+          if (!cancelled) {
+            setQrDataUrl(url);
+            setQrError("");
+          }
+        })
+        .catch((error) => {
+          console.error("[stock-label] QR generation failed", { code: "QR_GENERATION_FAILED", error });
+          if (!cancelled) {
+            setQrDataUrl("");
+            setQrError("Le QR code n'a pas pu être généré. Réessayez.");
+          }
+        });
+    } catch (error) {
+      console.error("[stock-label] QR target rejected", { code: "QR_TARGET_REJECTED", error });
+      if (!cancelled) {
+        setQrDataUrl("");
+        setQrError(error instanceof Error ? error.message : "URL de production invalide.");
+      }
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [ensureStockScanAccess, item]);
+
+  return { qrDataUrl, qrError };
 }
 
 function comparable(value?: string) {
@@ -241,7 +295,7 @@ function stockLabelName(item: StockItem) {
   return `${name} ${model}`;
 }
 
-function printElement(element: HTMLElement, title: string) {
+function printElement(element: HTMLElement, title: string, format: StockLabelFormat) {
   const win = window.open("", "_blank", "noopener,noreferrer,width=760,height=720");
   if (!win) {
     toast.error("Ouverture de l'impression bloquée par le navigateur.");
@@ -255,11 +309,12 @@ function printElement(element: HTMLElement, title: string) {
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; background: #FAFAF8; color: #1A1916; font-family: Arial, sans-serif; }
-    @page { size: A4; margin: 8mm; }
+    @page { size: ${format === "a4" ? "A4" : format === "thermal40" ? "40mm 25mm" : "60mm 30mm"}; margin: 0; }
     @media print {
       body { background: #fff; }
       .no-print { display: none !important; }
       .print-root { box-shadow: none !important; }
+      .print-root > .inline-flex { padding: 0 !important; box-shadow: none !important; }
     }
   </style>
 </head>
@@ -279,48 +334,72 @@ function StockLabelCard({
   const config = STOCK_LABEL_FORMATS[format];
   const reference = firstNonEmpty(stockPrimaryReference(item), item.sku, item.reference, item.internalCode, item.id);
   const compact = format === "thermal40";
+  const compatibility = [item.brandName, item.compatibleModels.join(" / ")].filter(Boolean).join(" · ");
+  const secondary = [item.quality, item.location].filter(Boolean).join(" · ");
+  const smallCode = [item.ean ? `EAN ${item.ean}` : "", item.sku && item.sku !== reference ? `SKU ${item.sku}` : ""]
+    .filter(Boolean)
+    .join(" · ");
   const style: CSSProperties = {
     width: `${config.widthMm}mm`,
     height: `${config.heightMm}mm`,
     padding: `${config.paddingMm}mm`,
+    boxSizing: "border-box",
   };
 
   return (
-    <div
-      className="flex shrink-0 flex-col overflow-hidden border border-[#1A1916] bg-white text-[#1A1916]"
-      style={style}
-    >
-      <div className="flex items-center gap-[1.4mm] font-bold text-[5.5px] leading-none tracking-normal">
-        <span>BEHAR</span>
-        <span className="size-[1.8mm] rounded-full bg-[#2A9D8F]" />
-        <span>TECH</span>
-        <span className="rounded-[1.5mm] border border-[#2A9D8F] px-[1mm] py-[0.4mm] font-bold text-[#167B70]">
-          PRO
-        </span>
-      </div>
-      <div className="mt-[1.5mm] flex min-h-0 flex-1 gap-[2mm]">
-        <div className="min-w-0 flex-1">
+    <div className="grid shrink-0 overflow-hidden border border-[#1A1916] bg-white text-[#1A1916]" style={style}>
+      <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_auto] gap-[2mm]">
+        <div className="flex min-w-0 flex-col overflow-hidden">
+          <div className="truncate font-bold text-[5.5px] leading-none tracking-[0.06em]">BEHAR • TECH PRO</div>
           <p
             className={cn(
-              "truncate font-mono font-black leading-none tracking-normal",
-              compact ? "text-[12px]" : "text-[17px]",
+              "mt-[1.5mm] truncate font-mono font-black leading-none tracking-[-0.02em]",
+              reference.length > 14
+                ? compact
+                  ? "text-[8px]"
+                  : "text-[12px]"
+                : compact
+                  ? "text-[11px]"
+                  : "text-[16px]",
             )}
           >
             {reference}
           </p>
           <p
             className={cn(
-              "mt-[1.2mm] line-clamp-2 font-semibold leading-tight",
-              compact ? "text-[6.5px]" : "text-[8px]",
+              "mt-[1.1mm] line-clamp-2 min-w-0 font-semibold leading-[1.15]",
+              compact ? "text-[6px]" : "text-[7.5px]",
             )}
           >
-            {stockLabelName(item)}
+            {firstNonEmpty(item.displayName, item.name, "Pièce")}
           </p>
-          <p className={cn("mt-[1mm] truncate font-mono text-[#6B6B6B]", compact ? "text-[5.7px]" : "text-[7px]")}>
-            {displayText(item.internalCode, "Code interne")}
-          </p>
+          {compatibility && (
+            <p className={cn("mt-[0.7mm] truncate text-[#6B6B6B]", compact ? "text-[5px]" : "text-[6px]")}>
+              {compatibility}
+            </p>
+          )}
+          {secondary && (
+            <p
+              className={cn("mt-[0.5mm] truncate font-semibold text-[#167B70]", compact ? "text-[5px]" : "text-[6px]")}
+            >
+              {secondary}
+            </p>
+          )}
+          {smallCode && (
+            <p
+              className={cn(
+                "mt-auto truncate pt-[0.5mm] font-mono text-[#6B6B6B]",
+                compact ? "text-[4.5px]" : "text-[5px]",
+              )}
+            >
+              {smallCode}
+            </p>
+          )}
         </div>
-        <div className="grid shrink-0 place-items-center bg-white" style={{ width: `${config.qrMm}mm` }}>
+        <div
+          className="grid shrink-0 place-items-center self-center bg-white p-[0.7mm]"
+          style={{ width: `${config.qrMm}mm`, height: `${config.qrMm}mm` }}
+        >
           {qrDataUrl ? (
             // biome-ignore lint/performance/noImgElement: QR local data URL nécessaire pour impression thermique/PDF.
             <img alt={`QR ${reference}`} className="h-full w-full object-contain" src={qrDataUrl} />
@@ -371,14 +450,19 @@ function StockLabelPreview({
 function StockLabelPrintModal({
   item,
   qrDataUrl,
+  qrError,
   onClose,
-}: Readonly<{ item: StockItem; qrDataUrl: string; onClose: () => void }>) {
+}: Readonly<{ item: StockItem; qrDataUrl: string; qrError: string; onClose: () => void }>) {
   const [format, setFormat] = useState<StockLabelFormat>("thermal40");
   const [copies, setCopies] = useState(24);
   const printRef = useRef<HTMLDivElement>(null);
   const reference = firstNonEmpty(stockPrimaryReference(item), item.sku, item.reference, item.internalCode, item.id);
 
   async function downloadPdf() {
+    if (!qrDataUrl) {
+      toast.error(qrError || "QR code indisponible.");
+      return;
+    }
     try {
       downloadStockLabelPdf({
         copies,
@@ -400,7 +484,7 @@ function StockLabelPrintModal({
           <div>
             <p className="font-semibold text-[#1A1916] text-lg">Étiquette pièce</p>
             <p className="mt-1 text-[#6B6B6B] text-sm">
-              Référence, nom court, code interne et QR code. Le détail complet reste dans la fiche pièce.
+              Référence interne, pièce compatible, variante, emplacement et QR sécurisé.
             </p>
           </div>
           <button
@@ -453,19 +537,25 @@ function StockLabelPrintModal({
                 />
               </label>
             )}
+            {qrError && (
+              <div className="rounded-[12px] border border-[#F2D4D1] bg-[#FBEBEB] p-3 text-[#B42318] text-xs">
+                {qrError}
+              </div>
+            )}
             <div className="rounded-[12px] bg-[#FAFAF8] p-3">
               <p className="font-mono font-semibold text-[#1A1916] text-sm">{reference}</p>
               <p className="mt-1 text-[#6B6B6B] text-xs">{stockLabelName(item)}</p>
-              <p className="mt-1 font-mono text-[#6B6B6B] text-xs">{displayText(item.internalCode)}</p>
+              {item.location && <p className="mt-1 text-[#6B6B6B] text-xs">{item.location}</p>}
             </div>
             <div className="grid gap-2">
               <PrimaryButton
-                onClick={() => printRef.current && printElement(printRef.current, `Étiquette ${reference}`)}
+                disabled={!qrDataUrl}
+                onClick={() => printRef.current && printElement(printRef.current, `Étiquette ${reference}`, format)}
               >
                 <Printer className="size-4" />
                 Imprimer
               </PrimaryButton>
-              <SecondaryButton onClick={downloadPdf}>
+              <SecondaryButton disabled={!qrDataUrl} onClick={downloadPdf}>
                 <Download className="size-4" />
                 Télécharger PDF
               </SecondaryButton>
@@ -1044,9 +1134,11 @@ export function StockWorkspace() {
                       <td className="px-5 py-4">
                         <div className="flex flex-col gap-1">
                           <StockReferenceButton item={item} />
-                          {item.internalCode && (
-                            <span className="font-mono text-[#8A8A85] text-[10.5px]">{item.internalCode}</span>
-                          )}
+                          {item.internalCode &&
+                            normalizePartReference(item.internalCode) !==
+                              normalizePartReference(stockPrimaryReference(item)) && (
+                              <span className="font-mono text-[#8A8A85] text-[10.5px]">{item.internalCode}</span>
+                            )}
                         </div>
                       </td>
                       <td className="max-w-[220px] px-5 py-4 text-[#1A1916] text-sm">
@@ -1136,7 +1228,7 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
   const store = useBeharStore();
   const router = useRouter();
   const [targetRepairId, setTargetRepairId] = useState(store.selectedRepairId || "");
-  const [qrDataUrl, setQrDataUrl] = useState("");
+  const { qrDataUrl, qrError } = useStockLabelQr(item);
   const [labelOpen, setLabelOpen] = useState(false);
   const canManageStock = store.hasPermission("canManageStock");
   const canUseStockItem = store.hasPermission("canUseStockItem");
@@ -1191,24 +1283,6 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
     router.push("/dashboard/parametres/catalogue");
     onClose();
   };
-
-  useEffect(() => {
-    let cancelled = false;
-    QRCode.toDataURL(buildScannedPartUrl(reference), {
-      margin: 1,
-      width: 148,
-      color: { dark: "#1A1916", light: "#FFFFFF" },
-    })
-      .then((url) => {
-        if (!cancelled) setQrDataUrl(url);
-      })
-      .catch(() => {
-        if (!cancelled) setQrDataUrl("");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [reference]);
 
   return (
     <div className="px-4 pb-10 pt-3">
@@ -1446,6 +1520,16 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
           </div>
         )}
         <div className={rowClass}>
+          <span className={labelClass}>Emplacement</span>
+          <input
+            className={textInputClass}
+            value={item.location ?? ""}
+            readOnly={!canManageStock}
+            placeholder="Ex. Tiroir A3"
+            onChange={(e) => store.updateStockItem(item.id, { location: e.target.value })}
+          />
+        </div>
+        <div className={rowClass}>
           <span className={labelClass}>Délai moyen</span>
           <input
             className={textInputClass}
@@ -1612,7 +1696,9 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
           Supprimer la pièce
         </SecondaryButton>
       </div>
-      {labelOpen && <StockLabelPrintModal item={item} qrDataUrl={qrDataUrl} onClose={() => setLabelOpen(false)} />}
+      {labelOpen && (
+        <StockLabelPrintModal item={item} qrDataUrl={qrDataUrl} qrError={qrError} onClose={() => setLabelOpen(false)} />
+      )}
     </div>
   );
 }
@@ -1622,7 +1708,7 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
   const store = useBeharStore();
   const router = useRouter();
   const [targetRepairId, setTargetRepairId] = useState(store.selectedRepairId || "");
-  const [qrDataUrl, setQrDataUrl] = useState("");
+  const { qrDataUrl, qrError } = useStockLabelQr(item);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [labelOpen, setLabelOpen] = useState(false);
   const canManageStock = store.hasPermission("canManageStock");
@@ -1688,24 +1774,6 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
     toast.success("Tarif créé depuis cette pièce.");
     router.push("/dashboard/parametres/catalogue");
   };
-
-  useEffect(() => {
-    let cancelled = false;
-    QRCode.toDataURL(buildScannedPartUrl(reference), {
-      margin: 1,
-      width: 164,
-      color: { dark: "#1A1916", light: "#FFFFFF" },
-    })
-      .then((url) => {
-        if (!cancelled) setQrDataUrl(url);
-      })
-      .catch(() => {
-        if (!cancelled) setQrDataUrl("");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [reference]);
 
   return (
     <Panel className="overflow-y-auto rounded-[14px] p-4 md:max-h-[calc(100vh-11rem)]">
@@ -2074,6 +2142,19 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
           )}
           <DetailRow
             className="py-2"
+            label="Emplacement"
+            value={
+              <input
+                className={textInputClass}
+                onChange={(event) => store.updateStockItem(item.id, { location: event.target.value })}
+                placeholder="Ex. Tiroir A3"
+                readOnly={!canManageStock}
+                value={item.location ?? ""}
+              />
+            }
+          />
+          <DetailRow
+            className="py-2"
             label="Délai moyen"
             value={
               <input
@@ -2430,7 +2511,9 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
           Supprimer la pièce
         </SecondaryButton>
       </div>
-      {labelOpen && <StockLabelPrintModal item={item} qrDataUrl={qrDataUrl} onClose={() => setLabelOpen(false)} />}
+      {labelOpen && (
+        <StockLabelPrintModal item={item} qrDataUrl={qrDataUrl} qrError={qrError} onClose={() => setLabelOpen(false)} />
+      )}
     </Panel>
   );
 }
@@ -2504,12 +2587,12 @@ export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<StockDetailTab>("overview");
   const [labelOpen, setLabelOpen] = useState(false);
-  const [qrDataUrl, setQrDataUrl] = useState("");
   const decodedId = decodeURIComponent(pieceId);
   const item =
     store.stockItems.find((entry) => entry.id === decodedId) ??
     store.resolveStockItemByReference(decodedId) ??
     store.stockItems.find((entry) => stockPrimaryReference(entry) === decodedId);
+  const { qrDataUrl, qrError } = useStockLabelQr(item);
   const canManageStock = store.hasPermission("canManageStock");
   const canUseStockItem = store.hasPermission("canUseStockItem");
   const canViewPurchasePrice = store.hasPermission("canViewPurchasePrice");
@@ -2526,25 +2609,6 @@ export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string
   );
   const linkedDocuments = store.documents.filter((document) => invoiceDocumentIds.has(document.id));
   const auditEntries = store.auditLogs.filter((entry) => entry.targetType === "stock" && entry.targetId === item?.id);
-
-  useEffect(() => {
-    if (!item) return;
-    let cancelled = false;
-    QRCode.toDataURL(buildScannedPartUrl(reference), {
-      margin: 1,
-      width: 172,
-      color: { dark: "#1A1916", light: "#FFFFFF" },
-    })
-      .then((url) => {
-        if (!cancelled) setQrDataUrl(url);
-      })
-      .catch(() => {
-        if (!cancelled) setQrDataUrl("");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [item, reference]);
 
   if (!store._hasHydrated) {
     return <Panel className="p-8 text-[#6B6B6B] text-sm">Chargement de la fiche pièce...</Panel>;
@@ -2793,7 +2857,7 @@ export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string
                   value={<span className="font-mono">{displayText(item.ean)}</span>}
                 />
                 <StockDetailDataRow label="Garantie fournisseur" value={displayText(item.supplierWarranty)} />
-                <StockDetailDataRow label="Emplacement" value={displayText(item.leadTime, "À définir")} />
+                <StockDetailDataRow label="Emplacement" value={displayText(item.location, "À définir")} />
               </dl>
             </StockDetailCard>
             <StockDetailCard title="Stock et valorisation">
@@ -2973,8 +3037,8 @@ export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string
             </div>
             <div className="space-y-3">
               <p className="text-[#6B6B6B] text-sm">
-                L'étiquette contient uniquement le logo, la référence lisible, le nom court, le code interne et le QR
-                code.
+                L'étiquette contient la référence interne, le nom, la compatibilité, la variante, l'emplacement et le QR
+                sécurisé. Le SKU ou l'EAN n'apparaît qu'en petit lorsqu'il existe.
               </p>
               <div className="flex flex-wrap gap-2">
                 <PrimaryButton onClick={() => setLabelOpen(true)}>
@@ -3029,7 +3093,9 @@ export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string
         </StockDetailCard>
       )}
 
-      {labelOpen && <StockLabelPrintModal item={item} qrDataUrl={qrDataUrl} onClose={() => setLabelOpen(false)} />}
+      {labelOpen && (
+        <StockLabelPrintModal item={item} qrDataUrl={qrDataUrl} qrError={qrError} onClose={() => setLabelOpen(false)} />
+      )}
     </div>
   );
 }
@@ -3087,6 +3153,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
   const [nameOverride, setNameOverride] = useState<string>("");
   const [skuOverride, setSkuOverride] = useState<string>("");
   const [supplier, setSupplier] = useState<string>("");
+  const [location, setLocation] = useState<string>("");
   const [purchasePrice, setPurchasePrice] = useState<string>("");
   const [stockQty, setStockQty] = useState<string>("1");
   const [threshold, setThreshold] = useState<string>("1");
@@ -3178,6 +3245,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
         counterVisible,
         salePrice: sale,
         supplier: supplier.trim() || "Non renseigné",
+        location: location.trim() || undefined,
         purchasePrice: Math.max(0, Number(purchasePrice) || 0),
         quantity: Math.max(0, Number(stockQty) || 0),
         threshold: Math.max(0, Number(threshold) || 0),
@@ -3224,6 +3292,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
         counterSaleEnabled: counterVisible,
         counterVisible,
         supplier: supplier.trim() || existingStock.supplier || "Non renseigné",
+        location: location.trim() || existingStock.location,
         purchasePrice: purchasePrice ? Number(purchasePrice) : existingStock.purchasePrice,
         quantity: Math.max(0, Number(stockQty) || 0) + (existingStock.quantity ?? 0),
         threshold: Math.max(0, Number(threshold) || 0),
@@ -3249,6 +3318,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
       active: true,
       counterVisible,
       supplier: supplier.trim() || "Non renseigné",
+      location: location.trim() || undefined,
       purchasePrice: Math.max(0, Number(purchasePrice) || 0),
       quantity: Math.max(0, Number(stockQty) || 0),
       threshold: Math.max(0, Number(threshold) || 0),
@@ -3551,6 +3621,16 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
               placeholder="UTOPYA, etc."
               value={supplier}
               onChange={(e) => setSupplier(e.target.value)}
+            />
+          </label>
+          <label className="block">
+            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Emplacement</span>
+            <input
+              type="text"
+              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              placeholder="Ex. Tiroir A3"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
             />
           </label>
           <label className="block">
