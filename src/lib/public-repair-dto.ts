@@ -121,6 +121,19 @@ function documentNumber(
   return document.type === "intake" ? repair.number : undefined;
 }
 
+/**
+ * Chemin public d'un document commercial (devis/facture/reçu), lu par les pages
+ * /devis /facture /recu depuis `public_tracking_documents`. Le token est l'id de
+ * l'entité liée (quoteId/invoiceId/paymentId). Remplace l'ancienne route
+ * `/print/document/...` qui n'est lisible qu'en local (cassée à distance).
+ */
+function commercialDocumentPath(document: BeharDocument): string | undefined {
+  if (document.type === "quote" && document.quoteId) return `/devis/${document.quoteId}`;
+  if (document.type === "invoice" && document.invoiceId) return `/facture/${document.invoiceId}`;
+  if (document.type === "payment" && document.paymentId) return `/recu/${document.paymentId}`;
+  return undefined;
+}
+
 export function buildPublicRepairDtoFromLocalState(
   state: Pick<
     StoreState,
@@ -177,7 +190,9 @@ export function buildPublicRepairDtoFromLocalState(
         title: publicDocumentTitle(document, number),
         number,
         status: "ready",
-        previewUrl: hasPublicPreviewTarget(document) ? getPublicDocumentUrl(document) : undefined,
+        previewUrl:
+          commercialDocumentPath(document) ??
+          (hasPublicPreviewTarget(document) ? getPublicDocumentUrl(document) : undefined),
         downloadUrl: document.fileUrl || undefined,
       };
     }),
@@ -197,7 +212,7 @@ export function buildPublicRepairDtoFromLocalState(
           number: quote.number,
           status: quote.status,
           totalTtc: quote.totalTtc ?? quote.totalAmount ?? 0,
-          previewUrl: document ? getPublicDocumentUrl(document) : "",
+          previewUrl: `/devis/${quote.id}`,
           downloadUrl: document?.fileUrl || undefined,
         };
       }),
@@ -209,7 +224,7 @@ export function buildPublicRepairDtoFromLocalState(
           number: invoice.number,
           status: invoice.status,
           totalTtc: invoice.lines.reduce((sum, line) => sum + (line.total ?? line.quantity * line.unitPrice), 0),
-          previewUrl: document ? getPublicDocumentUrl(document) : "",
+          previewUrl: `/facture/${invoice.id}`,
           downloadUrl: document?.fileUrl || undefined,
         };
       }),
@@ -221,7 +236,7 @@ export function buildPublicRepairDtoFromLocalState(
           number: payment.paymentNumber,
           status: payment.status,
           amount: payment.amount,
-          previewUrl: document ? getPublicDocumentUrl(document) : "",
+          previewUrl: `/recu/${payment.id}`,
           downloadUrl: document?.fileUrl || undefined,
         };
       }),

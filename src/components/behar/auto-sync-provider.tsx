@@ -4,6 +4,7 @@ import { useEffect } from "react";
 
 import { type StoreState, useBeharStore } from "@/lib/behar-store";
 import { checkDeviceQuota } from "@/lib/plan-limits";
+import { syncPublicTrackingDocumentsToCloud } from "@/lib/public-tracking-documents-sync";
 import { syncPublicTrackingRepairsToCloud } from "@/lib/public-tracking-sync";
 import { installReconditioningSalesBridge } from "@/lib/reconditioning-store";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -256,6 +257,9 @@ export function AutoSyncProvider() {
             if (trackedRepairs.length > 0) {
               void syncPublicTrackingRepairsToCloud(trackedRepairs, trackingState);
             }
+            // Idem pour les documents commerciaux (devis/facture/reçu/vente) :
+            // alimente `public_tracking_documents` lu par les pages publiques.
+            void syncPublicTrackingDocumentsToCloud(trackingState);
           })
           .catch(() => {
             // Le statut détaillé est déjà maintenu par workshop-sync.

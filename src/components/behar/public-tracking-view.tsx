@@ -119,7 +119,11 @@ async function readPublicRepairFromSupabase(token: string): Promise<PublicRepair
     return null;
   }
 
-  const safeToken = token.replace(/[^a-zA-Z0-9-]/g, "");
+  // Les tokens de suivi peuvent contenir des underscores (`rp_XXXX`,
+  // `repair_1783..._94a6ec`). Il faut donc les conserver, sinon la recherche
+  // Supabase ne matche jamais et la page affiche « Suivi introuvable ».
+  // On garde uniquement [a-zA-Z0-9_-] : sûr pour le filtre PostgREST `.or()`.
+  const safeToken = token.replace(/[^a-zA-Z0-9_-]/g, "");
   if (!safeToken) return null;
 
   // On recherche par tracking_id en respectant la casse (originale ou majuscule) ou par numéro de dossier

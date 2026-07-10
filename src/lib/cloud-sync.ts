@@ -10,6 +10,7 @@
 
 "use client";
 
+import { syncPublicTrackingDocumentsToCloud } from "@/lib/public-tracking-documents-sync";
 import { syncPublicTrackingRepairsToCloud } from "@/lib/public-tracking-sync";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
 
@@ -239,6 +240,8 @@ export async function uploadSnapshot(opts?: { silent?: boolean }): Promise<Uploa
     if (activeRepairs.length > 0) {
       syncPublicTrackingRepairsToCloud(activeRepairs, state).catch(() => {});
     }
+    // Documents commerciaux (devis/facture/reçu/vente) → public_tracking_documents.
+    syncPublicTrackingDocumentsToCloud(state).catch(() => {});
 
     return { ok: true, updatedAt: finalUpdatedAt, sizeBytes };
   } catch (e: any) {
