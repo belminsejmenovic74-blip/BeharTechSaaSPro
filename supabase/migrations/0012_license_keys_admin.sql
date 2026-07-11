@@ -40,7 +40,7 @@ create index idx_license_keys_download_token_hash on public.license_keys(downloa
 create trigger set_updated_at_license_keys
   before update on public.license_keys
   for each row
-  execute function public.handle_updated_at();
+  execute function public.touch_updated_at();
 
 -- 2. Sécurité RLS
 alter table public.license_keys enable row level security;

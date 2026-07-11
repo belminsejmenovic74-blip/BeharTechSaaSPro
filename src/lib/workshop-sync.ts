@@ -9,6 +9,7 @@ import { getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
 
 export const WORKSHOP_STORAGE_KEY = "behar-tech-local-demo-v3";
 export const WORKSHOP_SCHEMA_VERSION = 1;
+const CLOUD_REQUEST_TIMEOUT_MS = 12_000;
 
 // Stores annexes (Zustand persist) embarqués dans le même snapshot cloud :
 // règles de reprise, appareils reconditionnés, réglages recond. Sans eux,
@@ -280,6 +281,8 @@ export async function loadSnapshotByLicenseKey(key: string): Promise<WorkshopSna
   }
   const supabase = getSupabase();
   if (!supabase) return null;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), CLOUD_REQUEST_TIMEOUT_MS);
 
   markSyncStatus("loading");
   try {
@@ -293,19 +296,30 @@ export async function loadSnapshotByLicenseKey(key: string): Promise<WorkshopSna
       .ilike("license_key", normalizedKey)
       .order("updated_at", { ascending: false })
       .limit(1)
+      .abortSignal(controller.signal)
       .maybeSingle<WorkshopSnapshotRow>();
 
     if (error) {
       markSyncStatus(isNetworkError(error.message) ? "offline" : "error", { lastError: error.message });
       throw error;
     }
-    return data ? rowToSnapshot(data, normalizedKey) : null;
+    const snapshot = data ? rowToSnapshot(data, normalizedKey) : null;
+    if (snapshot) {
+      markSyncStatus("synced", { lastSyncedAt: snapshot.updatedAt, lastError: undefined });
+    } else {
+      markSyncStatus("idle", { lastError: undefined });
+    }
+    return snapshot;
   } catch (error: unknown) {
-    const message = getErrorMessage(error, "Lecture Supabase impossible.");
+    const message = controller.signal.aborted
+      ? "Délai de connexion cloud dépassé."
+      : getErrorMessage(error, "Lecture Supabase impossible.");
     markSyncStatus(isNetworkError(message) ? "offline" : "error", {
       lastError: message,
     });
-    throw error;
+    throw controller.signal.aborted ? new Error(message) : error;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -558,6 +572,24 @@ export function hydrateStoreFromCloud(
     const localSyncedTs = new Date(current.cloudSync?.lastSyncedAt || 0).getTime();
     if (localVersion > cloudVersion || (localVersion === cloudVersion && localSyncedTs >= cloudTs)) {
       devLog("hydrate ✗ snapshot distant pas plus récent", { localVersion, cloudVersion, localSyncedTs, cloudTs });
+      // Un cache local peut contenir la bonne version et le bon timestamp tout
+      // en ayant perdu les métadonnées d'identité cloud (anciens snapshots,
+      // migration de store interrompue, nettoyage partiel du localStorage).
+      // Ne pas réhydrater les données métier dans ce cas, mais toujours
+      // réconcilier l'identité de l'atelier : le widget et les API publiques
+      // ont besoin du couple licence + workshopId.
+      const currentLicense = normalizeLicenseKey(current.licenseKey);
+      const identityNeedsRepair =
+        current.cloudSync?.workshopId !== snapshot.workshopId || currentLicense !== licenseKey;
+      if (identityNeedsRepair) {
+        const repaired = withLicenseState(licenseKey, current, {
+          workshopId: snapshot.workshopId,
+          lastSyncedAt: snapshot.updatedAt,
+          stateVersion: localVersion,
+        });
+        useBeharStore.setState(repaired as Partial<StoreState>, false);
+        cacheWorkshopState(repaired);
+      }
       markSyncStatus("synced", { lastSyncedAt: snapshot.updatedAt, lastError: undefined });
       return;
     }

@@ -129,13 +129,17 @@ export function AutoSyncProvider() {
       }
 
       if (!force && incomingVersion < localVersion) {
+        markSyncStatus("synced", { lastSyncedAt: snapshot.updatedAt, lastError: undefined });
         return;
       }
 
       if (!force && incomingVersion === localVersion) {
         const localSyncedAt = new Date(current.cloudSync?.lastSyncedAt || 0).getTime();
         const remoteUpdatedAt = new Date(snapshot.updatedAt || 0).getTime();
-        if (localSyncedAt >= remoteUpdatedAt) return;
+        if (localSyncedAt >= remoteUpdatedAt) {
+          markSyncStatus("synced", { lastSyncedAt: snapshot.updatedAt, lastError: undefined });
+          return;
+        }
       }
 
       applyingRemote = true;

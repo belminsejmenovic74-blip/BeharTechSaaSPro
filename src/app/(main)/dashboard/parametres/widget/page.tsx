@@ -106,6 +106,7 @@ export default function WidgetSettingsPage() {
   const [tab, setTab] = useState<EditorTab>("content");
   const [device, setDevice] = useState<PreviewDevice>("desktop");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"draft" | "publish" | null>(null);
   const [dirty, setDirty] = useState(false);
   const [draggedBlock, setDraggedBlock] = useState<WidgetBlockKey | null>(null);
@@ -121,6 +122,8 @@ export default function WidgetSettingsPage() {
       setLoading(false);
       return;
     }
+    setLoading(true);
+    setLoadError(null);
     settingsRequest<WidgetEditorResponse>({
       operation: "get",
       ...credentials,
@@ -137,7 +140,11 @@ export default function WidgetSettingsPage() {
         setVersions(result.versions);
         setConfig(normalizeEditableWidgetConfig(result.widget.config));
       })
-      .catch((error) => toast.error(error instanceof Error ? error.message : "Chargement impossible."))
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : "Chargement impossible.";
+        setLoadError(message);
+        toast.error(message);
+      })
       .finally(() => setLoading(false));
   }, [credentials, store.workshopSettings]);
 
@@ -267,6 +274,20 @@ export default function WidgetSettingsPage() {
     );
   }
 
+  if (loadError) {
+    return (
+      <PageShell title="Widget client" subtitle="Éditeur visuel contrôlé.">
+        <Panel className="max-w-2xl p-6">
+          <h2 className="font-semibold">Widget momentanément indisponible</h2>
+          <p className="mt-2 text-sm text-[#6B6B6B]">{loadError}</p>
+          <SecondaryButton className="mt-4" onClick={() => window.location.reload()}>
+            Réessayer
+          </SecondaryButton>
+        </Panel>
+      </PageShell>
+    );
+  }
+
   if (!credentials.workshopId || !credentials.licenseKey || !widget) {
     return (
       <PageShell title="Widget client" subtitle="Éditeur visuel contrôlé.">
@@ -275,6 +296,12 @@ export default function WidgetSettingsPage() {
           <p className="mt-2 text-sm text-[#6B6B6B]">
             Activez la licence et la synchronisation de l’atelier avant de configurer le widget.
           </p>
+          <Link
+            href="/dashboard/parametres"
+            className="mt-4 inline-flex text-sm font-semibold text-[#147065] hover:underline"
+          >
+            Ouvrir les réglages de synchronisation
+          </Link>
         </Panel>
       </PageShell>
     );
