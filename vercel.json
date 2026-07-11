@@ -6,6 +6,14 @@
   "installCommand": "npm install",
   "rewrites": [
     {
+      "source": "/exemple",
+      "destination": "/exemple.html"
+    },
+    {
+      "source": "/exemple/",
+      "destination": "/exemple.html"
+    },
+    {
       "source": "/suivi",
       "destination": "https://behar-tech-saa-s-pro.vercel.app/suivi/"
     },
