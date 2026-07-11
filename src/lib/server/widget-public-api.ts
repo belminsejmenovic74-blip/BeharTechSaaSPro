@@ -442,11 +442,18 @@ export function sanitizePublicConfig(widget: WidgetRow) {
   const rawVisual = valueObject(config.visual);
   const visual = {
     primaryColor: cleanString(rawVisual.primaryColor, 30) || undefined,
+    buttonColor: cleanString(rawVisual.buttonColor, 30) || undefined,
+    buttonTextColor: cleanString(rawVisual.buttonTextColor, 30) || undefined,
     textColor: cleanString(rawVisual.textColor, 30) || undefined,
     backgroundColor: cleanString(rawVisual.backgroundColor, 30) || undefined,
     radius: cleanNumber(rawVisual.radius),
     logoUrl: cleanString(rawVisual.logoUrl, 1000) || undefined,
     position: cleanString(rawVisual.position, 40) || undefined,
+    backgroundStyle: cleanString(rawVisual.backgroundStyle, 20) || undefined,
+    buttonStyle: cleanString(rawVisual.buttonStyle, 20) || undefined,
+    headingSize: cleanString(rawVisual.headingSize, 20) || undefined,
+    textSize: cleanString(rawVisual.textSize, 20) || undefined,
+    contentWidth: cleanString(rawVisual.contentWidth, 20) || undefined,
   };
   const rawTexts = valueObject(config.texts);
   const texts = Object.fromEntries(
@@ -458,6 +465,15 @@ export function sanitizePublicConfig(widget: WidgetRow) {
       "resultTitle",
       "contactTitle",
       "bookingTitle",
+      "firstNameLabel",
+      "lastNameLabel",
+      "phoneLabel",
+      "emailLabel",
+      "contactPreferenceLabel",
+      "commentLabel",
+      "requestTypeLabel",
+      "photoLabel",
+      "consentLabel",
       "submitLabel",
       "callbackLabel",
       "quoteLabel",
@@ -488,6 +504,62 @@ export function sanitizePublicConfig(widget: WidgetRow) {
       .map((key) => [key, rawFeatures[key]]),
   );
   const rawBooking = valueObject(config.booking);
+  const rawLayout = valueObject(config.layout);
+  const rawIcons = valueObject(config.icons);
+  const allowedBlocks = ["header", "progress", "content", "actions"];
+  const allowedFields = ["identity", "contact", "preference", "comment", "photos", "request", "booking", "consent"];
+  const ordered = (value: unknown, allowed: string[]) => {
+    if (!Array.isArray(value)) return undefined;
+    const result = value
+      .map(String)
+      .filter((entry, index, list) => allowed.includes(entry) && list.indexOf(entry) === index);
+    return result.length === allowed.length ? result : undefined;
+  };
+  const layout = {
+    blockOrder: ordered(rawLayout.blockOrder, allowedBlocks),
+    hiddenBlocks: Array.isArray(rawLayout.hiddenBlocks)
+      ? rawLayout.hiddenBlocks
+          .map(String)
+          .filter((entry) => allowedBlocks.includes(entry) && !["content", "actions"].includes(entry))
+      : undefined,
+    fieldOrder: ordered(rawLayout.fieldOrder, allowedFields),
+    hiddenFields: Array.isArray(rawLayout.hiddenFields)
+      ? rawLayout.hiddenFields
+          .map(String)
+          .filter((entry) => allowedFields.includes(entry) && !["contact", "consent"].includes(entry))
+      : undefined,
+    columns: rawLayout.columns === 2 ? 2 : 1,
+    alignment: ["left", "center", "right"].includes(String(rawLayout.alignment)) ? rawLayout.alignment : "left",
+    template: ["classic", "compact", "showcase"].includes(String(rawLayout.template)) ? rawLayout.template : "classic",
+  };
+  const iconTargets = [
+    "phone",
+    "tablet",
+    "computer",
+    "console",
+    "battery",
+    "screen",
+    "charging",
+    "appointment",
+    "confirmation",
+  ];
+  const icons = Object.fromEntries(
+    iconTargets.map((target) => {
+      const raw = valueObject(rawIcons[target]);
+      const mode = ["library", "custom"].includes(String(raw.mode)) ? String(raw.mode) : "none";
+      return [
+        target,
+        {
+          mode,
+          libraryIcon: mode === "library" ? cleanString(raw.libraryIcon, 40) || undefined : undefined,
+          assetUrl: mode === "custom" ? cleanString(raw.assetUrl, 1000) || undefined : undefined,
+          size: Math.min(64, Math.max(12, cleanNumber(raw.size) ?? 24)),
+          alt: cleanString(raw.alt, 100) || undefined,
+        },
+      ];
+    }),
+  ) as Record<string, unknown>;
+  icons.poweredBy = rawIcons.poweredBy === true;
   const booking = {
     timezone: cleanString(rawBooking.timezone, 80) || undefined,
     days: Array.isArray(rawBooking.days)
@@ -508,6 +580,8 @@ export function sanitizePublicConfig(widget: WidgetRow) {
     visual,
     texts,
     features,
+    layout,
+    icons,
     booking,
     publishedAt: widget.published_at,
   };

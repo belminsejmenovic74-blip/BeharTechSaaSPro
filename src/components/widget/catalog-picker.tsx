@@ -4,7 +4,7 @@
 // suggestions sous forme de puces, saisie « autre » libre, états chargement /
 // erreur / vide. Utilisé pour catégorie, marque, modèle et problème simple.
 
-import { useId, useMemo, useState } from "react";
+import { useId, useMemo, useState, type ReactNode } from "react";
 
 import { WidgetButton, WidgetChip, WidgetInput } from "@/components/widget/widget-primitives";
 
@@ -25,6 +25,7 @@ export type CatalogPickerProps = {
   onSelect: (value: string) => void;
   onSelectOther: (value: string) => void;
   onEnterOther: () => void;
+  renderItemIcon?: (item: string) => ReactNode;
 };
 
 function normalize(value: string): string {
@@ -55,6 +56,7 @@ export function CatalogPicker({
   onSelect,
   onSelectOther,
   onEnterOther,
+  renderItemIcon,
 }: CatalogPickerProps) {
   const [query, setQuery] = useState("");
   const inputId = useId();
@@ -117,7 +119,10 @@ export function CatalogPicker({
             onClick={() => onSelect(item)}
             disabled={disabled}
           >
-            {item}
+            <span className="inline-flex items-center gap-1.5">
+              {renderItemIcon?.(item)}
+              {item}
+            </span>
           </WidgetChip>
         ))}
 

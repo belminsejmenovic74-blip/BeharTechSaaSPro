@@ -15,6 +15,7 @@ import {
 } from "@/components/widget/widget-state";
 import { formatDateTimeFr, formatPrice } from "@/components/widget/widget-theme";
 import { SummaryRow } from "@/components/widget/widget-primitives";
+import { WidgetIcon } from "@/components/widget/widget-icon";
 
 const REQUEST_LABELS: Record<RequestType, string> = {
   appointment: "Rendez-vous",
@@ -42,17 +43,11 @@ export function ConfirmationStep({ ctx, result }: { ctx: StepContext; result: Su
   return (
     <div className="grid gap-6">
       <div className="grid gap-3 text-center">
-        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--w-primary)] text-[var(--w-on-primary)]">
-          <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" aria-hidden="true">
-            <path
-              d="m5 12.5 4.2 4.2L19 7"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </span>
+        {config.icons.confirmation.mode !== "none" ? (
+          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--w-tint)] text-[var(--w-primary)]">
+            <WidgetIcon choice={config.icons.confirmation} />
+          </span>
+        ) : null}
         <h2 className="text-xl font-semibold tracking-tight text-[var(--w-text)]">{headline}</h2>
         <p className="mx-auto max-w-sm text-sm leading-relaxed text-[var(--w-muted)]">{message}</p>
       </div>

@@ -8,12 +8,13 @@
 import { useState } from "react";
 
 import { CatalogPicker } from "@/components/widget/catalog-picker";
+import { iconTargetForIssue, WidgetIcon } from "@/components/widget/widget-icon";
 import { useAsyncList } from "@/components/widget/use-catalog";
 import type { StepContext } from "@/components/widget/widget-state";
 import { StepShell, WidgetChip, WidgetField, WidgetInput, WidgetTextarea } from "@/components/widget/widget-primitives";
 
 export function IssueStep({ ctx }: { ctx: StepContext }) {
-  const { client, token, draft, patch, features, texts } = ctx;
+  const { client, token, draft, patch, features, texts, config } = ctx;
   const [customIssue, setCustomIssue] = useState("");
 
   const issues = useAsyncList(
@@ -73,11 +74,17 @@ export function IssueStep({ ctx }: { ctx: StepContext }) {
           />
         ) : (
           <div className="flex flex-wrap gap-2">
-            {issues.items.map((issue) => (
-              <WidgetChip key={issue} selected={draft.issues.includes(issue)} onClick={() => toggle(issue)}>
-                {issue}
-              </WidgetChip>
-            ))}
+            {issues.items.map((issue) => {
+              const target = iconTargetForIssue(issue);
+              return (
+                <WidgetChip key={issue} selected={draft.issues.includes(issue)} onClick={() => toggle(issue)}>
+                  <span className="inline-flex items-center gap-1.5">
+                    {target ? <WidgetIcon choice={config.icons[target]} /> : null}
+                    {issue}
+                  </span>
+                </WidgetChip>
+              );
+            })}
             {customIssues.map((issue) => (
               <WidgetChip key={issue} selected onClick={() => toggle(issue)}>
                 {issue}&nbsp;×

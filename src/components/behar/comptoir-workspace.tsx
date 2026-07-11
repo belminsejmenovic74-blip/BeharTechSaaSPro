@@ -54,7 +54,10 @@ import {
   Droplet,
   Database,
   Lock,
+  Inbox,
 } from "lucide-react";
+
+import { CounterLeadSearch } from "@/components/behar/counter-lead-search";
 import { toast } from "sonner";
 
 import { BeharLogo } from "@/components/behar/behar-logo";
@@ -244,6 +247,7 @@ type CounterScreen =
   | "tracking"
   | "invoices"
   | "documents"
+  | "lead-search"
   | "reconditionne";
 
 export function ComptoirWorkspace({ initialScreen = "home" }: Readonly<{ initialScreen?: CounterScreen }>) {
@@ -348,6 +352,14 @@ export function ComptoirWorkspace({ initialScreen = "home" }: Readonly<{ initial
         setDossiersScanMode(false);
         setCounterScreen("dossiers");
       },
+    },
+    {
+      id: "lead-search",
+      label: "Rechercher une demande",
+      description: "Demandes reçues du site",
+      icon: Inbox,
+      permission: null,
+      onClick: () => setCounterScreen("lead-search"),
     },
     {
       id: "sale",
@@ -496,6 +508,9 @@ export function ComptoirWorkspace({ initialScreen = "home" }: Readonly<{ initial
             createRequestKey={appointmentCreateRequestKey}
             createPrefill={appointmentPrefill}
           />
+        )}
+        {counterScreen === "lead-search" && (
+          <CounterLeadSearch onClose={() => setCounterScreen("home")} onOpenRepairDetail={openRepairDetail} />
         )}
         {counterScreen === "clients" && (
           <CounterClientsScreen

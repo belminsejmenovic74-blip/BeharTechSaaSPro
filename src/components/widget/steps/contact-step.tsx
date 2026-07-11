@@ -6,13 +6,15 @@
 // devis ou prendre rendez-vous (avec sélection de créneau). Aucune création de
 // compte : seul un moyen de contact est requis, plus le consentement.
 
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 
 import type { ContactPreference, Slot } from "@/lib/widget/public-types";
 import { WidgetApiError } from "@/lib/widget/public-client";
 import { useAsyncList } from "@/components/widget/use-catalog";
 import { primaryService, type RequestType, type StepContext } from "@/components/widget/widget-state";
-import { formatDateFr } from "@/components/widget/widget-theme";
+import { WidgetIcon } from "@/components/widget/widget-icon";
+import { formatDateFr, resolveLayout } from "@/components/widget/widget-theme";
+import type { WidgetFieldKey } from "@/lib/widget/cms-config";
 import {
   OptionCard,
   Spinner,
@@ -52,12 +54,14 @@ export function ContactStep({ ctx, submitError }: { ctx: StepContext; submitErro
     return list;
   }, [features.booking, features.callbackRequest, features.quoteRequest, features.priceEstimate, texts]);
 
-  const consentText = config.general.commercialName || "l’atelier";
-
-  return (
-    <StepShell title={texts.contactTitle} subtitle="Vos coordonnées restent confidentielles. Aucun compte à créer.">
-      <div className="grid grid-cols-2 gap-3">
-        <WidgetField label="Prénom" htmlFor="w-firstname">
+  const configuredName = config.general.commercialName?.trim();
+  const consentText = configuredName ? configuredName : "l’atelier";
+  const layout = resolveLayout(config.layout);
+  const columnClass = layout.columns === 2 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1";
+  const fieldBlocks: Record<WidgetFieldKey, ReactNode> = {
+    identity: (
+      <div className={`grid gap-3 ${columnClass}`}>
+        <WidgetField label={texts.firstNameLabel} htmlFor="w-firstname">
           <WidgetInput
             id="w-firstname"
             value={draft.firstName}
@@ -66,7 +70,7 @@ export function ContactStep({ ctx, submitError }: { ctx: StepContext; submitErro
             placeholder="Prénom"
           />
         </WidgetField>
-        <WidgetField label="Nom" htmlFor="w-lastname">
+        <WidgetField label={texts.lastNameLabel} htmlFor="w-lastname">
           <WidgetInput
             id="w-lastname"
             value={draft.lastName}
@@ -76,9 +80,10 @@ export function ContactStep({ ctx, submitError }: { ctx: StepContext; submitErro
           />
         </WidgetField>
       </div>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <WidgetField label="Téléphone" htmlFor="w-phone" hint="Requis pour traiter votre demande.">
+    ),
+    contact: (
+      <div className={`grid gap-3 ${columnClass}`}>
+        <WidgetField label={texts.phoneLabel} htmlFor="w-phone" hint="Requis pour traiter votre demande.">
           <WidgetInput
             id="w-phone"
             type="tel"
@@ -89,7 +94,7 @@ export function ContactStep({ ctx, submitError }: { ctx: StepContext; submitErro
             placeholder="06 12 34 56 78"
           />
         </WidgetField>
-        <WidgetField label="E-mail" htmlFor="w-email">
+        <WidgetField label={texts.emailLabel} htmlFor="w-email">
           <WidgetInput
             id="w-email"
             type="email"
@@ -101,8 +106,9 @@ export function ContactStep({ ctx, submitError }: { ctx: StepContext; submitErro
           />
         </WidgetField>
       </div>
-
-      <WidgetField label="Préférence de contact">
+    ),
+    preference: (
+      <WidgetField label={texts.contactPreferenceLabel}>
         <div className="flex flex-wrap gap-2">
           {CONTACT_PREFERENCES.map((preference) => (
             <WidgetChip
@@ -117,38 +123,36 @@ export function ContactStep({ ctx, submitError }: { ctx: StepContext; submitErro
           ))}
         </div>
       </WidgetField>
-
-      {features.comment ? (
-        <WidgetField label="Commentaire" hint="Facultatif.">
-          <WidgetTextarea
-            value={draft.comment}
-            onChange={(event) => patch({ comment: event.target.value })}
-            placeholder="Une précision pour l’atelier ?"
-            maxLength={1500}
-          />
-        </WidgetField>
-      ) : null}
-
-      {features.photos ? <PhotoUploader ctx={ctx} /> : null}
-
-      {actions.length ? (
-        <WidgetField label="Votre demande">
-          <div className="grid gap-2">
-            {actions.map((action) => (
-              <OptionCard
-                key={action.value}
-                selected={draft.requestType === action.value}
-                title={action.label}
-                subtitle={action.description}
-                onClick={() => patch({ requestType: action.value })}
-              />
-            ))}
-          </div>
-        </WidgetField>
-      ) : null}
-
-      {draft.requestType === "appointment" ? <SlotPicker ctx={ctx} /> : null}
-
+    ),
+    comment: features.comment ? (
+      <WidgetField label={texts.commentLabel} hint="Facultatif.">
+        <WidgetTextarea
+          value={draft.comment}
+          onChange={(event) => patch({ comment: event.target.value })}
+          placeholder="Une précision pour l’atelier ?"
+          maxLength={1500}
+        />
+      </WidgetField>
+    ) : null,
+    photos: features.photos ? <PhotoUploader ctx={ctx} /> : null,
+    request: actions.length ? (
+      <WidgetField label={texts.requestTypeLabel}>
+        <div className="grid gap-2">
+          {actions.map((action) => (
+            <OptionCard
+              key={action.value}
+              selected={draft.requestType === action.value}
+              title={action.label}
+              subtitle={action.description}
+              icon={action.value === "appointment" ? <WidgetIcon choice={config.icons.appointment} /> : undefined}
+              onClick={() => patch({ requestType: action.value })}
+            />
+          ))}
+        </div>
+      </WidgetField>
+    ) : null,
+    booking: draft.requestType === "appointment" ? <SlotPicker ctx={ctx} /> : null,
+    consent: (
       <label className="flex cursor-pointer items-start gap-3 rounded-[var(--w-radius)] border border-[var(--w-border)] bg-[var(--w-surface)] p-4">
         <input
           type="checkbox"
@@ -157,7 +161,7 @@ export function ContactStep({ ctx, submitError }: { ctx: StepContext; submitErro
           className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--w-primary)]"
         />
         <span className="text-sm leading-relaxed text-[var(--w-text)]">
-          J’autorise {consentText} à utiliser mes coordonnées pour traiter ma demande et me recontacter.
+          {texts.consentLabel.replace("l’atelier", consentText)}
           {config.general.privacyUrl ? (
             <>
               {" "}
@@ -174,6 +178,14 @@ export function ContactStep({ ctx, submitError }: { ctx: StepContext; submitErro
           ) : null}
         </span>
       </label>
+    ),
+  };
+
+  return (
+    <StepShell title={texts.contactTitle} subtitle="Vos coordonnées restent confidentielles. Aucun compte à créer.">
+      {layout.fieldOrder.map((field) =>
+        layout.hiddenFields.includes(field) ? null : <div key={field}>{fieldBlocks[field]}</div>,
+      )}
 
       {submitError ? <WidgetNotice tone="warning">{submitError}</WidgetNotice> : null}
     </StepShell>
@@ -250,7 +262,7 @@ function SlotPicker({ ctx }: { ctx: StepContext }) {
 type PhotoEntry = { path: string; name: string; status: "uploading" | "done" | "error" };
 
 function PhotoUploader({ ctx }: { ctx: StepContext }) {
-  const { client, token, draft, patch, sessionId } = ctx;
+  const { client, token, draft, patch, sessionId, texts } = ctx;
   const [entries, setEntries] = useState<PhotoEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -304,7 +316,7 @@ function PhotoUploader({ ctx }: { ctx: StepContext }) {
 
   return (
     <WidgetField
-      label="Photos"
+      label={texts.photoLabel}
       hint={`Facultatif — jusqu’à ${MAX_PHOTOS} photos du problème.`}
       error={error ?? undefined}
     >
@@ -342,7 +354,7 @@ function PhotoUploader({ ctx }: { ctx: StepContext }) {
               multiple
               className="sr-only"
               onChange={(event) => {
-                handleFiles(event.target.files);
+                void handleFiles(event.target.files);
                 event.target.value = "";
               }}
             />

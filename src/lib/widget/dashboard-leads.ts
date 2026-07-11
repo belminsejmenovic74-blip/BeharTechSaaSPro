@@ -110,6 +110,21 @@ export const REQUIRED_LEAD_ACTIONS = [
 
 export type RequiredLeadAction = (typeof REQUIRED_LEAD_ACTIONS)[number];
 
+export function leadHistoryLabel(action: string, status: string | null): string {
+  if (action === "submitted") return "Demande reçue";
+  if (action === "status_changed")
+    return status ? `Statut : ${LEAD_STATUS_LABELS[status as WidgetLeadStatus] || status}` : "Statut modifié";
+  if (action === "assigned") return "Responsable modifié";
+  if (action === "called") return "Appel lancé";
+  if (action === "sms_sent") return "SMS envoyé";
+  if (action === "email_opened") return "E-mail préparé";
+  if (action === "quote_created") return "Devis créé";
+  if (action === "appointment_proposed") return "Rendez-vous proposé";
+  if (action === "repair_created") return "Dossier créé";
+  if (action === "note_added") return "Note interne";
+  return "Note ajoutée";
+}
+
 export function leadCustomerName(lead: DashboardWidgetLead) {
   return `${lead.first_name || ""} ${lead.last_name || ""}`.trim() || "Client widget";
 }

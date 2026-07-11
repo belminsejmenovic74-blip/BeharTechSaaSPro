@@ -45,7 +45,8 @@ export function WidgetButton({
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant; loading?: boolean }) {
   const variants: Record<ButtonVariant, string> = {
-    primary: "bg-[var(--w-primary)] text-[var(--w-on-primary)] shadow-sm hover:brightness-95",
+    primary:
+      "border border-[var(--w-button-border,var(--w-primary))] bg-[var(--w-button-bg,var(--w-primary))] text-[var(--w-button-fg,var(--w-on-primary))] shadow-sm hover:brightness-95",
     secondary:
       "border border-[var(--w-border)] bg-[var(--w-surface)] text-[var(--w-text)] hover:border-[var(--w-primary)]",
     ghost: "text-[var(--w-muted)] hover:text-[var(--w-text)]",
@@ -74,6 +75,7 @@ export function OptionCard({
   meta,
   onClick,
   disabled,
+  icon,
 }: {
   selected: boolean;
   title: string;
@@ -81,6 +83,7 @@ export function OptionCard({
   meta?: ReactNode;
   onClick: () => void;
   disabled?: boolean;
+  icon?: ReactNode;
 }) {
   return (
     <button
@@ -95,12 +98,17 @@ export function OptionCard({
           : "border-[var(--w-border)] bg-[var(--w-surface)] hover:border-[var(--w-primary)]",
       )}
     >
-      <span className="min-w-0">
-        <span className="block truncate text-sm font-medium text-[var(--w-text)]">{title}</span>
-        {subtitle ? <span className="mt-0.5 block truncate text-xs text-[var(--w-muted)]">{subtitle}</span> : null}
+      <span className="flex min-w-0 items-center gap-3">
+        {icon}
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-medium text-[var(--w-text)]">{title}</span>
+          {subtitle ? <span className="mt-0.5 block truncate text-xs text-[var(--w-muted)]">{subtitle}</span> : null}
+        </span>
       </span>
       <span className="flex shrink-0 items-center gap-2">
-        {meta ? <span className="text-xs font-medium text-[var(--w-muted)]">{meta}</span> : null}
+        {meta !== null && meta !== undefined ? (
+          <span className="text-xs font-medium text-[var(--w-muted)]">{meta}</span>
+        ) : null}
         <span
           className={cn(
             "flex h-5 w-5 items-center justify-center rounded-full border transition",
@@ -233,7 +241,9 @@ export function StepShell({ title, subtitle, children }: { title: string; subtit
   return (
     <div className="grid gap-5">
       <header className="grid gap-1.5">
-        <h2 className="text-xl font-semibold tracking-tight text-[var(--w-text)]">{title}</h2>
+        <h2 className="text-[calc(1.25rem*var(--w-heading-scale,1))] font-semibold tracking-tight text-[var(--w-text)]">
+          {title}
+        </h2>
         {subtitle ? <p className="text-sm leading-relaxed text-[var(--w-muted)]">{subtitle}</p> : null}
       </header>
       {children}

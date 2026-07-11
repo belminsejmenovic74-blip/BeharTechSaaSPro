@@ -26,6 +26,7 @@ import {
   leadCustomerName,
   leadDeviceLabel,
   leadEmailHref,
+  leadHistoryLabel,
   leadPhoneHref,
   LEAD_STATUS_LABELS,
   LEAD_TYPE_LABELS,
@@ -34,10 +35,19 @@ import {
   type WidgetLeadStatus,
   widgetLeadDashboardRequest,
 } from "@/lib/widget/dashboard-leads";
+import {
+  findExistingCustomerId,
+  leadToAppointmentInput,
+  leadToCustomerInput,
+  leadToQuoteInput,
+  leadToRepairInput,
+} from "@/lib/widget/lead-conversion";
 import { cn } from "@/lib/utils";
 
 const ACTIVE_STATUSES: WidgetLeadStatus[] = ["new", "to_contact", "contacted", "in_progress", "waiting_customer"];
 const ALL_STATUSES = Object.keys(LEAD_STATUS_LABELS) as WidgetLeadStatus[];
+const PAGE_SIZE = 20;
+type LeadSort = "recent" | "oldest" | "name";
 
 function isoDate(value: string) {
   return new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
@@ -70,6 +80,9 @@ export function WidgetLeadsWorkspace() {
   const [appointmentLead, setAppointmentLead] = useState<DashboardWidgetLead | null>(null);
   const [appointmentDate, setAppointmentDate] = useState(tomorrow());
   const [appointmentTime, setAppointmentTime] = useState("09:00");
+  const [sort, setSort] = useState<LeadSort>("recent");
+  const [page, setPage] = useState(1);
+  const [note, setNote] = useState("");
 
   const authBody = useMemo(() => ({ workshopId, licenseKey }), [workshopId, licenseKey]);
 
@@ -99,7 +112,7 @@ export function WidgetLeadsWorkspace() {
     void load();
   }, [load]);
 
-  const leads = useMemo(() => {
+  const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase();
     return data.leads.filter((lead) => {
       if (status !== "all" && lead.status !== status) return false;
@@ -113,7 +126,29 @@ export function WidgetLeadsWorkspace() {
     });
   }, [data.leads, search, status, type, assignee]);
 
-  const selected = data.leads.find((lead) => lead.id === selectedId) || leads[0];
+  const sorted = useMemo(() => {
+    const copy = [...filtered];
+    if (sort === "name") copy.sort((a, b) => leadCustomerName(a).localeCompare(leadCustomerName(b), "fr"));
+    else copy.sort((a, b) => (sort === "oldest" ? 1 : -1) * b.created_at.localeCompare(a.created_at));
+    return copy;
+  }, [filtered, sort]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paged = sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  // Revenir à la première page quand la recherche, les filtres ou le tri changent.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: réinitialisation volontaire
+  useEffect(() => setPage(1), [search, status, type, assignee, sort]);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: efface la note à chaque changement de demande
+  useEffect(() => setNote(""), [selectedId]);
+
+  const assigneeName = useCallback(
+    (id: string | null) => (id ? data.assignees.find((member) => member.id === id)?.name || "—" : "Non assignée"),
+    [data.assignees],
+  );
+
+  const selected = data.leads.find((lead) => lead.id === selectedId) || sorted[0];
   const selectedHistory = selected ? data.history.filter((entry) => entry.lead_id === selected.id) : [];
 
   async function updateLead(
@@ -155,22 +190,7 @@ export function WidgetLeadsWorkspace() {
   }
 
   function ensureCustomer(lead: DashboardWidgetLead) {
-    const phone = (lead.phone_normalized || lead.phone || "").replace(/\s/g, "");
-    const email = (lead.email_normalized || lead.email || "").toLowerCase();
-    const existing = store.customers.find(
-      (customer) =>
-        (phone && customer.phone.replace(/\s/g, "") === phone) ||
-        (email && (customer.email || "").toLowerCase() === email),
-    );
-    if (existing) return existing.id;
-    return store.addCustomer({
-      name: leadCustomerName(lead),
-      phone: lead.phone || "",
-      email: lead.email || "",
-      device: leadDeviceLabel(lead),
-      source: "Widget site internet",
-      notes: [lead.issue_description, lead.comment].filter(Boolean).join(" — "),
-    });
+    return findExistingCustomerId(store.customers, lead) ?? store.addCustomer(leadToCustomerInput(lead));
   }
 
   async function sendSms(lead: DashboardWidgetLead) {
@@ -210,22 +230,7 @@ export function WidgetLeadsWorkspace() {
   async function createQuote(lead: DashboardWidgetLead) {
     const customerId = ensureCustomer(lead);
     if (!customerId) return toast.error("Création du client impossible.");
-    const amount = Number(lead.displayed_price || 0);
-    const quoteId = store.addQuote({
-      customerId,
-      status: "Brouillon",
-      deviceType: lead.device_category as never,
-      brandName: lead.brand || undefined,
-      deviceModel: lead.model,
-      device: leadDeviceLabel(lead),
-      issue: lead.issue,
-      notes: `Demande du site · ${lead.issue_description || lead.comment || "Sans précision"}`,
-      selectedPriceSnapshot: (lead.displayed_price_snapshot ?? undefined) as never,
-      lines:
-        amount > 0
-          ? [{ description: lead.service_label || lead.issue, quantity: 1, unitPrice: amount, total: amount }]
-          : [],
-    });
+    const quoteId = store.addQuote(leadToQuoteInput(lead, customerId));
     if (!quoteId) return toast.error("Création du devis impossible.");
     await recordActivity(lead, "quote_created", "Devis brouillon créé", { quoteId });
     await updateLead(lead, { status: "converted_quote", conversionReference: quoteId });
@@ -237,22 +242,7 @@ export function WidgetLeadsWorkspace() {
   async function createRepair(lead: DashboardWidgetLead) {
     const customerId = ensureCustomer(lead);
     if (!customerId) return toast.error("Création du client impossible.");
-    const amount = Number(lead.displayed_price || 0);
-    const repairId = store.addRepair({
-      customerId,
-      deviceType: lead.device_category as never,
-      brandName: lead.brand || undefined,
-      deviceModel: lead.model,
-      device: leadDeviceLabel(lead),
-      issue: lead.issue,
-      status: "Reçu",
-      amount,
-      total: amount,
-      notes: ["Demande du site", lead.issue_description, lead.comment].filter(Boolean).join(" · "),
-      droppedAt: new Date().toISOString(),
-      technician: "À assigner",
-      selectedPriceSnapshot: (lead.displayed_price_snapshot ?? undefined) as never,
-    });
+    const repairId = store.addRepair(leadToRepairInput(lead, customerId));
     if (!repairId) return toast.error("Création du dossier impossible.");
     await recordActivity(lead, "repair_created", "Dossier atelier créé", { repairId });
     await updateLead(lead, { status: "converted_repair", conversionReference: repairId });
@@ -266,25 +256,9 @@ export function WidgetLeadsWorkspace() {
     if (!lead) return;
     const customerId = ensureCustomer(lead);
     if (!customerId) return toast.error("Création du client impossible.");
-    const appointmentId = store.addAppointment({
-      customerId,
-      device: leadDeviceLabel(lead),
-      issue: lead.issue,
-      date: appointmentDate,
-      time: appointmentTime,
-      deviceType: lead.device_category as never,
-      deviceBrand: lead.brand || undefined,
-      deviceModel: lead.model,
-      clientName: leadCustomerName(lead),
-      clientPhone: lead.phone || undefined,
-      clientEmail: lead.email || undefined,
-      source: "Widget site internet",
-      channel: "Site internet",
-      status: "Planifié",
-      notes: lead.comment || lead.issue_description || "Demande du site",
-      customerPrice: lead.displayed_price || undefined,
-      priceSnapshot: (lead.displayed_price_snapshot || undefined) as never,
-    });
+    const appointmentId = store.addAppointment(
+      leadToAppointmentInput(lead, customerId, { date: appointmentDate, time: appointmentTime }),
+    );
     if (!appointmentId) return toast.error("Création du rendez-vous impossible.");
     await recordActivity(lead, "appointment_proposed", "Rendez-vous proposé", {
       appointmentId,
@@ -294,6 +268,14 @@ export function WidgetLeadsWorkspace() {
     await updateLead(lead, { status: "converted_appointment", conversionReference: appointmentId });
     setAppointmentLead(null);
     toast.success("Rendez-vous ajouté.");
+  }
+
+  async function addInternalNote(lead: DashboardWidgetLead) {
+    const text = note.trim();
+    if (!text) return;
+    await updateLead(lead, { note: text });
+    setNote("");
+    toast.success("Note interne ajoutée.");
   }
 
   if (!(workshopId && licenseKey)) {
@@ -314,7 +296,7 @@ export function WidgetLeadsWorkspace() {
       </div>
 
       <Panel className="p-4">
-        <div className="grid gap-3 lg:grid-cols-[minmax(240px,1fr)_190px_180px_190px_auto]">
+        <div className="grid gap-3 lg:grid-cols-[minmax(200px,1fr)_160px_150px_160px_150px_auto]">
           <label className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#8A8A8A]" />
             <input
@@ -349,6 +331,11 @@ export function WidgetLeadsWorkspace() {
               </option>
             ))}
           </FilterSelect>
+          <FilterSelect value={sort} onChange={(value) => setSort(value as LeadSort)}>
+            <option value="recent">Plus récentes</option>
+            <option value="oldest">Plus anciennes</option>
+            <option value="name">Nom client</option>
+          </FilterSelect>
           <button
             type="button"
             onClick={() => void load()}
@@ -364,36 +351,71 @@ export function WidgetLeadsWorkspace() {
         <Panel className="overflow-hidden">
           {loading ? (
             <div className="p-12 text-center text-sm text-[#6B6B6B]">Chargement…</div>
-          ) : leads.length === 0 ? (
+          ) : sorted.length === 0 ? (
             <div className="p-12 text-center text-sm text-[#6B6B6B]">Aucune demande.</div>
           ) : (
-            <div className="divide-y divide-[#E8E8E5]">
-              {leads.map((lead) => (
-                <button
-                  key={lead.id}
-                  type="button"
-                  onClick={() => setSelectedId(lead.id)}
-                  className={cn(
-                    "grid w-full gap-3 p-4 text-left transition md:grid-cols-[1.1fr_1fr_1.2fr_150px] md:items-center",
-                    selected?.id === lead.id ? "bg-[#F1FAF8]" : "hover:bg-[#FAFAF8]",
-                  )}
-                >
-                  <div>
-                    <p className="font-semibold text-sm text-[#1A1916]">{leadCustomerName(lead)}</p>
-                    <p className="mt-1 text-xs text-[#6B6B6B]">{lead.phone}</p>
+            <>
+              <div className="divide-y divide-[#E8E8E5]">
+                {paged.map((lead) => (
+                  <button
+                    key={lead.id}
+                    type="button"
+                    onClick={() => setSelectedId(lead.id)}
+                    className={cn(
+                      "grid w-full gap-3 p-4 text-left transition md:grid-cols-[1.1fr_1fr_1.2fr_150px] md:items-center",
+                      selected?.id === lead.id ? "bg-[#F1FAF8]" : "hover:bg-[#FAFAF8]",
+                    )}
+                  >
+                    <div>
+                      <p className="font-semibold text-sm text-[#1A1916]">{leadCustomerName(lead)}</p>
+                      <p className="mt-1 text-xs text-[#6B6B6B]">{lead.phone}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{leadDeviceLabel(lead)}</p>
+                      <p className="mt-1 text-xs text-[#6B6B6B]">{lead.issue}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge>{LEAD_TYPE_LABELS[lead.lead_type]}</Badge>
+                      <StatusBadge status={lead.status} />
+                      {lead.photos.length ? (
+                        <Badge>
+                          {lead.photos.length} photo{lead.photos.length > 1 ? "s" : ""}
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <div className="md:text-right">
+                      <p className="text-xs text-[#6B6B6B]">{isoDate(lead.created_at)}</p>
+                      <p className="mt-1 truncate text-[11px] text-[#8A8A8A]">{assigneeName(lead.assigned_to)}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              {totalPages > 1 ? (
+                <div className="flex items-center justify-between gap-3 border-t border-[#E8E8E5] px-4 py-3 text-sm">
+                  <span className="text-[#6B6B6B] text-xs">
+                    {sorted.length} demande{sorted.length > 1 ? "s" : ""} · page {currentPage}/{totalPages}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={currentPage <= 1}
+                      onClick={() => setPage((value) => Math.max(1, value - 1))}
+                      className="rounded-lg border border-[#E8E8E5] px-3 py-1.5 font-medium text-xs disabled:opacity-40"
+                    >
+                      Précédent
+                    </button>
+                    <button
+                      type="button"
+                      disabled={currentPage >= totalPages}
+                      onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+                      className="rounded-lg border border-[#E8E8E5] px-3 py-1.5 font-medium text-xs disabled:opacity-40"
+                    >
+                      Suivant
+                    </button>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">{leadDeviceLabel(lead)}</p>
-                    <p className="mt-1 text-xs text-[#6B6B6B]">{lead.issue}</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge>{LEAD_TYPE_LABELS[lead.lead_type]}</Badge>
-                    <StatusBadge status={lead.status} />
-                  </div>
-                  <p className="text-xs text-[#6B6B6B] md:text-right">{isoDate(lead.created_at)}</p>
-                </button>
-              ))}
-            </div>
+                </div>
+              ) : null}
+            </>
           )}
         </Panel>
 
@@ -412,12 +434,20 @@ export function WidgetLeadsWorkspace() {
             <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
               <Info label="Téléphone" value={selected.phone || "—"} />
               <Info label="E-mail" value={selected.email || "—"} />
+              <Info label="Modèle" value={leadDeviceLabel(selected)} />
+              <Info label="Prestation" value={selected.service_label || "—"} />
               <Info
                 label="Prix affiché"
                 value={selected.displayed_price != null ? `${selected.displayed_price} €` : "Non affiché"}
               />
-              <Info label="Stock affiché" value={selected.displayed_stock || "Masqué"} />
+              <Info label="Disponibilité affichée" value={selected.displayed_stock || "À confirmer"} />
+              <Info
+                label="Durée affichée"
+                value={selected.displayed_duration_minutes ? `${selected.displayed_duration_minutes} min` : "—"}
+              />
+              <Info label="Garantie" value={selected.displayed_warranty || "—"} />
               <Info label="Qualité" value={selected.quality_label || "—"} />
+              <Info label="Photos" value={selected.photos.length ? String(selected.photos.length) : "Aucune"} />
               <Info label="Origine" value={selected.source_url || "Site internet"} />
             </div>
 
@@ -541,6 +571,25 @@ export function WidgetLeadsWorkspace() {
               </div>
             </div>
 
+            <div className="mt-5">
+              <span className="text-xs font-semibold text-[#6B6B6B]">Note interne</span>
+              <textarea
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+                rows={2}
+                placeholder="Ajouter une note visible par l'équipe…"
+                className="mt-1 w-full rounded-xl border border-[#E8E8E5] p-3 text-sm outline-none focus:border-[#2A9D8F]"
+              />
+              <button
+                type="button"
+                disabled={!note.trim()}
+                onClick={() => void addInternalNote(selected)}
+                className="mt-2 rounded-xl border border-[#E8E8E5] px-3 py-2 text-xs font-semibold disabled:opacity-40"
+              >
+                Ajouter la note
+              </button>
+            </div>
+
             <div className="mt-6 border-t border-[#E8E8E5] pt-5">
               <h3 className="flex items-center gap-2 font-semibold text-sm">
                 <Clock3 className="size-4" />
@@ -550,7 +599,7 @@ export function WidgetLeadsWorkspace() {
                 {selectedHistory.length ? (
                   selectedHistory.map((entry) => (
                     <div key={entry.id} className="border-l-2 border-[#D7EFEA] pl-3">
-                      <p className="text-sm font-medium">{historyLabel(entry.action, entry.to_status)}</p>
+                      <p className="text-sm font-medium">{leadHistoryLabel(entry.action, entry.to_status)}</p>
                       <p className="text-xs text-[#6B6B6B]">
                         {entry.note || entry.actor_name} · {isoDate(entry.created_at)}
                       </p>
@@ -676,17 +725,4 @@ function FilterSelect({
       {children}
     </select>
   );
-}
-function historyLabel(action: string, status: string | null) {
-  if (action === "submitted") return "Demande reçue";
-  if (action === "status_changed")
-    return status ? `Statut : ${LEAD_STATUS_LABELS[status as WidgetLeadStatus] || status}` : "Statut modifié";
-  if (action === "assigned") return "Responsable modifié";
-  if (action === "called") return "Appel lancé";
-  if (action === "sms_sent") return "SMS envoyé";
-  if (action === "email_opened") return "E-mail préparé";
-  if (action === "quote_created") return "Devis créé";
-  if (action === "appointment_proposed") return "Rendez-vous proposé";
-  if (action === "repair_created") return "Dossier créé";
-  return "Note ajoutée";
 }

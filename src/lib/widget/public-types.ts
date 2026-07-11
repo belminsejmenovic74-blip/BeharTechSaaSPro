@@ -57,12 +57,52 @@ export type WidgetGeneral = {
 
 export type WidgetVisual = {
   primaryColor?: string;
+  buttonColor?: string;
+  buttonTextColor?: string;
   textColor?: string;
   backgroundColor?: string;
   radius?: number;
   logoUrl?: string;
   position?: string;
+  backgroundStyle?: "plain" | "tinted" | "gradient";
+  buttonStyle?: "solid" | "soft" | "outline";
+  headingSize?: "small" | "medium" | "large";
+  textSize?: "small" | "medium" | "large";
+  contentWidth?: "compact" | "standard" | "wide";
 };
+
+export type WidgetLayout = {
+  blockOrder?: Array<"header" | "progress" | "content" | "actions">;
+  hiddenBlocks?: Array<"header" | "progress" | "content" | "actions">;
+  fieldOrder?: Array<"identity" | "contact" | "preference" | "comment" | "photos" | "request" | "booking" | "consent">;
+  hiddenFields?: Array<
+    "identity" | "contact" | "preference" | "comment" | "photos" | "request" | "booking" | "consent"
+  >;
+  columns?: 1 | 2;
+  alignment?: "left" | "center" | "right";
+  template?: "classic" | "compact" | "showcase";
+};
+
+export type WidgetIconTarget =
+  | "phone"
+  | "tablet"
+  | "computer"
+  | "console"
+  | "battery"
+  | "screen"
+  | "charging"
+  | "appointment"
+  | "confirmation";
+
+export type WidgetIconChoice = {
+  mode: "none" | "library" | "custom";
+  libraryIcon?: string;
+  assetUrl?: string;
+  size: number;
+  alt?: string;
+};
+
+export type WidgetIcons = Record<WidgetIconTarget, WidgetIconChoice> & { poweredBy: boolean };
 
 export type WidgetTextKey =
   | "title"
@@ -72,6 +112,15 @@ export type WidgetTextKey =
   | "resultTitle"
   | "contactTitle"
   | "bookingTitle"
+  | "firstNameLabel"
+  | "lastNameLabel"
+  | "phoneLabel"
+  | "emailLabel"
+  | "contactPreferenceLabel"
+  | "commentLabel"
+  | "requestTypeLabel"
+  | "photoLabel"
+  | "consentLabel"
   | "submitLabel"
   | "callbackLabel"
   | "quoteLabel"
@@ -116,6 +165,8 @@ export type WidgetConfig = {
   visual: WidgetVisual;
   texts: WidgetTexts;
   features: WidgetFeatures;
+  layout: WidgetLayout;
+  icons: WidgetIcons;
   booking: WidgetBooking;
   publishedAt: string | null;
   shops: PublicShop[];

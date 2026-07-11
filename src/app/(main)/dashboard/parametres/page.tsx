@@ -42,6 +42,7 @@ const TABS = [
   { key: "atelier", label: "Informations atelier", href: "/dashboard/parametres" },
   { key: "appareils", label: "Catalogue appareils", href: "/dashboard/parametres/appareils" },
   { key: "catalogue", label: "Tarifs & prestations", href: "/dashboard/parametres/catalogue" },
+  { key: "widget", label: "Widget client", href: "/dashboard/parametres/widget" },
   { key: "reconditionnement", label: "Reconditionnement", href: "/dashboard/parametres/reconditionnement" },
   { key: "equipe", label: "Équipe & permissions", href: "/dashboard/parametres/equipe" },
 ] as const;

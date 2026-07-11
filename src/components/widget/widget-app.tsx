@@ -25,6 +25,7 @@ import {
   defaultConsentText,
   randomId,
   resolveFeatures,
+  resolveLayout,
   resolveTexts,
 } from "@/components/widget/widget-theme";
 import {
@@ -41,6 +42,7 @@ import { IssueStep } from "@/components/widget/steps/issue-step";
 import { ResultStep } from "@/components/widget/steps/result-step";
 import { ContactStep } from "@/components/widget/steps/contact-step";
 import { ConfirmationStep } from "@/components/widget/steps/confirmation-step";
+import { cn } from "@/lib/utils";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -130,11 +132,12 @@ export function WidgetApp({ publicId }: { publicId: string }) {
       cancelAnimationFrame(frame);
       observer.disconnect();
     };
-  }, [publicId, config, step]);
+  }, [publicId]);
 
   const theme = useMemo(() => buildTheme(config?.visual), [config?.visual]);
   const features = useMemo(() => resolveFeatures(config?.features), [config?.features]);
   const texts = useMemo(() => resolveTexts(config?.texts), [config?.texts]);
+  const layout = useMemo(() => resolveLayout(config?.layout), [config?.layout]);
 
   const ctx: StepContext | null = config
     ? {
@@ -240,61 +243,87 @@ export function WidgetApp({ publicId }: { publicId: string }) {
             ? "Envoyer la demande"
             : texts.callbackLabel;
 
+  const contentWidth =
+    config?.visual.contentWidth === "compact"
+      ? "max-w-[480px]"
+      : config?.visual.contentWidth === "wide"
+        ? "max-w-[760px]"
+        : "max-w-[560px]";
+  const alignment =
+    layout.alignment === "center" ? "text-center" : layout.alignment === "right" ? "text-right" : "text-left";
+  const blocks = ctx
+    ? {
+        header: <BrandHeader config={ctx.config} texts={texts} />,
+        progress: step < STEP_LABELS.length ? <WidgetProgress steps={[...STEP_LABELS]} current={step} /> : null,
+        content: (
+          <main className="flex-1">
+            {step === 0 ? <DeviceStep ctx={ctx} /> : null}
+            {step === 1 ? <IssueStep ctx={ctx} /> : null}
+            {step === 2 ? <ResultStep ctx={ctx} /> : null}
+            {step === 3 ? <ContactStep ctx={ctx} submitError={submitError} /> : null}
+            {step === 4 ? <ConfirmationStep ctx={ctx} result={submitResult} /> : null}
+          </main>
+        ),
+        actions: (
+          <footer className="flex items-center justify-between gap-3 border-t border-[var(--w-border)] pt-5">
+            {step === 4 ? (
+              <>
+                <WidgetButton variant="ghost" onClick={() => postToParent(publicId, { type: "behar.widget.close" })}>
+                  Fermer
+                </WidgetButton>
+                <WidgetButton variant="secondary" onClick={restart}>
+                  Nouvelle demande
+                </WidgetButton>
+              </>
+            ) : (
+              <>
+                <WidgetButton
+                  variant="ghost"
+                  onClick={goBack}
+                  disabled={step === 0}
+                  className={step === 0 ? "invisible" : ""}
+                >
+                  Précédent
+                </WidgetButton>
+                {step === 3 ? (
+                  <WidgetButton onClick={submit} disabled={!canSubmit()} loading={submitting}>
+                    {submitLabel}
+                  </WidgetButton>
+                ) : (
+                  <WidgetButton onClick={goNext} disabled={!canAdvance(step)}>
+                    Continuer
+                  </WidgetButton>
+                )}
+              </>
+            )}
+          </footer>
+        ),
+      }
+    : null;
+
   return (
-    <div style={theme.style} className="min-h-screen w-full bg-[var(--w-bg)] text-[var(--w-text)]">
-      <div ref={rootRef} className="mx-auto flex w-full max-w-[560px] flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
+    <div style={theme.style} className="min-h-screen w-full bg-[var(--w-page-bg,var(--w-bg))] text-[var(--w-text)]">
+      <div
+        ref={rootRef}
+        className={cn(
+          "mx-auto flex w-full flex-col px-4 py-6 sm:px-6 sm:py-8",
+          contentWidth,
+          alignment,
+          layout.template === "compact" ? "gap-4" : layout.template === "showcase" ? "gap-8" : "gap-6",
+        )}
+      >
         {loadError ? (
           <LoadErrorView message={loadError} />
         ) : !ctx ? (
           <LoadingView />
         ) : (
-          <>
-            <BrandHeader config={ctx.config} texts={texts} />
-
-            {step < STEP_LABELS.length ? <WidgetProgress steps={[...STEP_LABELS]} current={step} /> : null}
-
-            <main className="flex-1">
-              {step === 0 ? <DeviceStep ctx={ctx} /> : null}
-              {step === 1 ? <IssueStep ctx={ctx} /> : null}
-              {step === 2 ? <ResultStep ctx={ctx} /> : null}
-              {step === 3 ? <ContactStep ctx={ctx} submitError={submitError} /> : null}
-              {step === 4 ? <ConfirmationStep ctx={ctx} result={submitResult} /> : null}
-            </main>
-
-            <footer className="flex items-center justify-between gap-3 border-t border-[var(--w-border)] pt-5">
-              {step === 4 ? (
-                <>
-                  <WidgetButton variant="ghost" onClick={() => postToParent(publicId, { type: "behar.widget.close" })}>
-                    Fermer
-                  </WidgetButton>
-                  <WidgetButton variant="secondary" onClick={restart}>
-                    Nouvelle demande
-                  </WidgetButton>
-                </>
-              ) : (
-                <>
-                  <WidgetButton
-                    variant="ghost"
-                    onClick={goBack}
-                    disabled={step === 0}
-                    className={step === 0 ? "invisible" : ""}
-                  >
-                    Précédent
-                  </WidgetButton>
-                  {step === 3 ? (
-                    <WidgetButton onClick={submit} disabled={!canSubmit()} loading={submitting}>
-                      {submitLabel}
-                    </WidgetButton>
-                  ) : (
-                    <WidgetButton onClick={goNext} disabled={!canAdvance(step)}>
-                      Continuer
-                    </WidgetButton>
-                  )}
-                </>
-              )}
-            </footer>
-          </>
+          layout.blockOrder.map((block) =>
+            layout.hiddenBlocks.includes(block) ? null : <div key={block}>{blocks?.[block]}</div>,
+          )
         )}
+        {ctx?.config.icons.poweredBy ? (
+          <p className="text-center text-[10px] text-[var(--w-muted)]/70">Propulsé par Behar Tech Pro</p>
+        ) : null}
       </div>
     </div>
   );
@@ -347,7 +376,7 @@ function BrandHeader({ config, texts }: { config: WidgetConfig; texts: ReturnTyp
   return (
     <header className="flex items-center gap-3">
       {config.visual.logoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
+        // biome-ignore lint/performance/noImgElement: logo distant configuré par le réparateur dans le mini-CMS.
         <img src={config.visual.logoUrl} alt={name || "Atelier"} className="h-9 w-auto max-w-[160px] object-contain" />
       ) : (
         <span className="text-base font-semibold tracking-tight text-[var(--w-text)]">{name || texts.title}</span>

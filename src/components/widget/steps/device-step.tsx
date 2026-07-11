@@ -9,6 +9,7 @@
 import { useState } from "react";
 
 import { CatalogPicker } from "@/components/widget/catalog-picker";
+import { iconTargetForDevice, WidgetIcon } from "@/components/widget/widget-icon";
 import { useAsyncList } from "@/components/widget/use-catalog";
 import { deviceLabel, type StepContext, type WidgetDraft } from "@/components/widget/widget-state";
 import { OptionCard, StepShell, WidgetField, WidgetInput, WidgetNotice } from "@/components/widget/widget-primitives";
@@ -116,6 +117,10 @@ export function DeviceStep({ ctx }: { ctx: StepContext }) {
                 setBrandOtherLocal(false);
                 setModelOtherLocal(false);
                 patch({ category: "", brand: "", ...resetDownstream });
+              }}
+              renderItemIcon={(item) => {
+                const target = iconTargetForDevice(item);
+                return target ? <WidgetIcon choice={config.icons[target]} /> : null;
               }}
             />
           </WidgetField>

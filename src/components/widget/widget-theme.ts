@@ -6,7 +6,14 @@
 
 import type { CSSProperties } from "react";
 
-import type { PublicPrice, PublicStock, WidgetFeatures, WidgetTexts, WidgetVisual } from "@/lib/widget/public-types";
+import type {
+  PublicPrice,
+  PublicStock,
+  WidgetFeatures,
+  WidgetLayout,
+  WidgetTexts,
+  WidgetVisual,
+} from "@/lib/widget/public-types";
 
 const DEFAULT_PRIMARY = "#2A9D8F";
 const DEFAULT_TEXT = "#1A1916";
@@ -42,6 +49,15 @@ export const TEXT_DEFAULTS: Required<WidgetTexts> = {
   resultTitle: "Votre estimation",
   contactTitle: "Vos coordonnées",
   bookingTitle: "Choisissez un créneau",
+  firstNameLabel: "Prénom",
+  lastNameLabel: "Nom",
+  phoneLabel: "Téléphone",
+  emailLabel: "E-mail",
+  contactPreferenceLabel: "Préférence de contact",
+  commentLabel: "Commentaire",
+  requestTypeLabel: "Votre demande",
+  photoLabel: "Photos",
+  consentLabel: "J’autorise l’atelier à utiliser mes coordonnées pour traiter ma demande et me recontacter.",
   submitLabel: "Envoyer ma demande",
   callbackLabel: "Être rappelé",
   quoteLabel: "Demander un devis",
@@ -50,6 +66,20 @@ export const TEXT_DEFAULTS: Required<WidgetTexts> = {
 
 export function resolveTexts(texts: WidgetTexts | undefined): Required<WidgetTexts> {
   return { ...TEXT_DEFAULTS, ...(texts ?? {}) };
+}
+
+export const LAYOUT_DEFAULTS: Required<WidgetLayout> = {
+  blockOrder: ["header", "progress", "content", "actions"],
+  hiddenBlocks: [],
+  fieldOrder: ["identity", "contact", "preference", "comment", "photos", "request", "booking", "consent"],
+  hiddenFields: [],
+  columns: 1,
+  alignment: "left",
+  template: "classic",
+};
+
+export function resolveLayout(layout: WidgetLayout | undefined): Required<WidgetLayout> {
+  return { ...LAYOUT_DEFAULTS, ...(layout ?? {}) };
 }
 
 // ---------------------------------------------------------------------------
@@ -100,6 +130,15 @@ export function buildTheme(visual: WidgetVisual | undefined): WidgetTheme {
   const radius =
     typeof visual?.radius === "number" && visual.radius >= 0 ? Math.min(28, visual.radius) : DEFAULT_RADIUS;
   const onPrimary = readableOn(primary);
+  const button = parseHex(visual?.buttonColor) ? (visual?.buttonColor as string) : primary;
+  const onButton = parseHex(visual?.buttonTextColor) ? (visual?.buttonTextColor as string) : readableOn(button);
+  const buttonStyle = visual?.buttonStyle ?? "solid";
+  const pageBackground =
+    visual?.backgroundStyle === "gradient"
+      ? `linear-gradient(145deg, ${background}, ${tintOf(primary)})`
+      : visual?.backgroundStyle === "tinted"
+        ? `linear-gradient(${tintOf(primary)}, ${tintOf(primary)}), ${background}`
+        : background;
   const theme: Omit<WidgetTheme, "style"> = {
     primary,
     onPrimary,
@@ -123,6 +162,14 @@ export function buildTheme(visual: WidgetVisual | undefined): WidgetTheme {
       "--w-border": theme.border,
       "--w-tint": theme.tint,
       "--w-radius": `${theme.radius}px`,
+      "--w-button": button,
+      "--w-on-button": onButton,
+      "--w-button-bg": buttonStyle === "solid" ? button : buttonStyle === "soft" ? tintOf(button) : "transparent",
+      "--w-button-fg": buttonStyle === "solid" ? onButton : button,
+      "--w-button-border": button,
+      "--w-page-bg": pageBackground,
+      "--w-heading-scale": visual?.headingSize === "small" ? "0.9" : visual?.headingSize === "large" ? "1.15" : "1",
+      "--w-text-scale": visual?.textSize === "small" ? "0.92" : visual?.textSize === "large" ? "1.08" : "1",
     } as CSSProperties,
   };
 }

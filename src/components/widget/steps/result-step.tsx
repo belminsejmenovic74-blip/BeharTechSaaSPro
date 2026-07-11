@@ -10,6 +10,7 @@ import { useEffect, useRef } from "react";
 
 import type { PublicService } from "@/lib/widget/public-types";
 import { useAsyncList } from "@/components/widget/use-catalog";
+import { iconTargetForIssue, WidgetIcon } from "@/components/widget/widget-icon";
 import type { StepContext } from "@/components/widget/widget-state";
 import { formatAvailability, formatDuration, formatPrice } from "@/components/widget/widget-theme";
 import { StepShell, WidgetChip, WidgetNotice } from "@/components/widget/widget-primitives";
@@ -19,7 +20,7 @@ function sameIssue(a: string, b: string): boolean {
 }
 
 export function ResultStep({ ctx }: { ctx: StepContext }) {
-  const { client, token, draft, patch, features, texts, currency, locale, emit } = ctx;
+  const { client, token, draft, patch, texts, currency, locale, emit } = ctx;
 
   const services = useAsyncList(
     (signal) =>
@@ -37,6 +38,7 @@ export function ResultStep({ ctx }: { ctx: StepContext }) {
 
   // Résolution : associe à chaque problème sa prestation publiée (défaut = 1re
   // correspondance). Ne réécrit le brouillon que si la sélection devient invalide.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: la résolution dépend volontairement des projections listées pour éviter une boucle de patch.
   useEffect(() => {
     if (services.loading || services.error) return;
     const next = { ...draft.services };
@@ -68,6 +70,7 @@ export function ResultStep({ ctx }: { ctx: StepContext }) {
 
   // Analytique : une émission prix/stock par résolution.
   const emittedRef = useRef<string>("");
+  // biome-ignore lint/correctness/useExhaustiveDependencies: l'événement est dédupliqué par emittedRef et ne doit partir qu'après résolution des services.
   useEffect(() => {
     if (services.loading || services.error) return;
     if (draft.issues.some((issue) => draft.services[issue] === undefined)) return; // résolution en cours
@@ -131,7 +134,8 @@ function ResultCard({
   onChoose: (service: PublicService) => void;
   ctx: StepContext;
 }) {
-  const { features, currency, locale } = ctx;
+  const { features, currency, locale, config } = ctx;
+  const issueIconTarget = iconTargetForIssue(issue);
   const price = chosen ? formatPrice(chosen.price, currency, locale) : { label: null, onRequest: true };
   const duration = chosen ? formatDuration(chosen.durationMinutes) : null;
   const availability = formatAvailability(chosen?.stock);
@@ -146,7 +150,10 @@ function ResultCard({
     <article className="rounded-[var(--w-radius)] border border-[var(--w-border)] bg-[var(--w-surface)] p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs font-medium uppercase tracking-wide text-[var(--w-muted)]">{issue}</p>
+          <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-[var(--w-muted)]">
+            {issueIconTarget ? <WidgetIcon choice={config.icons[issueIconTarget]} /> : null}
+            {issue}
+          </p>
           <h3 className="mt-1 text-base font-semibold text-[var(--w-text)]">
             {chosen ? chosen.service : "Prestation sur devis"}
           </h3>
