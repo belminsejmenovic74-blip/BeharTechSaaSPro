@@ -21,6 +21,9 @@ import {
   Send,
   Smartphone,
   Tablet,
+  Tags,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -43,7 +46,7 @@ import {
 import type { WidgetFeatureKey, WidgetTextKey } from "@/lib/widget/public-types";
 import { cn } from "@/lib/utils";
 
-type EditorTab = "content" | "style" | "structure" | "media" | "display";
+type EditorTab = "content" | "style" | "offers" | "structure" | "media" | "display";
 type PreviewDevice = "desktop" | "tablet" | "mobile";
 type Version = { version: number; status: string; created_at: string; published_at: string | null };
 type WidgetEditorResponse = {
@@ -352,11 +355,12 @@ export default function WidgetSettingsPage() {
 
       <div className="grid min-h-[760px] gap-4 xl:grid-cols-[390px_minmax(0,1fr)]">
         <Panel className="min-h-0 overflow-hidden p-0">
-          <div className="grid grid-cols-5 border-b border-[#E8E8E5] bg-[#FAFAF8] p-1.5">
+          <div className="grid grid-cols-6 border-b border-[#E8E8E5] bg-[#FAFAF8] p-1.5">
             {(
               [
                 ["content", "Contenu", PanelLeft],
                 ["style", "Style", LayoutTemplate],
+                ["offers", "Offres", Tags],
                 ["structure", "Blocs", GripVertical],
                 ["media", "Médias", Images],
                 ["display", "Affichage", Monitor],
@@ -380,6 +384,7 @@ export default function WidgetSettingsPage() {
               <ContentPanel config={config} updateGeneral={updateGeneral} updateText={updateText} change={change} />
             ) : null}
             {tab === "style" ? <StylePanel config={config} updateVisual={updateVisual} /> : null}
+            {tab === "offers" ? <OffersPanel config={config} change={change} /> : null}
             {tab === "structure" ? (
               <StructurePanel
                 config={config}
@@ -510,6 +515,366 @@ function ContentPanel({
           />
         ))}
       </EditorSection>
+      <EditorSection title="Demandes hors catalogue">
+        <p className="mb-2 text-xs text-[#6B6B6B]">
+          Le catalogue global affiche toutes les marques, modèles et pannes. Ces options laissent le client envoyer sa
+          demande même quand un élément n’est pas encore configuré — recommandé pour capter plus de demandes.
+        </p>
+        {(
+          [
+            ["allowOutOfCatalog", "Autoriser les demandes hors catalogue"],
+            ["allowUnconfiguredModels", "Autoriser les modèles non configurés"],
+            ["allowUnconfiguredIssues", "Autoriser les pannes non configurées"],
+            ["allowOutOfCatalogAppointments", "Autoriser les rendez-vous hors catalogue"],
+          ] as const
+        ).map(([key, label]) => (
+          <Toggle
+            key={key}
+            label={label}
+            checked={config.catalogPolicy[key]}
+            onChange={(checked) =>
+              change((current) => ({ ...current, catalogPolicy: { ...current.catalogPolicy, [key]: checked } }))
+            }
+          />
+        ))}
+        <EditorField label="Repli si non configuré">
+          <select
+            className={inputClass}
+            value={config.catalogPolicy.fallbackMode}
+            onChange={(event) =>
+              change((current) => ({
+                ...current,
+                catalogPolicy: {
+                  ...current.catalogPolicy,
+                  fallbackMode: event.target.value as EditableWidgetConfig["catalogPolicy"]["fallbackMode"],
+                },
+              }))
+            }
+          >
+            <option value="quote">Sur devis</option>
+            <option value="callback">Être rappelé</option>
+            <option value="manual">Demande manuelle</option>
+          </select>
+        </EditorField>
+      </EditorSection>
+    </div>
+  );
+}
+
+function OffersPanel({
+  config,
+  change,
+}: {
+  config: EditableWidgetConfig;
+  change: (updater: (current: EditableWidgetConfig) => EditableWidgetConfig) => void;
+}) {
+  type Offer = EditableWidgetConfig["offers"]["offers"][number];
+  const updateSection = <K extends keyof EditableWidgetConfig["offers"]>(
+    key: K,
+    value: EditableWidgetConfig["offers"][K],
+  ) => change((current) => ({ ...current, offers: { ...current.offers, [key]: value } }));
+  const updateOffer = (id: string, patch: Partial<Offer>) =>
+    change((current) => ({
+      ...current,
+      offers: {
+        ...current.offers,
+        offers: current.offers.offers.map((offer) => (offer.id === id ? { ...offer, ...patch } : offer)),
+      },
+    }));
+  const addOffer = () =>
+    change((current) => ({
+      ...current,
+      offers: {
+        ...current.offers,
+        enabled: true,
+        offers: [
+          ...current.offers.offers,
+          {
+            id: `offer_${crypto.randomUUID().replaceAll("-", "")}`,
+            title: "Nouvelle offre",
+            subtitle: "",
+            description: "",
+            fullDescription: "",
+            displayMode: "text",
+            behavior: "selectable",
+            imageUrl: "",
+            imageAlt: "",
+            imagePosition: "cover",
+            hideImageOnMobile: false,
+            iconName: "",
+            iconUrl: "",
+            badgeText: "",
+            conditionText: "",
+            validationRequired: false,
+            isPublished: false,
+            displayOrder: current.offers.offers.length,
+            layoutSize: "standard",
+            startDate: "",
+            endDate: "",
+            appointmentOnly: false,
+            desktopVisible: true,
+            mobileVisible: true,
+            externalUrl: "",
+          },
+        ],
+      },
+    }));
+
+  return (
+    <div className="space-y-6">
+      <EditorSection title="Section des avantages">
+        <Toggle
+          label="Afficher les offres additionnelles"
+          checked={config.offers.enabled}
+          onChange={(value) => updateSection("enabled", value)}
+        />
+        <EditorField label="Titre libre de la section">
+          <input
+            className={inputClass}
+            value={config.offers.title || ""}
+            onChange={(event) => updateSection("title", event.target.value)}
+            placeholder="Ex : Nos offres du moment"
+          />
+        </EditorField>
+        <EditorField label="Sous-titre">
+          <input
+            className={inputClass}
+            value={config.offers.subtitle || ""}
+            onChange={(event) => updateSection("subtitle", event.target.value)}
+          />
+        </EditorField>
+        <EditorField label="Texte d’introduction">
+          <textarea
+            className={`${inputClass} h-20 py-2`}
+            value={config.offers.introduction || ""}
+            onChange={(event) => updateSection("introduction", event.target.value)}
+          />
+        </EditorField>
+        <Segment
+          label="Disposition"
+          value={config.offers.layout}
+          options={[
+            ["list", "Liste"],
+            ["grid", "Grille"],
+          ]}
+          onChange={(value) => updateSection("layout", value as "list" | "grid")}
+        />
+        {config.offers.layout === "grid" ? (
+          <Segment
+            label="Colonnes"
+            value={String(config.offers.columns)}
+            options={[
+              ["1", "Une"],
+              ["2", "Deux"],
+              ["3", "Trois"],
+            ]}
+            onChange={(value) => updateSection("columns", Number(value) as 1 | 2 | 3)}
+          />
+        ) : null}
+        <button
+          type="button"
+          onClick={addOffer}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#2A9D8F]/50 bg-[#F4FBF9] px-3 py-2.5 text-sm font-semibold text-[#167B70]"
+        >
+          <Plus className="size-4" /> Créer une offre personnalisée
+        </button>
+        {!config.offers.offers.length ? (
+          <p className="text-xs text-[#73736F]">Aucune offre : la section publique sera entièrement masquée.</p>
+        ) : null}
+      </EditorSection>
+
+      {config.offers.offers.map((offer, index) => (
+        <EditorSection key={offer.id} title={offer.title || `Offre ${index + 1}`}>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex gap-1">
+              <button
+                type="button"
+                aria-label={`Monter ${offer.title}`}
+                disabled={index === 0}
+                onClick={() =>
+                  updateSection(
+                    "offers",
+                    reorder(config.offers.offers, index, index - 1).map((item, order) => ({
+                      ...item,
+                      displayOrder: order,
+                    })),
+                  )
+                }
+                className="rounded-lg border border-[#E8E8E5] p-2 disabled:opacity-30"
+              >
+                <ArrowUp className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                aria-label={`Descendre ${offer.title}`}
+                disabled={index === config.offers.offers.length - 1}
+                onClick={() =>
+                  updateSection(
+                    "offers",
+                    reorder(config.offers.offers, index, index + 1).map((item, order) => ({
+                      ...item,
+                      displayOrder: order,
+                    })),
+                  )
+                }
+                className="rounded-lg border border-[#E8E8E5] p-2 disabled:opacity-30"
+              >
+                <ArrowDown className="size-3.5" />
+              </button>
+            </div>
+            <button
+              type="button"
+              aria-label={`Supprimer ${offer.title}`}
+              onClick={() =>
+                updateSection(
+                  "offers",
+                  config.offers.offers.filter((item) => item.id !== offer.id),
+                )
+              }
+              className="rounded-lg border border-[#F2D4D1] p-2 text-[#B42318]"
+            >
+              <Trash2 className="size-3.5" />
+            </button>
+          </div>
+          <Toggle
+            label="Publiée"
+            checked={offer.isPublished}
+            onChange={(value) => updateOffer(offer.id, { isPublished: value })}
+          />
+          <EditorField label="Titre">
+            <input
+              className={inputClass}
+              value={offer.title}
+              onChange={(event) => updateOffer(offer.id, { title: event.target.value })}
+            />
+          </EditorField>
+          <EditorField label="Description">
+            <textarea
+              className={`${inputClass} h-20 py-2`}
+              value={offer.description || ""}
+              onChange={(event) => updateOffer(offer.id, { description: event.target.value })}
+            />
+          </EditorField>
+          <Segment
+            label="Rendu"
+            value={offer.displayMode}
+            options={[
+              ["text", "Texte"],
+              ["image", "Image"],
+              ["icon", "Icône"],
+              ["image_icon", "Image + icône"],
+              ["badge", "Badge"],
+              ["price", "Prix"],
+              ["informative", "Information"],
+            ]}
+            onChange={(value) => updateOffer(offer.id, { displayMode: value as Offer["displayMode"] })}
+          />
+          <Segment
+            label="Comportement"
+            value={offer.behavior}
+            options={[
+              ["selectable", "Sélectionnable"],
+              ["automatic", "Automatique"],
+              ["informative", "Informative"],
+              ["validation", "Validation boutique"],
+              ["link", "Lien externe"],
+              ["hidden", "Masquée"],
+            ]}
+            onChange={(value) => updateOffer(offer.id, { behavior: value as Offer["behavior"] })}
+          />
+          {["image", "image_icon"].includes(offer.displayMode) ? (
+            <>
+              <EditorField label="Image (médiathèque ou URL HTTPS)">
+                <input
+                  className={inputClass}
+                  value={offer.imageUrl || ""}
+                  onChange={(event) => updateOffer(offer.id, { imageUrl: event.target.value })}
+                  placeholder="https://…"
+                />
+              </EditorField>
+              <EditorField label="Texte alternatif">
+                <input
+                  className={inputClass}
+                  value={offer.imageAlt || ""}
+                  onChange={(event) => updateOffer(offer.id, { imageAlt: event.target.value })}
+                />
+              </EditorField>
+              <Toggle
+                label="Masquer l’image sur mobile"
+                checked={offer.hideImageOnMobile === true}
+                onChange={(value) => updateOffer(offer.id, { hideImageOnMobile: value })}
+              />
+            </>
+          ) : null}
+          {["icon", "image_icon"].includes(offer.displayMode) ? (
+            <EditorField label="Icône personnalisée (URL facultative)">
+              <input
+                className={inputClass}
+                value={offer.iconUrl || ""}
+                onChange={(event) => updateOffer(offer.id, { iconUrl: event.target.value })}
+                placeholder="Sans URL : icône de la bibliothèque"
+              />
+            </EditorField>
+          ) : null}
+          <div className="grid grid-cols-2 gap-2">
+            <EditorField label="Ancien prix">
+              <input
+                className={inputClass}
+                type="number"
+                min="0"
+                value={offer.originalPrice ?? ""}
+                onChange={(event) =>
+                  updateOffer(offer.id, { originalPrice: event.target.value ? Number(event.target.value) : undefined })
+                }
+              />
+            </EditorField>
+            <EditorField label="Nouveau prix">
+              <input
+                className={inputClass}
+                type="number"
+                min="0"
+                value={offer.promotionalPrice ?? ""}
+                onChange={(event) =>
+                  updateOffer(offer.id, {
+                    promotionalPrice: event.target.value ? Number(event.target.value) : undefined,
+                  })
+                }
+              />
+            </EditorField>
+          </div>
+          <EditorField label="Condition">
+            <input
+              className={inputClass}
+              value={offer.conditionText || ""}
+              onChange={(event) => updateOffer(offer.id, { conditionText: event.target.value })}
+            />
+          </EditorField>
+          {offer.behavior === "link" ? (
+            <EditorField label="Lien externe">
+              <input
+                className={inputClass}
+                value={offer.externalUrl || ""}
+                onChange={(event) => updateOffer(offer.id, { externalUrl: event.target.value })}
+              />
+            </EditorField>
+          ) : null}
+          <Toggle
+            label="Uniquement avec rendez-vous"
+            checked={offer.appointmentOnly === true}
+            onChange={(value) => updateOffer(offer.id, { appointmentOnly: value })}
+          />
+          <Toggle
+            label="Visible sur mobile"
+            checked={offer.mobileVisible !== false}
+            onChange={(value) => updateOffer(offer.id, { mobileVisible: value })}
+          />
+          <Toggle
+            label="Visible sur ordinateur"
+            checked={offer.desktopVisible !== false}
+            onChange={(value) => updateOffer(offer.id, { desktopVisible: value })}
+          />
+        </EditorSection>
+      ))}
     </div>
   );
 }
@@ -965,6 +1330,28 @@ function PreviewBlock({ block, config }: { block: WidgetBlockKey; config: Editab
           ),
         )}
       </div>
+      {config.offers.enabled &&
+      config.offers.offers.some((offer) => offer.isPublished && offer.behavior !== "hidden") ? (
+        <div className="mt-4 grid gap-2 border-t border-[var(--w-border)] pt-4">
+          {config.offers.title ? <p className="text-xs font-bold text-[var(--w-text)]">{config.offers.title}</p> : null}
+          {config.offers.offers
+            .filter((offer) => offer.isPublished && offer.behavior !== "hidden")
+            .slice(0, 4)
+            .map((offer) => (
+              <div
+                key={offer.id}
+                className="flex items-center justify-between gap-2 rounded-[var(--w-radius)] border border-[var(--w-border)] p-2 text-[10px]"
+              >
+                <span className="font-semibold text-[var(--w-text)]">{offer.title}</span>
+                {typeof offer.promotionalPrice === "number" ? (
+                  <span className="text-[var(--w-primary)]">
+                    {offer.promotionalPrice} {config.general.currency}
+                  </span>
+                ) : null}
+              </div>
+            ))}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -12,8 +12,14 @@ import type { WidgetTheme } from "@/components/widget/widget-theme";
 
 export type RequestType = "callback" | "quote" | "price_request" | "request" | "appointment";
 
-// Cinq étapes : Appareil, Problème, Résultat, Informations & rendez-vous, Confirmation.
-export const STEP_LABELS = ["Appareil", "Problème", "Résultat", "Contact", "Confirmation"] as const;
+// Cinq étapes commerciales visibles dans la modale publique.
+export const STEP_LABELS = [
+  "Appareil",
+  "Marque & modèle",
+  "Panne",
+  "Rendez-vous & offres",
+  "Infos & confirmation",
+] as const;
 
 export type WidgetDraft = {
   shopId: string; // public_shop_id ("" tant qu'aucune boutique n'est choisie)
@@ -23,6 +29,7 @@ export type WidgetDraft = {
   issues: string[]; // libellés des problèmes retenus
   issueDescription: string;
   services: Record<string, PublicService | null>; // problème -> prestation publiée résolue
+  selectedOfferIds: string[];
   firstName: string;
   lastName: string;
   phone: string;
@@ -44,6 +51,7 @@ export const EMPTY_DRAFT: WidgetDraft = {
   issues: [],
   issueDescription: "",
   services: {},
+  selectedOfferIds: [],
   firstName: "",
   lastName: "",
   phone: "",

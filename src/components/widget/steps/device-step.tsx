@@ -13,6 +13,21 @@ import { iconTargetForDevice, WidgetIcon } from "@/components/widget/widget-icon
 import { useAsyncList } from "@/components/widget/use-catalog";
 import { deviceLabel, type StepContext, type WidgetDraft } from "@/components/widget/widget-state";
 import { OptionCard, StepShell, WidgetField, WidgetInput, WidgetNotice } from "@/components/widget/widget-primitives";
+import { brandsForType, deviceTypeLabels, fold, modelsForBrand } from "@/lib/widget/global-catalog";
+
+// Fusion catalogue GLOBAL (large, capte la demande) ∪ éléments boutique (config),
+// dédupliqués : on affiche tout, la boutique ne fait qu'enrichir.
+function mergeUnique(global: string[], shop: string[]): string[] {
+  const out = [...global];
+  const seen = new Set(global.map(fold));
+  for (const item of shop) {
+    if (item && !seen.has(fold(item))) {
+      seen.add(fold(item));
+      out.push(item);
+    }
+  }
+  return out;
+}
 
 export function DeviceStep({ ctx }: { ctx: StepContext }) {
   const { client, token, draft, patch, features, texts, config } = ctx;
@@ -36,10 +51,13 @@ export function DeviceStep({ ctx }: { ctx: StepContext }) {
     [token, shop, draft.category, shopReady],
   );
 
-  const categoryOther =
-    categoryOtherLocal || (!!draft.category && !categories.loading && !categories.items.includes(draft.category));
-  const brandOther = brandOtherLocal || (!!draft.brand && !brands.loading && !brands.items.includes(draft.brand));
-  const noBrandCategory = !brands.loading && brands.items.length === 0;
+  // Listes affichées = catalogue global ∪ configuration boutique.
+  const categoryItems = mergeUnique(deviceTypeLabels(), categories.items);
+  const brandItems = draft.category ? mergeUnique(brandsForType(draft.category), brands.items) : [];
+
+  const categoryOther = categoryOtherLocal || (!!draft.category && !categoryItems.includes(draft.category));
+  const brandOther = brandOtherLocal || (!!draft.brand && !brandItems.includes(draft.brand));
+  const noBrandCategory = brandItems.length === 0;
 
   const models = useAsyncList(
     (signal) =>
@@ -48,8 +66,11 @@ export function DeviceStep({ ctx }: { ctx: StepContext }) {
         : Promise.resolve([]),
     [token, shop, draft.category, draft.brand, brandOther, noBrandCategory, shopReady],
   );
-  const modelOther =
-    modelOtherLocal || (!!draft.model && !models.loading && !brandOther && !models.items.includes(draft.model));
+  const modelItems =
+    draft.category && draft.brand
+      ? mergeUnique(modelsForBrand(draft.category, draft.brand), models.items)
+      : models.items;
+  const modelOther = modelOtherLocal || (!!draft.model && !brandOther && !modelItems.includes(draft.model));
 
   const resetDevice: Partial<WidgetDraft> = {
     category: "",
@@ -89,15 +110,15 @@ export function DeviceStep({ ctx }: { ctx: StepContext }) {
         <>
           <WidgetField label="Catégorie" required>
             <CatalogPicker
-              items={categories.items}
-              loading={categories.loading}
+              items={categoryItems}
+              loading={categoryItems.length === 0 && categories.loading}
               error={categories.error}
               onReload={categories.reload}
               searchable={features.deviceSearch}
-              searchPlaceholder="Rechercher une catégorie"
+              searchPlaceholder="Rechercher un type d’appareil"
               value={draft.category}
               isCustom={categoryOther}
-              allowOther
+              allowOther={config.catalogPolicy.allowOutOfCatalog}
               otherLabel="Autre appareil"
               otherPlaceholder="Type d’appareil (ex : montre connectée)"
               emptyHint="Aucun appareil publié pour cette boutique."
@@ -128,15 +149,15 @@ export function DeviceStep({ ctx }: { ctx: StepContext }) {
           {draft.category ? (
             <WidgetField label="Marque" hint={noBrandCategory ? "Marque facultative pour cette catégorie." : undefined}>
               <CatalogPicker
-                items={brands.items}
-                loading={brands.loading}
+                items={brandItems}
+                loading={brandItems.length === 0 && brands.loading}
                 error={brands.error}
                 onReload={brands.reload}
                 searchable={features.deviceSearch}
                 searchPlaceholder="Rechercher une marque"
                 value={draft.brand}
                 isCustom={brandOther}
-                allowOther
+                allowOther={config.catalogPolicy.allowOutOfCatalog}
                 otherLabel="Autre marque"
                 otherPlaceholder="Saisissez la marque"
                 onSelect={(value) => {
@@ -169,15 +190,15 @@ export function DeviceStep({ ctx }: { ctx: StepContext }) {
                 />
               ) : (
                 <CatalogPicker
-                  items={models.items}
-                  loading={models.loading}
+                  items={modelItems}
+                  loading={modelItems.length === 0 && models.loading}
                   error={models.error}
                   onReload={models.reload}
                   searchable={features.deviceSearch}
                   searchPlaceholder="Rechercher un modèle"
                   value={draft.model}
                   isCustom={modelOther}
-                  allowOther
+                  allowOther={config.catalogPolicy.allowUnconfiguredModels}
                   otherLabel="Autre modèle"
                   otherPlaceholder="Saisissez le modèle"
                   onSelect={(value) => {

@@ -19,6 +19,9 @@ import {
   type WidgetEventData,
   type WidgetEventName,
 } from "@/lib/widget/public-client";
+import { computeLeadTags } from "@/lib/widget/catalog-merge";
+import { DemoWidgetClient } from "@/lib/widget/demo-data";
+import { fold, modelsForBrand } from "@/lib/widget/global-catalog";
 import {
   CONSENT_PRIVACY_VERSION,
   buildTheme,
@@ -37,12 +40,14 @@ import {
   type WidgetDraft,
 } from "@/components/widget/widget-state";
 import { Spinner, WidgetButton, WidgetProgress } from "@/components/widget/widget-primitives";
-import { DeviceStep } from "@/components/widget/steps/device-step";
 import { IssueStep } from "@/components/widget/steps/issue-step";
-import { ResultStep } from "@/components/widget/steps/result-step";
-import { ContactStep } from "@/components/widget/steps/contact-step";
 import { ConfirmationStep } from "@/components/widget/steps/confirmation-step";
 import { cn } from "@/lib/utils";
+import { X } from "lucide-react";
+import { DeviceTypeStep } from "@/components/widget/steps/device-type-step";
+import { BrandModelStep } from "@/components/widget/steps/brand-model-step";
+import { AppointmentOffersStep } from "@/components/widget/steps/appointment-offers-step";
+import { CustomerSummaryStep } from "@/components/widget/steps/customer-summary-step";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -65,7 +70,12 @@ function postToParent(publicId: string, message: Record<string, unknown>) {
 
 export function WidgetApp({ publicId }: { publicId: string }) {
   const clientRef = useRef<WidgetPublicClient | null>(null);
-  if (!clientRef.current) clientRef.current = new WidgetPublicClient(publicId, detectHostOrigin());
+  if (!clientRef.current) {
+    clientRef.current =
+      publicId === "demo" && process.env.NODE_ENV !== "production"
+        ? new DemoWidgetClient()
+        : new WidgetPublicClient(publicId, detectHostOrigin());
+  }
   const client = clientRef.current;
 
   const sessionIdRef = useRef<string>(randomId("wses"));
@@ -134,6 +144,12 @@ export function WidgetApp({ publicId }: { publicId: string }) {
     };
   }, [publicId]);
 
+  useEffect(() => {
+    void step;
+    void submitResult;
+    rootRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [step, submitResult]);
+
   const theme = useMemo(() => buildTheme(config?.visual), [config?.visual]);
   const features = useMemo(() => resolveFeatures(config?.features), [config?.features]);
   const texts = useMemo(() => resolveTexts(config?.texts), [config?.texts]);
@@ -157,11 +173,53 @@ export function WidgetApp({ publicId }: { publicId: string }) {
     : null;
 
   const needShop = features.shopChoice && (config?.shops.length ?? 0) > 1;
+  const appointmentStepEnabled =
+    features.booking || Boolean(config?.offers.enabled && config.offers.offers.some((offer) => offer.isPublished));
+
+  const hasProgress = Boolean(
+    draft.category ||
+      draft.brand ||
+      draft.model ||
+      draft.issues.length ||
+      draft.firstName ||
+      draft.lastName ||
+      draft.phone ||
+      draft.email,
+  );
+  const requestClose = useCallback(() => {
+    if (
+      hasProgress &&
+      !submitResult &&
+      !window.confirm("Votre demande n’est pas terminée. Voulez-vous vraiment fermer ?")
+    )
+      return;
+    postToParent(publicId, { type: "behar.widget.close" });
+  }, [hasProgress, publicId, submitResult]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") requestClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [requestClose]);
+
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.source !== window.parent || event.data?.type !== "behar.widget.request-close") return;
+      if (event.data?.widgetPublicId && event.data.widgetPublicId !== publicId) return;
+      requestClose();
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [publicId, requestClose]);
 
   const canAdvance = (index: number): boolean => {
-    if (index === 0)
-      return Boolean(draft.category) && Boolean(draft.model.trim()) && (!needShop || Boolean(draft.shopId));
-    if (index === 1) return draft.issues.length > 0;
+    if (index === 0) return Boolean(draft.category);
+    if (index === 1) return Boolean(draft.model.trim());
+    if (index === 2) return draft.issues.length > 0;
+    if (index === 3 && draft.requestType === "appointment")
+      return Boolean(draft.appointmentDate && draft.appointmentTime) && (!needShop || Boolean(draft.shopId));
     return true;
   };
 
@@ -173,19 +231,21 @@ export function WidgetApp({ publicId }: { publicId: string }) {
 
   const goNext = () => {
     if (!canAdvance(step)) return;
-    if (step === 0) {
+    if (step === 1) {
       emit("widget_started");
       emit("device_selected", { category: draft.category, brand: draft.brand, model: draft.model });
     }
-    if (step === 1) emit("issue_selected", { issue: draft.issues[0] });
+    if (step === 2) emit("issue_selected", { issue: draft.issues[0] });
     if (step === 2) {
       emit("form_opened");
       if (draft.requestType === "appointment") emit("booking_opened");
     }
-    setStep((current) => Math.min(current + 1, STEP_LABELS.length - 1));
+    setStep((current) =>
+      current === 2 && !appointmentStepEnabled ? 4 : Math.min(current + 1, STEP_LABELS.length - 1),
+    );
   };
 
-  const goBack = () => setStep((current) => Math.max(current - 1, 0));
+  const goBack = () => setStep((current) => (current === 4 && !appointmentStepEnabled ? 2 : Math.max(current - 1, 0)));
 
   const submit = async () => {
     if (!config || submitting || !canSubmit()) return;
@@ -243,32 +303,27 @@ export function WidgetApp({ publicId }: { publicId: string }) {
             ? "Envoyer la demande"
             : texts.callbackLabel;
 
-  const contentWidth =
-    config?.visual.contentWidth === "compact"
-      ? "max-w-[480px]"
-      : config?.visual.contentWidth === "wide"
-        ? "max-w-[760px]"
-        : "max-w-[560px]";
   const alignment =
     layout.alignment === "center" ? "text-center" : layout.alignment === "right" ? "text-right" : "text-left";
   const blocks = ctx
     ? {
         header: <BrandHeader config={ctx.config} texts={texts} />,
-        progress: step < STEP_LABELS.length ? <WidgetProgress steps={[...STEP_LABELS]} current={step} /> : null,
+        progress: !submitResult ? <WidgetProgress steps={[...STEP_LABELS]} current={step} /> : null,
         content: (
           <main className="flex-1">
-            {step === 0 ? <DeviceStep ctx={ctx} /> : null}
-            {step === 1 ? <IssueStep ctx={ctx} /> : null}
-            {step === 2 ? <ResultStep ctx={ctx} /> : null}
-            {step === 3 ? <ContactStep ctx={ctx} submitError={submitError} /> : null}
-            {step === 4 ? <ConfirmationStep ctx={ctx} result={submitResult} /> : null}
+            {submitResult ? <ConfirmationStep ctx={ctx} result={submitResult} /> : null}
+            {!submitResult && step === 0 ? <DeviceTypeStep ctx={ctx} /> : null}
+            {!submitResult && step === 1 ? <BrandModelStep ctx={ctx} onContinue={goNext} /> : null}
+            {!submitResult && step === 2 ? <IssueStep ctx={ctx} /> : null}
+            {!submitResult && step === 3 ? <AppointmentOffersStep ctx={ctx} /> : null}
+            {!submitResult && step === 4 ? <CustomerSummaryStep ctx={ctx} submitError={submitError} /> : null}
           </main>
         ),
         actions: (
-          <footer className="flex items-center justify-between gap-3 border-t border-[var(--w-border)] pt-5">
-            {step === 4 ? (
+          <footer className="sticky bottom-0 z-10 -mx-1 flex items-center justify-between gap-3 border-t border-[var(--w-border)] bg-[var(--w-surface)]/95 px-1 pt-4 backdrop-blur">
+            {submitResult ? (
               <>
-                <WidgetButton variant="ghost" onClick={() => postToParent(publicId, { type: "behar.widget.close" })}>
+                <WidgetButton variant="ghost" onClick={requestClose}>
                   Fermer
                 </WidgetButton>
                 <WidgetButton variant="secondary" onClick={restart}>
@@ -285,7 +340,7 @@ export function WidgetApp({ publicId }: { publicId: string }) {
                 >
                   Précédent
                 </WidgetButton>
-                {step === 3 ? (
+                {step === 4 ? (
                   <WidgetButton onClick={submit} disabled={!canSubmit()} loading={submitting}>
                     {submitLabel}
                   </WidgetButton>
@@ -302,23 +357,46 @@ export function WidgetApp({ publicId }: { publicId: string }) {
     : null;
 
   return (
-    <div style={theme.style} className="min-h-screen w-full bg-[var(--w-page-bg,var(--w-bg))] text-[var(--w-text)]">
+    <div
+      style={theme.style}
+      className="grid min-h-screen w-full place-items-center bg-transparent text-[var(--w-text)] sm:p-4"
+    >
       <div
         ref={rootRef}
         className={cn(
-          "mx-auto flex w-full flex-col px-4 py-6 sm:px-6 sm:py-8",
-          contentWidth,
+          "relative mx-auto flex max-h-[100svh] min-h-[100svh] w-full flex-col gap-5 overflow-y-auto bg-[var(--w-surface)] px-4 py-5 shadow-[0_28px_90px_rgba(15,23,42,.22)] sm:max-h-[90svh] sm:min-h-0 sm:max-w-[1180px] sm:rounded-[calc(var(--w-radius)+8px)] sm:border sm:border-[var(--w-border)] sm:px-7 sm:py-6",
           alignment,
           layout.template === "compact" ? "gap-4" : layout.template === "showcase" ? "gap-8" : "gap-6",
         )}
       >
+        {ctx ? (
+          <button
+            type="button"
+            onClick={requestClose}
+            aria-label="Fermer le widget"
+            className="absolute right-4 top-4 z-20 grid size-9 place-items-center rounded-full text-[var(--w-muted)] transition hover:bg-[var(--w-primary-soft)] hover:text-[var(--w-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--w-focus-ring)]"
+          >
+            <X className="size-4" />
+          </button>
+        ) : null}
         {loadError ? (
           <LoadErrorView message={loadError} />
         ) : !ctx ? (
           <LoadingView />
         ) : (
           layout.blockOrder.map((block) =>
-            layout.hiddenBlocks.includes(block) ? null : <div key={block}>{blocks?.[block]}</div>,
+            layout.hiddenBlocks.includes(block) ? null : (
+              <div
+                key={block}
+                className={
+                  block === "actions"
+                    ? "sticky bottom-0 z-30 bg-[var(--w-surface)] pb-[max(.25rem,env(safe-area-inset-bottom))]"
+                    : undefined
+                }
+              >
+                {blocks?.[block]}
+              </div>
+            ),
           )
         )}
         {ctx?.config.icons.poweredBy ? (
@@ -341,6 +419,17 @@ function buildLead(
   if (extraIssues.length) descriptionParts.push(`Autres problèmes : ${extraIssues.join(", ")}`);
   const sourceUrl = typeof document !== "undefined" ? document.referrer || window.location.href : undefined;
   const preference: ContactPreference | undefined = draft.contactPreference || undefined;
+
+  // Tags hors catalogue : le parcours n'est jamais bloqué, mais l'admin est prévenu.
+  const selectedIssuesConfigured = draft.issues.map((issue) => Boolean(draft.services[issue]));
+  const modelInGlobalCatalog = modelsForBrand(draft.category, draft.brand).some(
+    (entry) => fold(entry) === fold(draft.model),
+  );
+  const tags = computeLeadTags({
+    modelInGlobalCatalog,
+    modelConfigured: selectedIssuesConfigured.some(Boolean),
+    selectedIssuesConfigured,
+  });
   return {
     type: "callback",
     firstName: draft.firstName.trim(),
@@ -358,6 +447,26 @@ function buildLead(
     contactPreference: preference,
     shopPublicId: draft.shopId || undefined,
     photos: draft.photos,
+    tags,
+    selectedOffers: (config.offers?.offers ?? [])
+      .filter(
+        (offer) =>
+          offer.behavior === "automatic" ||
+          ((offer.behavior === "selectable" || offer.behavior === "validation") &&
+            draft.selectedOfferIds.includes(offer.id)),
+      )
+      .map((offer) => ({
+        offerId: offer.id,
+        offerName: offer.title,
+        originalPrice: offer.originalPrice,
+        promotionalPrice: offer.promotionalPrice,
+        fixedDiscount: offer.fixedDiscount,
+        percentageDiscount: offer.percentageDiscount,
+        conditionsSnapshot: offer.conditionText,
+        validationRequired: offer.validationRequired === true || offer.behavior === "validation",
+        behavior: offer.behavior,
+        selectedAt: new Date().toISOString(),
+      })),
     sourceUrl,
     consent: {
       service: true,
@@ -374,13 +483,21 @@ function buildLead(
 function BrandHeader({ config, texts }: { config: WidgetConfig; texts: ReturnType<typeof resolveTexts> }) {
   const name = config.general.commercialName;
   return (
-    <header className="flex items-center gap-3">
+    <header className="flex items-center gap-3 pr-12">
       {config.visual.logoUrl ? (
         // biome-ignore lint/performance/noImgElement: logo distant configuré par le réparateur dans le mini-CMS.
         <img src={config.visual.logoUrl} alt={name || "Atelier"} className="h-9 w-auto max-w-[160px] object-contain" />
       ) : (
-        <span className="text-base font-semibold tracking-tight text-[var(--w-text)]">{name || texts.title}</span>
+        <span className="grid size-10 place-items-center rounded-xl bg-[var(--w-primary-soft)] text-base font-bold text-[var(--w-primary)]">
+          {(name || texts.title).slice(0, 1)}
+        </span>
       )}
+      <div className="min-w-0">
+        <p className="truncate text-base font-semibold tracking-tight text-[var(--w-text)]">
+          {name || texts.title || "Demande de devis ou rendez-vous"}
+        </p>
+        <p className="truncate text-xs text-[var(--w-muted)]">{texts.introduction}</p>
+      </div>
     </header>
   );
 }

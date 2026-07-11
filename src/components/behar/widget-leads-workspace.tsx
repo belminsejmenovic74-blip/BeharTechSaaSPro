@@ -28,6 +28,7 @@ import {
   leadEmailHref,
   leadHistoryLabel,
   leadPhoneHref,
+  leadTagLabel,
   LEAD_STATUS_LABELS,
   LEAD_TYPE_LABELS,
   type DashboardWidgetLead,
@@ -459,6 +460,19 @@ export function WidgetLeadsWorkspace() {
                 </p>
               </div>
             )}
+
+            {selected.tags?.length ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {selected.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-[#EBD9B4] bg-[#FBF6EA] px-2.5 py-1 text-[11px] font-semibold text-[#8A6D1B]"
+                  >
+                    {leadTagLabel(tag)}
+                  </span>
+                ))}
+              </div>
+            ) : null}
 
             <div className="mt-4 grid grid-cols-2 gap-2">
               <a

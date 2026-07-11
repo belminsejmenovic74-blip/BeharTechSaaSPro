@@ -162,7 +162,7 @@ export async function POST(request: Request) {
       admin
         .from("widget_leads")
         .select(
-          "id, shop_id, widget_id, customer_id, appointment_id, quote_id, repair_case_id, lead_type, first_name, last_name, phone, phone_normalized, email, email_normalized, device_category, brand, model, issue, issue_description, service_label, quality_label, displayed_price, displayed_price_snapshot, displayed_stock, displayed_stock_snapshot, displayed_duration_minutes, displayed_warranty, comment, photos, contact_preference, requested_callback_at, source_url, status, assigned_to, conversion_reference, submission_payload, created_at, updated_at, last_activity_at, closed_at, spam_at",
+          "id, shop_id, widget_id, customer_id, appointment_id, quote_id, repair_case_id, lead_type, first_name, last_name, phone, phone_normalized, email, email_normalized, device_category, brand, model, issue, issue_description, service_label, quality_label, displayed_price, displayed_price_snapshot, displayed_stock, displayed_stock_snapshot, displayed_duration_minutes, displayed_warranty, comment, photos, tags, contact_preference, requested_callback_at, source_url, status, assigned_to, conversion_reference, submission_payload, created_at, updated_at, last_activity_at, closed_at, spam_at",
         )
         .eq("tenant_id", workshopId)
         .order("created_at", { ascending: false })

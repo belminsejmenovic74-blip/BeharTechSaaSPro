@@ -42,13 +42,13 @@ export function resolveFeatures(features: WidgetFeatures | undefined): Required<
 }
 
 export const TEXT_DEFAULTS: Required<WidgetTexts> = {
-  title: "Réparez votre appareil",
-  introduction: "Obtenez une estimation et contactez l’atelier en quelques instants.",
-  deviceTitle: "Votre appareil",
-  issueTitle: "Le problème rencontré",
-  resultTitle: "Votre estimation",
-  contactTitle: "Vos coordonnées",
-  bookingTitle: "Choisissez un créneau",
+  title: "Demande de devis ou rendez-vous",
+  introduction: "Devis et rendez-vous en 2 min",
+  deviceTitle: "Choix de l’appareil",
+  issueTitle: "Choix de la panne",
+  resultTitle: "Tarifs et prestations",
+  contactTitle: "Vos informations",
+  bookingTitle: "Rendez-vous et offres",
   firstNameLabel: "Prénom",
   lastNameLabel: "Nom",
   phoneLabel: "Téléphone",
@@ -119,8 +119,13 @@ function readableOn(color: string): string {
 }
 
 function tintOf(color: string): string {
-  const rgb = parseHex(color);
-  return rgb ? `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.08)` : "rgba(42, 157, 143, 0.08)";
+  return alphaOf(color, 0.08);
+}
+
+// Variante douce et lisible de la couleur choisie (fond/bordure/hover/focus).
+function alphaOf(color: string, alpha: number): string {
+  const rgb = parseHex(color) ?? [42, 157, 143];
+  return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
 }
 
 export function buildTheme(visual: WidgetVisual | undefined): WidgetTheme {
@@ -161,6 +166,16 @@ export function buildTheme(visual: WidgetVisual | undefined): WidgetTheme {
       "--w-surface": theme.surface,
       "--w-border": theme.border,
       "--w-tint": theme.tint,
+      // Variantes douces générées automatiquement depuis la couleur du réparateur.
+      "--w-primary-soft": alphaOf(primary, 0.08),
+      "--w-primary-border": alphaOf(primary, 0.24),
+      "--w-primary-hover": alphaOf(primary, 0.14),
+      "--w-primary-selected": alphaOf(primary, 0.12),
+      "--w-focus-ring": alphaOf(primary, 0.3),
+      "--w-success": "#167B70",
+      "--w-success-soft": "rgba(22, 123, 112, 0.1)",
+      "--w-warning": "#8A6D1B",
+      "--w-warning-soft": "rgba(138, 109, 27, 0.1)",
       "--w-radius": `${theme.radius}px`,
       "--w-button": button,
       "--w-on-button": onButton,

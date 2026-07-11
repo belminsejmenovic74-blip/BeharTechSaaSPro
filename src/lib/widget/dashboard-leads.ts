@@ -40,6 +40,7 @@ export type DashboardWidgetLead = {
   displayed_warranty: string | null;
   comment: string | null;
   photos: string[];
+  tags: string[];
   contact_preference: string | null;
   requested_callback_at: string | null;
   source_url: string | null;
@@ -123,6 +124,17 @@ export function leadHistoryLabel(action: string, status: string | null): string 
   if (action === "repair_created") return "Dossier créé";
   if (action === "note_added") return "Note interne";
   return "Note ajoutée";
+}
+
+export const LEAD_TAG_LABELS: Record<string, string> = {
+  modèle_non_configuré: "Modèle non configuré",
+  panne_non_configurée: "Panne non configurée",
+  demande_hors_catalogue: "Hors catalogue",
+  devis_manuel_à_traiter: "Devis manuel à traiter",
+};
+
+export function leadTagLabel(tag: string): string {
+  return LEAD_TAG_LABELS[tag] || tag.replace(/_/g, " ");
 }
 
 export function leadCustomerName(lead: DashboardWidgetLead) {

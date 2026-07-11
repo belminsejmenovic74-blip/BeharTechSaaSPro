@@ -94,4 +94,32 @@ describe("mini-CMS widget", () => {
     });
     expect(invalidCustom.success).toBe(false);
   });
+
+  it("ne crée aucune offre par défaut et accepte une offre textuelle sans image", () => {
+    expect(DEFAULT_WIDGET_CMS_CONFIG.offers.enabled).toBe(false);
+    expect(DEFAULT_WIDGET_CMS_CONFIG.offers.offers).toEqual([]);
+    const parsed = editableWidgetConfigSchema.safeParse({
+      ...DEFAULT_WIDGET_CMS_CONFIG,
+      offers: {
+        enabled: true,
+        title: "Bons plans de l’atelier",
+        subtitle: "",
+        introduction: "",
+        layout: "list",
+        columns: 1,
+        offers: [
+          {
+            id: "offer_text_only",
+            title: "Diagnostic offert",
+            description: "Avec toute réparation acceptée.",
+            displayMode: "text",
+            behavior: "informative",
+            isPublished: true,
+            displayOrder: 0,
+          },
+        ],
+      },
+    });
+    expect(parsed.success).toBe(true);
+  });
 });

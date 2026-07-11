@@ -40,6 +40,7 @@ function lead(over: Partial<DashboardWidgetLead> = {}): DashboardWidgetLead {
     displayed_warranty: "12 mois",
     comment: "Rappel avant 12h",
     photos: ["a.jpg"],
+    tags: [],
     contact_preference: "phone",
     requested_callback_at: null,
     source_url: "https://exemple.fr",

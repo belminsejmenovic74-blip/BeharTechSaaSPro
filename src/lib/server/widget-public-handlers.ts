@@ -320,11 +320,17 @@ async function sendAppointmentConfirmationSms(input: { phone: string; shopName: 
 async function existingSubmission(context: PublicWidgetContext, key: string) {
   const { data } = await context.admin
     .from("widget_leads")
-    .select("status, appointment_id")
+    .select("id, status, appointment_id")
     .eq("widget_id", context.widget.id)
     .eq("idempotency_key", key)
     .maybeSingle();
   return data;
+}
+
+function publicReference(id: string | undefined): string | undefined {
+  if (!id) return undefined;
+  const day = new Date().toISOString().slice(2, 10).replaceAll("-", "");
+  return `BT-${day}-${id.replaceAll("-", "").slice(-6).toUpperCase()}`;
 }
 
 function leadRow(
@@ -365,6 +371,7 @@ function leadRow(
     displayed_warranty: service?.warranty || null,
     comment: input.comment || null,
     photos: input.photos,
+    tags: input.tags?.length ? input.tags : [],
     contact_preference: input.contactPreference || null,
     requested_callback_at: input.requestedCallbackAt || null,
     source_url: input.sourceUrl || null,
@@ -383,7 +390,13 @@ export async function handleLead(request: Request, route: RouteParams) {
   const key = idempotencyKey(request);
   if (!key) return publicError("bad_request", 400, context.requestId);
   const prior = await existingSubmission(context, key);
-  if (prior) return publicSuccess(context, { accepted: true, duplicate: true, status: prior.status });
+  if (prior)
+    return publicSuccess(context, {
+      accepted: true,
+      duplicate: true,
+      status: prior.status,
+      reference: publicReference(prior.id),
+    });
   const parsed = leadInputSchema.safeParse(await readJson(request));
   if (!parsed.success)
     return publicError(
@@ -397,17 +410,28 @@ export async function handleLead(request: Request, route: RouteParams) {
   try {
     const service = await serviceForInput(context, parsed.data.servicePublicId, shop.id);
     const customer = await findOrCreateCustomer(context, parsed.data);
-    const { error } = await context.admin
+    const inserted = await context.admin
       .from("widget_leads")
-      .insert(leadRow(context, shop.id, parsed.data, customer, key, service));
-    if (error) {
-      const duplicate = error.code === "23505" ? await existingSubmission(context, key) : null;
-      if (!duplicate) throw error;
-      return publicSuccess(context, { accepted: true, duplicate: true, status: duplicate.status });
+      .insert(leadRow(context, shop.id, parsed.data, customer, key, service))
+      .select("id")
+      .single();
+    if (inserted.error) {
+      const duplicate = inserted.error.code === "23505" ? await existingSubmission(context, key) : null;
+      if (!duplicate) throw inserted.error;
+      return publicSuccess(context, {
+        accepted: true,
+        duplicate: true,
+        status: duplicate.status,
+        reference: publicReference(duplicate.id),
+      });
     }
     await eventBestEffort(context, "lead_submitted", { type: parsed.data.type }, shop.id);
     logPublicMutation(context, "lead_created", { type: parsed.data.type, ambiguousCustomer: customer.ambiguous });
-    return publicSuccess(context, { accepted: true, duplicate: false, status: "new" }, { status: 201 });
+    return publicSuccess(
+      context,
+      { accepted: true, duplicate: false, status: "new", reference: publicReference(inserted.data?.id) },
+      { status: 201 },
+    );
   } catch {
     return publicError("service_unavailable", 503, context.requestId);
   }
@@ -423,7 +447,12 @@ export async function handleAppointment(request: Request, route: RouteParams) {
   const prior = await existingSubmission(context, key);
   if (prior) {
     if (!prior.appointment_id) return publicError("service_unavailable", 503, context.requestId);
-    return publicSuccess(context, { accepted: true, duplicate: true, status: prior.status });
+    return publicSuccess(context, {
+      accepted: true,
+      duplicate: true,
+      status: prior.status,
+      reference: publicReference(prior.id),
+    });
   }
   const parsed = appointmentInputSchema.safeParse(await readJson(request));
   if (!parsed.success) return publicError("bad_request", 400, context.requestId);
@@ -527,6 +556,7 @@ export async function handleAppointment(request: Request, route: RouteParams) {
         time: reservation.time || parsed.data.time,
         durationMinutes: reservation.durationMinutes || duration,
         confirmation: "Votre rendez-vous est confirmé.",
+        reference: publicReference(leadInsert.data.id),
       },
       { status: 201 },
     );

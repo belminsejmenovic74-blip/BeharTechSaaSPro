@@ -11,12 +11,10 @@ import { type ReactNode, useMemo, useState } from "react";
 import type { ContactPreference, Slot } from "@/lib/widget/public-types";
 import { WidgetApiError } from "@/lib/widget/public-client";
 import { useAsyncList } from "@/components/widget/use-catalog";
-import { primaryService, type RequestType, type StepContext } from "@/components/widget/widget-state";
-import { WidgetIcon } from "@/components/widget/widget-icon";
+import { primaryService, type StepContext } from "@/components/widget/widget-state";
 import { formatDateFr, resolveLayout } from "@/components/widget/widget-theme";
 import type { WidgetFieldKey } from "@/lib/widget/cms-config";
 import {
-  OptionCard,
   Spinner,
   StepShell,
   WidgetChip,
@@ -39,20 +37,6 @@ const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 
 export function ContactStep({ ctx, submitError }: { ctx: StepContext; submitError: string | null }) {
   const { draft, patch, features, texts, config } = ctx;
-
-  const actions = useMemo(() => {
-    const list: Array<{ value: RequestType; label: string; description: string }> = [];
-    if (features.booking)
-      list.push({ value: "appointment", label: texts.bookingLabel, description: "Choisissez un créneau en atelier." });
-    if (features.callbackRequest)
-      list.push({ value: "callback", label: texts.callbackLabel, description: "L’atelier vous rappelle." });
-    if (features.quoteRequest)
-      list.push({ value: "quote", label: texts.quoteLabel, description: "Recevez un devis personnalisé." });
-    if (features.priceEstimate)
-      list.push({ value: "price_request", label: "Demander le prix", description: "L’atelier confirme le tarif." });
-    list.push({ value: "request", label: "Envoyer une demande", description: "Transmettez simplement votre besoin." });
-    return list;
-  }, [features.booking, features.callbackRequest, features.quoteRequest, features.priceEstimate, texts]);
 
   const configuredName = config.general.commercialName?.trim();
   const consentText = configuredName ? configuredName : "l’atelier";
@@ -135,23 +119,8 @@ export function ContactStep({ ctx, submitError }: { ctx: StepContext; submitErro
       </WidgetField>
     ) : null,
     photos: features.photos ? <PhotoUploader ctx={ctx} /> : null,
-    request: actions.length ? (
-      <WidgetField label={texts.requestTypeLabel}>
-        <div className="grid gap-2">
-          {actions.map((action) => (
-            <OptionCard
-              key={action.value}
-              selected={draft.requestType === action.value}
-              title={action.label}
-              subtitle={action.description}
-              icon={action.value === "appointment" ? <WidgetIcon choice={config.icons.appointment} /> : undefined}
-              onClick={() => patch({ requestType: action.value })}
-            />
-          ))}
-        </div>
-      </WidgetField>
-    ) : null,
-    booking: draft.requestType === "appointment" ? <SlotPicker ctx={ctx} /> : null,
+    request: null,
+    booking: null,
     consent: (
       <label className="flex cursor-pointer items-start gap-3 rounded-[var(--w-radius)] border border-[var(--w-border)] bg-[var(--w-surface)] p-4">
         <input
@@ -192,7 +161,7 @@ export function ContactStep({ ctx, submitError }: { ctx: StepContext; submitErro
   );
 }
 
-function SlotPicker({ ctx }: { ctx: StepContext }) {
+export function SlotPicker({ ctx }: { ctx: StepContext }) {
   const { client, token, draft, patch, emit } = ctx;
   const service = primaryService(draft);
   const slots = useAsyncList<Slot>(

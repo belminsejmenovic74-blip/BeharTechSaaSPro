@@ -572,6 +572,72 @@ export function sanitizePublicConfig(widget: WidgetRow) {
     capacity: cleanNumber(rawBooking.capacity),
     minimumNoticeMinutes: cleanNumber(rawBooking.minimumNoticeMinutes),
   };
+  const rawPolicy = valueObject(config.catalogPolicy);
+  // Défaut PERMISSIF (le catalogue global capte la demande, la config enrichit).
+  const catalogPolicy = {
+    allowOutOfCatalog: rawPolicy.allowOutOfCatalog !== false,
+    allowUnconfiguredModels: rawPolicy.allowUnconfiguredModels !== false,
+    allowUnconfiguredIssues: rawPolicy.allowUnconfiguredIssues !== false,
+    allowOutOfCatalogAppointments: rawPolicy.allowOutOfCatalogAppointments !== false,
+    fallbackMode: ["quote", "callback", "manual"].includes(String(rawPolicy.fallbackMode))
+      ? (rawPolicy.fallbackMode as "quote" | "callback" | "manual")
+      : "quote",
+  };
+  const rawOffers = valueObject(config.offers);
+  const allowedOfferModes = ["image", "icon", "image_icon", "text", "badge", "price", "informative"];
+  const allowedBehaviors = ["selectable", "automatic", "informative", "validation", "link", "hidden"];
+  const offers = {
+    enabled: rawOffers.enabled === true,
+    title: cleanString(rawOffers.title, 160) || undefined,
+    subtitle: cleanString(rawOffers.subtitle, 240) || undefined,
+    introduction: cleanString(rawOffers.introduction, 500) || undefined,
+    layout: rawOffers.layout === "grid" ? "grid" : "list",
+    columns: [1, 2, 3].includes(Number(rawOffers.columns)) ? Number(rawOffers.columns) : 1,
+    offers: (Array.isArray(rawOffers.offers) ? rawOffers.offers : [])
+      .map(valueObject)
+      .filter((offer) => offer.isPublished === true && offer.behavior !== "hidden")
+      .slice(0, 40)
+      .map((offer, index) => ({
+        id: cleanString(offer.id, 80),
+        title: cleanString(offer.title, 160),
+        subtitle: cleanString(offer.subtitle, 200) || undefined,
+        description: cleanString(offer.description, 500) || undefined,
+        fullDescription: cleanString(offer.fullDescription, 2000) || undefined,
+        displayMode: allowedOfferModes.includes(String(offer.displayMode)) ? String(offer.displayMode) : "text",
+        behavior: allowedBehaviors.includes(String(offer.behavior)) ? String(offer.behavior) : "informative",
+        imageUrl: cleanString(offer.imageUrl, 1000) || undefined,
+        imageAlt: cleanString(offer.imageAlt, 180) || undefined,
+        imagePosition: ["cover", "contain", "left", "top"].includes(String(offer.imagePosition))
+          ? String(offer.imagePosition)
+          : "cover",
+        hideImageOnMobile: offer.hideImageOnMobile === true,
+        iconName: cleanString(offer.iconName, 60) || undefined,
+        iconUrl: cleanString(offer.iconUrl, 1000) || undefined,
+        iconColor: cleanString(offer.iconColor, 30) || undefined,
+        iconBackground: cleanString(offer.iconBackground, 30) || undefined,
+        badgeText: cleanString(offer.badgeText, 100) || undefined,
+        originalPrice: cleanNumber(offer.originalPrice),
+        promotionalPrice: cleanNumber(offer.promotionalPrice),
+        fixedDiscount: cleanNumber(offer.fixedDiscount),
+        percentageDiscount: cleanNumber(offer.percentageDiscount),
+        conditionText: cleanString(offer.conditionText, 500) || undefined,
+        validationRequired: offer.validationRequired === true,
+        isPublished: true,
+        displayOrder: cleanNumber(offer.displayOrder) ?? index,
+        layoutSize: ["compact", "standard", "featured", "banner"].includes(String(offer.layoutSize))
+          ? String(offer.layoutSize)
+          : "standard",
+        startDate: cleanString(offer.startDate, 10) || undefined,
+        endDate: cleanString(offer.endDate, 10) || undefined,
+        usageLimit: cleanNumber(offer.usageLimit),
+        appointmentOnly: offer.appointmentOnly === true,
+        desktopVisible: offer.desktopVisible !== false,
+        mobileVisible: offer.mobileVisible !== false,
+        externalUrl: cleanString(offer.externalUrl, 1000) || undefined,
+      }))
+      .filter((offer) => offer.id && offer.title)
+      .sort((a, b) => a.displayOrder - b.displayOrder),
+  };
   return {
     id: widget.public_widget_id,
     active: true,
@@ -580,9 +646,11 @@ export function sanitizePublicConfig(widget: WidgetRow) {
     visual,
     texts,
     features,
+    catalogPolicy,
     layout,
     icons,
     booking,
+    offers,
     publishedAt: widget.published_at,
   };
 }

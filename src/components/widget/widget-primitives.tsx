@@ -4,34 +4,18 @@
 // (`--w-*`). Aucun composant décoratif superflu : boutons, cartes d'option,
 // champs, barre de progression et coquille d'étape.
 
+import { useMemo, useState } from "react";
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
+import { Check, LoaderCircle, Search } from "lucide-react";
 
+import { fold } from "@/lib/widget/global-catalog";
 import { cn } from "@/lib/utils";
 
 const FIELD_CLASS =
-  "h-11 w-full rounded-[var(--w-radius)] border border-[var(--w-border)] bg-[var(--w-surface)] px-3.5 text-sm text-[var(--w-text)] outline-none transition placeholder:text-[var(--w-muted)] focus-visible:border-[var(--w-primary)] focus-visible:ring-2 focus-visible:ring-[var(--w-tint)]";
-
-function CheckMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 12 12" fill="none" className={cn("h-3 w-3", className)} aria-hidden="true">
-      <path
-        d="M2.5 6.2 5 8.5 9.5 3.5"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+  "h-11 w-full rounded-[var(--w-radius)] border border-[var(--w-border)] bg-[var(--w-surface)] px-3.5 text-sm text-[var(--w-text)] outline-none transition placeholder:text-[var(--w-muted)] hover:border-[var(--w-primary-border,var(--w-border))] focus-visible:border-[var(--w-primary)] focus-visible:ring-2 focus-visible:ring-[var(--w-focus-ring,var(--w-tint))]";
 
 export function Spinner({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={cn("h-5 w-5 animate-spin", className)} aria-hidden="true">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" className="opacity-20" fill="none" />
-      <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" fill="none" />
-    </svg>
-  );
+  return <LoaderCircle className={cn("h-5 w-5 animate-spin", className)} aria-hidden="true" />;
 }
 
 type ButtonVariant = "primary" | "secondary" | "ghost";
@@ -56,7 +40,7 @@ export function WidgetButton({
       type="button"
       disabled={disabled || loading}
       className={cn(
-        "inline-flex h-11 select-none items-center justify-center gap-2 rounded-[var(--w-radius)] px-5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--w-tint)] disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex h-11 select-none items-center justify-center gap-2 rounded-[var(--w-radius)] px-5 text-sm font-semibold transition duration-150 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--w-focus-ring,var(--w-tint))] disabled:pointer-events-none disabled:opacity-50",
         variants[variant],
         className,
       )}
@@ -92,10 +76,10 @@ export function OptionCard({
       disabled={disabled}
       aria-pressed={selected}
       className={cn(
-        "flex w-full items-center justify-between gap-3 rounded-[var(--w-radius)] border px-4 py-3.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--w-tint)] disabled:opacity-50",
+        "flex w-full items-center justify-between gap-3 rounded-[var(--w-radius)] border px-4 py-3.5 text-left transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--w-focus-ring,var(--w-tint))] disabled:opacity-50",
         selected
-          ? "border-[var(--w-primary)] bg-[var(--w-tint)]"
-          : "border-[var(--w-border)] bg-[var(--w-surface)] hover:border-[var(--w-primary)]",
+          ? "border-[var(--w-primary)] bg-[var(--w-primary-selected,var(--w-tint))] shadow-[0_2px_12px_var(--w-primary-soft,rgba(0,0,0,0.04))]"
+          : "border-[var(--w-border)] bg-[var(--w-surface)] hover:border-[var(--w-primary-border,var(--w-primary))] hover:bg-[var(--w-primary-soft,var(--w-tint))] hover:shadow-[0_2px_8px_rgba(26,25,22,0.05)]",
       )}
     >
       <span className="flex min-w-0 items-center gap-3">
@@ -117,7 +101,7 @@ export function OptionCard({
               : "border-[var(--w-border)] text-transparent",
           )}
         >
-          <CheckMark />
+          <Check className="size-3" strokeWidth={3} />
         </span>
       </span>
     </button>
@@ -142,10 +126,10 @@ export function WidgetChip({
       disabled={disabled}
       aria-pressed={selected}
       className={cn(
-        "rounded-full border px-3.5 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--w-tint)] disabled:opacity-50",
+        "rounded-full border px-3.5 py-2 text-sm font-medium transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--w-focus-ring,var(--w-tint))] disabled:opacity-50",
         selected
-          ? "border-[var(--w-primary)] bg-[var(--w-primary)] text-[var(--w-on-primary)]"
-          : "border-[var(--w-border)] bg-[var(--w-surface)] text-[var(--w-text)] hover:border-[var(--w-primary)]",
+          ? "border-[var(--w-primary)] bg-[var(--w-primary)] text-[var(--w-on-primary)] shadow-sm"
+          : "border-[var(--w-border)] bg-[var(--w-surface)] text-[var(--w-text)] hover:border-[var(--w-primary-border,var(--w-primary))] hover:bg-[var(--w-primary-soft,var(--w-tint))]",
       )}
     >
       {children}
@@ -201,38 +185,65 @@ export function WidgetTextarea({ className, ...props }: TextareaHTMLAttributes<H
 
 export function WidgetProgress({ steps, current }: { steps: string[]; current: number }) {
   return (
-    <div className="w-full">
-      <div className="mb-2.5 flex items-baseline justify-between gap-3">
-        <span className="text-xs font-medium uppercase tracking-wide text-[var(--w-muted)]">
+    <div
+      className="w-full"
+      role="progressbar"
+      aria-label={`Étape ${current + 1} sur ${steps.length} — ${steps[current]}`}
+      aria-valuemin={1}
+      aria-valuemax={steps.length}
+      aria-valuenow={current + 1}
+    >
+      <div className="flex items-center justify-between gap-3 sm:hidden">
+        <span className="text-xs font-semibold text-[var(--w-primary)]">
           Étape {current + 1} sur {steps.length}
         </span>
         <span className="truncate text-sm font-semibold text-[var(--w-text)]">{steps[current]}</span>
       </div>
-      <div className="flex gap-1.5">
+      <ol className="hidden grid-cols-5 sm:grid">
         {steps.map((label, index) => (
-          <div key={label} className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--w-border)]">
-            <div
+          <li key={label} className="relative flex min-w-0 flex-col items-center gap-2 text-center">
+            {index > 0 ? (
+              <span
+                className={cn(
+                  "absolute right-1/2 top-[10px] h-px w-full transition-colors",
+                  index <= current ? "bg-[var(--w-primary)]" : "bg-[var(--w-border)]",
+                )}
+              />
+            ) : null}
+            <span
               className={cn(
-                "h-full rounded-full bg-[var(--w-primary)] transition-all duration-500 ease-out",
-                index <= current ? "w-full" : "w-0",
+                "relative z-10 grid size-5 place-items-center rounded-full border bg-[var(--w-surface)] text-[10px] font-bold transition",
+                index < current
+                  ? "border-[var(--w-primary)] bg-[var(--w-primary)] text-[var(--w-on-primary)]"
+                  : index === current
+                    ? "border-[var(--w-primary)] bg-[var(--w-primary)] text-[var(--w-on-primary)] ring-4 ring-[var(--w-primary-soft)]"
+                    : "border-[var(--w-border)] text-[var(--w-muted)]",
               )}
-            />
-          </div>
-        ))}
-      </div>
-      <ol className="mt-3 hidden grid-cols-5 gap-1 sm:grid" aria-hidden="true">
-        {steps.map((label, index) => (
-          <li
-            key={label}
-            className={cn(
-              "truncate text-center text-[11px] font-medium transition-colors",
-              index <= current ? "text-[var(--w-text)]" : "text-[var(--w-muted)]",
-            )}
-          >
-            {label}
+            >
+              {index < current ? <Check className="size-3" strokeWidth={3} /> : index + 1}
+            </span>
+            <span
+              className={cn(
+                "truncate px-1 text-[10px] font-medium",
+                index === current ? "text-[var(--w-primary)]" : "text-[var(--w-muted)]",
+              )}
+            >
+              {label}
+            </span>
           </li>
         ))}
       </ol>
+      <div className="mt-2 flex gap-1 sm:hidden">
+        {steps.map((label, index) => (
+          <span
+            key={label}
+            className={cn(
+              "h-1 flex-1 rounded-full",
+              index <= current ? "bg-[var(--w-primary)]" : "bg-[var(--w-border)]",
+            )}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -271,6 +282,123 @@ export function SummaryRow({ label, value }: { label: string; value: ReactNode }
     <div className="flex items-start justify-between gap-4 py-2.5">
       <span className="shrink-0 text-sm text-[var(--w-muted)]">{label}</span>
       <span className="text-right text-sm font-medium text-[var(--w-text)]">{value}</span>
+    </div>
+  );
+}
+
+// Champ de recherche compact avec icône, aligné sur le style de la maquette.
+export function WidgetSearch({
+  value,
+  onChange,
+  placeholder = "Rechercher…",
+  ariaLabel,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  ariaLabel?: string;
+}) {
+  return (
+    <div className="relative">
+      <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--w-muted)]" />
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        aria-label={ariaLabel || placeholder}
+        className="h-10 w-full rounded-[calc(var(--w-radius)-2px)] border border-[var(--w-border)] bg-[var(--w-surface)] pl-9 pr-3 text-sm text-[var(--w-text)] outline-none transition placeholder:text-[var(--w-muted)] hover:border-[var(--w-primary-border)] focus-visible:border-[var(--w-primary)] focus-visible:ring-2 focus-visible:ring-[var(--w-focus-ring)]"
+      />
+    </div>
+  );
+}
+
+// Liste propre, compacte, scrollable et recherchable (marques, modèles).
+// Remplace les « gros boutons dispersés » : une seule colonne lisible.
+export function CatalogList({
+  items,
+  value,
+  onSelect,
+  searchable = true,
+  searchPlaceholder = "Rechercher…",
+  ariaLabel,
+  renderLeading,
+  renderTrailing,
+  loading = false,
+  emptyHint = "Aucun résultat.",
+  heightClass = "max-h-[340px]",
+  footer,
+}: {
+  items: string[];
+  value: string;
+  onSelect: (value: string) => void;
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  ariaLabel?: string;
+  renderLeading?: (item: string, selected: boolean) => ReactNode;
+  renderTrailing?: (item: string, selected: boolean) => ReactNode;
+  loading?: boolean;
+  emptyHint?: string;
+  heightClass?: string;
+  footer?: ReactNode;
+}) {
+  const [query, setQuery] = useState("");
+  const filtered = useMemo(() => {
+    const q = fold(query.trim());
+    return q ? items.filter((item) => fold(item).includes(q)) : items;
+  }, [items, query]);
+
+  return (
+    <div className="flex min-h-0 flex-col gap-2.5">
+      {searchable ? (
+        <WidgetSearch value={query} onChange={setQuery} placeholder={searchPlaceholder} ariaLabel={ariaLabel} />
+      ) : null}
+      <div className={cn("min-h-0 flex-1 overflow-y-auto pr-1", heightClass)}>
+        {loading ? (
+          <div className="grid gap-1.5">
+            {[0, 1, 2, 3, 4, 5].map((index) => (
+              <div key={index} className="h-11 animate-pulse rounded-[calc(var(--w-radius)-2px)] bg-[var(--w-tint)]" />
+            ))}
+          </div>
+        ) : filtered.length ? (
+          <ul className="grid gap-1">
+            {filtered.map((item) => {
+              const selected = fold(item) === fold(value);
+              return (
+                <li key={item}>
+                  <button
+                    type="button"
+                    onClick={() => onSelect(item)}
+                    aria-pressed={selected}
+                    className={cn(
+                      "flex w-full items-center gap-2.5 rounded-[calc(var(--w-radius)-2px)] border px-3 py-2.5 text-left text-sm transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--w-focus-ring)]",
+                      selected
+                        ? "border-[var(--w-primary-border)] bg-[var(--w-primary-soft)] font-semibold text-[var(--w-text)]"
+                        : "border-transparent text-[var(--w-text)] hover:bg-[var(--w-primary-soft)]",
+                    )}
+                  >
+                    {renderLeading ? renderLeading(item, selected) : null}
+                    <span className="min-w-0 flex-1 truncate">{item}</span>
+                    {renderTrailing ? (
+                      renderTrailing(item, selected)
+                    ) : (
+                      <Check
+                        className={cn(
+                          "size-4 shrink-0 transition",
+                          selected ? "text-[var(--w-primary)]" : "text-transparent",
+                        )}
+                        strokeWidth={3}
+                      />
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="px-1 py-8 text-center text-sm text-[var(--w-muted)]">{emptyHint}</p>
+        )}
+        {footer}
+      </div>
     </div>
   );
 }

@@ -103,6 +103,18 @@ const featuresSchema = z
   })
   .strict();
 
+// Politique « hors catalogue » : par défaut tout est permissif (le catalogue
+// global capte la demande, la config boutique ne fait qu'enrichir).
+const catalogPolicySchema = z
+  .object({
+    allowOutOfCatalog: z.boolean(),
+    allowUnconfiguredModels: z.boolean(),
+    allowUnconfiguredIssues: z.boolean(),
+    allowOutOfCatalogAppointments: z.boolean(),
+    fallbackMode: z.enum(["quote", "callback", "manual"]),
+  })
+  .strict();
+
 const uniqueOrder = <T extends string>(allowed: readonly T[]) =>
   z
     .array(z.enum(allowed as [T, ...T[]]))
@@ -156,6 +168,55 @@ const iconsSchema = z
   })
   .strict();
 
+const offerSchema = z
+  .object({
+    id: cleanText(80).min(1),
+    title: cleanText(160).min(1),
+    subtitle: cleanText(200).optional(),
+    description: cleanText(500).optional(),
+    fullDescription: cleanText(2000).optional(),
+    displayMode: z.enum(["image", "icon", "image_icon", "text", "badge", "price", "informative"]),
+    behavior: z.enum(["selectable", "automatic", "informative", "validation", "link", "hidden"]),
+    imageUrl: z.union([z.literal(""), z.string().url().max(1000)]).optional(),
+    imageAlt: cleanText(180).optional(),
+    imagePosition: z.enum(["cover", "contain", "left", "top"]).optional(),
+    hideImageOnMobile: z.boolean().optional(),
+    iconName: cleanText(60).optional(),
+    iconUrl: z.union([z.literal(""), z.string().url().max(1000)]).optional(),
+    iconColor: color.optional(),
+    iconBackground: color.optional(),
+    badgeText: cleanText(100).optional(),
+    originalPrice: z.number().min(0).optional(),
+    promotionalPrice: z.number().min(0).optional(),
+    fixedDiscount: z.number().min(0).optional(),
+    percentageDiscount: z.number().min(0).max(100).optional(),
+    conditionText: cleanText(500).optional(),
+    validationRequired: z.boolean().optional(),
+    isPublished: z.boolean(),
+    displayOrder: z.number().int().min(0),
+    layoutSize: z.enum(["compact", "standard", "featured", "banner"]).optional(),
+    startDate: z.union([z.literal(""), z.string().date()]).optional(),
+    endDate: z.union([z.literal(""), z.string().date()]).optional(),
+    usageLimit: z.number().int().positive().optional(),
+    appointmentOnly: z.boolean().optional(),
+    desktopVisible: z.boolean().optional(),
+    mobileVisible: z.boolean().optional(),
+    externalUrl: z.union([z.literal(""), z.string().url().max(1000)]).optional(),
+  })
+  .strict();
+
+const offersSchema = z
+  .object({
+    enabled: z.boolean(),
+    title: cleanText(160).optional(),
+    subtitle: cleanText(240).optional(),
+    introduction: cleanText(500).optional(),
+    layout: z.enum(["list", "grid"]),
+    columns: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+    offers: z.array(offerSchema).max(40),
+  })
+  .strict();
+
 export const editableWidgetConfigSchema = z
   .object({
     internalName: cleanText(160).min(1),
@@ -165,8 +226,10 @@ export const editableWidgetConfigSchema = z
     visual: visualSchema,
     texts: textsSchema,
     features: featuresSchema,
+    catalogPolicy: catalogPolicySchema,
     layout: layoutSchema,
     icons: iconsSchema,
+    offers: offersSchema,
   })
   .strict();
 
@@ -177,7 +240,7 @@ const noIcon = () => ({ mode: "none" as const, libraryIcon: "", assetUrl: "", si
 export const DEFAULT_WIDGET_CMS_CONFIG: EditableWidgetConfig = {
   internalName: "Widget client principal",
   active: true,
-  displayMode: "inline",
+  displayMode: "modal",
   general: {
     commercialName: "Mon atelier",
     phone: "",
@@ -198,16 +261,16 @@ export const DEFAULT_WIDGET_CMS_CONFIG: EditableWidgetConfig = {
     buttonStyle: "solid",
     headingSize: "medium",
     textSize: "medium",
-    contentWidth: "standard",
+    contentWidth: "wide",
   },
   texts: {
-    title: "Réparez votre appareil",
-    introduction: "Obtenez une estimation et contactez l’atelier en quelques instants.",
-    deviceTitle: "Votre appareil",
-    issueTitle: "Le problème rencontré",
-    resultTitle: "Votre estimation",
-    contactTitle: "Vos coordonnées",
-    bookingTitle: "Choisissez un créneau",
+    title: "Demande de devis ou rendez-vous",
+    introduction: "Devis et rendez-vous en 2 min",
+    deviceTitle: "Choix de l’appareil",
+    issueTitle: "Choix de la panne",
+    resultTitle: "Tarifs et prestations",
+    contactTitle: "Vos informations",
+    bookingTitle: "Rendez-vous et offres",
     firstNameLabel: "Prénom",
     lastNameLabel: "Nom",
     phoneLabel: "Téléphone",
@@ -238,6 +301,13 @@ export const DEFAULT_WIDGET_CMS_CONFIG: EditableWidgetConfig = {
     warranty: true,
     payments: false,
   },
+  catalogPolicy: {
+    allowOutOfCatalog: true,
+    allowUnconfiguredModels: true,
+    allowUnconfiguredIssues: true,
+    allowOutOfCatalogAppointments: true,
+    fallbackMode: "quote",
+  },
   layout: {
     blockOrder: [...WIDGET_BLOCKS],
     hiddenBlocks: [],
@@ -259,6 +329,15 @@ export const DEFAULT_WIDGET_CMS_CONFIG: EditableWidgetConfig = {
     confirmation: noIcon(),
     poweredBy: false,
   },
+  offers: {
+    enabled: false,
+    title: "",
+    subtitle: "",
+    introduction: "",
+    layout: "list",
+    columns: 1,
+    offers: [],
+  },
 };
 
 function object(value: unknown): Record<string, unknown> {
@@ -274,8 +353,10 @@ export function normalizeEditableWidgetConfig(
   const visual = object(raw.visual);
   const texts = object(raw.texts);
   const features = object(raw.features);
+  const catalogPolicy = object(raw.catalogPolicy);
   const layout = object(raw.layout);
   const icons = object(raw.icons);
+  const offers = object(raw.offers);
   const merged = {
     ...DEFAULT_WIDGET_CMS_CONFIG,
     ...defaults,
@@ -284,6 +365,7 @@ export function normalizeEditableWidgetConfig(
     visual: { ...DEFAULT_WIDGET_CMS_CONFIG.visual, ...defaults.visual, ...visual },
     texts: { ...DEFAULT_WIDGET_CMS_CONFIG.texts, ...defaults.texts, ...texts },
     features: { ...DEFAULT_WIDGET_CMS_CONFIG.features, ...defaults.features, ...features },
+    catalogPolicy: { ...DEFAULT_WIDGET_CMS_CONFIG.catalogPolicy, ...defaults.catalogPolicy, ...catalogPolicy },
     layout: { ...DEFAULT_WIDGET_CMS_CONFIG.layout, ...defaults.layout, ...layout },
     icons: {
       ...DEFAULT_WIDGET_CMS_CONFIG.icons,
@@ -300,6 +382,12 @@ export function normalizeEditableWidgetConfig(
       ),
       poweredBy: typeof icons.poweredBy === "boolean" ? icons.poweredBy : (defaults.icons?.poweredBy ?? false),
     },
+    offers: {
+      ...DEFAULT_WIDGET_CMS_CONFIG.offers,
+      ...defaults.offers,
+      ...offers,
+      offers: Array.isArray(offers.offers) ? offers.offers : (defaults.offers?.offers ?? []),
+    },
   };
   if (typeof merged.visual.radius !== "number" || merged.visual.radius < 0 || merged.visual.radius > 28) {
     merged.visual.radius = DEFAULT_WIDGET_CMS_CONFIG.visual.radius;
@@ -312,7 +400,7 @@ export function mergeEditableWidgetConfig(
   source: Record<string, unknown> | null | undefined,
   config: EditableWidgetConfig,
 ): Record<string, unknown> &
-  Pick<EditableWidgetConfig, "general" | "visual" | "texts" | "features" | "layout" | "icons"> {
+  Pick<EditableWidgetConfig, "general" | "visual" | "texts" | "features" | "layout" | "icons" | "offers"> {
   return {
     ...(source ?? {}),
     general: config.general,
@@ -321,6 +409,7 @@ export function mergeEditableWidgetConfig(
     features: config.features,
     layout: config.layout,
     icons: config.icons,
+    offers: config.offers,
   };
 }
 

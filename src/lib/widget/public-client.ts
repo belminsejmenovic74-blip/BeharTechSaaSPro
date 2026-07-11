@@ -56,6 +56,19 @@ export type LeadPayload = {
   requestedCallbackAt?: string;
   shopPublicId?: string;
   photos: string[];
+  tags: string[];
+  selectedOffers: Array<{
+    offerId: string;
+    offerName: string;
+    originalPrice?: number;
+    promotionalPrice?: number;
+    fixedDiscount?: number;
+    percentageDiscount?: number;
+    conditionsSnapshot?: string;
+    validationRequired: boolean;
+    behavior: string;
+    selectedAt: string;
+  }>;
   sourceUrl?: string;
   consent: ConsentPayload;
   startedAt: string;

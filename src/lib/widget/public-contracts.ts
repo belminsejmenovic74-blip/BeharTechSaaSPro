@@ -37,6 +37,27 @@ const contactFields = {
   requestedCallbackAt: z.string().datetime({ offset: true }).optional(),
   shopPublicId: z.string().trim().max(100).optional(),
   photos: z.array(z.string().trim().min(8).max(500)).max(5).optional().default([]),
+  tags: z.array(safeText(60)).max(12).optional().default([]),
+  selectedOffers: z
+    .array(
+      z
+        .object({
+          offerId: safeText(80).min(1),
+          offerName: safeText(160).min(1),
+          originalPrice: z.number().min(0).optional(),
+          promotionalPrice: z.number().min(0).optional(),
+          fixedDiscount: z.number().min(0).optional(),
+          percentageDiscount: z.number().min(0).max(100).optional(),
+          conditionsSnapshot: safeText(500).optional(),
+          validationRequired: z.boolean(),
+          behavior: z.enum(["selectable", "automatic", "informative", "validation", "link"]),
+          selectedAt: z.string().datetime({ offset: true }),
+        })
+        .strict(),
+    )
+    .max(40)
+    .optional()
+    .default([]),
   sourceUrl: z.string().url().max(1000).optional(),
   consent: z
     .object({

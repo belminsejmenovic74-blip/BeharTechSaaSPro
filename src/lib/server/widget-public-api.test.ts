@@ -40,6 +40,26 @@ const widget: WidgetRow = {
       purchasePrice: 12,
     },
     visual: { primaryColor: "#2A9D8F", internalNote: "secret" },
+    offers: {
+      enabled: true,
+      title: "Avantages",
+      layout: "list",
+      columns: 1,
+      offers: [
+        {
+          id: "offer_1",
+          title: "Verre trempé",
+          description: "Posé en boutique",
+          displayMode: "text",
+          behavior: "selectable",
+          promotionalPrice: 10,
+          supplierCost: 2,
+          isPublished: true,
+          displayOrder: 0,
+        },
+        { id: "offer_hidden", title: "Secret", displayMode: "text", behavior: "hidden", isPublished: true },
+      ],
+    },
     catalog: [
       {
         publicId: "svc_screen_iphone13",
@@ -168,8 +188,22 @@ describe("widget public API security", () => {
     expect(serialized).not.toContain("margin");
     expect(serialized).not.toContain("internalNote");
     expect(serialized).not.toContain("lotNumber");
+    expect(serialized).not.toContain("supplierCost");
+    expect(serialized).not.toContain("offer_hidden");
+    expect(serialized).toContain("Verre trempé");
     expect(services[0].stock?.quantity).toBeUndefined();
     expect(services[0].price?.amount).toBe(129);
+  });
+
+  it("exposes a permissive out-of-catalog policy by default", () => {
+    const config = sanitizePublicConfig(widget) as { catalogPolicy: Record<string, unknown> };
+    expect(config.catalogPolicy).toMatchObject({
+      allowOutOfCatalog: true,
+      allowUnconfiguredModels: true,
+      allowUnconfiguredIssues: true,
+      allowOutOfCatalogAppointments: true,
+      fallbackMode: "quote",
+    });
   });
 
   it("parses per-shop scoping and filters catalog by requested shop", () => {

@@ -157,6 +157,62 @@ export type WidgetBooking = {
   minimumNoticeMinutes?: number;
 };
 
+export type WidgetOfferDisplayMode = "image" | "icon" | "image_icon" | "text" | "badge" | "price" | "informative";
+export type WidgetOfferBehavior = "selectable" | "automatic" | "informative" | "validation" | "link" | "hidden";
+
+export type WidgetOffer = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  description?: string;
+  fullDescription?: string;
+  displayMode: WidgetOfferDisplayMode;
+  behavior: WidgetOfferBehavior;
+  imageUrl?: string;
+  imageAlt?: string;
+  imagePosition?: "cover" | "contain" | "left" | "top";
+  hideImageOnMobile?: boolean;
+  iconName?: string;
+  iconUrl?: string;
+  iconColor?: string;
+  iconBackground?: string;
+  badgeText?: string;
+  originalPrice?: number;
+  promotionalPrice?: number;
+  fixedDiscount?: number;
+  percentageDiscount?: number;
+  conditionText?: string;
+  validationRequired?: boolean;
+  isPublished: boolean;
+  displayOrder: number;
+  layoutSize?: "compact" | "standard" | "featured" | "banner";
+  startDate?: string;
+  endDate?: string;
+  usageLimit?: number;
+  appointmentOnly?: boolean;
+  desktopVisible?: boolean;
+  mobileVisible?: boolean;
+  externalUrl?: string;
+};
+
+export type WidgetOffersConfig = {
+  enabled: boolean;
+  title?: string;
+  subtitle?: string;
+  introduction?: string;
+  layout: "list" | "grid";
+  columns: 1 | 2 | 3;
+  offers: WidgetOffer[];
+};
+
+export type WidgetCatalogPolicy = {
+  allowOutOfCatalog: boolean;
+  allowUnconfiguredModels: boolean;
+  allowUnconfiguredIssues: boolean;
+  allowOutOfCatalogAppointments: boolean;
+  fallbackMode: "quote" | "callback" | "manual";
+};
+
 export type WidgetConfig = {
   id: string;
   active: boolean;
@@ -165,9 +221,11 @@ export type WidgetConfig = {
   visual: WidgetVisual;
   texts: WidgetTexts;
   features: WidgetFeatures;
+  catalogPolicy: WidgetCatalogPolicy;
   layout: WidgetLayout;
   icons: WidgetIcons;
   booking: WidgetBooking;
+  offers: WidgetOffersConfig;
   publishedAt: string | null;
   shops: PublicShop[];
   sessionToken: string;
@@ -195,4 +253,7 @@ export type SubmissionResult = {
   status: string;
   date?: string;
   time?: string;
+  reference?: string;
+  durationMinutes?: number;
+  confirmation?: string;
 };
