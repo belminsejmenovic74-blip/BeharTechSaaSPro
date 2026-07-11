@@ -4342,6 +4342,26 @@ function CounterAppointmentsScreen({
                             {linked.number}
                           </span>
                         )}
+                        {apt.source === "Widget site internet" && (
+                          <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                            <span className="rounded-full border border-[#BFE7DD] bg-[#ECF8F4] px-2 py-0.5 font-bold text-[#167B70] text-[11px]">
+                              Widget
+                            </span>
+                            {apt.availabilityLabel && (
+                              <span className="rounded-full bg-[#F1F0EC] px-2 py-0.5 font-medium text-[#6B6B6B] text-[11px]">
+                                {apt.availabilityLabel}
+                              </span>
+                            )}
+                            {apt.alerts?.map((alert) => (
+                              <span
+                                key={alert}
+                                className="rounded-full border border-[#EBD9B4] bg-[#FBF6EA] px-2 py-0.5 font-medium text-[#8A6D1B] text-[11px]"
+                              >
+                                {alert}
+                              </span>
+                            ))}
+                          </span>
+                        )}
                       </span>
                       <span className="flex items-center gap-2">
                         <CounterApptStatusPill apt={apt} converted={Boolean(linked)} />

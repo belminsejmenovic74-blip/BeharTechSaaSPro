@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 
-import { Download, Eye, FileText, Package, Plus, Search, ShoppingCart, Trash2, X } from "lucide-react";
+import { Download, Eye, FileText, Package, Plus, Search, ShoppingCart, X } from "lucide-react";
 import { toast } from "sonner";
 
 import {
   formatEuro,
+  type Purchase,
   type PurchaseKind,
   type SupplierInvoice,
   type SupplierInvoiceLine,
@@ -66,6 +67,54 @@ type DetailPayload = InvoiceRow & {
 
 function currentMonthKey() {
   return new Date().toISOString().slice(0, 7);
+}
+
+type PeriodPreset = "all" | "today" | "last7days" | "thisMonth" | "lastMonth" | "custom";
+type EntryScope = "all" | "supplier" | "direct";
+
+const PERIOD_PRESETS: Array<{ value: PeriodPreset; label: string }> = [
+  { value: "all", label: "Toutes les dates" },
+  { value: "today", label: "Aujourd'hui" },
+  { value: "last7days", label: "7 derniers jours" },
+  { value: "thisMonth", label: "Ce mois" },
+  { value: "lastMonth", label: "Mois dernier" },
+  { value: "custom", label: "Personnalisée" },
+];
+
+function calendarDate(value: Date) {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function matchesPeriod(date: string, period: PeriodPreset, start: string, end: string) {
+  if (!date) return period === "all";
+  if (period === "custom") return (!start || date >= start) && (!end || date <= end);
+  if (period === "all") return true;
+  const today = new Date();
+  const todayKey = calendarDate(today);
+  if (period === "today") return date === todayKey;
+  if (period === "last7days") {
+    const firstDay = new Date(today);
+    firstDay.setDate(today.getDate() - 6);
+    return date >= calendarDate(firstDay) && date <= todayKey;
+  }
+  if (period === "thisMonth") return date.slice(0, 7) === todayKey.slice(0, 7);
+  const firstDayThisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastDayPreviousMonth = new Date(firstDayThisMonth);
+  lastDayPreviousMonth.setDate(0);
+  const firstDayPreviousMonth = new Date(lastDayPreviousMonth.getFullYear(), lastDayPreviousMonth.getMonth(), 1);
+  return date >= calendarDate(firstDayPreviousMonth) && date <= calendarDate(lastDayPreviousMonth);
+}
+
+function isSupplierInvoicePurchase(purchase: Purchase) {
+  return [
+    Boolean(purchase.supplierInvoiceId),
+    Boolean(purchase.supplierInvoiceLineId),
+    purchase.source === "Facture fournisseur",
+    purchase.source === "Analyse IA",
+  ].some(Boolean);
 }
 
 function isoDate(value: string | undefined) {
@@ -526,7 +575,6 @@ function DetailModal({ detail, onClose }: Readonly<{ detail: DetailPayload; onCl
 export function AchatsWorkspace() {
   const purchases = useBeharStore((s) => s.purchases);
   const updatePurchase = useBeharStore((s) => s.updatePurchase);
-  const deletePurchase = useBeharStore((s) => s.deletePurchase);
   const updateReconditioningFile = useReconditioningStore((s) => s.updateFile);
   const commitSupplierInvoice = useBeharStore((s) => s.commitSupplierInvoice);
   const canViewPurchases = useBeharStore((s) => s.hasPermission("canViewPurchasePrice"));
@@ -541,6 +589,9 @@ export function AchatsWorkspace() {
   const [supplierSearch, setSupplierSearch] = useState("");
   const [invoiceSearch, setInvoiceSearch] = useState("");
   const [referenceSearch, setReferenceSearch] = useState("");
+  const [periodPreset, setPeriodPreset] = useState<PeriodPreset>("all");
+  const [entryScope, setEntryScope] = useState<EntryScope>("all");
+  const [directSourceFilter, setDirectSourceFilter] = useState("all");
   const [dateStart, setDateStart] = useState("");
   const [dateEnd, setDateEnd] = useState("");
   const [supplierFilter, setSupplierFilter] = useState("all");
@@ -559,6 +610,14 @@ export function AchatsWorkspace() {
   }, [stockMovements, supplierInvoiceLines, supplierInvoices]);
 
   const suppliers = useMemo(() => uniqueValues(invoiceRows.map((row) => row.invoice.supplierName)), [invoiceRows]);
+  const standalonePurchases = useMemo(
+    () => purchases.filter((purchase) => !isSupplierInvoicePurchase(purchase)),
+    [purchases],
+  );
+  const directSources = useMemo(
+    () => uniqueValues(standalonePurchases.map((purchase) => purchase.source)),
+    [standalonePurchases],
+  );
 
   const filteredRows = useMemo(() => {
     const globalQuery = search.trim().toLowerCase();
@@ -589,8 +648,7 @@ export function AchatsWorkspace() {
       if (supplierQuery && !invoice.supplierName.toLowerCase().includes(supplierQuery)) return false;
       if (invoiceQuery && !invoice.invoiceNumber.toLowerCase().includes(invoiceQuery)) return false;
       if (referenceQuery && !references.includes(referenceQuery)) return false;
-      if (dateStart && date < dateStart) return false;
-      if (dateEnd && date > dateEnd) return false;
+      if (!matchesPeriod(date, periodPreset, dateStart, dateEnd)) return false;
       if (supplierFilter !== "all" && invoice.supplierName !== supplierFilter) return false;
       if (statusFilter !== "all" && invoice.status !== statusFilter) return false;
       if (sourceFilter !== "all" && invoice.source !== sourceFilter) return false;
@@ -605,6 +663,7 @@ export function AchatsWorkspace() {
     dateStart,
     invoiceRows,
     invoiceSearch,
+    periodPreset,
     referenceSearch,
     search,
     sourceFilter,
@@ -612,6 +671,37 @@ export function AchatsWorkspace() {
     supplierFilter,
     supplierSearch,
   ]);
+
+  const filteredDirectPurchases = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return standalonePurchases.filter((purchase) => {
+      const date = isoDate(purchase.date);
+      if (!matchesPeriod(date, periodPreset, dateStart, dateEnd)) return false;
+      if (directSourceFilter !== "all" && purchase.source !== directSourceFilter) return false;
+      if (!query) return true;
+      return [purchase.label, purchase.reference, purchase.invoiceNumber, purchase.supplier, purchase.source]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(query);
+    });
+  }, [dateEnd, dateStart, directSourceFilter, periodPreset, search, standalonePurchases]);
+
+  const resetFilters = () => {
+    setPeriodPreset("all");
+    setEntryScope("all");
+    setDirectSourceFilter("all");
+    setDateStart("");
+    setDateEnd("");
+    setSupplierSearch("");
+    setInvoiceSearch("");
+    setReferenceSearch("");
+    setSupplierFilter("all");
+    setStatusFilter("all");
+    setSourceFilter("all");
+    setAmountMin("");
+    setAmountMax("");
+  };
 
   const stats = useMemo(() => {
     const month = currentMonthKey();
@@ -735,21 +825,84 @@ export function AchatsWorkspace() {
       onSearchChange={setSearch}
       searchPlaceholder="Rechercher fournisseur, facture, référence..."
       searchValue={search}
-      subtitle="Historique complet des factures fournisseurs reliées au stock, aux mouvements et aux fiches pièces."
+      subtitle="Registre interne des factures fournisseur, importations, entrées de stock et reprises de téléphones."
       title="Achats"
     >
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <Kpi
-          label="Achats du mois"
-          value={formatEuro(stats.monthTotal)}
-          helper="factures fournisseurs"
-          icon={ShoppingCart}
-        />
-        <Kpi label="Factures" value={String(stats.invoiceCount)} helper="historique fournisseur" icon={FileText} />
-        <Kpi label="Pièces achetées" value={String(stats.piecesBought)} helper="quantité cumulée" icon={Package} />
-        <Kpi label="Coût moyen" value={formatEuro(stats.averageCost)} helper="par pièce achetée" icon={ShoppingCart} />
-        <Kpi label="Fournisseur principal" value={stats.mainSupplier} helper="par montant TTC" icon={Package} />
-      </div>
+      <Panel className="mb-5 p-4 md:p-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <Search className="size-4 text-[#2A9D8F]" />
+              <h2 className="font-semibold text-[#1A1916] text-sm">Filtrer le registre</h2>
+            </div>
+            <p className="mt-1 text-[#6B6B6B] text-xs">
+              Les factures fournisseur et les reprises/achats directs sont séparés pour éviter les doublons.
+            </p>
+          </div>
+          <button
+            className="h-9 w-fit rounded-[9px] border border-[#E8E8E5] bg-white px-3 font-semibold text-[#6B6B6B] text-[12px] hover:border-[#2A9D8F]/45 hover:text-[#1A1916]"
+            onClick={resetFilters}
+            type="button"
+          >
+            Réinitialiser les filtres
+          </button>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-3 xl:grid-cols-5">
+          <FilterSelect
+            label="Période"
+            onChange={(value) => setPeriodPreset(value as PeriodPreset)}
+            options={PERIOD_PRESETS}
+            value={periodPreset}
+          />
+          <FilterSelect
+            label="Type d'entrée"
+            onChange={(value) => setEntryScope(value as EntryScope)}
+            options={[
+              { value: "all", label: "Toutes les entrées" },
+              { value: "supplier", label: "Factures fournisseur" },
+              { value: "direct", label: "Reprises & achats directs" },
+            ]}
+            value={entryScope}
+          />
+          {entryScope !== "supplier" && (
+            <FilterSelect
+              label="Origine directe"
+              onChange={setDirectSourceFilter}
+              options={[
+                { value: "all", label: "Toutes les origines" },
+                ...directSources.map((source) => ({ value: source, label: source })),
+              ]}
+              value={directSourceFilter}
+            />
+          )}
+          {periodPreset === "custom" && (
+            <>
+              <FilterInput label="Du" onChange={setDateStart} type="date" value={dateStart} />
+              <FilterInput label="Au" onChange={setDateEnd} type="date" value={dateEnd} />
+            </>
+          )}
+        </div>
+      </Panel>
+
+      {entryScope !== "direct" && (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+          <Kpi
+            label="Achats du mois"
+            value={formatEuro(stats.monthTotal)}
+            helper="factures fournisseurs"
+            icon={ShoppingCart}
+          />
+          <Kpi label="Factures" value={String(stats.invoiceCount)} helper="historique fournisseur" icon={FileText} />
+          <Kpi label="Pièces achetées" value={String(stats.piecesBought)} helper="quantité cumulée" icon={Package} />
+          <Kpi
+            label="Coût moyen"
+            value={formatEuro(stats.averageCost)}
+            helper="par pièce achetée"
+            icon={ShoppingCart}
+          />
+          <Kpi label="Fournisseur principal" value={stats.mainSupplier} helper="par montant TTC" icon={Package} />
+        </div>
+      )}
 
       {showForm && (
         <Panel className="mt-5 p-4 md:p-5">
@@ -826,173 +979,189 @@ export function AchatsWorkspace() {
         </Panel>
       )}
 
-      <Panel className="mt-5 p-4 md:p-5">
-        <div className="mb-4 flex items-center gap-2">
-          <Search className="size-4 text-[#2A9D8F]" />
-          <h2 className="font-semibold text-[#1A1916] text-sm">Filtres achats fournisseurs</h2>
-        </div>
-        <div className="grid gap-3 md:grid-cols-4 xl:grid-cols-8">
-          <FilterInput
-            label="Recherche fournisseur"
-            onChange={setSupplierSearch}
-            placeholder="Nom fournisseur"
-            value={supplierSearch}
-          />
-          <FilterInput label="N° facture" onChange={setInvoiceSearch} placeholder="Facture" value={invoiceSearch} />
-          <FilterInput
-            label="Référence pièce"
-            onChange={setReferenceSearch}
-            placeholder="SKU / code"
-            value={referenceSearch}
-          />
-          <FilterInput label="Date début" onChange={setDateStart} type="date" value={dateStart} />
-          <FilterInput label="Date fin" onChange={setDateEnd} type="date" value={dateEnd} />
-          <FilterSelect
-            label="Fournisseur"
-            onChange={setSupplierFilter}
-            options={[
-              { value: "all", label: "Tous" },
-              ...suppliers.map((supplier) => ({ value: supplier, label: supplier })),
-            ]}
-            value={supplierFilter}
-          />
-          <FilterSelect
-            label="Statut"
-            onChange={setStatusFilter}
-            options={[
-              { value: "all", label: "Tous" },
-              { value: "brouillon", label: "Brouillon" },
-              { value: "reçu", label: "Reçu" },
-              { value: "partiel", label: "Partiel" },
-              { value: "annulé", label: "Annulé" },
-            ]}
-            value={statusFilter}
-          />
-          <FilterSelect
-            label="Source"
-            onChange={setSourceFilter}
-            options={[
-              { value: "all", label: "Toutes" },
-              { value: "manuel", label: "Manuel" },
-              { value: "textract", label: "Analyse IA" },
-            ]}
-            value={sourceFilter}
-          />
-          <FilterInput label="Montant min" onChange={setAmountMin} placeholder="0" type="number" value={amountMin} />
-          <FilterInput label="Montant max" onChange={setAmountMax} placeholder="9999" type="number" value={amountMax} />
-        </div>
-      </Panel>
+      {entryScope !== "direct" && (
+        <>
+          <Panel className="mt-5 p-4 md:p-5">
+            <div className="mb-4 flex items-center gap-2">
+              <Search className="size-4 text-[#2A9D8F]" />
+              <h2 className="font-semibold text-[#1A1916] text-sm">Filtres détaillés des factures fournisseur</h2>
+            </div>
+            <div className="grid gap-3 md:grid-cols-4 xl:grid-cols-8">
+              <FilterInput
+                label="Recherche fournisseur"
+                onChange={setSupplierSearch}
+                placeholder="Nom fournisseur"
+                value={supplierSearch}
+              />
+              <FilterInput label="N° facture" onChange={setInvoiceSearch} placeholder="Facture" value={invoiceSearch} />
+              <FilterInput
+                label="Référence pièce"
+                onChange={setReferenceSearch}
+                placeholder="SKU / code"
+                value={referenceSearch}
+              />
+              <FilterSelect
+                label="Fournisseur"
+                onChange={setSupplierFilter}
+                options={[
+                  { value: "all", label: "Tous" },
+                  ...suppliers.map((supplier) => ({ value: supplier, label: supplier })),
+                ]}
+                value={supplierFilter}
+              />
+              <FilterSelect
+                label="Statut"
+                onChange={setStatusFilter}
+                options={[
+                  { value: "all", label: "Tous" },
+                  { value: "brouillon", label: "Brouillon" },
+                  { value: "reçu", label: "Reçu" },
+                  { value: "partiel", label: "Partiel" },
+                  { value: "annulé", label: "Annulé" },
+                ]}
+                value={statusFilter}
+              />
+              <FilterSelect
+                label="Source"
+                onChange={setSourceFilter}
+                options={[
+                  { value: "all", label: "Toutes" },
+                  { value: "manuel", label: "Manuel" },
+                  { value: "textract", label: "Analyse IA" },
+                ]}
+                value={sourceFilter}
+              />
+              <FilterInput
+                label="Montant min"
+                onChange={setAmountMin}
+                placeholder="0"
+                type="number"
+                value={amountMin}
+              />
+              <FilterInput
+                label="Montant max"
+                onChange={setAmountMax}
+                placeholder="9999"
+                type="number"
+                value={amountMax}
+              />
+            </div>
+          </Panel>
 
-      <Panel className="mt-4 overflow-hidden">
-        {filteredRows.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
-            <ShoppingCart className="h-8 w-8 text-[#C9C9C3]" />
-            <p className="font-medium text-[#1A1916] text-sm">Aucune facture fournisseur</p>
-            <p className="max-w-sm text-[#8A8A85] text-xs">
-              Importez une facture ou saisissez un achat fournisseur pour alimenter le stock et les mouvements.
-            </p>
-          </div>
-        ) : (
-          <TableShell>
-            <table className={`${tableClassName} min-w-[1420px]`}>
-              <thead className={tableHeadClassName}>
-                <tr>
-                  <th className="px-4 py-3">Date d'achat</th>
-                  <th className="px-4 py-3">Fournisseur</th>
-                  <th className="px-4 py-3">N° facture</th>
-                  <th className="px-4 py-3">Articles achetés</th>
-                  <th className="px-4 py-3">Références</th>
-                  <th className="px-4 py-3">Pièces ajoutées</th>
-                  <th className="px-4 py-3 text-right">HT</th>
-                  <th className="px-4 py-3 text-right">TVA</th>
-                  <th className="px-4 py-3 text-right">TTC</th>
-                  <th className="px-4 py-3">Statut</th>
-                  <th className="px-4 py-3">Source</th>
-                  <th className="px-4 py-3 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRows.map((row) => {
-                  const references = invoiceReferenceList(row.lines);
-                  const articles = invoiceArticles(row.lines);
-                  const piecesAdded = row.lines.reduce((sum, line) => sum + line.quantityPurchased, 0);
-                  return (
-                    <tr key={row.invoice.id}>
-                      <td className={cn(tableCellClassName, "whitespace-nowrap text-xs text-[#6B6B6B]")}>
-                        {isoDate(row.invoice.purchaseDate)}
-                      </td>
-                      <td className={cn(tableCellClassName, "font-semibold")}>{row.invoice.supplierName}</td>
-                      <td className={cn(tableCellClassName, "font-mono text-xs")}>{row.invoice.invoiceNumber}</td>
-                      <td className={cn(tableCellClassName, "max-w-[260px] text-xs text-[#1A1916]")}>
-                        {articles.slice(0, 3).join(", ")}
-                        {articles.length > 3 && <span className="text-[#8A8A85]"> +{articles.length - 3}</span>}
-                      </td>
-                      <td className={cn(tableCellClassName, "max-w-[230px] text-xs")}>
-                        <div className="flex flex-wrap gap-1.5">
-                          {references.slice(0, 4).map((reference) => (
-                            <PartReferenceLink key={reference} reference={reference} />
-                          ))}
-                          {references.length > 4 && <span className="text-[#8A8A85]">+{references.length - 4}</span>}
-                        </div>
-                      </td>
-                      <td className={cn(tableCellClassName, "text-xs text-[#6B6B6B]")}>
-                        {piecesAdded} unité(s) · {row.movements.length} mouvement(s)
-                      </td>
-                      <td className={cn(tableCellClassName, "text-right tabular-nums")}>
-                        {formatEuro(row.invoice.totalExcludingTax)}
-                      </td>
-                      <td className={cn(tableCellClassName, "text-right tabular-nums")}>
-                        {formatEuro(row.invoice.taxAmount)}
-                      </td>
-                      <td className={cn(tableCellClassName, "text-right font-semibold tabular-nums")}>
-                        {formatEuro(row.invoice.totalIncludingTax)}
-                      </td>
-                      <td className={tableCellClassName}>
-                        <span
-                          className={cn(
-                            "inline-flex rounded-full border px-2.5 py-1 font-semibold text-[11px]",
-                            statusBadge(row.invoice.status),
-                          )}
-                        >
-                          {statusLabels[row.invoice.status]}
-                        </span>
-                      </td>
-                      <td className={tableCellClassName}>
-                        <span
-                          className={cn(
-                            "inline-flex rounded-full border px-2.5 py-1 font-semibold text-[11px]",
-                            sourceBadge(row.invoice.source),
-                          )}
-                        >
-                          {sourceLabels[row.invoice.source]}
-                        </span>
-                      </td>
-                      <td className={cn(tableCellClassName, "text-right")}>
-                        <button
-                          aria-label="Voir détail achat"
-                          className="inline-flex items-center gap-1 rounded-full border border-[#E8E8E5] bg-white px-3 py-1.5 font-semibold text-[#1A1916] text-xs hover:border-[#2A9D8F]/45"
-                          onClick={() => setDetailId(row.invoice.id)}
-                          type="button"
-                        >
-                          <Eye className="size-3.5" />
-                          Voir détail
-                        </button>
-                      </td>
+          <Panel className="mt-4 overflow-hidden">
+            {filteredRows.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
+                <ShoppingCart className="h-8 w-8 text-[#C9C9C3]" />
+                <p className="font-medium text-[#1A1916] text-sm">Aucune facture fournisseur</p>
+                <p className="max-w-sm text-[#8A8A85] text-xs">
+                  Importez une facture ou saisissez un achat fournisseur pour alimenter le stock et les mouvements.
+                </p>
+              </div>
+            ) : (
+              <TableShell>
+                <table className={`${tableClassName} min-w-[1420px]`}>
+                  <thead className={tableHeadClassName}>
+                    <tr>
+                      <th className="px-4 py-3">Date d'achat</th>
+                      <th className="px-4 py-3">Fournisseur</th>
+                      <th className="px-4 py-3">N° facture</th>
+                      <th className="px-4 py-3">Articles achetés</th>
+                      <th className="px-4 py-3">Références</th>
+                      <th className="px-4 py-3">Pièces ajoutées</th>
+                      <th className="px-4 py-3 text-right">HT</th>
+                      <th className="px-4 py-3 text-right">TVA</th>
+                      <th className="px-4 py-3 text-right">TTC</th>
+                      <th className="px-4 py-3">Statut</th>
+                      <th className="px-4 py-3">Source</th>
+                      <th className="px-4 py-3 text-right">Action</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </TableShell>
-        )}
-      </Panel>
+                  </thead>
+                  <tbody>
+                    {filteredRows.map((row) => {
+                      const references = invoiceReferenceList(row.lines);
+                      const articles = invoiceArticles(row.lines);
+                      const piecesAdded = row.lines.reduce((sum, line) => sum + line.quantityPurchased, 0);
+                      return (
+                        <tr key={row.invoice.id}>
+                          <td className={cn(tableCellClassName, "whitespace-nowrap text-xs text-[#6B6B6B]")}>
+                            {isoDate(row.invoice.purchaseDate)}
+                          </td>
+                          <td className={cn(tableCellClassName, "font-semibold")}>{row.invoice.supplierName}</td>
+                          <td className={cn(tableCellClassName, "font-mono text-xs")}>{row.invoice.invoiceNumber}</td>
+                          <td className={cn(tableCellClassName, "max-w-[260px] text-xs text-[#1A1916]")}>
+                            {articles.slice(0, 3).join(", ")}
+                            {articles.length > 3 && <span className="text-[#8A8A85]"> +{articles.length - 3}</span>}
+                          </td>
+                          <td className={cn(tableCellClassName, "max-w-[230px] text-xs")}>
+                            <div className="flex flex-wrap gap-1.5">
+                              {references.slice(0, 4).map((reference) => (
+                                <PartReferenceLink key={reference} reference={reference} />
+                              ))}
+                              {references.length > 4 && (
+                                <span className="text-[#8A8A85]">+{references.length - 4}</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className={cn(tableCellClassName, "text-xs text-[#6B6B6B]")}>
+                            {piecesAdded} unité(s) · {row.movements.length} mouvement(s)
+                          </td>
+                          <td className={cn(tableCellClassName, "text-right tabular-nums")}>
+                            {formatEuro(row.invoice.totalExcludingTax)}
+                          </td>
+                          <td className={cn(tableCellClassName, "text-right tabular-nums")}>
+                            {formatEuro(row.invoice.taxAmount)}
+                          </td>
+                          <td className={cn(tableCellClassName, "text-right font-semibold tabular-nums")}>
+                            {formatEuro(row.invoice.totalIncludingTax)}
+                          </td>
+                          <td className={tableCellClassName}>
+                            <span
+                              className={cn(
+                                "inline-flex rounded-full border px-2.5 py-1 font-semibold text-[11px]",
+                                statusBadge(row.invoice.status),
+                              )}
+                            >
+                              {statusLabels[row.invoice.status]}
+                            </span>
+                          </td>
+                          <td className={tableCellClassName}>
+                            <span
+                              className={cn(
+                                "inline-flex rounded-full border px-2.5 py-1 font-semibold text-[11px]",
+                                sourceBadge(row.invoice.source),
+                              )}
+                            >
+                              {sourceLabels[row.invoice.source]}
+                            </span>
+                          </td>
+                          <td className={cn(tableCellClassName, "text-right")}>
+                            <button
+                              aria-label="Voir détail achat"
+                              className="inline-flex items-center gap-1 rounded-full border border-[#E8E8E5] bg-white px-3 py-1.5 font-semibold text-[#1A1916] text-xs hover:border-[#2A9D8F]/45"
+                              onClick={() => setDetailId(row.invoice.id)}
+                              type="button"
+                            >
+                              <Eye className="size-3.5" />
+                              Voir détail
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </TableShell>
+            )}
+          </Panel>
+        </>
+      )}
 
-      {purchases.length > 0 && (
+      {entryScope !== "supplier" && (
         <Panel className="mt-4 p-4">
           <div className="mb-3">
-            <p className="font-semibold text-[#1A1916] text-sm">Achats directs (téléphones, reprises…)</p>
+            <p className="font-semibold text-[#1A1916] text-sm">Reprises & achats directs</p>
             <p className="text-[#6B6B6B] text-xs">
-              Entrées issues du comptoir et du reconditionnement. Ajustez ici votre prix d'achat.
+              Téléphones repris au comptoir, ajoutés en reconditionnement ou entrées stock sans facture fournisseur.
             </p>
           </div>
           <div className="overflow-x-auto">
@@ -1005,11 +1174,10 @@ export function AchatsWorkspace() {
                   <th className="py-2 pr-3 text-right font-semibold">Qté</th>
                   <th className="py-2 pr-3 text-right font-semibold">Prix d'achat unitaire</th>
                   <th className="py-2 pr-3 text-right font-semibold">Total</th>
-                  <th className="py-2" />
                 </tr>
               </thead>
               <tbody>
-                {purchases.map((purchase) => (
+                {filteredDirectPurchases.map((purchase) => (
                   <tr key={purchase.id} className="border-[#F0F0ED] border-b last:border-0">
                     <td className="py-2 pr-3 font-medium text-[#1A1916]">{purchase.label || "—"}</td>
                     <td className="py-2 pr-3 text-[#6B6B6B]">{purchase.source}</td>
@@ -1042,18 +1210,15 @@ export function AchatsWorkspace() {
                         ? formatEuro(purchase.total ?? (purchase.unitCost || 0) * (purchase.quantity || 1))
                         : "Masqué"}
                     </td>
-                    <td className="py-2 text-right">
-                      <button
-                        aria-label="Supprimer l'achat"
-                        className="grid size-8 place-items-center rounded-[8px] text-[#B4342A] transition hover:bg-[#FCF4F3]"
-                        onClick={() => deletePurchase(purchase.id)}
-                        type="button"
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
-                    </td>
                   </tr>
                 ))}
+                {filteredDirectPurchases.length === 0 && (
+                  <tr>
+                    <td className="py-8 text-center text-[#6B6B6B] text-sm" colSpan={6}>
+                      Aucune reprise ou entrée directe pour ces filtres.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

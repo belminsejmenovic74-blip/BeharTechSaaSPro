@@ -173,10 +173,9 @@ export function PublicCertificateView({
                 </span>
               ) : null}
               {settings.showShopName && (
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-[#1A1916] text-sm">{data.workshopName || "Boutique"}</p>
-                  <p className="text-[#6B6B6B] text-xs">Données fournies par la boutique</p>
-                </div>
+                <p className="min-w-0 truncate font-semibold text-[#1A1916] text-sm">
+                  {data.workshopName || "Boutique"}
+                </p>
               )}
             </div>
             <span className="inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-[#CDEBE4] bg-white px-3 font-semibold text-[#147065] text-[13px]">
@@ -337,9 +336,6 @@ export function PublicCertificateView({
               {data.technician}
             </p>
           )}
-          <p className="mt-1 text-[#9A9A95] text-xs">
-            Aucune donnée interne ou donnée vendeur n'est affichée sur cette page.
-          </p>
           {settings.showPoweredBy && (
             <p className="mt-1 text-[#9A9A95] text-xs">Certificat généré avec Behar Tech Pro</p>
           )}

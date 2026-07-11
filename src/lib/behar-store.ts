@@ -15,6 +15,7 @@ import {
   seedPriceBookExamples,
   updatePriceBookItem,
 } from "@/lib/price-book";
+import type { NotificationCategory } from "@/lib/widget/notifications";
 import { appointments as appointmentMocks } from "@/mock/appointments";
 import { customers as customerMocks } from "@/mock/customers";
 import { invoices as invoiceMocks } from "@/mock/invoices";
@@ -198,6 +199,9 @@ export type AppNotification = {
   actorName: string;
   read: boolean;
   createdAt: string;
+  /** Catégorie métier (centre de notifications widget) et boutique concernée. */
+  category?: NotificationCategory;
+  shopId?: string;
 };
 
 export type DeviceBrand = {
@@ -810,6 +814,16 @@ export type Appointment = {
   row: number;
   color: string;
   type?: "repair_pickup" | "standard";
+  externalSourceId?: string;
+  widgetLeadId?: string;
+  isPreIntake?: boolean;
+  /** Données consultées côté widget, reprises sans ressaisie (source « Widget site internet »). */
+  qualityLabel?: string;
+  warrantyLabel?: string;
+  availabilityLabel?: string;
+  widgetSnapshot?: Record<string, unknown>;
+  alerts?: string[];
+  photos?: string[];
 };
 
 export type StockItem = {
@@ -1353,6 +1367,8 @@ export type StoreState = {
     message: string;
     targetType: string;
     targetId: string;
+    category?: NotificationCategory;
+    shopId?: string;
   }) => string;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
@@ -1468,6 +1484,7 @@ export type StoreState = {
   ) => boolean;
   updatePaymentStatus: (id: string, status: PaymentStatus) => void;
   addAppointment: (input: AppointmentInput) => string;
+  importExternalAppointment: (input: Appointment) => string;
   updateAppointment: (id: string, patch: Partial<Appointment>) => void;
   deleteAppointment: (id: string, deleteLinkedRepair?: boolean) => void;
   createRepairFromAppointment: (appointmentId: string) => string;
@@ -3989,6 +4006,22 @@ const normalizeAppointment = (
     dayIndex: clampQuantity(appointment.dayIndex),
     row: clampQuantity(appointment.row),
     color: normalizeText(appointment.color, "mint"),
+    externalSourceId: normalizeText(appointment.externalSourceId) || undefined,
+    widgetLeadId: normalizeText(appointment.widgetLeadId) || undefined,
+    isPreIntake: appointment.isPreIntake === true,
+    qualityLabel: normalizeText(appointment.qualityLabel) || undefined,
+    warrantyLabel: normalizeText(appointment.warrantyLabel) || undefined,
+    availabilityLabel: normalizeText(appointment.availabilityLabel) || undefined,
+    widgetSnapshot:
+      appointment.widgetSnapshot && typeof appointment.widgetSnapshot === "object"
+        ? appointment.widgetSnapshot
+        : undefined,
+    alerts: Array.isArray(appointment.alerts)
+      ? appointment.alerts.map((alert) => normalizeText(alert)).filter(Boolean)
+      : undefined,
+    photos: Array.isArray(appointment.photos)
+      ? appointment.photos.map((photo) => normalizeText(photo)).filter(Boolean)
+      : undefined,
   };
 };
 /** §4 — résout la catégorie produit en tolérant les anciennes données (libellés libres). */
@@ -5292,6 +5325,8 @@ export const useBeharStore = create<StoreState>()(
             actorName: actor.name,
             read: false,
             createdAt: nowLabel(),
+            category: input.category,
+            shopId: input.shopId,
           };
           return { notifications: [notification, ...state.notifications].slice(0, 100) };
         });
@@ -8025,7 +8060,65 @@ export const useBeharStore = create<StoreState>()(
         });
         return id;
       },
-      updateAppointment: (id, patch) =>
+      importExternalAppointment: (input) => {
+        const state = get();
+        const existing = state.appointments.find(
+          (appointment) => appointment.id === input.id || appointment.externalSourceId === input.externalSourceId,
+        );
+        if (existing) return existing.id;
+        const appointment = normalizeAppointment(input, state.customers, state.repairs);
+        set((current) => ({
+          appointments: [appointment, ...current.appointments],
+          selectedAppointmentId: current.selectedAppointmentId || appointment.id,
+        }));
+        const notify = get().addNotification;
+        const who = appointment.clientName || "Client";
+        notify({
+          type: "success",
+          title: "Nouveau rendez-vous du site",
+          message: `${appointment.device} le ${appointment.date} à ${appointment.time}`,
+          targetType: "appointment",
+          targetId: appointment.id,
+          category: "new_appointment",
+          shopId: appointment.shopId,
+        });
+        if (appointment.alerts?.includes("Prix à confirmer")) {
+          notify({
+            type: "warning",
+            title: "Prix à confirmer",
+            message: `${who} · ${appointment.device}`,
+            targetType: "appointment",
+            targetId: appointment.id,
+            category: "price_to_confirm",
+            shopId: appointment.shopId,
+          });
+        }
+        if (appointment.alerts?.includes("Disponibilité à confirmer")) {
+          notify({
+            type: "warning",
+            title: "Stock à confirmer",
+            message: `${who} · ${appointment.device}`,
+            targetType: "appointment",
+            targetId: appointment.id,
+            category: "stock_to_confirm",
+            shopId: appointment.shopId,
+          });
+        }
+        if (appointment.photos?.length) {
+          notify({
+            type: "info",
+            title: "Photo reçue",
+            message: `${appointment.photos.length} photo(s) · ${appointment.device}`,
+            targetType: "appointment",
+            targetId: appointment.id,
+            category: "photo_received",
+            shopId: appointment.shopId,
+          });
+        }
+        return appointment.id;
+      },
+      updateAppointment: (id, patch) => {
+        const before = get().appointments.find((entry) => entry.id === id);
         set((state) => {
           const patchProvidesCustomer =
             patch.customerId !== undefined && patch.customerId !== null && normalizeText(patch.customerId) !== "";
@@ -8057,7 +8150,35 @@ export const useBeharStore = create<StoreState>()(
               : repair;
           });
           return { appointments, customers: deriveCustomers(state.customers, repairs, state.payments), repairs };
-        }),
+        });
+        // Notifie l'équipe des déplacements et annulations de rendez-vous widget.
+        const after = get().appointments.find((entry) => entry.id === id);
+        if (before && after && (after.source === "Widget site internet" || after.isPreIntake)) {
+          const notify = get().addNotification;
+          const who = after.clientName || "Client";
+          if (after.status === "Annulé" && before.status !== "Annulé") {
+            notify({
+              type: "danger",
+              title: "Rendez-vous annulé",
+              message: `${who} · ${after.device}`,
+              targetType: "appointment",
+              targetId: after.id,
+              category: "appointment_cancelled",
+              shopId: after.shopId,
+            });
+          } else if (before.date !== after.date || before.time !== after.time) {
+            notify({
+              type: "info",
+              title: "Rendez-vous déplacé",
+              message: `${after.device} → ${after.date} à ${after.time}`,
+              targetType: "appointment",
+              targetId: after.id,
+              category: "appointment_moved",
+              shopId: after.shopId,
+            });
+          }
+        }
+      },
       deleteAppointment: (id, deleteLinkedRepair = false) =>
         set((state) => {
           const appointments = state.appointments.filter((appointment) => appointment.id !== id);
@@ -8147,6 +8268,17 @@ export const useBeharStore = create<StoreState>()(
             confirmed: true,
             convertedToRepairAt: nowLabel(),
           });
+          if (appointment.source === "Widget site internet" || appointment.isPreIntake) {
+            get().addNotification({
+              type: "success",
+              title: "Conversion en dossier",
+              message: `${appointment.device} · ${appointment.clientName || "Client"}`,
+              targetType: "repair",
+              targetId: repairId,
+              category: "converted",
+              shopId: appointment.shopId,
+            });
+          }
         }
         return repairId;
       },

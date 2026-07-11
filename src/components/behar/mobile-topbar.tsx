@@ -6,11 +6,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import {
-  Bell,
   CalendarDays,
   Files,
   FileText,
   LayoutDashboard,
+  Inbox,
   LogOut,
   Menu,
   Package,
@@ -30,6 +30,7 @@ const allModules = [
   { label: "Réparations", href: "/dashboard/reparations", icon: Wrench },
   { label: "Dossiers", href: "/dashboard/dossiers", icon: Files },
   { label: "Clients", href: "/dashboard/clients", icon: Users },
+  { label: "Demandes du site", href: "/dashboard/demandes-site", icon: Inbox },
   { label: "Devis", href: "/dashboard/devis", icon: FileText },
   { label: "Factures", href: "/dashboard/factures", icon: Receipt },
   { label: "Rendez-vous", href: "/dashboard/rendez-vous", icon: CalendarDays },

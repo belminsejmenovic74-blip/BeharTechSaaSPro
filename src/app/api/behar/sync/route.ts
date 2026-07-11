@@ -522,6 +522,99 @@ export async function POST(request: Request) {
   });
   if (docs.length) await supabase.from("documents").upsert(docs, { onConflict: "id" });
 
+  type SyncedCommitment = {
+    localStockItemId: string;
+    sourceShopKey: string;
+    type: "reservation" | "repair_allocation" | "transfer_out";
+    quantity: number;
+    sourceId: string;
+  };
+  const stockCommitments: SyncedCommitment[] = [];
+  const stockShopKeyById = new Map(
+    (payload.stockItems ?? []).map((item) => [item.id, text(item.shopId, "shop-default")]),
+  );
+  const closedRepairStatuses = new Set(["delivered", "cancelled", "irreparable"]);
+  for (const repair of payload.repairs ?? []) {
+    if (closedRepairStatuses.has(repairStatus(repair.status))) continue;
+    for (const part of repair.parts ?? []) {
+      const quantity = Math.max(0, money(part.quantity) ?? 0);
+      if (!part.stockItemId || quantity <= 0 || !(part.stockDecremented === true || part.confirmed === true)) continue;
+      stockCommitments.push({
+        localStockItemId: part.stockItemId,
+        sourceShopKey: stockShopKeyById.get(part.stockItemId) ?? text(repair.shopId, "shop-default"),
+        type: part.confirmed === true ? "repair_allocation" : "reservation",
+        quantity,
+        sourceId: `repair:${repair.id}:part:${part.stockItemId}:${part.supplierInvoiceLineId || "aggregate"}`,
+      });
+    }
+    for (const line of repair.repairSaleLines ?? []) {
+      const quantity = Math.max(0, money(line.quantity) ?? 0);
+      if (!line.stockItemId || quantity <= 0 || line.stockDecremented !== true) continue;
+      stockCommitments.push({
+        localStockItemId: line.stockItemId,
+        sourceShopKey: stockShopKeyById.get(line.stockItemId) ?? text(repair.shopId, "shop-default"),
+        type: line.status === "draft" ? "reservation" : "repair_allocation",
+        quantity,
+        sourceId: `repair:${repair.id}:sale-line:${line.id}`,
+      });
+    }
+  }
+  const reservationLedger = new Map<
+    string,
+    { localStockItemId: string; sourceShopKey: string; sourceId: string; quantityDelta: number }
+  >();
+  for (const movement of payload.stockMovements ?? []) {
+    if (!(movement.movementType === "reservation_created" || movement.movementType === "reservation_released"))
+      continue;
+    const sourceId = text(movement.linkedRepairId || movement.sourceId || movement.id);
+    const key = `${movement.stockItemId}:${sourceId}`;
+    const current = reservationLedger.get(key) ?? {
+      localStockItemId: movement.stockItemId,
+      sourceShopKey: stockShopKeyById.get(movement.stockItemId) ?? text(movement.shopId, "shop-default"),
+      sourceId: `ledger-reservation:${sourceId}`,
+      quantityDelta: 0,
+    };
+    current.quantityDelta += money(movement.quantityDelta) ?? 0;
+    reservationLedger.set(key, current);
+  }
+  for (const reservation of reservationLedger.values()) {
+    if (reservation.quantityDelta >= 0) continue;
+    const alreadyRepresented = stockCommitments.some(
+      (commitment) =>
+        commitment.localStockItemId === reservation.localStockItemId &&
+        commitment.sourceId.includes(reservation.sourceId.replace("ledger-reservation:", "")),
+    );
+    if (alreadyRepresented) continue;
+    stockCommitments.push({
+      localStockItemId: reservation.localStockItemId,
+      sourceShopKey: reservation.sourceShopKey,
+      type: "reservation",
+      quantity: Math.abs(reservation.quantityDelta),
+      sourceId: reservation.sourceId,
+    });
+  }
+  for (const movement of payload.stockMovements ?? []) {
+    const transferStatus = text(movement.metadata?.status).toLowerCase();
+    const isPendingTransfer = ["pending", "in_transit", "in-transit", "en_cours", "en transit"].includes(
+      transferStatus,
+    );
+    if (movement.movementType !== "stock_transfer_out" || !isPendingTransfer || movement.quantityDelta >= 0) continue;
+    stockCommitments.push({
+      localStockItemId: movement.stockItemId,
+      sourceShopKey: stockShopKeyById.get(movement.stockItemId) ?? text(movement.shopId, "shop-default"),
+      type: "transfer_out",
+      quantity: Math.abs(money(movement.quantityDelta) ?? 0),
+      sourceId: `movement:${movement.id}`,
+    });
+  }
+  const committedByItem = new Map<string, number>();
+  for (const commitment of stockCommitments) {
+    committedByItem.set(
+      commitment.localStockItemId,
+      (committedByItem.get(commitment.localStockItemId) ?? 0) + commitment.quantity,
+    );
+  }
+
   const stockItems = (payload.stockItems ?? []).map((item) => ({
     id: stableUuid(`stock:${workshopId}:${item.id}`),
     workshop_id: workshopId,
@@ -535,15 +628,18 @@ export async function POST(request: Request) {
     scan_token: text(item.scanToken) || null,
     scan_active: item.scanEnabled !== false,
     storage_location: text(item.location) || null,
+    source_shop_key: text(item.shopId, "shop-default"),
     quality: text(item.quality) || null,
     repair_enabled: item.repairEnabled !== false,
     counter_sale_enabled: item.counterSaleEnabled === true,
     active: item.active !== false,
+    sellable_status: item.active !== false && item.repairEnabled !== false ? "sellable" : "blocked",
     purchase_price: money(item.purchasePrice),
     average_purchase_price: money(item.averagePurchasePrice),
     last_purchase_price: money(item.lastPurchasePrice),
     sale_price: money(item.salePrice),
     quantity: money(item.stock ?? item.quantity) ?? 0,
+    physical_quantity: Math.max(0, (money(item.stock ?? item.quantity) ?? 0) + (committedByItem.get(item.id) ?? 0)),
     threshold: money(item.threshold),
     supplier: text(item.supplier) || null,
     primary_supplier_id: item.primarySupplierId ? stableUuid(`supplier:${workshopId}:${item.primarySupplierId}`) : null,
@@ -561,6 +657,23 @@ export async function POST(request: Request) {
     updated_at: cleanIso(item.updatedAt),
   }));
   if (stockItems.length) await supabase.from("stock_items").upsert(stockItems, { onConflict: "id" });
+
+  await supabase.from("stock_commitments").delete().eq("tenant_id", workshopId).eq("sync_source", "normalized_sync");
+  if (stockCommitments.length) {
+    await supabase.from("stock_commitments").insert(
+      stockCommitments.map((commitment) => ({
+        id: stableUuid(`stock_commitment:${workshopId}:${commitment.sourceId}`),
+        tenant_id: workshopId,
+        stock_item_id: stableUuid(`stock:${workshopId}:${commitment.localStockItemId}`),
+        source_shop_key: commitment.sourceShopKey,
+        commitment_type: commitment.type,
+        quantity: commitment.quantity,
+        source_id: commitment.sourceId,
+        sync_source: "normalized_sync",
+        active: true,
+      })),
+    );
+  }
 
   const suppliers = (payload.suppliers ?? []).map((supplier) => ({
     id: stableUuid(`supplier:${workshopId}:${supplier.id}`),

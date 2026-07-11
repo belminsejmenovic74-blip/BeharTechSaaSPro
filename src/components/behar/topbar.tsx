@@ -9,6 +9,7 @@ import { Bell, ChevronDown, FileText, LogOut, Menu, Plus, Search, UserRound, X }
 import { PrimaryButton } from "@/components/behar/primitives";
 import { SyncStatusBadge } from "@/components/behar/sync-status-badge";
 import { type AppNotification, useBeharStore } from "@/lib/behar-store";
+import { WidgetNotificationCenter } from "@/components/behar/widget-notification-center";
 import { formatDeviceLabel } from "@/lib/format-device";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +29,7 @@ const notificationHref = (notification: AppNotification) => {
   if (notification.targetType === "invoice") return "/dashboard/factures";
   if (notification.targetType === "payment") return "/dashboard/paiements";
   if (notification.targetType === "appointment") return "/dashboard/rendez-vous";
+  if (notification.targetType === "widget_lead") return "/dashboard/demandes-site";
   if (notification.targetType === "stock") return "/dashboard/stock";
   if (notification.targetType === "settings") return "/dashboard/parametres";
   return "/dashboard";
@@ -54,6 +56,7 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
 
   const roleLabel =
     currentUser.role === "admin" ? "Gérant" : currentUser.role === "technician" ? "Technicien" : "Accueil";
+  const canViewNotifications = currentUser.permissions?.canViewNotifications !== false;
 
   const notifications = useMemo<NotificationItem[]>(() => {
     const out: NotificationItem[] = [];
@@ -105,22 +108,24 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
         });
       }
     }
-    const persisted = appNotifications.map(
-      (notification): NotificationItem => ({
-        id: notification.id,
-        title: notification.title,
-        hint: `${notification.message} · ${notification.actorName}`,
-        href: notificationHref(notification),
-        tone:
-          notification.type === "warning" || notification.type === "danger"
-            ? "warn"
-            : notification.type === "success"
-              ? "ok"
-              : "info",
-        read: notification.read,
-        appNotificationId: notification.id,
-      }),
-    );
+    const persisted = appNotifications
+      .filter((notification) => !notification.category)
+      .map(
+        (notification): NotificationItem => ({
+          id: notification.id,
+          title: notification.title,
+          hint: `${notification.message} · ${notification.actorName}`,
+          href: notificationHref(notification),
+          tone:
+            notification.type === "warning" || notification.type === "danger"
+              ? "warn"
+              : notification.type === "success"
+                ? "ok"
+                : "info",
+          read: notification.read,
+          appNotificationId: notification.id,
+        }),
+      );
     return [...persisted, ...out].slice(0, 12);
   }, [invoices, repairs, quotes, appointments, customers, appNotifications]);
 
@@ -320,88 +325,93 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
             Nouvelle prise en charge
           </PrimaryButton>
         </Link>
-        <div className="relative">
-          <button
-            aria-label="Notifications"
-            className={cn(
-              "relative grid size-10 place-items-center rounded-[10px] text-[#6B6B6B] transition hover:bg-[#FFFFFF] hover:text-[#1A1916]",
-              notifOpen && "bg-[#FFFFFF] text-[#1A1916]",
-            )}
-            onClick={() => setNotifOpen((v) => !v)}
-            type="button"
-          >
-            <Bell className="size-[18px]" />
-            {hasUnread && <span className="absolute top-2.5 right-2.5 size-1.5 rounded-full bg-[#2A9D8F]" />}
-          </button>
-          {notifOpen && (
-            <>
-              <button
-                aria-label="Fermer"
-                className="fixed inset-0 z-10 cursor-default"
-                onClick={() => setNotifOpen(false)}
-                type="button"
-              />
-              <div className="absolute top-12 right-0 z-20 w-[340px] overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-white shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
-                <div className="flex items-center justify-between border-[#E8E8E5] border-b px-4 py-3">
-                  <span className="font-semibold text-[#1A1916] text-sm">
-                    Notifications{unreadCount ? ` · ${unreadCount}` : ""}
-                  </span>
-                  {unreadCount > 0 && (
+        {canViewNotifications && (
+          <div className="relative">
+            <button
+              aria-label="Notifications"
+              className={cn(
+                "relative grid size-10 place-items-center rounded-[10px] text-[#6B6B6B] transition hover:bg-[#FFFFFF] hover:text-[#1A1916]",
+                notifOpen && "bg-[#FFFFFF] text-[#1A1916]",
+              )}
+              onClick={() => setNotifOpen((v) => !v)}
+              type="button"
+            >
+              <Bell className="size-[18px]" />
+              {hasUnread && <span className="absolute top-2.5 right-2.5 size-1.5 rounded-full bg-[#2A9D8F]" />}
+            </button>
+            {notifOpen && (
+              <>
+                <button
+                  aria-label="Fermer"
+                  className="fixed inset-0 z-10 cursor-default"
+                  onClick={() => setNotifOpen(false)}
+                  type="button"
+                />
+                <div className="absolute top-12 right-0 z-20 w-[340px] overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-white shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
+                  <div className="flex items-center justify-between border-[#E8E8E5] border-b px-4 py-3">
+                    <span className="font-semibold text-[#1A1916] text-sm">
+                      Notifications{unreadCount ? ` · ${unreadCount}` : ""}
+                    </span>
+                    {unreadCount > 0 && (
+                      <button
+                        className="rounded-[8px] px-2 py-1 font-medium text-[#2A9D8F] text-xs hover:bg-[#FFFFFF]"
+                        onClick={markAllNotificationsRead}
+                        type="button"
+                      >
+                        Tout lu
+                      </button>
+                    )}
                     <button
-                      className="rounded-[8px] px-2 py-1 font-medium text-[#2A9D8F] text-xs hover:bg-[#FFFFFF]"
-                      onClick={markAllNotificationsRead}
+                      aria-label="Fermer"
+                      className="grid size-7 place-items-center rounded-[8px] text-[#6B6B6B] hover:bg-[#FFFFFF]"
+                      onClick={() => setNotifOpen(false)}
                       type="button"
                     >
-                      Tout lu
+                      <X className="size-4" />
                     </button>
-                  )}
-                  <button
-                    aria-label="Fermer"
-                    className="grid size-7 place-items-center rounded-[8px] text-[#6B6B6B] hover:bg-[#FFFFFF]"
-                    onClick={() => setNotifOpen(false)}
-                    type="button"
-                  >
-                    <X className="size-4" />
-                  </button>
-                </div>
-                <div className="max-h-[360px] overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <p className="px-4 py-8 text-center text-[#6B6B6B] text-sm">Aucune notification pour le moment.</p>
-                  ) : (
-                    notifications.map((notif) => (
-                      <Link
-                        className={cn(
-                          "flex items-start gap-3 border-[#E8E8E5] border-b px-4 py-3 transition hover:bg-[#FFFFFF]",
-                          notif.read === false && "bg-[#FFFFFF]",
-                        )}
-                        href={notif.href}
-                        key={notif.id}
-                        onClick={() => {
-                          if (notif.appNotificationId) markNotificationRead(notif.appNotificationId);
-                          setNotifOpen(false);
-                        }}
-                        prefetch={false}
-                      >
-                        <span
+                  </div>
+                  <WidgetNotificationCenter onNavigate={() => setNotifOpen(false)} />
+                  <div className="max-h-[360px] overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <p className="px-4 py-8 text-center text-[#6B6B6B] text-sm">
+                        Aucune notification pour le moment.
+                      </p>
+                    ) : (
+                      notifications.map((notif) => (
+                        <Link
                           className={cn(
-                            "mt-1.5 size-2 shrink-0 rounded-full",
-                            notif.tone === "warn" && "bg-[#FFFFFF]",
-                            notif.tone === "ok" && "bg-[#2A9D8F]",
-                            notif.tone === "info" && "bg-[#6B6B6B]",
+                            "flex items-start gap-3 border-[#E8E8E5] border-b px-4 py-3 transition hover:bg-[#FFFFFF]",
+                            notif.read === false && "bg-[#FFFFFF]",
                           )}
-                        />
-                        <span className="min-w-0 flex-1">
-                          <span className="block font-medium text-[#1A1916] text-sm">{notif.title}</span>
-                          <span className="block truncate text-[#6B6B6B] text-xs">{notif.hint}</span>
-                        </span>
-                      </Link>
-                    ))
-                  )}
+                          href={notif.href}
+                          key={notif.id}
+                          onClick={() => {
+                            if (notif.appNotificationId) markNotificationRead(notif.appNotificationId);
+                            setNotifOpen(false);
+                          }}
+                          prefetch={false}
+                        >
+                          <span
+                            className={cn(
+                              "mt-1.5 size-2 shrink-0 rounded-full",
+                              notif.tone === "warn" && "bg-[#FFFFFF]",
+                              notif.tone === "ok" && "bg-[#2A9D8F]",
+                              notif.tone === "info" && "bg-[#6B6B6B]",
+                            )}
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="block font-medium text-[#1A1916] text-sm">{notif.title}</span>
+                            <span className="block truncate text-[#6B6B6B] text-xs">{notif.hint}</span>
+                          </span>
+                        </Link>
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
-            </>
-          )}
-        </div>
+              </>
+            )}
+          </div>
+        )}
         <div className="relative">
           <button
             type="button"

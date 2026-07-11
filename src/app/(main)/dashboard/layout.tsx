@@ -8,6 +8,8 @@ import { PermissionRouteGuard } from "@/components/behar/permission-route-guard"
 import { PinLoginGate } from "@/components/behar/pin-login-gate";
 import { PrintProvider } from "@/components/behar/print-provider";
 import { Topbar } from "@/components/behar/topbar";
+import { WidgetLeadNotificationsProvider } from "@/components/behar/widget-lead-notifications-provider";
+import { WidgetAppointmentsProvider } from "@/components/behar/widget-appointments-provider";
 
 export default function Layout({ children }: Readonly<{ children: ReactNode }>) {
   return (
@@ -15,6 +17,8 @@ export default function Layout({ children }: Readonly<{ children: ReactNode }>) 
       <InstallationGate>
         <PinLoginGate>
           <AutoSyncProvider />
+          <WidgetAppointmentsProvider />
+          <WidgetLeadNotificationsProvider />
           <div className="behar-app min-h-svh bg-[#FFFFFF] text-[#1A1916]">
             <DashboardSidebar />
             <div className="flex min-h-svh flex-col md:pl-[var(--behar-sidebar-width,234px)]">

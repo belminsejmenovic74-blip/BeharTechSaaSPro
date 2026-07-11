@@ -34,6 +34,7 @@ import {
 import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
 
+import { AtelierUpcoming } from "@/components/behar/atelier-upcoming";
 import { RealDeviceVisual, RealProductVisual } from "@/components/behar/real-product-visual";
 import {
   type BeharDocument,
@@ -750,47 +751,51 @@ export function AtelierWorkspace() {
 
   if (!repairs.length) {
     return (
-      <Panel className="overflow-hidden bg-[#FFFFFF] p-8">
-        <div className="grid gap-8 lg:grid-cols-[1fr_420px]">
-          <div className="max-w-2xl">
-            <span className="inline-flex size-11 items-center justify-center rounded-[14px] bg-[#FFFFFF] text-[#2A9D8F]">
-              <Wrench className="size-5" />
-            </span>
-            <h2 className="mt-5 font-semibold text-[#1A1916] text-[30px] leading-tight tracking-tight">
-              File d'attente atelier prête à recevoir les dossiers comptoir.
-            </h2>
-            <p className="mt-3 text-[#6B6B6B] text-sm leading-6">
-              Dès qu'une prise en charge est créée au comptoir, elle apparaît ici avec le client, l'appareil, la panne,
-              la date promise et les actions technicien.
-            </p>
-          </div>
-          <div className="grid gap-3">
-            {[
-              ["Reçu", "Dossier comptoir"],
-              ["Diagnostic", "Contrôle technicien"],
-              ["En réparation", "Intervention atelier"],
-            ].map(([status, label], index) => (
-              <div
-                className="rounded-[16px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
-                key={label}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-[#1A1916] text-sm">Étape {index + 1}</span>
-                  <StatusBadge status={status} />
+      <div className="space-y-5">
+        <AtelierUpcoming />
+        <Panel className="overflow-hidden bg-[#FFFFFF] p-8">
+          <div className="grid gap-8 lg:grid-cols-[1fr_420px]">
+            <div className="max-w-2xl">
+              <span className="inline-flex size-11 items-center justify-center rounded-[14px] bg-[#FFFFFF] text-[#2A9D8F]">
+                <Wrench className="size-5" />
+              </span>
+              <h2 className="mt-5 font-semibold text-[#1A1916] text-[30px] leading-tight tracking-tight">
+                File d'attente atelier prête à recevoir les dossiers comptoir.
+              </h2>
+              <p className="mt-3 text-[#6B6B6B] text-sm leading-6">
+                Dès qu'une prise en charge est créée au comptoir, elle apparaît ici avec le client, l'appareil, la
+                panne, la date promise et les actions technicien.
+              </p>
+            </div>
+            <div className="grid gap-3">
+              {[
+                ["Reçu", "Dossier comptoir"],
+                ["Diagnostic", "Contrôle technicien"],
+                ["En réparation", "Intervention atelier"],
+              ].map(([status, label], index) => (
+                <div
+                  className="rounded-[16px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
+                  key={label}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-[#1A1916] text-sm">Étape {index + 1}</span>
+                    <StatusBadge status={status} />
+                  </div>
+                  <p className="mt-3 text-[#1A1916] text-sm">{label}</p>
+                  <p className="mt-1 text-[#6B6B6B] text-xs">Synchronisé avec le dossier central</p>
                 </div>
-                <p className="mt-3 text-[#1A1916] text-sm">{label}</p>
-                <p className="mt-1 text-[#6B6B6B] text-xs">Synchronisé avec le dossier central</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      </Panel>
+        </Panel>
+      </div>
     );
   }
 
   if (view === "queue") {
     return (
       <div className="space-y-5">
+        <AtelierUpcoming />
         <div className="grid gap-3 md:grid-cols-4">
           <WorkshopMetric
             label="Dossiers actifs"

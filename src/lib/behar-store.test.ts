@@ -1,8 +1,62 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { useBeharStore } from "@/lib/behar-store";
+import { mapRemoteWidgetAppointment, type RemoteWidgetAppointment } from "@/lib/widget/appointment-sync";
 
 const store = () => useBeharStore.getState();
+
+function widgetRemote(over: Partial<RemoteWidgetAppointment> = {}): RemoteWidgetAppointment {
+  return {
+    id: "10000000-0000-4000-a000-000000000042",
+    shop_id: "shop_b",
+    client_id: null,
+    appointment_number: "RDV-W-000000042",
+    client_name: "Sarah Martin",
+    client_phone: "+33612345678",
+    client_email: "sarah@example.fr",
+    device_type: "Smartphone",
+    device_brand: "Apple",
+    device_model: "iPhone 13",
+    issue_description: "Écran cassé",
+    intervention_label: "Remplacement écran",
+    customer_price: 129,
+    price_status: "confirmed",
+    price_snapshot: { amount: 129, type: "exact", quality: "OLED" },
+    appointment_date: "2026-07-20",
+    appointment_time: "10:00",
+    duration_minutes: 45,
+    source: "Widget site internet",
+    status: "pending",
+    notes: "Rappel avant 12h",
+    widget_lead_id: "20000000-0000-4000-a000-000000000043",
+    assigned_technician_id: null,
+    is_pre_intake: true,
+    confirmation_status: "pending",
+    stock_confirmation_required: false,
+    price_confirmation_required: false,
+    created_at: "2026-07-11T09:00:00.000Z",
+    updated_at: "2026-07-11T09:00:00.000Z",
+    quality_label: "OLED",
+    displayed_stock: "Disponible",
+    displayed_stock_snapshot: { mode: "simple", status: "available" },
+    displayed_warranty: "12 mois",
+    photos: ["w/t/wdg/s/a.jpg", "w/t/wdg/s/b.jpg"],
+    ...over,
+  };
+}
+
+function importWidgetAppointment(over: Partial<RemoteWidgetAppointment> = {}): string {
+  const customerId = store().addCustomer({ name: "Sarah Martin", phone: "+33612345678", email: "sarah@example.fr" });
+  const customer = store().customers.find((entry) => entry.id === customerId);
+  const appointment = mapRemoteWidgetAppointment(widgetRemote(over), {
+    id: customer?.id ?? customerId,
+    shopId: customer?.shopId ?? "shop_atelier_belmin",
+    name: customer?.name ?? "Sarah Martin",
+    phone: customer?.phone,
+    email: customer?.email,
+  });
+  return store().importExternalAppointment(appointment);
+}
 
 const nowIso = () => new Date().toISOString();
 
@@ -245,6 +299,160 @@ describe("Achats — registre central", () => {
     const id = store().addPurchase({ kind: "piece", source: "Manuel", label: "X", unitCost: 10 });
     store().deletePurchase(id);
     expect(store().purchases.some((purchase) => purchase.id === id)).toBe(false);
+  });
+});
+
+describe("Rendez-vous widget — import idempotent", () => {
+  it("importe une pré-fiche confirmée sans créer de réparation", () => {
+    const customerId = store().addCustomer({ name: "Client widget", phone: "+33600000000" });
+    const customer = store().customers.find((entry) => entry.id === customerId);
+    expect(customer).toBeTruthy();
+    const input = {
+      id: "10000000-0000-4000-a000-000000000099",
+      externalSourceId: "10000000-0000-4000-a000-000000000099",
+      widgetLeadId: "10000000-0000-4000-a000-000000000098",
+      isPreIntake: true,
+      shopId: customer?.shopId || "shop_atelier_belmin",
+      customerId,
+      device: "Apple iPhone 15",
+      issue: "Écran cassé",
+      date: "2026-07-20",
+      time: "10:00",
+      duration: "60 min",
+      channel: "Site internet",
+      source: "Widget site internet",
+      technician: "À assigner",
+      notes: "Pré-fiche créée depuis le widget",
+      status: "Confirmé" as const,
+      confirmed: true,
+      dayIndex: 0,
+      row: 0,
+      color: "mint",
+    };
+    expect(store().importExternalAppointment(input)).toBe(input.id);
+    expect(store().importExternalAppointment(input)).toBe(input.id);
+    expect(store().appointments.filter((appointment) => appointment.id === input.id)).toHaveLength(1);
+    expect(store().appointments.find((appointment) => appointment.id === input.id)).toMatchObject({
+      status: "Confirmé",
+      isPreIntake: true,
+      repairId: undefined,
+    });
+    expect(store().repairs.some((repair) => repair.appointmentId === input.id)).toBe(false);
+  });
+});
+
+describe("Rendez-vous widget — cycle de vie comptoir/atelier", () => {
+  it("importe « à confirmer » avec toutes les données consultées", () => {
+    const id = importWidgetAppointment();
+    const saved = store().appointments.find((entry) => entry.id === id);
+    expect(saved).toMatchObject({
+      status: "En attente", // à confirmer
+      isPreIntake: true,
+      qualityLabel: "OLED",
+      availabilityLabel: "Disponible",
+      warrantyLabel: "12 mois",
+      customerPrice: 129,
+      source: "Widget site internet",
+      repairId: undefined,
+    });
+    expect(saved?.photos).toHaveLength(2);
+    expect(store().repairs.some((repair) => repair.appointmentId === id)).toBe(false);
+  });
+
+  it("gère confirmation, déplacement, absence et annulation", () => {
+    const id = importWidgetAppointment();
+
+    store().updateAppointment(id, { status: "Confirmé", confirmed: true });
+    expect(store().appointments.find((entry) => entry.id === id)?.status).toBe("Confirmé");
+
+    store().updateAppointment(id, {
+      appointmentDate: "2026-07-22",
+      appointmentTime: "15:30",
+      date: "2026-07-22",
+      time: "15:30",
+    });
+    const moved = store().appointments.find((entry) => entry.id === id);
+    expect(moved).toMatchObject({ date: "2026-07-22", time: "15:30", qualityLabel: "OLED" }); // données conservées
+
+    store().updateAppointment(id, { status: "Non venu" });
+    expect(store().appointments.find((entry) => entry.id === id)?.status).toBe("Non venu");
+
+    store().updateAppointment(id, { status: "Annulé" });
+    expect(store().appointments.find((entry) => entry.id === id)?.status).toBe("Annulé");
+  });
+
+  it("« Commencer la prise en charge » reprend tout sans ressaisie", () => {
+    const id = importWidgetAppointment();
+    const repairId = store().createRepairFromAppointment(id);
+    expect(repairId).toBeTruthy();
+    const repair = store().repairs.find((entry) => entry.id === repairId);
+    expect(repair).toMatchObject({ deviceModel: "iPhone 13", brandName: "Apple", amount: 129 });
+    expect(repair?.issue).toContain("Écran");
+    const appointment = store().appointments.find((entry) => entry.id === id);
+    expect(appointment).toMatchObject({ status: "Réparation créée", repairId });
+  });
+
+  it("reste idempotent : réimporter ne duplique pas", () => {
+    const id = importWidgetAppointment();
+    store().importExternalAppointment(
+      mapRemoteWidgetAppointment(widgetRemote(), { id: "x", shopId: "shop_atelier_belmin", name: "X" }),
+    );
+    expect(store().appointments.filter((entry) => entry.id === id)).toHaveLength(1);
+  });
+});
+
+describe("Notifications widget — centre temps réel", () => {
+  const widgetNotifs = () => store().notifications.filter((notification) => notification.category);
+  const byCategory = (category: string) => widgetNotifs().filter((notification) => notification.category === category);
+
+  it("émet « nouveau rendez-vous » + « photo reçue » à l'import, avec boutique", () => {
+    const id = importWidgetAppointment();
+    const appointment = store().appointments.find((entry) => entry.id === id);
+    expect(byCategory("new_appointment")).toHaveLength(1);
+    expect(byCategory("new_appointment")[0].shopId).toBe(appointment?.shopId);
+    expect(byCategory("photo_received")).toHaveLength(1);
+    expect(byCategory("stock_to_confirm")).toHaveLength(0); // stock ferme dans la fixture
+  });
+
+  it("émet « stock à confirmer » et « prix à confirmer » selon les alertes", () => {
+    importWidgetAppointment({
+      price_status: "to_confirm",
+      customer_price: null,
+      stock_confirmation_required: true,
+      displayed_stock: null,
+      displayed_stock_snapshot: { mode: "hidden" },
+    });
+    expect(byCategory("price_to_confirm")).toHaveLength(1);
+    expect(byCategory("stock_to_confirm")).toHaveLength(1);
+  });
+
+  it("émet « rendez-vous déplacé » et « annulé » sur modification locale", () => {
+    const id = importWidgetAppointment();
+    store().updateAppointment(id, {
+      appointmentDate: "2026-07-25",
+      appointmentTime: "16:00",
+      date: "2026-07-25",
+      time: "16:00",
+    });
+    expect(byCategory("appointment_moved")).toHaveLength(1);
+    store().updateAppointment(id, { status: "Annulé" });
+    expect(byCategory("appointment_cancelled")).toHaveLength(1);
+  });
+
+  it("émet « conversion en dossier » à la prise en charge", () => {
+    const id = importWidgetAppointment();
+    store().createRepairFromAppointment(id);
+    expect(byCategory("converted")).toHaveLength(1);
+    expect(byCategory("converted")[0].targetType).toBe("repair");
+  });
+
+  it("marque comme lu et tout marquer comme lu", () => {
+    importWidgetAppointment();
+    const first = widgetNotifs()[0];
+    store().markNotificationRead(first.id);
+    expect(store().notifications.find((n) => n.id === first.id)?.read).toBe(true);
+    store().markAllNotificationsRead();
+    expect(store().notifications.every((n) => n.read)).toBe(true);
   });
 });
 
