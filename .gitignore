@@ -8,3 +8,6 @@ build
 .DS_Store
 
 .svelte-kit
+.agents/
+.claude/
+posthog-setup-report.md

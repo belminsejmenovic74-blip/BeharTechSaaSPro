@@ -1,0 +1,165 @@
+/* Éditeur visuel — styles globaux appliqués aux nœuds instrumentés.
+   Chargés uniquement quand l'overlay admin est monté (EditorRoot). */
+
+.cms-editable {
+	position: relative;
+	transition: outline-color 120ms ease;
+	outline: 1.5px solid transparent;
+	outline-offset: 2px;
+}
+
+.cms-editable:hover:not(.cms-selected):not([data-editing]) {
+	outline-color: rgba(42, 157, 143, 0.45);
+	cursor: pointer;
+}
+
+.cms-editable[data-editing] {
+	outline: 2px solid #2a9d8f;
+	outline-offset: 3px;
+	cursor: text;
+	border-radius: 3px;
+}
+
+/* La sélection est dessinée par SelectionFrame (overlay), on neutralise l'outline
+   du nœud pour éviter le double contour. */
+.cms-editable.cms-selected {
+	outline-color: transparent;
+}
+
+/* Curseur « déplaçable » quand le mode édition est actif et l'élément survolé. */
+.cms-edit-active .cms-editable:not([data-editing]) {
+	user-select: none;
+}
+
+/* ── Contrôles des panneaux d'édition (classes globales) ─────────────────── */
+.cms-panel-section {
+	padding: 16px;
+	border-bottom: 1px solid rgba(26, 25, 22, 0.07);
+}
+.cms-panel-title {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: #9a9a95;
+	margin-bottom: 12px;
+}
+.cms-field {
+	margin-bottom: 12px;
+}
+.cms-field:last-child {
+	margin-bottom: 0;
+}
+.cms-label {
+	display: block;
+	font-size: 11px;
+	font-weight: 600;
+	color: #6b6b6b;
+	margin-bottom: 5px;
+}
+.cms-row {
+	display: flex;
+	gap: 8px;
+}
+.cms-row > .cms-field {
+	flex: 1;
+	margin-bottom: 0;
+}
+.cms-input,
+.cms-select {
+	width: 100%;
+	height: 34px;
+	padding: 0 10px;
+	font-size: 13px;
+	color: #1a1916;
+	background: #fff;
+	border: 1px solid rgba(26, 25, 22, 0.12);
+	border-radius: 8px;
+	outline: none;
+	transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+.cms-input:focus,
+.cms-select:focus {
+	border-color: #2a9d8f;
+	box-shadow: 0 0 0 3px rgba(42, 157, 143, 0.12);
+}
+.cms-seg {
+	display: inline-flex;
+	width: 100%;
+	padding: 3px;
+	gap: 2px;
+	background: rgba(26, 25, 22, 0.05);
+	border-radius: 9px;
+}
+.cms-seg button {
+	flex: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	height: 28px;
+	border-radius: 6px;
+	color: #6b6b6b;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+}
+.cms-seg button.on {
+	background: #fff;
+	color: #1a1916;
+	box-shadow: 0 1px 3px rgba(26, 25, 22, 0.12);
+}
+.cms-color {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.cms-swatch {
+	width: 34px;
+	height: 34px;
+	padding: 0;
+	border: 1px solid rgba(26, 25, 22, 0.12);
+	border-radius: 8px;
+	overflow: hidden;
+	cursor: pointer;
+	flex-shrink: 0;
+	background: none;
+}
+.cms-swatch input {
+	width: 150%;
+	height: 150%;
+	margin: -25%;
+	cursor: pointer;
+	border: none;
+	padding: 0;
+}
+.cms-range {
+	width: 100%;
+	accent-color: #2a9d8f;
+}
+
+/* ── Scène / cadre responsive en mode édition ───────────────────────────── */
+html.cms-edit-active body {
+	padding-top: 52px;
+}
+/* Décale les en-têtes fixes du site sous la barre d'édition pour les rendre éditables. */
+html.cms-edit-active header.fixed {
+	top: 52px !important;
+}
+.cms-stage {
+	transition:
+		max-width 280ms cubic-bezier(0.32, 0.72, 0, 1),
+		margin 280ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+html.cms-edit-active .cms-stage[data-bp='tablet'],
+html.cms-edit-active .cms-stage[data-bp='mobile'] {
+	margin: 0 auto;
+	box-shadow: 0 0 0 1px rgba(26, 25, 22, 0.08);
+	border-radius: 14px;
+	overflow: hidden;
+}
+html.cms-edit-active .cms-stage[data-bp='tablet'] {
+	max-width: 834px;
+}
+html.cms-edit-active .cms-stage[data-bp='mobile'] {
+	max-width: 390px;
+}

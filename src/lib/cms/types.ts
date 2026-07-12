@@ -209,8 +209,46 @@ export interface BuilderPage {
 	blocks: Block[];
 }
 
+/* ---- Éditeur visuel : couche d'overrides par élément ------------------- */
+export type Breakpoint = 'desktop' | 'tablet' | 'mobile';
+
+/** Styles surchargeables sur un élément éditable (typo, couleur, ombre…). */
+export interface ElementStyle {
+	fontSize?: number; // px
+	fontFamily?: string;
+	fontWeight?: number;
+	lineHeight?: number; // unité em (1.2)
+	letterSpacing?: number; // px
+	textAlign?: 'left' | 'center' | 'right';
+	color?: string;
+	background?: string;
+	borderRadius?: number; // px
+	shadow?: ShadowIntensity;
+	paddingX?: number; // px
+	paddingY?: number; // px
+	opacity?: number; // 0-100
+}
+
+/** Position/dimension surchargée pour un breakpoint donné (canvas libre). */
+export interface ElementLayout {
+	dx?: number; // translation X en px
+	dy?: number; // translation Y en px
+	w?: number; // largeur en px
+	h?: number; // hauteur en px
+	hidden?: boolean;
+}
+
+/** Override complet d'un élément, clé = identifiant stable `data-el`. */
+export interface ElementOverride {
+	content?: { text?: string; href?: string; src?: string; alt?: string };
+	style?: ElementStyle;
+	layout?: Partial<Record<Breakpoint, ElementLayout>>;
+}
+
 export interface SiteContent {
 	theme: Theme;
+	/** Surcharges visuelles par élément (éditeur « Mode édition »). */
+	editorOverrides?: Record<string, ElementOverride>;
 	pages: BuilderPage[];
 	seo: Seo;
 	header: HeaderContent;
@@ -225,4 +263,43 @@ export interface SiteContent {
 	pricing: PricingContent;
 	footer: FooterContent;
 	sections: SectionRef[];
+}
+
+export interface Page {
+	id: string;
+	slug: string;
+	title: string;
+	seo_title: string;
+	seo_description: string;
+	status: 'draft' | 'published';
+	created_at: string;
+	updated_at: string;
+}
+
+export type SectionType =
+	| 'header'
+	| 'hero'
+	| 'stats'
+	| 'showcaseA'
+	| 'showcaseB'
+	| 'showcaseC'
+	| 'integrations'
+	| 'pricing'
+	| 'footer';
+
+export interface PageSection {
+	id: string;
+	page_id: string;
+	type: SectionType | string;
+	order: number;
+	content: any; // Utilise les interfaces existantes (HeroContent, etc.) en JSON
+	settings: any;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface LocalDbSchema {
+	pages: Page[];
+	page_sections: PageSection[];
+	theme: Theme;
 }

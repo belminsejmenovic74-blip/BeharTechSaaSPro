@@ -1,0 +1,6 @@
+-- Behar Tech Pro
+-- Canonical Supabase setup now lives in:
+-- - supabase/migrations/create_client_onboarding.sql
+-- - supabase/migrations/create_visual_cms.sql
+--
+-- Keep this file as an index only so nobody accidentally runs an older CMS schema.

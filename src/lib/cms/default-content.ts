@@ -29,10 +29,47 @@ export const DEFAULT_CONTENT = {
 			bg: '#FAFAF8',
 			maxWidth: 760,
 			blocks: [
-				{ id: 'b1', type: 'heading', text: 'Ma nouvelle page', fontSize: 46, fontWeight: 700, color: '#1A1916', align: 'center', paddingY: 24, paddingX: 16 },
-				{ id: 'b2', type: 'text', text: 'Clique sur un bloc pour le modifier : texte, taille, couleurs, icône, espacement…', fontSize: 18, color: '#6B6B6B', align: 'center', paddingY: 6, paddingX: 16 },
-				{ id: 'b3', type: 'icon', icon: 'sparkles', fontSize: 40, color: '#2A9D8F', align: 'center', paddingY: 16 },
-				{ id: 'b4', type: 'button', text: 'Commencer', href: '/dashboard', bg: '#2A9D8F', color: '#FFFFFF', align: 'center', radius: 12, paddingY: 20 }
+				{
+					id: 'b1',
+					type: 'heading',
+					text: 'Ma nouvelle page',
+					fontSize: 46,
+					fontWeight: 700,
+					color: '#1A1916',
+					align: 'center',
+					paddingY: 24,
+					paddingX: 16
+				},
+				{
+					id: 'b2',
+					type: 'text',
+					text: 'Clique sur un bloc pour le modifier : texte, taille, couleurs, icône, espacement…',
+					fontSize: 18,
+					color: '#6B6B6B',
+					align: 'center',
+					paddingY: 6,
+					paddingX: 16
+				},
+				{
+					id: 'b3',
+					type: 'icon',
+					icon: 'sparkles',
+					fontSize: 40,
+					color: '#2A9D8F',
+					align: 'center',
+					paddingY: 16
+				},
+				{
+					id: 'b4',
+					type: 'button',
+					text: 'Commencer',
+					href: '/dashboard',
+					bg: '#2A9D8F',
+					color: '#FFFFFF',
+					align: 'center',
+					radius: 12,
+					paddingY: 20
+				}
 			]
 		}
 	],
@@ -56,9 +93,9 @@ export const DEFAULT_CONTENT = {
 			{ label: 'Ressources', href: '#' }
 		],
 		loginLabel: 'Connexion',
-		loginHref: '/dashboard',
+		loginHref: '/connexion',
 		ctaLabel: 'Essayer gratuitement',
-		ctaHref: '/dashboard?plan=gratuit'
+		ctaHref: '/inscription'
 	},
 
 	hero: {
@@ -66,7 +103,7 @@ export const DEFAULT_CONTENT = {
 		title: 'Transformez votre atelier.',
 		subtitle: 'Gagnez du temps. Gagnez des clients.\nCentralisez votre atelier dans un seul outil.',
 		ctaLabel: 'Essayer gratuitement',
-		ctaHref: '/dashboard?plan=gratuit',
+		ctaHref: '/inscription',
 		showImage: false,
 		image: '/imgs/mockup-dashboard.png'
 	},
@@ -78,7 +115,13 @@ export const DEFAULT_CONTENT = {
 			{ id: 'st1', value: '20 boutiques', label: 'utilisent nos services', visible: true },
 			{ id: 'st2', value: 'UE + Suisse', label: 'disponible', icon: 'globe', visible: true },
 			{ id: 'st3', value: '3 h', label: 'de temps gagné par semaine', visible: true },
-			{ id: 'st4', value: '+1,4', label: 'de note Google en moyenne', icon: 'google', visible: true },
+			{
+				id: 'st4',
+				value: '+1,4',
+				label: 'de note Google en moyenne',
+				icon: 'google',
+				visible: true
+			},
 			{ id: 'st5', value: '+18 %', label: 'de chiffre d’affaires', visible: true }
 		]
 	},
@@ -240,10 +283,34 @@ export const DEFAULT_CONTENT = {
 						'Contact direct avec l’atelier'
 					],
 					cards: [
-						{ id: 'c-suivi-1', icon: 'messageSquare', title: 'SMS envoyé', text: 'Vous êtes notifié à chaque étape.', visible: true },
-						{ id: 'c-suivi-2', icon: 'fileText', title: 'Documents accessibles', text: 'Facture, certificat et photos en quelques clics.', visible: true },
-						{ id: 'c-suivi-3', icon: 'mail', title: 'Email envoyé', text: 'Suivi automatique par email.', visible: true },
-						{ id: 'c-suivi-4', icon: 'bellRing', title: 'Prêt à récupérer', text: 'Estimation de date et notification dès que c’est prêt.', visible: true }
+						{
+							id: 'c-suivi-1',
+							icon: 'messageSquare',
+							title: 'SMS envoyé',
+							text: 'Vous êtes notifié à chaque étape.',
+							visible: true
+						},
+						{
+							id: 'c-suivi-2',
+							icon: 'fileText',
+							title: 'Documents accessibles',
+							text: 'Facture, certificat et photos en quelques clics.',
+							visible: true
+						},
+						{
+							id: 'c-suivi-3',
+							icon: 'mail',
+							title: 'Email envoyé',
+							text: 'Suivi automatique par email.',
+							visible: true
+						},
+						{
+							id: 'c-suivi-4',
+							icon: 'bellRing',
+							title: 'Prêt à récupérer',
+							text: 'Estimation de date et notification dès que c’est prêt.',
+							visible: true
+						}
 					]
 				},
 				{
@@ -252,12 +319,41 @@ export const DEFAULT_CONTENT = {
 					tabIcon: 'smartphone',
 					img: '/imgs/mockup-c-recond.png',
 					visible: true,
-					bullets: ['Tests détaillés', 'Facture et certificat', 'Photos de l’appareil', 'Confiance à l’achat'],
+					bullets: [
+						'Tests détaillés',
+						'Facture et certificat',
+						'Photos de l’appareil',
+						'Confiance à l’achat'
+					],
 					cards: [
-						{ id: 'c-recond-1', icon: 'shieldCheck', title: '80 points testés', text: 'Contrôle qualité complet.', visible: true },
-						{ id: 'c-recond-2', icon: 'receipt', title: 'Facture accessible', text: 'Disponible à tout moment.', visible: true },
-						{ id: 'c-recond-3', icon: 'badgeCheck', title: 'Certificat disponible', text: 'Preuve du reconditionnement.', visible: true },
-						{ id: 'c-recond-4', icon: 'camera', title: 'Photos de l’appareil', text: 'État réel avant achat.', visible: true }
+						{
+							id: 'c-recond-1',
+							icon: 'shieldCheck',
+							title: '80 points testés',
+							text: 'Contrôle qualité complet.',
+							visible: true
+						},
+						{
+							id: 'c-recond-2',
+							icon: 'receipt',
+							title: 'Facture accessible',
+							text: 'Disponible à tout moment.',
+							visible: true
+						},
+						{
+							id: 'c-recond-3',
+							icon: 'badgeCheck',
+							title: 'Certificat disponible',
+							text: 'Preuve du reconditionnement.',
+							visible: true
+						},
+						{
+							id: 'c-recond-4',
+							icon: 'camera',
+							title: 'Photos de l’appareil',
+							text: 'État réel avant achat.',
+							visible: true
+						}
 					]
 				},
 				{
@@ -266,12 +362,41 @@ export const DEFAULT_CONTENT = {
 					tabIcon: 'mail',
 					img: '/imgs/mockup-c-sms.png',
 					visible: true,
-					bullets: ['Notifications automatiques', 'Moins d’appels entrants', 'Client rassuré', 'Communication claire'],
+					bullets: [
+						'Notifications automatiques',
+						'Moins d’appels entrants',
+						'Client rassuré',
+						'Communication claire'
+					],
 					cards: [
-						{ id: 'c-sms-1', icon: 'messageSquare', title: 'SMS automatique', text: 'Envoyé à chaque changement.', visible: true },
-						{ id: 'c-sms-2', icon: 'mail', title: 'Email automatique', text: 'Récapitulatif clair.', visible: true },
-						{ id: 'c-sms-3', icon: 'bellRing', title: 'Prêt à récupérer', text: 'Le client sait quand venir.', visible: true },
-						{ id: 'c-sms-4', icon: 'activity', title: 'Alerte immédiate', text: 'Aucune information oubliée.', visible: true }
+						{
+							id: 'c-sms-1',
+							icon: 'messageSquare',
+							title: 'SMS automatique',
+							text: 'Envoyé à chaque changement.',
+							visible: true
+						},
+						{
+							id: 'c-sms-2',
+							icon: 'mail',
+							title: 'Email automatique',
+							text: 'Récapitulatif clair.',
+							visible: true
+						},
+						{
+							id: 'c-sms-3',
+							icon: 'bellRing',
+							title: 'Prêt à récupérer',
+							text: 'Le client sait quand venir.',
+							visible: true
+						},
+						{
+							id: 'c-sms-4',
+							icon: 'activity',
+							title: 'Alerte immédiate',
+							text: 'Aucune information oubliée.',
+							visible: true
+						}
 					]
 				},
 				{
@@ -280,12 +405,41 @@ export const DEFAULT_CONTENT = {
 					tabIcon: 'star',
 					img: '/imgs/mockup-c-avis.png',
 					visible: true,
-					bullets: ['Plus d’avis clients', 'Image plus professionnelle', 'Lien d’avis simplifié', 'Meilleure note Google'],
+					bullets: [
+						'Plus d’avis clients',
+						'Image plus professionnelle',
+						'Lien d’avis simplifié',
+						'Meilleure note Google'
+					],
 					cards: [
-						{ id: 'c-avis-1', icon: 'star', title: 'Demande d’avis simplifiée', text: 'En un tap après la réparation.', visible: true },
-						{ id: 'c-avis-2', icon: 'link', title: 'Lien envoyé automatiquement', text: 'Aucune démarche pour vous.', visible: true },
-						{ id: 'c-avis-3', icon: 'trendingUp', title: 'Plus de notes 5 étoiles', text: 'Votre réputation grandit.', visible: true },
-						{ id: 'c-avis-4', icon: 'badgeCheck', title: 'Image plus professionnelle', text: 'Vous vous démarquez.', visible: true }
+						{
+							id: 'c-avis-1',
+							icon: 'star',
+							title: 'Demande d’avis simplifiée',
+							text: 'En un tap après la réparation.',
+							visible: true
+						},
+						{
+							id: 'c-avis-2',
+							icon: 'link',
+							title: 'Lien envoyé automatiquement',
+							text: 'Aucune démarche pour vous.',
+							visible: true
+						},
+						{
+							id: 'c-avis-3',
+							icon: 'trendingUp',
+							title: 'Plus de notes 5 étoiles',
+							text: 'Votre réputation grandit.',
+							visible: true
+						},
+						{
+							id: 'c-avis-4',
+							icon: 'badgeCheck',
+							title: 'Image plus professionnelle',
+							text: 'Vous vous démarquez.',
+							visible: true
+						}
 					]
 				}
 			]
@@ -299,12 +453,48 @@ export const DEFAULT_CONTENT = {
 		subtitle:
 			'Des intégrations utiles pour automatiser votre atelier, informer vos clients et encaisser simplement.',
 		items: [
-			{ id: 'int-sms', name: 'Beevo SMS', desc: 'Envoi automatique de SMS', logo: '/imgs/beevo-sms-logo.png', visible: true },
-			{ id: 'int-email', name: 'Beevo E-mail', desc: 'E-mails transactionnels', logo: '/imgs/beevo-email-logo.png', visible: true },
-			{ id: 'int-amazon', name: 'Amazon IA', desc: 'OCR & lecture automatique', logo: '/imgs/amazon-logo.png', visible: true },
-			{ id: 'int-quali', name: 'Label Quali Répar', desc: 'Gestion des aides réparation', logo: '/imgs/label-quali-repar-logo.png', visible: true },
-			{ id: 'int-stripe', name: 'Stripe', desc: 'Paiements en ligne', logo: '/imgs/stripe-logo.png', visible: true },
-			{ id: 'int-sumup', name: 'SumUp', desc: 'Encaissement en boutique', logo: '/imgs/sumup-logo.png', visible: true }
+			{
+				id: 'int-sms',
+				name: 'Beevo SMS',
+				desc: 'Envoi automatique de SMS',
+				logo: '/imgs/beevo-sms-logo.png',
+				visible: true
+			},
+			{
+				id: 'int-email',
+				name: 'Beevo E-mail',
+				desc: 'E-mails transactionnels',
+				logo: '/imgs/beevo-email-logo.png',
+				visible: true
+			},
+			{
+				id: 'int-amazon',
+				name: 'Amazon IA',
+				desc: 'OCR & lecture automatique',
+				logo: '/imgs/amazon-logo.png',
+				visible: true
+			},
+			{
+				id: 'int-quali',
+				name: 'Label Quali Répar',
+				desc: 'Gestion des aides réparation',
+				logo: '/imgs/label-quali-repar-logo.png',
+				visible: true
+			},
+			{
+				id: 'int-stripe',
+				name: 'Stripe',
+				desc: 'Paiements en ligne',
+				logo: '/imgs/stripe-logo.png',
+				visible: true
+			},
+			{
+				id: 'int-sumup',
+				name: 'SumUp',
+				desc: 'Encaissement en boutique',
+				logo: '/imgs/sumup-logo.png',
+				visible: true
+			}
 		]
 	},
 
@@ -319,8 +509,15 @@ export const DEFAULT_CONTENT = {
 				name: 'Gratuit',
 				description: 'Pour démarrer et tester l’outil sur un premier appareil.',
 				buttonText: 'Commencer',
-				buttonHref: '/dashboard?plan=gratuit',
-				features: ['1 appareil connecté', '10 réparations / mois', '10 SMS inclus', 'Suivi client & QR Code', 'Devis & Factures', 'Support email'],
+				buttonHref: '/inscription',
+				features: [
+					'1 appareil connecté',
+					'10 réparations / mois',
+					'10 SMS inclus',
+					'Suivi client & QR Code',
+					'Devis & Factures',
+					'Support email'
+				],
 				monthlyPrice: 0,
 				yearlyPrice: 0,
 				isMostPopular: false,
@@ -331,8 +528,15 @@ export const DEFAULT_CONTENT = {
 				name: 'Starter',
 				description: 'Pour les petits ateliers qui veulent l’essentiel.',
 				buttonText: 'Choisir Starter',
-				buttonHref: '/dashboard?plan=starter',
-				features: ['2 appareils connectés', 'Réparations illimitées', '30 SMS inclus', 'Suivi client & QR Code', 'Devis & Factures', 'Support prioritaire'],
+				buttonHref: '/inscription',
+				features: [
+					'2 appareils connectés',
+					'Réparations illimitées',
+					'30 SMS inclus',
+					'Suivi client & QR Code',
+					'Devis & Factures',
+					'Support prioritaire'
+				],
 				monthlyPrice: 2900,
 				yearlyPrice: 29000,
 				isMostPopular: false,
@@ -343,8 +547,16 @@ export const DEFAULT_CONTENT = {
 				name: 'Pro',
 				description: 'Le plus choisi par les ateliers en croissance.',
 				buttonText: 'Choisir Pro',
-				buttonHref: '/dashboard?plan=pro',
-				features: ['4 appareils connectés', 'Réparations illimitées', '150 SMS inclus', 'Suivi client & QR Code', 'Devis & Factures', 'Support prioritaire', 'Export comptable'],
+				buttonHref: '/inscription',
+				features: [
+					'4 appareils connectés',
+					'Réparations illimitées',
+					'150 SMS inclus',
+					'Suivi client & QR Code',
+					'Devis & Factures',
+					'Support prioritaire',
+					'Export comptable'
+				],
 				monthlyPrice: 4900,
 				yearlyPrice: 49000,
 				isMostPopular: true,
@@ -355,8 +567,16 @@ export const DEFAULT_CONTENT = {
 				name: 'Business',
 				description: 'Pour les ateliers multi-postes et le volume.',
 				buttonText: 'Choisir Business',
-				buttonHref: '/dashboard?plan=business',
-				features: ['Appareils illimités', 'Réparations illimitées', '250 SMS inclus', 'Suivi client & QR Code', 'Devis & Factures', 'Support dédié', 'Export comptable'],
+				buttonHref: '/inscription',
+				features: [
+					'Appareils illimités',
+					'Réparations illimitées',
+					'250 SMS inclus',
+					'Suivi client & QR Code',
+					'Devis & Factures',
+					'Support dédié',
+					'Export comptable'
+				],
 				monthlyPrice: 9900,
 				yearlyPrice: 99000,
 				isMostPopular: false,
@@ -366,7 +586,13 @@ export const DEFAULT_CONTENT = {
 		setup: {
 			name: 'Setup Atelier',
 			description: 'Installation clé en main de votre atelier, réalisée par notre équipe.',
-			features: ['Configuration complète', 'Paramètres perso', 'Formation incluse', 'Import de vos données', 'Accompagnement'],
+			features: [
+				'Configuration complète',
+				'Paramètres perso',
+				'Formation incluse',
+				'Import de vos données',
+				'Accompagnement'
+			],
 			price: '99€',
 			note: 'paiement unique',
 			buttonText: 'En savoir plus',

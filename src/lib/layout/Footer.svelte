@@ -4,6 +4,7 @@
 	import { Input } from '$lib/components/ui/input';
 	import Button from '$lib/components/ui/button/button.svelte';
 	import { getCms } from '$lib/cms/context';
+	import { editable } from '$lib/editor/editable';
 
 	const cms = getCms();
 	$: footer = $cms.footer;
@@ -24,9 +25,12 @@
 						>PRO</span
 					>
 				</a>
-				<p class="max-w-xs">{footer.tagline}</p>
+				<p use:editable={{ id: 'footer.tagline', kind: 'text', path: 'footer.tagline', label: 'Slogan', multiline: true }} class="max-w-xs">{footer.tagline}</p>
 				<div class="mt-2 flex max-w-xs flex-col gap-2">
-					<h2 class="text-sm font-medium uppercase tracking-tighter text-gray-900">
+					<h2
+						use:editable={{ id: 'footer.newsletterTitle', kind: 'heading', path: 'footer.newsletterTitle', label: 'Titre newsletter' }}
+						class="text-sm font-medium uppercase tracking-tighter text-gray-900"
+					>
 						{footer.newsletterTitle}
 					</h2>
 					<form class="flex items-center gap-2" on:submit|preventDefault={() => {}}>
@@ -36,16 +40,20 @@
 				</div>
 			</div>
 			<div class="grid grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-10">
-				{#each footer.columns as nav}
+				{#each footer.columns as nav, ci}
 					<div>
-						<h2 class="mb-6 text-sm font-medium uppercase tracking-tighter text-gray-900">
+						<h2
+							use:editable={{ id: `footer.columns.${ci}.label`, kind: 'heading', path: `footer.columns.${ci}.label`, label: 'Titre de colonne' }}
+							class="mb-6 text-sm font-medium uppercase tracking-tighter text-gray-900"
+						>
 							{nav.label}
 						</h2>
 						<ul class="grid gap-2">
-							{#each nav.items as item}
+							{#each nav.items as item, ii}
 								<li>
 									<a
 										href={item.href}
+										use:editable={{ id: `footer.columns.${ci}.items.${ii}`, kind: 'button', path: `footer.columns.${ci}.items.${ii}.label`, label: 'Lien', fields: { href: `footer.columns.${ci}.items.${ii}.href` } }}
 										class="cursor-pointer text-sm font-[450] text-gray-400 duration-200 hover:text-gray-600"
 									>
 										{item.label}
@@ -71,7 +79,7 @@
 			</div>
 			<span class="text-sm text-gray-500 sm:text-center">
 				© {new Date().getFullYear()}
-				<a href="/" class="cursor-pointer">{footer.copyright}</a>. Tous droits réservés.
+				<a href="/" use:editable={{ id: 'footer.copyright', kind: 'heading', path: 'footer.copyright', label: 'Copyright' }} class="cursor-pointer">{footer.copyright}</a>. Tous droits réservés.
 			</span>
 		</div>
 	</div>

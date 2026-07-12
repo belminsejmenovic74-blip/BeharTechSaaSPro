@@ -1,51 +1,44 @@
 <script lang="ts">
 	import { seo } from '$lib';
-	import ClientSection from '$lib/components/landing/ClientSection.svelte';
-	import CtaSection from '$lib/components/landing/CtaSection.svelte';
-	import HeroSection from '$lib/components/landing/HeroSection.svelte';
-	import PricingSection from '$lib/components/landing/PricingSection.svelte';
-	import ShowcaseCarousel from '$lib/components/landing/ShowcaseCarousel.svelte';
-	import SphereMask from '$lib/components/magic/SphereMask/SphereMask.svelte';
+	import { onMount } from 'svelte';
 	import type { SiteContent } from '$lib/cms/types';
+	import { createDefaultDb, loadPublishedDb } from '$lib/cms/db';
+	import SectionRenderer from '$lib/components/landing/SectionRenderer.svelte';
 
 	export let data: { content: SiteContent };
-	$: content = data.content;
+	$: seoContent = data.content.seo;
+
+	let db = createDefaultDb();
+
+	onMount(() => {
+		loadPublishedDb().then((published) => {
+			db = published;
+		});
+	});
+
+	// Trier les sections selon l'ordre défini par l'admin
+	$: sections = db.page_sections.sort((a, b) => a.order - b.order);
 </script>
 
 <svelte:head>
-	<title>{content.seo.title || seo.title}</title>
-	<meta name="description" content={content.seo.description} />
-	<meta name="keywords" content={content.seo.keywords} />
+	<title>{seoContent.title || seo.title}</title>
+	<meta name="description" content={seoContent.description} />
+	<meta name="keywords" content={seoContent.keywords} />
 
-	<meta property="og:title" content={content.seo.title} />
-	<meta property="og:description" content={content.seo.description} />
-	<meta property="og:image" content={content.seo.image} />
-	<meta property="og:site_name" content={content.seo.title} />
-	<meta property="og:url" content={content.seo.url} />
+	<meta property="og:title" content={seoContent.title} />
+	<meta property="og:description" content={seoContent.description} />
+	<meta property="og:image" content={seoContent.image} />
+	<meta property="og:site_name" content={seoContent.title} />
+	<meta property="og:url" content={seoContent.url} />
 
 	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="twitter:title" content={content.seo.title} />
-	<meta name="twitter:description" content={content.seo.description} />
-	<meta name="twitter:image" content={content.seo.image} />
+	<meta name="twitter:title" content={seoContent.title} />
+	<meta name="twitter:description" content={seoContent.description} />
+	<meta name="twitter:image" content={seoContent.image} />
 </svelte:head>
 
-{#each content.sections as section (section.id)}
-	{#if section.visible}
-		{#if section.id === 'hero'}
-			<HeroSection />
-		{:else if section.id === 'stats'}
-			<ClientSection />
-		{:else if section.id === 'showcaseA'}
-			<SphereMask />
-			<ShowcaseCarousel id="pense" config={content.showcases.A} />
-		{:else if section.id === 'showcaseB'}
-			<ShowcaseCarousel config={content.showcases.B} />
-		{:else if section.id === 'showcaseC'}
-			<ShowcaseCarousel config={content.showcases.C} />
-		{:else if section.id === 'integrations'}
-			<CtaSection />
-		{:else if section.id === 'pricing'}
-			<PricingSection />
-		{/if}
+{#each sections as section (section.id)}
+	{#if section.settings.visible}
+		<SectionRenderer {section} />
 	{/if}
 {/each}

@@ -1,158 +1,423 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { toast } from 'svelte-sonner';
 	import { writable } from 'svelte/store';
 	import { goto } from '$app/navigation';
+	import posthog from 'posthog-js';
 	import {
-		Palette, LayoutList, PanelTop, Sparkles, BarChart3, LayoutGrid, Puzzle,
-		CreditCard, PanelBottom, Search, ExternalLink, RotateCcw, Save, LogOut, Download,
-		FileStack
+		ExternalLink,
+		RotateCcw,
+		Save,
+		LogOut,
+		Download,
+		Plus,
+		LayoutTemplate,
+		Layers,
+		Wand2
 	} from 'lucide-svelte';
-	import type { SiteContent } from '$lib/cms/types';
+
+	import type { LocalDbSchema, PageSection } from '$lib/cms/types';
+	import {
+		cacheDraftDb,
+		clearDb,
+		createDefaultDb,
+		loadDraftDb,
+		logoutAdmin,
+		newCmsId,
+		publishDb,
+		saveDraftDb
+	} from '$lib/cms/db';
 	import { DEFAULT_CONTENT } from '$lib/cms/default-content';
-	import { clearLocalContent, loadLocalContent, saveLocalContent, setAuthed } from '$lib/cms/local';
+	import { clearAdminSession, getAdminSession } from '$lib/cms/local';
 
-	import AdminThemeEditor from '$lib/components/admin/editors/AdminThemeEditor.svelte';
-	import AdminSectionsEditor from '$lib/components/admin/editors/AdminSectionsEditor.svelte';
-	import AdminHeaderEditor from '$lib/components/admin/editors/AdminHeaderEditor.svelte';
-	import AdminHeroEditor from '$lib/components/admin/editors/AdminHeroEditor.svelte';
-	import AdminStatsEditor from '$lib/components/admin/editors/AdminStatsEditor.svelte';
-	import AdminShowcaseEditor from '$lib/components/admin/editors/AdminShowcaseEditor.svelte';
-	import AdminIntegrationsEditor from '$lib/components/admin/editors/AdminIntegrationsEditor.svelte';
-	import AdminPricingEditor from '$lib/components/admin/editors/AdminPricingEditor.svelte';
-	import AdminFooterEditor from '$lib/components/admin/editors/AdminFooterEditor.svelte';
-	import AdminSeoEditor from '$lib/components/admin/editors/AdminSeoEditor.svelte';
-	import AdminPagesEditor from '$lib/components/admin/editors/AdminPagesEditor.svelte';
-	import LivePreview from './LivePreview.svelte';
+	import VisualEditor from './VisualEditor.svelte';
+	import RightPanel from '$lib/components/admin/cms/RightPanel.svelte';
+	import BlockLibraryModal from '$lib/components/admin/cms/BlockLibraryModal.svelte';
 
-	export let data: { content: SiteContent };
+	let isMounted = false;
+	const db = writable<LocalDbSchema>({
+		pages: [],
+		page_sections: [],
+		theme: DEFAULT_CONTENT.theme
+	});
+	let adminSession = '';
+	let loadingCms = true;
+	let loadingError = '';
+	let saving = false;
+	let publishing = false;
 
-	let content: SiteContent = loadLocalContent(data.content);
-	const preview = writable<SiteContent>(content);
-	// Chaque édition rafraîchit l'aperçu live (nouvelle réf top → réactivité).
-	const touch = () => preview.set({ ...content });
+	onMount(() => {
+		adminSession = getAdminSession();
+		if (!adminSession) {
+			goto('/admin/login');
+			return;
+		}
 
-	const MEDIA = [
-		'/imgs/mockup-dashboard.png', '/imgs/mockup-comptoir.png', '/imgs/mockup-a-mobile.png',
-		'/imgs/mockup-a-atelier.png', '/imgs/mockup-b-ocr.png', '/imgs/mockup-b-rachat.png',
-		'/imgs/mockup-b-suivi.png', '/imgs/mockup-b-widget.png', '/imgs/mockup-c-suivi.png',
-		'/imgs/mockup-c-recond.png', '/imgs/mockup-c-sms.png', '/imgs/mockup-c-avis.png',
-		'/imgs/amazon-logo.png', '/imgs/beevo-sms-logo.png', '/imgs/beevo-email-logo.png',
-		'/imgs/label-quali-repar-logo.png', '/imgs/stripe-logo.png', '/imgs/sumup-logo.png'
-	];
+		loadDraftDb(adminSession)
+			.then((loaded) => {
+				db.set(loaded);
+			})
+			.catch((error) => {
+				loadingError = error instanceof Error ? error.message : 'Chargement Supabase impossible.';
+				db.set(createDefaultDb());
+			})
+			.finally(() => {
+				loadingCms = false;
+				isMounted = true;
+			});
+	});
 
-	const groups = [
-		{ id: 'apparence', label: 'Apparence', icon: Palette },
-		{ id: 'sections', label: 'Sections', icon: LayoutList },
-		{ id: 'header', label: 'En-tête', icon: PanelTop },
-		{ id: 'hero', label: 'Hero', icon: Sparkles },
-		{ id: 'stats', label: 'Chiffres', icon: BarChart3 },
-		{ id: 'showcaseA', label: 'Écrans boutique', icon: LayoutGrid },
-		{ id: 'showcaseB', label: 'Services', icon: LayoutGrid },
-		{ id: 'showcaseC', label: 'Clients', icon: LayoutGrid },
-		{ id: 'integrations', label: 'Intégrations', icon: Puzzle },
-		{ id: 'pricing', label: 'Tarifs', icon: CreditCard },
-		{ id: 'footer', label: 'Pied de page', icon: PanelBottom },
-		{ id: 'seo', label: 'SEO', icon: Search },
-		{ id: 'pages', label: 'Pages', icon: FileStack }
-	] as const;
+	let activeSectionId: string | null = null;
+	$: activeSection = $db.page_sections.find((s) => s.id === activeSectionId) || null;
 
-	let tab: string = 'apparence';
+	let showBlockLibrary = false;
 
-	function save() {
-		saveLocalContent(content);
-		toast.success('Enregistré — visible sur le site dans ce navigateur');
+	// Actions sur les sections
+	function handleSelect(id: string | null) {
+		activeSectionId = id;
 	}
+
+	function handleMoveUp(id: string) {
+		const idx = $db.page_sections.findIndex((s) => s.id === id);
+		if (idx > 0) {
+			const sections = [...$db.page_sections];
+			const temp = sections[idx - 1];
+			sections[idx - 1] = sections[idx];
+			sections[idx] = temp;
+			// Réassigner les ordres
+			sections.forEach((s, i) => (s.order = i));
+			$db.page_sections = sections;
+			touch();
+		}
+	}
+
+	function handleMoveDown(id: string) {
+		const idx = $db.page_sections.findIndex((s) => s.id === id);
+		if (idx > -1 && idx < $db.page_sections.length - 1) {
+			const sections = [...$db.page_sections];
+			const temp = sections[idx + 1];
+			sections[idx + 1] = sections[idx];
+			sections[idx] = temp;
+			// Réassigner les ordres
+			sections.forEach((s, i) => (s.order = i));
+			$db.page_sections = sections;
+			touch();
+		}
+	}
+
+	function handleDuplicate(id: string) {
+		const idx = $db.page_sections.findIndex((s) => s.id === id);
+		if (idx > -1) {
+			const original = $db.page_sections[idx];
+			const clone: PageSection = {
+				...structuredClone(original),
+				id: newCmsId(),
+				created_at: new Date().toISOString(),
+				updated_at: new Date().toISOString()
+			};
+			const sections = [...$db.page_sections];
+			sections.splice(idx + 1, 0, clone);
+			sections.forEach((s, i) => (s.order = i));
+			$db.page_sections = sections;
+			activeSectionId = clone.id;
+			toast.success('Section dupliquée');
+			touch();
+		}
+	}
+
+	function handleDelete(id: string) {
+		if (confirm('Voulez-vous vraiment supprimer cette section ?')) {
+			const sections = $db.page_sections.filter((s) => s.id !== id);
+			sections.forEach((s, i) => (s.order = i));
+			$db.page_sections = sections;
+			activeSectionId = null;
+			toast.success('Section supprimée');
+			touch();
+		}
+	}
+
+	function handleAddSection(type: string) {
+		let content = (DEFAULT_CONTENT as any)[type];
+		if (type.startsWith('showcase')) {
+			content = (DEFAULT_CONTENT.showcases as any)[type.replace('showcase', '')];
+		}
+
+		const newSection: PageSection = {
+			id: newCmsId(),
+			page_id: $db.pages[0].id, // fallback page d'accueil
+			type: type,
+			order: $db.page_sections.length,
+			content: structuredClone(content),
+			settings: { visible: true },
+			created_at: new Date().toISOString(),
+			updated_at: new Date().toISOString()
+		};
+
+		$db.page_sections = [...$db.page_sections, newSection];
+		showBlockLibrary = false;
+		activeSectionId = newSection.id;
+		toast.success('Section ajoutée');
+		touch();
+	}
+
+	// Sauvegarde & Publication
+	function touch() {
+		// Appelé pour forcer la réactivité et la sauvegarde brouillon
+		$db = $db;
+		cacheDraftDb($db);
+	}
+
+	async function saveDraft() {
+		if (!adminSession) {
+			toast.error('Session admin expirée.');
+			goto('/admin/login');
+			return;
+		}
+		saving = true;
+		try {
+			await saveDraftDb($db, adminSession);
+			posthog.capture('admin_draft_saved');
+			toast.success('Brouillon enregistré dans Supabase');
+		} catch (error) {
+			toast.error('Enregistrement impossible', {
+				description: error instanceof Error ? error.message : 'Erreur Supabase.'
+			});
+		} finally {
+			saving = false;
+		}
+	}
+
+	async function publish() {
+		if (!adminSession) {
+			toast.error('Session admin expirée.');
+			goto('/admin/login');
+			return;
+		}
+		publishing = true;
+		try {
+			await publishDb($db, adminSession);
+			posthog.capture('admin_published');
+			toast.success('Site publié avec succès !', {
+				description: 'Les modifications publiées sont maintenant enregistrées dans Supabase.'
+			});
+		} catch (error) {
+			toast.error('Publication impossible', {
+				description: error instanceof Error ? error.message : 'Erreur Supabase.'
+			});
+		} finally {
+			publishing = false;
+		}
+	}
+
+	async function reset() {
+		if (
+			!confirm(
+				"Réinitialiser tout le contenu (brouillon et publié) sur la version d'origine Behar Tech Pro ?"
+			)
+		)
+			return;
+		await clearDb(adminSession);
+		db.set(createDefaultDb());
+		toast.success('Brouillon réinitialisé');
+	}
+
 	function exportJson() {
-		const blob = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
+		// Exporte la version publiée
+		const blob = new Blob([JSON.stringify($db, null, 2)], { type: 'application/json' });
 		const a = document.createElement('a');
 		a.href = URL.createObjectURL(blob);
-		a.download = 'site-content.json';
+		a.download = 'database.json';
 		a.click();
 		URL.revokeObjectURL(a.href);
-		toast.success('site-content.json exporté — committe-le pour la prod');
+		posthog.capture('admin_content_exported');
+		toast.success('Fichier JSON exporté !', {
+			description: 'Commitez ce fichier dans votre dépôt Git pour que Vercel le mette en ligne.'
+		});
 	}
-	function reset() {
-		if (!confirm('Réinitialiser tout le contenu sur la DA Behar Tech Pro ?')) return;
-		content = structuredClone(DEFAULT_CONTENT);
-		clearLocalContent();
-		preview.set({ ...content });
-		toast.success('Contenu réinitialisé');
-	}
-	function logout() {
-		setAuthed(false);
+
+	async function logout() {
+		if (adminSession) await logoutAdmin(adminSession);
+		clearAdminSession();
 		goto('/admin/login');
 	}
 </script>
 
-<svelte:head><title>Admin · Behar Tech Pro</title></svelte:head>
+<svelte:head><title>Admin · Visual CMS</title></svelte:head>
 
-<div class="flex h-screen flex-col">
-	<!-- Topbar -->
-	<header class="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4">
-		<div class="flex items-center gap-2 font-semibold">
-			<span class="flex size-7 items-center justify-center rounded-lg bg-emerald-600 text-xs text-white">BT</span>
-			Behar CMS
-		</div>
-		<div class="flex items-center gap-2">
-			<a href="/" target="_blank" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
-				<ExternalLink class="size-4" /> <span class="hidden sm:inline">Voir le site</span>
-			</a>
-			<button type="button" on:click={exportJson} class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
-				<Download class="size-4" /> <span class="hidden sm:inline">Exporter JSON</span>
-			</button>
-			<button type="button" on:click={reset} class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">
-				<RotateCcw class="size-4" /> <span class="hidden sm:inline">Réinitialiser</span>
-			</button>
-			<button type="button" on:click={save} class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700">
-				<Save class="size-4" /> Enregistrer
-			</button>
-			<button type="button" on:click={logout} title="Déconnexion" class="rounded-lg border border-slate-300 p-1.5 text-slate-500 hover:bg-slate-50">
-				<LogOut class="size-4" />
-			</button>
-		</div>
-	</header>
-
-	<div class="flex min-h-0 flex-1">
-		<!-- Sidebar -->
-		<aside class="hidden w-48 shrink-0 overflow-auto border-r border-slate-200 bg-white p-3 md:block">
-			{#each groups as g}
-				<button type="button" on:click={() => (tab = g.id)}
-					class="mb-0.5 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition {tab === g.id ? 'bg-emerald-50 font-medium text-emerald-700' : 'text-slate-600 hover:bg-slate-50'}">
-					<svelte:component this={g.icon} class="size-4" /> {g.label}
-				</button>
-			{/each}
-		</aside>
-
-		<!-- Éditeur -->
-		<main class="w-full overflow-auto p-5 lg:w-[440px] lg:shrink-0" on:input={touch} on:change={touch} on:click={touch}>
-			<select bind:value={tab} class="mb-4 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm md:hidden">
-				{#each groups as g}<option value={g.id}>{g.label}</option>{/each}
-			</select>
-			{#if tab === 'apparence'}<AdminThemeEditor bind:theme={content.theme} />
-			{:else if tab === 'sections'}<AdminSectionsEditor bind:sections={content.sections} />
-			{:else if tab === 'header'}<AdminHeaderEditor bind:header={content.header} />
-			{:else if tab === 'hero'}<AdminHeroEditor bind:hero={content.hero} media={MEDIA} />
-			{:else if tab === 'stats'}<AdminStatsEditor bind:stats={content.stats} />
-			{:else if tab === 'showcaseA'}<AdminShowcaseEditor bind:showcase={content.showcases.A} media={MEDIA} />
-			{:else if tab === 'showcaseB'}<AdminShowcaseEditor bind:showcase={content.showcases.B} media={MEDIA} />
-			{:else if tab === 'showcaseC'}<AdminShowcaseEditor bind:showcase={content.showcases.C} media={MEDIA} />
-			{:else if tab === 'integrations'}<AdminIntegrationsEditor bind:integrations={content.integrations} media={MEDIA} />
-			{:else if tab === 'pricing'}<AdminPricingEditor bind:pricing={content.pricing} />
-			{:else if tab === 'footer'}<AdminFooterEditor bind:footer={content.footer} />
-			{:else if tab === 'seo'}<AdminSeoEditor bind:seo={content.seo} media={MEDIA} />
-			{:else if tab === 'pages'}<AdminPagesEditor bind:pages={content.pages} media={MEDIA} />
-			{/if}
-		</main>
-
-		<!-- Aperçu live -->
-		<section class="hidden flex-1 flex-col bg-slate-100 p-4 lg:flex">
-			<div class="mb-2 flex items-center gap-2 text-xs font-medium text-slate-500">
-				<span class="size-2 rounded-full bg-emerald-500"></span>
-				Aperçu live — clique une zone du site pour l’éditer
-			</div>
-			<div class="min-h-0 flex-1">
-				<LivePreview content={preview} activeTab={tab} onSelect={(t) => (tab = t)} />
-			</div>
-		</section>
+{#if loadingCms}
+	<div class="flex h-screen items-center justify-center bg-[#FAFAF8] text-sm text-slate-500">
+		Chargement du CMS Supabase…
 	</div>
-</div>
+{:else if isMounted}
+	<div class="flex h-screen flex-col overflow-hidden bg-white">
+		<!-- Topbar -->
+		<header
+			class="z-[60] flex h-14 shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 shadow-sm"
+		>
+			<div class="flex items-center gap-2 font-semibold">
+				<span
+					class="flex size-8 items-center justify-center rounded-lg bg-emerald-600 text-sm text-white shadow-inner"
+					>BT</span
+				>
+				<span class="text-slate-800">Visual CMS</span>
+				<span
+					class="ml-2 rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-slate-500"
+					>Pro</span
+				>
+			</div>
+			<div class="flex items-center gap-3">
+				<a
+					href="/?edit=1"
+					class="inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700"
+				>
+					<Wand2 class="size-4" /> <span>Mode édition (site)</span>
+				</a>
+
+				<a
+					href="/"
+					target="_blank"
+					class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"
+				>
+					<ExternalLink class="size-4" /> <span class="hidden sm:inline">Voir le site public</span>
+				</a>
+
+				<div class="mx-1 h-4 w-px bg-slate-200"></div>
+
+				<button
+					type="button"
+					on:click={() => (showBlockLibrary = true)}
+					class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+				>
+					<Plus class="size-4" /> <span class="hidden sm:inline">Ajouter section</span>
+				</button>
+
+				<button
+					type="button"
+					on:click={saveDraft}
+					class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-4 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+				>
+					{saving ? 'Enregistrement…' : 'Enregistrer brouillon'}
+				</button>
+
+				<button
+					type="button"
+					on:click={publish}
+					class="inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-4 py-1.5 text-sm font-medium text-white shadow-sm transition hover:bg-teal-700"
+				>
+					<Save class="size-4" />
+					{publishing ? 'Publication…' : 'Publier'}
+				</button>
+
+				<div class="mx-1 h-4 w-px bg-slate-200"></div>
+
+				<button
+					type="button"
+					on:click={exportJson}
+					class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-slate-500 transition hover:bg-slate-50"
+					title="Exporter pour Vercel"
+				>
+					<Download class="size-4" /> <span class="hidden sm:inline">Exporter (Vercel)</span>
+				</button>
+
+				<button
+					type="button"
+					on:click={logout}
+					title="Déconnexion"
+					class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-900"
+				>
+					<LogOut class="size-4" />
+				</button>
+			</div>
+		</header>
+
+		<div class="relative flex min-h-0 flex-1">
+			{#if loadingError}
+				<div
+					class="absolute left-1/2 top-4 z-[90] -translate-x-1/2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-800 shadow-sm"
+				>
+					{loadingError}
+				</div>
+			{/if}
+			<!-- Sidebar Gauche (Pages - Optionnel pour l'instant) -->
+			<aside
+				class="z-50 hidden w-16 shrink-0 flex-col border-r border-slate-200 bg-white sm:flex md:w-56"
+			>
+				<div class="border-b border-slate-100 p-3">
+					<div
+						class="mb-2 ml-2 hidden text-xs font-semibold uppercase tracking-wider text-slate-400 md:block"
+					>
+						Pages
+					</div>
+					<button
+						class="flex w-full items-center gap-3 rounded-lg bg-teal-50 px-3 py-2 text-sm font-medium text-teal-700 transition"
+					>
+						<LayoutTemplate class="size-4" /> <span class="hidden md:inline">Accueil</span>
+					</button>
+				</div>
+				<div class="flex-1 p-3">
+					<div
+						class="mb-2 ml-2 hidden text-xs font-semibold uppercase tracking-wider text-slate-400 md:block"
+					>
+						Structure
+					</div>
+					{#each $db.page_sections as sec}
+						<button
+							class="flex w-full items-center gap-3 rounded-lg px-3 py-1.5 text-sm transition {activeSectionId ===
+							sec.id
+								? 'bg-slate-100 font-medium text-slate-900'
+								: 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}"
+							on:click={() => handleSelect(sec.id)}
+						>
+							<Layers class="size-3.5 opacity-70" />
+							<span class="hidden truncate capitalize md:inline"
+								>{sec.type.replace('showcase', 'Showcase ')}</span
+							>
+							{#if !sec.settings.visible}
+								<span class="ml-auto flex size-2 rounded-full bg-slate-300"></span>
+							{/if}
+						</button>
+					{/each}
+				</div>
+				<div class="mt-auto border-t border-slate-100 p-4">
+					<button
+						type="button"
+						on:click={reset}
+						class="flex w-full items-center gap-2 text-xs text-slate-400 transition hover:text-red-500"
+					>
+						<RotateCcw class="size-3.5" /> <span class="hidden md:inline">Réinitialiser</span>
+					</button>
+				</div>
+			</aside>
+
+			<!-- Éditeur Visuel (Workspace) -->
+			<main
+				class="relative min-w-0 flex-1 overflow-hidden bg-slate-50 shadow-[inset_0_0_20px_rgba(0,0,0,0.02)]"
+			>
+				<VisualEditor
+					{db}
+					{activeSectionId}
+					onSelect={handleSelect}
+					onMoveUp={handleMoveUp}
+					onMoveDown={handleMoveDown}
+					onDuplicate={handleDuplicate}
+					onDelete={handleDelete}
+					onAddSection={() => (showBlockLibrary = true)}
+				/>
+			</main>
+
+			<!-- Panneau Droit (Propriétés) -->
+			<RightPanel
+				section={activeSection}
+				theme={$db.theme}
+				onClose={() => (activeSectionId = null)}
+				onChange={touch}
+			/>
+		</div>
+	</div>
+
+	<BlockLibraryModal
+		show={showBlockLibrary}
+		onClose={() => (showBlockLibrary = false)}
+		onSelect={handleAddSection}
+	/>
+{/if}

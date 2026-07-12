@@ -143,6 +143,13 @@
 	function touch() {
 		pages = pages;
 	}
+
+	const BLOCK_TYPES: BlockType[] = ['heading', 'text', 'button', 'image', 'icon', 'divider', 'spacer'];
+	const ALIGN_OPTIONS: Array<{v: 'left' | 'center' | 'right', i: any}> = [
+		{v: 'left', i: AlignLeft},
+		{v: 'center', i: AlignCenter},
+		{v: 'right', i: AlignRight}
+	];
 </script>
 
 <!-- ═══════ PAGE LIST ═══════ -->
@@ -209,7 +216,7 @@
 					<Color bind:value={activePage.bg} />
 				</Field>
 				<Field label="Largeur max (px)">
-					<Txt bind:value={activePage.maxWidth} type="number" placeholder="760" />
+					<input type="number" bind:value={activePage.maxWidth} placeholder="760" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
 				</Field>
 			</div>
 		</div>
@@ -246,6 +253,8 @@
 									{BLOCK_LABELS[block.type]}
 								</span>
 
+								<!-- svelte-ignore a11y_click_events_have_key_events -->
+								<!-- svelte-ignore a11y_no_static_element_interactions -->
 								<div class="flex items-center gap-0.5 opacity-0 transition group-hover:opacity-100"
 									on:click|stopPropagation={() => {}}>
 									<button type="button" title="Monter" disabled={bi === 0}
@@ -343,13 +352,13 @@
 								{#if block.type !== 'spacer' && block.type !== 'divider'}
 									<Field label="Alignement">
 										<div class="flex gap-1">
-											{#each [['left', AlignLeft], ['center', AlignCenter], ['right', AlignRight]] as [val, Icon]}
+											{#each ALIGN_OPTIONS as item}
 												<button type="button"
-													on:click={() => { block.align = val; touch(); }}
-													class="rounded-lg p-2 transition {block.align === val
+													on:click={() => { block.align = item.v; touch(); }}
+													class="rounded-lg p-2 transition {block.align === item.v
 														? 'bg-emerald-100 text-emerald-700'
 														: 'bg-white text-slate-500 hover:bg-slate-100'}">
-													<svelte:component this={Icon} class="size-4" />
+													<svelte:component this={item.i} class="size-4" />
 												</button>
 											{/each}
 										</div>
@@ -430,7 +439,7 @@
 		<div class="rounded-xl border border-dashed border-slate-300 bg-white p-3">
 			<p class="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">Ajouter un bloc</p>
 			<div class="flex flex-wrap gap-1.5">
-				{#each /** @type {BlockType[]} */ (['heading', 'text', 'button', 'image', 'icon', 'divider', 'spacer']) as btype}
+				{#each BLOCK_TYPES as btype}
 					<button type="button" on:click={() => addBlock(btype)}
 						class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700">
 						{#if btype === 'heading'}<Heading class="size-3.5" />

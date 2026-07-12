@@ -3,9 +3,16 @@
 	import { AlignJustify, XIcon } from 'lucide-svelte';
 	import { fly } from 'svelte/transition';
 	import { getCms } from '$lib/cms/context';
+	import { editable } from '$lib/editor/editable';
+	import BrandLogo from '$lib/components/brand/BrandLogo.svelte';
+	import posthog from 'posthog-js';
 
 	const cms = getCms();
 	$: header = $cms.header;
+
+	function onNavCtaClick() {
+		posthog.capture('nav_cta_clicked', { cta_label: header.ctaLabel, cta_href: header.ctaHref });
+	}
 	// Menu mobile = liens de nav + connexion + CTA.
 	$: mobileItems = [
 		...header.nav,
@@ -32,22 +39,28 @@
 	style="background: var(--bt-glass-bg); backdrop-filter: blur(var(--bt-glass-blur)); -webkit-backdrop-filter: blur(var(--bt-glass-blur));"
 >
 	<div class="container flex h-20 items-center justify-between">
-		<a class="text-md flex items-center gap-1.5 font-semibold" href="/">
-			{header.brand}<span
-				class="rounded-[5px] border px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wide"
-				>{header.badge}</span
-			>
-		</a>
+		<BrandLogo compact />
 
 		<div class="ml-auto hidden items-center gap-6 md:flex lg:gap-8">
-			{#each header.nav as item}
-				<a href={item.href} class="text-sm text-gray-600 transition hover:text-[#1A1916]">{item.label}</a>
+			{#each header.nav as item, i}
+				<a
+					href={item.href}
+					use:editable={{ id: `header.nav.${i}`, kind: 'button', path: `header.nav.${i}.label`, label: 'Lien de nav', fields: { href: `header.nav.${i}.href` } }}
+					class="text-sm text-gray-600 transition hover:text-[#1A1916]">{item.label}</a
+				>
 			{/each}
-			<a class="text-sm text-[#1A1916]" href={header.loginHref}>{header.loginLabel}</a>
+			<a
+				class="text-sm text-[#1A1916]"
+				href={header.loginHref}
+				use:editable={{ id: 'header.login', kind: 'button', path: 'header.loginLabel', label: 'Connexion', fields: { href: 'header.loginHref' } }}
+				>{header.loginLabel}</a
+			>
 			<a
 				class="rounded-lg px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
 				style="background: var(--bt-button)"
-				href={header.ctaHref}>{header.ctaLabel}</a
+				href={header.ctaHref}
+				use:editable={{ id: 'header.cta', kind: 'button', path: 'header.ctaLabel', label: 'CTA en-tête', fields: { href: 'header.ctaHref' } }}
+				on:click={onNavCtaClick}>{header.ctaLabel}</a
 			>
 		</div>
 		<button class="ml-6 md:hidden" use:toggleOverflowHidden>
@@ -69,12 +82,7 @@
 >
 	{#if hamburgerMenuIsOpen}
 		<div class="container flex h-20 items-center justify-between">
-			<a class="text-md flex items-center gap-1.5 font-semibold" href="/">
-				{header.brand}<span
-					class="rounded-[5px] border px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wide"
-					>{header.badge}</span
-				>
-			</a>
+			<BrandLogo compact />
 			<button class="md:hidden" use:toggleOverflowHidden>
 				<span class="sr-only">Toggle menu</span>
 				<XIcon strokeWidth={1.4} class="text-gray-400" />

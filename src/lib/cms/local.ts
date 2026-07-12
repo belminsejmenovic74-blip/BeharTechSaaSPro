@@ -9,7 +9,7 @@ import type { SiteContent } from './types';
 
 const KEY = 'bt_content';
 export const AUTH_KEY = 'bt_admin_ok';
-export const ADMIN_PASSWORD = 'behar-admin';
+export const ADMIN_SESSION_KEY = 'bt_cms_admin_session';
 
 export function loadLocalContent(fallback: SiteContent = DEFAULT_CONTENT): SiteContent {
 	if (!browser) return fallback;
@@ -30,11 +30,29 @@ export function clearLocalContent(): void {
 }
 
 export function isAuthed(): boolean {
-	return browser && sessionStorage.getItem(AUTH_KEY) === '1';
+	return browser && Boolean(getAdminSession());
 }
 
 export function setAuthed(ok: boolean): void {
 	if (!browser) return;
-	if (ok) sessionStorage.setItem(AUTH_KEY, '1');
-	else sessionStorage.removeItem(AUTH_KEY);
+	if (!ok) {
+		sessionStorage.removeItem(AUTH_KEY);
+		clearAdminSession();
+	}
+}
+
+export function getAdminSession(): string {
+	return browser ? sessionStorage.getItem(ADMIN_SESSION_KEY) || '' : '';
+}
+
+export function setAdminSession(token: string): void {
+	if (!browser) return;
+	sessionStorage.setItem(ADMIN_SESSION_KEY, token);
+	sessionStorage.setItem(AUTH_KEY, '1');
+}
+
+export function clearAdminSession(): void {
+	if (!browser) return;
+	sessionStorage.removeItem(ADMIN_SESSION_KEY);
+	sessionStorage.removeItem(AUTH_KEY);
 }

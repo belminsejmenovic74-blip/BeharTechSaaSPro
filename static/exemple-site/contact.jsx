@@ -43,7 +43,7 @@ function ContactDesktop(){
         <span className="bmc-eyebrow">Widget client</span>
         <h1 style={{fontSize:58,lineHeight:1.04,margin:'18px auto 0',fontWeight:700,maxWidth:820}}>Testez une demande comme votre client.</h1>
         <p style={{fontSize:18,color:'var(--slate)',margin:'18px auto 0',maxWidth:700,lineHeight:1.65}}>
-          Ce parcours est relié à un atelier de démonstration Behar Tech Pro. Les demandes envoyées remontent dans le SaaS.
+          Ce parcours utilise uniquement des données fictives. Aucune demande réelle n’est enregistrée dans le SaaS.
         </p>
       </section>
       <section id="widget-demo" style={{padding:'46px 56px 76px',maxWidth:980,margin:'0 auto'}}>

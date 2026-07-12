@@ -1,20 +1,28 @@
 <script lang="ts">
 	import { Globe } from 'lucide-svelte';
 	import { getCms } from '$lib/cms/context';
+	import { editable } from '$lib/editor/editable';
 	import { resolveIcon } from '$lib/cms/icons';
 
 	const cms = getCms();
 	$: stats = $cms.stats;
-	$: items = stats.items.filter((s) => s.visible !== false);
+	$: items = stats.items.map((s, i) => ({ ...s, _i: i })).filter((s) => s.visible !== false);
 </script>
 
 <section id="clients" class="scroll-mt-28 px-6 py-24 md:px-8 md:py-28">
 	<div class="mx-auto max-w-6xl">
 		<div class="text-center">
-			<p class="text-xs font-semibold uppercase tracking-[0.22em] text-gray-500">
+			<p
+				use:editable={{ id: 'stats.kicker', kind: 'text', path: 'stats.kicker', label: 'Sur-titre' }}
+				class="text-xs font-semibold uppercase tracking-[0.22em] text-gray-500"
+			>
 				{stats.kicker}
 			</p>
-			<p class="mx-auto mt-4 max-w-2xl text-lg" style="color: var(--bt-muted)">
+			<p
+				use:editable={{ id: 'stats.subtitle', kind: 'text', path: 'stats.subtitle', label: 'Sous-titre', multiline: true }}
+				class="mx-auto mt-4 max-w-2xl text-lg"
+				style="color: var(--bt-muted)"
+			>
 				{stats.subtitle}
 			</p>
 		</div>
@@ -23,7 +31,10 @@
 			class="mx-auto mt-16 grid max-w-5xl grid-cols-2 gap-x-6 gap-y-12 sm:grid-cols-3 lg:grid-cols-5 lg:gap-x-8 lg:gap-y-0"
 		>
 			{#each items as stat (stat.id)}
-				<div class="flex flex-col items-center gap-2 px-4 text-center">
+				<div
+					use:editable={{ id: `stats.items.${stat._i}`, kind: 'container', label: stat.label || 'Statistique' }}
+					class="flex flex-col items-center gap-2 px-4 text-center"
+				>
 					<div class="flex items-center gap-2">
 						{#if stat.icon === 'globe'}
 							<Globe class="size-6" style="color: var(--bt-accent)" strokeWidth={1.8} />
@@ -37,11 +48,19 @@
 						{:else if stat.icon}
 							<svelte:component this={resolveIcon(stat.icon)} class="size-6" style="color: var(--bt-accent)" strokeWidth={1.8} />
 						{/if}
-						<span class="text-3xl font-bold tracking-tight md:text-4xl" style="color: var(--bt-text)">
+						<span
+							use:editable={{ id: `stats.items.${stat._i}.value`, kind: 'heading', path: `stats.items.${stat._i}.value`, label: 'Valeur' }}
+							class="text-3xl font-bold tracking-tight md:text-4xl"
+							style="color: var(--bt-text)"
+						>
 							{stat.value}
 						</span>
 					</div>
-					<span class="text-sm" style="color: var(--bt-muted)">{stat.label}</span>
+					<span
+						use:editable={{ id: `stats.items.${stat._i}.label`, kind: 'text', path: `stats.items.${stat._i}.label`, label: 'Libellé' }}
+						class="text-sm"
+						style="color: var(--bt-muted)">{stat.label}</span
+					>
 				</div>
 			{/each}
 		</div>
