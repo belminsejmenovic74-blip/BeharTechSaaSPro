@@ -36,6 +36,7 @@ import {
   type PublicService,
   type PublicWidgetContext,
 } from "@/lib/server/widget-public-api";
+import { brandsForType, deviceTypeLabels, fold, issuesForType, modelsForBrand } from "@/lib/widget/global-catalog";
 
 type RouteParams = { params: Promise<{ publicId: string }> };
 
@@ -83,12 +84,29 @@ function unique(values: string[]) {
   const seen = new Set<string>();
   const ordered: string[] = [];
   for (const value of values) {
-    if (value && !seen.has(value)) {
-      seen.add(value);
+    const key = fold(value);
+    if (value && !seen.has(key)) {
+      seen.add(key);
       ordered.push(value);
     }
   }
   return ordered;
+}
+
+function globalCatalogValues(
+  kind: "categories" | "brands" | "models" | "issues",
+  values: z.infer<typeof catalogQuerySchema>,
+) {
+  switch (kind) {
+    case "categories":
+      return deviceTypeLabels();
+    case "brands":
+      return values.category ? brandsForType(values.category) : [];
+    case "models":
+      return values.category && values.brand ? modelsForBrand(values.category, values.brand) : [];
+    case "issues":
+      return values.category ? issuesForType(values.category) : [];
+  }
 }
 
 async function eventBestEffort(
@@ -152,12 +170,13 @@ export async function handleCatalog(
     const data =
       kind === "services"
         ? await Promise.all(services.map((service) => serviceWithLivePublicStock(context, service, shop?.id)))
-        : unique(
-            services.map(
+        : unique([
+            ...globalCatalogValues(kind, values),
+            ...services.map(
               (service) =>
                 service[kind === "categories" ? "category" : (kind.slice(0, -1) as "brand" | "model" | "issue")],
             ),
-          );
+          ]);
     return publicSuccess(
       context,
       { [kind]: data },

@@ -68,7 +68,7 @@ function issueIcon(issue: string): LucideIcon {
   return Wrench;
 }
 
-export function IssueStep({ ctx }: { ctx: StepContext }) {
+export function IssueStep({ ctx, hideHeader = false }: { ctx: StepContext; hideHeader?: boolean }) {
   const { client, token, draft, patch, features, config } = ctx;
   const [query, setQuery] = useState("");
   const [showOther, setShowOther] = useState(false);
@@ -126,7 +126,8 @@ export function IssueStep({ ctx }: { ctx: StepContext }) {
           changed = true;
         }
       } else if (!stillValid) {
-        next[issue] = matches[0];
+        // Défaut = la qualité recommandée par l'atelier, sinon la première.
+        next[issue] = matches.find((match) => match.recommended) ?? matches[0];
         changed = true;
       }
     }
@@ -202,14 +203,16 @@ export function IssueStep({ ctx }: { ctx: StepContext }) {
 
   return (
     <div className="grid gap-5">
-      <header className="grid gap-1.5 text-center">
-        <h2 className="text-[calc(1.35rem*var(--w-heading-scale,1))] font-semibold tracking-tight text-[var(--w-text)]">
-          Que souhaitez-vous réparer sur votre {deviceName} ?
-        </h2>
-        <p className="text-sm text-[var(--w-muted)]">{subtitle}</p>
-      </header>
+      {hideHeader ? null : (
+        <header className="grid gap-1.5 text-center">
+          <h2 className="text-[calc(1.35rem*var(--w-heading-scale,1))] font-semibold tracking-tight text-[var(--w-text)]">
+            Que souhaitez-vous réparer sur votre {deviceName} ?
+          </h2>
+          <p className="text-sm text-[var(--w-muted)]">{subtitle}</p>
+        </header>
+      )}
 
-      <div className="mx-auto w-full max-w-md">
+      <div className="w-full max-w-md">
         <WidgetSearch value={query} onChange={setQuery} placeholder="Rechercher une panne (écran, batterie…)" />
       </div>
 

@@ -140,33 +140,109 @@ export const DEMO_CONFIG: WidgetConfig = {
   sessionToken: "demo-session-token",
 };
 
-// Prestations configurées pour les iPhone (démontre l'état « configuré »).
-const IPHONE_SERVICES: Array<[string, string, number, number, string]> = [
-  ["Écran cassé", "Écran (OLED premium)", 129, 45, "12 mois"],
-  ["Batterie", "Batterie", 69, 30, "12 mois"],
-  ["Connecteur de charge", "Connecteur de charge", 69, 45, "12 mois"],
-  ["Vitre arrière", "Vitre arrière", 89, 45, "6 mois"],
-  ["Caméra arrière", "Caméra arrière", 69, 45, "6 mois"],
-  ["Caméra avant", "Caméra avant", 59, 30, "6 mois"],
-  ["Haut-parleur", "Haut-parleur", 49, 30, "6 mois"],
-  ["Micro", "Micro", 49, 30, "6 mois"],
+// Prestations configurées pour les iPhone (démontre l'état « configuré » et,
+// surtout, plusieurs qualités par panne pour l'étape « Choisissez votre
+// réparation » : écran = 3 qualités, batterie = 2, connecteur = 1, etc.).
+type DemoService = {
+  issue: string;
+  service: string;
+  amount: number;
+  durationMinutes: number;
+  warranty: string;
+  description?: string;
+  recommended?: boolean;
+  qualireparEligible?: boolean;
+  qualireparBonus?: number;
+};
+
+const IPHONE_SERVICES: DemoService[] = [
+  // Façade avant / écran — trois qualités comparatives (cas maquette).
+  {
+    issue: "Écran cassé",
+    service: "Écran compatible",
+    amount: 89,
+    durationMinutes: 40,
+    warranty: "12 mois",
+    description: "Qualité fiable, prix maîtrisé",
+    qualireparEligible: true,
+    qualireparBonus: 25,
+  },
+  {
+    issue: "Écran cassé",
+    service: "Écran premium OLED",
+    amount: 129,
+    durationMinutes: 45,
+    warranty: "12 mois",
+    description: "Meilleur affichage, confort visuel optimal",
+    recommended: true,
+    qualireparEligible: true,
+    qualireparBonus: 25,
+  },
+  {
+    issue: "Écran cassé",
+    service: "Écran original",
+    amount: 189,
+    durationMinutes: 60,
+    warranty: "12 mois",
+    description: "Pièce d'origine constructeur",
+  },
+  // Batterie — deux qualités.
+  {
+    issue: "Batterie",
+    service: "Batterie compatible",
+    amount: 69,
+    durationMinutes: 30,
+    warranty: "12 mois",
+    description: "Capacité standard, bon rapport qualité-prix",
+    qualireparEligible: true,
+    qualireparBonus: 25,
+  },
+  {
+    issue: "Batterie",
+    service: "Batterie originale",
+    amount: 99,
+    durationMinutes: 30,
+    warranty: "12 mois",
+    description: "Pièce d'origine constructeur",
+    recommended: true,
+  },
+  // Connecteur de charge — une seule qualité.
+  {
+    issue: "Connecteur de charge",
+    service: "Remplacement connecteur",
+    amount: 69,
+    durationMinutes: 45,
+    warranty: "12 mois",
+    qualireparEligible: true,
+    qualireparBonus: 25,
+  },
+  // Autres pannes — une qualité chacune.
+  { issue: "Vitre arrière", service: "Vitre arrière", amount: 89, durationMinutes: 45, warranty: "6 mois" },
+  { issue: "Caméra arrière", service: "Caméra arrière", amount: 69, durationMinutes: 45, warranty: "6 mois" },
+  { issue: "Caméra avant", service: "Caméra avant", amount: 59, durationMinutes: 30, warranty: "6 mois" },
+  { issue: "Haut-parleur", service: "Haut-parleur", amount: 49, durationMinutes: 30, warranty: "6 mois" },
+  { issue: "Micro", service: "Micro", amount: 49, durationMinutes: 30, warranty: "6 mois" },
 ];
 
 function demoServices(query: CatalogQuery): PublicService[] {
   const brand = fold(query.brand ?? "");
   const model = fold(query.model ?? "");
   if (brand !== "apple" || !model.includes("iphone")) return [];
-  return IPHONE_SERVICES.map(([issue, service, amount, durationMinutes, warranty], index) => ({
+  return IPHONE_SERVICES.map((entry, index) => ({
     publicId: `demo-svc-${index}`,
     category: query.category ?? "Smartphone",
     brand: query.brand ?? "Apple",
     model: query.model ?? "",
-    issue,
-    service,
-    price: { mode: "from", amount, currency: "EUR" },
+    issue: entry.issue,
+    service: entry.service,
+    description: entry.description,
+    recommended: entry.recommended,
+    qualireparEligible: entry.qualireparEligible,
+    qualireparBonus: entry.qualireparBonus,
+    price: { mode: "from", amount: entry.amount, currency: "EUR" },
     stock: { mode: "simple", status: "available" },
-    durationMinutes,
-    warranty,
+    durationMinutes: entry.durationMinutes,
+    warranty: entry.warranty,
   }));
 }
 

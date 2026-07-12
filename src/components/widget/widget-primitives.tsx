@@ -12,7 +12,7 @@ import { fold } from "@/lib/widget/global-catalog";
 import { cn } from "@/lib/utils";
 
 const FIELD_CLASS =
-  "h-11 w-full rounded-[var(--w-radius)] border border-[var(--w-border)] bg-[var(--w-surface)] px-3.5 text-sm text-[var(--w-text)] outline-none transition placeholder:text-[var(--w-muted)] hover:border-[var(--w-primary-border,var(--w-border))] focus-visible:border-[var(--w-primary)] focus-visible:ring-2 focus-visible:ring-[var(--w-focus-ring,var(--w-tint))]";
+  "h-[54px] w-full rounded-[15px] border border-[var(--w-border)] bg-[var(--w-surface)] px-4 text-sm text-[var(--w-text)] outline-none transition placeholder:text-[var(--w-muted)] hover:border-[var(--w-primary-border,var(--w-border))] focus-visible:border-[var(--w-primary)] focus-visible:ring-2 focus-visible:ring-[var(--w-focus-ring,var(--w-tint))]";
 
 export function Spinner({ className }: { className?: string }) {
   return <LoaderCircle className={cn("h-5 w-5 animate-spin", className)} aria-hidden="true" />;
@@ -113,11 +113,13 @@ export function WidgetChip({
   children,
   onClick,
   disabled,
+  segmented = false,
 }: {
   selected: boolean;
   children: ReactNode;
   onClick: () => void;
   disabled?: boolean;
+  segmented?: boolean;
 }) {
   return (
     <button
@@ -126,10 +128,15 @@ export function WidgetChip({
       disabled={disabled}
       aria-pressed={selected}
       className={cn(
-        "rounded-full border px-3.5 py-2 text-sm font-medium transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--w-focus-ring,var(--w-tint))] disabled:opacity-50",
+        "border px-3.5 py-2 text-sm font-medium transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--w-focus-ring,var(--w-tint))] disabled:opacity-50",
+        segmented ? "rounded-[10px]" : "rounded-full",
         selected
-          ? "border-[var(--w-primary)] bg-[var(--w-primary)] text-[var(--w-on-primary)] shadow-sm"
-          : "border-[var(--w-border)] bg-[var(--w-surface)] text-[var(--w-text)] hover:border-[var(--w-primary-border,var(--w-primary))] hover:bg-[var(--w-primary-soft,var(--w-tint))]",
+          ? segmented
+            ? "border-[var(--w-primary-border)] bg-[var(--w-primary-soft)] text-[var(--w-primary)]"
+            : "border-[var(--w-primary)] bg-[var(--w-primary)] text-[var(--w-on-primary)] shadow-sm"
+          : segmented
+            ? "border-transparent bg-transparent text-[var(--w-muted)] hover:bg-white"
+            : "border-[var(--w-border)] bg-[var(--w-surface)] text-[var(--w-text)] hover:border-[var(--w-primary-border,var(--w-primary))] hover:bg-[var(--w-primary-soft,var(--w-tint))]",
       )}
     >
       {children}
@@ -188,62 +195,55 @@ export function WidgetProgress({ steps, current }: { steps: string[]; current: n
     <div
       className="w-full"
       role="progressbar"
-      aria-label={`Étape ${current + 1} sur ${steps.length} — ${steps[current]}`}
+      aria-label={`${steps[current]} — ${current + 1} / ${steps.length}`}
       aria-valuemin={1}
       aria-valuemax={steps.length}
       aria-valuenow={current + 1}
     >
-      <div className="flex items-center justify-between gap-3 sm:hidden">
-        <span className="text-xs font-semibold text-[var(--w-primary)]">
-          Étape {current + 1} sur {steps.length}
+      <div className="grid gap-2 sm:hidden">
+        <div className="flex items-end justify-between gap-3">
+          <span className="truncate text-sm font-semibold text-[var(--w-text)]">{steps[current]}</span>
+          <span className="text-xs font-medium tabular-nums text-[var(--w-muted)]">
+            {current + 1} / {steps.length}
+          </span>
+        </div>
+        <span className="h-1 overflow-hidden rounded-full bg-[var(--w-border)]">
+          <span
+            className="block h-full rounded-full bg-[var(--w-primary)] transition-[width] duration-300"
+            style={{ width: `${((current + 1) / steps.length) * 100}%` }}
+          />
         </span>
-        <span className="truncate text-sm font-semibold text-[var(--w-text)]">{steps[current]}</span>
       </div>
-      <ol className="hidden grid-cols-5 sm:grid">
+      <ol className="hidden grid-cols-4 sm:grid">
         {steps.map((label, index) => (
-          <li key={label} className="relative flex min-w-0 flex-col items-center gap-2 text-center">
+          <li key={label} className="relative flex min-w-0 items-center justify-center gap-2 px-3 text-center">
             {index > 0 ? (
               <span
                 className={cn(
-                  "absolute right-1/2 top-[10px] h-px w-full transition-colors",
+                  "absolute right-1/2 top-1/2 h-px w-full -translate-y-1/2 transition-colors",
                   index <= current ? "bg-[var(--w-primary)]" : "bg-[var(--w-border)]",
                 )}
               />
             ) : null}
+            {index < current ? (
+              <span className="relative z-10 grid size-4 place-items-center rounded-full bg-[#FAFAF8] text-[var(--w-primary)]">
+                <Check className="size-3.5" strokeWidth={2.5} />
+              </span>
+            ) : null}
             <span
               className={cn(
-                "relative z-10 grid size-5 place-items-center rounded-full border bg-[var(--w-surface)] text-[10px] font-bold transition",
-                index < current
-                  ? "border-[var(--w-primary)] bg-[var(--w-primary)] text-[var(--w-on-primary)]"
-                  : index === current
-                    ? "border-[var(--w-primary)] bg-[var(--w-primary)] text-[var(--w-on-primary)] ring-4 ring-[var(--w-primary-soft)]"
-                    : "border-[var(--w-border)] text-[var(--w-muted)]",
-              )}
-            >
-              {index < current ? <Check className="size-3" strokeWidth={3} /> : index + 1}
-            </span>
-            <span
-              className={cn(
-                "truncate px-1 text-[10px] font-medium",
-                index === current ? "text-[var(--w-primary)]" : "text-[var(--w-muted)]",
+                "relative z-10 truncate bg-[#FAFAF8] px-2 text-xs font-medium",
+                index === current ? "text-[var(--w-text)]" : "text-[var(--w-muted)]",
               )}
             >
               {label}
             </span>
+            {index === current ? (
+              <span className="absolute -bottom-2 h-0.5 w-8 rounded-full bg-[var(--w-primary)]" />
+            ) : null}
           </li>
         ))}
       </ol>
-      <div className="mt-2 flex gap-1 sm:hidden">
-        {steps.map((label, index) => (
-          <span
-            key={label}
-            className={cn(
-              "h-1 flex-1 rounded-full",
-              index <= current ? "bg-[var(--w-primary)]" : "bg-[var(--w-border)]",
-            )}
-          />
-        ))}
-      </div>
     </div>
   );
 }

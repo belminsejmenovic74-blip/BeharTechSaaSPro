@@ -38,10 +38,10 @@ const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 export function ContactStep({ ctx, submitError }: { ctx: StepContext; submitError: string | null }) {
   const { draft, patch, features, texts, config } = ctx;
 
-  const configuredName = config.general.commercialName?.trim();
-  const consentText = configuredName ? configuredName : "l’atelier";
   const layout = resolveLayout(config.layout);
-  const columnClass = layout.columns === 2 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1";
+  const columnClass = "grid-cols-1 sm:grid-cols-2";
+  const phoneDigits = draft.phone.replace(/\D/g, "").length;
+  const emailValid = !draft.email.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email.trim());
   const fieldBlocks: Record<WidgetFieldKey, ReactNode> = {
     identity: (
       <div className={`grid gap-3 ${columnClass}`}>
@@ -67,7 +67,13 @@ export function ContactStep({ ctx, submitError }: { ctx: StepContext; submitErro
     ),
     contact: (
       <div className={`grid gap-3 ${columnClass}`}>
-        <WidgetField label={texts.phoneLabel} htmlFor="w-phone" hint="Requis pour traiter votre demande.">
+        <WidgetField
+          label={texts.phoneLabel}
+          htmlFor="w-phone"
+          required
+          hint="Requis pour traiter votre demande."
+          error={draft.phone && phoneDigits < 7 ? "Saisissez un numéro de téléphone valide." : undefined}
+        >
           <WidgetInput
             id="w-phone"
             type="tel"
@@ -78,7 +84,11 @@ export function ContactStep({ ctx, submitError }: { ctx: StepContext; submitErro
             placeholder="06 12 34 56 78"
           />
         </WidgetField>
-        <WidgetField label={texts.emailLabel} htmlFor="w-email">
+        <WidgetField
+          label={texts.emailLabel}
+          htmlFor="w-email"
+          error={!emailValid ? "Saisissez une adresse e-mail valide." : undefined}
+        >
           <WidgetInput
             id="w-email"
             type="email"
@@ -93,11 +103,12 @@ export function ContactStep({ ctx, submitError }: { ctx: StepContext; submitErro
     ),
     preference: (
       <WidgetField label={texts.contactPreferenceLabel}>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex w-fit max-w-full flex-wrap gap-1 rounded-[13px] border border-[var(--w-border)] bg-[#F5F6F3] p-1">
           {CONTACT_PREFERENCES.map((preference) => (
             <WidgetChip
               key={preference.value}
               selected={draft.contactPreference === preference.value}
+              segmented
               onClick={() =>
                 patch({ contactPreference: draft.contactPreference === preference.value ? "" : preference.value })
               }
@@ -130,7 +141,7 @@ export function ContactStep({ ctx, submitError }: { ctx: StepContext; submitErro
           className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--w-primary)]"
         />
         <span className="text-sm leading-relaxed text-[var(--w-text)]">
-          {texts.consentLabel.replace("l’atelier", consentText)}
+          {texts.consentLabel.replace(config.general.commercialName?.trim() || "l’atelier", "l’atelier")}
           {config.general.privacyUrl ? (
             <>
               {" "}
@@ -151,7 +162,7 @@ export function ContactStep({ ctx, submitError }: { ctx: StepContext; submitErro
   };
 
   return (
-    <StepShell title={texts.contactTitle} subtitle="Vos coordonnées restent confidentielles. Aucun compte à créer.">
+    <StepShell title="Vos coordonnées" subtitle="Ces informations permettront à l’atelier de confirmer votre demande.">
       {layout.fieldOrder.map((field) =>
         layout.hiddenFields.includes(field) ? null : <div key={field}>{fieldBlocks[field]}</div>,
       )}

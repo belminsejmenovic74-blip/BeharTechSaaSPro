@@ -1147,8 +1147,9 @@ function DisplayPanel({
   publicWidgetId: string;
   publishedVersion: number;
 }) {
-  const assetOrigin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://app.behartechpro.fr";
-  const integrationCode = `<button type="button" data-behar-widget-open>Estimer ma réparation</button>\n<script async src="${assetOrigin}/widget.js" data-widget-id="${publicWidgetId}"></script>`;
+  const widgetScriptOrigin =
+    process.env.NEXT_PUBLIC_WIDGET_SCRIPT_ORIGIN?.replace(/\/$/, "") || "https://behartechpro.fr";
+  const integrationCode = `<div data-behar-widget-search></div>\n<script async src="${widgetScriptOrigin}/widget.js" data-widget-id="${publicWidgetId}"></script>`;
   return (
     <div className="space-y-6">
       <EditorSection title="Mode d’intégration">

@@ -5,7 +5,7 @@ vi.mock("@/lib/supabase/server", () => ({ getSupabaseAdmin: vi.fn() }));
 
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { leadInputSchema } from "@/lib/widget/public-contracts";
-import { handleLead } from "@/lib/server/widget-public-handlers";
+import { handleCatalog, handleLead } from "@/lib/server/widget-public-handlers";
 import {
   createWidgetToken,
   displayedSnapshot,
@@ -204,6 +204,38 @@ describe("widget public API security", () => {
       allowOutOfCatalogAppointments: true,
       fallbackMode: "quote",
     });
+  });
+
+  it("exposes the complete global device catalog before configured services", async () => {
+    const fake = fakeAdmin();
+    vi.mocked(getSupabaseAdmin).mockReturnValue(fake.admin as never);
+    const token = createWidgetToken(widget, "https://repair.example.com");
+    const route = { params: Promise.resolve({ publicId: widget.public_widget_id }) };
+    const catalogRequest = (path: string) =>
+      new Request(`https://app.example.com/api/public/widgets/${widget.public_widget_id}/${path}`, {
+        headers: {
+          "x-behar-host-origin": "https://repair.example.com",
+          "x-widget-token": token,
+        },
+      });
+
+    const categoriesResponse = await handleCatalog(catalogRequest("categories"), route, "categories");
+    const categories = (await categoriesResponse.json()).data.categories as string[];
+    expect(categories).toEqual(
+      expect.arrayContaining(["Smartphone", "Console", "Montre connectée", "Écouteurs / audio"]),
+    );
+
+    const brandsResponse = await handleCatalog(catalogRequest("brands?category=Console"), route, "brands");
+    const brands = (await brandsResponse.json()).data.brands as string[];
+    expect(brands).toEqual(expect.arrayContaining(["Sony PlayStation", "Microsoft Xbox", "Nintendo"]));
+
+    const modelsResponse = await handleCatalog(
+      catalogRequest("models?category=Console&brand=Nintendo"),
+      route,
+      "models",
+    );
+    const models = (await modelsResponse.json()).data.models as string[];
+    expect(models).toEqual(expect.arrayContaining(["Nintendo Switch", "Nintendo Switch OLED", "Nintendo Switch Lite"]));
   });
 
   it("parses per-shop scoping and filters catalog by requested shop", () => {

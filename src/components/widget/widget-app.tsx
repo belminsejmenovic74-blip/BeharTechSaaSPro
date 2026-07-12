@@ -33,21 +33,23 @@ import {
 } from "@/components/widget/widget-theme";
 import {
   EMPTY_DRAFT,
-  STEP_LABELS,
   primaryService,
   type RequestType,
   type StepContext,
   type WidgetDraft,
 } from "@/components/widget/widget-state";
 import { Spinner, WidgetButton, WidgetProgress } from "@/components/widget/widget-primitives";
-import { IssueStep } from "@/components/widget/steps/issue-step";
 import { ConfirmationStep } from "@/components/widget/steps/confirmation-step";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
-import { DeviceTypeStep } from "@/components/widget/steps/device-type-step";
-import { BrandModelStep } from "@/components/widget/steps/brand-model-step";
-import { AppointmentOffersStep } from "@/components/widget/steps/appointment-offers-step";
-import { CustomerSummaryStep } from "@/components/widget/steps/customer-summary-step";
+import { DeviceStep } from "@/components/widget/steps/device-step";
+import { IssueStep } from "@/components/widget/steps/issue-step";
+import { QualityStep } from "@/components/widget/steps/quality-step";
+import { IntakeStep } from "@/components/widget/steps/intake-step";
+import { RepairSummary } from "@/components/widget/steps/repair-summary";
+import { ContactStep } from "@/components/widget/steps/contact-step";
+
+const JOURNEY_STEPS = ["Appareil", "Réparation", "Prise en charge", "Coordonnées"] as const;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -79,10 +81,14 @@ export function WidgetApp({ publicId, previewConfig }: { publicId: string; previ
   const sessionIdRef = useRef<string>(randomId("wses"));
   const startedAtRef = useRef<string>(new Date().toISOString());
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
 
   const [config, setConfig] = useState<WidgetConfig | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [step, setStep] = useState(0);
+  // Appareil verrouillé : la sélection vient du sélecteur du site (hero). Dans ce
+  // cas le widget n'affiche PAS d'étape appareil et démarre sur les pannes.
+  const [deviceLocked, setDeviceLocked] = useState(false);
   const [draft, setDraft] = useState<WidgetDraft>(EMPTY_DRAFT);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -134,6 +140,26 @@ export function WidgetApp({ publicId, previewConfig }: { publicId: string; previ
     return () => controller.abort();
   }, [client, previewConfig, publicId]);
 
+  // Pré-sélection appareil transmise par le sélecteur du site (hero) via l'URL :
+  // ?type=Smartphone&brand=Apple&model=iPhone%2015%20Pro → l'appareil est choisi
+  // sur le site (hero). Le widget verrouille cette sélection, saute l'étape
+  // appareil et démarre directement sur les pannes.
+  const preselectRef = useRef(false);
+  useEffect(() => {
+    if (preselectRef.current || previewConfig || typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const category = params.get("type")?.trim() || "";
+    const brand = params.get("brand")?.trim() || "";
+    const model = params.get("model")?.trim() || "";
+    if (!category && !brand && !model) return;
+    preselectRef.current = true;
+    setDraft((current) => ({ ...current, category, brand, model }));
+    if (category && model) {
+      setDeviceLocked(true);
+      setStep(1);
+    }
+  }, [previewConfig]);
+
   // Report de hauteur au chargeur hôte pour dimensionner l'iframe.
   useEffect(() => {
     const node = rootRef.current;
@@ -157,7 +183,8 @@ export function WidgetApp({ publicId, previewConfig }: { publicId: string; previ
   useEffect(() => {
     void step;
     void submitResult;
-    rootRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    // Seul le contenu défile désormais : on le ramène en haut à chaque étape.
+    contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, [step, submitResult]);
 
   const theme = useMemo(() => buildTheme(config?.visual), [config?.visual]);
@@ -183,8 +210,16 @@ export function WidgetApp({ publicId, previewConfig }: { publicId: string; previ
     : null;
 
   const needShop = features.shopChoice && (config?.shops.length ?? 0) > 1;
-  const appointmentStepEnabled =
-    features.booking || Boolean(config?.offers.enabled && config.offers.offers.some((offer) => offer.isPublished));
+  // Parcours maquette en 4 étapes visibles (l'appareil vient du sélecteur du
+  // site) : Panne (1) → Réparation/Qualité (2) → Prise en charge (3) →
+  // Confirmation (4). L'étape 0 (choix de l'appareil) n'est montrée que si rien
+  // n'a été pré-sélectionné, et reste accessible via « Modifier ».
+  const CONFIRM_STEP = 5;
+  const finalStep = 4; // dernière étape de saisie ; l'envoi (submit) s'y fait.
+  // Première étape atteignable : pannes (1) quand l'appareil vient du hero,
+  // sinon l'étape appareil (0) sert de repli (ouverture directe du widget).
+  const minStep = deviceLocked ? 1 : 0;
+  const appointmentActive = features.booking && draft.requestType === "appointment";
 
   const hasProgress = Boolean(
     draft.category ||
@@ -225,9 +260,14 @@ export function WidgetApp({ publicId, previewConfig }: { publicId: string; previ
   }, [publicId, requestClose]);
 
   const canAdvance = (index: number): boolean => {
-    if (index === 0) return Boolean(draft.category);
-    if (index === 1) return Boolean(draft.model.trim());
-    if (index === 2) return draft.issues.length > 0;
+    // 0 : appareil + marque + modèle (+ boutique si multi-boutiques).
+    if (index === 0) return Boolean(draft.category && draft.model.trim()) && (!needShop || Boolean(draft.shopId));
+    // 1 : au moins une panne retenue.
+    if (index === 1) return draft.issues.length > 0;
+    // 2 : une qualité choisie (ou « sur devis ») pour chaque panne.
+    if (index === 2)
+      return draft.issues.length > 0 && draft.issues.every((issue) => draft.services[issue] !== undefined);
+    // 3 : un créneau est obligatoire uniquement pour le rendez-vous.
     if (index === 3 && draft.requestType === "appointment")
       return Boolean(draft.appointmentDate && draft.appointmentTime) && (!needShop || Boolean(draft.shopId));
     return true;
@@ -235,27 +275,26 @@ export function WidgetApp({ publicId, previewConfig }: { publicId: string; previ
 
   const canSubmit = (): boolean => {
     if (!hasRequiredPhone(draft) || !draft.consent) return false;
-    if (draft.requestType === "appointment") return Boolean(draft.appointmentDate && draft.appointmentTime);
+    if (draft.requestType === "appointment")
+      return Boolean(draft.appointmentDate && draft.appointmentTime) && (!needShop || Boolean(draft.shopId));
     return true;
   };
 
   const goNext = () => {
     if (!canAdvance(step)) return;
-    if (step === 1) {
+    if (step === 0) {
       emit("widget_started");
       emit("device_selected", { category: draft.category, brand: draft.brand, model: draft.model });
     }
-    if (step === 2) emit("issue_selected", { issue: draft.issues[0] });
+    if (step === 1) emit("issue_selected", { issue: draft.issues[0] });
     if (step === 2) {
-      emit("form_opened");
-      if (draft.requestType === "appointment") emit("booking_opened");
+      if (appointmentActive) emit("booking_opened");
     }
-    setStep((current) =>
-      current === 2 && !appointmentStepEnabled ? 4 : Math.min(current + 1, STEP_LABELS.length - 1),
-    );
+    if (step === 3) emit("form_opened");
+    setStep((current) => Math.min(current + 1, finalStep));
   };
 
-  const goBack = () => setStep((current) => (current === 4 && !appointmentStepEnabled ? 2 : Math.max(current - 1, 0)));
+  const goBack = () => setStep((current) => Math.max(current - 1, minStep));
 
   const submit = async () => {
     if (!config || submitting || !canSubmit()) return;
@@ -281,7 +320,7 @@ export function WidgetApp({ publicId, previewConfig }: { publicId: string; previ
         );
       }
       setSubmitResult(result);
-      setStep(STEP_LABELS.length - 1);
+      setStep(CONFIRM_STEP);
     } catch (error) {
       setSubmitError(error instanceof WidgetApiError ? error.message : "Envoi impossible. Réessayez dans un instant.");
     } finally {
@@ -304,39 +343,84 @@ export function WidgetApp({ publicId, previewConfig }: { publicId: string; previ
 
   const submitLabel =
     draft.requestType === "appointment"
-      ? texts.bookingLabel
+      ? "Confirmer mon rendez-vous"
       : draft.requestType === "quote"
         ? texts.quoteLabel
         : draft.requestType === "price_request"
           ? "Demander le prix"
           : draft.requestType === "request"
-            ? "Envoyer la demande"
+            ? "Envoyer ma demande"
             : texts.callbackLabel;
 
   const alignment =
     layout.alignment === "center" ? "text-center" : layout.alignment === "right" ? "text-right" : "text-left";
+
+  const stepCopy =
+    step === 1
+      ? {
+          title: draft.model ? `Que souhaitez-vous réparer sur votre ${draft.model} ?` : "Que souhaitez-vous réparer ?",
+          subtitle: "Sélectionnez la panne concernée.",
+        }
+      : step === 2
+        ? {
+            title: "Choisissez la qualité de votre réparation",
+            subtitle: "Comparez les pièces disponibles, leur garantie et leur délai.",
+          }
+        : step === 3
+          ? {
+              title: "Comment souhaitez-vous nous confier votre appareil ?",
+              subtitle: "Réservez un créneau, venez directement ou envoyez une demande.",
+            }
+          : null;
+
+  const rightColumn = ctx ? (
+    <div className="grid content-start gap-5 text-left">
+      {!submitResult && stepCopy ? (
+        <div className="grid gap-1.5">
+          <h2 className="text-[calc(1.35rem*var(--w-heading-scale,1))] font-semibold leading-tight tracking-tight text-[var(--w-text)]">
+            {stepCopy.title}
+          </h2>
+          <p className="text-sm leading-relaxed text-[var(--w-muted)]">{stepCopy.subtitle}</p>
+        </div>
+      ) : null}
+      {submitResult ? <ConfirmationStep ctx={ctx} result={submitResult} /> : null}
+      {!submitResult && step === 0 ? <DeviceStep ctx={ctx} /> : null}
+      {!submitResult && step === 1 ? <IssueStep ctx={ctx} hideHeader /> : null}
+      {!submitResult && step === 2 ? <QualityStep ctx={ctx} /> : null}
+      {!submitResult && step === 3 ? <IntakeStep ctx={ctx} submitError={submitError} /> : null}
+      {!submitResult && step === 4 ? <ContactStep ctx={ctx} submitError={submitError} /> : null}
+    </div>
+  ) : null;
+
   const blocks = ctx
     ? {
-        header: <BrandHeader config={ctx.config} texts={texts} />,
-        progress: !submitResult ? <WidgetProgress steps={[...STEP_LABELS]} current={step} /> : null,
+        header: (
+          <WidgetProgress steps={[...JOURNEY_STEPS]} current={step <= 1 ? 0 : step === 2 ? 1 : step === 3 ? 2 : 3} />
+        ),
+        progress: null,
         content: (
           <main className="flex-1">
-            {submitResult ? <ConfirmationStep ctx={ctx} result={submitResult} /> : null}
-            {!submitResult && step === 0 ? <DeviceTypeStep ctx={ctx} /> : null}
-            {!submitResult && step === 1 ? <BrandModelStep ctx={ctx} onContinue={goNext} /> : null}
-            {!submitResult && step === 2 ? <IssueStep ctx={ctx} /> : null}
-            {!submitResult && step === 3 ? <AppointmentOffersStep ctx={ctx} /> : null}
-            {!submitResult && step === 4 ? <CustomerSummaryStep ctx={ctx} submitError={submitError} /> : null}
+            {!submitResult && step >= 1 ? (
+              <div className="grid min-h-full lg:grid-cols-[300px_minmax(0,1fr)]">
+                <aside className="bg-[#F5F6F3] px-4 py-4 lg:sticky lg:top-0 lg:self-start lg:px-6 lg:py-7">
+                  <RepairSummary ctx={ctx} onModify={deviceLocked ? undefined : () => setStep(0)} />
+                </aside>
+                <div className="px-4 py-5 sm:px-7 lg:px-9 lg:py-7">{rightColumn}</div>
+              </div>
+            ) : (
+              <div className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-7">{rightColumn}</div>
+            )}
           </main>
         ),
         actions: (
-          <footer className="sticky bottom-0 z-10 -mx-1 flex items-center justify-between gap-3 border-t border-[var(--w-border)] bg-[var(--w-surface)]/95 px-1 pt-4 backdrop-blur">
+          <footer className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
             {submitResult ? (
               <>
                 <WidgetButton variant="ghost" onClick={requestClose}>
                   Fermer
                 </WidgetButton>
-                <WidgetButton variant="secondary" onClick={restart}>
+                <span />
+                <WidgetButton variant="secondary" onClick={restart} className="justify-self-end">
                   Nouvelle demande
                 </WidgetButton>
               </>
@@ -345,17 +429,29 @@ export function WidgetApp({ publicId, previewConfig }: { publicId: string; previ
                 <WidgetButton
                   variant="ghost"
                   onClick={goBack}
-                  disabled={step === 0}
-                  className={step === 0 ? "invisible" : ""}
+                  disabled={step === minStep}
+                  className={step === minStep ? "invisible" : ""}
                 >
                   Précédent
                 </WidgetButton>
-                {step === 4 ? (
-                  <WidgetButton onClick={submit} disabled={!canSubmit()} loading={submitting}>
+                {ctx.config.icons.poweredBy ? (
+                  <span className="hidden justify-self-center text-[10px] text-[var(--w-muted)]/60 sm:block">
+                    Propulsé par Behar Tech Pro
+                  </span>
+                ) : (
+                  <span />
+                )}
+                {step === finalStep ? (
+                  <WidgetButton
+                    onClick={submit}
+                    disabled={!canSubmit()}
+                    loading={submitting}
+                    className="justify-self-end"
+                  >
                     {submitLabel}
                   </WidgetButton>
                 ) : (
-                  <WidgetButton onClick={goNext} disabled={!canAdvance(step)}>
+                  <WidgetButton onClick={goNext} disabled={!canAdvance(step)} className="justify-self-end">
                     Continuer
                   </WidgetButton>
                 )}
@@ -369,14 +465,15 @@ export function WidgetApp({ publicId, previewConfig }: { publicId: string; previ
   return (
     <div
       style={theme.style}
-      className="grid min-h-screen w-full place-items-center bg-transparent text-[var(--w-text)] sm:p-4"
+      className="grid min-h-screen w-full place-items-center bg-transparent text-[var(--w-text)] sm:p-6"
     >
       <div
         ref={rootRef}
         className={cn(
-          "relative mx-auto flex max-h-[100svh] min-h-[100svh] w-full flex-col gap-5 overflow-y-auto bg-[var(--w-surface)] px-4 py-5 shadow-[0_28px_90px_rgba(15,23,42,.22)] sm:max-h-[90svh] sm:min-h-0 sm:max-w-[1180px] sm:rounded-[calc(var(--w-radius)+8px)] sm:border sm:border-[var(--w-border)] sm:px-7 sm:py-6",
+          // Cadre à hauteur fixe : en-tête + progression + boutons restent visibles,
+          // seul le bloc « content » défile. Le client clique, il ne scrolle pas partout.
+          "relative mx-auto flex h-[100svh] max-h-[100svh] w-full flex-col overflow-hidden bg-[#FAFAF8] shadow-[0_28px_90px_rgba(20,24,28,.22)] sm:h-[calc(100vh-48px)] sm:max-h-[calc(100vh-48px)] sm:min-h-[560px] sm:max-w-[1380px] sm:rounded-[28px] sm:border sm:border-black/[.06]",
           alignment,
-          layout.template === "compact" ? "gap-4" : layout.template === "showcase" ? "gap-8" : "gap-6",
         )}
       >
         {ctx ? (
@@ -390,31 +487,40 @@ export function WidgetApp({ publicId, previewConfig }: { publicId: string; previ
           </button>
         ) : null}
         {loadError ? (
-          <LoadErrorView message={loadError} />
+          <div className="flex flex-1 items-center justify-center p-6">
+            <LoadErrorView message={loadError} />
+          </div>
         ) : !ctx ? (
-          <LoadingView />
+          <div className="flex flex-1 items-center justify-center p-6">
+            <LoadingView />
+          </div>
         ) : (
-          layout.blockOrder.map((block) =>
-            layout.hiddenBlocks.includes(block) ? null : (
-              <div
-                key={block}
-                className={
-                  block === "actions"
-                    ? "sticky bottom-0 z-30 bg-[var(--w-surface)] pb-[max(.25rem,env(safe-area-inset-bottom))]"
-                    : undefined
-                }
-              >
-                {blocks?.[block]}
-              </div>
-            ),
-          )
+          (["header", "content", "actions"] as const).map((block) => (
+            <div key={block} ref={block === "content" ? contentRef : undefined} className={blockWrapperClass(block)}>
+              {blocks?.[block]}
+            </div>
+          ))
         )}
-        {ctx?.config.icons.poweredBy ? (
-          <p className="text-center text-[10px] text-[var(--w-muted)]/70">Propulsé par Behar Tech Pro</p>
-        ) : null}
       </div>
     </div>
   );
+}
+
+// Rôle de chaque bloc dans le cadre à hauteur fixe : l'en-tête, la progression et
+// les boutons sont figés (flex-none) et toujours visibles ; seul le contenu défile.
+function blockWrapperClass(block: string): string {
+  switch (block) {
+    case "content":
+      return "flex-1 min-h-0 overflow-y-auto overscroll-contain";
+    case "actions":
+      return "flex-none border-t border-[var(--w-border)] bg-[#FAFAF8] px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-7";
+    case "header":
+      return "flex-none border-b border-[var(--w-border)] bg-[#FAFAF8] px-4 py-4 pr-16 sm:px-8 sm:py-5 sm:pr-20";
+    case "progress":
+      return "flex-none px-4 pb-1 sm:px-7";
+    default:
+      return "flex-none px-4 sm:px-7";
+  }
 }
 
 function buildLead(
@@ -488,28 +594,6 @@ function buildLead(
     startedAt,
     website: "",
   };
-}
-
-function BrandHeader({ config, texts }: { config: WidgetConfig; texts: ReturnType<typeof resolveTexts> }) {
-  const name = config.general.commercialName;
-  return (
-    <header className="flex items-center gap-3 pr-12">
-      {config.visual.logoUrl ? (
-        // biome-ignore lint/performance/noImgElement: logo distant configuré par le réparateur dans le mini-CMS.
-        <img src={config.visual.logoUrl} alt={name || "Atelier"} className="h-9 w-auto max-w-[160px] object-contain" />
-      ) : (
-        <span className="grid size-10 place-items-center rounded-xl bg-[var(--w-primary-soft)] text-base font-bold text-[var(--w-primary)]">
-          {(name || texts.title).slice(0, 1)}
-        </span>
-      )}
-      <div className="min-w-0">
-        <p className="truncate text-base font-semibold tracking-tight text-[var(--w-text)]">
-          {name || texts.title || "Demande de devis ou rendez-vous"}
-        </p>
-        <p className="truncate text-xs text-[var(--w-muted)]">{texts.introduction}</p>
-      </div>
-    </header>
-  );
 }
 
 function LoadingView() {

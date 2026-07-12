@@ -119,7 +119,7 @@ export function DeviceStep({ ctx }: { ctx: StepContext }) {
               value={draft.category}
               isCustom={categoryOther}
               allowOther={config.catalogPolicy.allowOutOfCatalog}
-              otherLabel="Autre appareil"
+              otherLabel="Autre (préciser)"
               otherPlaceholder="Type d’appareil (ex : montre connectée)"
               emptyHint="Aucun appareil publié pour cette boutique."
               onSelect={(value) => {

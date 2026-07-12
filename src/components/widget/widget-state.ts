@@ -12,14 +12,11 @@ import type { WidgetTheme } from "@/components/widget/widget-theme";
 
 export type RequestType = "callback" | "quote" | "price_request" | "request" | "appointment";
 
-// Cinq étapes commerciales visibles dans la modale publique.
-export const STEP_LABELS = [
-  "Appareil",
-  "Marque & modèle",
-  "Panne",
-  "Rendez-vous & offres",
-  "Infos & confirmation",
-] as const;
+// Parcours façon WeFix : appareil (type+marque+modèle) → réparations & offres →
+// récapitulatif prix → coordonnées → créneau. La dernière étape (créneau) n'est
+// atteinte que pour une prise de rendez-vous ; sinon l'envoi se fait après les
+// coordonnées.
+export const STEP_LABELS = ["Appareil", "Réparations", "Récapitulatif", "Coordonnées", "Créneau"] as const;
 
 export type WidgetDraft = {
   shopId: string; // public_shop_id ("" tant qu'aucune boutique n'est choisie)

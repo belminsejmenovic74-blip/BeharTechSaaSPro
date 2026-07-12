@@ -95,10 +95,20 @@ export function BrandModelStep({ ctx, onContinue }: { ctx: StepContext; onContin
   const image = deviceImageFor(draft.category, draft.brand);
   const FallbackIcon = categoryIcon(draft.category);
 
+  // Affichage progressif sur mobile : une seule liste à la fois pour éviter le
+  // scroll. Sur desktop (lg), les trois zones restent visibles côte à côte.
+  const brandChosen = Boolean(draft.brand) || customBrand;
+  const modelChosen = Boolean(draft.model) || customModel;
+  const resetBrand = () => {
+    setCustomBrand(false);
+    setCustomModel(false);
+    patch({ brand: "", model: "", issues: [], services: {} });
+  };
+
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(240px,0.86fr)]">
-      {/* Zone gauche — marques */}
-      <section className="flex min-h-0 flex-col gap-2.5">
+      {/* Zone gauche — marques (masquée sur mobile une fois une marque choisie) */}
+      <section className={cn("min-h-0 flex-col gap-2.5", brandChosen ? "hidden lg:flex" : "flex")}>
         <h3 className="text-sm font-semibold text-[var(--w-text)]">Choisissez une marque</h3>
         <CatalogList
           items={brandItems}
@@ -144,8 +154,25 @@ export function BrandModelStep({ ctx, onContinue }: { ctx: StepContext; onContin
         />
       </section>
 
-      {/* Zone centrale — modèles */}
-      <section className="flex min-h-0 flex-col gap-2.5">
+      {/* Barre mobile — marque sélectionnée + retour à la liste des marques */}
+      {brandChosen ? (
+        <button
+          type="button"
+          onClick={resetBrand}
+          className="flex items-center justify-between gap-2 rounded-[var(--w-radius)] border border-[var(--w-border)] bg-[var(--w-page-bg)] px-3 py-2.5 text-left lg:hidden"
+        >
+          <span className="min-w-0">
+            <span className="block text-[11px] font-medium uppercase tracking-wide text-[var(--w-muted)]">Marque</span>
+            <span className="block truncate text-sm font-semibold text-[var(--w-text)]">
+              {draft.brand || "Autre marque"}
+            </span>
+          </span>
+          <span className="shrink-0 text-xs font-semibold text-[var(--w-primary)]">Changer</span>
+        </button>
+      ) : null}
+
+      {/* Zone centrale — modèles (masquée sur mobile tant qu'aucune marque n'est choisie) */}
+      <section className={cn("min-h-0 flex-col gap-2.5", brandChosen ? "flex" : "hidden lg:flex")}>
         <h3 className="text-sm font-semibold text-[var(--w-text)]">Choisissez votre modèle</h3>
         {!draft.brand && !customBrand ? (
           <div className="grid flex-1 place-items-center rounded-[var(--w-radius)] border border-dashed border-[var(--w-border)] p-6 text-center text-sm text-[var(--w-muted)]">
@@ -183,8 +210,8 @@ export function BrandModelStep({ ctx, onContinue }: { ctx: StepContext; onContin
         )}
       </section>
 
-      {/* Zone droite — aperçu */}
-      <aside className="lg:sticky lg:top-0 lg:self-start">
+      {/* Zone droite — aperçu (sur mobile : visible seulement quand un modèle est choisi) */}
+      <aside className={cn("lg:sticky lg:top-0 lg:self-start", modelChosen ? "block" : "hidden lg:block")}>
         <div className="flex flex-col items-center gap-3 rounded-[var(--w-radius)] border border-[var(--w-border)] bg-[var(--w-page-bg)] p-5 text-center">
           <div className="grid h-32 w-full place-items-center">
             {image ? (

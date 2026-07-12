@@ -1,3 +1,51 @@
+## Recherche appareil avant ouverture du widget — 12 juillet 2026
+
+**Comparison target**
+
+- Source visual truth: `/var/folders/y2/0l9d6j_50gz9723lgrnl6lyw0000gn/T/codex-clipboard-1f132440-e6a8-4e87-8140-e9c5b7ce9a53.png`.
+- Focused source crop: `/private/tmp/behar-search-reference-crop.png`.
+- Browser-rendered implementation: `/private/tmp/behar-search-desktop-full.png`.
+- Local URL: `http://127.0.0.1:4174/`.
+- Viewport and state: desktop 1440 × 420, with Smartphone → Apple → iPhone SE (2016) selected; responsive check at 390 × 844 with the same values.
+- Full-view comparison evidence: the original full-page reference and the browser-rendered desktop capture were opened together.
+- Focused-region evidence: the source selector crop and implementation capture were opened in the same comparison input. A separate focused crop was not needed because the component text and borders were fully legible at original resolution.
+
+**Findings**
+
+- No actionable P0, P1, or P2 mismatch remains.
+- Fonts and typography: the implementation uses the host-safe Inter/system stack, muted 13 px labels, bold 18 px values, and a 16 px CTA. This preserves the reference hierarchy while remaining independent from host-site fonts.
+- Spacing and layout rhythm: four horizontal tracks, fine separators, approximately 22 px outer radius, compact vertical padding, soft shadow, and an inset CTA match the reference. On mobile the tracks stack without horizontal overflow.
+- Colors and tokens: white surface, `#1A1916`/navy text, muted blue-gray labels, subtle gray borders, and the dark navy CTA match the supplied visual direction.
+- Image and icon fidelity: this component contains no raster imagery or custom decorative asset. Native select chevrons are used as functional browser controls; no placeholder or handcrafted icon was introduced.
+- Copy and content: `Quel appareil ?`, `Quelle marque ?`, `Quel modèle ?`, and `Voir les réparations et les prix` match the supplied reference.
+- Interaction: catalog values load in dependency order; downstream fields reset after an upstream change; the CTA stays disabled until a model is selected; submitting opens the widget URL with type, brand, and model query parameters.
+- Responsive: at 390 px, body `scrollWidth` and `clientWidth` both equal 390 px. Controls remain fully visible and the CTA spans the available width.
+- Browser console errors checked: none.
+
+**Comparison history**
+
+- Initial integration pass: the launcher could not render because the Next.js asset server was not running. Fix: started the project server and reloaded the same in-app browser page. Post-fix evidence is `/private/tmp/behar-search-desktop-full.png`.
+- Final visual comparison: no P0/P1/P2 visual fix was required after the component became available. Desktop and mobile interaction states passed.
+
+**Implementation Checklist**
+
+- [x] Search launcher rendered from the public integration script.
+- [x] CMS-backed type, brand, and model dependencies.
+- [x] Preselected widget opening.
+- [x] Host-CSS isolation through Shadow DOM.
+- [x] Desktop and mobile responsive behavior.
+- [x] Loading, disabled, and failure states.
+
+**Follow-up Polish**
+
+- No remaining P3 item is required for handoff.
+
+final result: passed
+
+---
+
+## Previous widget-flow QA
+
 **Comparison target**
 
 - Source visual truth: `/var/folders/y2/0l9d6j_50gz9723lgrnl6lyw0000gn/T/codex-clipboard-6f39b7ea-09dc-4829-a94f-71583775ff9b.png`

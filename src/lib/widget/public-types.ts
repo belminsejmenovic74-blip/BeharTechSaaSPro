@@ -32,6 +32,13 @@ export type PublicService = {
   issue: string;
   service: string;
   quality?: string;
+  // Champs optionnels façon maquette (cartes qualité comparatives). Renseignés
+  // par la projection catalogue quand l'atelier les configure ; absents = pas de
+  // badge / pas de sous-titre. Additifs : jamais requis, jamais bloquants.
+  description?: string; // sous-titre de la carte (« Meilleur affichage… »)
+  recommended?: boolean; // badge « Recommandé »
+  qualireparEligible?: boolean; // badge « Éligible QualiRépar »
+  qualireparBonus?: number; // montant indicatif du bonus, en devise
   price?: PublicPrice;
   stock?: PublicStock;
   durationMinutes?: number;
