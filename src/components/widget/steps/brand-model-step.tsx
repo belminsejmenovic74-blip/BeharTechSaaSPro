@@ -235,16 +235,9 @@ export function BrandModelStep({ ctx, onContinue }: { ctx: StepContext; onContin
                   </dl>
                 </div>
               ) : (
-                <div className="grid w-full gap-2">
-                  <span className="mx-auto inline-flex items-center rounded-full bg-[var(--w-warning-soft)] px-3 py-1 text-xs font-semibold text-[var(--w-warning)]">
-                    Modèle non configuré
-                  </span>
-                  <p className="text-xs leading-relaxed text-[var(--w-muted)]">
-                    Ce modèle n’est pas encore configuré par cet atelier. Vous pouvez tout de même continuer et recevoir
-                    une estimation personnalisée.
-                  </p>
+                <div className="w-full">
                   <WidgetButton variant="secondary" onClick={onContinue} className="h-10 w-full text-sm">
-                    Continuer quand même
+                    Continuer
                   </WidgetButton>
                 </div>
               )}

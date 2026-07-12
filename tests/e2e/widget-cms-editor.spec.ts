@@ -80,7 +80,9 @@ test("Widget client — aperçu direct, disposition contrôlée et publication",
   await page.goto("/dashboard/parametres/widget", { waitUntil: "domcontentloaded" });
   await expect(page.getByRole("heading", { name: "Widget client" })).toBeVisible();
   await page.getByTestId("widget-shop-name").fill("Atelier Mobile Premium");
-  await expect(page.getByTestId("widget-preview").getByText("Atelier Mobile Premium")).toBeVisible();
+  await expect(
+    page.frameLocator('iframe[title="Aperçu réel du widget"]').getByText("Atelier Mobile Premium"),
+  ).toBeVisible();
 
   await page.getByRole("button", { name: "Style" }).click();
   await page.getByText("Style des boutons").scrollIntoViewIfNeeded();

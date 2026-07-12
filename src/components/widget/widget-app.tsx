@@ -68,13 +68,11 @@ function postToParent(publicId: string, message: Record<string, unknown>) {
   }
 }
 
-export function WidgetApp({ publicId }: { publicId: string }) {
+export function WidgetApp({ publicId, previewConfig }: { publicId: string; previewConfig?: WidgetConfig }) {
   const clientRef = useRef<WidgetPublicClient | null>(null);
   if (!clientRef.current) {
     clientRef.current =
-      publicId === "demo" && process.env.NODE_ENV !== "production"
-        ? new DemoWidgetClient()
-        : new WidgetPublicClient(publicId, detectHostOrigin());
+      publicId === "demo" ? new DemoWidgetClient() : new WidgetPublicClient(publicId, detectHostOrigin());
   }
   const client = clientRef.current;
 
@@ -102,6 +100,18 @@ export function WidgetApp({ publicId }: { publicId: string }) {
 
   // Chargement de la configuration publiée + amorçage du jeton de session.
   useEffect(() => {
+    if (previewConfig) {
+      const feats = resolveFeatures(previewConfig.features);
+      const firstAction: RequestType = feats.booking ? "appointment" : feats.callbackRequest ? "callback" : "quote";
+      setConfig(previewConfig);
+      setLoadError(null);
+      setDraft((current) => ({
+        ...current,
+        shopId: previewConfig.shops.length === 1 ? previewConfig.shops[0].id : current.shopId,
+        requestType: firstAction,
+      }));
+      return;
+    }
     const controller = new AbortController();
     client
       .getConfig(controller.signal)
@@ -122,7 +132,7 @@ export function WidgetApp({ publicId }: { publicId: string }) {
         setLoadError(error instanceof WidgetApiError ? error.message : "Widget momentanément indisponible.");
       });
     return () => controller.abort();
-  }, [client, publicId]);
+  }, [client, previewConfig, publicId]);
 
   // Report de hauteur au chargeur hôte pour dimensionner l'iframe.
   useEffect(() => {

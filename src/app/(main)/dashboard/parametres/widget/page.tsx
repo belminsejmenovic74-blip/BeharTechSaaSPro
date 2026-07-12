@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlignCenter,
@@ -12,7 +12,6 @@ import {
   Copy,
   Eye,
   EyeOff,
-  ExternalLink,
   Globe2,
   GripVertical,
   Images,
@@ -33,7 +32,6 @@ import { toast } from "sonner";
 import { PageShell } from "@/components/behar/page-shell";
 import { Panel, PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
 import { WidgetIconLibraryEditor } from "@/components/behar/widget-icon-library-editor";
-import { buildTheme } from "@/components/widget/widget-theme";
 import { useBeharStore } from "@/lib/behar-store";
 import { buildWidgetCatalog } from "@/lib/widget/catalog-projection";
 import {
@@ -46,7 +44,7 @@ import {
   type WidgetBlockKey,
   type WidgetFieldKey,
 } from "@/lib/widget/cms-config";
-import type { WidgetFeatureKey, WidgetTextKey } from "@/lib/widget/public-types";
+import type { WidgetConfig, WidgetFeatureKey, WidgetTextKey } from "@/lib/widget/public-types";
 import { cn } from "@/lib/utils";
 
 type EditorTab = "content" | "style" | "offers" | "structure" | "media" | "display";
@@ -338,15 +336,6 @@ export default function WidgetSettingsPage() {
           <ArrowLeft className="size-4" /> Retour aux paramètres
         </Link>
         <div className="flex flex-wrap items-center gap-2">
-          {widget.publishedVersion ? (
-            <Link
-              href={`/exemple-widget/${widget.publicWidgetId}`}
-              target="_blank"
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#DADAD6] bg-white px-3 text-sm font-semibold text-[#147065] hover:bg-[#F4FBF9]"
-            >
-              <ExternalLink className="size-4" /> Voir le site exemple
-            </Link>
-          ) : null}
           <span className="mr-1 text-xs text-[#6B6B6B]">
             {dirty
               ? "Modifications non enregistrées"
@@ -1308,53 +1297,70 @@ function DisplayPanel({
 }
 
 function WidgetPreview({ config, device }: { config: EditableWidgetConfig; device: PreviewDevice }) {
-  const theme = buildTheme(config.visual);
+  const frameRef = useRef<HTMLIFrameElement | null>(null);
   const viewport = device === "desktop" ? 1120 : device === "tablet" ? 760 : 390;
-  const width = config.visual.contentWidth === "compact" ? 480 : config.visual.contentWidth === "wide" ? 720 : 560;
-  const align = config.layout.alignment;
-  const content = (
-    <div
-      style={{ ...theme.style, width: Math.min(width, viewport - 32), borderRadius: config.visual.radius }}
-      className={cn(
-        "mx-auto border border-black/5 bg-[var(--w-surface)] p-5 shadow-[0_18px_60px_rgba(20,30,25,.12)]",
-        config.layout.template === "compact"
-          ? "space-y-3"
-          : config.layout.template === "showcase"
-            ? "space-y-7"
-            : "space-y-5",
-        align === "center" ? "text-center" : align === "right" ? "text-right" : "text-left",
-      )}
-    >
-      {config.layout.blockOrder.map((block) =>
-        config.layout.hiddenBlocks.includes(block) ? null : <PreviewBlock key={block} block={block} config={config} />,
-      )}
-    </div>
+  const previewConfig = useMemo<WidgetConfig>(
+    () => ({
+      id: "demo",
+      active: true,
+      displayMode: config.displayMode,
+      general: config.general,
+      visual: config.visual,
+      texts: config.texts,
+      features: config.features,
+      catalogPolicy: config.catalogPolicy,
+      layout: config.layout,
+      icons: config.icons,
+      booking: {
+        timezone: "Europe/Paris",
+        days: [1, 2, 3, 4, 5, 6],
+        start: "09:00",
+        end: "18:00",
+        intervalMinutes: 30,
+        durationMinutes: 45,
+        capacity: 1,
+      },
+      offers: config.offers,
+      publishedAt: new Date().toISOString(),
+      shops: [
+        {
+          id: "shop-preview",
+          name: config.general.commercialName || "Mon atelier",
+          address: { address: config.general.address || "", postalCode: "", city: "", country: "FR" },
+          timezone: "Europe/Paris",
+        },
+      ],
+      sessionToken: "cms-preview",
+    }),
+    [config],
   );
+  const sendConfig = useCallback(
+    () =>
+      frameRef.current?.contentWindow?.postMessage(
+        { type: "behar.widget.cms-preview", config: previewConfig },
+        window.location.origin,
+      ),
+    [previewConfig],
+  );
+  useEffect(() => {
+    const receive = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || event.source !== frameRef.current?.contentWindow) return;
+      if (event.data?.type === "behar.widget.cms-preview-ready") sendConfig();
+    };
+    window.addEventListener("message", receive);
+    sendConfig();
+    return () => window.removeEventListener("message", receive);
+  }, [sendConfig]);
   return (
-    <div data-testid="widget-preview" className="h-[700px] overflow-auto bg-[#EFEFEB] p-5">
-      <div
-        style={{ width: viewport, minHeight: 650, ...theme.style, background: "var(--w-page-bg, var(--w-bg))" }}
-        className="relative mx-auto overflow-hidden rounded-2xl border border-black/10 p-4 transition-all duration-300"
-      >
-        {config.displayMode === "inline" ? content : null}
-        {config.displayMode === "modal" ? (
-          <div className="absolute inset-0 grid place-items-center bg-black/30 p-4">{content}</div>
-        ) : null}
-        {config.displayMode === "floating" ? (
-          <>
-            <div className="absolute inset-0 bg-white/70" />{" "}
-            <div className="absolute right-5 bottom-5">
-              <button
-                type="button"
-                className="rounded-full bg-[var(--w-button-bg)] px-5 py-3 text-sm font-semibold text-[var(--w-button-fg)] shadow-xl"
-              >
-                {config.texts.bookingLabel}
-              </button>
-            </div>
-            <div className="absolute inset-x-4 top-5">{content}</div>
-          </>
-        ) : null}
-      </div>
+    <div data-testid="widget-preview" className="h-[700px] overflow-auto bg-[#EFEFEB] p-4">
+      <iframe
+        ref={frameRef}
+        src="/widget-preview"
+        title="Aperçu réel du widget"
+        onLoad={sendConfig}
+        style={{ width: viewport, height: 660 }}
+        className="mx-auto block rounded-2xl border border-black/10 bg-white shadow-sm transition-all duration-300"
+      />
     </div>
   );
 }

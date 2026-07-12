@@ -1,9 +1,9 @@
-// Mode démo LOCAL du widget (dev uniquement) — aucune dépendance backend.
+// Mode démo public du widget — aucune dépendance backend et aucune donnée client.
 //
-// Permet d'ouvrir /widget/demo sur localhost et de voir le parcours réel (mêmes
+// Permet d'ouvrir /widget/demo et de voir le parcours réel (mêmes
 // composants React) avec des données d'exemple : config Behar Tech, catalogue
 // Apple configuré, créneaux générés, offres QualiRépar. Aucune donnée n'est
-// créée : les soumissions renvoient une référence factice. Jamais activé en prod.
+// créée : les soumissions renvoient une référence factice.
 
 import {
   WidgetPublicClient,
@@ -26,15 +26,9 @@ import { fold } from "@/lib/widget/global-catalog";
 
 const DEMO_SHOPS: PublicShop[] = [
   {
-    id: "shop-republique",
-    name: "Behar Tech Paris — République",
-    address: { address: "15 rue de la Paix", postalCode: "75002", city: "Paris", country: "FR" },
-    timezone: "Europe/Paris",
-  },
-  {
-    id: "shop-nation",
-    name: "Behar Tech Paris — Nation",
-    address: { address: "23 avenue de la Nation", postalCode: "75012", city: "Paris", country: "FR" },
+    id: "shop-demo",
+    name: "Atelier de démonstration",
+    address: { address: "", postalCode: "", city: "", country: "FR" },
     timezone: "Europe/Paris",
   },
 ];
@@ -63,11 +57,9 @@ export const DEMO_CONFIG: WidgetConfig = {
   active: true,
   displayMode: "modal",
   general: {
-    commercialName: "Behar Tech Paris",
-    phone: "01 84 80 12 34",
+    commercialName: "Atelier de démonstration",
     locale: "fr-FR",
     currency: "EUR",
-    privacyUrl: "https://example.com/confidentialite",
   },
   visual: {
     primaryColor: "#2A9D8F",

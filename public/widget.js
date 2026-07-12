@@ -1,7 +1,7 @@
 (() => {
   var script = document.currentScript;
   var publicId = (script && script.getAttribute("data-widget-id")) || window.BEHAR_WIDGET_PUBLIC_ID || "";
-  if (!publicId || !/^wdg_[a-zA-Z0-9_-]{12,80}$/.test(publicId)) return;
+  if (!publicId || !(publicId === "demo" || /^wdg_[a-zA-Z0-9_-]{12,80}$/.test(publicId))) return;
 
   var assetOrigin;
   try {

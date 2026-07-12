@@ -72,7 +72,7 @@ export function computeLeadTags(input: LeadTagInput): string[] {
 export function reassuranceText(kind: "model" | "issue" | "generic" | "confirm"): string {
   switch (kind) {
     case "model":
-      return "Ce modèle n’est pas encore configuré, mais vous pouvez quand même envoyer votre demande.";
+      return "Vous pouvez continuer votre demande.";
     case "issue":
       return "Cette panne sera traitée sur devis personnalisé.";
     case "confirm":
