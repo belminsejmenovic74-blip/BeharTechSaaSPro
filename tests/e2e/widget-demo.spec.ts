@@ -30,7 +30,7 @@ test("widget démo — parcours réel sans message technique", async ({ page }) 
 
 test("recherche intégrée — appareil, marque et modèle ouvrent le widget prérempli", async ({ page, baseURL }) => {
   await page.route("**/api/public/widgets/demo/**", async (route) => {
-    const path = new URL(route.request().url()).pathname;
+    const path = new URL(route.request().url()).pathname.replace(/\/$/, "");
     const data = path.endsWith("/config")
       ? { sessionToken: "demo-token" }
       : path.endsWith("/categories")

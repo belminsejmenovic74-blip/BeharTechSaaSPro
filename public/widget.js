@@ -117,7 +117,8 @@
   }
 
   function publicRequest(path, token, query) {
-    var url = new URL(`${assetOrigin}/api/public/widgets/${encodeURIComponent(publicId)}${path}`);
+    var normalizedPath = path.endsWith("/") ? path : `${path}/`;
+    var url = new URL(`${assetOrigin}/api/public/widgets/${encodeURIComponent(publicId)}${normalizedPath}`);
     if (query) {
       Object.keys(query).forEach((key) => {
         if (query[key]) url.searchParams.set(key, query[key]);
