@@ -9,8 +9,11 @@ import {
   ArrowDown,
   ArrowLeft,
   ArrowUp,
+  Copy,
   Eye,
   EyeOff,
+  ExternalLink,
+  Globe2,
   GripVertical,
   Images,
   LayoutTemplate,
@@ -55,6 +58,7 @@ type WidgetEditorResponse = {
     publicWidgetId: string;
     publishedVersion: number;
     publishedAt: string | null;
+    allowedDomains: string[];
     config: EditableWidgetConfig;
   };
   versions: Version[];
@@ -106,6 +110,7 @@ export default function WidgetSettingsPage() {
   const [config, setConfig] = useState<EditableWidgetConfig>(DEFAULT_WIDGET_CMS_CONFIG);
   const [widget, setWidget] = useState<WidgetEditorResponse["widget"] | null>(null);
   const [versions, setVersions] = useState<Version[]>([]);
+  const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
   const [tab, setTab] = useState<EditorTab>("content");
   const [device, setDevice] = useState<PreviewDevice>("desktop");
   const [loading, setLoading] = useState(true);
@@ -136,11 +141,13 @@ export default function WidgetSettingsPage() {
         address: [store.workshopSettings.address, store.workshopSettings.postalCity].filter(Boolean).join(", "),
         locale: store.workshopSettings.country === "CH" ? "fr-CH" : "fr-FR",
         currency: store.workshopSettings.country === "CH" ? "CHF" : "EUR",
+        businessHours: store.workshopSettings.businessHours || "",
       },
     })
       .then((result) => {
         setWidget(result.widget);
         setVersions(result.versions);
+        setAllowedDomains(result.widget.allowedDomains || []);
         setConfig(normalizeEditableWidgetConfig(result.widget.config));
       })
       .catch((error) => {
@@ -184,7 +191,14 @@ export default function WidgetSettingsPage() {
         stockMode: parsed.data.features.stockAvailability ? "simple" : "hidden",
         priceRules: parsed.data.features.priceEstimate ? [{ mode: "exact" }] : [],
       });
-      await settingsRequest({ operation, ...credentials, widgetId: widget.id, config: parsed.data, catalog });
+      await settingsRequest({
+        operation,
+        ...credentials,
+        widgetId: widget.id,
+        config: parsed.data,
+        catalog,
+        allowedDomains,
+      });
       setDirty(false);
       if (operation === "publish") {
         const refreshed = await settingsRequest<WidgetEditorResponse>({
@@ -196,10 +210,12 @@ export default function WidgetSettingsPage() {
             address: config.general.address,
             locale: config.general.locale,
             currency: config.general.currency,
+            businessHours: store.workshopSettings.businessHours || "",
           },
         });
         setWidget(refreshed.widget);
         setVersions(refreshed.versions);
+        setAllowedDomains(refreshed.widget.allowedDomains || []);
         toast.success("Widget publié. Le code d’intégration ne change pas.");
       } else {
         toast.success("Brouillon enregistré.");
@@ -221,10 +237,12 @@ export default function WidgetSettingsPage() {
         address: config.general.address,
         locale: config.general.locale,
         currency: config.general.currency,
+        businessHours: store.workshopSettings.businessHours || "",
       },
     });
     setWidget(refreshed.widget);
     setVersions(refreshed.versions);
+    setAllowedDomains(refreshed.widget.allowedDomains || []);
     setConfig(normalizeEditableWidgetConfig(refreshed.widget.config));
     setDirty(false);
   };
@@ -320,6 +338,15 @@ export default function WidgetSettingsPage() {
           <ArrowLeft className="size-4" /> Retour aux paramètres
         </Link>
         <div className="flex flex-wrap items-center gap-2">
+          {widget.publishedVersion ? (
+            <Link
+              href={`/exemple-widget/${widget.publicWidgetId}`}
+              target="_blank"
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#DADAD6] bg-white px-3 text-sm font-semibold text-[#147065] hover:bg-[#F4FBF9]"
+            >
+              <ExternalLink className="size-4" /> Voir le site exemple
+            </Link>
+          ) : null}
           <span className="mr-1 text-xs text-[#6B6B6B]">
             {dirty
               ? "Modifications non enregistrées"
@@ -412,6 +439,13 @@ export default function WidgetSettingsPage() {
                 onRestore={(version) => void restoreVersion(version)}
                 busy={busy !== null}
                 canEdit={store.hasPermission("canEditSettings")}
+                allowedDomains={allowedDomains}
+                onAllowedDomainsChange={(domains) => {
+                  setAllowedDomains(domains);
+                  setDirty(true);
+                }}
+                publicWidgetId={widget.publicWidgetId}
+                publishedVersion={widget.publishedVersion}
               />
             ) : null}
           </div>
@@ -1108,6 +1142,10 @@ function DisplayPanel({
   onRestore,
   busy,
   canEdit,
+  allowedDomains,
+  onAllowedDomainsChange,
+  publicWidgetId,
+  publishedVersion,
 }: {
   config: EditableWidgetConfig;
   change: (updater: (current: EditableWidgetConfig) => EditableWidgetConfig) => void;
@@ -1115,7 +1153,13 @@ function DisplayPanel({
   onRestore: (version: number) => void;
   busy: boolean;
   canEdit: boolean;
+  allowedDomains: string[];
+  onAllowedDomainsChange: (domains: string[]) => void;
+  publicWidgetId: string;
+  publishedVersion: number;
 }) {
+  const assetOrigin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://app.behartechpro.fr";
+  const integrationCode = `<button type="button" data-behar-widget-open>Estimer ma réparation</button>\n<script async src="${assetOrigin}/widget.js" data-widget-id="${publicWidgetId}"></script>`;
   return (
     <div className="space-y-6">
       <EditorSection title="Mode d’intégration">
@@ -1146,6 +1190,53 @@ function DisplayPanel({
           checked={config.active}
           onChange={(active) => change((current) => ({ ...current, active }))}
         />
+      </EditorSection>
+      <EditorSection
+        title="Sites autorisés"
+        description="Le domaine du SaaS est ajouté automatiquement pour l’aperçu. Ajoutez ici les sites du réparateur."
+      >
+        <div className="rounded-xl border border-[#DDEBE8] bg-[#F4FBF9] p-3 text-xs text-[#37635E]">
+          <Globe2 className="mr-2 inline size-4" /> Un domaine par ligne, par exemple monatelier.fr ou *.monreseau.fr.
+        </div>
+        <textarea
+          className={`${inputClass} h-28 py-2 font-mono text-xs`}
+          value={allowedDomains.join("\n")}
+          onChange={(event) =>
+            onAllowedDomainsChange(
+              event.target.value
+                .split(/[,\n]+/)
+                .map((value) => value.trim())
+                .filter(Boolean),
+            )
+          }
+          placeholder={"monatelier.fr\n*.monreseau.fr"}
+        />
+      </EditorSection>
+      <EditorSection
+        title="Code d’intégration"
+        description="À coller une seule fois sur le site du réparateur. Les publications suivantes gardent le même code."
+      >
+        {publishedVersion ? (
+          <>
+            <pre className="overflow-x-auto rounded-xl bg-[#17211E] p-3 text-[11px] leading-5 text-[#D9EFE9]">
+              <code>{integrationCode}</code>
+            </pre>
+            <button
+              type="button"
+              onClick={async () => {
+                await navigator.clipboard.writeText(integrationCode);
+                toast.success("Code d’intégration copié.");
+              }}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#DADAD6] bg-white px-3 py-2.5 text-sm font-semibold text-[#147065]"
+            >
+              <Copy className="size-4" /> Copier le code
+            </button>
+          </>
+        ) : (
+          <p className="rounded-xl bg-[#FFF8E6] p-3 text-xs text-[#7A5A00]">
+            Publiez d’abord le widget pour obtenir son code d’intégration stable.
+          </p>
+        )}
       </EditorSection>
       <EditorSection title="Modèle de disposition">
         <div className="grid grid-cols-3 gap-2">

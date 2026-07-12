@@ -8,6 +8,7 @@ import { makePublicUrl } from "@/lib/public-access";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { isLicenseActive } from "@/lib/server/verify-license";
 import { normalizePartReference } from "@/lib/stock-reference";
+import { syncWidgetShopFromLicense } from "@/lib/server/widget-license-data";
 
 export const dynamic = "force-dynamic";
 
@@ -266,6 +267,19 @@ export async function POST(request: Request) {
       settings: ws ?? {},
     },
     { onConflict: "workshop_id" },
+  );
+
+  // La licence résout déjà l'atelier ci-dessus. On propage donc ses coordonnées
+  // et horaires vers toutes ses boutiques widget, sans modifier la présentation.
+  const { data: widgetShops } = await supabase
+    .from("shops")
+    .select("id")
+    .eq("tenant_id", workshopId)
+    .eq("active", true);
+  await Promise.all(
+    (widgetShops || []).map((shop) =>
+      syncWidgetShopFromLicense(supabase, workshopId, shop.id, (ws ?? {}) as Record<string, unknown>),
+    ),
   );
 
   const users = (payload.users ?? []).map((user) => ({

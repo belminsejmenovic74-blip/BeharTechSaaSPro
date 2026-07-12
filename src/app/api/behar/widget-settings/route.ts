@@ -11,11 +11,13 @@ import {
 } from "@/lib/widget/cms-config";
 import { authorizeWorkshopLicense } from "@/lib/server/workshop-license-auth";
 import { publicServices } from "@/lib/server/widget-public-api";
+import { syncWidgetShopFromLicense, syncWidgetStockLinks } from "@/lib/server/widget-license-data";
 
 // Catalogue envoyé par l'éditeur (projeté depuis le vrai PriceBook côté client).
 // Volontairement permissif : le serveur le re-passe par la liste blanche
 // `publicServices` avant tout stockage — aucun champ interne ne peut être publié.
 const catalogSchema = z.array(z.record(z.string(), z.unknown())).max(5000).optional();
+const allowedDomainsSchema = z.array(z.string().trim().min(1).max(255)).max(20).optional();
 
 // Réduit le catalogue à ses champs publics (aucun fournisseur / coût / lot / SKU).
 function sanitizeCatalog(raw: unknown) {
@@ -36,6 +38,7 @@ const defaultsSchema = z
     address: z.string().trim().max(300),
     locale: z.enum(["fr-FR", "fr-CH"]),
     currency: z.enum(["EUR", "CHF"]),
+    businessHours: z.string().trim().max(500).optional(),
   })
   .strict();
 
@@ -47,6 +50,7 @@ const requestSchema = z.discriminatedUnion("operation", [
       widgetId: z.string().uuid(),
       config: editableWidgetConfigSchema,
       catalog: catalogSchema,
+      allowedDomains: allowedDomainsSchema,
     })
     .strict(),
   base
@@ -55,6 +59,7 @@ const requestSchema = z.discriminatedUnion("operation", [
       widgetId: z.string().uuid(),
       config: editableWidgetConfigSchema,
       catalog: catalogSchema,
+      allowedDomains: allowedDomainsSchema,
     })
     .strict(),
   // Annuler les modifications / restaurer la version publiée : le brouillon
@@ -82,7 +87,36 @@ type WidgetRow = {
   published_config: Record<string, unknown> | null;
   published_version: number;
   published_at: string | null;
+  allowed_domains: string[];
 };
+
+function normalizeDomain(value: string): string {
+  const trimmed = value.trim().toLowerCase();
+  const wildcard = trimmed.startsWith("*.");
+  try {
+    const hostname = new URL(
+      wildcard ? `https://${trimmed.slice(2)}` : trimmed.includes("://") ? trimmed : `https://${trimmed}`,
+    ).hostname.replace(/^www\./, "");
+    return hostname && !hostname.includes(" ") ? `${wildcard ? "*." : ""}${hostname}` : "";
+  } catch {
+    return "";
+  }
+}
+
+function requestDomain(request: Request): string {
+  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const headerHost = forwardedHost || request.headers.get("host") || "";
+  if (headerHost) return normalizeDomain(headerHost);
+  try {
+    return new URL(request.url).hostname.toLowerCase().replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
+function allowedDomains(values: string[] | undefined, request: Request): string[] {
+  return [...new Set([...(values ?? []), requestDomain(request)].map(normalizeDomain).filter(Boolean))].slice(0, 20);
+}
 
 function responseError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
@@ -101,7 +135,7 @@ async function loadWidget(admin: SupabaseClient, workshopId: string, widgetId?: 
   let query = admin
     .from("widget_settings")
     .select(
-      "id, shop_id, public_widget_id, internal_name, active, display_mode, draft_config, published_config, published_version, published_at",
+      "id, shop_id, public_widget_id, internal_name, active, display_mode, draft_config, published_config, published_version, published_at, allowed_domains",
     )
     .eq("tenant_id", workshopId);
   if (widgetId) query = query.eq("id", widgetId);
@@ -165,13 +199,27 @@ export async function POST(request: Request) {
           step_config: initial.layout,
           icon_config: initial.icons,
           draft_config: mergeEditableWidgetConfig({}, initial),
+          allowed_domains: allowedDomains(undefined, request),
         })
         .select(
-          "id, shop_id, public_widget_id, internal_name, active, display_mode, draft_config, published_config, published_version, published_at",
+          "id, shop_id, public_widget_id, internal_name, active, display_mode, draft_config, published_config, published_version, published_at, allowed_domains",
         )
         .single();
       if (created.error || !created.data) return responseError("Création du widget impossible.", 503);
       widget = created.data;
+    }
+    const normalizedDomains = allowedDomains(widget.allowed_domains, request);
+    if (normalizedDomains.join("|") !== (widget.allowed_domains || []).join("|")) {
+      const domainUpdate = await admin
+        .from("widget_settings")
+        .update({ allowed_domains: normalizedDomains })
+        .eq("tenant_id", workshopId)
+        .eq("id", widget.id);
+      if (domainUpdate.error) return responseError("Activation du widget impossible.", 503);
+      widget.allowed_domains = normalizedDomains;
+    }
+    if (widget.shop_id) {
+      await syncWidgetShopFromLicense(admin, workshopId, widget.shop_id, parsed.data.defaults).catch(() => undefined);
     }
     const versionResult = await admin
       .from("widget_versions")
@@ -187,6 +235,7 @@ export async function POST(request: Request) {
         publicWidgetId: widget.public_widget_id,
         publishedVersion: widget.published_version,
         publishedAt: widget.published_at,
+        allowedDomains: widget.allowed_domains,
         config: editableFromRow(widget as WidgetRow),
       },
       versions: versionResult.data || [],
@@ -251,6 +300,7 @@ export async function POST(request: Request) {
         field_config: parsed.data.config.features,
         step_config: parsed.data.config.layout,
         icon_config: parsed.data.config.icons,
+        allowed_domains: allowedDomains(parsed.data.allowedDomains, request),
         draft_config: fullConfig,
       })
       .eq("tenant_id", workshopId)
@@ -268,5 +318,18 @@ export async function POST(request: Request) {
     p_created_by: null,
   });
   if (error) return responseError("Publication du widget impossible.", 503);
+  const domainUpdate = await admin
+    .from("widget_settings")
+    .update({ allowed_domains: allowedDomains(parsed.data.allowedDomains, request) })
+    .eq("tenant_id", workshopId)
+    .eq("id", row.id);
+  if (domainUpdate.error) return responseError("Publication des domaines impossible.", 503);
+  if (row.shop_id) {
+    try {
+      await syncWidgetStockLinks(admin, workshopId, row.id, row.shop_id, parsed.data.catalog);
+    } catch {
+      return responseError("Connexion du stock au widget impossible.", 503);
+    }
+  }
   return NextResponse.json({ ok: true, publication: data });
 }

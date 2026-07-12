@@ -54,6 +54,8 @@ export type WidgetCatalogEntry = {
   durationMinutes?: number;
   warranty?: string;
   shops?: string[]; // ids publics des boutiques concernées ; absent = toutes
+  /** Liaison interne envoyée à l'API sous licence puis supprimée de la projection publique. */
+  stockItemIds?: string[];
 };
 
 export type ShopMembership = (item: PriceBookItem, shopPublicId: string) => boolean;
@@ -302,8 +304,7 @@ export function buildWidgetCatalog(
     };
 
     const makeEntry = (price: WidgetCatalogPrice, entryShops?: string[]): WidgetCatalogEntry => ({
-      publicId:
-        entryShops && entryShops.length ? stableId(`${key}@${[...entryShops].sort().join(",")}`) : stableId(key),
+      publicId: entryShops?.length ? stableId(`${key}@${[...entryShops].sort().join(",")}`) : stableId(key),
       category,
       brand: baseCtx.brand,
       model: baseCtx.model,
@@ -313,7 +314,8 @@ export function buildWidgetCatalog(
       price,
       stock,
       warranty,
-      ...(entryShops && entryShops.length ? { shops: entryShops } : {}),
+      stockItemIds: [...new Set(items.map((item) => item.stockItemId).filter((id): id is string => !!id))],
+      ...(entryShops?.length ? { shops: entryShops } : {}),
     });
 
     if (!shops.length) {

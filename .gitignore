@@ -79,3 +79,4 @@ public/downloads/*.apk
 /android/captures/
 /android/*.iml
 /android/app/*.iml
+.env*

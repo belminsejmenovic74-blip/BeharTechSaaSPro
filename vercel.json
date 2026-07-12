@@ -22,15 +22,6 @@
     {
       "source": "/atelier/(.*)",
       "headers": [{ "key": "X-Frame-Options", "value": "SAMEORIGIN" }]
-    },
-    {
-      "source": "/widget/(.*)",
-      "headers": [
-        {
-          "key": "Content-Security-Policy",
-          "value": "frame-ancestors 'self' https://behartechpro.fr https://www.behartechpro.fr"
-        }
-      ]
     }
   ]
 }
