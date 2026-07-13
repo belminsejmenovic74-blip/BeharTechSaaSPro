@@ -1,4 +1,6 @@
 import type { Handle, HandleServerError } from '@sveltejs/kit';
+import { createServerClient } from '@supabase/ssr';
+import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public';
 
 import { COOKIE, verifySession } from '$lib/server/auth';
 import { getPostHogClient } from '$lib/server/posthog';
@@ -32,6 +34,19 @@ export const handle: Handle = async ({ event, resolve }) => {
 			duplex: 'half'
 		});
 	}
+
+	event.locals.supabase = createServerClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, {
+		cookies: {
+			getAll: () => event.cookies.getAll(),
+			setAll: (cookiesToSet) => {
+				cookiesToSet.forEach(({ name, value, options }) =>
+					event.cookies.set(name, value, { ...options, path: '/' })
+				);
+			}
+		}
+	});
+	const { data } = await event.locals.supabase.auth.getUser();
+	event.locals.user = data.user ?? null;
 
 	event.locals.admin = verifySession(event.cookies.get(COOKIE));
 	return resolve(event);

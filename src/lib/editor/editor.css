@@ -31,6 +31,13 @@
 	user-select: none;
 }
 
+/* La détection automatique étend le canvas à toutes les cartes, formulaires,
+   champs et zones de mise en page, sans modifier leur rendu visiteur. */
+.cms-edit-active [data-cms-auto='true'] {
+	min-width: 1px;
+	min-height: 1px;
+}
+
 /* ── Contrôles des panneaux d'édition (classes globales) ─────────────────── */
 .cms-panel-section {
 	padding: 16px;

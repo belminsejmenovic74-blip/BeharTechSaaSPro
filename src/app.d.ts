@@ -5,6 +5,8 @@ declare global {
 		// interface Error {}
 		interface Locals {
 			admin: boolean;
+			supabase: import('@supabase/supabase-js').SupabaseClient;
+			user: import('@supabase/supabase-js').User | null;
 		}
 		// interface PageData {}
 		// interface PageState {}

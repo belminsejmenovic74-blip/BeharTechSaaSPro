@@ -1,9 +1,11 @@
 import { browser } from '$app/environment';
-import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
+import type { SupabaseClient, User } from '@supabase/supabase-js';
 
 type ClientProfile = {
 	id: string;
 	user_id: string;
+	workshop_id: string | null;
 	email: string;
 	first_name: string | null;
 	last_name: string | null;
@@ -60,11 +62,11 @@ const supabaseKey =
 
 export const supabase: SupabaseClient | null =
 	browser && supabaseUrl && supabaseKey
-		? createClient(supabaseUrl, supabaseKey, {
+		? createBrowserClient(supabaseUrl, supabaseKey, {
 				auth: {
 					autoRefreshToken: true,
 					detectSessionInUrl: true,
-					flowType: 'implicit',
+					flowType: 'pkce',
 					persistSession: true
 				}
 			})
@@ -74,30 +76,10 @@ export function hasSupabase() {
 	return Boolean(supabase);
 }
 
-export function generateActivationKey() {
-	const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-	const group = () =>
-		Array.from({ length: 4 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
-	return `BTP-${group()}-${group()}-${group()}`;
-}
-
 function defaultProfileFor(user: User) {
-	const renewal = new Date();
-	renewal.setDate(renewal.getDate() + 30);
-
 	return {
 		user_id: user.id,
-		email: user.email || '',
-		plan: 'free',
-		subscription_status: 'active',
-		activation_key: generateActivationKey(),
-		repairs_limit: 10,
-		repairs_used: 0,
-		sms_limit: 10,
-		sms_used: 0,
-		devices_limit: 1,
-		devices_used: 0,
-		renewal_date: renewal.toISOString()
+		email: user.email || ''
 	};
 }
 
@@ -126,18 +108,13 @@ export async function ensureClientProfile(user: User): Promise<ClientProfile | n
 	if (existing.error) throw existing.error;
 	if (existing.data) return normalizeProfile(existing.data as ClientProfile);
 
-	for (let attempt = 0; attempt < 3; attempt += 1) {
-		const created = await supabase
-			.from('client_profiles')
-			.insert(defaultProfileFor(user))
-			.select('*')
-			.single();
-
-		if (!created.error) return normalizeProfile(created.data as ClientProfile);
-		if (!created.error.message.toLowerCase().includes('activation')) throw created.error;
-	}
-
-	throw new Error('Impossible de générer une clé d’activation unique.');
+	const created = await supabase
+		.from('client_profiles')
+		.insert(defaultProfileFor(user))
+		.select('*')
+		.single();
+	if (created.error) throw created.error;
+	return normalizeProfile(created.data as ClientProfile);
 }
 
 export async function updateClientProfile(userId: string, patch: ClientProfilePatch) {

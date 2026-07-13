@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import { get } from 'svelte/store';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import {
 		Undo2,
 		Redo2,
@@ -38,6 +40,21 @@
 		{ id: 'tablet', icon: Tablet, label: 'Tablette' },
 		{ id: 'mobile', icon: Smartphone, label: 'Mobile' }
 	];
+	const cmsPages = [
+		{ href: '/', label: 'Accueil' },
+		{ href: '/connexion', label: 'Connexion' },
+		{ href: '/inscription', label: 'Inscription' },
+		{ href: '/signin', label: 'Connexion application' },
+		{ href: '/signup', label: 'Inscription application' },
+		{ href: '/client', label: 'Espace client' },
+		{ href: '/dashboard', label: 'Dashboard' },
+		{ href: '/atelier', label: 'Atelier' },
+		{ href: '/comptoir', label: 'Comptoir' },
+		{ href: '/reparation', label: 'Réparation' },
+		{ href: '/factures', label: 'Factures' },
+		{ href: '/billing', label: 'Abonnement' },
+		{ href: '/onboarding', label: 'Configuration' }
+	];
 
 	async function doSave(silent = false) {
 		const store = getCmsStore();
@@ -73,6 +90,13 @@
 		}
 	}
 
+	async function openPage(event: Event) {
+		const href = (event.currentTarget as HTMLSelectElement).value;
+		if (!href || href === $page.url.pathname) return;
+		if ($isDirty) await doSave(true);
+		await goto(`${href}?edit=1`);
+	}
+
 	// Autosave débouncé quand le brouillon est « sale ».
 	const unsubDirty = isDirty.subscribe((dirty) => {
 		if (!dirty || !get(editMode)) return;
@@ -99,6 +123,17 @@
 		<span class="brand">
 			<span class="dot"></span> Mode édition
 		</span>
+
+		<div class="divider"></div>
+
+		<label class="page-picker" title="Changer la page à modifier">
+			<span>Page</span>
+			<select value={$page.url.pathname} on:change={openPage}>
+				{#each cmsPages as item}
+					<option value={item.href}>{item.label}</option>
+				{/each}
+			</select>
+		</label>
 
 		<div class="divider"></div>
 
@@ -249,6 +284,30 @@
 		font-weight: 600;
 		color: #2a9d8f;
 		padding: 0 8px;
+	}
+	.page-picker {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 11px;
+		font-weight: 600;
+		color: #6b6b6b;
+	}
+	.page-picker select {
+		height: 30px;
+		max-width: 150px;
+		padding: 0 26px 0 9px;
+		border: 1px solid rgba(26, 25, 22, 0.1);
+		border-radius: 8px;
+		background: #fff;
+		color: #1a1916;
+		font-size: 12px;
+		font-weight: 600;
+		outline: none;
+	}
+	.page-picker select:focus {
+		border-color: #2a9d8f;
+		box-shadow: 0 0 0 3px rgba(42, 157, 143, 0.12);
 	}
 	.status.dirty {
 		color: #b08900;

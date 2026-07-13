@@ -1,8 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": null,
   "buildCommand": "npm run build",
-  "outputDirectory": "build",
   "installCommand": "npm install",
   "rewrites": [
     {
@@ -290,5 +288,5 @@
       "destination": "https://behar-tech-saa-s-pro.vercel.app/api/:path*"
     }
   ],
-  "trailingSlash": true
+  "trailingSlash": false
 }

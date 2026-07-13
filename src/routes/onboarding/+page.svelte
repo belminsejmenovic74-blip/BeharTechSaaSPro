@@ -30,9 +30,11 @@
 	let loading = true;
 	let saving = false;
 	let errorMessage = '';
+	let licenseEmailNotice = '';
 	let userId = '';
 	let profile: ClientProfile | null = null;
 	let currentStep = 1;
+	let selectedPlan = 'free';
 
 	let personal = {
 		first_name: '',
@@ -84,6 +86,7 @@
 
 	onMount(async () => {
 		try {
+			try { selectedPlan = JSON.parse(localStorage.getItem('btp_selected_plan') || '{}').plan || 'free'; } catch { selectedPlan = 'free'; }
 			const user = await getCurrentUser();
 			if (!user) {
 				loading = false;
@@ -246,6 +249,10 @@
 			if (sendInvitations) await createTeamInvitations(userId, filledInvitations);
 			const updated = await updateClientProfile(userId, { onboarding_completed: true });
 			if (updated) hydrateForm(updated);
+			const emailResponse = await fetch('/api/email/license', { method: 'POST' });
+			licenseEmailNotice = emailResponse.ok
+				? 'Un e-mail contenant votre clé de licence vient de vous être envoyé.'
+				: 'Votre clé est disponible ci-dessous. L’e-mail sera envoyé dès que le service d’envoi sera configuré.';
 			currentStep = 7;
 			errorMessage = '';
 		} catch (error) {
@@ -512,7 +519,8 @@
 						Conservez cette clé en lieu sûr. Elle vous sera demandée pour connecter vos appareils.
 					</p>
 				</div>
-				<a class="bt-primary mt-8" href="/client">Accéder à mon espace</a>
+				{#if licenseEmailNotice}<p class="mt-4 text-sm leading-6 text-[#167B70]">{licenseEmailNotice}</p>{/if}
+				<a class="bt-primary mt-8" href={selectedPlan === 'free' || selectedPlan === 'gratuit' ? '/client' : '/billing'}>{selectedPlan === 'free' || selectedPlan === 'gratuit' ? 'Accéder à mon espace' : 'Finaliser mon abonnement'}</a>
 			{/if}
 
 			{#if errorMessage}

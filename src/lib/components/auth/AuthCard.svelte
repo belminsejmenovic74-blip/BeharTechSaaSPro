@@ -1,27 +1,38 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import BrandLogo from '$lib/components/brand/BrandLogo.svelte';
 	import { editable } from '$lib/editor/editable';
 	import { ensureClientProfile, hasSupabase, supabase } from '$lib/auth/supabase';
+	import { redirectAfterAuth } from '$lib/auth/post-auth';
 
 	export let initialMode: 'signin' | 'signup' = 'signin';
 	export let showProgress = false;
 
 	let mode: 'signin' | 'signup' = initialMode;
 	let email = '';
+	let password = '';
 	let loading = false;
 	let checkingSession = true;
 	let message = '';
 	let errorMessage = '';
+	let awaitingVerification = false;
+	let pendingEmail = '';
+	let selectedPlan = 'free';
+	let billingInterval: 'month' | 'year' = 'month';
+	const signupPlans = [
+		{ id: 'free', name: 'Gratuit', monthly: 0, yearly: 0, recommended: false },
+		{ id: 'starter', name: 'Starter', monthly: 29, yearly: 290, recommended: false },
+		{ id: 'pro', name: 'Pro', monthly: 49, yearly: 490, recommended: true },
+		{ id: 'business', name: 'Business', monthly: 99, yearly: 990, recommended: false }
+	] as const;
 
 	$: isSignup = mode === 'signup';
 	$: title = isSignup ? 'Bienvenue' : 'Se connecter';
 	$: subtitle = isSignup
 		? 'Créez votre compte ou connectez-vous pour accéder à votre espace.'
 		: 'Connectez-vous pour accéder à votre espace.';
-	$: emailButton = isSignup ? 'Continuer par e-mail' : 'Recevoir le lien de connexion';
+	$: emailButton = isSignup ? 'Créer mon compte' : 'Se connecter';
 	$: googleButton = isSignup ? 'Google' : 'Continuer avec Google';
 	$: alternateHref = isSignup ? '/connexion' : '/inscription';
 	$: alternateText = isSignup
@@ -36,8 +47,14 @@
 		return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 	}
 
-	function temporaryPassword() {
-		return `${crypto.randomUUID()}-${crypto.randomUUID()}-Btp!2026`;
+	function choosePlan(plan: string) {
+		selectedPlan = plan;
+		localStorage.setItem('btp_selected_plan', JSON.stringify({ plan, interval: billingInterval }));
+	}
+
+	function chooseInterval(interval: 'month' | 'year') {
+		billingInterval = interval;
+		localStorage.setItem('btp_selected_plan', JSON.stringify({ plan: selectedPlan, interval }));
 	}
 
 	async function redirectExistingSession() {
@@ -54,10 +71,15 @@
 		}
 
 		const profile = await ensureClientProfile(user);
-		await goto(profile?.onboarding_completed ? '/client' : '/onboarding');
+		await redirectAfterAuth(profile?.onboarding_completed);
 	}
 
 	onMount(() => {
+		try {
+			const choice = JSON.parse(localStorage.getItem('btp_selected_plan') || '{}');
+			selectedPlan = ['free', 'gratuit', 'starter', 'pro', 'business'].includes(String(choice.plan).toLowerCase()) ? String(choice.plan).toLowerCase().replace('gratuit', 'free') : 'free';
+			billingInterval = choice.interval === 'year' ? 'year' : 'month';
+		} catch { selectedPlan = 'free'; billingInterval = 'month'; }
 		redirectExistingSession().catch(() => {
 			checkingSession = false;
 		});
@@ -99,15 +121,20 @@
 			errorMessage = 'Indiquez une adresse e-mail valide.';
 			return;
 		}
+		if (password.length < 8) {
+			errorMessage = 'Le mot de passe doit contenir au moins 8 caractères.';
+			return;
+		}
 
 		loading = true;
 
 		if (isSignup) {
 			const { data, error } = await supabase.auth.signUp({
 				email: normalizedEmail,
-				password: temporaryPassword(),
+				password,
 				options: {
-					emailRedirectTo: getRedirectUrl()
+					emailRedirectTo: getRedirectUrl(),
+					data: { signup_source: 'behartechpro.fr', selected_plan: selectedPlan, billing_interval: billingInterval }
 				}
 			});
 			loading = false;
@@ -119,30 +146,47 @@
 
 			if (data.session?.user) {
 				const profile = await ensureClientProfile(data.session.user);
-				await goto(profile?.onboarding_completed ? '/client' : '/onboarding');
+				await redirectAfterAuth(profile?.onboarding_completed);
 				return;
 			}
 
-			errorMessage =
-				'La confirmation e-mail est encore activée dans Supabase. Désactivez "Confirm email" dans Auth > Providers > Email pour créer le compte et passer directement à la configuration.';
+			pendingEmail = normalizedEmail;
+			awaitingVerification = true;
+			message = 'Un e-mail de vérification vient de vous être envoyé. Vérifiez votre boîte de réception avant de continuer.';
 			return;
 		}
 
-		const { error } = await supabase.auth.signInWithOtp({
-			email: normalizedEmail,
-			options: {
-				emailRedirectTo: getRedirectUrl(),
-				shouldCreateUser: false
-			}
-		});
+		const { data, error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
 		loading = false;
 
 		if (error) {
+			if (/confirm|verified/i.test(error.message)) {
+				pendingEmail = normalizedEmail;
+				awaitingVerification = true;
+				errorMessage = 'Votre adresse e-mail doit être vérifiée avant l’accès à Behar Tech Pro.';
+				return;
+			}
 			errorMessage = error.message;
 			return;
 		}
+		if (data.user) {
+			const profile = await ensureClientProfile(data.user);
+			await redirectAfterAuth(profile?.onboarding_completed);
+		}
+	}
 
-		message = 'Lien envoyé. Ouvrez votre e-mail pour vous connecter.';
+	async function resendVerification() {
+		if (!supabase || !pendingEmail) return;
+		loading = true;
+		errorMessage = '';
+		const { error } = await supabase.auth.resend({
+			type: 'signup',
+			email: pendingEmail,
+			options: { emailRedirectTo: getRedirectUrl() }
+		});
+		loading = false;
+		if (error) errorMessage = error.message;
+		else message = 'E-mail renvoyé. Pensez à vérifier le dossier indésirable.';
 	}
 </script>
 
@@ -193,7 +237,40 @@
 				class="mt-9 h-6 w-6 animate-spin rounded-full border-2 border-[#DDDAD5] border-t-[#2A9D8F]"
 				aria-label="Chargement"
 			></div>
+		{:else if awaitingVerification}
+			<div class="mt-8 w-full rounded-[14px] border border-[#2A9D8F]/25 bg-white p-6 text-left">
+				<h2 class="text-lg font-semibold">Vérifiez votre adresse e-mail</h2>
+				<p class="mt-2 text-sm leading-6 text-[#6B6B6B]">L’accès au portail et au SaaS reste bloqué tant que <strong>{pendingEmail}</strong> n’est pas vérifiée.</p>
+				<button type="button" class="mt-5 flex h-12 w-full items-center justify-center rounded-[8px] bg-[#111111] text-sm font-semibold text-white disabled:opacity-60" on:click={resendVerification} disabled={loading}>{loading ? 'Envoi…' : 'Renvoyer l’e-mail'}</button>
+				<button type="button" class="mt-3 w-full text-center text-sm text-[#6B6B6B] underline" on:click={() => { awaitingVerification = false; message = ''; errorMessage = ''; }}>Utiliser une autre adresse</button>
+			</div>
+			{#if message}<p class="mt-4 text-center text-sm text-[#167B70]">{message}</p>{/if}
+			{#if errorMessage}<p class="mt-4 text-center text-sm text-red-700">{errorMessage}</p>{/if}
 		{:else}
+			{#if isSignup}
+				<div class="mt-8 w-full rounded-[16px] border border-[#E8E5DF] bg-white p-4 text-left">
+					<div class="flex items-center justify-between gap-3">
+						<div><small class="text-[11px] uppercase tracking-wide text-[#6B6B6B]">Choisissez votre abonnement</small><strong class="mt-0.5 block">Avant de créer le compte</strong></div>
+						<div class="inline-flex rounded-[10px] bg-[#F4F5F2] p-1 text-xs font-semibold">
+							<button type="button" class={`rounded-[8px] px-2.5 py-1.5 ${billingInterval === 'month' ? 'bg-white text-[#167B70] shadow-sm' : 'text-[#6B6B6B]'}`} on:click={() => chooseInterval('month')}>Mensuel</button>
+							<button type="button" class={`rounded-[8px] px-2.5 py-1.5 ${billingInterval === 'year' ? 'bg-white text-[#167B70] shadow-sm' : 'text-[#6B6B6B]'}`} on:click={() => chooseInterval('year')}>Annuel</button>
+						</div>
+					</div>
+					<div class="mt-4 grid grid-cols-2 gap-2">
+						{#each signupPlans as plan}
+							<button
+								type="button"
+								on:click={() => choosePlan(plan.id)}
+								class={`relative rounded-[12px] border px-3 py-3 text-left transition ${selectedPlan === plan.id ? 'border-[#2A9D8F] bg-[#F1FAF8] ring-2 ring-[#2A9D8F]/10' : 'border-[#E8E5DF] hover:border-[#A7D7D0]'}`}
+							>
+								{#if plan.recommended}<span class="absolute right-2 top-2 rounded-full bg-[#2A9D8F] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">Recommandé</span>{/if}
+								<strong class="block text-sm">{plan.name}</strong>
+								<span class="mt-1 block text-xs text-[#6B6B6B]">{billingInterval === 'year' ? plan.yearly : plan.monthly} € / {billingInterval === 'year' ? 'an' : 'mois'}</span>
+							</button>
+						{/each}
+					</div>
+				</div>
+			{/if}
 			<form class="mt-8 w-full space-y-4" on:submit|preventDefault={handleEmailAuth}>
 				<input
 					class="h-[52px] w-full rounded-[8px] border border-[#E8E5DF] bg-white px-4 text-[15px] text-[#1A1916] outline-none transition placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]"
@@ -201,6 +278,13 @@
 					placeholder="nom@exemple.com"
 					bind:value={email}
 					autocomplete="email"
+				/>
+				<input
+					class="h-[52px] w-full rounded-[8px] border border-[#E8E5DF] bg-white px-4 text-[15px] text-[#1A1916] outline-none transition placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]"
+					type="password"
+					placeholder="Mot de passe (8 caractères minimum)"
+					bind:value={password}
+					autocomplete={isSignup ? 'new-password' : 'current-password'}
 				/>
 
 				<button

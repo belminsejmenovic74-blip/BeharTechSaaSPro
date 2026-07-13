@@ -32,6 +32,9 @@
 			plan_href: planHref,
 			billing_period: planInterval
 		});
+		if (typeof localStorage !== 'undefined') {
+			localStorage.setItem('btp_selected_plan', JSON.stringify({ plan: planName.toLowerCase(), interval: planInterval }));
+		}
 	}
 
 	function onSetupCtaClick() {

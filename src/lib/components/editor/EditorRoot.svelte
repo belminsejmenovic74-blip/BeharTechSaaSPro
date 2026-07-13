@@ -12,6 +12,7 @@
 	import SelectionFrame from './SelectionFrame.svelte';
 	import PropertiesPanel from './PropertiesPanel.svelte';
 	import HistoryDrawer from './HistoryDrawer.svelte';
+	import AutoCanvas from './AutoCanvas.svelte';
 
 	const cms = getCms();
 	let isAdmin = false;
@@ -92,6 +93,7 @@
 <svelte:window on:keydown={onKeydown} on:click|capture={onDocClick} />
 
 {#if isAdmin}
+	<AutoCanvas />
 	<div data-cms-chrome>
 		<EditModeToggle />
 

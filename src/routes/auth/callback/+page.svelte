@@ -2,22 +2,30 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { ensureClientProfile, supabase } from '$lib/auth/supabase';
+	import { redirectAfterAuth } from '$lib/auth/post-auth';
+	import type { PageData } from './$types';
+
+	export let data: PageData;
 
 	let errorMessage = '';
 
 	onMount(async () => {
+		if (data.authError) {
+			errorMessage = data.authError;
+			return;
+		}
 		if (!supabase) {
 			errorMessage = 'Supabase n’est pas configuré.';
 			return;
 		}
 
-		const { data, error } = await supabase.auth.getSession();
+		const { data: sessionData, error } = await supabase.auth.getSession();
 		if (error) {
 			errorMessage = error.message;
 			return;
 		}
 
-		const user = data.session?.user;
+		const user = sessionData.session?.user;
 		if (!user) {
 			await goto('/connexion');
 			return;
@@ -25,7 +33,7 @@
 
 		try {
 			const profile = await ensureClientProfile(user);
-			await goto(profile?.onboarding_completed ? '/client' : '/onboarding');
+			await redirectAfterAuth(profile?.onboarding_completed);
 		} catch (error) {
 			errorMessage =
 				error instanceof Error ? error.message : 'Profil client impossible à préparer.';

@@ -1,24 +1,62 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import BrandLogo from '$lib/components/brand/BrandLogo.svelte';
 	import {
-		ensureClientProfile,
-		getCurrentUser,
-		supabase,
-		type ClientProfile
-	} from '$lib/auth/supabase';
+		Activity,
+		CalendarDays,
+		ChevronDown,
+		Home,
+		LayoutDashboard,
+		LayoutTemplate,
+		LogOut,
+		Menu,
+		MessageSquareText,
+		Search,
+		Settings2,
+		Store,
+		Wrench,
+		X
+	} from 'lucide-svelte';
+	import BrandLogo from '$lib/components/brand/BrandLogo.svelte';
+	import PortalControlCenter from '$lib/components/portal/PortalControlCenter.svelte';
+	import { ensureClientProfile, getCurrentUser, supabase, type ClientProfile } from '$lib/auth/supabase';
+	import { appBaseUrl, openSaas } from '$lib/auth/post-auth';
+	import { loadPortalData, type PortalData } from '$lib/auth/ecosystem';
+
+	type Section = 'home' | 'widget' | 'tracking' | 'configuration';
+	const nav: { id: Section; label: string; icon: typeof Home }[] = [
+		{ id: 'home', label: 'Accueil', icon: Home },
+		{ id: 'widget', label: 'Widget', icon: LayoutTemplate },
+		{ id: 'tracking', label: 'Mon suivi', icon: Activity },
+		{ id: 'configuration', label: 'Configuration', icon: Settings2 }
+	];
 
 	let loading = true;
+	let actionLoading = '';
 	let errorMessage = '';
-	let copied = false;
+	let section: Section = 'home';
+	let mobileNav = false;
+	let userMenu = false;
+	let query = '';
+	let statusFilter = 'all';
 	let profile: ClientProfile | null = null;
+	let portal: PortalData | null = null;
 
-	$: repairsRemaining = profile ? Math.max(profile.repairs_limit - profile.repairs_used, 0) : 0;
-	$: smsRemaining = profile ? Math.max(profile.sms_limit - profile.sms_used, 0) : 0;
-	$: planLabel = profile?.plan === 'free' ? 'Starter' : profile?.plan || 'Starter';
-	$: statusLabel =
-		profile?.subscription_status === 'active' ? 'Actif' : profile?.subscription_status || 'Actif';
+	$: workshopName = String(portal?.workshop?.commercial_name || portal?.workshop?.name || profile?.company_name || 'Mon atelier');
+	$: firstName = profile?.first_name || workshopName;
+	$: activeRepairs = portal?.repairs.filter((repair) => !['ready', 'delivered', 'cancelled'].includes(repair.status)).length ?? 0;
+	$: readyRepairs = portal?.repairs.filter((repair) => repair.status === 'ready').length ?? 0;
+	$: waitingRepairs = portal?.repairs.filter((repair) => ['received', 'diagnosis'].includes(repair.status)).length ?? 0;
+	$: plan = String(portal?.subscription?.plan || profile?.plan || 'free');
+	$: subscriptionStatus = String(portal?.subscription?.status || profile?.subscription_status || 'pending');
+	$: licenseStatus = String(portal?.license?.status || 'pending');
+	$: smsUsed = Number(portal?.usage?.sms_count ?? profile?.sms_used ?? 0);
+	$: emailUsed = Number(portal?.usage?.email_count ?? 0);
+	$: smsLimit = Number(profile?.sms_limit ?? 0);
+	$: filteredRepairs = portal?.repairs.filter((repair) => {
+		const haystack = `${repair.repair_number} ${repair.clients?.full_name || ''} ${repair.clients?.phone || ''} ${repair.device_brand || ''} ${repair.device_model || ''}`.toLowerCase();
+		return (!query || haystack.includes(query.toLowerCase())) && (statusFilter === 'all' || repair.status === statusFilter);
+	}) ?? [];
 
 	onMount(async () => {
 		try {
@@ -27,273 +65,103 @@
 				await goto('/connexion');
 				return;
 			}
-
-			const nextProfile = await ensureClientProfile(user);
-			if (!nextProfile) throw new Error('Profil client introuvable.');
-			if (!nextProfile.onboarding_completed) {
+			if (!user.email_confirmed_at) {
+				await supabase?.auth.signOut();
+				await goto(`/connexion?verification=required&email=${encodeURIComponent(user.email || '')}`);
+				return;
+			}
+			profile = await ensureClientProfile(user);
+			if (!profile) throw new Error('Profil client introuvable.');
+			if (!profile.onboarding_completed) {
 				await goto('/onboarding');
 				return;
 			}
-
-			profile = nextProfile;
+			portal = await loadPortalData(profile);
 		} catch (error) {
-			errorMessage =
-				error instanceof Error ? error.message : 'Impossible de charger votre espace client.';
+			errorMessage = error instanceof Error ? error.message : 'Impossible de charger votre portail.';
 		} finally {
 			loading = false;
 		}
 	});
 
-	async function copyKey() {
-		if (!profile) return;
-		try {
-			await navigator.clipboard.writeText(profile.activation_key);
-			copied = true;
-			window.setTimeout(() => (copied = false), 1800);
-		} catch {
-			errorMessage = 'Copie impossible depuis ce navigateur.';
-		}
+	async function launch(path: string, id: string) {
+		actionLoading = id;
+		errorMessage = '';
+		try { await openSaas(path); }
+		catch (error) { errorMessage = error instanceof Error ? error.message : 'Ouverture impossible.'; actionLoading = ''; }
 	}
 
 	async function logout() {
-		await supabase?.auth.signOut();
-		await goto('/connexion');
+		await supabase?.auth.signOut({ scope: 'global' });
+		const base = appBaseUrl();
+		if (base) window.location.assign(`${base}/api/auth/logout?returnTo=${encodeURIComponent('/connexion')}`);
+		else await goto('/connexion');
+	}
+
+	function displayDate(value: unknown) {
+		if (!value) return 'Non disponible';
+		const date = new Date(String(value));
+		return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' }).format(date);
 	}
 </script>
 
-<svelte:head>
-	<title>Espace client | Behar Tech Pro</title>
-	<meta
-		name="description"
-		content="Votre espace client Behar Tech Pro, votre clé d’activation et vos accès."
-	/>
-</svelte:head>
+<svelte:head><title>Portail client | Behar Tech Pro</title><meta name="description" content="Accueil et configuration de votre entreprise Behar Tech Pro." /></svelte:head>
 
-<main class="min-h-screen bg-[#FAFAF8] px-5 py-7 text-[#1A1916]">
-	{#if loading}
-		<div class="flex min-h-[80vh] items-center justify-center">
-			<div
-				class="h-7 w-7 animate-spin rounded-full border-2 border-[#DDDAD5] border-t-[#2A9D8F]"
-				aria-label="Chargement"
-			></div>
-		</div>
-	{:else if errorMessage}
-		<section class="mx-auto flex min-h-[80vh] max-w-md items-center justify-center">
-			<div class="w-full rounded-[16px] border border-red-200 bg-white p-7 text-center">
-				<p class="text-sm font-medium text-red-700">{errorMessage}</p>
-				<a
-					class="mt-6 inline-flex rounded-[10px] bg-[#111111] px-5 py-3 text-sm font-semibold text-white"
-					href="/connexion"
-				>
-					Connexion
-				</a>
-			</div>
-		</section>
-	{:else if profile}
-		<header class="mx-auto grid max-w-[1080px] grid-cols-[1fr_auto_1fr] items-center gap-4">
-			<a
-				href="/"
-				class="inline-flex items-center justify-self-start text-sm font-medium transition hover:text-[#2A9D8F]"
-			>
-				<span class="mr-2 text-xl leading-none">‹</span>
-				Retour
-			</a>
-			<BrandLogo centered compact />
-			<button
-				type="button"
-				class="justify-self-end text-sm font-medium text-[#6B6B6B] underline underline-offset-4 transition hover:text-[#1A1916]"
-				on:click={logout}
-			>
-				Déconnexion
-			</button>
+{#if loading}
+	<main class="flex min-h-screen items-center justify-center bg-white"><div class="h-8 w-8 animate-spin rounded-full border-2 border-[#DDDAD5] border-t-[#2A9D8F]" aria-label="Chargement"></div></main>
+{:else if errorMessage && !portal}
+	<main class="flex min-h-screen items-center justify-center bg-[#F6F7F9] px-5"><div class="max-w-md rounded-2xl border border-red-200 bg-white p-7 text-center"><h1 class="text-xl font-semibold">Portail indisponible</h1><p class="mt-3 text-sm leading-6 text-red-700">{errorMessage}</p><a class="mt-5 inline-flex rounded-xl bg-[#111] px-5 py-3 text-sm font-semibold text-white" href="/connexion">Se reconnecter</a></div></main>
+{:else if portal && profile}
+	<div class="min-h-screen bg-white text-[#171715]">
+		<aside class="fixed inset-y-0 left-0 z-30 hidden w-[236px] border-r border-[#E8E8E5] bg-white px-3 py-6 md:block">
+			<div class="px-1"><BrandLogo compact /></div>
+			<nav class="mt-8 space-y-1">{#each nav as item}<button type="button" on:click={() => (section = item.id)} class="flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium transition {section === item.id ? 'bg-[#EAF6F4] text-[#167B70]' : 'text-[#666662] hover:bg-[#F3F3F1]'}"><svelte:component this={item.icon} size={18} />{item.label}</button>{/each}</nav>
+		</aside>
+
+		<header class="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-[#E8E8E5] bg-white/95 px-5 backdrop-blur md:ml-[236px] md:justify-end md:px-8">
+			<div class="md:hidden"><BrandLogo compact /></div><button class="grid size-10 place-items-center rounded-xl md:hidden" on:click={() => (mobileNav = true)} aria-label="Menu"><Menu size={21} /></button>
+			<div class="relative hidden md:block"><button class="flex items-center gap-3 rounded-xl px-2 py-1.5 hover:bg-[#F3F3F1]" on:click={() => (userMenu = !userMenu)}><span class="grid size-9 place-items-center rounded-full bg-[#171715] font-semibold text-white">{firstName.charAt(0).toUpperCase()}</span><span class="text-left"><strong class="block max-w-48 truncate text-sm">{firstName}</strong><small class="block max-w-48 truncate text-[#6B6B6B]">{workshopName}</small></span><ChevronDown size={15} /></button>{#if userMenu}<div class="absolute right-0 mt-2 w-52 rounded-xl border border-[#E8E8E5] bg-white p-1.5 shadow-xl"><button class="flex h-10 w-full items-center gap-2 rounded-lg px-3 text-sm text-red-700 hover:bg-red-50" on:click={logout}><LogOut size={16} />Se déconnecter</button></div>{/if}</div>
 		</header>
 
-		<section class="mx-auto mt-9 max-w-[1052px] pb-12">
-			<div class="text-center">
-				<h1 class="text-[38px] font-semibold leading-tight tracking-normal sm:text-[44px]">
-					Votre espace est prêt
-				</h1>
-				<p class="mt-3 text-[16px] leading-7 text-[#6B6B6B]">
-					Retrouvez vos accès, votre clé et vos prochaines étapes.
-				</p>
-				<span
-					class="mt-6 inline-flex items-center rounded-full bg-[#2A9D8F]/10 px-3 py-1.5 text-[13px] font-semibold text-[#0E766B]"
-				>
-					<span class="mr-2 h-2 w-2 rounded-full bg-[#2A9D8F]"></span>
-					Compte actif
-				</span>
-			</div>
+		{#if mobileNav}<div class="fixed inset-0 z-50 md:hidden"><button class="absolute inset-0 bg-black/30" aria-label="Fermer" on:click={() => (mobileNav = false)}></button><aside class="absolute inset-y-0 left-0 w-[282px] bg-white p-4"><div class="flex items-center justify-between"><BrandLogo compact /><button class="grid size-10 place-items-center" on:click={() => (mobileNav = false)}><X size={20} /></button></div><nav class="mt-7 space-y-1">{#each nav as item}<button class="flex h-12 w-full items-center gap-3 rounded-xl px-3 text-left {section === item.id ? 'bg-[#EAF6F4] text-[#167B70]' : ''}" on:click={() => { section = item.id; mobileNav = false; }}><svelte:component this={item.icon} size={19} />{item.label}</button>{/each}</nav><button class="absolute bottom-5 left-4 right-4 flex h-12 items-center gap-3 rounded-xl px-3 text-red-700" on:click={logout}><LogOut size={19} />Se déconnecter</button></aside></div>{/if}
 
-			<div class="mt-8 grid gap-5 lg:grid-cols-[1.35fr_0.9fr]">
-				<section class="rounded-[16px] border border-[#E8E5DF] bg-white p-6 sm:p-7">
-					<h2 class="text-[14px] font-semibold">Votre clé d’activation</h2>
-					<div
-						class="mt-5 flex flex-col gap-5 rounded-[14px] border border-[#E8E5DF] bg-[#FAFAF8] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"
-					>
-						<p class="break-all font-mono text-[22px] font-semibold tracking-normal sm:text-[26px]">
-							{profile.activation_key}
-						</p>
-						<button
-							type="button"
-							class="h-11 shrink-0 rounded-[8px] border border-[#E8E5DF] bg-white px-4 text-[13px] font-semibold transition hover:border-[#2A9D8F]"
-							on:click={copyKey}
-						>
-							{copied ? 'Clé copiée' : 'Copier la clé'}
-						</button>
-					</div>
-					<p class="mt-5 max-w-xl text-[13px] leading-6 text-[#6B6B6B]">
-						Conservez cette clé en lieu sûr. Elle vous sera demandée pour connecter vos appareils.
-					</p>
-				</section>
+		<main class="px-5 py-8 md:ml-[236px] md:px-8 md:py-10"><div class="mx-auto max-w-[1200px]">
+			{#if errorMessage}<div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{errorMessage}</div>{/if}
 
-				<section class="rounded-[16px] border border-[#E8E5DF] bg-white p-6 sm:p-7">
-					<h2 class="text-[14px] font-semibold">Détails de votre compte</h2>
-					<div class="mt-5 space-y-3.5 text-[13px]">
-						<div class="bt-detail"><span>E-mail</span><strong>{profile.email}</strong></div>
-						<div class="bt-detail">
-							<span>Téléphone</span><strong>{profile.phone || 'À compléter'}</strong>
-						</div>
-						<div class="bt-detail">
-							<span>Code postal</span><strong>{profile.postal_code || 'À compléter'}</strong>
-						</div>
-						<div class="bt-detail">
-							<span>Entreprise</span><strong>{profile.company_name || 'Behar Tech Pro'}</strong>
-						</div>
-						<div class="bt-detail border-t border-[#E8E5DF] pt-4">
-							<span>Plan</span><strong>{planLabel}</strong>
-						</div>
-						<div class="bt-detail">
-							<span>Statut</span>
-							<strong
-								><span class="mr-2 inline-block h-2 w-2 rounded-full bg-[#2A9D8F]"
-								></span>{statusLabel}</strong
-							>
-						</div>
-					</div>
-				</section>
-			</div>
-
-			<div class="mt-5 grid gap-5 md:grid-cols-3">
-				<section class="rounded-[14px] border border-[#E8E5DF] bg-white p-5">
-					<p class="text-[13px] font-semibold">Réparations restantes</p>
-					<p class="mt-2 text-[23px] font-semibold">
-						{repairsRemaining} <span class="text-[#6B6B6B]">/ {profile.repairs_limit}</span>
-					</p>
-					<p class="mt-1 text-[13px] text-[#6B6B6B]">Ce mois-ci</p>
-				</section>
-				<section class="rounded-[14px] border border-[#E8E5DF] bg-white p-5">
-					<p class="text-[13px] font-semibold">SMS restants</p>
-					<p class="mt-2 text-[23px] font-semibold">
-						{smsRemaining} <span class="text-[#6B6B6B]">/ {profile.sms_limit}</span>
-					</p>
-					<p class="mt-1 text-[13px] text-[#6B6B6B]">Ce mois-ci</p>
-				</section>
-				<section class="rounded-[14px] border border-[#E8E5DF] bg-white p-5">
-					<p class="text-[13px] font-semibold">Appareils connectés</p>
-					<p class="mt-2 text-[23px] font-semibold">
-						{profile.devices_used} <span class="text-[#6B6B6B]">/ {profile.devices_limit}</span>
-					</p>
-					<p class="mt-1 text-[13px] text-[#6B6B6B]">Limite incluse dans votre plan</p>
-				</section>
-			</div>
-
-			<section class="mt-8">
-				<h2 class="text-[18px] font-semibold">Accéder à votre espace</h2>
-				<div class="mt-4 grid gap-5 md:grid-cols-3">
-					<a class="bt-access-card" href="/dashboard">
-						<span>
-							<strong>Accéder au dashboard</strong>
-							<small>Vue d’ensemble de votre activité et de vos performances.</small>
-						</span>
-						<span aria-hidden="true">→</span>
-					</a>
-					<a class="bt-access-card" href="/comptoir">
-						<span>
-							<strong>Accéder au comptoir</strong>
-							<small>Gérer les clients, les réparations et les encaissements.</small>
-						</span>
-						<span aria-hidden="true">→</span>
-					</a>
-					<a class="bt-access-card" href="/atelier">
-						<span>
-							<strong>Accéder à l’atelier</strong>
-							<small>Suivre vos interventions et vos techniciens.</small>
-						</span>
-						<span aria-hidden="true">→</span>
-					</a>
+			{#if section === 'home'}
+				<div class="flex flex-wrap items-end justify-between gap-4"><div><p class="mb-2 text-xs font-bold uppercase tracking-[.14em] text-[#858580]">Espace entreprise</p><h1 class="text-[32px] font-semibold tracking-[-0.04em] sm:text-[40px]">Bonjour {firstName}</h1><p class="mt-2 text-[#6B6B6B]">Que souhaitez-vous gérer aujourd’hui ?</p></div><a href="/billing" class="rounded-full border border-[#2A9D8F] bg-white px-5 py-2.5 text-sm font-semibold text-[#167B70]">Mettre à niveau · {plan}</a></div>
+				<div class="mt-7 grid gap-4 md:grid-cols-3">
+					<button class="bt-mode" on:click={() => launch('/comptoir', 'counter')} disabled={!!actionLoading}><Store size={24} /><strong>Mode comptoir</strong><span>Prises en charge, devis, ventes et encaissements.</span><small>{actionLoading === 'counter' ? 'Connexion…' : 'Ouvrir le SaaS →'}</small></button>
+					<button class="bt-mode" on:click={() => launch('/atelier', 'workshop')} disabled={!!actionLoading}><Wrench size={24} /><strong>Mode atelier</strong><span>Appareils, statuts, pièces et travail en cours.</span><small>{activeRepairs} en cours · {readyRepairs} prêts</small></button>
+					<button class="bt-mode" on:click={() => launch('/dashboard', 'dashboard')} disabled={!!actionLoading}><LayoutDashboard size={24} /><strong>Tableau de bord détaillé</strong><span>Activité, marges, dépenses et performances.</span><small>{actionLoading === 'dashboard' ? 'Connexion…' : 'Ouvrir le SaaS →'}</small></button>
 				</div>
-			</section>
-
-			<section
-				class="mt-5 flex flex-col gap-5 rounded-[14px] border border-[#E8E5DF] bg-white p-6 sm:flex-row sm:items-center sm:justify-between"
-			>
-				<div>
-					<h2 class="text-[14px] font-semibold">Inviter plus tard</h2>
-					<p class="mt-2 text-[13px] text-[#6B6B6B]">
-						Ajoutez des membres à votre équipe quand vous le souhaitez.
-					</p>
+				<div class="mt-5 grid gap-4 lg:grid-cols-2">
+					<section class="bt-card"><div class="flex items-center justify-between"><h2 class="bt-title"><CalendarDays size={18} />Prochains rendez-vous</h2><button class="text-sm font-medium text-[#167B70]" on:click={() => launch('/dashboard/rendez-vous', 'appointments')}>Tout voir</button></div>{#if portal.appointments.length}{#each portal.appointments.slice(0, 5) as appointment}<button class="bt-row w-full text-left" on:click={() => launch('/dashboard/rendez-vous', appointment.id)}><span><strong>{appointment.client_name || 'Client'}</strong><small>{appointment.device_model || 'Appareil non précisé'}</small></span><span class="text-right"><strong>{displayDate(appointment.appointment_date)}</strong><small>{appointment.appointment_time || appointment.status}</small></span></button>{/each}{:else}<p class="bt-empty">Aucun rendez-vous planifié.</p>{/if}</section>
+					<section class="bt-card"><h2 class="bt-title"><Activity size={18} />Activité réelle</h2><div class="mt-5 grid grid-cols-3 gap-3"><div class="bt-stat"><strong>{activeRepairs}</strong><span>En cours</span></div><div class="bt-stat"><strong>{readyRepairs}</strong><span>Prêts</span></div><div class="bt-stat"><strong>{waitingRepairs}</strong><span>En attente</span></div></div><div class="mt-5 space-y-3 border-t border-[#F0F0EE] pt-4"><div class="bt-detail"><span>SMS envoyés / restants</span><strong>{smsUsed} / {Math.max(smsLimit - smsUsed, 0)}</strong></div><div class="bt-detail"><span>E-mails envoyés</span><strong>{emailUsed}</strong></div><div class="bt-detail"><span>Plan actif</span><strong class="capitalize">{plan}</strong></div><div class="bt-detail"><span>Licence</span><strong class={licenseStatus === 'active' ? 'text-[#167B70]' : 'text-amber-700'}>{licenseStatus}</strong></div><div class="bt-detail"><span>Prochaine échéance</span><strong>{displayDate(portal.subscription?.current_period_end || profile.renewal_date)}</strong></div></div></section>
 				</div>
-				<a
-					class="inline-flex h-11 items-center justify-center rounded-[8px] border border-[#E8E5DF] bg-white px-5 text-[13px] font-semibold transition hover:border-[#2A9D8F]"
-					href="/billing"
-				>
-					Gérer mon abonnement
-				</a>
-			</section>
-		</section>
-	{/if}
-</main>
+				<section class="bt-card mt-4"><div class="flex items-center justify-between"><h2 class="bt-title"><MessageSquareText size={18} />Dernières demandes du widget</h2><button class="text-sm font-medium text-[#167B70]" on:click={() => launch('/dashboard/demandes-site', 'leads')}>Gérer</button></div>{#if portal.leads.length}{#each portal.leads.slice(0, 5) as lead}<button class="bt-row w-full text-left" on:click={() => launch('/dashboard/demandes-site', lead.id)}><span><strong>{[lead.first_name, lead.last_name].filter(Boolean).join(' ') || 'Nouveau contact'}</strong><small>{lead.model} · {lead.issue}</small></span><span class="rounded-full border border-[#E8E8E5] px-2 py-1 text-xs">{lead.status}</span></button>{/each}{:else}<p class="bt-empty">Aucune demande reçue depuis le widget.</p>{/if}</section>
+			{:else if section === 'widget'}
+				<h1 class="text-3xl font-bold">Widget</h1><p class="mt-2 text-[#6B6B6B]">La configuration publiée est celle utilisée immédiatement par votre vrai widget.</p>
+				<div class="mt-7"><PortalControlCenter initialTab="widget" /></div>
+			{:else if section === 'tracking'}
+				<h1 class="text-3xl font-bold">Mon suivi</h1><p class="mt-2 text-[#6B6B6B]">Réparations, rendez-vous et demandes issus des données du SaaS.</p><section class="bt-card mt-7"><div class="grid gap-3 sm:grid-cols-[1fr_220px]"><label class="flex h-11 items-center gap-2 rounded-xl border border-[#E8E8E5] px-3"><Search size={17} class="text-[#8A8A8A]" /><input class="min-w-0 flex-1 outline-none" placeholder="Client, téléphone, référence…" bind:value={query} /></label><select class="h-11 rounded-xl border border-[#E8E8E5] px-3" bind:value={statusFilter}><option value="all">Tous les statuts</option>{#each Array.from(new Set(portal.repairs.map((repair) => repair.status))) as status}<option value={status}>{status}</option>{/each}</select></div><div class="mt-5">{#if filteredRepairs.length}{#each filteredRepairs as repair}<button class="bt-row w-full text-left" on:click={() => launch('/dashboard/reparations', repair.id)}><span><strong>{repair.repair_number} · {repair.clients?.full_name || 'Client'}</strong><small>{[repair.device_brand, repair.device_model].filter(Boolean).join(' ')} · {repair.issue_description}</small></span><span class="rounded-full border border-[#E8E8E5] px-2 py-1 text-xs">{repair.status}</span></button>{/each}{:else}<p class="bt-empty">Aucun dossier ne correspond aux filtres.</p>{/if}</div></section>
+			{:else}
+				<div class="flex flex-wrap items-end justify-between gap-4"><div><h1 class="text-3xl font-bold">Configuration</h1><p class="mt-2 text-[#6B6B6B]">Modifie ici ton entreprise, tes messages et ton widget. Tout se synchronise automatiquement.</p></div><a class="rounded-xl bg-[#111] px-5 py-3 text-sm font-semibold text-white" href="/billing">Mettre à niveau l’abonnement</a></div>
+				<div class="mt-7"><PortalControlCenter initialTab="company" /></div>
+			{/if}
+		</div></main>
+	</div>
+{/if}
 
 <style>
-	.bt-detail {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
-	}
-
-	.bt-detail span {
-		color: #6b6b6b;
-	}
-
-	.bt-detail strong {
-		text-align: right;
-		font-weight: 500;
-		color: #1a1916;
-	}
-
-	.bt-access-card {
-		display: flex;
-		min-height: 6.4rem;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
-		border-radius: 14px;
-		border: 1px solid #e8e5df;
-		background: #ffffff;
-		padding: 1.25rem;
-		color: #1a1916;
-		transition:
-			border-color 160ms ease,
-			transform 160ms ease;
-	}
-
-	.bt-access-card:hover {
-		border-color: #2a9d8f;
-		transform: translateY(-1px);
-	}
-
-	.bt-access-card strong {
-		display: block;
-		font-size: 0.875rem;
-		font-weight: 700;
-	}
-
-	.bt-access-card small {
-		margin-top: 0.6rem;
-		display: block;
-		color: #6b6b6b;
-		font-size: 0.8125rem;
-		line-height: 1.55;
-	}
+	:global(.bt-card){border:1px solid #e5e5e1;background:#fff;border-radius:20px;padding:24px;box-shadow:0 1px 2px rgba(17,17,17,.025)}
+	:global(.bt-title){display:flex;align-items:center;gap:9px;font-size:16px;font-weight:650}
+	:global(.bt-mode){display:flex;min-height:210px;flex-direction:column;align-items:flex-start;border:1px solid #e5e5e1;background:#fff;border-radius:20px;padding:24px;text-align:left;transition:.2s}
+	:global(.bt-mode:hover){border-color:rgba(42,157,143,.6);transform:translateY(-2px);box-shadow:0 14px 32px rgba(17,17,17,.07)}
+	:global(.bt-mode svg){color:#2a9d8f}
+	:global(.bt-mode strong){margin-top:26px;font-size:18px;letter-spacing:-.02em}.bt-mode span{margin-top:8px;color:#6b6b6b;font-size:13px;line-height:1.65}.bt-mode small{margin-top:auto;padding-top:18px;color:#167b70;font-weight:700}
+	:global(.bt-row){display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid #f0f0ee;padding:13px 0}.bt-row:first-child{border-top:0}.bt-row span{min-width:0}.bt-row strong{display:block;font-size:13px}.bt-row small{display:block;margin-top:3px;max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#6b6b6b;font-size:12px}
+	:global(.bt-stat){border:1px solid #e9e9e5;background:#fcfcfb;border-radius:14px;padding:15px;text-align:center}.bt-stat strong{display:block;font-size:22px}.bt-stat span{display:block;margin-top:4px;color:#6b6b6b;font-size:11px}
+	:global(.bt-detail){display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:13px}.bt-detail span{color:#6b6b6b}.bt-detail strong{text-align:right}
+	:global(.bt-empty){margin-top:16px;border-radius:12px;background:#f6f7f9;padding:22px;text-align:center;color:#6b6b6b;font-size:13px}
 </style>
