@@ -99,7 +99,7 @@ export const DEFAULT_CONTENT = {
 	},
 
 	hero: {
-		badge: 'Le logiciel premium pour ateliers de réparation',
+		badge: '',
 		title: 'Transformez votre atelier.',
 		subtitle: 'Gagnez du temps. Gagnez des clients.\nCentralisez votre atelier dans un seul outil.',
 		ctaLabel: 'Essayer gratuitement',
@@ -603,7 +603,7 @@ export const DEFAULT_CONTENT = {
 
 	footer: {
 		brand: 'BEHAR • TECH',
-		tagline: 'Le logiciel premium pour ateliers de réparation.',
+		tagline: '',
 		newsletterTitle: 'Restez informé',
 		newsletterPlaceholder: 'Votre e-mail',
 		newsletterButton: 'S’inscrire',

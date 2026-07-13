@@ -26,6 +26,19 @@
 		interval = next;
 	}
 
+	function planSlug(planName: string) {
+		const n = planName.trim().toLowerCase();
+		return n === 'gratuit' ? 'free' : n;
+	}
+
+	// Le plan choisi sur le site est transmis à /inscription via l'URL
+	// (source de vérité robuste), en plus du localStorage en repli.
+	function planHref(base: string, planName: string, planInterval: Interval) {
+		if (!base || !base.includes('inscription')) return base;
+		const sep = base.includes('?') ? '&' : '?';
+		return `${base}${sep}plan=${planSlug(planName)}&interval=${planInterval}`;
+	}
+
 	function onPlanCtaClick(planName: string, planHref: string, planInterval: Interval) {
 		posthog.capture('pricing_plan_selected', {
 			plan_name: planName,
@@ -33,7 +46,7 @@
 			billing_period: planInterval
 		});
 		if (typeof localStorage !== 'undefined') {
-			localStorage.setItem('btp_selected_plan', JSON.stringify({ plan: planName.toLowerCase(), interval: planInterval }));
+			localStorage.setItem('btp_selected_plan', JSON.stringify({ plan: planSlug(planName), interval: planInterval }));
 		}
 	}
 
@@ -125,7 +138,7 @@
 						</div>
 					{/key}
 					<Button
-						href={price.buttonHref}
+						href={planHref(price.buttonHref, price.name, interval)}
 						on:click={() => onPlanCtaClick(price.name, price.buttonHref, interval)}
 						class="group relative w-full gap-2 overflow-hidden text-lg font-semibold tracking-tighter"
 					>

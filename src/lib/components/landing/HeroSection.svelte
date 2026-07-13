@@ -24,17 +24,6 @@
 		style="background: radial-gradient(58% 48% at 50% 44%, rgba(255,214,186,0.85), transparent 70%);"
 	></div>
 
-	{#if hero.badge}
-		<a
-			href="#pense"
-			use:editable={{ id: 'hero.badge', kind: 'button', path: 'hero.badge', label: 'Badge' }}
-			class="-translate-y-4 animate-fade-in inline-flex items-center gap-1.5 rounded-full border border-[rgba(26,25,22,0.08)] bg-white/70 px-4 py-1.5 text-sm text-gray-500 opacity-0 shadow-sm backdrop-blur transition hover:text-gray-700"
-		>
-			{hero.badge}
-			<ArrowRightIcon class="size-3.5" />
-		</a>
-	{/if}
-
 	<h1
 		use:editable={{ id: 'hero.title', kind: 'heading', path: 'hero.title', label: 'Titre principal' }}
 		class="-translate-y-4 animate-fade-in mt-6 max-w-4xl text-balance py-2 text-6xl font-medium leading-[1.02] tracking-tighter opacity-0 [--animation-delay:150ms] md:text-7xl lg:text-8xl"

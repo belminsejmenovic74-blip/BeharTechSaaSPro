@@ -50,6 +50,7 @@
 		? 'Créez votre compte ou connectez-vous pour accéder à votre espace.'
 		: 'Connectez-vous pour accéder à votre espace.';
 	$: selectedPlanData = signupPlans.find((plan) => plan.id === selectedPlan) || signupPlans[2];
+	$: planPriceMonthly = billingInterval === 'year' ? monthlyEquivalent(selectedPlanData.yearly) : selectedPlanData.monthly;
 	$: emailButton = isSignup ? `Continuer avec l’offre ${selectedPlanData.name}` : 'Se connecter';
 	$: googleButton = isSignup ? 'Google' : 'Continuer avec Google';
 	$: alternateHref = isSignup ? '/connexion' : '/inscription';
@@ -65,14 +66,10 @@
 		return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 	}
 
-	function choosePlan(plan: string) {
-		selectedPlan = plan;
-		localStorage.setItem('btp_selected_plan', JSON.stringify({ plan, interval: billingInterval }));
-	}
-
-	function chooseInterval(interval: 'month' | 'year') {
-		billingInterval = interval;
-		localStorage.setItem('btp_selected_plan', JSON.stringify({ plan: selectedPlan, interval }));
+	const PLAN_IDS = ['free', 'gratuit', 'starter', 'pro', 'business'];
+	function normalizePlan(value: unknown): string {
+		const v = String(value ?? '').toLowerCase();
+		return PLAN_IDS.includes(v) ? v.replace('gratuit', 'free') : '';
 	}
 
 	function monthlyEquivalent(yearly: number) {
@@ -97,11 +94,23 @@
 	}
 
 	onMount(() => {
+		// Priorité : offre choisie sur le site (URL) > dernier choix (localStorage) > défaut.
+		let plan = '';
+		let interval: 'month' | 'year' | '' = '';
 		try {
-			const choice = JSON.parse(localStorage.getItem('btp_selected_plan') || '{}');
-			selectedPlan = ['free', 'gratuit', 'starter', 'pro', 'business'].includes(String(choice.plan).toLowerCase()) ? String(choice.plan).toLowerCase().replace('gratuit', 'free') : 'pro';
-			billingInterval = choice.interval === 'year' ? 'year' : 'month';
-		} catch { selectedPlan = 'pro'; billingInterval = 'month'; }
+			const params = $page.url.searchParams;
+			plan = normalizePlan(params.get('plan'));
+			interval = params.get('interval') === 'year' ? 'year' : params.get('interval') === 'month' ? 'month' : '';
+			if (!plan || !interval) {
+				const choice = JSON.parse(localStorage.getItem('btp_selected_plan') || '{}');
+				if (!plan) plan = normalizePlan(choice.plan);
+				if (!interval) interval = choice.interval === 'year' ? 'year' : 'month';
+			}
+		} catch { /* défauts ci-dessous */ }
+		selectedPlan = plan || 'pro';
+		billingInterval = interval || 'month';
+		// Mémorise pour la suite du parcours (onboarding / repli).
+		try { localStorage.setItem('btp_selected_plan', JSON.stringify({ plan: selectedPlan, interval: billingInterval })); } catch { /* ignore */ }
 		redirectExistingSession().catch(() => {
 			checkingSession = false;
 		});
@@ -222,9 +231,9 @@
 	</a>
 
 	<section
-		class={`mx-auto flex min-h-[calc(100vh-4.5rem)] w-full flex-col items-center justify-center py-8 transition-all ${isSignup ? 'max-w-[760px]' : 'max-w-[430px]'}`}
+		class="mx-auto flex min-h-[calc(100vh-4.5rem)] w-full max-w-[430px] flex-col items-center justify-center py-8 transition-all"
 	>
-		<BrandLogo centered compact />
+		<BrandLogo centered size="h-12" />
 
 		{#if showProgress}
 			<div class="mt-10 flex w-full items-center justify-center gap-8">
@@ -270,52 +279,33 @@
 			{#if errorMessage}<p class="mt-4 text-center text-sm text-red-700">{errorMessage}</p>{/if}
 		{:else}
 			{#if isSignup}
-				<div class="mt-8 w-full text-left">
-					<div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
-						<div>
-							<p class="text-[12px] font-bold uppercase tracking-[0.14em] text-[#2A9D8F]">Choisissez votre formule</p>
-							<h2 class="mt-1 text-xl font-semibold tracking-[-0.02em]">L’offre adaptée à votre atelier</h2>
-						</div>
-						<div class="inline-flex rounded-full border border-[#E3E0DA] bg-[#F1F0ED] p-1 text-sm font-semibold shadow-inner">
-							<button type="button" class={`rounded-full px-4 py-2 transition ${billingInterval === 'month' ? 'bg-white text-[#1A1916] shadow-sm' : 'text-[#6B6B6B]'}`} on:click={() => chooseInterval('month')}>Mensuel</button>
-							<button type="button" class={`flex items-center gap-2 rounded-full px-4 py-2 transition ${billingInterval === 'year' ? 'bg-[#1A1916] text-white shadow-sm' : 'text-[#6B6B6B]'}`} on:click={() => chooseInterval('year')}>
-								Annuel <span class={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${billingInterval === 'year' ? 'bg-white/15 text-white' : 'bg-[#DDF2EE] text-[#167B70]'}`}>2 mois offerts</span>
-							</button>
-						</div>
-					</div>
-					<div class="mt-5 grid gap-3 sm:grid-cols-2">
-						{#each signupPlans as plan}
-							<button
-								type="button"
-								on:click={() => choosePlan(plan.id)}
-								aria-pressed={selectedPlan === plan.id}
-								class={`group relative overflow-hidden rounded-[18px] border p-5 text-left transition-all duration-200 ${selectedPlan === plan.id ? 'border-[#2A9D8F] bg-[#F4FBF9] shadow-[0_14px_35px_rgba(42,157,143,0.12)] ring-1 ring-[#2A9D8F]' : 'border-[#E3E0DA] bg-white hover:-translate-y-0.5 hover:border-[#9CCFC8] hover:shadow-[0_10px_25px_rgba(26,25,22,0.07)]'}`}
-							>
-								{#if selectedPlan === plan.id}<span class="absolute inset-y-0 left-0 w-1 bg-[#2A9D8F]"></span>{/if}
-								<div class="flex items-start justify-between gap-3">
-									<div>
-										<div class="flex items-center gap-2">
-											<strong class="text-[17px]">{plan.name}</strong>
-											{#if plan.recommended}<span class="inline-flex items-center gap-1 rounded-full bg-[#1A1916] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-white"><Sparkles class="size-3" /> Le plus choisi</span>{/if}
-										</div>
-										<p class="mt-1 text-xs text-[#6B6B6B]">{plan.description}</p>
-									</div>
-									<span class={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border ${selectedPlan === plan.id ? 'border-[#2A9D8F] bg-[#2A9D8F] text-white' : 'border-[#CFCBC4] bg-white text-transparent'}`}><Check class="size-3.5" strokeWidth={3} /></span>
+				<div class="mt-8 w-full max-w-[430px] text-left">
+					<div class="rounded-[16px] border border-[#E3E0DA] bg-white p-5 shadow-[0_10px_25px_rgba(26,25,22,0.05)]">
+						<div class="flex items-start justify-between gap-3">
+							<div>
+								<p class="text-[11px] font-bold uppercase tracking-[0.14em] text-[#2A9D8F]">Votre formule</p>
+								<div class="mt-1.5 flex items-center gap-2">
+									<strong class="text-[19px] tracking-[-0.02em]">{selectedPlanData.name}</strong>
+									{#if selectedPlanData.recommended}<span class="inline-flex items-center gap-1 rounded-full bg-[#1A1916] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-white"><Sparkles class="size-3" /> Le plus choisi</span>{/if}
 								</div>
-								<div class="mt-4 flex items-end gap-1">
-									<span class="text-[30px] font-bold leading-none tracking-[-0.04em]">{billingInterval === 'year' ? monthlyEquivalent(plan.yearly) : plan.monthly} €</span>
-									<span class="pb-0.5 text-xs text-[#6B6B6B]">/ mois</span>
-								</div>
-								{#if billingInterval === 'year' && plan.yearly > 0}<p class="mt-1 text-[11px] font-medium text-[#167B70]">{plan.yearly} € facturés par an · économisez {plan.monthly * 12 - plan.yearly} €</p>{/if}
-								<ul class="mt-4 space-y-2 border-t border-[#E9E6E1] pt-3">
-									{#each plan.features as feature}
-										<li class="flex items-center gap-2 text-xs font-medium text-[#494844]"><Check class="size-3.5 text-[#2A9D8F]" strokeWidth={2.5} /> {feature}</li>
-									{/each}
-								</ul>
-							</button>
-						{/each}
+								<p class="mt-1 text-xs text-[#6B6B6B]">{selectedPlanData.description}</p>
+							</div>
+							<a href="/#pricing" class="shrink-0 text-sm font-medium text-[#2A9D8F] underline underline-offset-4 transition hover:text-[#167B70]">Modifier</a>
+						</div>
+						<div class="mt-4 flex items-end gap-1 border-t border-[#E9E6E1] pt-4">
+							<span class="text-[30px] font-bold leading-none tracking-[-0.04em]">{planPriceMonthly} €</span>
+							<span class="pb-0.5 text-xs text-[#6B6B6B]">/ mois</span>
+							{#if billingInterval === 'year' && selectedPlanData.yearly > 0}
+								<span class="ml-2 pb-0.5 text-[11px] font-medium text-[#167B70]">{selectedPlanData.yearly} € / an · 2 mois offerts</span>
+							{/if}
+						</div>
+						<ul class="mt-4 space-y-2">
+							{#each selectedPlanData.features as feature}
+								<li class="flex items-center gap-2 text-xs font-medium text-[#494844]"><Check class="size-3.5 text-[#2A9D8F]" strokeWidth={2.5} /> {feature}</li>
+							{/each}
+						</ul>
 					</div>
-					<p class="mt-4 text-center text-xs text-[#6B6B6B]">Sans engagement · Changez de formule à tout moment depuis votre espace</p>
+					<p class="mt-3 text-center text-xs text-[#6B6B6B]">Sans engagement · Changez de formule à tout moment depuis votre espace</p>
 				</div>
 			{/if}
 			<form class="mt-8 w-full max-w-[430px] space-y-4" on:submit|preventDefault={handleEmailAuth}>

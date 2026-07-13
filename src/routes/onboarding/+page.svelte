@@ -300,7 +300,7 @@
 		<section
 			class="mx-auto flex min-h-[calc(100vh-4.5rem)] w-full max-w-[430px] flex-col items-center justify-center py-8"
 		>
-			<BrandLogo centered compact />
+			<BrandLogo centered size="h-12" />
 
 			<div class="mt-10 flex w-full items-center justify-center gap-8">
 				<div class="flex items-center gap-2" aria-label={`Progression ${progressLabel}`}>

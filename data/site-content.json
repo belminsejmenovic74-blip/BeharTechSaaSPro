@@ -90,7 +90,10 @@
 			"id": "A",
 			"layout": "screen",
 			"tabStyle": "dots",
-			"titleLines": ["Pensé pour chaque besoin", "de votre boutique."],
+			"titleLines": [
+				"Pensé pour chaque besoin",
+				"de votre boutique."
+			],
 			"slides": [
 				{
 					"id": "a-dashboard",
@@ -158,7 +161,10 @@
 			"id": "B",
 			"layout": "screen",
 			"tabStyle": "filled",
-			"titleLines": ["Gagnez du temps.", "Gagnez des clients grâce à nos services."],
+			"titleLines": [
+				"Gagnez du temps.",
+				"Gagnez des clients grâce à nos services."
+			],
 			"subtitle": "Des outils intelligents pour automatiser, centraliser et développer votre activité.",
 			"sideTitle": "Avantages réparateur",
 			"slides": [
@@ -228,7 +234,9 @@
 			"id": "C",
 			"layout": "phone",
 			"tabStyle": "filled",
-			"titleLines": ["On pense à vos clients"],
+			"titleLines": [
+				"On pense à vos clients"
+			],
 			"subtitleTeal": "Expérience plus professionnelle",
 			"description": "Au lieu d’un papier perdu ou d’un message WhatsApp flou, le client a un vrai suivi digital, comme dans un service premium.",
 			"sideTitle": "Avantages client",
@@ -570,7 +578,7 @@
 	},
 	"footer": {
 		"brand": "BEHAR • TECH",
-		"tagline": "Le logiciel premium pour ateliers de réparation.",
+		"tagline": "",
 		"newsletterTitle": "Restez informé",
 		"newsletterPlaceholder": "Votre e-mail",
 		"newsletterButton": "S’inscrire",

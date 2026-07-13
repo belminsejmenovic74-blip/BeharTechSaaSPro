@@ -37,7 +37,7 @@
 		<section
 			class="w-full max-w-2xl rounded-[16px] border border-[#E8E5DF] bg-white p-8 text-center sm:p-10"
 		>
-			<BrandLogo centered compact />
+			<BrandLogo centered size="h-12" />
 			<h1 class="mt-8 text-3xl font-semibold tracking-normal sm:text-4xl">{title}</h1>
 			<p class="mx-auto mt-4 max-w-xl text-base leading-7 text-[#6B6B6B]">{description}</p>
 			<a

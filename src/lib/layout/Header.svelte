@@ -39,7 +39,7 @@
 	style="background: var(--bt-glass-bg); backdrop-filter: blur(var(--bt-glass-blur)); -webkit-backdrop-filter: blur(var(--bt-glass-blur));"
 >
 	<div class="container flex h-20 items-center justify-between">
-		<BrandLogo compact />
+		<BrandLogo size="h-11" />
 
 		<div class="ml-auto hidden items-center gap-6 md:flex lg:gap-8">
 			{#each header.nav as item, i}
@@ -82,7 +82,7 @@
 >
 	{#if hamburgerMenuIsOpen}
 		<div class="container flex h-20 items-center justify-between">
-			<BrandLogo compact />
+			<BrandLogo size="h-11" />
 			<button class="md:hidden" use:toggleOverflowHidden>
 				<span class="sr-only">Toggle menu</span>
 				<XIcon strokeWidth={1.4} class="text-gray-400" />
