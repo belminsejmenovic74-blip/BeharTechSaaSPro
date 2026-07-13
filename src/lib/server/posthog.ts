@@ -1,12 +1,17 @@
 import { PostHog } from 'posthog-node';
-import { PUBLIC_POSTHOG_PROJECT_TOKEN, PUBLIC_POSTHOG_HOST } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 
 let posthogClient: PostHog | null = null;
 
-export function getPostHogClient() {
+export function getPostHogClient(): PostHog | null {
+	const token = env.PUBLIC_POSTHOG_PROJECT_TOKEN;
+	// PostHog non configuré (variable absente) : on désactive proprement.
+	// `$env/dynamic/public` est lu au runtime, donc le build ne casse plus si la
+	// variable n'est pas définie sur l'environnement (ex. Vercel).
+	if (!token) return null;
 	if (!posthogClient) {
-		posthogClient = new PostHog(PUBLIC_POSTHOG_PROJECT_TOKEN, {
-			host: PUBLIC_POSTHOG_HOST,
+		posthogClient = new PostHog(token, {
+			host: env.PUBLIC_POSTHOG_HOST,
 			flushAt: 1,
 			flushInterval: 0
 		});
