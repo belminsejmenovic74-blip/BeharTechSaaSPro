@@ -1,9 +1,13 @@
 import posthog from 'posthog-js';
-import { PUBLIC_POSTHOG_PROJECT_TOKEN } from '$env/static/public';
+import { env } from '$env/dynamic/public';
 import type { HandleClientError } from '@sveltejs/kit';
 
 export async function init() {
-	posthog.init(PUBLIC_POSTHOG_PROJECT_TOKEN, {
+	const token = env.PUBLIC_POSTHOG_PROJECT_TOKEN;
+	// PostHog non configuré (variable absente) : on n'initialise pas.
+	// `$env/dynamic/public` est lu au runtime, donc le build ne casse plus.
+	if (!token) return;
+	posthog.init(token, {
 		api_host: '/ingest',
 		ui_host: 'https://eu.posthog.com',
 		defaults: '2026-01-30',
