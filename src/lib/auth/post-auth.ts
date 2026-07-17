@@ -1,5 +1,4 @@
 import { goto } from '$app/navigation';
-import { supabase } from '$lib/auth/supabase';
 
 /**
  * Destination après une authentification réussie.
@@ -34,14 +33,10 @@ export function appBaseUrl(): string {
  * actuel). Aucun token n'est transmis — seulement ce nonce à usage unique.
  */
 async function mintHandoffCode(): Promise<string | null> {
-	if (!supabase) return null;
-	try {
-		const { data, error } = await supabase.rpc('create_workshop_handoff');
-		if (error) return null;
-		return typeof data === 'string' && data.length > 0 ? data : null;
-	} catch {
-		return null;
-	}
+	const response = await fetch('/api/auth/handoff', { method: 'POST', cache: 'no-store' });
+	const body = (await response.json().catch(() => null)) as { code?: string; error?: string } | null;
+	if (!response.ok) throw new Error(body?.error || 'Impossible de préparer l’accès au logiciel.');
+	return typeof body?.code === 'string' && body.code.length > 0 ? body.code : null;
 }
 
 export async function redirectAfterAuth(onboardingCompleted: boolean | null | undefined): Promise<void> {
@@ -54,7 +49,7 @@ export async function saasUrl(path = '/accueil'): Promise<string> {
 	const safePath = path.startsWith('/') && !path.startsWith('//') ? path : '/accueil';
 	const code = await mintHandoffCode();
 	if (!code) throw new Error('Votre licence est encore en cours de préparation. Réessayez dans un instant.');
-	const target = new URL('/accueil', `${base}/`);
+	const target = new URL('/client', `${base}/`);
 	target.searchParams.set('bthk', code);
 	if (safePath !== '/accueil') target.searchParams.set('returnTo', safePath);
 	return target.toString();
