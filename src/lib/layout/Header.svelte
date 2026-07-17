@@ -5,6 +5,9 @@
 	import { getCms } from '$lib/cms/context';
 	import { editable } from '$lib/editor/editable';
 	import BrandLogo from '$lib/components/brand/BrandLogo.svelte';
+	import ClerkUserButton from '$lib/components/auth/ClerkUserButton.svelte';
+	import { clerkSession, getClerk } from '$lib/auth/clerk';
+	import { onMount } from 'svelte';
 	import posthog from 'posthog-js';
 
 	const cms = getCms();
@@ -16,11 +19,19 @@
 	// Menu mobile = liens de nav + connexion + CTA.
 	$: mobileItems = [
 		...header.nav,
-		{ label: header.loginLabel, href: header.loginHref },
-		{ label: header.ctaLabel, href: header.ctaHref }
+		...($clerkSession.signedIn
+			? []
+			: [
+					{ label: header.loginLabel, href: header.loginHref },
+					{ label: header.ctaLabel, href: header.ctaHref }
+				])
 	];
 
 	let hamburgerMenuIsOpen = false;
+
+	onMount(() => {
+		getClerk().catch((error) => console.error('[clerk] initialization failed', error));
+	});
 
 	function toggleOverflowHidden(node: HTMLElement) {
 		node.addEventListener('click', () => {
@@ -49,19 +60,23 @@
 					class="text-sm text-gray-600 transition hover:text-[#1A1916]">{item.label}</a
 				>
 			{/each}
-			<a
-				class="text-sm text-[#1A1916]"
-				href={header.loginHref}
-				use:editable={{ id: 'header.login', kind: 'button', path: 'header.loginLabel', label: 'Connexion', fields: { href: 'header.loginHref' } }}
-				>{header.loginLabel}</a
-			>
-			<a
-				class="rounded-lg px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
-				style="background: var(--bt-button)"
-				href={header.ctaHref}
-				use:editable={{ id: 'header.cta', kind: 'button', path: 'header.ctaLabel', label: 'CTA en-tête', fields: { href: 'header.ctaHref' } }}
-				on:click={onNavCtaClick}>{header.ctaLabel}</a
-			>
+			{#if $clerkSession.signedIn}
+				<ClerkUserButton />
+			{:else}
+				<a
+					class="text-sm text-[#1A1916]"
+					href={header.loginHref}
+					use:editable={{ id: 'header.login', kind: 'button', path: 'header.loginLabel', label: 'Connexion', fields: { href: 'header.loginHref' } }}
+					>{header.loginLabel}</a
+				>
+				<a
+					class="rounded-lg px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+					style="background: var(--bt-button)"
+					href={header.ctaHref}
+					use:editable={{ id: 'header.cta', kind: 'button', path: 'header.ctaLabel', label: 'CTA en-tête', fields: { href: 'header.ctaHref' } }}
+					on:click={onNavCtaClick}>{header.ctaLabel}</a
+				>
+			{/if}
 		</div>
 		<button class="ml-6 md:hidden" use:toggleOverflowHidden>
 			<span class="sr-only">Toggle menu</span>
@@ -83,10 +98,13 @@
 	{#if hamburgerMenuIsOpen}
 		<div class="container flex h-20 items-center justify-between">
 			<BrandLogo size="h-11" />
-			<button class="md:hidden" use:toggleOverflowHidden>
-				<span class="sr-only">Toggle menu</span>
-				<XIcon strokeWidth={1.4} class="text-gray-400" />
-			</button>
+			<div class="flex items-center gap-4">
+				{#if $clerkSession.signedIn}<ClerkUserButton />{/if}
+				<button class="md:hidden" use:toggleOverflowHidden>
+					<span class="sr-only">Toggle menu</span>
+					<XIcon strokeWidth={1.4} class="text-gray-400" />
+				</button>
+			</div>
 		</div>
 		<ul in:fly={{ y: -30, duration: 400 }} class="flex flex-col uppercase ease-in">
 			{#each mobileItems as item}

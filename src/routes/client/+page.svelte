@@ -19,7 +19,8 @@
 	} from 'lucide-svelte';
 	import BrandLogo from '$lib/components/brand/BrandLogo.svelte';
 	import PortalControlCenter from '$lib/components/portal/PortalControlCenter.svelte';
-	import { ensureClientProfile, getCurrentUser, supabase, type ClientProfile } from '$lib/auth/supabase';
+	import { getClerk } from '$lib/auth/clerk';
+	import { ensureClientProfile, getCurrentUser, type ClientProfile } from '$lib/auth/supabase';
 	import { appBaseUrl, openSaas } from '$lib/auth/post-auth';
 	import { loadPortalData, type PortalData } from '$lib/auth/ecosystem';
 
@@ -66,7 +67,7 @@
 				return;
 			}
 			if (!user.email_confirmed_at) {
-				await supabase?.auth.signOut();
+				await (await getClerk()).signOut();
 				await goto(`/connexion?verification=required&email=${encodeURIComponent(user.email || '')}`);
 				return;
 			}
@@ -92,7 +93,7 @@
 	}
 
 	async function logout() {
-		await supabase?.auth.signOut({ scope: 'global' });
+		await (await getClerk()).signOut();
 		const base = appBaseUrl();
 		if (base) window.location.assign(`${base}/api/auth/logout?returnTo=${encodeURIComponent('/connexion')}`);
 		else await goto('/connexion');

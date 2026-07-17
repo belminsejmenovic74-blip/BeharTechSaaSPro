@@ -11,7 +11,7 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 	const parsed = inputSchema.safeParse(await request.json().catch(() => null));
 	if (!parsed.success) return json({ error: 'Offre invalide.' }, { status: 400 });
 	const admin = getSupabaseAdmin();
-	const { data: member } = await admin.from('organization_members').select('workshop_id,role,status').eq('user_id', locals.user.id).eq('status', 'active').order('created_at').limit(1).maybeSingle();
+	const { data: member } = await admin.from('organization_members').select('workshop_id,role,status').eq('clerk_user_id', locals.user.id).eq('status', 'active').order('created_at').limit(1).maybeSingle();
 	if (!member || !['owner', 'admin'].includes(member.role)) return json({ error: 'Vous ne pouvez pas gérer cet abonnement.' }, { status: 403 });
 	const { data: subscription } = await admin.from('subscriptions').select('stripe_customer_id').eq('workshop_id', member.workshop_id).maybeSingle();
 	const stripe = stripeClient();

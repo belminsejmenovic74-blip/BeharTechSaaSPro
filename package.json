@@ -36,7 +36,10 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@supabase/ssr": "^0.7.0",
+		"@clerk/backend": "^3.11.5",
+		"@clerk/clerk-js": "^6.25.3",
+		"@clerk/localizations": "^4.13.3",
+		"@clerk/ui": "^1.25.3",
 		"@supabase/supabase-js": "^2.110.1",
 		"bits-ui": "^0.21.13",
 		"clsx": "^2.1.1",

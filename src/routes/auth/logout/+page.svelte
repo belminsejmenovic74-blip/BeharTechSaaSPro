@@ -1,15 +1,16 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
-	import { supabase } from '$lib/auth/supabase';
+	import { getClerk } from '$lib/auth/clerk';
 
 	let errorMessage = '';
 	onMount(async () => {
 		const returnTo = $page.url.searchParams.get('returnTo');
 		const safeReturnTo = returnTo?.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '/';
-		const { error } = (await supabase?.auth.signOut({ scope: 'global' })) ?? { error: null };
-		if (error) {
-			errorMessage = error.message;
+		try {
+			await (await getClerk()).signOut();
+		} catch (error) {
+			errorMessage = error instanceof Error ? error.message : 'Déconnexion impossible.';
 			return;
 		}
 		window.location.replace(safeReturnTo);

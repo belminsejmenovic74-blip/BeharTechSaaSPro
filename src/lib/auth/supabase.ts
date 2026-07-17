@@ -1,10 +1,20 @@
 import { browser } from '$app/environment';
-import { createBrowserClient } from '@supabase/ssr';
-import type { SupabaseClient, User } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { getClerk } from '$lib/auth/clerk';
+import { provisionClerkAccount } from '$lib/auth/provision';
+
+type AuthUser = {
+	id: string;
+	email: string;
+	email_confirmed_at: string | null;
+	first_name: string | null;
+	last_name: string | null;
+};
 
 type ClientProfile = {
 	id: string;
-	user_id: string;
+	user_id: string | null;
+	clerk_user_id: string | null;
 	workshop_id: string | null;
 	email: string;
 	first_name: string | null;
@@ -62,12 +72,10 @@ const supabaseKey =
 
 export const supabase: SupabaseClient | null =
 	browser && supabaseUrl && supabaseKey
-		? createBrowserClient(supabaseUrl, supabaseKey, {
-				auth: {
-					autoRefreshToken: true,
-					detectSessionInUrl: true,
-					flowType: 'pkce',
-					persistSession: true
+		? createClient(supabaseUrl, supabaseKey, {
+				accessToken: async () => {
+					const clerk = await getClerk();
+					return clerk.session?.getToken() ?? null;
 				}
 			})
 		: null;
@@ -76,9 +84,9 @@ export function hasSupabase() {
 	return Boolean(supabase);
 }
 
-function defaultProfileFor(user: User) {
+function defaultProfileFor(user: AuthUser) {
 	return {
-		user_id: user.id,
+		clerk_user_id: user.id,
 		email: user.email || ''
 	};
 }
@@ -97,13 +105,14 @@ function normalizeProfile(profile: ClientProfile): ClientProfile {
 	};
 }
 
-export async function ensureClientProfile(user: User): Promise<ClientProfile | null> {
+export async function ensureClientProfile(user: AuthUser): Promise<ClientProfile | null> {
 	if (!supabase) return null;
+	await provisionClerkAccount();
 
 	const existing = await supabase
 		.from('client_profiles')
 		.select('*')
-		.eq('user_id', user.id)
+		.eq('clerk_user_id', user.id)
 		.maybeSingle();
 	if (existing.error) throw existing.error;
 	if (existing.data) return normalizeProfile(existing.data as ClientProfile);
@@ -123,7 +132,7 @@ export async function updateClientProfile(userId: string, patch: ClientProfilePa
 	const updated = await supabase
 		.from('client_profiles')
 		.update({ ...patch, updated_at: new Date().toISOString() })
-		.eq('user_id', userId)
+		.eq('clerk_user_id', userId)
 		.select('*')
 		.single();
 
@@ -139,7 +148,7 @@ export async function createTeamInvitations(
 
 	const rows = invitations
 		.map((invitation) => ({
-			owner_user_id: ownerUserId,
+			owner_clerk_user_id: ownerUserId,
 			email: invitation.email.trim().toLowerCase(),
 			role: invitation.role
 		}))
@@ -151,10 +160,22 @@ export async function createTeamInvitations(
 }
 
 export async function getCurrentUser() {
-	if (!supabase) return null;
-	const { data, error } = await supabase.auth.getUser();
-	if (error) return null;
-	return data.user;
+	try {
+		const clerk = await getClerk();
+		const user = clerk.user;
+		if (!user) return null;
+		const primaryEmail = user.primaryEmailAddress;
+		return {
+			id: user.id,
+			email: primaryEmail?.emailAddress ?? '',
+			email_confirmed_at:
+				primaryEmail?.verification?.status === 'verified' ? new Date().toISOString() : null,
+			first_name: user.firstName,
+			last_name: user.lastName
+		} satisfies AuthUser;
+	} catch {
+		return null;
+	}
 }
 
 export async function getCurrentProfile() {
@@ -173,4 +194,4 @@ export function nextOnboardingStep(profile: ClientProfile | null) {
 	return 6;
 }
 
-export type { ClientProfile, ClientProfilePatch, TeamInvitationInput };
+export type { AuthUser, ClientProfile, ClientProfilePatch, TeamInvitationInput };

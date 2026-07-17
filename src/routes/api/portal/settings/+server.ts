@@ -25,7 +25,7 @@ function cleanDomain(value: string) {
 async function context(locals: App.Locals) {
 	if (!locals.user?.email_confirmed_at) return null;
 	const admin = getSupabaseAdmin();
-	const { data: member } = await admin.from('organization_members').select('workshop_id,role,status').eq('user_id', locals.user.id).eq('status', 'active').order('created_at').limit(1).maybeSingle();
+	const { data: member } = await admin.from('organization_members').select('workshop_id,role,status').eq('clerk_user_id', locals.user.id).eq('status', 'active').order('created_at').limit(1).maybeSingle();
 	return member ? { admin, member } : null;
 }
 
@@ -40,7 +40,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 		admin.from('document_settings').select('*').eq('workshop_id', workshopId).maybeSingle(),
 		admin.from('subscriptions').select('*').eq('workshop_id', workshopId).maybeSingle(),
 		admin.from('license_keys').select('id,status,plan,max_devices,used_devices,limits,activated_at,expires_at').eq('workshop_id', workshopId).maybeSingle(),
-		admin.from('client_profiles').select('activation_key,plan,subscription_status').eq('user_id', locals.user!.id).maybeSingle(),
+		admin.from('client_profiles').select('activation_key,plan,subscription_status').eq('clerk_user_id', locals.user!.id).maybeSingle(),
 		admin.from('widget_settings').select('id,public_widget_id,active,allowed_domains,published_config,published_version,published_at').eq('tenant_id', workshopId).order('created_at').limit(1).maybeSingle()
 	]);
 	const failure = [workshop, communication, document, subscription, license, profile, widget].find((entry) => entry.error);

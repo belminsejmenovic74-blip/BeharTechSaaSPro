@@ -12,7 +12,7 @@ export const POST: RequestHandler = async ({ locals }) => {
 	const { data: profile, error } = await admin
 		.from('client_profiles')
 		.select('first_name,activation_key,plan,onboarding_completed')
-		.eq('user_id', locals.user.id)
+		.eq('clerk_user_id', locals.user.id)
 		.maybeSingle();
 	if (error || !profile?.activation_key) {
 		return json({ error: 'Licence encore en cours de préparation.' }, { status: 409 });
