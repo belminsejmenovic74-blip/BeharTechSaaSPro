@@ -35,6 +35,7 @@ export const FEATURE_DEFAULTS: Required<WidgetFeatures> = {
   photos: false,
   warranty: true,
   payments: false,
+  summarySidebar: true,
 };
 
 export function resolveFeatures(features: WidgetFeatures | undefined): Required<WidgetFeatures> {

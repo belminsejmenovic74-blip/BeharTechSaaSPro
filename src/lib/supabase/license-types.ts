@@ -1,5 +1,5 @@
-export type LicenseKeyStatus = 'active' | 'inactive' | 'used' | 'expired';
-export type LicensePlan = 'free' | 'starter' | 'pro' | 'business';
+export type LicenseKeyStatus = "active" | "inactive" | "used" | "expired";
+export type LicensePlan = "free" | "starter" | "pro" | "business";
 
 export interface LicenseKey {
   id: string;
@@ -15,6 +15,7 @@ export interface LicenseKey {
   download_count: number;
   last_downloaded_at?: string | null;
   expires_at?: string | null;
+  founder_access?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -25,8 +26,8 @@ export interface GenerateLicensesResult {
   count?: number;
   licenses?: {
     id: string;
-    key: string;            // FULL KEY (only available immediately after generation)
-    token: string;          // FULL TOKEN (only available immediately after generation)
+    key: string; // FULL KEY (only available immediately after generation)
+    token: string; // FULL TOKEN (only available immediately after generation)
     keyPreview: string;
     status: LicenseKeyStatus;
     plan: LicensePlan;

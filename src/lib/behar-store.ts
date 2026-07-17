@@ -16,6 +16,7 @@ import {
   updatePriceBookItem,
 } from "@/lib/price-book";
 import type { NotificationCategory } from "@/lib/widget/notifications";
+import { defaultWorkshopWeeklyHours, type WorkshopWeeklyHours } from "@/lib/workshop-hours";
 import { appointments as appointmentMocks } from "@/mock/appointments";
 import { customers as customerMocks } from "@/mock/customers";
 import { invoices as invoiceMocks } from "@/mock/invoices";
@@ -1003,6 +1004,7 @@ export type WorkshopInfo = {
   documentFooter?: string;
   acceptedPaymentMethods?: string[];
   businessHours?: string;
+  weeklyHours?: WorkshopWeeklyHours;
   allowCounterClient?: boolean;
   repairPrefix?: string;
   quotePrefix?: string;
@@ -1380,6 +1382,7 @@ export type StoreState = {
   licenseActivatedAt?: string;
   lastLicenseKey?: string;
   activateLicense: (key: string) => boolean;
+  activateTrustedLicense: (key: string, plan?: string, organizationRole?: string) => void;
   deactivateLicense: () => void;
 
   // Team
@@ -2169,6 +2172,7 @@ const defaultWorkshopInfo: WorkshopInfo = {
   documentFooter: "Merci pour votre confiance.",
   acceptedPaymentMethods: ["Espèces", "Carte bancaire", "SumUp", "Stripe", "Virement", "Chèque", "Autre"],
   businessHours: "Lun-Ven 09:00-18:00 · Sam 09:00-13:00",
+  weeklyHours: defaultWorkshopWeeklyHours(),
   allowCounterClient: true,
   counterPrintFormat: "A4",
   counterQrFormat: "80mm",
@@ -5414,6 +5418,38 @@ export const useBeharStore = create<StoreState>()(
         }
         return false;
       },
+      activateTrustedLicense: (key: string, plan?: string, organizationRole?: string) => {
+        const normalizedKey = key.toUpperCase().trim();
+        if (!normalizedKey) return;
+        const current = get();
+        const previousKey = current.lastLicenseKey || current.licenseKey;
+        if (previousKey && previousKey !== normalizedKey) {
+          const cleanSeed = createSeed();
+          set({
+            ...cleanSeed,
+            licenseActivated: true,
+            licenseKey: normalizedKey,
+            lastLicenseKey: normalizedKey,
+            licensePlan: plan || "Gratuit",
+            licenseActivatedAt: new Date().toISOString(),
+            sessionUserId:
+              organizationRole === "owner" || organizationRole === "admin" ? defaultCurrentUser.id : undefined,
+            currentUser: defaultCurrentUser,
+            _hasHydrated: true,
+          });
+          return;
+        }
+        set({
+          licenseActivated: true,
+          licenseKey: normalizedKey,
+          lastLicenseKey: normalizedKey,
+          licensePlan: plan || current.licensePlan || "Gratuit",
+          licenseActivatedAt: new Date().toISOString(),
+          ...(organizationRole === "owner" || organizationRole === "admin"
+            ? { sessionUserId: defaultCurrentUser.id, currentUser: defaultCurrentUser }
+            : {}),
+        });
+      },
       deactivateLicense: () => {
         // On conserve lastLicenseKey pour pouvoir détecter un changement de licence à la prochaine activation
         set((state) => ({
@@ -7415,7 +7451,7 @@ export const useBeharStore = create<StoreState>()(
         });
       },
       markInvoicePaid: (invoiceId, method, note = "") => {
-        if (!get().requirePermission("canMarkPaymentPaid", "Indiquer un règlement")) return "";
+        if (!get().requirePermission("canMarkPaymentPaid", "Créer une demande de paiement")) return "";
         const normalizedMethod = normalizeSelectedPaymentMethod(method);
         if (!normalizedMethod) return "";
         const invoice = get().invoices.find((entry) => entry.id === invoiceId);
@@ -7700,7 +7736,7 @@ export const useBeharStore = create<StoreState>()(
         return state.markInvoicePaid(invoiceId, normalizedMethod, note);
       },
       recordRepairSettlement: (repairId, input) => {
-        if (!get().requirePermission("canMarkPaymentPaid", "Indiquer un règlement")) return "";
+        if (!get().requirePermission("canMarkPaymentPaid", "Créer une demande de paiement")) return "";
         const isOffert = input.status === "Offert / Garantie / SAV";
         if (!isOffert && !input.confirmExternal) return "";
 

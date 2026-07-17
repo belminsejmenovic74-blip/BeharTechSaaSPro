@@ -2499,6 +2499,7 @@ export function AtelierWorkspace() {
       )}
       <SettlementModal
         draft={settlement.draft}
+        invoice={settlement.invoice}
         isOpen={settlement.isOpen}
         onClose={settlement.close}
         onDraftChange={settlement.setDraft}

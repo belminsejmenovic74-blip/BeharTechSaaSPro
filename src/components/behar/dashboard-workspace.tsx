@@ -197,7 +197,7 @@ export function DashboardWorkspace() {
         </Link>
       </section>
 
-      {/* Volet finance : CA encaissé, variations réelles, répartition, encours. */}
+      {/* Volet facturation : montants des factures emises, sans resultat de reglement. */}
       <FinanceOverview />
 
       {/* KPI secondaires : une ligne, flèches pour faire défiler. */}
@@ -467,7 +467,7 @@ export function DashboardWorkspace() {
                     </PrimaryButton>
                   ) : (
                     <PrimaryButton className="w-full" disabled={selectedPaid} onClick={indiquerReglement}>
-                      {selectedPaid ? "Règlement indiqué" : "Indiquer règlement"}
+                      Créer une demande de paiement
                     </PrimaryButton>
                   )}
                   {nextStep && selected.status === "Prêt" ? null : nextStep ? (
@@ -477,7 +477,7 @@ export function DashboardWorkspace() {
                       onClick={indiquerReglement}
                       className="h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 font-medium text-[#1A1916] text-[13px] transition hover:border-[#2A9D8F]/40 disabled:cursor-not-allowed disabled:opacity-45"
                     >
-                      {selectedPaid ? "Règlement indiqué" : "Indiquer règlement"}
+                      Créer une demande de paiement
                     </button>
                   ) : null}
                   <Link
@@ -532,6 +532,7 @@ export function DashboardWorkspace() {
       )}
       <SettlementModal
         draft={settlement.draft}
+        invoice={settlement.invoice}
         isOpen={settlement.isOpen}
         onClose={settlement.close}
         onDraftChange={settlement.setDraft}

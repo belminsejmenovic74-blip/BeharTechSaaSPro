@@ -125,7 +125,7 @@ const PERMISSION_LABELS: Partial<Record<PermissionKey, string>> = {
   canCreateInvoice: "Créer une facture",
   canEditInvoice: "Modifier une facture",
   canViewPayments: "Voir les paiements",
-  canMarkPaymentPaid: "Indiquer un règlement",
+  canMarkPaymentPaid: "Créer une demande de paiement externe",
   canCancelPayment: "Annuler / rembourser",
   canViewStock: "Voir le stock",
   canManageStock: "Gérer le stock",

@@ -401,10 +401,17 @@ export function WidgetApp({ publicId, previewConfig }: { publicId: string; previ
         content: (
           <main className="flex-1">
             {!submitResult && step >= 1 ? (
-              <div className="grid min-h-full lg:grid-cols-[300px_minmax(0,1fr)]">
-                <aside className="bg-[#F5F6F3] px-4 py-4 lg:sticky lg:top-0 lg:self-start lg:px-6 lg:py-7">
-                  <RepairSummary ctx={ctx} onModify={deviceLocked ? undefined : () => setStep(0)} />
-                </aside>
+              <div
+                className={cn(
+                  "grid min-h-full",
+                  features.summarySidebar ? "lg:grid-cols-[300px_minmax(0,1fr)]" : "grid-cols-1",
+                )}
+              >
+                {features.summarySidebar ? (
+                  <aside className="border-r border-[#ECECE8] bg-[#FCFCFB] px-4 py-4 lg:sticky lg:top-0 lg:self-start lg:px-6 lg:py-7">
+                    <RepairSummary ctx={ctx} onModify={deviceLocked ? undefined : () => setStep(0)} />
+                  </aside>
+                ) : null}
                 <div className="px-4 py-5 sm:px-7 lg:px-9 lg:py-7">{rightColumn}</div>
               </div>
             ) : (
@@ -472,7 +479,7 @@ export function WidgetApp({ publicId, previewConfig }: { publicId: string; previ
         className={cn(
           // Cadre à hauteur fixe : en-tête + progression + boutons restent visibles,
           // seul le bloc « content » défile. Le client clique, il ne scrolle pas partout.
-          "relative mx-auto flex h-[100svh] max-h-[100svh] w-full flex-col overflow-hidden bg-[#FAFAF8] shadow-[0_28px_90px_rgba(20,24,28,.22)] sm:h-[calc(100vh-48px)] sm:max-h-[calc(100vh-48px)] sm:min-h-[560px] sm:max-w-[1380px] sm:rounded-[28px] sm:border sm:border-black/[.06]",
+          "relative mx-auto flex h-[100svh] max-h-[100svh] w-full flex-col overflow-hidden bg-white shadow-[0_28px_90px_rgba(20,24,28,.16)] sm:h-[calc(100vh-48px)] sm:max-h-[calc(100vh-48px)] sm:min-h-[560px] sm:max-w-[1380px] sm:rounded-[28px] sm:border sm:border-black/[.07]",
           alignment,
         )}
       >
@@ -513,9 +520,9 @@ function blockWrapperClass(block: string): string {
     case "content":
       return "flex-1 min-h-0 overflow-y-auto overscroll-contain";
     case "actions":
-      return "flex-none border-t border-[var(--w-border)] bg-[#FAFAF8] px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-7";
+      return "flex-none border-t border-[var(--w-border)] bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-7";
     case "header":
-      return "flex-none border-b border-[var(--w-border)] bg-[#FAFAF8] px-4 py-4 pr-16 sm:px-8 sm:py-5 sm:pr-20";
+      return "flex-none border-b border-[var(--w-border)] bg-white px-4 py-4 pr-16 sm:px-8 sm:py-5 sm:pr-20";
     case "progress":
       return "flex-none px-4 pb-1 sm:px-7";
     default:

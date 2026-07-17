@@ -100,6 +100,7 @@ const featuresSchema = z
     photos: z.boolean(),
     warranty: z.boolean(),
     payments: z.boolean(),
+    summarySidebar: z.boolean(),
   })
   .strict();
 
@@ -300,6 +301,7 @@ export const DEFAULT_WIDGET_CMS_CONFIG: EditableWidgetConfig = {
     photos: false,
     warranty: true,
     payments: false,
+    summarySidebar: true,
   },
   catalogPolicy: {
     allowOutOfCatalog: true,
@@ -330,13 +332,37 @@ export const DEFAULT_WIDGET_CMS_CONFIG: EditableWidgetConfig = {
     poweredBy: false,
   },
   offers: {
-    enabled: false,
-    title: "",
-    subtitle: "",
-    introduction: "",
-    layout: "list",
-    columns: 1,
-    offers: [],
+    enabled: true,
+    title: "Offres et avantages",
+    subtitle: "Ajoutez une option à votre réparation",
+    introduction: "Sélectionnez uniquement ce qui vous intéresse.",
+    layout: "grid",
+    columns: 2,
+    offers: [
+      {
+        id: "qualirepar",
+        title: "Bonus QualiRépar",
+        description: "Jusqu’à 25 € de remise sur une réparation éligible.",
+        conditionText: "Éligibilité confirmée en boutique",
+        displayMode: "icon",
+        behavior: "selectable",
+        fixedDiscount: 25,
+        isPublished: true,
+        displayOrder: 0,
+      },
+      {
+        id: "verre-trempe",
+        title: "Verre trempé premium",
+        description: "Protection posée en boutique.",
+        conditionText: "Compatible selon le modèle",
+        displayMode: "icon",
+        behavior: "selectable",
+        originalPrice: 20,
+        promotionalPrice: 10,
+        isPublished: true,
+        displayOrder: 1,
+      },
+    ],
   },
 };
 
@@ -451,6 +477,7 @@ export const WIDGET_FEATURE_LABELS: Record<WidgetFeatureKey, string> = {
   photos: "Ajout de photos",
   warranty: "Garantie",
   payments: "Paiement",
+  summarySidebar: "Colonne récapitulative",
 };
 
 export const WIDGET_ICON_LABELS: Record<WidgetIconTarget, string> = {

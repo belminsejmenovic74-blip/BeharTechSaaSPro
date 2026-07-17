@@ -154,7 +154,7 @@ export function FinanceOverview() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-[#6B6B6B] text-[13px]">
-            CA encaissé ·{" "}
+            CA facturé ·{" "}
             {config.label === "Jour"
               ? "aujourd'hui"
               : config.label === "Semaine"

@@ -253,7 +253,8 @@ function DocumentTrackingQr({ url }: Readonly<{ url?: string }>) {
   }
 
   if (!qr) return null;
-  const isLocalhost = absoluteUrl.includes("localhost") || absoluteUrl.includes("127.0.0.1") || absoluteUrl.includes("[::1]");
+  const isLocalhost =
+    absoluteUrl.includes("localhost") || absoluteUrl.includes("127.0.0.1") || absoluteUrl.includes("[::1]");
 
   return (
     <div className="flex shrink-0 flex-col items-center gap-1">
@@ -266,7 +267,9 @@ function DocumentTrackingQr({ url }: Readonly<{ url?: string }>) {
       <p className="max-w-[90px] text-center text-[#6B6B6B] text-[9px] leading-tight">Suivi client</p>
       {isLocalhost && (
         <p className="mt-1 max-w-[120px] text-center font-medium text-[#B54708] text-[7px] leading-tight print:hidden">
-          Attention : ce QR Code pointe vers localhost. Un téléphone ne peut pas ouvrir le localhost de votre ordinateur. Pour tester depuis un téléphone, configurez VITE_PUBLIC_APP_URL avec l'IP locale de votre ordinateur, par exemple http://192.168.1.25:5173.
+          Attention : ce QR Code pointe vers localhost. Un téléphone ne peut pas ouvrir le localhost de votre
+          ordinateur. Pour tester depuis un téléphone, configurez VITE_PUBLIC_APP_URL avec l'IP locale de votre
+          ordinateur, par exemple http://192.168.1.25:5173.
         </p>
       )}
     </div>
@@ -599,21 +602,16 @@ function TotalsCard({
   lines,
   total,
   workshop,
-  paid = 0,
-  showBalance = false,
   currency,
 }: Readonly<{
   lines: QuoteLine[];
   total: number;
   workshop?: WorkshopInfo;
-  paid?: number;
-  showBalance?: boolean;
   currency?: WorkshopCurrency;
 }>) {
   const ws = workshop ?? defaultWorkshopInfo;
   const vat = getVatSummary(lines, ws);
   const finalTotal = ws.vatApplicable ? vat.ttc : total;
-  const balance = Math.max(finalTotal - paid, 0);
   return (
     <section className="ml-auto w-full max-w-[360px] rounded-[6px] border border-[#E8E8E8] bg-white p-4">
       {ws.vatApplicable ? (
@@ -629,17 +627,7 @@ function TotalsCard({
           )}
         </p>
       )}
-      <TotalLine
-        emphasize
-        label={showBalance ? "Total facture" : "Total à payer"}
-        value={money(finalTotal, currency)}
-      />
-      {showBalance ? (
-        <>
-          <TotalLine label="Montant payé" value={money(paid, currency)} />
-          <TotalLine emphasize label="Reste à payer" value={money(balance, currency)} />
-        </>
-      ) : null}
+      <TotalLine emphasize label="Total TTC facturé" value={money(finalTotal, currency)} />
     </section>
   );
 }
@@ -1076,10 +1064,9 @@ export function InvoiceDocument({
 }: Readonly<{ invoice: Invoice; customer: Customer; quote?: Quote; repair?: Repair; workshop?: WorkshopInfo }>) {
   const ws = workshop ?? defaultWorkshopInfo;
   const total = getInvoiceTotal(invoice);
-  const paidAmount = Math.max(invoice.paidAmount ?? 0, invoice.status === "Payée" ? total : 0);
   return (
     <DocumentPage
-      badge={invoice.status === "Payée" ? "Payée" : "À régler"}
+      badge={invoice.status === "Annulée" ? "Annulée" : invoice.status === "Brouillon" ? "Brouillon" : "Émise"}
       date={invoice.date}
       number={invoice.number}
       type="facture"
@@ -1094,14 +1081,7 @@ export function InvoiceDocument({
         </DocumentSection>
       ) : null}
       <PremiumTable currency={invoice.currency} repair={repair} rows={invoice.lines ?? []} />
-      <TotalsCard
-        currency={invoice.currency}
-        lines={invoice.lines ?? []}
-        paid={paidAmount}
-        showBalance
-        total={total}
-        workshop={ws}
-      />
+      <TotalsCard currency={invoice.currency} lines={invoice.lines ?? []} total={total} workshop={ws} />
       <InvoiceLegalMentions invoice={invoice} repair={repair} workshop={ws} />
     </DocumentPage>
   );
@@ -1114,11 +1094,8 @@ function InvoiceLegalMentions({
 }: Readonly<{ invoice: Invoice; repair?: Repair; workshop: WorkshopInfo }>) {
   const ws = workshop;
   const issuedAt = invoice.date ? dateLabel(invoice.date) : "Non renseignée";
-  const paid = invoice.status === "Payée";
-  const partial = !paid && (invoice.paidAmount ?? 0) > 0;
-  const settlementStatus = paid ? "Réglée" : partial ? "Partiellement réglée" : "Non réglée";
-  const dueLabel = paid ? "Réglée" : "Paiement à réception de facture";
-  const serviceDateRaw = invoice.paidAt ?? invoice.date;
+  const dueLabel = "Paiement à réception de facture";
+  const serviceDateRaw = invoice.date;
   const serviceDate = serviceDateRaw ? dateLabel(serviceDateRaw) : issuedAt;
   void repair;
 
@@ -1131,23 +1108,15 @@ function InvoiceLegalMentions({
   return (
     <section className="grid gap-4 md:grid-cols-2">
       <div className="rounded-[6px] border border-[#E8E8E8] bg-white p-4">
-        <h3 className="mb-3 font-bold text-[#2A9D8F] text-[11px] uppercase tracking-wider">Règlement</h3>
+        <h3 className="mb-3 font-bold text-[#2A9D8F] text-[11px] uppercase tracking-wider">Informations facture</h3>
         <div className="space-y-1.5 text-[#1A1916] text-[11.5px]">
           <KeyValue label="Date d'émission" value={issuedAt} />
           <KeyValue label="Date de prestation" value={serviceDate} />
           <KeyValue label="Date d'échéance" value={dueLabel} />
-          <KeyValue label="Statut" value={settlementStatus} />
-          <KeyValue
-            label="Moyen de paiement"
-            value={
-              invoice.paymentMethod === "Autre" && repair?.paymentCustomMethod
-                ? repair.paymentCustomMethod
-                : paymentMethodLabel(invoice.paymentMethod)
-            }
-          />
-          {invoice.paidAt ? <KeyValue label="Date du règlement" value={dateLabel(invoice.paidAt)} /> : null}
-          {repair?.paymentReference ? <KeyValue label="Référence" value={repair.paymentReference} /> : null}
         </div>
+        <p className="mt-3 text-[#6B6B6B] text-[10px] leading-relaxed">
+          Le règlement est géré en dehors de Behar Tech Pro par Stripe, SumUp ou le système de paiement du réparateur.
+        </p>
         {ws.country === "FR" ? (
           <p className="mt-3 text-[#6B6B6B] text-[10px] leading-relaxed">
             Pas d'escompte pour règlement anticipé. En cas de retard de paiement, application des pénalités et frais
@@ -1233,45 +1202,24 @@ export function PaymentReceiptDocument({
   repair?: Repair;
   workshop?: WorkshopInfo;
 }>) {
-  const invoiceTotal = invoice ? getInvoiceTotal(invoice) : payment.amount;
-  const isFullSettlement = invoice ? Math.abs(payment.amount - invoiceTotal) < 0.01 : true;
+  void payment;
   return (
     <DocumentPage
-      badge={isFullSettlement ? "Réglé" : "Règlement partiel"}
-      date={payment.date}
-      number={payment.paymentNumber}
+      badge="Archive masquée"
+      date={invoice?.date || ""}
+      number={invoice?.number || "Document historique"}
       type="recu"
       workshop={workshop}
       qrSlot={repair ? <DocumentTrackingQr url={repair.publicAccess?.url} /> : undefined}
     >
       <DocumentIntro customer={customer} invoice={invoice} repair={repair} />
-      <PaymentHero amount={payment.amount} currency={payment.currency} date={payment.date} method={payment.method} />
-      <DocumentSection title="Détails du règlement">
+      <DocumentSection title="Document historique">
         <KeyValue label="Facture liée" value={dash(invoice?.number)} />
         <KeyValue label="Dossier lié" value={dash(repair?.number)} />
-        <KeyValue label="Montant réglé" value={money(payment.amount, payment.currency)} />
-        <KeyValue
-          label="Moyen de paiement"
-          value={
-            (payment.method ?? payment.mode) === "Autre" && payment.customMethod
-              ? payment.customMethod
-              : paymentMethodLabel(payment.method ?? payment.mode)
-          }
-        />
-        <KeyValue label="Date du règlement" value={dateLabel(payment.date)} />
-        <KeyValue label="Référence externe" value={dash(payment.externalReference ?? payment.reference)} />
-        {payment.method === "TWINT" ? <KeyValue label="Paiement" value="Payé par TWINT" /> : null}
-        {payment.method === "TWINT" && payment.twintReference ? (
-          <KeyValue label="Référence TWINT" value={dash(payment.twintReference)} />
-        ) : null}
-        <KeyValue label="Statut" value={dash(payment.status)} />
       </DocumentSection>
-      <NoticeCard title="Confirmation de règlement">
-        Paiement enregistré manuellement. Encaissement effectué via le moyen de paiement indiqué. Ce document ne
-        remplace pas une facture. La facture reste le document comptable officiel.
-        {isFullSettlement
-          ? ` Le dossier est indiqué comme réglé pour la facture ${dash(invoice?.number)}.`
-          : ` Le présent document constate un règlement partiel sur la facture ${dash(invoice?.number)}.`}
+      <NoticeCard title="Données historiques masquées">
+        Les informations financières de cet ancien document ne sont plus affichées. Le règlement est géré en dehors de
+        Behar Tech Pro par Stripe, SumUp ou le système de paiement du réparateur.
       </NoticeCard>
     </DocumentPage>
   );

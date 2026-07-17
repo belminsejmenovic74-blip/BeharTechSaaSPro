@@ -19,6 +19,7 @@ import {
   ExternalLink,
   FileText,
   FolderOpen,
+  Link2,
   Lock,
   Menu,
   MessageSquare,
@@ -48,17 +49,13 @@ import {
   formatIsoToDisplay,
   getInvoiceTotal,
   getQuoteTotal,
-  getRepairReadyDisplayLabel,
   isTerminalRepairStatus,
-  paymentMethods,
   type Customer,
   type DeviceModel,
   type Invoice,
-  type PaymentMethod,
   type Repair,
   type RepairPart,
   type RepairStatus,
-  type SettlementStatus,
   type StockItem,
   useBeharStore,
 } from "@/lib/behar-store";
@@ -139,43 +136,18 @@ const docTypeOrder: Record<string, number> = {
   diagnostic_report: 1,
   quote: 2,
   invoice: 3,
-  payment: 4,
-  "sale-receipt": 5,
-  "sale-invoice": 6,
-  summary: 7,
-  internal: 8,
+  summary: 4,
+  internal: 5,
 };
 
 const docLabel: Record<string, string> = {
   intake: "Bon de prise en charge",
   quote: "Devis",
   invoice: "Facture",
-  payment: "Confirmation de règlement",
   internal: "Fiche intervention interne",
   summary: "Rapport final",
-  "sale-receipt": "Justificatif de vente",
-  "sale-invoice": "Facture de vente",
   diagnostic_report: "Rapport diagnostic",
 };
-
-const settlementStatuses: SettlementStatus[] = ["Non réglé", "Partiellement réglé", "Réglé", "Offert / Garantie / SAV"];
-
-const settlementMethods: PaymentMethod[] = [
-  "Espèces",
-  "Carte bancaire",
-  "SumUp",
-  "Stripe",
-  "Virement",
-  "Chèque",
-  "Autre",
-];
-
-function todayInputValue() {
-  const date = new Date();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${date.getFullYear()}-${month}-${day}`;
-}
 
 function cleanDossierId(value?: string | null) {
   const id = (value ?? "").trim();
@@ -202,28 +174,8 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
   const [notesFocus, setNotesFocus] = useState<"internal" | "client" | null>(null);
   const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null);
   const [viewingMobileDoc, setViewingMobileDoc] = useState<any | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("" as PaymentMethod);
   const settlement = useSettlementModal();
   const [closureModalOpen, setClosureModalOpen] = useState(false);
-  const [settlementDraft, setSettlementDraft] = useState<{
-    status: SettlementStatus;
-    amount: string;
-    date: string;
-    method: PaymentMethod;
-    customMethod: string;
-    externalReference: string;
-    note: string;
-    confirmExternal: boolean;
-  }>({
-    status: "Réglé",
-    amount: "0",
-    date: todayInputValue(),
-    method: "" as PaymentMethod,
-    customMethod: "",
-    externalReference: "",
-    note: "",
-    confirmExternal: false,
-  });
   const resolvedDossierId = cleanDossierId(dossierId) || browserDossierId;
 
   useEffect(() => {
@@ -252,9 +204,8 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
   const invoiceTotal = invoice ? getInvoiceTotal(invoice) : 0;
   const quoteTotal = quote ? getQuoteTotal(quote) : 0;
   const dossierTotal = invoiceTotal || quoteTotal || repair?.total || repair?.amount || 0;
-  const paidAmount = payments.filter((entry) => entry.status === "Payé").reduce((sum, entry) => sum + entry.amount, 0);
   const formatDossier = (value: number) => formatEuro(value);
-  const readyDisplayLabel = repair ? getRepairReadyDisplayLabel(repair, payments) : "";
+  const readyDisplayLabel = repair?.status === "Prêt" ? "Prêt à restituer" : repair?.status || "";
 
   const activity = useMemo(() => {
     if (!repair) return [];
@@ -357,40 +308,13 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
   };
 
   const closeDossier = () => {
-    // Open the closure + settlement modal instead of window.confirm
-    setSettlementDraft((draft) => ({
-      ...draft,
-      amount: String(dossierTotal || repair.amount || 0),
-      date: todayInputValue(),
-      method: settlementMethods.includes(paymentMethod) ? paymentMethod : ("" as PaymentMethod),
-      customMethod: "",
-      status:
-        paidAmount > 0 && paidAmount >= dossierTotal ? "Réglé" : paidAmount > 0 ? "Partiellement réglé" : "Non réglé",
-      confirmExternal: false,
-      externalReference: "",
-      note: "",
-    }));
     setClosureModalOpen(true);
   };
 
   const submitClosure = () => {
-    const amount = Number.parseFloat(settlementDraft.amount.replace(",", "."));
-    const ok = store.closeDossierWithSettlement(repair.id, {
-      status: settlementDraft.status,
-      amount: Number.isFinite(amount) ? amount : 0,
-      date: settlementDraft.date,
-      method: settlementDraft.method,
-      customMethod: settlementDraft.customMethod,
-      externalReference: settlementDraft.externalReference,
-      note: settlementDraft.note,
-      confirmExternal: settlementDraft.confirmExternal,
-    });
-    if (!ok) {
-      toast.error("Clôture impossible. Vérifiez les informations de règlement.");
-      return;
-    }
+    store.changeRepairStatus(repair.id, "Clôturé");
     setClosureModalOpen(false);
-    toast.success("Dossier clôturé avec succès.");
+    toast.success("Dossier clôturé.");
   };
 
   const activeIndex = Math.max(0, progression.indexOf(repair.status));
@@ -505,15 +429,7 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
             {tab === "Réparation" && <RepairTab onAdvance={advance} repair={repair} />}
             {tab === "Devis" && <QuoteTab onCreate={createQuote} quote={quote} quotes={quotes} repair={repair} />}
             {tab === "Facture" && (
-              <InvoiceTab
-                invoice={invoice}
-                invoices={invoices}
-                onCreate={createInvoice}
-                onPayment={indicatePayment}
-                paymentMethod={paymentMethod}
-                paymentSummary={repair.paymentMethodNote}
-                setPaymentMethod={setPaymentMethod}
-              />
+              <InvoiceTab invoice={invoice} invoices={invoices} onCreate={createInvoice} onPayment={indicatePayment} />
             )}
             {tab === "Documents" && (
               <DocumentsTab documents={documents} download={download} print={print} repair={repair} />
@@ -593,10 +509,6 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
               invoices={invoices}
               onCreate={createInvoice}
               onPayment={indicatePayment}
-              paymentMethod={paymentMethod}
-              paymentSummary={repair.paymentMethodNote}
-              setPaymentMethod={setPaymentMethod}
-              formatDossier={formatDossier}
               setViewingMobileDoc={setViewingMobileDoc}
             />
           )}
@@ -632,7 +544,6 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
             customer={customer}
             quotes={quotes}
             invoices={invoices}
-            payments={payments}
             onClose={() => setViewingMobileDoc(null)}
             download={download}
             print={print}
@@ -652,6 +563,7 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
 
       <SettlementModal
         draft={settlement.draft}
+        invoice={settlement.invoice}
         isOpen={settlement.isOpen}
         onClose={settlement.close}
         onDraftChange={settlement.setDraft}
@@ -659,10 +571,12 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
         total={settlement.total}
       />
       <ClosureSettlementModal
-        draft={settlementDraft}
         isOpen={closureModalOpen}
         onClose={() => setClosureModalOpen(false)}
-        onDraftChange={setSettlementDraft}
+        onPayment={() => {
+          setClosureModalOpen(false);
+          settlement.open(repair.id);
+        }}
         onSubmit={submitClosure}
         repair={repair}
         customer={customer}
@@ -687,220 +601,85 @@ function HeaderCol({ className, label, value }: Readonly<{ label: string; value:
 }
 
 function ClosureSettlementModal({
-  draft,
   isOpen,
   onClose,
-  onDraftChange,
+  onPayment,
   onSubmit,
   repair,
   customer,
   invoice,
   total,
 }: Readonly<{
-  draft: {
-    status: SettlementStatus;
-    amount: string;
-    date: string;
-    method: PaymentMethod;
-    customMethod: string;
-    externalReference: string;
-    note: string;
-    confirmExternal: boolean;
-  };
   isOpen: boolean;
   onClose: () => void;
-  onDraftChange: (draft: {
-    status: SettlementStatus;
-    amount: string;
-    date: string;
-    method: PaymentMethod;
-    customMethod: string;
-    externalReference: string;
-    note: string;
-    confirmExternal: boolean;
-  }) => void;
+  onPayment: () => void;
   onSubmit: () => void;
   repair: Repair;
   customer?: Pick<Customer, "name" | "phone">;
   invoice?: Invoice;
   total: number;
 }>) {
-  const patch = (partial: Partial<typeof draft>) => onDraftChange({ ...draft, ...partial });
-
-  const isPaid = draft.status === "Réglé" || draft.status === "Partiellement réglé";
-  const canSubmit = !isPaid || (draft.method && draft.confirmExternal && Number(draft.amount.replace(",", ".")) > 0);
-
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Clôture & règlement" maxWidth="max-w-2xl">
-      <div className="space-y-6">
-        {/* Résumé dossier */}
-        <section className="rounded-[14px] border border-[#E8E8E5] bg-[#FAFAFA] p-4 text-sm">
-          <h3 className="font-semibold text-[#1A1916] mb-3">Résumé du dossier</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <span className="text-[#6B6B6B] block text-xs mb-1">Dossier</span>
-              <span className="font-medium">{repair.number}</span>
-            </div>
-            <div>
-              <span className="text-[#6B6B6B] block text-xs mb-1">Client</span>
-              <span className="font-medium">{customer?.name || "Client de passage"}</span>
-            </div>
-            <div>
-              <span className="text-[#6B6B6B] block text-xs mb-1">Appareil</span>
-              <span className="font-medium">
-                {[repair.brandName, repair.deviceModel].filter(Boolean).join(" ") || repair.device || "Appareil"}
-              </span>
-            </div>
-            <div>
-              <span className="text-[#6B6B6B] block text-xs mb-1">Total TTC</span>
-              <span className="font-bold text-[#1A1916] text-base">{formatEuro(total)}</span>
-            </div>
+    <Modal isOpen={isOpen} maxWidth="max-w-2xl" onClose={onClose} title="Clôturer le dossier">
+      <div className="space-y-5">
+        <section className="flex items-center gap-4 rounded-[15px] border border-[#E8E8E5] bg-white p-4">
+          <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#F1FAF8] text-[#2A9D8F]">
+            <Smartphone className="size-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-[#1A1916] text-sm">
+              {repair.number} · {repair.deviceModel || repair.device || "Appareil"}
+            </p>
+            <p className="mt-1 text-[#6B6B6B] text-sm">
+              {invoice ? `Facture ${invoice.number}` : "Facture à générer"} ·{" "}
+              <span className="font-semibold text-[#167B70]">{formatEuro(total)} TTC</span>
+            </p>
           </div>
-          {invoice && (
-            <div className="mt-3 pt-3 border-t border-[#E8E8E5]">
-              <span className="text-[#6B6B6B] text-xs">Facture liée : </span>
-              <span className="font-medium">{invoice.number}</span>
-            </div>
-          )}
         </section>
 
-        {/* Statut règlement */}
         <section>
-          <h3 className="font-semibold text-[#1A1916] mb-3 text-sm">Statut du règlement</h3>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {(["Non réglé", "Partiellement réglé", "Réglé"] as SettlementStatus[]).map((status) => (
-              <button
-                key={status}
-                type="button"
-                onClick={() => {
-                  patch({
-                    status,
-                    amount: status === "Non réglé" ? "0" : String(total),
-                    method: status === "Non réglé" ? ("" as PaymentMethod) : draft.method,
-                    confirmExternal: status === "Non réglé" ? false : draft.confirmExternal,
-                  });
-                }}
-                className={cn(
-                  "flex items-center justify-center gap-2 rounded-[12px] border h-11 px-3 text-sm font-medium transition-colors",
-                  draft.status === status
-                    ? "border-[#2A9D8F] bg-[#E9F4F3] text-[#167B70]"
-                    : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:bg-[#FAFAFA]",
-                )}
-              >
-                {draft.status === status && <CheckCircle2 className="size-4" />}
-                {status}
-              </button>
+          <h3 className="font-semibold text-[#1A1916] text-sm">Vérifications avant clôture</h3>
+          <div className="mt-3 divide-y divide-[#EFEFEC] rounded-[15px] border border-[#E8E8E5] bg-white px-4">
+            {["Réparation terminée", "Tests finaux effectués", "Appareil remis au client"].map((label) => (
+              <div className="flex items-center gap-3 py-3" key={label}>
+                <CheckCircle2 className="size-5 text-[#2A9D8F]" />
+                <span className="text-[#1A1916] text-sm">{label}</span>
+              </div>
             ))}
           </div>
         </section>
 
-        {isPaid && (
-          <div className="space-y-4 rounded-[14px] border border-[#E8E8E5] p-4 bg-white shadow-[0_1px_2px_rgba(26,25,22,0.02)]">
-            <h3 className="font-semibold text-[#1A1916] text-sm">Informations d'encaissement</h3>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="grid gap-1.5 text-sm">
-                <span className="font-semibold text-[#1A1916]">Montant réglé (€)</span>
-                <input
-                  className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
-                  inputMode="decimal"
-                  onChange={(event) => patch({ amount: event.target.value })}
-                  type="text"
-                  value={draft.amount}
-                />
-              </label>
-
-              <label className="grid gap-1.5 text-sm">
-                <span className="font-semibold text-[#1A1916]">Moyen de paiement</span>
-                <select
-                  className={cn(
-                    "h-11 rounded-[12px] border bg-white px-3 outline-none focus:border-[#2A9D8F]",
-                    !draft.method ? "border-red-300 ring-1 ring-red-100" : "border-[#E8E8E5]",
-                  )}
-                  onChange={(event) => patch({ method: event.target.value as PaymentMethod })}
-                  value={draft.method}
-                >
-                  <option value="" disabled>
-                    Sélectionner...
-                  </option>
-                  {settlementMethods.map((method) => (
-                    <option key={method} value={method}>
-                      {method}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              {draft.method === "Autre" && (
-                <label className="grid gap-1.5 text-sm sm:col-span-2">
-                  <span className="font-semibold text-[#1A1916]">Préciser le moyen de paiement</span>
-                  <input
-                    className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
-                    onChange={(event) => patch({ customMethod: event.target.value })}
-                    type="text"
-                    value={draft.customMethod}
-                    placeholder="Ex: Chèque cadeau..."
-                  />
-                </label>
-              )}
-
-              <label className="grid gap-1.5 text-sm">
-                <span className="font-semibold text-[#1A1916]">Date</span>
-                <input
-                  className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
-                  onChange={(event) => patch({ date: event.target.value })}
-                  type="date"
-                  value={draft.date}
-                />
-              </label>
-
-              <label className="grid gap-1.5 text-sm">
-                <span className="font-semibold text-[#1A1916]">Réf. externe (facultatif)</span>
-                <input
-                  className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
-                  onChange={(event) => patch({ externalReference: event.target.value })}
-                  type="text"
-                  placeholder="N° transaction..."
-                  value={draft.externalReference}
-                />
-              </label>
-            </div>
-
-            <label className="mt-4 flex items-start gap-3 rounded-[12px] bg-[#FEFBF6] p-3 border border-[#F3E8C8] cursor-pointer">
-              <input
-                type="checkbox"
-                checked={draft.confirmExternal}
-                onChange={(e) => patch({ confirmExternal: e.target.checked })}
-                className="mt-1 h-4 w-4 rounded border-gray-300 text-[#2A9D8F] focus:ring-[#2A9D8F]"
-              />
-              <span className="text-sm font-medium text-[#B48421]">
-                Je confirme que ce paiement a bien été encaissé hors de l'application Behar Tech Pro.
-              </span>
-            </label>
-          </div>
-        )}
-
-        <div className="flex gap-3 pt-4 border-t border-[#E8E8E5]">
+        <section className="rounded-[15px] border border-[#F0D9A7] bg-[#FFFDF8] p-4">
+          <h3 className="font-semibold text-[#1A1916] text-sm">Demande de paiement</h3>
+          <p className="mt-1.5 text-[#6B6B6B] text-sm">
+            Le règlement est géré en dehors de Behar Tech Pro. La clôture du dossier reste indépendante.
+          </p>
+          <p className="mt-3 text-[#8A8A8A] text-xs">
+            {customer?.name || "Client"} · montant issu de la facture finalisée
+          </p>
           <button
-            className="flex h-11 flex-1 items-center justify-center rounded-[12px] border border-[#E8E8E5] bg-white font-semibold text-[#1A1916] text-sm hover:bg-[#FAFAFA]"
-            onClick={onClose}
+            className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-[11px] border border-[#2A9D8F] bg-white font-semibold text-[#167B70] text-sm transition hover:bg-[#F1FAF8] disabled:cursor-not-allowed disabled:opacity-45"
+            disabled={!invoice}
+            onClick={onPayment}
             type="button"
           >
-            Annuler
+            <Link2 className="size-4" />
+            Créer une demande de paiement
           </button>
-          <PrimaryButton className="flex-1" onClick={onSubmit} disabled={!canSubmit}>
-            {draft.status === "Non réglé"
-              ? "Clôturer sans règlement"
-              : draft.status === "Réglé"
-                ? "Clôturer et marquer réglé"
-                : "Clôturer (règlement partiel)"}
+        </section>
+
+        <div className="grid gap-3 border-[#EFEFEC] border-t pt-4 sm:grid-cols-2">
+          <SecondaryButton className="h-12 justify-center" onClick={onClose}>
+            Annuler
+          </SecondaryButton>
+          <PrimaryButton className="h-12 justify-center" onClick={onSubmit}>
+            Clôturer le dossier
           </PrimaryButton>
         </div>
       </div>
     </Modal>
   );
 }
-
 function StatusPill({ status }: Readonly<{ status: RepairStatus }>) {
   const tone =
     status === "Rendu" || status === "Clôturé"
@@ -1443,23 +1222,17 @@ function DocumentsLiesCard({
   invoices: any[];
 }>) {
   const { preview, download } = useDocument();
-  const rows = documents.map((doc) => {
-    const quote = doc.type === "quote" ? (quotes.find((q) => q.id === (doc as any).quoteId) ?? quotes[0]) : undefined;
-    const invoice =
-      doc.type === "invoice" ? (invoices.find((i) => i.id === (doc as any).invoiceId) ?? invoices[0]) : undefined;
-    const amount = quote ? getQuoteTotal(quote) : invoice ? getInvoiceTotal(invoice) : 0;
-    const number = quote?.number || invoice?.number || "";
-    const statusLabel = invoice
-      ? invoice.status === "Payée"
-        ? "Réglée"
-        : "À régler"
-      : quote
-        ? quote.status
-        : doc.type === "intake"
-          ? "Émise"
-          : "";
-    return { doc, amount, number, statusLabel };
-  });
+  const rows = documents
+    .filter((doc) => !["payment", "sale-receipt", "sale-invoice"].includes(doc.type))
+    .map((doc) => {
+      const quote = doc.type === "quote" ? (quotes.find((q) => q.id === (doc as any).quoteId) ?? quotes[0]) : undefined;
+      const invoice =
+        doc.type === "invoice" ? (invoices.find((i) => i.id === (doc as any).invoiceId) ?? invoices[0]) : undefined;
+      const amount = quote ? getQuoteTotal(quote) : invoice ? getInvoiceTotal(invoice) : 0;
+      const number = quote?.number || invoice?.number || "";
+      const statusLabel = invoice ? "Finalisée" : quote ? quote.status : doc.type === "intake" ? "Émise" : "";
+      return { doc, amount, number, statusLabel };
+    });
   return (
     <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
       <h3 className="font-semibold text-[#1A1916]">Documents liés</h3>
@@ -2016,17 +1789,11 @@ function InvoiceTab({
   invoices,
   onCreate,
   onPayment,
-  paymentMethod,
-  paymentSummary,
-  setPaymentMethod,
 }: Readonly<{
-  invoice?: { id: string; number: string; status: string; lines: any[] };
-  invoices: any[];
+  invoice?: Invoice;
+  invoices: Invoice[];
   onCreate: () => void;
   onPayment: () => void;
-  paymentMethod: PaymentMethod;
-  paymentSummary?: string;
-  setPaymentMethod: (method: PaymentMethod) => void;
 }>) {
   const store = useBeharStore();
   if (!invoice) {
@@ -2039,41 +1806,24 @@ function InvoiceTab({
           href="/dashboard/factures"
           key={entry.id}
           onOpen={() => store.setSelected("invoice", entry.id)}
-          status={entry.status === "Payée" ? "Réglée" : entry.status === "Envoyée" ? "À régler" : entry.status}
-          subtitle={formatEuro(getInvoiceTotal(entry))}
+          status={entry.status === "Brouillon" ? "Brouillon" : "Finalisée"}
+          subtitle={formatCurrency(getInvoiceTotal(entry), entry.currency)}
           title={`Facture ${entry.number}`}
         />
       ))}
-      {paymentSummary ? (
-        <div className="rounded-[14px] border border-[#D7EFEA] bg-[#FFFFFF] p-3 text-[#1E7A6E] text-sm font-semibold">
-          {paymentSummary}
-        </div>
-      ) : null}
-      <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
-        <p className="font-semibold text-[#1A1916]">Moyen de règlement indiqué</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {paymentMethods.map((method) => (
-            <button
-              className={cn(
-                "rounded-full border px-3 py-1.5 text-xs font-semibold",
-                paymentMethod === method
-                  ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
-                  : "border-[#E8E8E5] bg-white text-[#1A1916]",
-              )}
-              key={method}
-              onClick={() => setPaymentMethod(method)}
-              type="button"
-            >
-              {method}
-            </button>
-          ))}
-        </div>
+      <div className="rounded-[16px] border border-[#D7EFEA] bg-[#F1FAF8] p-4">
+        <p className="font-semibold text-[#1A1916] text-sm">Paiement externe</p>
+        <p className="mt-1 text-[#47706B] text-sm">
+          Le règlement est géré en dehors de Behar Tech Pro par le prestataire sélectionné.
+        </p>
       </div>
-      <PrimaryButton onClick={onPayment}>Indiquer règlement</PrimaryButton>
+      <PrimaryButton disabled={invoice.status === "Brouillon" || invoice.status === "Annulée"} onClick={onPayment}>
+        <Link2 className="size-4" />
+        Demander le paiement
+      </PrimaryButton>
     </div>
   );
 }
-
 function DocumentsTab({
   documents,
   download,
@@ -2705,11 +2455,13 @@ const getLatestDocOfTypes = (allDocs: any[], types: string[]) => {
 
 const getDeduplicatedDocuments = (allDocs: any[]) => {
   const typeMap = new Map<string, any>();
-  const sorted = [...allDocs].sort((a, b) => {
-    const dateA = new Date(a.createdAt || 0).getTime();
-    const dateB = new Date(b.createdAt || 0).getTime();
-    return dateA - dateB;
-  });
+  const sorted = allDocs
+    .filter((doc) => !["payment", "sale-receipt", "sale-invoice"].includes(doc.type))
+    .sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0).getTime();
+      const dateB = new Date(b.createdAt || 0).getTime();
+      return dateA - dateB;
+    });
   for (const doc of sorted) {
     typeMap.set(doc.type, doc);
   }
@@ -2845,7 +2597,6 @@ function MobileOverviewSection({
 
   const quoteDoc = documents.find((d) => d.type === "quote");
   const invoiceDoc = documents.find((d) => d.type === "invoice");
-  const paymentDoc = documents.find((d) => ["payment", "sale-receipt", "sale-invoice"].includes(d.type));
 
   const deduplicatedDocs = useMemo(() => getDeduplicatedDocuments(documents), [documents]);
 
@@ -3083,16 +2834,6 @@ function MobileOverviewSection({
                 Voir la facture
               </button>
             )}
-            {paymentDoc && (
-              <button
-                type="button"
-                onClick={() => setViewingMobileDoc(paymentDoc)}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
-              >
-                <Receipt className="size-4" />
-                Voir la confirmation de règlement
-              </button>
-            )}
             <button
               type="button"
               onClick={onPrint}
@@ -3152,15 +2893,7 @@ function MobileOverviewSection({
                   : undefined;
               const amount = q ? getQuoteTotal(q) : inv ? getInvoiceTotal(inv) : 0;
               const number = q?.number || inv?.number || "";
-              const statusLabel = inv
-                ? inv.status === "Payée"
-                  ? "Réglée"
-                  : "À régler"
-                : q
-                  ? q.status
-                  : doc.type === "intake"
-                    ? "Émise"
-                    : "";
+              const statusLabel = inv ? "Finalisée" : q ? q.status : doc.type === "intake" ? "Émise" : "";
 
               return (
                 <button
@@ -3729,155 +3462,103 @@ function MobileInvoiceSection({
   invoices,
   onCreate,
   onPayment,
-  paymentMethod,
-  paymentSummary,
-  setPaymentMethod,
-  formatDossier,
   setViewingMobileDoc,
 }: Readonly<{
-  invoice?: any;
-  invoices: any[];
+  invoice?: Invoice;
+  invoices: Invoice[];
   onCreate: () => void;
   onPayment: () => void;
-  paymentMethod: PaymentMethod;
-  paymentSummary?: string;
-  setPaymentMethod: (method: PaymentMethod) => void;
-  formatDossier: (val: number) => string;
   setViewingMobileDoc: (doc: any) => void;
 }>) {
   const store = useBeharStore();
-  const repair = store.repairs.find((r) => r.id === invoice?.repairId || invoices[0]?.repairId);
-
+  const repair = store.repairs.find((entry) => entry.id === invoice?.repairId || invoices[0]?.repairId);
   const quotes = repair ? store.quotes.filter((entry) => entry.repairId === repair.id) : [];
   const acceptedQuote = quotes.find((entry) => entry.status === "Accepté" || entry.status === "Facturé");
-
-  const hasAcceptedQuote = !!acceptedQuote;
-  const hasTotal = repair ? (repair.total ?? 0) > 0 || (repair.amount ?? 0) > 0 : false;
-  const canCreateInvoice = hasAcceptedQuote || hasTotal;
+  const canCreateInvoice =
+    Boolean(acceptedQuote) || Boolean(repair && ((repair.total ?? 0) > 0 || (repair.amount ?? 0) > 0));
 
   if (!invoice) {
     return (
-      <div className="rounded-[20px] border border-dashed border-[#E8E8E5] bg-white p-8 text-center space-y-4">
-        <p className="font-semibold text-sm text-[#1A1916]">Aucune facture liée à ce dossier</p>
+      <div className="space-y-4 rounded-[20px] border border-dashed border-[#E8E8E5] bg-white p-8 text-center">
+        <p className="font-semibold text-[#1A1916] text-sm">Aucune facture liée à ce dossier</p>
+        <button
+          className="inline-flex h-11 w-full items-center justify-center rounded-[12px] bg-[#2A9D8F] px-6 font-semibold text-sm text-white disabled:cursor-not-allowed disabled:bg-[#F1F1EF] disabled:text-[#A7A7A2]"
+          disabled={!canCreateInvoice}
+          onClick={onCreate}
+          type="button"
+        >
+          Créer une facture
+        </button>
         {!canCreateInvoice ? (
-          <div className="space-y-2">
-            <button
-              type="button"
-              disabled
-              className="inline-flex h-11 items-center justify-center px-6 rounded-[12px] bg-gray-100 text-gray-400 font-semibold text-sm cursor-not-allowed border border-gray-200 w-full"
-            >
-              Créer une facture
-            </button>
-            <p className="text-[10px] text-[#B42318] bg-[#FFFFFF] rounded-[8px] p-2 border border-[#B42318]/10 leading-normal text-left max-w-sm mx-auto">
-              ⚠️ Un devis accepté ou un montant total &gt; 0 est requis pour générer une facture.
-            </p>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={onCreate}
-            className="mt-4 inline-flex h-11 items-center justify-center px-6 rounded-[12px] bg-[#2A9D8F] text-white font-semibold text-sm shadow-sm hover:bg-[#238579] w-full"
-          >
-            Créer une facture
-          </button>
-        )}
+          <p className="text-[#6B6B6B] text-xs">Un devis accepté ou un montant total est requis.</p>
+        ) : null}
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      {paymentSummary ? (
-        <div className="rounded-[16px] border border-[#D7EFEA] bg-white p-4 text-[#1E7A6E] text-sm font-bold">
-          {paymentSummary}
-        </div>
-      ) : null}
-      {invoices.map((inv) => {
-        const doc = store.documents.find((d) => d.invoiceId === inv.id && d.type === "invoice");
+      {invoices.map((entry) => {
+        const document = store.documents.find(
+          (candidate) => candidate.invoiceId === entry.id && candidate.type === "invoice",
+        );
         return (
           <div
-            key={inv.id}
-            className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4"
+            className="space-y-4 rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)]"
+            key={entry.id}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between gap-3">
               <div>
-                <h4 className="font-bold text-[15px] text-[#1A1916]">Facture {inv.number}</h4>
-                <p className="text-[11px] text-[#6B6B6B] mt-0.5">Créée le {formatIsoToDisplay(inv.createdAt || "")}</p>
+                <h4 className="font-bold text-[#1A1916] text-[15px]">Facture {entry.number}</h4>
+                <p className="mt-0.5 text-[#6B6B6B] text-[11px]">
+                  Créée le {formatIsoToDisplay(entry.createdAt || "")}
+                </p>
               </div>
-              <span
-                className={cn(
-                  "rounded-full px-2.5 py-0.5 font-bold text-[10px] uppercase tracking-wide",
-                  inv.status === "Payée" ? "bg-[#FFFFFF] text-[#167B70]" : "bg-[#FFFFFF] text-[#936100]",
-                )}
+              <span className="rounded-full bg-[#F1FAF8] px-2.5 py-1 font-bold text-[#167B70] text-[10px] uppercase tracking-wide">
+                {entry.status === "Brouillon" ? "Brouillon" : "Finalisée"}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] p-4">
+              <span className="font-semibold text-[#6B6B6B] text-xs uppercase tracking-wider">Total TTC</span>
+              <span className="font-bold text-[#167B70] text-lg">
+                {formatCurrency(getInvoiceTotal(entry), entry.currency)}
+              </span>
+            </div>
+
+            <div className="rounded-[14px] border border-[#D7EFEA] bg-[#F1FAF8] p-3 text-left text-[#47706B] text-xs">
+              Le règlement est géré en dehors de Behar Tech Pro par le prestataire sélectionné.
+            </div>
+
+            <button
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#2A9D8F] font-semibold text-sm text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-45"
+              disabled={entry.status === "Brouillon" || entry.status === "Annulée"}
+              onClick={onPayment}
+              type="button"
+            >
+              <Link2 className="size-4" />
+              Demander le paiement
+            </button>
+
+            {document ? (
+              <button
+                className="flex h-9 w-full items-center justify-center gap-1 rounded-full border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-[12px]"
+                onClick={() => setViewingMobileDoc(document)}
+                type="button"
               >
-                {inv.status === "Payée" ? "Réglée" : "À régler"}
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center bg-[#FFFFFF] rounded-[14px] p-4 border border-[#E8E8E5]">
-              <span className="text-xs font-semibold text-[#6B6B6B] uppercase tracking-wider">Montant total</span>
-              <span className="text-lg font-bold text-[#167B70]">
-                {formatCurrency(getInvoiceTotal(inv), inv.currency)}
-              </span>
-            </div>
-
-            {inv.status !== "Payée" && (
-              <div className="space-y-3 pt-1">
-                <label className="text-xs font-bold text-[#6B6B6B] uppercase tracking-wider block">
-                  Moyen de règlement
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {paymentMethods.map((method) => {
-                    const active = paymentMethod === method;
-                    return (
-                      <button
-                        key={method}
-                        type="button"
-                        onClick={() => setPaymentMethod(method)}
-                        className={cn(
-                          "h-10 rounded-full border text-[11px] font-bold flex items-center justify-center px-2.5 transition",
-                          active
-                            ? "border-[#2A9D8F] bg-[#2A9D8F] text-white shadow-sm"
-                            : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:text-[#1A1916]",
-                        )}
-                      >
-                        {method}
-                      </button>
-                    );
-                  })}
-                </div>
-                <button
-                  type="button"
-                  onClick={onPayment}
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#2A9D8F] text-white font-semibold text-sm hover:bg-[#238579] shadow-sm mt-1"
-                >
-                  Indiquer le règlement
-                </button>
-              </div>
-            )}
-
-            <div className="flex gap-2 pt-2 border-t border-[#FFFFFF]">
-              {doc && (
-                <button
-                  type="button"
-                  onClick={() => setViewingMobileDoc(doc)}
-                  className="flex-1 h-9 rounded-full border border-[#E8E8E5] bg-[#FFFFFF] text-[#1A1916] text-[12px] font-bold flex items-center justify-center gap-1 shadow-sm hover:bg-[#FFFFFF]"
-                >
-                  <Printer className="size-3.5" />
-                  Imprimer / PDF
-                </button>
-              )}
-            </div>
+                <Printer className="size-3.5" />
+                Imprimer / PDF
+              </button>
+            ) : null}
           </div>
         );
       })}
-      <p className="text-[11px] text-[#6B6B6B] text-center italic">
-        Aucune donnée bancaire n'est stockée dans ce terminal.
+      <p className="text-center text-[#6B6B6B] text-[11px] italic">
+        Aucune donnée bancaire n’est saisie ou stockée dans Behar Tech Pro.
       </p>
     </div>
   );
 }
-
 /* ───────────────────────── SECTION DOCUMENTS MOBILE ───────────────────────── */
 
 function MobileDocumentsSection({
@@ -3921,15 +3602,7 @@ function MobileDocumentsSection({
                 : undefined;
             const amount = q ? getQuoteTotal(q) : inv ? getInvoiceTotal(inv) : 0;
             const number = q?.number || inv?.number || "";
-            const statusLabel = inv
-              ? inv.status === "Payée"
-                ? "Réglée"
-                : "À régler"
-              : q
-                ? q.status
-                : doc.type === "intake"
-                  ? "Émise"
-                  : "";
+            const statusLabel = inv ? "Finalisée" : q ? q.status : doc.type === "intake" ? "Émise" : "";
 
             return (
               <div
@@ -4293,7 +3966,7 @@ function MobileFinalTestSection({
               className="flex h-9 w-full items-center justify-center gap-2 rounded-full border border-[#E8E8E5] text-[#1A1916] text-xs font-bold bg-[#FFFFFF] hover:bg-[#FFFFFF]"
             >
               <Receipt className="size-3.5" />
-              Gérer la facture / règlement
+              Gérer la facture
             </button>
             <button
               type="button"
@@ -4330,7 +4003,6 @@ function MobileDocumentViewerModal({
   customer,
   quotes,
   invoices,
-  payments,
   onClose,
   download,
   print,
@@ -4340,7 +4012,6 @@ function MobileDocumentViewerModal({
   customer?: Customer;
   quotes: any[];
   invoices: any[];
-  payments: any[];
   onClose: () => void;
   download: (type: any, id: string) => void;
   print: (type: any, id: string) => void;
@@ -4350,7 +4021,6 @@ function MobileDocumentViewerModal({
   const isIntake = doc.type === "intake";
   const isQuote = doc.type === "quote";
   const isInvoice = doc.type === "invoice";
-  const isPayment = ["payment", "sale-receipt", "sale-invoice"].includes(doc.type);
 
   const underlyingQuote = isQuote ? (quotes.find((q) => q.id === doc.quoteId) ?? quotes[0]) : undefined;
   const underlyingInvoice = isInvoice ? (invoices.find((i) => i.id === doc.invoiceId) ?? invoices[0]) : undefined;
@@ -4471,7 +4141,7 @@ function MobileDocumentViewerModal({
             </div>
           )}
 
-          {(isQuote || isInvoice || isPayment) && (
+          {(isQuote || isInvoice) && (
             <div className="bg-white rounded-[20px] border border-[#E8E8E5] p-5 shadow-[0_4px_12px_rgba(26,25,22,0.015)] space-y-4">
               <h3 className="text-[13px] font-bold text-[#1A1916] border-b border-[#FFFFFF] pb-2">
                 Détail des prestations

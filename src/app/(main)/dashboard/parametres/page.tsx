@@ -24,11 +24,14 @@ import {
 import { toast } from "sonner";
 
 import { LicenseCard } from "@/components/behar/license-card";
+import { BusinessHoursEditor } from "@/components/behar/business-hours-editor";
+import { ExternalPaymentIntegrations } from "@/components/behar/external-payment-integrations";
 import { PageShell } from "@/components/behar/page-shell";
 import { Panel, PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
 import { UpdateChecker } from "@/components/behar/update-checker";
 import { useBeharStore, type WorkshopSettings } from "@/lib/behar-store";
 import { createBillingProfile, getLegalFieldsByCountry, getWorkshopCountryConfig } from "@/lib/workshop-country";
+import { formatWorkshopWeeklyHours } from "@/lib/workshop-hours";
 import {
   hydrateStoreFromCloud,
   loadSnapshotByLicenseKey,
@@ -42,9 +45,16 @@ const TABS = [
   { key: "atelier", label: "Informations atelier", href: "/dashboard/parametres" },
   { key: "appareils", label: "Catalogue appareils", href: "/dashboard/parametres/appareils" },
   { key: "catalogue", label: "Tarifs & prestations", href: "/dashboard/parametres/catalogue" },
-  { key: "widget", label: "Widget client", href: "/dashboard/parametres/widget" },
   { key: "reconditionnement", label: "Reconditionnement", href: "/dashboard/parametres/reconditionnement" },
   { key: "equipe", label: "Équipe & permissions", href: "/dashboard/parametres/equipe" },
+] as const;
+
+const SETTING_GROUPS = [
+  { key: "atelier", label: "Atelier & contact" },
+  { key: "horaires", label: "Horaires & rendez-vous" },
+  { key: "legal", label: "Fiscalité & licence" },
+  { key: "integrations", label: "Intégrations & paiements" },
+  { key: "documents", label: "Documents & sauvegarde" },
 ] as const;
 
 /* ── Helpers ──────────────────────────────────────── */
@@ -238,6 +248,7 @@ export default function SettingsPage() {
   const [draft, setDraft] = useState<WorkshopSettings>(store.workshopSettings);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(true);
+  const [activeGroup, setActiveGroup] = useState<(typeof SETTING_GROUPS)[number]["key"]>("atelier");
   const pathname = usePathname();
 
   const setField = <K extends keyof WorkshopSettings>(key: K, value: WorkshopSettings[K]) => {
@@ -541,592 +552,651 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Grid */}
-      <div className="grid gap-5 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-        {/* Col 1 — Identité */}
-        <Section
-          icon={Building2}
-          title="Identité atelier"
-          description="Le nom de l'atelier apparaîtra sur vos documents."
-        >
-          <div className="grid gap-4">
-            <Field label="Nom de l'atelier" required error={errors.name}>
-              <input className={inputCls} value={draft.name || ""} onChange={(e) => setField("name", e.target.value)} />
-            </Field>
-            <Field label="Nom commercial" hint="Optionnel" error={errors.commercialName}>
-              <input
-                className={inputCls}
-                value={draft.commercialName || ""}
-                onChange={(e) => setField("commercialName", e.target.value)}
-              />
-            </Field>
-            <Field label="Site web" hint="Optionnel">
-              <input
-                className={inputCls}
-                value={draft.website || ""}
-                onChange={(e) => setField("website", e.target.value)}
-                placeholder="https://behartechpro.fr"
-              />
-            </Field>
-            <Field label="Pays de domiciliation" required>
-              <select
-                className={selectCls}
-                value={draft.country || "FR"}
-                onChange={(e) => {
-                  const newCountry = e.target.value as "FR" | "CH" | "autre";
-                  setCountry(newCountry);
-                }}
-              >
-                <option value="FR">France</option>
-                <option value="CH">Suisse</option>
-                <option value="autre">Autre</option>
-              </select>
-            </Field>
-            <Field label="Marché principal" required>
-              <select
-                className={selectCls}
-                value={
-                  draft.allowedMarkets?.includes("FR") && draft.allowedMarkets?.includes("CH")
-                    ? "FR-CH"
-                    : draft.defaultMarket || "FR"
-                }
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === "FR-CH") {
-                    setField("allowedMarkets", ["FR", "CH"]);
-                    setField("defaultMarket", draft.country === "CH" ? "CH" : "FR");
-                  } else {
-                    const country = val as "FR" | "CH";
-                    setField("defaultMarket", country);
-                    setField("allowedMarkets", [country]);
-                  }
-                }}
-              >
-                <option value="FR">France</option>
-                <option value="CH">Suisse</option>
-                <option value="FR-CH">Suisse-France</option>
-              </select>
-            </Field>
-            <Field label="Devise par défaut" hint="Déterminée automatiquement par le marché principal.">
-              <input
-                className={`${inputCls} bg-[#FFFFFF] text-[#6B6B6B]`}
-                value={
-                  draft.allowedMarkets?.includes("FR") && draft.allowedMarkets?.includes("CH")
-                    ? "EUR et CHF (Choix modifiable par document)"
-                    : draft.defaultMarket === "CH"
-                      ? "CHF (Franc suisse)"
-                      : "EUR (Euro)"
-                }
-                readOnly
-              />
-            </Field>
-          </div>
-        </Section>
+      <div className="mb-6 flex gap-2 overflow-x-auto rounded-[18px] border border-[#E8E8E5] bg-white p-2">
+        {SETTING_GROUPS.map((group) => (
+          <button
+            key={group.key}
+            type="button"
+            onClick={() => setActiveGroup(group.key)}
+            className={`shrink-0 rounded-[12px] px-4 py-2.5 text-[13px] font-semibold transition ${
+              activeGroup === group.key
+                ? "bg-[#E9F7F4] text-[#1E7A6E] shadow-sm"
+                : "text-[#6B6B6B] hover:bg-[#F7F7F4] hover:text-[#1A1916]"
+            }`}
+          >
+            {group.label}
+          </button>
+        ))}
+      </div>
 
-        {/* Col 2 — Coordonnées */}
-        <Section icon={Phone} title="Coordonnées" description="Ces informations apparaîtront sur vos documents.">
-          <div className="grid gap-4">
-            <Field label="Téléphone" required error={errors.phone}>
-              <div className="grid grid-cols-[132px_1fr] gap-2">
-                <select
-                  className={`${selectCls} px-3`}
-                  value={callingCodeOptions.some((option) => option.code === phone.prefix) ? phone.prefix : "+33"}
-                  onChange={(e) => setInternationalPhone(e.target.value, phone.local)}
-                  aria-label="Indicatif téléphonique"
-                >
-                  {callingCodeOptions.map((option) => (
-                    <option key={option.code} value={option.code}>
-                      {option.code} · {option.label}
-                    </option>
-                  ))}
-                </select>
+      {/* Grid */}
+      {activeGroup === "atelier" ? (
+        <div className="grid gap-5 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+          {/* Col 1 — Identité */}
+          <Section
+            icon={Building2}
+            title="Identité atelier"
+            description="Le nom de l'atelier apparaîtra sur vos documents."
+          >
+            <div className="grid gap-4">
+              <Field label="Nom de l'atelier" required error={errors.name}>
                 <input
                   className={inputCls}
-                  inputMode="tel"
-                  value={phoneLocal}
-                  onChange={(e) => setInternationalPhone(phone.prefix, e.target.value)}
-                  placeholder={phone.prefix === "+33" ? "6 12 34 56 78" : "Numéro"}
-                  aria-label="Numéro de téléphone"
-                />
-              </div>
-            </Field>
-            <Field label="Email" required error={errors.email}>
-              <input
-                className={inputCls}
-                type="email"
-                value={draft.email || ""}
-                onChange={(e) => setField("email", e.target.value)}
-              />
-            </Field>
-            <Field label="Adresse" required error={errors.address}>
-              <input
-                className={inputCls}
-                value={draft.address || ""}
-                onChange={(e) => setField("address", e.target.value)}
-              />
-            </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label={legalFields.postalCodeLabel} required error={errors.postalCode}>
-                <input
-                  className={inputCls}
-                  inputMode="numeric"
-                  value={draft.postalCode || ""}
-                  onChange={(e) => setPostalCode(e.target.value)}
+                  value={draft.name || ""}
+                  onChange={(e) => setField("name", e.target.value)}
                 />
               </Field>
-              <Field label="Ville" required error={errors.city}>
-                {postalCities.length > 0 ? (
+              <Field label="Nom commercial" hint="Optionnel" error={errors.commercialName}>
+                <input
+                  className={inputCls}
+                  value={draft.commercialName || ""}
+                  onChange={(e) => setField("commercialName", e.target.value)}
+                />
+              </Field>
+              <Field label="Site web" hint="Optionnel">
+                <input
+                  className={inputCls}
+                  value={draft.website || ""}
+                  onChange={(e) => setField("website", e.target.value)}
+                  placeholder="https://behartechpro.fr"
+                />
+              </Field>
+              <Field label="Pays de domiciliation" required>
+                <select
+                  className={selectCls}
+                  value={draft.country || "FR"}
+                  onChange={(e) => {
+                    const newCountry = e.target.value as "FR" | "CH" | "autre";
+                    setCountry(newCountry);
+                  }}
+                >
+                  <option value="FR">France</option>
+                  <option value="CH">Suisse</option>
+                  <option value="autre">Autre</option>
+                </select>
+              </Field>
+              <Field label="Marché principal" required>
+                <select
+                  className={selectCls}
+                  value={
+                    draft.allowedMarkets?.includes("FR") && draft.allowedMarkets?.includes("CH")
+                      ? "FR-CH"
+                      : draft.defaultMarket || "FR"
+                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "FR-CH") {
+                      setField("allowedMarkets", ["FR", "CH"]);
+                      setField("defaultMarket", draft.country === "CH" ? "CH" : "FR");
+                    } else {
+                      const country = val as "FR" | "CH";
+                      setField("defaultMarket", country);
+                      setField("allowedMarkets", [country]);
+                    }
+                  }}
+                >
+                  <option value="FR">France</option>
+                  <option value="CH">Suisse</option>
+                  <option value="FR-CH">Suisse-France</option>
+                </select>
+              </Field>
+              <Field label="Devise par défaut" hint="Déterminée automatiquement par le marché principal.">
+                <input
+                  className={`${inputCls} bg-[#FFFFFF] text-[#6B6B6B]`}
+                  value={
+                    draft.allowedMarkets?.includes("FR") && draft.allowedMarkets?.includes("CH")
+                      ? "EUR et CHF (Choix modifiable par document)"
+                      : draft.defaultMarket === "CH"
+                        ? "CHF (Franc suisse)"
+                        : "EUR (Euro)"
+                  }
+                  readOnly
+                />
+              </Field>
+            </div>
+          </Section>
+
+          {/* Col 2 — Coordonnées */}
+          <Section icon={Phone} title="Coordonnées" description="Ces informations apparaîtront sur vos documents.">
+            <div className="grid gap-4">
+              <Field label="Téléphone" required error={errors.phone}>
+                <div className="grid grid-cols-[132px_1fr] gap-2">
                   <select
-                    className={selectCls}
-                    value={draft.city || postalCities[0]}
-                    onChange={(e) => setField("city", e.target.value)}
+                    className={`${selectCls} px-3`}
+                    value={callingCodeOptions.some((option) => option.code === phone.prefix) ? phone.prefix : "+33"}
+                    onChange={(e) => setInternationalPhone(e.target.value, phone.local)}
+                    aria-label="Indicatif téléphonique"
                   >
-                    {postalCities.map((city) => (
-                      <option key={city} value={city}>
-                        {city}
+                    {callingCodeOptions.map((option) => (
+                      <option key={option.code} value={option.code}>
+                        {option.code} · {option.label}
                       </option>
                     ))}
                   </select>
-                ) : (
                   <input
                     className={inputCls}
-                    value={draft.city || ""}
-                    onChange={(e) => setField("city", e.target.value)}
+                    inputMode="tel"
+                    value={phoneLocal}
+                    onChange={(e) => setInternationalPhone(phone.prefix, e.target.value)}
+                    placeholder={phone.prefix === "+33" ? "6 12 34 56 78" : "Numéro"}
+                    aria-label="Numéro de téléphone"
                   />
-                )}
+                </div>
               </Field>
-            </div>
-            {isSwiss && (
-              <Field label="Canton" hint="Optionnel">
+              <Field label="Email" required error={errors.email}>
                 <input
                   className={inputCls}
-                  value={draft.swissCanton || ""}
-                  onChange={(e) => setField("swissCanton", e.target.value)}
-                  placeholder="Genève, Vaud, Valais…"
+                  type="email"
+                  value={draft.email || ""}
+                  onChange={(e) => setField("email", e.target.value)}
                 />
               </Field>
-            )}
-          </div>
-        </Section>
-      </div>
-
-      {/* Row 2 */}
-      <div className="grid gap-5 xl:grid-cols-3 mt-5">
-        {/* Informations légales */}
-        <Section
-          icon={Shield}
-          title="Informations légales"
-          description="Ces informations apparaîtront sur vos documents."
-        >
-          <div className="grid gap-4">
-            {draft.country === "FR" && (
-              <>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="SIREN" hint="9 chiffres">
-                    <input
-                      className={`${inputCls} bg-[#FFFFFF] text-[#6B6B6B]`}
-                      value={siren}
-                      readOnly
-                      aria-readonly="true"
-                    />
-                  </Field>
-                  <Field label="SIRET" required error={errors.siret} hint="14 chiffres">
-                    <div className="relative">
-                      <input
-                        className={inputCls}
-                        inputMode="numeric"
-                        value={draft.siret || ""}
-                        onChange={(e) => setField("siret", digitsOnly(e.target.value).slice(0, 14))}
-                      />
-                      {draft.siret && /^\d{14}$/.test(digitsOnly(draft.siret)) && !errors.siret && (
-                        <Check className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-[#2A9D8F]" />
-                      )}
-                    </div>
-                  </Field>
-                </div>
-                <Field label="TVA Intracommunautaire" hint="Optionnel" error={errors.tvaNumber}>
+              <Field label="Adresse" required error={errors.address}>
+                <input
+                  className={inputCls}
+                  value={draft.address || ""}
+                  onChange={(e) => setField("address", e.target.value)}
+                />
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label={legalFields.postalCodeLabel} required error={errors.postalCode}>
                   <input
                     className={inputCls}
-                    value={draft.tvaNumber || ""}
-                    onChange={(e) => setField("tvaNumber", e.target.value)}
+                    inputMode="numeric"
+                    value={draft.postalCode || ""}
+                    onChange={(e) => setPostalCode(e.target.value)}
                   />
                 </Field>
-              </>
-            )}
-
-            {draft.country === "CH" && (
-              <>
-                <Field label="Identifiant entreprise / IDE / UID" hint="Optionnel">
-                  <input
-                    className={inputCls}
-                    value={draft.swissUid || ""}
-                    onChange={(e) => setField("swissUid", e.target.value)}
-                    placeholder="CHE-123.456.789"
-                  />
-                </Field>
-                {draft.vatApplicable && (
-                  <Field label="Numéro TVA suisse" error={errors.swissVatNumber} hint="Optionnel">
+                <Field label="Ville" required error={errors.city}>
+                  {postalCities.length > 0 ? (
+                    <select
+                      className={selectCls}
+                      value={draft.city || postalCities[0]}
+                      onChange={(e) => setField("city", e.target.value)}
+                    >
+                      {postalCities.map((city) => (
+                        <option key={city} value={city}>
+                          {city}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
                     <input
                       className={inputCls}
-                      value={draft.swissVatNumber || ""}
-                      onChange={(e) => setField("swissVatNumber", e.target.value)}
-                      placeholder="CHE-123.456.789 TVA"
+                      value={draft.city || ""}
+                      onChange={(e) => setField("city", e.target.value)}
                     />
-                  </Field>
-                )}
-              </>
-            )}
-
-            {draft.country === "autre" && (
-              <>
-                <Field label="Identifiant entreprise" hint="Optionnel" error={errors.siret}>
-                  <input
-                    className={inputCls}
-                    value={draft.siret || ""}
-                    onChange={(e) => setField("siret", e.target.value)}
-                  />
+                  )}
                 </Field>
-                <Field label="Numéro TVA" hint="Optionnel" error={errors.tvaNumber}>
-                  <input
-                    className={inputCls}
-                    value={draft.tvaNumber || ""}
-                    onChange={(e) => setField("tvaNumber", e.target.value)}
-                  />
-                </Field>
-              </>
-            )}
-          </div>
-        </Section>
-
-        {/* TVA & documents */}
-        <Section icon={FileText} title="TVA & documents" description="Choisissez le régime de TVA pour vos documents.">
-          <div className="space-y-4">
-            <Field label="Régime TVA" required error={errors.vatApplicable}>
-              <select
-                className={selectCls}
-                value={
-                  draft.vatApplicable
-                    ? draft.vatRate === 8.1
-                      ? "vat_subject_ch"
-                      : draft.vatRate === 20
-                        ? "vat_subject_fr"
-                        : "vat_subject_other"
-                    : draft.tvaMention === "Exonéré de TVA"
-                      ? "exempt"
-                      : "not_subject_to_vat"
-                }
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === "vat_subject_fr") {
-                    setField("vatApplicable", true);
-                    setField("taxRegime", "vat_subject");
-                    setField("vatRate", 20);
-                    setField("tvaMention", "");
-                  } else if (val === "vat_subject_ch") {
-                    setField("vatApplicable", true);
-                    setField("taxRegime", "vat_subject");
-                    setField("vatRate", 8.1);
-                    setField("tvaMention", "");
-                  } else if (val === "vat_subject_other") {
-                    setField("vatApplicable", true);
-                    setField("taxRegime", "vat_subject");
-                    setField("vatRate", draft.vatRate || 20);
-                    setField("tvaMention", "");
-                  } else if (val === "exempt") {
-                    setField("vatApplicable", false);
-                    setField("taxRegime", "not_subject_to_vat");
-                    setField("tvaMention", "Exonéré de TVA");
-                  } else {
-                    setField("vatApplicable", false);
-                    setField("taxRegime", "not_subject_to_vat");
-                    setField(
-                      "tvaMention",
-                      isSwiss
-                        ? "TVA non facturée — entreprise non assujettie à la TVA suisse."
-                        : "TVA non applicable, art. 293 B du CGI",
-                    );
-                  }
-                  setSaved(false);
-                }}
-              >
-                <option value="vat_subject_fr">France (Assujetti à la TVA 20%)</option>
-                <option value="vat_subject_ch">Suisse (Assujetti à la TVA suisse 8.1%)</option>
-                <option value="not_subject_to_vat">Non assujetti (Franchise en base)</option>
-                <option value="exempt">Exonéré</option>
-                <option value="vat_subject_other">Autre / Personnalisé</option>
-              </select>
-            </Field>
-
-            {draft.vatApplicable && (
-              <Field label="Taux de TVA" error={errors.vatRate}>
-                <div className="grid grid-cols-3 gap-2">
-                  {(isSwiss ? [8.1, 3.8, 2.6] : [20, 10, 5.5]).map((rate) => (
-                    <button
-                      key={rate}
-                      type="button"
-                      onClick={() => {
-                        setField("vatRate", rate);
-                        setSaved(false);
-                      }}
-                      className={`h-11 rounded-[14px] border px-3 text-[13px] font-semibold transition ${
-                        Number(draft.vatRate ?? 20) === rate
-                          ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
-                          : "border-[#E8E8E5] bg-white text-[#1A1916] hover:border-[#DADADA]"
-                      }`}
-                    >
-                      {String(rate).replace(".", ",")} %
-                    </button>
-                  ))}
-                </div>
-                <input
-                  className={`${inputCls} mt-2`}
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={draft.vatRate ?? ""}
-                  onChange={(e) => {
-                    setField("vatRate", Number(e.target.value));
-                    setSaved(false);
-                  }}
-                  aria-label="Taux de TVA personnalisé"
-                  placeholder="Ex: 20"
-                />
-              </Field>
-            )}
-
-            {!draft.vatApplicable && (
-              <Field
-                label="Mention affichée sur les documents"
-                hint="Cette mention apparaîtra sur vos devis et factures."
-                error={errors.tvaMention}
-              >
-                <textarea
-                  className={areaCls}
-                  value={draft.tvaMention || ""}
-                  onChange={(e) => setField("tvaMention", e.target.value)}
-                  maxLength={120}
-                  rows={2}
-                />
-                <p className="text-right text-[10px] text-[#A3A3A3]">{(draft.tvaMention || "").length}/120</p>
-              </Field>
-            )}
-          </div>
-        </Section>
-
-        {/* Licence */}
-        <LicenseCard />
-      </div>
-
-      {/* Mises à jour application desktop — ligne dédiée plein largeur */}
-      <div className="mt-5">
-        <UpdateChecker />
-      </div>
-
-      {isSwiss && (
-        <div className="mt-5">
-          <Section
-            icon={CreditCard}
-            title="Paiements Suisse"
-            description="TWINT reste un moyen de paiement manuel : aucune API externe n'est connectée."
-          >
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field label="TWINT">
-                <button
-                  type="button"
-                  onClick={() => setField("twintEnabled", !draft.twintEnabled)}
-                  className={`h-11 w-full rounded-[14px] border px-4 text-left text-[13px] font-semibold transition ${
-                    draft.twintEnabled
-                      ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
-                      : "border-[#E8E8E5] bg-white text-[#6B6B6B]"
-                  }`}
-                >
-                  {draft.twintEnabled ? "TWINT activé" : "Activer TWINT"}
-                </button>
-              </Field>
-              <Field label="Lien TWINT" hint="Optionnel">
-                <input
-                  className={inputCls}
-                  value={draft.twintPaymentLink || ""}
-                  onChange={(e) => setField("twintPaymentLink", e.target.value)}
-                  placeholder="https://..."
-                />
-              </Field>
-              <Field label="QR code TWINT / image" hint="URL ou image encodée, optionnel">
-                <input
-                  className={inputCls}
-                  value={draft.twintQrCode || ""}
-                  onChange={(e) => setField("twintQrCode", e.target.value)}
-                  placeholder="https://.../qr-twint.png"
-                />
-              </Field>
-              <div className="rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] p-4 text-[12px] leading-relaxed text-[#6B6B6B]">
-                Moyens proposés : Espèces · TWINT · Carte externe · Virement · Autre.
               </div>
+              {isSwiss && (
+                <Field label="Canton" hint="Optionnel">
+                  <input
+                    className={inputCls}
+                    value={draft.swissCanton || ""}
+                    onChange={(e) => setField("swissCanton", e.target.value)}
+                    placeholder="Genève, Vaud, Valais…"
+                  />
+                </Field>
+              )}
             </div>
           </Section>
         </div>
-      )}
+      ) : null}
+
+      {activeGroup === "horaires" ? (
+        <div className="max-w-5xl">
+          <BusinessHoursEditor
+            value={draft.weeklyHours}
+            onChange={(weeklyHours) => {
+              setDraft((current) => ({
+                ...current,
+                weeklyHours,
+                businessHours: formatWorkshopWeeklyHours(weeklyHours),
+              }));
+              setSaved(false);
+            }}
+          />
+          <div className="mt-4 rounded-[16px] border border-[#CDEAE5] bg-[#F2FBF9] px-4 py-3 text-sm text-[#245F57]">
+            Les rendez-vous du jour restent proposés tant que l'heure du créneau n'est pas passée. Les pauses et jours
+            fermés sont automatiquement retirés du widget.
+          </div>
+        </div>
+      ) : null}
+
+      {/* Row 2 */}
+      {activeGroup === "legal" ? (
+        <>
+          <div className="grid gap-5 xl:grid-cols-3 mt-5">
+            {/* Informations légales */}
+            <Section
+              icon={Shield}
+              title="Informations légales"
+              description="Ces informations apparaîtront sur vos documents."
+            >
+              <div className="grid gap-4">
+                {draft.country === "FR" && (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field label="SIREN" hint="9 chiffres">
+                        <input
+                          className={`${inputCls} bg-[#FFFFFF] text-[#6B6B6B]`}
+                          value={siren}
+                          readOnly
+                          aria-readonly="true"
+                        />
+                      </Field>
+                      <Field label="SIRET" required error={errors.siret} hint="14 chiffres">
+                        <div className="relative">
+                          <input
+                            className={inputCls}
+                            inputMode="numeric"
+                            value={draft.siret || ""}
+                            onChange={(e) => setField("siret", digitsOnly(e.target.value).slice(0, 14))}
+                          />
+                          {draft.siret && /^\d{14}$/.test(digitsOnly(draft.siret)) && !errors.siret && (
+                            <Check className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-[#2A9D8F]" />
+                          )}
+                        </div>
+                      </Field>
+                    </div>
+                    <Field label="TVA Intracommunautaire" hint="Optionnel" error={errors.tvaNumber}>
+                      <input
+                        className={inputCls}
+                        value={draft.tvaNumber || ""}
+                        onChange={(e) => setField("tvaNumber", e.target.value)}
+                      />
+                    </Field>
+                  </>
+                )}
+
+                {draft.country === "CH" && (
+                  <>
+                    <Field label="Identifiant entreprise / IDE / UID" hint="Optionnel">
+                      <input
+                        className={inputCls}
+                        value={draft.swissUid || ""}
+                        onChange={(e) => setField("swissUid", e.target.value)}
+                        placeholder="CHE-123.456.789"
+                      />
+                    </Field>
+                    {draft.vatApplicable && (
+                      <Field label="Numéro TVA suisse" error={errors.swissVatNumber} hint="Optionnel">
+                        <input
+                          className={inputCls}
+                          value={draft.swissVatNumber || ""}
+                          onChange={(e) => setField("swissVatNumber", e.target.value)}
+                          placeholder="CHE-123.456.789 TVA"
+                        />
+                      </Field>
+                    )}
+                  </>
+                )}
+
+                {draft.country === "autre" && (
+                  <>
+                    <Field label="Identifiant entreprise" hint="Optionnel" error={errors.siret}>
+                      <input
+                        className={inputCls}
+                        value={draft.siret || ""}
+                        onChange={(e) => setField("siret", e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Numéro TVA" hint="Optionnel" error={errors.tvaNumber}>
+                      <input
+                        className={inputCls}
+                        value={draft.tvaNumber || ""}
+                        onChange={(e) => setField("tvaNumber", e.target.value)}
+                      />
+                    </Field>
+                  </>
+                )}
+              </div>
+            </Section>
+
+            {/* TVA & documents */}
+            <Section
+              icon={FileText}
+              title="TVA & documents"
+              description="Choisissez le régime de TVA pour vos documents."
+            >
+              <div className="space-y-4">
+                <Field label="Régime TVA" required error={errors.vatApplicable}>
+                  <select
+                    className={selectCls}
+                    value={
+                      draft.vatApplicable
+                        ? draft.vatRate === 8.1
+                          ? "vat_subject_ch"
+                          : draft.vatRate === 20
+                            ? "vat_subject_fr"
+                            : "vat_subject_other"
+                        : draft.tvaMention === "Exonéré de TVA"
+                          ? "exempt"
+                          : "not_subject_to_vat"
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "vat_subject_fr") {
+                        setField("vatApplicable", true);
+                        setField("taxRegime", "vat_subject");
+                        setField("vatRate", 20);
+                        setField("tvaMention", "");
+                      } else if (val === "vat_subject_ch") {
+                        setField("vatApplicable", true);
+                        setField("taxRegime", "vat_subject");
+                        setField("vatRate", 8.1);
+                        setField("tvaMention", "");
+                      } else if (val === "vat_subject_other") {
+                        setField("vatApplicable", true);
+                        setField("taxRegime", "vat_subject");
+                        setField("vatRate", draft.vatRate || 20);
+                        setField("tvaMention", "");
+                      } else if (val === "exempt") {
+                        setField("vatApplicable", false);
+                        setField("taxRegime", "not_subject_to_vat");
+                        setField("tvaMention", "Exonéré de TVA");
+                      } else {
+                        setField("vatApplicable", false);
+                        setField("taxRegime", "not_subject_to_vat");
+                        setField(
+                          "tvaMention",
+                          isSwiss
+                            ? "TVA non facturée — entreprise non assujettie à la TVA suisse."
+                            : "TVA non applicable, art. 293 B du CGI",
+                        );
+                      }
+                      setSaved(false);
+                    }}
+                  >
+                    <option value="vat_subject_fr">France (Assujetti à la TVA 20%)</option>
+                    <option value="vat_subject_ch">Suisse (Assujetti à la TVA suisse 8.1%)</option>
+                    <option value="not_subject_to_vat">Non assujetti (Franchise en base)</option>
+                    <option value="exempt">Exonéré</option>
+                    <option value="vat_subject_other">Autre / Personnalisé</option>
+                  </select>
+                </Field>
+
+                {draft.vatApplicable && (
+                  <Field label="Taux de TVA" error={errors.vatRate}>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(isSwiss ? [8.1, 3.8, 2.6] : [20, 10, 5.5]).map((rate) => (
+                        <button
+                          key={rate}
+                          type="button"
+                          onClick={() => {
+                            setField("vatRate", rate);
+                            setSaved(false);
+                          }}
+                          className={`h-11 rounded-[14px] border px-3 text-[13px] font-semibold transition ${
+                            Number(draft.vatRate ?? 20) === rate
+                              ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
+                              : "border-[#E8E8E5] bg-white text-[#1A1916] hover:border-[#DADADA]"
+                          }`}
+                        >
+                          {String(rate).replace(".", ",")} %
+                        </button>
+                      ))}
+                    </div>
+                    <input
+                      className={`${inputCls} mt-2`}
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={draft.vatRate ?? ""}
+                      onChange={(e) => {
+                        setField("vatRate", Number(e.target.value));
+                        setSaved(false);
+                      }}
+                      aria-label="Taux de TVA personnalisé"
+                      placeholder="Ex: 20"
+                    />
+                  </Field>
+                )}
+
+                {!draft.vatApplicable && (
+                  <Field
+                    label="Mention affichée sur les documents"
+                    hint="Cette mention apparaîtra sur vos devis et factures."
+                    error={errors.tvaMention}
+                  >
+                    <textarea
+                      className={areaCls}
+                      value={draft.tvaMention || ""}
+                      onChange={(e) => setField("tvaMention", e.target.value)}
+                      maxLength={120}
+                      rows={2}
+                    />
+                    <p className="text-right text-[10px] text-[#A3A3A3]">{(draft.tvaMention || "").length}/120</p>
+                  </Field>
+                )}
+              </div>
+            </Section>
+
+            {/* Licence */}
+            <LicenseCard />
+          </div>
+
+          {/* Mises à jour application desktop — ligne dédiée plein largeur */}
+          <div className="mt-5">
+            <UpdateChecker />
+          </div>
+
+          {isSwiss && (
+            <div className="mt-5">
+              <Section
+                icon={CreditCard}
+                title="Paiements Suisse"
+                description="TWINT reste un moyen de paiement manuel : aucune API externe n'est connectée."
+              >
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="TWINT">
+                    <button
+                      type="button"
+                      onClick={() => setField("twintEnabled", !draft.twintEnabled)}
+                      className={`h-11 w-full rounded-[14px] border px-4 text-left text-[13px] font-semibold transition ${
+                        draft.twintEnabled
+                          ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
+                          : "border-[#E8E8E5] bg-white text-[#6B6B6B]"
+                      }`}
+                    >
+                      {draft.twintEnabled ? "TWINT activé" : "Activer TWINT"}
+                    </button>
+                  </Field>
+                  <Field label="Lien TWINT" hint="Optionnel">
+                    <input
+                      className={inputCls}
+                      value={draft.twintPaymentLink || ""}
+                      onChange={(e) => setField("twintPaymentLink", e.target.value)}
+                      placeholder="https://..."
+                    />
+                  </Field>
+                  <Field label="QR code TWINT / image" hint="URL ou image encodée, optionnel">
+                    <input
+                      className={inputCls}
+                      value={draft.twintQrCode || ""}
+                      onChange={(e) => setField("twintQrCode", e.target.value)}
+                      placeholder="https://.../qr-twint.png"
+                    />
+                  </Field>
+                  <div className="rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] p-4 text-[12px] leading-relaxed text-[#6B6B6B]">
+                    Moyens proposés : Espèces · TWINT · Carte externe · Virement · Autre.
+                  </div>
+                </div>
+              </Section>
+            </div>
+          )}
+        </>
+      ) : null}
 
       {/* Row 3 */}
-      <div className="grid gap-5 xl:grid-cols-3 mt-5">
-        {/* Sauvegarde */}
-        <Section
-          icon={Download}
-          title="Sauvegarde & export"
-          description="Sauvegardez vos données ou exportez vos paramètres."
-        >
-          <div className="grid gap-3">
-            <SecondaryButton className="h-10 w-full" onClick={exportJson} disabled={!canExportData}>
-              <Download className="size-4" /> Exporter les paramètres
-            </SecondaryButton>
-            <input
-              ref={importRef}
-              type="file"
-              accept=".json,application/json"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) void handleImport(file);
-              }}
-            />
-            <SecondaryButton
-              className="h-10 w-full"
-              onClick={() => importRef.current?.click()}
-              disabled={!canImportData}
-            >
-              <Upload className="size-4" /> Voir les sauvegardes
-            </SecondaryButton>
-          </div>
-          <CloudSyncBlock />
-          <InstallAppLink />
-          <button
-            type="button"
-            className="mt-3 flex items-center gap-1.5 text-[12px] text-[#DC3545]/60 hover:text-[#DC3545] transition-colors"
-            disabled={!canBackupData}
-            onClick={() => {
-              if (!store.requirePermission("canBackupData", "Réinitialiser les données")) {
-                toast.error("Réinitialisation réservée au gérant/admin.");
-                return;
-              }
-              if (window.confirm("Cette action efface les données de l'atelier. Elle est irréversible.")) {
-                store.resetDemo();
-                store.setOnboardingCompleted(false);
-                toast.success("Données réinitialisées.");
-              }
-            }}
+      {activeGroup === "documents" ? (
+        <div className="grid gap-5 xl:grid-cols-3 mt-5">
+          {/* Sauvegarde */}
+          <Section
+            icon={Download}
+            title="Sauvegarde & export"
+            description="Sauvegardez vos données ou exportez vos paramètres."
           >
-            <AlertTriangle className="size-3" /> Réinitialiser les données
-          </button>
-        </Section>
-
-        {/* Documents — préfixes & conditions */}
-        <Section icon={FileText} title="Numérotation & conditions" description="Préfixes et numéros de vos documents.">
-          <div className="grid gap-3 grid-cols-2">
-            <Field label="Préfixe réparation">
+            <div className="grid gap-3">
+              <SecondaryButton className="h-10 w-full" onClick={exportJson} disabled={!canExportData}>
+                <Download className="size-4" /> Exporter les paramètres
+              </SecondaryButton>
               <input
-                className={inputCls}
-                value={draft.repairPrefix || "REP"}
-                onChange={(e) => setField("repairPrefix", e.target.value)}
+                ref={importRef}
+                type="file"
+                accept=".json,application/json"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void handleImport(file);
+                }}
               />
-            </Field>
-            <Field label="N° suivant">
-              <input
-                className={inputCls}
-                type="number"
-                min={1}
-                value={String(draft.nextRepairNumber || 1)}
-                onChange={(e) => setField("nextRepairNumber", Number(e.target.value) || 1)}
-              />
-            </Field>
-            <Field label="Préfixe devis">
-              <input
-                className={inputCls}
-                value={draft.quotePrefix || "DEV"}
-                onChange={(e) => setField("quotePrefix", e.target.value)}
-              />
-            </Field>
-            <Field label="N° suivant">
-              <input
-                className={inputCls}
-                type="number"
-                min={1}
-                value={String(draft.nextQuoteNumber || 1)}
-                onChange={(e) => setField("nextQuoteNumber", Number(e.target.value) || 1)}
-              />
-            </Field>
-            <Field label="Préfixe facture">
-              <input
-                className={inputCls}
-                value={draft.invoicePrefix || "FAC"}
-                onChange={(e) => setField("invoicePrefix", e.target.value)}
-              />
-            </Field>
-            <Field label="N° suivant">
-              <input
-                className={inputCls}
-                type="number"
-                min={1}
-                value={String(draft.nextInvoiceNumber || 1)}
-                onChange={(e) => setField("nextInvoiceNumber", Number(e.target.value) || 1)}
-              />
-            </Field>
-            <Field label="Préfixe reçu">
-              <input
-                className={inputCls}
-                value={draft.receiptPrefix || "REC"}
-                onChange={(e) => setField("receiptPrefix", e.target.value)}
-              />
-            </Field>
-            <Field label="N° suivant">
-              <input
-                className={inputCls}
-                type="number"
-                min={1}
-                value={String(draft.nextReceiptNumber || 1)}
-                onChange={(e) => setField("nextReceiptNumber", Number(e.target.value) || 1)}
-              />
-            </Field>
-          </div>
-          <div className="mt-4 grid gap-3">
-            <Field label="Conditions devis">
-              <textarea
-                className={areaCls}
-                value={draft.quoteTerms || ""}
-                onChange={(e) => setField("quoteTerms", e.target.value)}
-                rows={2}
-              />
-            </Field>
-            <Field label="Conditions facture">
-              <textarea
-                className={areaCls}
-                value={draft.invoiceTerms || ""}
-                onChange={(e) => setField("invoiceTerms", e.target.value)}
-                rows={2}
-              />
-            </Field>
-            <Field
-              label="Conditions bon de prise en charge"
-              hint="Texte libre ajouté aux mentions du bon de prise en charge."
+              <SecondaryButton
+                className="h-10 w-full"
+                onClick={() => importRef.current?.click()}
+                disabled={!canImportData}
+              >
+                <Upload className="size-4" /> Voir les sauvegardes
+              </SecondaryButton>
+            </div>
+            <CloudSyncBlock />
+            <InstallAppLink />
+            <button
+              type="button"
+              className="mt-3 flex items-center gap-1.5 text-[12px] text-[#DC3545]/60 hover:text-[#DC3545] transition-colors"
+              disabled={!canBackupData}
+              onClick={() => {
+                if (!store.requirePermission("canBackupData", "Réinitialiser les données")) {
+                  toast.error("Réinitialisation réservée au gérant/admin.");
+                  return;
+                }
+                if (window.confirm("Cette action efface les données de l'atelier. Elle est irréversible.")) {
+                  store.resetDemo();
+                  store.setOnboardingCompleted(false);
+                  toast.success("Données réinitialisées.");
+                }
+              }}
             >
-              <textarea
-                className={areaCls}
-                value={draft.intakeTerms || ""}
-                onChange={(e) => setField("intakeTerms", e.target.value)}
-                rows={3}
-              />
-            </Field>
-            <Field label="Pied de page document">
-              <textarea
-                className={areaCls}
-                value={draft.documentFooter || ""}
-                onChange={(e) => setField("documentFooter", e.target.value)}
-                rows={2}
-              />
-            </Field>
-          </div>
-        </Section>
-      </div>
+              <AlertTriangle className="size-3" /> Réinitialiser les données
+            </button>
+          </Section>
+
+          {/* Documents — préfixes & conditions */}
+          <Section
+            icon={FileText}
+            title="Numérotation & conditions"
+            description="Préfixes et numéros de vos documents."
+          >
+            <div className="grid gap-3 grid-cols-2">
+              <Field label="Préfixe réparation">
+                <input
+                  className={inputCls}
+                  value={draft.repairPrefix || "REP"}
+                  onChange={(e) => setField("repairPrefix", e.target.value)}
+                />
+              </Field>
+              <Field label="N° suivant">
+                <input
+                  className={inputCls}
+                  type="number"
+                  min={1}
+                  value={String(draft.nextRepairNumber || 1)}
+                  onChange={(e) => setField("nextRepairNumber", Number(e.target.value) || 1)}
+                />
+              </Field>
+              <Field label="Préfixe devis">
+                <input
+                  className={inputCls}
+                  value={draft.quotePrefix || "DEV"}
+                  onChange={(e) => setField("quotePrefix", e.target.value)}
+                />
+              </Field>
+              <Field label="N° suivant">
+                <input
+                  className={inputCls}
+                  type="number"
+                  min={1}
+                  value={String(draft.nextQuoteNumber || 1)}
+                  onChange={(e) => setField("nextQuoteNumber", Number(e.target.value) || 1)}
+                />
+              </Field>
+              <Field label="Préfixe facture">
+                <input
+                  className={inputCls}
+                  value={draft.invoicePrefix || "FAC"}
+                  onChange={(e) => setField("invoicePrefix", e.target.value)}
+                />
+              </Field>
+              <Field label="N° suivant">
+                <input
+                  className={inputCls}
+                  type="number"
+                  min={1}
+                  value={String(draft.nextInvoiceNumber || 1)}
+                  onChange={(e) => setField("nextInvoiceNumber", Number(e.target.value) || 1)}
+                />
+              </Field>
+              <Field label="Préfixe reçu">
+                <input
+                  className={inputCls}
+                  value={draft.receiptPrefix || "REC"}
+                  onChange={(e) => setField("receiptPrefix", e.target.value)}
+                />
+              </Field>
+              <Field label="N° suivant">
+                <input
+                  className={inputCls}
+                  type="number"
+                  min={1}
+                  value={String(draft.nextReceiptNumber || 1)}
+                  onChange={(e) => setField("nextReceiptNumber", Number(e.target.value) || 1)}
+                />
+              </Field>
+            </div>
+            <div className="mt-4 grid gap-3">
+              <Field label="Conditions devis">
+                <textarea
+                  className={areaCls}
+                  value={draft.quoteTerms || ""}
+                  onChange={(e) => setField("quoteTerms", e.target.value)}
+                  rows={2}
+                />
+              </Field>
+              <Field label="Conditions facture">
+                <textarea
+                  className={areaCls}
+                  value={draft.invoiceTerms || ""}
+                  onChange={(e) => setField("invoiceTerms", e.target.value)}
+                  rows={2}
+                />
+              </Field>
+              <Field
+                label="Conditions bon de prise en charge"
+                hint="Texte libre ajouté aux mentions du bon de prise en charge."
+              >
+                <textarea
+                  className={areaCls}
+                  value={draft.intakeTerms || ""}
+                  onChange={(e) => setField("intakeTerms", e.target.value)}
+                  rows={3}
+                />
+              </Field>
+              <Field label="Pied de page document">
+                <textarea
+                  className={areaCls}
+                  value={draft.documentFooter || ""}
+                  onChange={(e) => setField("documentFooter", e.target.value)}
+                  rows={2}
+                />
+              </Field>
+            </div>
+          </Section>
+        </div>
+      ) : null}
+
+      {activeGroup === "integrations" ? <ExternalPaymentIntegrations /> : null}
 
       {/* Sidebar help */}
       <div className="mt-6 rounded-[16px] border border-[#FFFFFF] bg-[#FFFFFF] px-5 py-4 flex items-start gap-3 max-w-sm">

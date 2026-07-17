@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { weeklyHoursToScheduleConfig } from "@/lib/workshop-hours";
+
 type CatalogStockLink = {
   publicId?: unknown;
   stock?: { mode?: unknown };
@@ -65,7 +67,8 @@ export async function syncWidgetShopFromLicense(
   shopId: string,
   settings: Record<string, unknown>,
 ) {
-  const weeklyHours = parseWorkshopBusinessHours(settings.businessHours);
+  const structuredSchedule = settings.weeklyHours ? weeklyHoursToScheduleConfig(settings.weeklyHours) : null;
+  const weeklyHours = structuredSchedule?.weeklyHours || parseWorkshopBusinessHours(settings.businessHours);
   const current = await admin
     .from("shops")
     .select("address_config, schedule_config")
@@ -86,7 +89,13 @@ export async function syncWidgetShopFromLicense(
     commercial_name: String(settings.commercialName || settings.name || "").trim() || null,
     address_config: nextAddress,
   };
-  if (Object.keys(weeklyHours).length) patch.schedule_config = { ...currentSchedule, weeklyHours };
+  if (Object.keys(weeklyHours).length) {
+    patch.schedule_config = {
+      ...currentSchedule,
+      weeklyHours,
+      ...(structuredSchedule ? { breaks: structuredSchedule.breaks } : {}),
+    };
+  }
   const { error } = await admin.from("shops").update(patch).eq("tenant_id", tenantId).eq("id", shopId);
   if (error) throw error;
 }

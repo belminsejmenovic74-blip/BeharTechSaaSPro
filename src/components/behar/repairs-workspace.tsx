@@ -134,9 +134,9 @@ function nextStatusLabel(from: RepairStatus): string | null {
   }
 }
 
-function invoiceUiStatus(inv: Invoice | undefined): "À créer" | "Créée" | "Payée" {
+function invoiceUiStatus(inv: Invoice | undefined): "À créer" | "Créée" | "Émise" {
   if (!inv) return "À créer";
-  if (inv.status === "Payée") return "Payée";
+  if (inv.status === "Envoyée" || inv.status === "Payée") return "Émise";
   return "Créée";
 }
 
@@ -164,7 +164,6 @@ export function RepairsWorkspace() {
     setSelected,
     convertQuoteToInvoice,
     addInvoice,
-    markInvoicePaid,
     addPartToRepair,
     addSaleLinesToRepair,
     markRepairSaleLineDelivered,
@@ -194,7 +193,6 @@ export function RepairsWorkspace() {
       setSelected: s.setSelected,
       convertQuoteToInvoice: s.convertQuoteToInvoice,
       addInvoice: s.addInvoice,
-      markInvoicePaid: s.markInvoicePaid,
       addPartToRepair: s.addPartToRepair,
       addSaleLinesToRepair: s.addSaleLinesToRepair,
       markRepairSaleLineDelivered: s.markRepairSaleLineDelivered,
@@ -493,40 +491,19 @@ export function RepairsWorkspace() {
     if (id) {
       setSelected("invoice", id);
       router.push("/dashboard/factures");
-      toast.success("Facture créée. Le paiement est en attente.");
+      toast.success("Facture créée.");
     } else {
       toast.error("Impossible de créer la facture.");
     }
   };
 
-  const markPaidAction = (method?: PaymentMethod) => {
+  const markPaidAction = (_method?: PaymentMethod) => {
     if (!selectedRepair) return;
-    if (!method) {
-      toast.error("Choisissez le moyen de paiement.");
-      return;
-    }
-    if (!primaryInvoice?.id) {
-      const id = createInvoiceFromRepair(selectedRepair.id);
-      if (!id) {
-        toast.error("Ajoutez un tarif avant de créer une facture.");
-        return;
-      }
-      const pid = markInvoicePaid(id, method, paymentNote);
-      if (pid) {
-        toast.success("Règlement externe enregistré.");
-        setPaymentNote("");
-      } else toast.error("Règlement externe impossible pour le moment.");
-      return;
-    }
-    if (primaryInvoice.status === "Payée") {
-      toast.info("Cette réparation est déjà réglée.");
-      return;
-    }
-    const pid = markInvoicePaid(primaryInvoice.id, method, paymentNote);
-    if (pid) {
-      toast.success("Règlement externe enregistré.");
-      setPaymentNote("");
-    } else toast.error("Règlement externe impossible pour le moment.");
+    const invoiceId = primaryInvoice?.id || createInvoiceFromRepair(selectedRepair.id);
+    if (!invoiceId) return toast.error("Finalisez une facture avant de créer la demande.");
+    setSelected("invoice", invoiceId);
+    router.push("/dashboard/factures");
+    toast.info("Créez la demande Stripe ou SumUp depuis la facture.");
   };
 
   const normalizePartQuantity = (value: number) => {
@@ -661,11 +638,10 @@ export function RepairsWorkspace() {
         };
       }
 
-      if (primaryInvoice.status !== "Payée" && resteAPayer > 0) {
+      if (primaryInvoice.status !== "Annulée") {
         return {
-          label: `Marquer payée (${formatRepairAmount(selectedRepair, resteAPayer)})`,
+          label: `Créer une demande (${formatRepairAmount(selectedRepair, totalClientAmount)})`,
           onClick: () => markPaidAction(repairPayMethod),
-          disabled: !repairPayMethod,
         };
       }
 
@@ -1290,7 +1266,7 @@ export function RepairsWorkspace() {
                     </div>
                     {resteAPayer > 0 ? (
                       <p className="mt-3 text-[#6B6B6B] text-[13px]">
-                        Reste à payer{" "}
+                        Total TTC facturé{" "}
                         <span className="font-semibold text-[#2A9D8F]">
                           {formatRepairAmount(selectedRepair, resteAPayer)}
                         </span>

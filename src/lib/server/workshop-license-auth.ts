@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getCurrentAppSession } from "@/lib/auth/app-session";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { isLicenseActive } from "@/lib/server/verify-license";
 
@@ -11,6 +12,10 @@ export async function authorizeWorkshopLicense(workshopId: string, licenseKey: s
   if (!UUID_RE.test(workshopId) || !(await isLicenseActive(licenseKey))) {
     return NextResponse.json({ error: "Accès atelier refusé." }, { status: 401 });
   }
+  const appSession = await getCurrentAppSession();
+  if (appSession && appSession.workshopId !== workshopId) {
+    return NextResponse.json({ error: "Session entreprise invalide." }, { status: 403 });
+  }
   const normalizedLicense = licenseKey.trim().toUpperCase();
   const { data, error } = await admin
     .from("workshop_snapshots")
@@ -21,5 +26,5 @@ export async function authorizeWorkshopLicense(workshopId: string, licenseKey: s
   if (!data || data.workshop_id !== workshopId) {
     return NextResponse.json({ error: "Accès atelier refusé." }, { status: 403 });
   }
-  return { admin, workshopId };
+  return { admin, workshopId, session: appSession };
 }

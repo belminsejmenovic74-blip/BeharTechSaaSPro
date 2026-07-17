@@ -235,7 +235,15 @@ export async function handleSlots(request: Request, route: RouteParams) {
     ? publicServices(context.widget.published_config).find((entry) => entry.publicId === parsed.data.servicePublicId)
     : undefined;
   if (parsed.data.servicePublicId && !service) return publicError("not_found", 404, context.requestId);
-  const from = parsed.data.from || new Date().toISOString().slice(0, 10);
+  const shopTimezone = typeof shop.timezone === "string" && shop.timezone ? shop.timezone : "Europe/Paris";
+  const from =
+    parsed.data.from ||
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: shopTimezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
   const { data, error } = await context.admin.rpc("widget_available_slots", {
     p_widget_id: context.widget.id,
     p_shop_id: shop.id,

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/lib/auth/app-session", () => ({ getCurrentAppSession: vi.fn(async () => null) }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseAdmin: vi.fn() }));
 vi.mock("@/lib/server/verify-license", () => ({ isLicenseActive: vi.fn() }));
 

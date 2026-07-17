@@ -8,11 +8,16 @@
 
 import { useState } from "react";
 
-import { CatalogPicker } from "@/components/widget/catalog-picker";
-import { iconTargetForDevice, WidgetIcon } from "@/components/widget/widget-icon";
 import { useAsyncList } from "@/components/widget/use-catalog";
 import { deviceLabel, type StepContext, type WidgetDraft } from "@/components/widget/widget-state";
-import { OptionCard, StepShell, WidgetField, WidgetInput, WidgetNotice } from "@/components/widget/widget-primitives";
+import {
+  OptionCard,
+  StepShell,
+  WidgetField,
+  WidgetInput,
+  WidgetNotice,
+  WidgetSelect,
+} from "@/components/widget/widget-primitives";
 import { brandsForType, deviceTypeLabels, fold, modelsForBrand } from "@/lib/widget/global-catalog";
 
 // Fusion catalogue GLOBAL (large, capte la demande) ∪ éléments boutique (config),
@@ -108,79 +113,92 @@ export function DeviceStep({ ctx }: { ctx: StepContext }) {
         <WidgetNotice>Choisissez votre boutique pour découvrir les appareils et prestations disponibles.</WidgetNotice>
       ) : (
         <>
-          <WidgetField label="Catégorie" required>
-            <CatalogPicker
-              items={categoryItems}
-              loading={categoryItems.length === 0 && categories.loading}
-              error={categories.error}
-              onReload={categories.reload}
-              searchable={features.deviceSearch}
-              searchPlaceholder="Rechercher un type d’appareil"
-              value={draft.category}
-              isCustom={categoryOther}
-              allowOther={config.catalogPolicy.allowOutOfCatalog}
-              otherLabel="Autre (préciser)"
-              otherPlaceholder="Type d’appareil (ex : montre connectée)"
-              emptyHint="Aucun appareil publié pour cette boutique."
-              onSelect={(value) => {
-                setCategoryOtherLocal(false);
-                setBrandOtherLocal(false);
-                setModelOtherLocal(false);
-                patch({ category: value, brand: "", ...resetDownstream });
-              }}
-              onSelectOther={(value) => {
-                setBrandOtherLocal(false);
-                setModelOtherLocal(false);
-                patch({ category: value, brand: "", ...resetDownstream });
-              }}
-              onEnterOther={() => {
-                setCategoryOtherLocal(true);
-                setBrandOtherLocal(false);
-                setModelOtherLocal(false);
-                patch({ category: "", brand: "", ...resetDownstream });
-              }}
-              renderItemIcon={(item) => {
-                const target = iconTargetForDevice(item);
-                return target ? <WidgetIcon choice={config.icons[target]} /> : null;
-              }}
-            />
-          </WidgetField>
-
-          {draft.category ? (
-            <WidgetField label="Marque" hint={noBrandCategory ? "Marque facultative pour cette catégorie." : undefined}>
-              <CatalogPicker
-                items={brandItems}
-                loading={brandItems.length === 0 && brands.loading}
-                error={brands.error}
-                onReload={brands.reload}
-                searchable={features.deviceSearch}
-                searchPlaceholder="Rechercher une marque"
-                value={draft.brand}
-                isCustom={brandOther}
-                allowOther={config.catalogPolicy.allowOutOfCatalog}
-                otherLabel="Autre marque"
-                otherPlaceholder="Saisissez la marque"
-                onSelect={(value) => {
+          <div className="grid gap-3 rounded-[calc(var(--w-radius)+4px)] border border-[var(--w-border)] bg-white p-3 shadow-[0_8px_28px_rgba(17,17,17,.04)] lg:grid-cols-3">
+            <WidgetField label="Quel appareil ?" required>
+              <WidgetSelect
+                aria-label="Quel appareil ?"
+                value={categoryOther ? "__other__" : draft.category}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  const other = value === "__other__";
+                  setCategoryOtherLocal(other);
                   setBrandOtherLocal(false);
                   setModelOtherLocal(false);
-                  patch({ brand: value, ...resetDownstream });
+                  patch({ category: other ? "" : value, brand: "", ...resetDownstream });
                 }}
-                onSelectOther={(value) => {
-                  setModelOtherLocal(false);
-                  patch({ brand: value, ...resetDownstream });
-                }}
-                onEnterOther={() => {
-                  setBrandOtherLocal(true);
-                  setModelOtherLocal(false);
-                  patch({ brand: "", ...resetDownstream });
-                }}
-              />
+              >
+                <option value="">Choisissez un appareil</option>
+                {categoryItems.map((item) => (
+                  <option value={item} key={item}>
+                    {item}
+                  </option>
+                ))}
+                {config.catalogPolicy.allowOutOfCatalog ? <option value="__other__">Autre appareil</option> : null}
+              </WidgetSelect>
+              {categoryOther ? (
+                <WidgetInput
+                  value={draft.category}
+                  onChange={(event) => patch({ category: event.target.value, brand: "", ...resetDownstream })}
+                  placeholder="Type d’appareil"
+                />
+              ) : null}
             </WidgetField>
-          ) : null}
 
-          {draft.category && (draft.brand || brandOther || noBrandCategory) ? (
-            <WidgetField label="Modèle" required>
+            <WidgetField label="Quelle marque ?">
+              <WidgetSelect
+                aria-label="Quelle marque ?"
+                disabled={!draft.category}
+                value={brandOther ? "__other__" : draft.brand}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  const other = value === "__other__";
+                  setBrandOtherLocal(other);
+                  setModelOtherLocal(false);
+                  patch({ brand: other ? "" : value, ...resetDownstream });
+                }}
+              >
+                <option value="">{draft.category ? "Choisissez une marque" : "Choisissez d’abord un appareil"}</option>
+                {brandItems.map((item) => (
+                  <option value={item} key={item}>
+                    {item}
+                  </option>
+                ))}
+                {config.catalogPolicy.allowOutOfCatalog ? <option value="__other__">Autre marque</option> : null}
+              </WidgetSelect>
               {brandOther ? (
+                <WidgetInput
+                  value={draft.brand}
+                  onChange={(event) => patch({ brand: event.target.value, ...resetDownstream })}
+                  placeholder="Saisissez la marque"
+                />
+              ) : null}
+            </WidgetField>
+
+            <WidgetField label="Quel modèle ?" required>
+              <WidgetSelect
+                aria-label="Quel modèle ?"
+                disabled={!draft.category || (!draft.brand && !brandOther && !noBrandCategory)}
+                value={modelOther ? "__other__" : draft.model}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  const other = value === "__other__";
+                  setModelOtherLocal(other);
+                  patch({ model: other ? "" : value, issues: [], services: {}, issueDescription: "" });
+                }}
+              >
+                <option value="">
+                  {draft.brand || brandOther || noBrandCategory
+                    ? "Choisissez un modèle"
+                    : "Choisissez d’abord une marque"}
+                </option>
+                {modelItems.map((item) => (
+                  <option value={item} key={item}>
+                    {item}
+                  </option>
+                ))}
+                {config.catalogPolicy.allowUnconfiguredModels ? <option value="__other__">Autre modèle</option> : null}
+              </WidgetSelect>
+              {modelOther ? (
                 <WidgetInput
                   value={draft.model}
                   onChange={(event) =>
@@ -188,32 +206,9 @@ export function DeviceStep({ ctx }: { ctx: StepContext }) {
                   }
                   placeholder="Saisissez le modèle"
                 />
-              ) : (
-                <CatalogPicker
-                  items={modelItems}
-                  loading={modelItems.length === 0 && models.loading}
-                  error={models.error}
-                  onReload={models.reload}
-                  searchable={features.deviceSearch}
-                  searchPlaceholder="Rechercher un modèle"
-                  value={draft.model}
-                  isCustom={modelOther}
-                  allowOther={config.catalogPolicy.allowUnconfiguredModels}
-                  otherLabel="Autre modèle"
-                  otherPlaceholder="Saisissez le modèle"
-                  onSelect={(value) => {
-                    setModelOtherLocal(false);
-                    patch({ model: value, issues: [], services: {}, issueDescription: "" });
-                  }}
-                  onSelectOther={(value) => patch({ model: value, issues: [], services: {}, issueDescription: "" })}
-                  onEnterOther={() => {
-                    setModelOtherLocal(true);
-                    patch({ model: "", issues: [], services: {}, issueDescription: "" });
-                  }}
-                />
-              )}
+              ) : null}
             </WidgetField>
-          ) : null}
+          </div>
 
           {draft.model.trim() ? (
             <p className="text-sm text-[var(--w-muted)]">

@@ -149,7 +149,8 @@ export type WidgetFeatureKey =
   | "comment"
   | "photos"
   | "warranty"
-  | "payments";
+  | "payments"
+  | "summarySidebar";
 
 export type WidgetFeatures = Partial<Record<WidgetFeatureKey, boolean>>;
 

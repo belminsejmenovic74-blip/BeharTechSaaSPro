@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { usePathname, useRouter } from "next/navigation";
 
@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { type CurrentUser, useBeharStore } from "@/lib/behar-store";
 import { safeReturnTo } from "@/lib/stock-label-url";
 import { cn } from "@/lib/utils";
+
+const PIN_SLOTS = ["premier", "deuxième", "troisième", "quatrième"] as const;
 
 /**
  * Garde de session à deux étapes :
@@ -53,10 +55,7 @@ export function PinLoginGate({ children }: Readonly<{ children: ReactNode }>) {
   if (!validSession) {
     // Le gérant principal hérite du nom configuré dans Atelier si le compte
     // utilisateur n'a pas été personnalisé (encore "Gérant" par défaut).
-    const managerDisplayName =
-      (workshopInfo?.managerSignature && workshopInfo.managerSignature.trim()) ||
-      (workshopInfo?.name && workshopInfo.name.trim()) ||
-      "";
+    const managerDisplayName = workshopInfo?.managerSignature?.trim() || workshopInfo?.name?.trim() || "";
     const visibleUsers = users
       .filter((u) => u.active)
       .map((u) => {
@@ -75,7 +74,9 @@ export function PinLoginGate({ children }: Readonly<{ children: ReactNode }>) {
           if (result.ok) {
             const requestedReturnTo =
               typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("returnTo");
-            router.replace(safeReturnTo(requestedReturnTo, pathname || "/dashboard"));
+            // Après une connexion réussie, l'utilisateur revient là où il était
+            // (returnTo sûr) ou atterrit sur le portail d'accueil intermédiaire.
+            router.replace(safeReturnTo(requestedReturnTo, pathname || "/client"));
           }
           return result;
         }}
@@ -137,7 +138,7 @@ function roleSubtitle(role: string, displayName: string) {
 function avatarColor(role: string): string {
   if (role === "admin") return "bg-[#2A9D8F] text-white";
   if (role === "technician") return "bg-[#6366F1] text-white";
-  return "bg-[#FFFFFF] text-white";
+  return "bg-[#EAF6F4] text-[#167B70]";
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
@@ -152,11 +153,13 @@ function UserSelectorScreen({
   onSelect: (user: CurrentUser) => void;
 }>) {
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center bg-white px-5 py-10">
+    <div className="flex min-h-svh flex-col items-center justify-center overflow-x-hidden bg-[#FAFAF8] px-4 py-[max(2.5rem,env(safe-area-inset-top))] sm:px-5">
       <div className="w-full max-w-[480px]">
         {/* Header */}
-        <div className="mb-10 text-center">
-          <h1 className="font-bold text-[#1A1916] text-[44px] tracking-[-0.03em] leading-none">Bonjour</h1>
+        <div className="mb-8 text-center sm:mb-10">
+          <h1 className="font-bold text-[#1A1916] text-[38px] leading-none tracking-[-0.03em] sm:text-[44px]">
+            Bonjour
+          </h1>
           <p className="mt-3 text-[#6B6B6B] text-[15px]">Choisissez votre compte</p>
         </div>
 
@@ -169,7 +172,7 @@ function UserSelectorScreen({
                 key={user.id}
                 type="button"
                 onClick={() => onSelect(user)}
-                className="group flex items-center gap-4 rounded-[20px] border border-[#FFFFFF] bg-white px-4 py-4 text-left shadow-[0_1px_4px_rgba(26,25,22,0.04)] transition active:scale-[0.98] hover:border-[#DADADA] hover:shadow-[0_4px_16px_rgba(26,25,22,0.08)]"
+                className="group flex min-h-20 items-center gap-4 rounded-[18px] border border-[#E8E8E5] bg-white px-4 py-4 text-left shadow-[0_1px_4px_rgba(26,25,22,0.04)] outline-none transition active:scale-[0.98] hover:border-[#CFCFCB] hover:shadow-[0_4px_16px_rgba(26,25,22,0.08)] focus-visible:ring-3 focus-visible:ring-[#2A9D8F]/25"
               >
                 {/* Avatar */}
                 <span
@@ -213,6 +216,7 @@ function PinEntryScreen({
 }>) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string>("");
+  const submittingRef = useRef(false);
   const avatar = avatarColor(user.role);
   const roleGreetings = useBeharStore((s) => s.roleGreetings);
   // Locks one random greeting for this mount (doesn't change on every render/keystroke)
@@ -228,17 +232,26 @@ function PinEntryScreen({
     onSubmitRef.current = onSubmit;
   });
 
-  const submit = (value: string) => {
-    const result = onSubmitRef.current(value);
-    if (!result.ok) {
-      setError(result.reason === "disabled" ? "Ce compte est désactivé. Contactez le gérant." : "Code PIN incorrect.");
+  const submit = useCallback(
+    (value: string) => {
+      if (submittingRef.current || value.length !== 4) return;
+      submittingRef.current = true;
+      const result = onSubmitRef.current(value);
+      if (!result.ok) {
+        setError(
+          result.reason === "disabled" ? "Ce compte est désactivé. Contactez le gérant." : "Code PIN incorrect.",
+        );
+        setPin("");
+        submittingRef.current = false;
+        return;
+      }
+      setError("");
       setPin("");
-      return;
-    }
-    setError("");
-    setPin("");
-    toast.success(`Bienvenue, ${user.name} !`);
-  };
+      toast.success(`Bienvenue, ${user.name} !`);
+      submittingRef.current = false;
+    },
+    [user.name],
+  );
 
   // Auto-submit at exactly 4 digits — MUST be in useEffect, not inside setPin updater
   // to avoid "setState during render" error
@@ -246,13 +259,12 @@ function PinEntryScreen({
     if (pin.length === 4) {
       submit(pin);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pin]);
+  }, [pin, submit]);
 
   const onDigit = (digit: string) => {
     setError("");
     // Simple update — no side effects, no store calls inside setState
-    setPin((current) => (current.length < 6 ? current + digit : current));
+    setPin((current) => (current.length < 4 ? current + digit : current));
   };
 
   const onBackspace = () => {
@@ -266,13 +278,13 @@ function PinEntryScreen({
   };
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-white px-5 py-10">
+    <div className="flex min-h-svh items-center justify-center overflow-x-hidden bg-[#FAFAF8] px-4 py-[max(1.5rem,env(safe-area-inset-top))] sm:px-5 sm:py-10">
       <div className="w-full max-w-[380px]">
         {/* Back button */}
         <button
           type="button"
           onClick={onBack}
-          className="mb-6 flex items-center gap-1.5 text-[#6B6B6B] text-[13px] font-medium transition hover:text-[#1A1916]"
+          className="mb-5 flex min-h-11 items-center gap-1.5 rounded-[10px] pr-3 text-[#6B6B6B] text-[13px] font-medium outline-none transition hover:text-[#1A1916] focus-visible:ring-3 focus-visible:ring-[#2A9D8F]/25 sm:mb-6"
         >
           <ArrowLeft className="size-4" strokeWidth={2} />
           Changer d'utilisateur
@@ -297,26 +309,30 @@ function PinEntryScreen({
           )}
         </div>
 
-        <div className="rounded-[24px] border border-[#FFFFFF] bg-white p-6 shadow-[0_2px_8px_rgba(26,25,22,0.04)]">
+        <div className="rounded-[22px] border border-[#E8E8E5] bg-white p-4 shadow-[0_8px_28px_rgba(26,25,22,0.06)] min-[360px]:p-6">
           {/* PIN dots */}
           <div className="flex justify-center gap-3">
-            {Array.from({ length: 4 }).map((_, i) => (
+            {PIN_SLOTS.map((slot, index) => (
               <span
-                key={i}
+                key={slot}
                 className={cn(
                   "grid h-12 w-10 place-items-center rounded-[12px] border text-[20px] font-semibold transition-all duration-150",
-                  pin[i]
+                  pin[index]
                     ? "border-[#2A9D8F]/50 bg-[#FFFFFF] text-[#1A1916] scale-105"
                     : "border-[#E8E8E5] bg-[#FFFFFF] text-[#A3A3A3]",
                   error && "border-[#DC3545]/40 bg-[#FFFFFF]",
                 )}
               >
-                {pin[i] ? "•" : ""}
+                {pin[index] ? "•" : ""}
               </span>
             ))}
           </div>
           {error && (
-            <p className="mt-3 text-center text-[#DC3545] text-[13px] font-medium animate-in fade-in slide-in-from-top-1 duration-200">
+            <p
+              id="pin-error"
+              role="alert"
+              className="mt-3 text-center text-[#DC3545] text-[13px] font-medium animate-in fade-in slide-in-from-top-1 duration-200"
+            >
               {error}
             </p>
           )}
@@ -368,11 +384,14 @@ function PinEntryScreen({
             <input
               type="password"
               inputMode="numeric"
-              maxLength={6}
+              maxLength={4}
+              autoComplete="one-time-code"
+              aria-label="Code PIN à 4 chiffres"
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? "pin-error" : undefined}
               value={pin}
-              autoFocus
               onChange={(e) => {
-                setPin(e.target.value.replace(/\D/g, "").slice(0, 6));
+                setPin(e.target.value.replace(/\D/g, "").slice(0, 4));
                 setError("");
               }}
               onKeyDown={(e) => {

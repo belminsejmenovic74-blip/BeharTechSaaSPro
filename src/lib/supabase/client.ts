@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://ctjlgeonvbwpfeqgsajf.supabase.co";
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0amxnZW9udmJ3cGZlcWdzYWpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4Mzc2OTEsImV4cCI6MjA5NDQxMzY5MX0.SIKA4t0jv1HMcdqFWgUgR6T2Fn78ga09vbHDW3w1hLY";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
 let cachedClient: SupabaseClient | null = null;
 

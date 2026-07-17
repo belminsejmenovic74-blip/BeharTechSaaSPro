@@ -53,6 +53,7 @@ import { realProductImage } from "@/lib/real-product-images";
 import { getWorkshopCountryConfig } from "@/lib/workshop-country";
 
 import { PartReferenceLink } from "./part-reference-link";
+import { ComingSoonModal } from "./coming-soon-integration";
 import { useDocument } from "./print-provider";
 
 type CartLine = Omit<SaleLine, "id">;
@@ -470,16 +471,13 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
       toast.error("Renseignez d'abord un montant sur la réparation.");
       return;
     }
-    if (!repairPaymentMethod) {
-      toast.error("Choisissez le moyen de paiement.");
-      return;
-    }
-    const paymentId = store.markRepairAsPaid(cashRepairId, repairPaymentMethod);
-    if (!paymentId) {
-      toast.error("Règlement impossible : dossier déjà réglé.");
-      return;
-    }
-    toast.success("Règlement indiqué.");
+    const invoiceId =
+      store.invoices.find((entry) => entry.repairId === cashRepairId)?.id ||
+      store.createInvoiceFromRepair(cashRepairId);
+    if (!invoiceId) return toast.error("Finalisez une facture avant de créer la demande.");
+    store.setSelected("invoice", invoiceId);
+    toast.info("Créez la demande Stripe ou SumUp depuis la facture.");
+    window.location.assign("/dashboard/factures");
     setCashRepairId("");
     setRepairPaymentMethod("" as PaymentMethod);
   };
@@ -515,7 +513,7 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
             {(
               [
                 ["products", "Vente produits"],
-                ["repair", "Indiquer règlement"],
+                ["repair", "Créer une demande de paiement"],
               ] as const
             ).map(([value, label]) => (
               <button
@@ -785,7 +783,7 @@ function RepairCashStep({
                 className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[10px] bg-[#11998E] text-[15px] font-semibold text-white transition hover:bg-[#0F8C82] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <CheckCircle2 className="size-5" />
-                Indiquer règlement
+                Créer une demande de paiement
               </button>
             </div>
           </>
@@ -1282,19 +1280,32 @@ function PaymentButton({
   active,
   onClick,
 }: Readonly<{ icon: typeof CreditCard; label: string; active: boolean; onClick: () => void }>) {
+  const integrationName = label === "Stripe" || label === "SumUp" ? label : null;
+  const [comingSoonOpen, setComingSoonOpen] = useState(false);
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex h-[58px] flex-row items-center justify-center gap-3 rounded-[8px] border text-[14px] font-semibold transition ${
-        active
-          ? "border-[#11998E] bg-[#FFFFFF] text-[#147065]"
-          : "border-[#E8E8E5] bg-white text-[#1A1916] hover:border-[#2A9D8F]/40 hover:text-[#1A1916]"
-      }`}
-    >
-      <Icon className="size-4" strokeWidth={1.8} />
-      {label}
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={integrationName ? () => setComingSoonOpen(true) : onClick}
+        className={`relative flex min-h-[58px] flex-row items-center justify-center gap-3 rounded-[8px] border px-2 text-[14px] font-semibold outline-none transition focus-visible:ring-3 focus-visible:ring-[#2A9D8F]/25 ${
+          active
+            ? "border-[#11998E] bg-[#FFFFFF] text-[#147065]"
+            : "border-[#E8E8E5] bg-white text-[#1A1916] hover:border-[#2A9D8F]/40 hover:text-[#1A1916]"
+        } ${integrationName ? "saturate-50" : ""}`}
+      >
+        <Icon className="size-4" strokeWidth={1.8} />
+        <span>{label}</span>
+        {integrationName ? (
+          <span className="absolute top-1 right-1 rounded-full bg-[#EAF6F4] px-1.5 py-0.5 text-[#167B70] text-[8px]">
+            Bientôt
+          </span>
+        ) : null}
+      </button>
+      {integrationName ? (
+        <ComingSoonModal isOpen={comingSoonOpen} name={integrationName} onClose={() => setComingSoonOpen(false)} />
+      ) : null}
+    </>
   );
 }
 

@@ -77,7 +77,7 @@ export function RepairDemoActions() {
         </SecondaryButton>
         <PrimaryButton className="w-full" onClick={cashIn}>
           <WalletCards className="size-4" />
-          Indiquer règlement {formatCurrency(189, currency)}
+          Créer une demande de paiement {formatCurrency(189, currency)}
         </PrimaryButton>
       </div>
 

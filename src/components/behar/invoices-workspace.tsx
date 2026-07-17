@@ -53,8 +53,6 @@ import {
   getVatSummary,
   type InvoiceStatus,
   linesForInvoiceFromQuote,
-  type PaymentMethod,
-  paymentMethods as manualPaymentMethods,
   type QuoteLine,
   type WorkshopCountry,
   type WorkshopCurrency,
@@ -63,15 +61,15 @@ import {
 import { displayCustomerName, isCounterCustomer } from "@/lib/customer-display";
 import { cn } from "@/lib/utils";
 
+import { ComingSoonModal } from "./coming-soon-integration";
 import { useDocument } from "./print-provider";
 
-const invoiceStatuses: InvoiceStatus[] = ["Brouillon", "Envoyée", "Payée", "Annulée"];
-const invoicePaymentMethods: PaymentMethod[] = manualPaymentMethods;
+const invoiceStatuses: InvoiceStatus[] = ["Brouillon", "Envoyée", "Annulée"];
 
-function invoicePaymentBadge(invoice: { status: string }): string {
-  if (invoice.status === "Payée") return "Payée";
-  if (invoice.status === "Annulée") return "Annulée";
-  return "Non payée";
+function displayedInvoiceStatus(status: string): string {
+  // Les anciennes valeurs sont conservees en base mais ne sont plus exposees
+  // comme resultat financier dans l'interface.
+  return status === "Payée" ? "Envoyée" : status;
 }
 
 function getNowIso() {
@@ -85,32 +83,20 @@ function safeLineEuro(quantity: number, unitPrice: number, total?: number) {
   return q * u;
 }
 
-// Une facture est « en retard » si elle n'est ni payée ni annulée et qu'elle a
-// plus de 30 jours. invoice.date est stocké en ISO court (YYYY-MM-DD).
-const OVERDUE_DAYS = 30;
-function isInvoiceOverdue(invoice: { status: string; date: string }) {
-  if (invoice.status === "Payée" || invoice.status === "Annulée") return false;
-  const parsed = Date.parse(invoice.date);
-  if (!Number.isFinite(parsed)) return false;
-  return Date.now() - parsed > OVERDUE_DAYS * 24 * 60 * 60 * 1000;
-}
-
 export function InvoicesWorkspace() {
   const router = useRouter();
   const store = useBeharStore();
   const { print, download } = useDocument();
 
   const [paymentOpen, setPaymentOpen] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("" as PaymentMethod);
-  const [paymentReference, setPaymentReference] = useState("");
+  const [requestProvider, setRequestProvider] = useState<
+    "stripe" | "sumup" | "paypal" | "square" | "revolut" | "mollie"
+  >("stripe");
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [linesEditing, setLinesEditing] = useState(false);
   const [invoiceSearch, setInvoiceSearch] = useState("");
-  const [invoiceFilterTab, setInvoiceFilterTab] = useState<
-    "all" | "unpaid" | "paid" | "overdue" | "month" | "cancelled" | "counter"
-  >("all");
+  const [invoiceFilterTab, setInvoiceFilterTab] = useState<"all" | "month" | "cancelled" | "counter">("all");
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
-  const paymentMethods = invoicePaymentMethods;
 
   // Métadonnées enrichies par facture : dossier / devis / reçu liés + index de
   // recherche puissant (n°, client, téléphone, appareil, REP, DEV, REC).
@@ -130,27 +116,24 @@ export function InvoicesWorkspace() {
       const entryCustomer = store.customers.find((entry) => entry.id === invoice.customerId);
       const repair = invoice.repairId ? store.repairs.find((entry) => entry.id === invoice.repairId) : undefined;
       const quote = invoice.quoteId ? store.quotes.find((entry) => entry.id === invoice.quoteId) : undefined;
-      const receipt = store.payments.find((p) => p.invoiceId === invoice.id && p.status === "Payé");
       const deviceLabel = repair ? repair.deviceModel || repair.device || "" : "";
       const dossierNumber = repair?.number ?? invoice.sourceNumber;
       const refs = [
         dossierNumber ? `Dossier ${dossierNumber}` : "",
         quote?.number ? `Devis ${quote.number}` : "",
-        receipt?.paymentNumber ? `Reçu ${receipt.paymentNumber}` : "",
       ].filter(Boolean);
       const haystack =
-        `${invoice.number} ${displayCustomerName(entryCustomer)} ${entryCustomer?.phone ?? ""} ${invoice.sourceNumber ?? ""} ${repair?.number ?? ""} ${deviceLabel} ${quote?.number ?? ""} ${receipt?.paymentNumber ?? ""}`.toLowerCase();
+        `${invoice.number} ${displayCustomerName(entryCustomer)} ${entryCustomer?.phone ?? ""} ${invoice.sourceNumber ?? ""} ${repair?.number ?? ""} ${deviceLabel} ${quote?.number ?? ""}`.toLowerCase();
       map.set(invoice.id, {
         repairNumber: dossierNumber,
         quoteNumber: quote?.number,
-        receiptNumber: receipt?.paymentNumber,
         deviceLabel,
         refs,
         haystack,
       });
     }
     return map;
-  }, [store.invoices, store.customers, store.repairs, store.quotes, store.payments]);
+  }, [store.invoices, store.customers, store.repairs, store.quotes]);
 
   const visibleInvoices = useMemo(() => {
     const q = invoiceSearch.trim().toLowerCase();
@@ -159,9 +142,6 @@ export function InvoicesWorkspace() {
     return store.invoices.filter((invoice) => {
       const entryCustomer = store.customers.find((entry) => entry.id === invoice.customerId);
 
-      if (invoiceFilterTab === "unpaid" && (invoice.status === "Payée" || invoice.status === "Annulée")) return false;
-      if (invoiceFilterTab === "paid" && invoice.status !== "Payée") return false;
-      if (invoiceFilterTab === "overdue" && !isInvoiceOverdue(invoice)) return false;
       if (invoiceFilterTab === "cancelled" && invoice.status !== "Annulée") return false;
       if (invoiceFilterTab === "counter" && !isCounterCustomer(entryCustomer)) return false;
       if (invoiceFilterTab === "month") {
@@ -178,16 +158,8 @@ export function InvoicesWorkspace() {
   const customer = selected ? store.customers.find((entry) => entry.id === selected.customerId) : undefined;
   const repair = selected ? store.repairs.find((entry) => entry.id === selected.repairId) : undefined;
 
-  const invoicePayments = selected ? store.payments.filter((payment) => payment.invoiceId === selected.id) : [];
-  const activePayments = invoicePayments.filter((payment) => payment.status === "Payé");
   const invoiceGrandTotal = selected ? getInvoiceTotal(selected) : 0;
   const selectedCurrency = selected?.currency ?? store.workshopInfo.currency;
-  const paidAmount =
-    selected && selected.status === "Payée"
-      ? invoiceGrandTotal
-      : activePayments.reduce((total, p) => total + p.amount, 0);
-  const remainingAmount = Math.max(0, invoiceGrandTotal - paidAmount);
-
   const paidLocked = selected?.status === "Payée";
   const lineInputsLocked = paidLocked || !linesEditing;
 
@@ -219,9 +191,6 @@ export function InvoicesWorkspace() {
               value={invoiceFilterTab}
             >
               <option value="all">Toutes</option>
-              <option value="unpaid">À régler</option>
-              <option value="overdue">En retard</option>
-              <option value="paid">Payées</option>
               <option value="month">Ce mois</option>
               <option value="cancelled">Annulées</option>
               <option value="counter">Comptoir</option>
@@ -239,20 +208,15 @@ export function InvoicesWorkspace() {
         <div className="md:hidden space-y-4">
           {(() => {
             const allInvoices = store.invoices;
-            const paid = allInvoices
+            const billed = allInvoices
               .filter(
                 (i) =>
-                  i.status === "Payée" && (i.currency ?? store.workshopInfo.currency) === store.workshopInfo.currency,
-              )
-              .reduce((s, i) => s + getInvoiceTotal(i), 0);
-            const pending = allInvoices
-              .filter(
-                (i) =>
-                  i.status !== "Payée" &&
+                  i.status !== "Brouillon" &&
                   i.status !== "Annulée" &&
                   (i.currency ?? store.workshopInfo.currency) === store.workshopInfo.currency,
               )
               .reduce((s, i) => s + getInvoiceTotal(i), 0);
+            const issued = allInvoices.filter((i) => i.status !== "Brouillon" && i.status !== "Annulée").length;
             const count = allInvoices.length;
             return (
               <section className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 scrollbar-none">
@@ -267,19 +231,17 @@ export function InvoicesWorkspace() {
                   <span className="grid size-9 place-items-center text-[#2A9D8F]">
                     <Receipt className="size-[18px]" />
                   </span>
-                  <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium">Encaissé</p>
+                  <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium">CA facturé</p>
                   <p className="mt-1.5 font-bold text-[#2A9D8F] text-[20px] leading-none tabular-nums">
-                    {formatEuro(paid)}
+                    {formatEuro(billed)}
                   </p>
                 </div>
                 <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
                   <span className="grid size-9 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#6B6B6B]">
                     <Receipt className="size-[18px]" />
                   </span>
-                  <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium">En attente</p>
-                  <p className="mt-1.5 font-bold text-[#6B6B6B] text-[20px] leading-none tabular-nums">
-                    {formatEuro(pending)}
-                  </p>
+                  <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium">Factures émises</p>
+                  <p className="mt-1.5 font-bold text-[#6B6B6B] text-[20px] leading-none tabular-nums">{issued}</p>
                 </div>
               </section>
             );
@@ -297,12 +259,9 @@ export function InvoicesWorkspace() {
           </div>
 
           <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1 scrollbar-none">
-            {(["all", "unpaid", "overdue", "paid", "month", "cancelled"] as const).map((tab) => {
+            {(["all", "month", "cancelled"] as const).map((tab) => {
               const labels: Record<string, string> = {
                 all: "Toutes",
-                unpaid: "À régler",
-                overdue: "En retard",
-                paid: "Payées",
                 month: "Ce mois",
                 cancelled: "Annulées",
               };
@@ -364,7 +323,7 @@ export function InvoicesWorkspace() {
                           <p className="mt-0.5 truncate text-[#6B6B6B] text-[11px]">Vente directe</p>
                         )}
                         <div className="mt-2">
-                          <StatusBadge status={isInvoiceOverdue(invoice) ? "En retard" : invoice.status} />
+                          <StatusBadge status={displayedInvoiceStatus(invoice.status)} />
                         </div>
                       </div>
                     </button>
@@ -423,7 +382,7 @@ export function InvoicesWorkspace() {
                     </td>
                     <td className="border-[#E8E8E5] border-b px-5 py-4">{formatIsoToDisplay(invoice.date)}</td>
                     <td className="border-[#E8E8E5] border-b px-5 py-4">
-                      <StatusBadge status={isInvoiceOverdue(invoice) ? "En retard" : invoice.status} />
+                      <StatusBadge status={displayedInvoiceStatus(invoice.status)} />
                     </td>
                     <td className="border-[#E8E8E5] border-b px-5 py-4 font-black tabular-nums">
                       {formatCurrency(getInvoiceTotal(invoice), invoice.currency ?? store.workshopInfo.currency)}
@@ -467,7 +426,7 @@ export function InvoicesWorkspace() {
             </div>
             <StatusBadge
               className="h-6 px-2.5 text-[10px] font-bold uppercase tracking-wider"
-              status={selected.status}
+              status={displayedInvoiceStatus(selected.status)}
             />
           </div>
 
@@ -597,16 +556,6 @@ export function InvoicesWorkspace() {
                     <span className="font-medium">{formatCurrency(invoiceGrandTotal, selectedCurrency)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-xs text-[#6B6B6B]">
-                  <span>Total Réglé</span>
-                  <span className="font-medium">{formatCurrency(paidAmount, selectedCurrency)}</span>
-                </div>
-                {remainingAmount > 0 && (
-                  <div className="flex justify-between text-xs text-[#1A1916] font-bold">
-                    <span>Reste à payer</span>
-                    <span>{formatCurrency(remainingAmount, selectedCurrency)}</span>
-                  </div>
-                )}
               </div>
 
               <div className="flex items-center justify-between pt-2 border-t border-[#FFFFFF]">
@@ -628,45 +577,80 @@ export function InvoicesWorkspace() {
               </p>
             </div>
 
-            {invoicePayments.length > 0 && (
-              <div className="space-y-3 pt-4">
-                <p className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider">Paiements enregistrés</p>
-                <div className="space-y-2">
-                  {invoicePayments.map((p) => (
-                    <div
-                      key={p.id}
-                      className="flex items-center justify-between p-3 rounded-xl border border-[#FFFFFF] text-sm"
-                    >
-                      <div>
-                        <p className="font-semibold text-[#1A1916]">{p.method}</p>
-                        <p className="text-[10px] text-[#8A8A8A] font-bold">{formatIsoToDisplay(p.date)}</p>
-                      </div>
-                      <span className="font-bold text-[#1A1916]">
-                        {formatCurrency(p.amount, p.currency ?? selectedCurrency)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <p className="rounded-[14px] border border-[#D7EFEA] bg-[#F0FAF8] p-4 text-[#47706B] text-xs leading-relaxed">
+              Le règlement est géré en dehors de Behar Tech Pro par Stripe, SumUp, PayPal, Square, Revolut, Mollie ou le
+              système de paiement du réparateur.
+            </p>
           </div>
 
           <div className="mt-8 pt-6 border-t border-[#FFFFFF] space-y-3">
-            {remainingAmount > 0 ? (
-              <button
-                onClick={() => {
-                  setPaymentMethod("" as PaymentMethod);
-                  setPaymentReference("");
-                  setPaymentOpen(true);
-                }}
-                className="w-full h-11 rounded-xl bg-[#1A1916] text-white font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2"
-              >
-                <CreditCard className="size-4" />
-                Enregistrer un paiement
-              </button>
+            {selected.status !== "Brouillon" && selected.status !== "Annulée" ? (
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                <button
+                  onClick={() => {
+                    setRequestProvider("stripe");
+                    setPaymentOpen(true);
+                  }}
+                  className="h-11 rounded-xl bg-[#1A1916] text-white font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2"
+                >
+                  <CreditCard className="size-4" />
+                  Créer une demande Stripe
+                </button>
+                <button
+                  onClick={() => {
+                    setRequestProvider("sumup");
+                    setPaymentOpen(true);
+                  }}
+                  className="h-11 rounded-xl border border-[#2A9D8F]/30 bg-[#E9F7F4] text-[#167B70] font-bold text-sm hover:border-[#2A9D8F] transition-all flex items-center justify-center gap-2"
+                >
+                  <CreditCard className="size-4" />
+                  Créer un lien SumUp
+                </button>
+                <button
+                  onClick={() => {
+                    setRequestProvider("paypal");
+                    setPaymentOpen(true);
+                  }}
+                  className="h-11 rounded-xl border border-[#167B70]/25 bg-white text-[#167B70] font-bold text-sm hover:border-[#167B70] transition-all flex items-center justify-center gap-2"
+                >
+                  <CreditCard className="size-4" />
+                  Créer une demande PayPal
+                </button>
+                <button
+                  onClick={() => {
+                    setRequestProvider("square");
+                    setPaymentOpen(true);
+                  }}
+                  className="h-11 rounded-xl border border-[#1A1916]/20 bg-white text-[#1A1916] font-bold text-sm hover:border-[#1A1916] transition-all flex items-center justify-center gap-2"
+                >
+                  <CreditCard className="size-4" />
+                  Créer un lien Square
+                </button>
+                <button
+                  onClick={() => {
+                    setRequestProvider("revolut");
+                    setPaymentOpen(true);
+                  }}
+                  className="h-11 rounded-xl border border-[#1A1916]/20 bg-[#FAFAF8] text-[#1A1916] font-bold text-sm hover:border-[#1A1916] transition-all flex items-center justify-center gap-2"
+                >
+                  <CreditCard className="size-4" />
+                  Créer un lien Revolut
+                </button>
+                <button
+                  onClick={() => {
+                    setRequestProvider("mollie");
+                    setPaymentOpen(true);
+                  }}
+                  className="h-11 rounded-xl border border-[#167B70]/25 bg-[#F0FAF8] text-[#167B70] font-bold text-sm hover:border-[#167B70] transition-all flex items-center justify-center gap-2"
+                  type="button"
+                >
+                  <CreditCard className="size-4" />
+                  Créer une demande Mollie
+                </button>
+              </div>
             ) : (
               <div className="w-full py-2.5 rounded-xl border border-[#FFFFFF] text-[#6B6B6B] text-xs font-bold text-center">
-                Facture soldée
+                Finalisez la facture pour créer une demande
               </div>
             )}
 
@@ -703,102 +687,25 @@ export function InvoicesWorkspace() {
         </Panel>
       )}
 
-      {paymentOpen && selected && (
-        <div className="fixed inset-0 z-50 flex items-stretch justify-stretch bg-black/40 p-0 md:items-center md:justify-center md:p-4">
-          <Panel className="w-full min-h-svh max-w-none rounded-none p-5 animate-in zoom-in-95 duration-200 md:max-w-sm md:min-h-0 md:rounded-[20px] md:p-6">
-            <h3 className="text-lg font-bold text-[#1A1916] mb-6">Nouveau paiement</h3>
-
-            <div className="space-y-5">
-              <div>
-                <label className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider block mb-2">
-                  Montant du règlement
-                </label>
-                <div className="relative">
-                  <input
-                    className="h-12 w-full rounded-xl border border-[#E8E8E5] bg-white px-4 text-xl font-bold text-[#1A1916] outline-none focus:border-[#1A1916] transition-all"
-                    type="number"
-                    defaultValue={remainingAmount}
-                    id="payment-amount"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-lg text-[#8A8A8A]">
-                    {store.workshopInfo.currency}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider block mb-2">
-                  Référence paiement
-                </label>
-                <input
-                  className="h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F]"
-                  value={paymentReference}
-                  onChange={(event) => setPaymentReference(event.target.value)}
-                  placeholder="Optionnel"
-                />
-              </div>
-
-              <div>
-                <label className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider block mb-2">
-                  Mode de règlement
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {paymentMethods.map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => setPaymentMethod(m)}
-                      className={`h-10 rounded-xl border font-bold text-xs transition-all ${
-                        paymentMethod === m
-                          ? "border-[#1A1916] bg-[#FFFFFF] text-[#1A1916]"
-                          : "border-[#E8E8E5] text-[#6B6B6B] hover:border-[#8A8A8A]"
-                      }`}
-                    >
-                      {m}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-8 flex gap-3">
-              <SecondaryButton className="flex-1 h-11" onClick={() => setPaymentOpen(false)}>
-                Annuler
-              </SecondaryButton>
-              <PrimaryButton
-                className="flex-1 h-11 bg-[#1A1916]"
-                onClick={() => {
-                  const amtInput = document.getElementById("payment-amount") as HTMLInputElement;
-                  const amt = Number(amtInput.value);
-                  if (amt <= 0) return toast.error("Montant invalide");
-                  if (!paymentMethod) return toast.error("Choisissez le moyen de paiement.");
-
-                  store.addPayment({
-                    invoiceId: selected.id,
-                    customerId: selected.customerId,
-                    amount: amt,
-                    method: paymentMethod,
-                    status: "Payé",
-                    date: new Date().toISOString().split("T")[0],
-                    reference: paymentReference.trim() || `PAY-${Date.now()}`,
-                    twintReference: undefined,
-                  });
-
-                  if (amt >= remainingAmount) {
-                    store.updateInvoice(selected.id, { status: "Payée" });
-                  }
-
-                  setPaymentOpen(false);
-                  setPaymentMethod("" as PaymentMethod);
-                  setPaymentReference("");
-                  toast.success("Paiement enregistré");
-                }}
-                disabled={!paymentMethod}
-              >
-                Confirmer
-              </PrimaryButton>
-            </div>
-          </Panel>
-        </div>
-      )}
+      {paymentOpen && selected ? (
+        <ComingSoonModal
+          isOpen={paymentOpen}
+          name={
+            requestProvider === "stripe"
+              ? "Stripe"
+              : requestProvider === "sumup"
+                ? "SumUp"
+                : requestProvider === "paypal"
+                  ? "PayPal"
+                  : requestProvider === "square"
+                    ? "Square"
+                    : requestProvider === "revolut"
+                      ? "Revolut Business"
+                      : "Mollie"
+          }
+          onClose={() => setPaymentOpen(false)}
+        />
+      ) : null}
     </section>
   );
 }

@@ -283,7 +283,7 @@ export function DashboardMockup() {
           {/* KPIs */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, margin: "14px 0" }}>
             {[
-              ["CA encaissé", "308,00 €", "7 derniers jours"],
+              ["CA facturé", "308,00 €", "7 derniers jours"],
               ["Marge nette", "0,00 €", "moyenne"],
               ["Achats", "40,00 €", "période"],
               ["CA en attente", "89,00 €", "à finaliser"],

@@ -5,7 +5,13 @@
 // champs, barre de progression et coquille d'étape.
 
 import { useMemo, useState } from "react";
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
+import type {
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+  TextareaHTMLAttributes,
+} from "react";
 import { Check, LoaderCircle, Search } from "lucide-react";
 
 import { fold } from "@/lib/widget/global-catalog";
@@ -78,8 +84,8 @@ export function OptionCard({
       className={cn(
         "flex w-full items-center justify-between gap-3 rounded-[var(--w-radius)] border px-4 py-3.5 text-left transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--w-focus-ring,var(--w-tint))] disabled:opacity-50",
         selected
-          ? "border-[var(--w-primary)] bg-[var(--w-primary-selected,var(--w-tint))] shadow-[0_2px_12px_var(--w-primary-soft,rgba(0,0,0,0.04))]"
-          : "border-[var(--w-border)] bg-[var(--w-surface)] hover:border-[var(--w-primary-border,var(--w-primary))] hover:bg-[var(--w-primary-soft,var(--w-tint))] hover:shadow-[0_2px_8px_rgba(26,25,22,0.05)]",
+          ? "border-[var(--w-primary)] bg-white shadow-[0_5px_18px_var(--w-primary-soft)]"
+          : "border-[var(--w-border)] bg-white hover:border-[#B9B9B4] hover:shadow-[0_2px_8px_rgba(26,25,22,0.05)]",
       )}
     >
       <span className="flex min-w-0 items-center gap-3">
@@ -132,8 +138,8 @@ export function WidgetChip({
         segmented ? "rounded-[10px]" : "rounded-full",
         selected
           ? segmented
-            ? "border-[var(--w-primary-border)] bg-[var(--w-primary-soft)] text-[var(--w-primary)]"
-            : "border-[var(--w-primary)] bg-[var(--w-primary)] text-[var(--w-on-primary)] shadow-sm"
+            ? "border-[var(--w-primary)] bg-white text-[var(--w-primary)] shadow-sm"
+            : "border-[var(--w-primary)] bg-white text-[var(--w-primary)] shadow-sm"
           : segmented
             ? "border-transparent bg-transparent text-[var(--w-muted)] hover:bg-white"
             : "border-[var(--w-border)] bg-[var(--w-surface)] text-[var(--w-text)] hover:border-[var(--w-primary-border,var(--w-primary))] hover:bg-[var(--w-primary-soft,var(--w-tint))]",
@@ -179,6 +185,12 @@ export function WidgetField({
 
 export function WidgetInput({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={cn(FIELD_CLASS, className)} {...props} />;
+}
+
+export function WidgetSelect({ className, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <select className={cn(FIELD_CLASS, "cursor-pointer appearance-auto bg-white font-medium", className)} {...props} />
+  );
 }
 
 export function WidgetTextarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {

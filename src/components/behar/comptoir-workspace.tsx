@@ -77,6 +77,7 @@ import {
   deviceBrands as catalogDeviceBrands,
   formatCurrency,
   formatEuro,
+  getInvoiceTotal,
   getQuoteDevices,
   getQuoteTotal,
   getVatSummary,
@@ -86,7 +87,6 @@ import {
   type BeharDocument,
   type DeviceType,
   type Invoice,
-  type PaymentMethod,
   type PermissionKey,
   type Quote,
   type QuoteLine,
@@ -188,11 +188,6 @@ const counterAccessoryProducts = [
   { id: "free_batterie_externe", name: "Batterie externe", price: 29.9 },
   { id: "free_support_voiture", name: "Support voiture", price: 16.9 },
 ] as const;
-
-const counterPaymentMethods = (country: WorkshopCountry, twintEnabled = true): PaymentMethod[] =>
-  country === "CH"
-    ? ["Espèces", ...(twintEnabled ? ["TWINT" as const] : []), "Carte externe", "Virement", "Autre"]
-    : ["TPE externe", "Espèces hors Behar Tech", "Virement", "Lien externe", "Autre"];
 
 function parseCounterMoney(value: string) {
   const amount = Number.parseFloat(value.replace(",", "."));
@@ -364,7 +359,7 @@ export function ComptoirWorkspace({ initialScreen = "home" }: Readonly<{ initial
     {
       id: "sale",
       label: "Vente comptoir",
-      description: "Marquer une vente réglée hors Behar Tech",
+      description: "Créer une vente avant sa facturation",
       icon: ShoppingBag,
       permission: "canViewSales",
       onClick: () => setCounterScreen("sale"),
@@ -3489,7 +3484,7 @@ function CounterFollowScreen({
               repair.status === "Prêt" ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]",
             )}
           >
-            Indiquer règlement <ChevronRight className="ml-2 inline size-5" />
+            Créer une demande de paiement <ChevronRight className="ml-2 inline size-5" />
           </button>
         </aside>
       </div>
@@ -3640,7 +3635,6 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
   const repairs = useBeharStore((s) => s.repairs);
   const customers = useBeharStore((s) => s.customers);
   const addSale = useBeharStore((s) => s.addSale);
-  const paySale = useBeharStore((s) => s.paySale);
   const addCustomer = useBeharStore((s) => s.addCustomer);
   const workshopInfo = useBeharStore((s) => s.workshopInfo);
   const [cart, setCart] = useState<CounterCartItem[]>([]);
@@ -3651,7 +3645,6 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
   // Modes (brief §7 + client) : vente simple, rattachée à un client, ou à un dossier.
   const [mode, setMode] = useState<"simple" | "client" | "repair">("simple");
   const [billingCountry, setBillingCountry] = useState<WorkshopCountry>(workshopInfo.country);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("TPE externe");
   const [linkedRepairId, setLinkedRepairId] = useState("");
   const [customerId, setCustomerId] = useState("");
   const [newClientOpen, setNewClientOpen] = useState(false);
@@ -3665,10 +3658,6 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
   const saleCountry = mode === "repair" && linkedRepair ? linkedRepair.billingCountry : billingCountry;
   const saleConfig = getWorkshopCountryConfig(saleCountry);
   const formatSale = (value: number) => formatCurrency(value, saleConfig.currency);
-  useEffect(() => {
-    const methods = counterPaymentMethods(saleCountry, workshopInfo.twintEnabled !== false);
-    if (!methods.includes(paymentMethod)) setPaymentMethod(methods[0]);
-  }, [paymentMethod, saleCountry, workshopInfo.twintEnabled]);
   // Vrai stock : on ne garde que les accessoires (catégorie/nom) encore disponibles.
   const accessories = useMemo(() => {
     const q = compactText(query);
@@ -3769,20 +3758,15 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
       })),
     });
     if (!saleId) {
-      toast.error("Règlement externe impossible : vérifiez le panier et le stock.");
-      return;
-    }
-    const paymentId = paySale(saleId, paymentMethod);
-    if (!paymentId) {
-      toast.error("Règlement externe impossible : stock insuffisant ou permission manquante.");
+      toast.error("Vente impossible : vérifiez le panier et le stock.");
       return;
     }
     toast.success(
       mode === "repair" && linkedRepair
-        ? `Paiement externe enregistré pour ${linkedRepair.number} — reçu généré (${formatSale(total)}).`
+        ? `Vente enregistrée pour ${linkedRepair.number} (${formatSale(total)}). Finalisez la facture pour créer une demande de paiement.`
         : mode === "client" && selectedCustomer
-          ? `Paiement externe enregistré pour ${selectedCustomer.name} — reçu généré (${formatSale(total)}).`
-          : `Paiement externe enregistré — ${formatSale(total)}.`,
+          ? `Vente enregistrée pour ${selectedCustomer.name} (${formatSale(total)}). Finalisez la facture pour créer une demande de paiement.`
+          : `Vente enregistrée (${formatSale(total)}). Finalisez une facture pour créer une demande de paiement.`,
     );
     setCart([]);
   };
@@ -3807,7 +3791,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
     <div className="mx-auto max-w-[1180px]">
       <CounterScreenTitle
         title="Vente comptoir"
-        subtitle="Accessoires et produits actifs, paiement enregistré hors Behar Tech"
+        subtitle="Accessoires et produits actifs. Le règlement reste géré hors Behar Tech Pro."
         onClose={onClose}
       />
 
@@ -4087,21 +4071,11 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
             </button>
           </section>
           <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4">
-            <h2 className="font-black text-lg">Paiement externe</h2>
+            <h2 className="font-black text-lg">Finaliser la vente</h2>
             <p className="mt-1 text-[#6B6B6B] text-xs leading-relaxed">
-              Behar Tech Pro enregistre seulement le règlement effectué hors logiciel.
+              Enregistrez d’abord la vente, puis créez une facture finalisée pour transmettre une demande à votre
+              prestataire externe.
             </p>
-            <select
-              className="mt-3 h-[52px] w-full rounded-[14px] border border-[#E8E8E5] bg-white px-4 font-semibold text-[#1A1916] outline-none focus:border-[#2A9D8F]"
-              value={paymentMethod}
-              onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}
-            >
-              {counterPaymentMethods(saleCountry, workshopInfo.twintEnabled !== false).map((method) => (
-                <option key={method} value={method}>
-                  {method}
-                </option>
-              ))}
-            </select>
           </section>
           <p className="rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] px-4 py-3 text-[#6B6B6B] text-xs leading-relaxed">
             Le règlement est géré hors Behar Tech Pro via votre prestataire externe.
@@ -4112,8 +4086,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
             onClick={handleCheckout}
             className="h-[58px] w-full rounded-[14px] bg-[#2A9D8F] font-black text-white disabled:cursor-not-allowed disabled:bg-[#FFFFFF]"
           >
-            <CreditCard className="mr-2 inline size-5" /> Paiement externe enregistré{" "}
-            {total > 0 ? `· ${formatSale(total)}` : ""}
+            <FileText className="mr-2 inline size-5" /> Enregistrer la vente {total > 0 ? `· ${formatSale(total)}` : ""}
           </button>
           <button
             type="button"
@@ -5093,7 +5066,7 @@ function CounterClientsScreen({
   const customersAll = useBeharStore((s) => s.customers);
   const repairs = useBeharStore((s) => s.repairs);
   const quotes = useBeharStore((s) => s.quotes);
-  const payments = useBeharStore((s) => s.payments);
+  const invoices = useBeharStore((s) => s.invoices);
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState("");
   // Vrais clients du dashboard (on masque le client comptoir anonyme).
@@ -5114,8 +5087,14 @@ function CounterClientsScreen({
     () => (selected ? quotes.filter((q) => q.customerId === selected.id) : []),
     [quotes, selected],
   );
-  const unpaidRepairId = customerRepairs.find(
-    (r) => repairAmount(r) > 0 && !payments.some((p) => p.repairId === r.id && p.status === "Payé"),
+  const paymentRequestRepairId = customerRepairs.find((repair) =>
+    invoices.some(
+      (invoice) =>
+        invoice.repairId === repair.id &&
+        invoice.status !== "Brouillon" &&
+        invoice.status !== "Annulée" &&
+        getInvoiceTotal(invoice) > 0,
+    ),
   )?.id;
 
   if (clients.length === 0) {
@@ -5216,8 +5195,8 @@ function CounterClientsScreen({
           <ClientQuickAction icon={<FileText className="size-7" />} label="Nouveau devis" onClick={onCreateQuote} />
           <ClientQuickAction
             icon={<CreditCard className="size-7" />}
-            label="Indiquer règlement"
-            onClick={() => onPay(unpaidRepairId)}
+            label="Créer une demande de paiement"
+            onClick={() => onPay(paymentRequestRepairId)}
           />
           <ClientQuickAction
             icon={<ClipboardCheck className="size-7" />}
@@ -5608,8 +5587,6 @@ function CounterRepairDetailScreen({
       ? linkedAppointment?.clientPhone || "Non renseigné"
       : customer?.phone || linkedAppointment?.clientPhone || "Non renseigné";
   const invoice = store.invoices.find((i) => i.repairId === repair.id);
-  const repairPayment = store.payments.find((p) => p.repairId === repair.id && p.status === "Payé");
-  const paid = Boolean(repairPayment) || invoice?.status === "Payée";
   const amount = repairAmount(repair);
   const photos = repair.intakeCondition?.photos ?? [];
   const prestations = repair.counterPrestations ?? [];
@@ -5620,10 +5597,10 @@ function CounterRepairDetailScreen({
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
-  const markPaid = () => {
-    const id = store.markRepairAsPaid(repair.id);
-    if (id) toast.success("Règlement indiqué.");
-    else toast.info("Dossier déjà réglé ou aucun montant à indiquer.");
+  const openPaymentRequest = () => {
+    const invoiceId = invoice?.id || store.createInvoiceFromRepair(repair.id);
+    if (!invoiceId) return toast.error("Finalisez une facture avant de créer la demande.");
+    settlement.open(repair.id);
   };
   // Étape suivante du dossier atelier (statut), pensée pour le comptoir tactile.
   const COUNTER_NEXT_STATUS: Partial<Record<Repair["status"], { next: Repair["status"]; label: string }>> = {
@@ -5639,11 +5616,12 @@ function CounterRepairDetailScreen({
     store.changeRepairStatus(repair.id, nextStep.next);
     toast.success(`Dossier passé en « ${nextStep.next} ».`);
   };
-  // Restitution = règlement obligatoire, puis clôture du dossier.
+  // La clôture reste strictement opérationnelle et indépendante du règlement externe.
   const confirmCloseDossier = () => {
     if (isTerminalRepairStatus(repair.status)) return toast.info("Dossier déjà terminé.");
     setCloseConfirmOpen(false);
-    settlement.open(repair.id, { closeAfterSubmit: true });
+    store.changeRepairStatus(repair.id, "Clôturé");
+    toast.success("Dossier clôturé.");
   };
   // Génère le vrai bon de prise en charge via le système Documents existant.
   const validatePriseEnCharge = () => {
@@ -5809,15 +5787,10 @@ function CounterRepairDetailScreen({
               {formatEuro(amount)} <span className="text-[#6B6B6B] text-sm">TTC</span>
             </p>
             <div className="mt-4 border-[#E8E8E5] border-t pt-4">
-              <p>Statut de facture</p>
-              <b className={paid ? "text-[#1E7A6E]" : "text-[#6B6B6B]"}>{paid ? "Réglée" : "À régler"}</b>
+              <p>Facture</p>
+              <b className="text-[#1E7A6E]">{invoice ? "Finalisée" : "À finaliser"}</b>
               <p className="mt-3 text-[#6B6B6B] text-sm">
-                Moyen indiqué
-                <br />
-                {repairPayment?.method ?? invoice?.paymentMethod ?? "Non renseigné"}
-              </p>
-              <p className="mt-3 text-[#6B6B6B] text-sm">
-                Facture
+                Référence
                 <br />
                 <b className="text-[#1A1916]">{invoice ? `#${invoice.number}` : "Non renseigné"}</b>
               </p>
@@ -5948,11 +5921,11 @@ function CounterRepairDetailScreen({
                 type="button"
                 onClick={() => {
                   setActionsMenuOpen(false);
-                  markPaid();
+                  openPaymentRequest();
                 }}
                 className="flex h-12 w-full items-center gap-3 rounded-[12px] px-3 font-bold hover:bg-[#FFFFFF]"
               >
-                <Receipt className="size-4" /> Indiquer règlement
+                <Receipt className="size-4" /> Créer une demande de paiement
               </button>
               <button
                 type="button"
@@ -5963,14 +5936,14 @@ function CounterRepairDetailScreen({
                 disabled={isTerminalRepairStatus(repair.status)}
                 className="flex h-12 w-full items-center gap-3 rounded-[12px] px-3 font-bold text-[#B42318] hover:bg-[#FFFFFF] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <X className="size-4" /> Clôturer / règlement
+                <X className="size-4" /> Clôturer le dossier
               </button>
             </div>
           ) : null}
         </div>
       </div>
       <p className="mt-3 text-center text-[#6B6B6B] text-xs">
-        La restitution remet la facture au client — le règlement est géré hors Behar Tech Pro.
+        La clôture du dossier est indépendante du règlement, géré hors Behar Tech Pro.
       </p>
       {appointmentModalOpen && (
         <RepairAppointmentModal
@@ -5994,6 +5967,7 @@ function CounterRepairDetailScreen({
       )}
       <SettlementModal
         draft={settlement.draft}
+        invoice={settlement.invoice}
         isOpen={settlement.isOpen}
         onClose={settlement.close}
         onDraftChange={settlement.setDraft}
@@ -6193,7 +6167,7 @@ function CloseDossierConfirmModal({ onCancel, onConfirm }: Readonly<{ onCancel: 
             onClick={onConfirm}
             className="h-[52px] rounded-[14px] bg-[#B42318] font-black text-white"
           >
-            Clôturer / règlement
+            Clôturer le dossier
           </button>
         </div>
       </section>
@@ -6327,7 +6301,6 @@ function CounterTrackingScreen({
     return <EmptyCounter title="Suivi du dossier" message="Aucun dossier à suivre pour le moment." onClose={onClose} />;
   const customer = customerOf(selected.customerId);
   const invoice = invoices.find((i) => i.repairId === selected.id);
-  const paid = payments.some((p) => p.repairId === selected.id && p.status === "Payé") || invoice?.status === "Payée";
   const workshop = useBeharStore((s) => s.workshopSettings ?? s.workshopInfo);
   const openClientTracking = () => {
     const url = getCustomerTrackingUrl(selected, workshop);
@@ -6423,7 +6396,7 @@ function CounterTrackingScreen({
             <DetailRowLite label="Client" value={customer?.name ?? "Non renseigné"} />
             <DetailRowLite label="Téléphone" value={customer?.phone || "Non renseigné"} />
             <DetailRowLite label="Appareil" value={repairDeviceLabel(selected)} />
-            <DetailRowLite label="Paiement" value={paid ? "Payé" : "À payer"} />
+            <DetailRowLite label="Facture" value={invoice ? invoice.number : "Non générée"} />
             <DetailRowLite label="Problème" value={selected.issue || "Non renseigné"} />
             <DetailRowLite label="Montant" value={`${formatEuro(repairAmount(selected))} TTC`} />
           </dl>
@@ -6742,126 +6715,99 @@ function CounterCheckoutScreen({
   onClose,
 }: Readonly<{ initialRepairId: string; onClose: () => void }>) {
   const store = useBeharStore();
-  const unpaid = store.repairs.filter(
-    (repair) =>
-      repair.status !== "Annulé" &&
-      repair.status !== "Irréparable" &&
-      !store.payments.some((payment) => payment.repairId === repair.id && payment.status === "Payé") &&
-      repairAmount(repair) > 0,
-  );
-  const [selectedId, setSelectedId] = useState(initialRepairId || unpaid[0]?.id || "");
-  const [method, setMethod] = useState<PaymentMethod>("TPE externe");
-  const [lastPaymentId, setLastPaymentId] = useState("");
-  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
-  const [externalReference, setExternalReference] = useState("");
-  const [confirmExternal, setConfirmExternal] = useState(false);
+  const eligible = store.repairs.filter((repair) => {
+    if (repair.status === "Annulé" || repair.status === "Irréparable") return false;
+    const invoice = store.invoices.find((entry) => entry.repairId === repair.id);
+    return Boolean(
+      invoice && invoice.status !== "Brouillon" && invoice.status !== "Annulée" && getInvoiceTotal(invoice) > 0,
+    );
+  });
+  const [selectedId, setSelectedId] = useState(initialRepairId || eligible[0]?.id || "");
   const settlement = useSettlementModal();
-  const repair = store.repairs.find((entry) => entry.id === selectedId) ?? unpaid[0];
+  const repair = store.repairs.find((entry) => entry.id === selectedId) ?? eligible[0];
+
   useEffect(() => {
     if (initialRepairId) setSelectedId(initialRepairId);
   }, [initialRepairId]);
-  if (!repair) return <EmptyCounter title="Indiquer règlement" message="Aucun dossier à régler." onClose={onClose} />;
+
+  if (!repair) {
+    return (
+      <EmptyCounter
+        message="Aucune facture finalisée n’est disponible."
+        onClose={onClose}
+        title="Demander le paiement"
+      />
+    );
+  }
+
   const customer = store.customers.find((entry) => entry.id === repair.customerId);
-  const lines: QuoteLine[] = (
-    repair.counterPrestations?.length
-      ? repair.counterPrestations
-      : [{ label: repair.issue, prixClient: repairAmount(repair) }]
-  ).map((line, index) => ({
-    id: `line_${index}`,
-    description: line.label,
-    quantity: 1,
-    unitPrice: line.prixClient,
-    total: line.prixClient,
-  }));
-  const vat = getVatSummary(lines, store.workshopInfo);
-  const amount = repairAmount(repair);
-  // Marquage administratif uniquement : aucune app externe / TPE n'est ouverte.
-  // La confirmation (doc_${paymentId}) est générée par le store.
-  const pay = () => {
-    if (!confirmExternal) {
-      toast.error("Confirmez que le paiement a été encaissé hors Behar Tech Pro.");
-      return;
-    }
-    if (!store.invoices.some((entry) => entry.repairId === repair.id)) {
-      store.createInvoiceFromRepair(repair.id);
-    }
-    const paymentId = store.recordRepairSettlement(repair.id, {
-      status: "Réglé",
-      amount,
-      date: localDateValue(),
-      method,
-      externalReference,
-      note: "Règlement indiqué depuis le mode Comptoir",
-      confirmExternal,
-    });
-    if (!paymentId) return toast.error("Règlement impossible.");
-    setLastPaymentId(paymentId);
-    toast.success(`Règlement indiqué hors Behar Tech Pro : ${formatEuro(amount)}.`);
-  };
-  // Retrouve la confirmation liée au dossier (session ou règlement déjà indiqué).
-  const resolvePaymentId = () =>
-    lastPaymentId || store.payments.find((p) => p.repairId === repair.id && p.status === "Payé")?.id || "";
-  const printReceipt = () => {
-    const paymentId = resolvePaymentId();
-    if (!paymentId) return toast.info("Indiquez d'abord le règlement pour générer la confirmation.");
-    if (!printDocument({ id: `doc_${paymentId}`, type: "payment" })) toast.error("Confirmation introuvable.");
-  };
-  const sendReceipt = () => {
-    if (!resolvePaymentId()) return toast.info("Indiquez d'abord le règlement externe pour générer la confirmation.");
-    toast.success("Confirmation marquée comme transmise au client.");
-  };
-  // Donner la facture au client en un seul geste : retrouve la facture du dossier
-  // (créée au règlement) et imprime le vrai document.
+  const invoice = store.invoices.find((entry) => entry.repairId === repair.id);
+  if (!invoice) return null;
+  const total = getInvoiceTotal(invoice);
+  const vat = getVatSummary(invoice.lines, store.workshopInfo);
+
   const printInvoice = () => {
-    const invoice = store.invoices.find((entry) => entry.repairId === repair.id);
-    if (!invoice) return toast.info("Indiquez d'abord le règlement pour générer la facture.");
-    const doc = store.documents.find((d) => d.type === "invoice" && d.invoiceId === invoice.id) ?? {
+    const document = store.documents.find((entry) => entry.type === "invoice" && entry.invoiceId === invoice.id) ?? {
       id: `doc_${invoice.id}`,
       type: "invoice" as const,
     };
-    if (!printDocument(doc)) toast.error("Facture introuvable.");
+    if (!printDocument(document)) toast.error("Facture introuvable.");
   };
+
+  const closeRepair = () => {
+    store.changeRepairStatus(repair.id, "Clôturé");
+    toast.success("Dossier clôturé. Le règlement reste géré par le prestataire externe.");
+  };
+
   return (
     <div className="mx-auto max-w-[1180px]">
       <button
-        type="button"
-        onClick={onClose}
         className="mb-4 inline-flex h-[52px] items-center gap-2 rounded-full bg-white px-4 shadow-sm"
+        onClick={onClose}
+        type="button"
       >
         <ArrowLeft className="size-5" /> Retour
       </button>
-      <h1 className="mb-5 text-center font-black text-[32px]">Indiquer règlement</h1>
+      <h1 className="mb-5 text-center font-black text-[32px]">Demander le paiement</h1>
       <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
         <aside className="rounded-[20px] border border-[#E8E8E5] bg-white p-4">
           <h2 className="mb-4 font-bold">
-            À régler <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2">{unpaid.length}</span>
+            Factures finalisées{" "}
+            <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAF8] px-2">{eligible.length}</span>
           </h2>
           <ul className="space-y-3">
-            {unpaid.map((entry) => {
-              const c = store.customers.find((customer) => customer.id === entry.customerId);
+            {eligible.map((entry) => {
+              const linkedCustomer = store.customers.find((candidate) => candidate.id === entry.customerId);
+              const linkedInvoice = store.invoices.find((candidate) => candidate.repairId === entry.id);
+              if (!linkedInvoice) return null;
               return (
                 <li key={entry.id}>
                   <button
-                    type="button"
-                    onClick={() => setSelectedId(entry.id)}
                     className={cn(
                       "w-full rounded-[14px] border p-4 text-left",
-                      entry.id === repair.id ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white",
+                      entry.id === repair.id ? "border-[#2A9D8F] bg-[#F4FBF9]" : "border-[#E8E8E5] bg-white",
                     )}
+                    onClick={() => setSelectedId(entry.id)}
+                    type="button"
                   >
-                    <div className="flex justify-between">
-                      <b>{c?.name ?? "Comptoir"}</b>
-                      <span className="text-[#6B6B6B]">À régler</span>
+                    <div className="flex items-start justify-between gap-2">
+                      <b>{linkedCustomer?.name ?? "Client comptoir"}</b>
+                      <span className="rounded-full bg-[#F1FAF8] px-2 py-1 text-[#167B70] text-[10px] font-bold uppercase">
+                        Finalisée
+                      </span>
                     </div>
-                    <b>{formatEuro(repairAmount(entry))}</b>
-                    <p>{repairDeviceLabel(entry)}</p>
-                    <p>Dossier #{displayRepairCode(entry)}</p>
+                    <b className="mt-2 block text-[#167B70]">
+                      {formatCurrency(getInvoiceTotal(linkedInvoice), linkedInvoice.currency)}
+                    </b>
+                    <p className="mt-1 text-[#6B6B6B] text-sm">{repairDeviceLabel(entry)}</p>
+                    <p className="text-[#6B6B6B] text-xs">Facture {linkedInvoice.number}</p>
                   </button>
                 </li>
               );
             })}
           </ul>
         </aside>
+
         <section className="space-y-5">
           <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5">
             <div className="grid gap-5 lg:grid-cols-[1fr_350px]">
@@ -6873,105 +6819,65 @@ function CounterCheckoutScreen({
                   {customer?.email}
                 </p>
                 <dl className="mt-8 grid grid-cols-[120px_1fr] gap-y-5">
+                  <dt>Facture</dt>
+                  <dd>
+                    <b>{invoice.number}</b>
+                  </dd>
                   <dt>Dossier</dt>
                   <dd>
                     <b>#{displayRepairCode(repair)}</b>
-                  </dd>
-                  <dt>Intervention</dt>
-                  <dd>
-                    <b>{repair.issue}</b>
                   </dd>
                   <dt>Appareil</dt>
                   <dd>
                     <b>{repairDeviceLabel(repair)}</b>
                   </dd>
-                  <dt>Statut</dt>
+                  <dt>Boutique</dt>
                   <dd>
-                    <StatusPillCounter tone="orange">À régler</StatusPillCounter>
+                    <b>{repair.shopId || invoice.shopId || "Boutique active"}</b>
                   </dd>
                 </dl>
               </div>
               <div>
-                <p>Total à régler</p>
+                <p className="text-[#6B6B6B] text-sm">Total TTC de la facture</p>
                 <p className="font-black text-[#1E7A6E] text-[42px] tabular-nums">
-                  {formatEuro(amount)}{" "}
-                  <span className="text-[15px] text-[#6E6E73]">{store.workshopInfo.vatApplicable ? "TTC" : ""}</span>
+                  {formatCurrency(total, invoice.currency)}
                 </p>
-                <MiniInvoice repair={repair} lines={lines} vat={vat} />
+                <MiniInvoice lines={invoice.lines} repair={repair} vat={vat} />
               </div>
             </div>
           </div>
-          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5">
-            <h2 className="font-bold">Choisir le moyen de paiement externe</h2>
-            <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
-              {counterPaymentMethods(store.workshopInfo.country, store.workshopInfo.twintEnabled !== false).map(
-                (entry) => (
-                  <SelectTile key={entry} active={method === entry} onClick={() => setMethod(entry)}>
-                    {entry}
-                  </SelectTile>
-                ),
-              )}
-            </div>
-            <input
-              className="mt-4 h-[48px] w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]"
-              onChange={(event) => setExternalReference(event.target.value)}
-              placeholder="Référence externe facultative"
-              value={externalReference}
-            />
-            <label className="mt-3 flex items-start gap-3 rounded-[12px] border border-[#E8E8E5] bg-white p-3 text-sm font-semibold">
-              <input
-                checked={confirmExternal}
-                className="mt-1 accent-[#2A9D8F]"
-                onChange={(event) => setConfirmExternal(event.target.checked)}
-                type="checkbox"
-              />
-              Je confirme que le paiement a été encaissé hors Behar Tech Pro.
-            </label>
-          </section>
-          <div className="flex flex-wrap gap-3 [&>button]:min-w-[150px] [&>button]:flex-1">
-            <button type="button" onClick={pay} className="h-[56px] rounded-[14px] bg-[#2A9D8F] font-bold text-white">
-              Indiquer {formatEuro(amount)}
-            </button>
+
+          <div className="rounded-[16px] border border-[#D7EFEA] bg-[#F1FAF8] p-4 text-[#47706B] text-sm">
+            Le règlement est géré en dehors de Behar Tech Pro par le prestataire sélectionné.
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
             <button
+              className="h-[56px] rounded-[14px] bg-[#2A9D8F] font-bold text-white"
+              onClick={() => settlement.open(repair.id)}
               type="button"
-              onClick={printReceipt}
-              className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold"
             >
-              <Printer className="mr-2 inline size-4" /> Imprimer confirmation
+              Demander le paiement
             </button>
             <button
-              type="button"
-              onClick={printInvoice}
               className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold"
+              onClick={printInvoice}
+              type="button"
             >
               <Receipt className="mr-2 inline size-4" /> Imprimer la facture
             </button>
             <button
-              type="button"
-              onClick={sendReceipt}
               className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold"
-            >
-              Marquer confirmation transmise
-            </button>
-            <button
+              onClick={closeRepair}
               type="button"
-              onClick={() => setCloseConfirmOpen(true)}
-              className="h-[56px] rounded-[14px] border border-[#F2C8C3] bg-white font-bold text-[#C7493B]"
             >
-              Clôturer / règlement
+              Clôturer le dossier
             </button>
           </div>
-          {closeConfirmOpen && (
-            <CloseDossierConfirmModal
-              onCancel={() => setCloseConfirmOpen(false)}
-              onConfirm={() => {
-                setCloseConfirmOpen(false);
-                settlement.open(repair.id, { closeAfterSubmit: true });
-              }}
-            />
-          )}
+
           <SettlementModal
             draft={settlement.draft}
+            invoice={settlement.invoice}
             isOpen={settlement.isOpen}
             onClose={settlement.close}
             onDraftChange={settlement.setDraft}
@@ -6983,7 +6889,6 @@ function CounterCheckoutScreen({
     </div>
   );
 }
-
 function MiniInvoice({
   repair,
   lines,
@@ -8325,7 +8230,6 @@ function CounterInvoicesScreen({ onClose }: Readonly<{ onClose: () => void }>) {
           {invoices.map((invoice) => {
             const customer = store.customers.find((entry) => entry.id === invoice.customerId);
             const repair = invoice.repairId ? store.repairs.find((entry) => entry.id === invoice.repairId) : undefined;
-            const paid = invoice.status === "Payée";
             return (
               <li
                 key={invoice.id}
@@ -8334,7 +8238,7 @@ function CounterInvoicesScreen({ onClose }: Readonly<{ onClose: () => void }>) {
                 <div className="min-w-0">
                   <div className="flex items-center gap-3">
                     <b className="text-[16px]">{invoice.number}</b>
-                    <StatusPillCounter tone={paid ? "green" : "orange"}>{paid ? "Payée" : "À payer"}</StatusPillCounter>
+                    <StatusPillCounter tone="green">Finalisée</StatusPillCounter>
                   </div>
                   <p className="mt-1 truncate text-[#6B6B6B] text-sm">
                     {customer?.name ?? "Client"} · {repair?.deviceModel || repair?.device || "—"}
@@ -8373,9 +8277,6 @@ const COUNTER_DOC_LABEL: Record<string, string> = {
   intake: "Bon de prise en charge",
   quote: "Devis",
   invoice: "Facture",
-  payment: "Confirmation de règlement",
-  "sale-receipt": "Justificatif de vente",
-  "sale-invoice": "Facture de vente",
   internal: "Fiche interne",
   summary: "Résumé dossier",
 };
@@ -8384,10 +8285,8 @@ const COUNTER_DOC_FILTERS: Array<{ key: string; label: string }> = [
   { key: "intake", label: "Bons" },
   { key: "quote", label: "Devis" },
   { key: "invoice", label: "Factures" },
-  { key: "payment", label: "Règlements" },
   { key: "diagnostic_report", label: "Diagnostics" },
   { key: "summary", label: "Rapports finaux" },
-  { key: "sale-receipt", label: "Ventes" },
 ];
 function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () => void; repairId?: string }>) {
   const store = useBeharStore();
@@ -8399,28 +8298,19 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
     const invoice = doc.invoiceId ? store.invoices.find((entry) => entry.id === doc.invoiceId) : undefined;
     const quote = doc.quoteId ? store.quotes.find((entry) => entry.id === doc.quoteId) : undefined;
     const repair = doc.repairId ? store.repairs.find((entry) => entry.id === doc.repairId) : undefined;
-    const payment = doc.paymentId ? store.payments.find((entry) => entry.id === doc.paymentId) : undefined;
-    const sale = doc.saleId ? store.sales.find((entry) => entry.id === doc.saleId) : undefined;
     if (doc.type === "intake" && repair) return displayIntakeBonCode(repair, store.repairs);
-    return (
-      sale?.number ??
-      invoice?.number ??
-      quote?.number ??
-      payment?.paymentNumber ??
-      repair?.number ??
-      doc.id.slice(-6).toUpperCase()
-    );
+    return invoice?.number ?? quote?.number ?? repair?.number ?? doc.id.slice(-6).toUpperCase();
   };
   const repairIdForDocument = (doc: BeharDocument) => {
     if (doc.repairId) return doc.repairId;
     const quote = doc.quoteId ? store.quotes.find((entry) => entry.id === doc.quoteId) : undefined;
     const invoice = doc.invoiceId ? store.invoices.find((entry) => entry.id === doc.invoiceId) : undefined;
-    const payment = doc.paymentId ? store.payments.find((entry) => entry.id === doc.paymentId) : undefined;
-    return quote?.repairId ?? invoice?.repairId ?? payment?.repairId ?? "";
+    return quote?.repairId ?? invoice?.repairId ?? "";
   };
   const documents = useMemo(() => {
     const q = compactText(search);
     return store.documents.filter((doc) => {
+      if (["payment", "sale-receipt", "sale-invoice"].includes(doc.type)) return false;
       if (repairId && repairIdForDocument(doc) !== repairId) return false;
       if (filter !== "all" && doc.type !== filter) return false;
       if (!q) return true;
@@ -8431,18 +8321,7 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
       return needle.includes(q);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    search,
-    filter,
-    repairId,
-    store.documents,
-    store.customers,
-    store.invoices,
-    store.quotes,
-    store.repairs,
-    store.payments,
-    store.sales,
-  ]);
+  }, [search, filter, repairId, store.documents, store.customers, store.invoices, store.quotes, store.repairs]);
 
   return (
     <div className="mx-auto max-w-[1180px]">
@@ -8451,7 +8330,7 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
         subtitle={
           scopedRepair
             ? `Documents du dossier ${scopedRepair.number}.`
-            : "Tous les fichiers : bons, devis, factures, reçus et ventes."
+            : "Tous les fichiers : bons, devis, factures et rapports."
         }
         onClose={onClose}
       />

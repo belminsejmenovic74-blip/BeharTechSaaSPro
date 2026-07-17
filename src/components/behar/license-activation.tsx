@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { ensureCloudStateForLicense, normalizeLicenseKey } from "@/lib/workshop-sync";
 
 export function LicenseActivation() {
-  const activateLicense = useBeharStore((s) => s.activateLicense);
+  const activateTrustedLicense = useBeharStore((s) => s.activateTrustedLicense);
   const deactivateLicense = useBeharStore((s) => s.deactivateLicense);
   const [key, setKey] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -26,23 +26,21 @@ export function LicenseActivation() {
     }
 
     setIsLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-
     const normalizedKey = normalizeLicenseKey(key);
-    const result = activateLicense(normalizedKey);
-
-    if (!result) {
-      setError("Clé invalide. Vérifiez votre licence.");
-      toast.error("Clé invalide.");
-      setIsLoading(false);
-      return;
-    }
 
     try {
-      const result = await ensureCloudStateForLicense(normalizedKey, true);
-      if (result === "loaded") {
+      const response = await fetch("/api/license/validate", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ licenseKey: normalizedKey }),
+      });
+      const validation = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(validation.error || "Clé invalide. Vérifiez votre licence.");
+      activateTrustedLicense(normalizedKey, validation.plan);
+      const cloudResult = await ensureCloudStateForLicense(normalizedKey, true);
+      if (cloudResult === "loaded") {
         toast.success("Atelier cloud chargé.");
-      } else if (result === "created") {
+      } else if (cloudResult === "created") {
         toast.success("Licence activée. Atelier cloud créé.");
       } else {
         deactivateLicense();

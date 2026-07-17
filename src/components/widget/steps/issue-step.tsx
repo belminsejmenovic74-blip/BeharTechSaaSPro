@@ -381,8 +381,8 @@ function IssueCard({
       className={cn(
         "group relative flex flex-col gap-2 rounded-[var(--w-radius)] border bg-[var(--w-surface)] p-3.5 text-left transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--w-focus-ring)]",
         selected
-          ? "border-[var(--w-primary)] bg-[var(--w-primary-soft)] shadow-[0_2px_12px_var(--w-primary-soft)]"
-          : "border-[var(--w-border)] hover:border-[var(--w-primary-border)] hover:shadow-sm",
+          ? "border-[var(--w-primary)] bg-white shadow-[0_5px_18px_var(--w-primary-soft)]"
+          : "border-[var(--w-border)] bg-white hover:border-[#B9B9B4] hover:shadow-sm",
       )}
     >
       <span className="flex items-start justify-between gap-2">
@@ -392,7 +392,7 @@ function IssueCard({
               "grid size-8 shrink-0 place-items-center rounded-lg transition",
               selected
                 ? "bg-[var(--w-primary)] text-[var(--w-on-primary)]"
-                : "bg-[var(--w-tint)] text-[var(--w-primary)]",
+                : "bg-[var(--w-primary-soft)] text-[var(--w-primary)]",
             )}
           >
             <Icon className="size-4" strokeWidth={1.75} />
@@ -419,7 +419,7 @@ function IssueCard({
         </span>
       </span>
       <span className="pl-10">
-        <span className="block text-sm font-semibold text-[var(--w-primary)]">
+        <span className="block text-sm font-semibold text-[var(--w-text)]">
           {price && !price.onRequest ? price.label : "Sur devis"}
         </span>
         <span className="mt-0.5 block text-xs text-[var(--w-muted)]">

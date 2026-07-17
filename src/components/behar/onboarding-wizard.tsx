@@ -24,9 +24,11 @@ import {
 import { toast } from "sonner";
 
 import { Panel, PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
+import { BusinessHoursEditor } from "@/components/behar/business-hours-editor";
 import { type TeamMember, useBeharStore, type WorkshopSettings } from "@/lib/behar-store";
 import { cn } from "@/lib/utils";
 import { getLegalFieldsByCountry, getWorkshopCountryConfig } from "@/lib/workshop-country";
+import { defaultWorkshopWeeklyHours, formatWorkshopWeeklyHours } from "@/lib/workshop-hours";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -171,6 +173,7 @@ export function OnboardingWizard() {
       ? store.workshopSettings.acceptedPaymentMethods
       : ["Espèces hors Behar Tech", "TPE externe"],
     businessHours: store.workshopSettings.businessHours || "Lun-Ven 09:00-18:00",
+    weeklyHours: store.workshopSettings.weeklyHours || defaultWorkshopWeeklyHours(),
     quoteTerms: store.workshopSettings.quoteTerms || "Valable 30 jours.",
     invoiceTerms: store.workshopSettings.invoiceTerms || "Paiement à réception.",
     intakeTerms: store.workshopSettings.intakeTerms || "",
@@ -207,7 +210,9 @@ export function OnboardingWizard() {
       const countryConfig = getWorkshopCountryConfig(draft.country);
       if (!countryConfig.postalCodePattern.test(postalCode) || /^0+$/.test(postalCode)) {
         return toast.error(
-          draft.country === "CH" ? "NPA suisse invalide (4 chiffres attendus)." : "Code postal invalide (5 chiffres attendus).",
+          draft.country === "CH"
+            ? "NPA suisse invalide (4 chiffres attendus)."
+            : "Code postal invalide (5 chiffres attendus).",
         );
       }
       if (isWeakText(draft.city)) return toast.error("Ville obligatoire.");
@@ -249,13 +254,10 @@ export function OnboardingWizard() {
       siret: draft.country === "CH" ? "" : digitsOnly(draft.siret),
       tvaNumber: draft.country === "CH" ? "" : normalizeSpaces(draft.tvaNumber),
       swissUid: draft.country === "CH" ? normalizeSpaces(draft.swissUid) : "",
-      swissVatNumber:
-        draft.country === "CH" && draft.vatApplicable ? normalizeSpaces(draft.swissVatNumber) : "",
+      swissVatNumber: draft.country === "CH" && draft.vatApplicable ? normalizeSpaces(draft.swissVatNumber) : "",
       swissCanton: draft.country === "CH" ? normalizeSpaces(draft.swissCanton) : "",
       postalCity: [postalCode, city].filter(Boolean).join(" ").trim(),
-      vatRate: draft.vatApplicable
-        ? Number(draft.vatRate || (draft.country === "CH" ? 8.1 : 20))
-        : 0,
+      vatRate: draft.vatApplicable ? Number(draft.vatRate || (draft.country === "CH" ? 8.1 : 20)) : 0,
       tvaMention: draft.vatApplicable
         ? ""
         : draft.country === "CH"
@@ -391,10 +393,7 @@ function StepAtelier({ draft, setField }: any) {
     setField("vatApplicable", false);
     setField("taxRegime", "not_subject_to_vat");
     setField("vatRate", 0);
-    setField(
-      "tvaMention",
-      country === "CH" ? "Non assujetti à la TVA" : "TVA non applicable, art. 293 B du CGI",
-    );
+    setField("tvaMention", country === "CH" ? "Non assujetti à la TVA" : "TVA non applicable, art. 293 B du CGI");
   };
 
   return (
@@ -511,7 +510,11 @@ function StepAtelier({ draft, setField }: any) {
           </>
         ) : (
           <>
-            <Field label="SIRET *" placeholder="12345678900012" hint="14 chiffres. Le SIREN est déduit automatiquement.">
+            <Field
+              label="SIRET *"
+              placeholder="12345678900012"
+              hint="14 chiffres. Le SIREN est déduit automatiquement."
+            >
               <input
                 className={inputCls}
                 value={draft.siret}
@@ -520,7 +523,11 @@ function StepAtelier({ draft, setField }: any) {
               />
             </Field>
             <Field label="TVA Intracommunautaire (optionnel)">
-              <input className={inputCls} value={draft.tvaNumber} onChange={(e) => setField("tvaNumber", e.target.value)} />
+              <input
+                className={inputCls}
+                value={draft.tvaNumber}
+                onChange={(e) => setField("tvaNumber", e.target.value)}
+              />
             </Field>
           </>
         )}
@@ -574,11 +581,7 @@ function StepSettings({ draft, setField }: any) {
     setField("vatRate", applicable ? (isSwiss ? 8.1 : 20) : 0);
     setField(
       "tvaMention",
-      applicable
-        ? ""
-        : isSwiss
-          ? "Non assujetti à la TVA"
-          : "TVA non applicable, art. 293 B du CGI",
+      applicable ? "" : isSwiss ? "Non assujetti à la TVA" : "TVA non applicable, art. 293 B du CGI",
     );
   };
   return (
@@ -589,6 +592,15 @@ function StepSettings({ draft, setField }: any) {
       </div>
 
       <div className="space-y-8">
+        <BusinessHoursEditor
+          value={draft.weeklyHours}
+          compact
+          onChange={(weeklyHours) => {
+            setField("weeklyHours", weeklyHours);
+            setField("businessHours", formatWorkshopWeeklyHours(weeklyHours));
+          }}
+        />
+
         {/* Regime TVA */}
         <div className="space-y-4">
           <p className="text-sm font-medium text-[#1A1916]">Régime de TVA</p>
@@ -850,7 +862,9 @@ function StepSummary({ draft, team }: { draft: WorkshopSettings; team: any[] }) 
             <SummaryItem icon={<Mail className="size-3" />} label={draft.email} />
             <SummaryItem
               icon={<FileText className="size-3" />}
-              label={draft.country === "CH" ? `IDE / CHE : ${draft.swissUid || "Non renseigné"}` : `SIRET: ${draft.siret}`}
+              label={
+                draft.country === "CH" ? `IDE / CHE : ${draft.swissUid || "Non renseigné"}` : `SIRET: ${draft.siret}`
+              }
             />
           </div>
         </SummarySection>

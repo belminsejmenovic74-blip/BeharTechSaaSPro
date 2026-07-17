@@ -95,9 +95,9 @@ describe("mini-CMS widget", () => {
     expect(invalidCustom.success).toBe(false);
   });
 
-  it("ne crée aucune offre par défaut et accepte une offre textuelle sans image", () => {
-    expect(DEFAULT_WIDGET_CMS_CONFIG.offers.enabled).toBe(false);
-    expect(DEFAULT_WIDGET_CMS_CONFIG.offers.offers).toEqual([]);
+  it("propose QualiRépar et le verre trempé par défaut et accepte une offre textuelle sans image", () => {
+    expect(DEFAULT_WIDGET_CMS_CONFIG.offers.enabled).toBe(true);
+    expect(DEFAULT_WIDGET_CMS_CONFIG.offers.offers.map((offer) => offer.id)).toEqual(["qualirepar", "verre-trempe"]);
     const parsed = editableWidgetConfigSchema.safeParse({
       ...DEFAULT_WIDGET_CMS_CONFIG,
       offers: {

@@ -1,9 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Copy, Download, KeyRound, Ban, CheckCircle2 } from "lucide-react";
+import { Copy, Download, KeyRound, Ban, CheckCircle2, Crown, Mail, UserPlus } from "lucide-react";
 import { PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
-import { generateLicenses, deactivateLicense, fetchLicenses, isAdminAuthed, loginAdmin } from "./actions";
+import {
+  createFounderClient,
+  generateLicenses,
+  deactivateLicense,
+  fetchLicenses,
+  isAdminAuthed,
+  loginAdmin,
+} from "./actions";
 import type { LicenseKey } from "@/lib/supabase/license-types";
 import { toast } from "sonner";
 
@@ -14,6 +21,8 @@ export default function AdminLicensesPage() {
   const [authState, setAuthState] = useState<"checking" | "locked" | "unlocked">("checking");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCreatingFounder, setIsCreatingFounder] = useState(false);
+  const [founderForm, setFounderForm] = useState({ workshopName: "", email: "", licenseKey: "" });
 
   useEffect(() => {
     isAdminAuthed().then((ok) => {
@@ -64,6 +73,20 @@ export default function AdminLicensesPage() {
       loadLicenses();
     } else {
       toast.error(res.message || "Erreur");
+    }
+  }
+
+  async function handleCreateFounder(e: React.FormEvent) {
+    e.preventDefault();
+    setIsCreatingFounder(true);
+    const res = await createFounderClient(founderForm);
+    setIsCreatingFounder(false);
+    if (res.success) {
+      toast.success(res.message);
+      setFounderForm({ workshopName: "", email: "", licenseKey: "" });
+      loadLicenses();
+    } else {
+      toast.error(res.message);
     }
   }
 
@@ -144,6 +167,72 @@ export default function AdminLicensesPage() {
         </div>
       </div>
 
+      <section className="overflow-hidden rounded-2xl border border-[#D8EDEA] bg-white shadow-sm">
+        <div className="flex flex-col gap-3 border-b border-[#E8E8E5] bg-[#F3FAF9] px-6 py-5 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="rounded-xl bg-[#2A9D8F] p-2.5 text-white">
+              <UserPlus className="size-5" />
+            </div>
+            <div>
+              <h2 className="flex items-center gap-2 text-lg font-bold text-[#1A1916]">
+                Donner un accès client fondateur
+                <Crown className="size-4 text-[#D69E2E]" />
+              </h2>
+              <p className="mt-0.5 text-sm text-[#62625E]">
+                Pour tes premiers clients : aucun abonnement à choisir, aucun paiement et aucune nouvelle clé.
+              </p>
+            </div>
+          </div>
+          <span className="w-fit rounded-full border border-[#B9DDD8] bg-white px-3 py-1 text-xs font-bold text-[#237F74]">
+            Tous les accès · sans échéance
+          </span>
+        </div>
+
+        <form onSubmit={handleCreateFounder} className="grid gap-4 p-6 lg:grid-cols-[1fr_1fr_1fr_auto] lg:items-end">
+          <label className="grid gap-2 text-sm font-semibold text-[#343431]">
+            Nom de l’atelier
+            <input
+              required
+              value={founderForm.workshopName}
+              onChange={(event) => setFounderForm((value) => ({ ...value, workshopName: event.target.value }))}
+              placeholder="Ex. Réparation Mobile Lyon"
+              className="h-11 rounded-xl border border-[#DEDDD8] bg-white px-3.5 font-normal text-[#1A1916] outline-none transition focus:border-[#2A9D8F] focus:ring-2 focus:ring-[#2A9D8F]/10"
+            />
+          </label>
+          <label className="grid gap-2 text-sm font-semibold text-[#343431]">
+            E-mail du client
+            <input
+              required
+              type="email"
+              value={founderForm.email}
+              onChange={(event) => setFounderForm((value) => ({ ...value, email: event.target.value }))}
+              placeholder="client@atelier.fr"
+              className="h-11 rounded-xl border border-[#DEDDD8] bg-white px-3.5 font-normal text-[#1A1916] outline-none transition focus:border-[#2A9D8F] focus:ring-2 focus:ring-[#2A9D8F]/10"
+            />
+          </label>
+          <label className="grid gap-2 text-sm font-semibold text-[#343431]">
+            Clé déjà remise
+            <input
+              required
+              value={founderForm.licenseKey}
+              onChange={(event) =>
+                setFounderForm((value) => ({ ...value, licenseKey: event.target.value.toUpperCase() }))
+              }
+              placeholder="BTP-XXXX-XXXX-XXXX"
+              className="h-11 rounded-xl border border-[#DEDDD8] bg-white px-3.5 font-mono font-normal uppercase text-[#1A1916] outline-none transition focus:border-[#2A9D8F] focus:ring-2 focus:ring-[#2A9D8F]/10"
+            />
+          </label>
+          <PrimaryButton type="submit" disabled={isCreatingFounder} className="h-11 gap-2 lg:px-5">
+            <Mail className="size-4" />
+            {isCreatingFounder ? "Création…" : "Créer et inviter"}
+          </PrimaryButton>
+        </form>
+        <div className="border-t border-[#EFEFEB] px-6 py-3 text-xs text-[#74746F]">
+          La clé rattache automatiquement les anciennes données de l’atelier. Le client clique sur l’e-mail reçu et
+          arrive directement dans son espace.
+        </div>
+      </section>
+
       {generatedBatch && (
         <div className="bg-[#FFFBEB] border border-[#FDE68A] p-4 rounded-xl text-[#92400E] text-sm flex gap-3">
           <div className="mt-0.5">
@@ -185,7 +274,9 @@ export default function AdminLicensesPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-6 py-4 uppercase text-xs font-bold text-[#6B6B6B]">{lic.plan}</td>
+                  <td className="px-6 py-4 uppercase text-xs font-bold text-[#6B6B6B]">
+                    {lic.founder_access ? "Fondateur" : lic.plan}
+                  </td>
                   <td className="px-6 py-4 text-[#6B6B6B]">{new Date(lic.created_at).toLocaleDateString("fr-FR")}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">

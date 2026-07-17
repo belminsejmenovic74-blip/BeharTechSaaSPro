@@ -181,7 +181,7 @@ export function DemoWorkflow() {
           <div className="mt-6 grid gap-2">
             <PrimaryButton onClick={() => completeStep("payment")}>
               <WalletCards className="size-4" />
-              Marquer comme payé
+              Créer une demande de paiement
             </PrimaryButton>
             <SecondaryButton onClick={() => addMessage("SMS")}>
               <Send className="size-4" />

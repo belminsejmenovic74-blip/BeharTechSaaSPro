@@ -6,6 +6,7 @@ import type { NormalizedBusinessState } from "@/lib/data/normalized-sync";
 import { getCustomerTrackingPath, getTrackingCode } from "@/lib/customer-tracking";
 import { makePublicUrl } from "@/lib/public-access";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { getCurrentAppSession } from "@/lib/auth/app-session";
 import { isLicenseActive } from "@/lib/server/verify-license";
 import { normalizePartReference } from "@/lib/stock-reference";
 import { syncWidgetShopFromLicense } from "@/lib/server/widget-license-data";
@@ -195,6 +196,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "workshopId UUID requis." }, { status: 400 });
   }
 
+  const appSession = await getCurrentAppSession();
+  if (appSession && appSession.workshopId !== workshopId) {
+    return NextResponse.json({ error: "Session entreprise invalide." }, { status: 403 });
+  }
+
   if (!(await isLicenseActive(payload.licenseKey))) {
     return NextResponse.json({ error: "Licence invalide ou inactive." }, { status: 401 });
   }
@@ -273,9 +279,11 @@ export async function POST(request: Request) {
   // et horaires vers toutes ses boutiques widget, sans modifier la présentation.
   const { data: widgetShops } = await supabase
     .from("shops")
-    .select("id")
+    .select("id,public_shop_id")
     .eq("tenant_id", workshopId)
     .eq("active", true);
+  const shopIdByPublicId = new Map((widgetShops || []).map((shop) => [shop.public_shop_id, shop.id]));
+  const defaultDatabaseShopId = widgetShops?.[0]?.id ?? null;
   await Promise.all(
     (widgetShops || []).map((shop) =>
       syncWidgetShopFromLicense(supabase, workshopId, shop.id, (ws ?? {}) as Record<string, unknown>),
@@ -307,6 +315,7 @@ export async function POST(request: Request) {
     return {
       id: stableUuid(`repair:${workshopId}:${repair.id}`),
       workshop_id: workshopId,
+      shop_id: shopIdByPublicId.get(text(repair.shopId)) ?? defaultDatabaseShopId,
       client_id: stableUuid(`client:${workshopId}:${repair.customerId}`),
       repair_number: text(repair.number, repair.id),
       device_brand: text(repair.brandName) || null,
@@ -407,6 +416,7 @@ export async function POST(request: Request) {
     return {
       id: stableUuid(`invoice:${workshopId}:${invoice.id}`),
       workshop_id: workshopId,
+      shop_id: shopIdByPublicId.get(text(invoice.shopId)) ?? defaultDatabaseShopId,
       client_id: stableUuid(`client:${workshopId}:${invoice.customerId}`),
       repair_id: invoice.repairId ? stableUuid(`repair:${workshopId}:${invoice.repairId}`) : null,
       quote_id: invoice.quoteId ? stableUuid(`quote:${workshopId}:${invoice.quoteId}`) : null,
