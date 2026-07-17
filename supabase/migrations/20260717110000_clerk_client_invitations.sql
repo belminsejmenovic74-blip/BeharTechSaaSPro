@@ -263,8 +263,12 @@ begin
       '{"devices":1,"repairs_per_month":10,"sms_per_month":10}'::jsonb
     ) returning id into v_license_id;
     insert into private.license_secrets(license_id, license_key) values (v_license_id, v_key);
-    insert into public.communication_settings(workshop_id) values (v_workshop_id);
-    insert into public.document_settings(workshop_id) values (v_workshop_id);
+    insert into public.communication_settings(workshop_id)
+    values (v_workshop_id)
+    on conflict (workshop_id) do nothing;
+    insert into public.document_settings(workshop_id)
+    values (v_workshop_id)
+    on conflict (workshop_id) do nothing;
 
     v_state := jsonb_build_object(
       'licenseActivated', true, 'licenseKey', v_key,
@@ -337,4 +341,3 @@ revoke all on function public.admin_provision_clerk_user(text, text, text, text)
   from public, anon, authenticated;
 grant execute on function public.admin_provision_clerk_user(text, text, text, text)
   to service_role;
-
