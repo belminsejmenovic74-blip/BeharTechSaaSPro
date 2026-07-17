@@ -84,13 +84,6 @@ export function hasSupabase() {
 	return Boolean(supabase);
 }
 
-function defaultProfileFor(user: AuthUser) {
-	return {
-		clerk_user_id: user.id,
-		email: user.email || ''
-	};
-}
-
 function normalizeProfile(profile: ClientProfile): ClientProfile {
 	return {
 		...profile,
@@ -106,24 +99,8 @@ function normalizeProfile(profile: ClientProfile): ClientProfile {
 }
 
 export async function ensureClientProfile(user: AuthUser): Promise<ClientProfile | null> {
-	if (!supabase) return null;
-	await provisionClerkAccount();
-
-	const existing = await supabase
-		.from('client_profiles')
-		.select('*')
-		.eq('clerk_user_id', user.id)
-		.maybeSingle();
-	if (existing.error) throw existing.error;
-	if (existing.data) return normalizeProfile(existing.data as ClientProfile);
-
-	const created = await supabase
-		.from('client_profiles')
-		.insert(defaultProfileFor(user))
-		.select('*')
-		.single();
-	if (created.error) throw created.error;
-	return normalizeProfile(created.data as ClientProfile);
+	const profile = await provisionClerkAccount<ClientProfile>();
+	return profile ? normalizeProfile(profile) : null;
 }
 
 export async function updateClientProfile(userId: string, patch: ClientProfilePatch) {

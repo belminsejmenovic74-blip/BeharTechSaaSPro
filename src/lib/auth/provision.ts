@@ -1,7 +1,11 @@
-export async function provisionClerkAccount(): Promise<void> {
+type ProvisionResponse<T> = {
+	error?: string;
+	profile?: T;
+};
+
+export async function provisionClerkAccount<T = unknown>(): Promise<T | null> {
 	const response = await fetch('/api/auth/provision', { method: 'POST', cache: 'no-store' });
-	if (response.ok) return;
-	const body = (await response.json().catch(() => null)) as { error?: string } | null;
+	const body = (await response.json().catch(() => null)) as ProvisionResponse<T> | null;
+	if (response.ok) return body?.profile ?? null;
 	throw new Error(body?.error || 'Impossible de préparer votre espace client.');
 }
-

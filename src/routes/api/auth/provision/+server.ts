@@ -17,7 +17,13 @@ export const POST: RequestHandler = async ({ locals }) => {
 			p_last_name: user.last_name
 		});
 		if (error) throw error;
-		return json({ ok: true, account: data }, { headers: { 'cache-control': 'no-store' } });
+		const { data: profile, error: profileError } = await admin
+			.from('client_profiles')
+			.select('*')
+			.eq('clerk_user_id', user.id)
+			.single();
+		if (profileError) throw profileError;
+		return json({ ok: true, account: data, profile }, { headers: { 'cache-control': 'no-store' } });
 	} catch (error) {
 		console.error('[clerk-provision]', error);
 		return json(
@@ -26,4 +32,3 @@ export const POST: RequestHandler = async ({ locals }) => {
 		);
 	}
 };
-

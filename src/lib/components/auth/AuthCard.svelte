@@ -312,7 +312,11 @@
 				throw new Error(`Informations manquantes : ${signUp.missingFields.join(', ') || 'vérification du compte'}.`);
 			}
 
-			const signIn = await client.signIn.create({ identifier: normalizedEmail, password });
+			const signIn = await client.signIn.create({
+				strategy: 'password',
+				identifier: normalizedEmail,
+				password
+			});
 			if (signIn.status === 'complete') {
 				await activateSession(signIn.createdSessionId, false);
 				return;
