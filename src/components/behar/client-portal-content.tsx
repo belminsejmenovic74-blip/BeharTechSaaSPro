@@ -2,7 +2,18 @@
 
 import Link from "next/link";
 
-import { Building2, CreditCard, FileText, LayoutTemplate, Mail, MessageSquareText, Store, Users } from "lucide-react";
+import {
+  Building2,
+  CalendarDays,
+  CreditCard,
+  FileText,
+  LayoutTemplate,
+  Mail,
+  MessageSquareText,
+  Sparkles,
+  Store,
+  Users,
+} from "lucide-react";
 
 import AccueilHome from "@/app/(main)/accueil/page";
 import { ExternalPaymentIntegrations } from "@/components/behar/external-payment-integrations";
@@ -73,6 +84,41 @@ const SECTION_CONTENT = {
 
 export function ClientPortalContent({ section }: Readonly<{ section: ClientSection }>) {
   if (section === "accueil") return <AccueilHome />;
+  if (section === "sms" || section === "emails") {
+    const isSms = section === "sms";
+    const Icon = isSms ? MessageSquareText : Mail;
+    return (
+      <PortalPage>
+        <PageHeader
+          title={isSms ? "SMS" : "E-mails"}
+          subtitle="Les communications clients arrivent bientôt dans votre espace."
+        />
+        <section className="relative max-w-3xl overflow-hidden rounded-[24px] border border-[#E5E9E6] bg-white p-6 shadow-[0_18px_55px_rgba(22,32,29,0.08)] sm:p-9">
+          <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[#EFF9F7] to-transparent" />
+          <div className="relative">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#D6EBE7] bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[#167B70] shadow-sm">
+              <Sparkles className="size-3.5" /> Nouvelle fonctionnalité
+            </span>
+            <span className="mt-6 grid size-14 place-items-center rounded-[17px] border border-[#DCEAE7] bg-white text-[#2A9D8F] shadow-[0_8px_24px_rgba(42,157,143,0.12)]">
+              <Icon className="size-6" />
+            </span>
+            <h2 className="mt-5 text-[23px] font-semibold tracking-tight text-[#1A1916]">
+              {isSms ? "Communications SMS" : "Communications par e-mail"}
+            </h2>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-[#6B6B6B]">
+              {isSms
+                ? "Envoyez les confirmations, suivis et rappels directement depuis les dossiers clients."
+                : "Envoyez vos documents, confirmations et informations de suivi depuis le même espace."}
+            </p>
+            <div className="mt-7 inline-flex min-h-12 items-center gap-3 rounded-[14px] border border-[#DDE7E4] bg-[#F7FAF9] px-4 text-sm font-semibold text-[#285F58]">
+              <CalendarDays className="size-5 text-[#2A9D8F]" />
+              Disponible à partir du 1er août 2026
+            </div>
+          </div>
+        </section>
+      </PortalPage>
+    );
+  }
   if (section === "paiements") {
     return (
       <PortalPage>

@@ -11,11 +11,14 @@ import {
   ChevronRight,
   FileText,
   Image as ImageIcon,
+  Loader2,
   Mail,
   Phone,
   Plus,
   ShieldCheck,
   Sparkles,
+  Store,
+  Truck,
   Trash2,
   Upload,
   UserPlus,
@@ -26,7 +29,9 @@ import { toast } from "sonner";
 import { Panel, PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
 import { BusinessHoursEditor } from "@/components/behar/business-hours-editor";
 import { type TeamMember, useBeharStore, type WorkshopSettings } from "@/lib/behar-store";
+import { syncNormalizedBusinessState } from "@/lib/data/normalized-sync";
 import { cn } from "@/lib/utils";
+import { normalizeLicenseKey, saveSnapshotState } from "@/lib/workshop-sync";
 import { getLegalFieldsByCountry, getWorkshopCountryConfig } from "@/lib/workshop-country";
 import { defaultWorkshopWeeklyHours, formatWorkshopWeeklyHours } from "@/lib/workshop-hours";
 
@@ -144,6 +149,7 @@ export function OnboardingWizard() {
   const store = useBeharStore();
   const [step, setStep] = useState<Step>(1);
   const [errors, setErrors] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [draft, setDraft] = useState<WorkshopSettings>(() => ({
     ...store.workshopSettings,
@@ -174,6 +180,7 @@ export function OnboardingWizard() {
       : ["Espèces hors Behar Tech", "TPE externe"],
     businessHours: store.workshopSettings.businessHours || "Lun-Ven 09:00-18:00",
     weeklyHours: store.workshopSettings.weeklyHours || defaultWorkshopWeeklyHours(),
+    customerReceptionMode: store.workshopSettings.customerReceptionMode || "shop",
     quoteTerms: store.workshopSettings.quoteTerms || "Valable 30 jours.",
     invoiceTerms: store.workshopSettings.invoiceTerms || "Paiement à réception.",
     intakeTerms: store.workshopSettings.intakeTerms || "",
@@ -235,7 +242,9 @@ export function OnboardingWizard() {
     window.scrollTo(0, 0);
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
     const city = normalizeSpaces(draft.city);
     const postalCode = normalizeSpaces(draft.postalCode);
     store.saveWorkshopSettings({
@@ -271,8 +280,42 @@ export function OnboardingWizard() {
       configuredAt: new Date().toISOString(),
     });
 
+    const cleanTeam = teamDraft.filter(
+      (member) => normalizeSpaces(member.firstName).length > 0 || normalizeSpaces(member.lastName).length > 0,
+    );
+    cleanTeam.forEach((member, index) => {
+      const normalizedMember = {
+        ...member,
+        firstName: normalizeSpaces(member.firstName),
+        lastName: normalizeSpaces(member.lastName),
+        email: normalizeSpaces(member.email).toLowerCase() || undefined,
+        phone: normalizeSpaces(member.phone) || undefined,
+      };
+      const existing = store.teamMembers[index];
+      if (existing) store.updateTeamMember(existing.id, normalizedMember);
+      else store.addTeamMember(normalizedMember);
+    });
+
     store.setOnboardingCompleted(true);
-    toast.success("Configuration terminée avec succès !");
+    try {
+      const licenseKey = normalizeLicenseKey(useBeharStore.getState().licenseKey);
+      if (!licenseKey) throw new Error("Licence introuvable.");
+      const snapshot = await saveSnapshotState(licenseKey, useBeharStore.getState());
+      useBeharStore.setState((state) => ({
+        cloudSync: {
+          ...(state.cloudSync ?? {}),
+          workshopId: snapshot.workshopId,
+          lastSyncedAt: snapshot.updatedAt,
+        },
+      }));
+      await syncNormalizedBusinessState(useBeharStore.getState());
+      toast.success("Atelier configuré et synchronisé avec succès !");
+    } catch (error) {
+      console.error("[onboarding] final sync failed", error);
+      toast.error("L’atelier est enregistré. La synchronisation cloud sera retentée automatiquement.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -318,9 +361,18 @@ export function OnboardingWizard() {
               ) : (
                 <PrimaryButton
                   onClick={handleFinish}
+                  disabled={isSaving}
                   className="h-12 px-8 rounded-[14px] gap-2 bg-[#2A9D8F] hover:bg-[#238579]"
                 >
-                  Terminer la configuration <ArrowRight className="size-4" />
+                  {isSaving ? (
+                    <>
+                      Synchronisation… <Loader2 className="size-4 animate-spin" />
+                    </>
+                  ) : (
+                    <>
+                      Terminer la configuration <ArrowRight className="size-4" />
+                    </>
+                  )}
                 </PrimaryButton>
               )}
             </div>
@@ -454,6 +506,45 @@ function StepAtelier({ draft, setField }: any) {
         <Field label="Email *" placeholder="contact@reparateur.fr">
           <input className={inputCls} value={draft.email} onChange={(e) => setField("email", e.target.value)} />
         </Field>
+        <div className="md:col-span-2">
+          <Field
+            label="Mode d’accueil client *"
+            hint="Ce choix adapte automatiquement les options proposées dans votre widget."
+          >
+            <div className="grid gap-3 sm:grid-cols-3">
+              {(
+                [
+                  ["shop", Store, "En boutique", "Les clients peuvent venir directement."],
+                  ["mobile", Truck, "Déplacement uniquement", "Aucune invitation à passer en boutique."],
+                  ["hybrid", Sparkles, "Boutique + déplacement", "Vous proposez les deux possibilités."],
+                ] as const
+              ).map(([value, Icon, label, description]) => {
+                const selected = (draft.customerReceptionMode || "shop") === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => setField("customerReceptionMode", value)}
+                    className={cn(
+                      "rounded-[16px] border p-4 text-left transition",
+                      selected
+                        ? "border-[#2A9D8F] bg-[#F1FAF8] shadow-[0_0_0_3px_rgba(42,157,143,0.08)]"
+                        : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/45",
+                    )}
+                  >
+                    <span className="flex items-center justify-between gap-3">
+                      <Icon className="size-5 text-[#2A9D8F]" />
+                      {selected ? <Check className="size-4 text-[#167B70]" /> : null}
+                    </span>
+                    <span className="mt-3 block text-sm font-semibold text-[#1A1916]">{label}</span>
+                    <span className="mt-1 block text-xs leading-5 text-[#6B6B6B]">{description}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+        </div>
         <div className="md:col-span-2">
           <Field label="Adresse complète *" placeholder="12 rue de la Paix">
             <input className={inputCls} value={draft.address} onChange={(e) => setField("address", e.target.value)} />

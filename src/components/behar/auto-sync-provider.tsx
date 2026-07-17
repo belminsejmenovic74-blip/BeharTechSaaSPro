@@ -4,6 +4,7 @@ import { useEffect } from "react";
 
 import { type StoreState, useBeharStore } from "@/lib/behar-store";
 import { checkDeviceQuota } from "@/lib/plan-limits";
+import { syncNormalizedBusinessState } from "@/lib/data/normalized-sync";
 import { syncPublicTrackingDocumentsToCloud } from "@/lib/public-tracking-documents-sync";
 import { syncPublicTrackingRepairsToCloud } from "@/lib/public-tracking-sync";
 import { installReconditioningSalesBridge } from "@/lib/reconditioning-store";
@@ -255,6 +256,13 @@ export function AutoSyncProvider() {
             // publique affiche toujours « Suivi introuvable ».
             // Fire-and-forget : ne bloque jamais la sauvegarde principale.
             const trackingState = useBeharStore.getState();
+            // Réplique aussi les paramètres et données dans les tables métier
+            // (workshops, app_settings, widget shops, clients, dossiers…). Le
+            // snapshot reste la sauvegarde exhaustive, les tables normalisées
+            // restent la source serveur exploitable par le portail et le widget.
+            void syncNormalizedBusinessState(trackingState).catch((error) => {
+              console.error("[auto-sync] normalized business sync failed", error);
+            });
             const trackedRepairs = (trackingState.repairs ?? []).filter(
               (repair) => repair?.publicAccess?.active !== false,
             );

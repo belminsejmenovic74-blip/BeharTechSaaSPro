@@ -196,21 +196,29 @@ function ModeCard({
     <Link
       href={href}
       prefetch={false}
-      className="group flex flex-col rounded-[18px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition hover:-translate-y-0.5 hover:border-[#2A9D8F]/50 hover:shadow-[0_12px_30px_rgba(16,24,40,0.09)]"
+      className="group relative grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 overflow-hidden rounded-[22px] border border-[#E8EAE7] bg-white p-4 shadow-[0_10px_30px_rgba(22,32,29,0.07),0_1px_2px_rgba(22,32,29,0.04)] transition active:scale-[0.99] md:flex md:min-h-[245px] md:flex-col md:items-stretch md:p-5 md:shadow-[0_1px_2px_rgba(16,24,40,0.04)] md:hover:-translate-y-0.5 md:hover:border-[#2A9D8F]/50 md:hover:shadow-[0_14px_34px_rgba(16,24,40,0.09)]"
     >
-      <div className="flex items-start justify-between">
-        <span className="grid size-12 place-items-center rounded-[14px] border border-[#E8E8E5] bg-white text-[#2A9D8F]">
-          <Icon className="size-6" />
-        </span>
-        <ArrowUpRight className="size-5 text-[#C4C4C0] transition group-hover:text-[#2A9D8F]" />
-      </div>
-      <h3 className="mt-4 font-semibold text-[#1A1916] text-[17px] tracking-tight">{title}</h3>
-      <p className="mt-1.5 flex-1 text-[#6B6B6B] text-[13.5px] leading-relaxed">{description}</p>
-      {hint && (
-        <p className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-full bg-[#F1F2F4] px-2.5 py-1 font-medium text-[#6B6B6B] text-[11.5px]">
-          {hint}
+      <span className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-[#F3FBF9] to-transparent opacity-80" />
+      <span className="relative grid size-12 shrink-0 place-items-center rounded-[15px] border border-[#DDEBE8] bg-white text-[#168B7D] shadow-[0_6px_18px_rgba(42,157,143,0.12)] md:size-13">
+        <Icon className="size-6" strokeWidth={1.8} />
+      </span>
+      <div className="relative min-w-0 md:flex md:flex-1 md:flex-col">
+        <p className="mb-1 text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#2A9D8F] md:mt-4">
+          Espace de travail
         </p>
-      )}
+        <h3 className="font-semibold text-[#171714] text-[16px] tracking-tight md:text-[17px]">{title}</h3>
+        <p className="mt-1 text-[#6B6B6B] text-[12px] leading-[1.55] md:mt-1.5 md:flex-1 md:text-[13.5px]">
+          {description}
+        </p>
+        {hint && (
+          <p className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-[#F1F4F3] px-2.5 py-1 font-medium text-[#626763] text-[10.5px] md:mt-3 md:text-[11.5px]">
+            {hint}
+          </p>
+        )}
+      </div>
+      <span className="relative grid size-9 shrink-0 place-items-center rounded-full border border-[#E2E7E4] bg-white text-[#9A9F9C] shadow-sm transition group-hover:border-[#B9DDD7] group-hover:text-[#168B7D] md:absolute md:right-5 md:top-5">
+        <ArrowUpRight className="size-[17px]" />
+      </span>
     </Link>
   );
 }

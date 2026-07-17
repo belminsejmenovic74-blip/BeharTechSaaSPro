@@ -5,6 +5,7 @@
 // puis, pour un rendez-vous, le calendrier de créneaux, et le formulaire client.
 // Les modes disponibles dépendent des fonctionnalités activées par l'atelier.
 
+import { useEffect, useMemo } from "react";
 import { CalendarClock, Check, Footprints, Mail, MapPin } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -17,34 +18,47 @@ type ModeCard = { value: RequestType; label: string; description: string; icon: 
 export function IntakeStep({ ctx, submitError: _submitError }: { ctx: StepContext; submitError: string | null }) {
   const { draft, patch, features, config } = ctx;
 
-  const modes: ModeCard[] = [
-    ...(features.booking
-      ? [
-          {
-            value: "appointment" as RequestType,
-            label: "Prendre rendez-vous",
-            description: "Choisissez un créneau disponible dans l’agenda.",
-            icon: CalendarClock,
-          },
-        ]
-      : []),
-    {
-      value: "request" as RequestType,
-      label: "Venir directement",
-      description: "Passez en boutique sans réservation préalable.",
-      icon: Footprints,
-    },
-    ...(features.quoteRequest || features.callbackRequest
-      ? [
-          {
-            value: (features.quoteRequest ? "quote" : "callback") as RequestType,
-            label: "Envoyer une demande",
-            description: "Décrivez votre besoin et laissez l’atelier vous rappeler.",
-            icon: Mail,
-          },
-        ]
-      : []),
-  ];
+  const modes = useMemo<ModeCard[]>(
+    () => [
+      ...(features.booking
+        ? [
+            {
+              value: "appointment" as RequestType,
+              label: "Prendre rendez-vous",
+              description: "Choisissez un créneau disponible dans l’agenda.",
+              icon: CalendarClock,
+            },
+          ]
+        : []),
+      ...(features.walkIn
+        ? [
+            {
+              value: "request" as RequestType,
+              label: "Venir directement",
+              description: "Passez en boutique sans réservation préalable.",
+              icon: Footprints,
+            },
+          ]
+        : []),
+      ...(features.quoteRequest || features.callbackRequest
+        ? [
+            {
+              value: (features.quoteRequest ? "quote" : "callback") as RequestType,
+              label: "Envoyer une demande",
+              description: "Décrivez votre besoin et laissez l’atelier vous rappeler.",
+              icon: Mail,
+            },
+          ]
+        : []),
+    ],
+    [features.booking, features.callbackRequest, features.quoteRequest, features.walkIn],
+  );
+
+  useEffect(() => {
+    if (modes.some((mode) => mode.value === draft.requestType)) return;
+    const fallback = modes[0]?.value;
+    if (fallback) patch({ requestType: fallback, appointmentDate: "", appointmentTime: "" });
+  }, [draft.requestType, modes, patch]);
 
   const isAppointment = draft.requestType === "appointment";
   const isWalkIn = draft.requestType === "request";

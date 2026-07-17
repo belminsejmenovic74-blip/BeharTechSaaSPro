@@ -143,6 +143,7 @@ export type WidgetFeatureKey =
   | "quoteRequest"
   | "callbackRequest"
   | "booking"
+  | "walkIn"
   | "shopChoice"
   | "qualityChoice"
   | "multiIssue"

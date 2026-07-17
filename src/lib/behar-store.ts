@@ -1005,6 +1005,7 @@ export type WorkshopInfo = {
   acceptedPaymentMethods?: string[];
   businessHours?: string;
   weeklyHours?: WorkshopWeeklyHours;
+  customerReceptionMode?: "shop" | "mobile" | "hybrid";
   allowCounterClient?: boolean;
   repairPrefix?: string;
   quotePrefix?: string;
@@ -2173,6 +2174,7 @@ const defaultWorkshopInfo: WorkshopInfo = {
   acceptedPaymentMethods: ["Espèces", "Carte bancaire", "SumUp", "Stripe", "Virement", "Chèque", "Autre"],
   businessHours: "Lun-Ven 09:00-18:00 · Sam 09:00-13:00",
   weeklyHours: defaultWorkshopWeeklyHours(),
+  customerReceptionMode: "shop",
   allowCounterClient: true,
   counterPrintFormat: "A4",
   counterQrFormat: "80mm",

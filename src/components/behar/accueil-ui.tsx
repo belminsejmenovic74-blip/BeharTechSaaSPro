@@ -5,7 +5,11 @@ import { cn } from "@/lib/utils";
 // Blocs partagés par les pages de l'espace Accueil (style Brevo épuré).
 
 export function PortalPage({ children }: Readonly<{ children: ReactNode }>) {
-  return <div className="mx-auto w-full max-w-[1200px] px-5 py-8 md:px-8 md:py-10 2xl:max-w-[1360px]">{children}</div>;
+  return (
+    <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-5 md:px-8 md:py-10 2xl:max-w-[1360px]">
+      {children}
+    </div>
+  );
 }
 
 export function PageHeader({
@@ -16,7 +20,7 @@ export function PageHeader({
   return (
     <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="font-bold text-[#1A1916] text-[30px] leading-[1.05] tracking-[-0.02em] md:text-[34px]">
+        <h1 className="font-bold text-[#1A1916] text-[28px] leading-[1.05] tracking-[-0.025em] md:text-[34px]">
           {title}
         </h1>
         {subtitle && <p className="mt-2 text-[#6B6B6B] text-[15px]">{subtitle}</p>}

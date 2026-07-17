@@ -28,6 +28,7 @@ export const FEATURE_DEFAULTS: Required<WidgetFeatures> = {
   quoteRequest: true,
   callbackRequest: true,
   booking: true,
+  walkIn: true,
   shopChoice: true,
   qualityChoice: true,
   multiIssue: false,

@@ -13,7 +13,7 @@ export default function ClientLayout({ children }: Readonly<{ children: ReactNod
   return (
     <PrintProvider>
       <AccueilLicenseBridge>
-        <InstallationGate>
+        <InstallationGate deferOnboarding>
           <PinLoginGate>
             <AutoSyncProvider />
             <WidgetAppointmentsProvider />

@@ -140,6 +140,7 @@ export default function WidgetSettingsPage() {
         locale: store.workshopSettings.country === "CH" ? "fr-CH" : "fr-FR",
         currency: store.workshopSettings.country === "CH" ? "CHF" : "EUR",
         businessHours: store.workshopSettings.businessHours || "",
+        customerReceptionMode: store.workshopSettings.customerReceptionMode || "shop",
       },
     })
       .then((result) => {
@@ -209,6 +210,7 @@ export default function WidgetSettingsPage() {
             locale: config.general.locale,
             currency: config.general.currency,
             businessHours: store.workshopSettings.businessHours || "",
+            customerReceptionMode: store.workshopSettings.customerReceptionMode || "shop",
           },
         });
         setWidget(refreshed.widget);
@@ -236,6 +238,7 @@ export default function WidgetSettingsPage() {
         locale: config.general.locale,
         currency: config.general.currency,
         businessHours: store.workshopSettings.businessHours || "",
+        customerReceptionMode: store.workshopSettings.customerReceptionMode || "shop",
       },
     });
     setWidget(refreshed.widget);
@@ -527,6 +530,10 @@ function ContentPanel({
         ))}
       </EditorSection>
       <EditorSection title="Champs et fonctionnalités">
+        <p className="mb-3 rounded-xl border border-[#D9ECE8] bg-[#F4FBF9] p-3 text-xs leading-5 text-[#42645F]">
+          Désactivez « Accueil sans rendez-vous en boutique » si vous travaillez uniquement en déplacement. Le widget ne
+          proposera alors plus « Venir directement » ni « Passez en boutique ».
+        </p>
         {(Object.keys(WIDGET_FEATURE_LABELS) as WidgetFeatureKey[]).map((key) => (
           <Toggle
             key={key}

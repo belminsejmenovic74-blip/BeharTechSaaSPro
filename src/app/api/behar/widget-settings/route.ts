@@ -39,6 +39,7 @@ const defaultsSchema = z
     locale: z.enum(["fr-FR", "fr-CH"]),
     currency: z.enum(["EUR", "CHF"]),
     businessHours: z.string().trim().max(500).optional(),
+    customerReceptionMode: z.enum(["shop", "mobile", "hybrid"]).optional(),
   })
   .strict();
 
@@ -122,13 +123,23 @@ function responseError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
 
-function editableFromRow(row: WidgetRow): EditableWidgetConfig {
+function editableFromRow(
+  row: WidgetRow,
+  customerReceptionMode: "shop" | "mobile" | "hybrid" = "shop",
+): EditableWidgetConfig {
   const source = Object.keys(row.draft_config || {}).length ? row.draft_config : (row.published_config ?? {});
-  return normalizeEditableWidgetConfig(source, {
+  const normalized = normalizeEditableWidgetConfig(source, {
     internalName: row.internal_name,
     active: row.active,
     displayMode: row.display_mode,
+    features: {
+      ...DEFAULT_WIDGET_CMS_CONFIG.features,
+      walkIn: customerReceptionMode !== "mobile",
+    },
   });
+  return customerReceptionMode === "mobile"
+    ? { ...normalized, features: { ...normalized.features, walkIn: false } }
+    : normalized;
 }
 
 async function loadWidget(admin: SupabaseClient, workshopId: string, widgetId?: string) {
@@ -181,7 +192,15 @@ export async function POST(request: Request) {
         active: true,
         general: {
           ...DEFAULT_WIDGET_CMS_CONFIG.general,
-          ...parsed.data.defaults,
+          commercialName: parsed.data.defaults.commercialName,
+          phone: parsed.data.defaults.phone,
+          address: parsed.data.defaults.address,
+          locale: parsed.data.defaults.locale,
+          currency: parsed.data.defaults.currency,
+        },
+        features: {
+          ...DEFAULT_WIDGET_CMS_CONFIG.features,
+          walkIn: parsed.data.defaults.customerReceptionMode !== "mobile",
         },
       });
       const created = await admin
@@ -236,7 +255,7 @@ export async function POST(request: Request) {
         publishedVersion: widget.published_version,
         publishedAt: widget.published_at,
         allowedDomains: widget.allowed_domains,
-        config: editableFromRow(widget as WidgetRow),
+        config: editableFromRow(widget as WidgetRow, parsed.data.defaults.customerReceptionMode || "shop"),
       },
       versions: versionResult.data || [],
     });

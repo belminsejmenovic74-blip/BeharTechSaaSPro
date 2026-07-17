@@ -29,8 +29,8 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { label: "Accueil", href: "/client", section: "", icon: Home },
   { label: "Mon offre", href: "/client?section=offre", section: "offre", icon: CreditCard },
-  { label: "SMS", href: "/client?section=sms", section: "sms", icon: MessageSquareText },
-  { label: "E-mails", href: "/client?section=emails", section: "emails", icon: Mail },
+  { label: "SMS", href: "/client?section=sms", section: "sms", icon: MessageSquareText, badge: "1er août" },
+  { label: "E-mails", href: "/client?section=emails", section: "emails", icon: Mail, badge: "1er août" },
   { label: "Documents", href: "/client?section=documents", section: "documents", icon: FileText },
   { label: "Widgets", href: "/client?section=widgets", section: "widgets", icon: LayoutTemplate },
   { label: "Intégrations", href: "/client?section=paiements", section: "paiements", icon: WalletCards },
@@ -84,7 +84,7 @@ export function AccueilShell({ children }: Readonly<{ children: ReactNode }>) {
   }, [open]);
 
   return (
-    <div className="min-h-svh bg-[#FAFAF8] text-[#1A1916]">
+    <div className="min-h-svh bg-white text-[#1A1916]">
       {/* Sidebar desktop */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[292px] flex-col border-[#E9E9E6] border-r bg-white px-3 py-7 md:flex">
         <div className="px-1">
@@ -107,7 +107,12 @@ export function AccueilShell({ children }: Readonly<{ children: ReactNode }>) {
                 )}
               >
                 <Icon className={cn("size-[17px] shrink-0", active && "text-[#2A9D8F]")} />
-                {item.label}
+                <span className="min-w-0 flex-1">{item.label}</span>
+                {"badge" in item ? (
+                  <span className="rounded-full bg-[#F1F2F4] px-2 py-0.5 text-[9.5px] font-semibold text-[#73736F]">
+                    {item.badge}
+                  </span>
+                ) : null}
               </Link>
             );
           })}
@@ -170,7 +175,12 @@ export function AccueilShell({ children }: Readonly<{ children: ReactNode }>) {
                     )}
                   >
                     <Icon className={cn("size-5 shrink-0", active && "text-[#2A9D8F]")} />
-                    {item.label}
+                    <span className="min-w-0 flex-1">{item.label}</span>
+                    {"badge" in item ? (
+                      <span className="rounded-full bg-[#F1F2F4] px-2 py-0.5 text-[10px] font-semibold text-[#73736F]">
+                        {item.badge}
+                      </span>
+                    ) : null}
                   </Link>
                 );
               })}

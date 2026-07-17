@@ -132,20 +132,32 @@ export async function handleConfig(request: Request, route: RouteParams) {
   if (isResponse(context)) return context;
   const limited = await enforceRateLimit(request, context, "config", 120, 60);
   if (limited) return limited;
-  const { data: shops, error } = await context.admin
-    .from("shops")
-    .select("id, public_shop_id, internal_name, commercial_name, address_config, timezone")
-    .eq("tenant_id", context.widget.tenant_id)
-    .eq("active", true)
-    .order("internal_name");
-  if (error) return publicError("service_unavailable", 503, context.requestId);
+  const [shopsResult, settingsResult] = await Promise.all([
+    context.admin
+      .from("shops")
+      .select("id, public_shop_id, internal_name, commercial_name, address_config, timezone")
+      .eq("tenant_id", context.widget.tenant_id)
+      .eq("active", true)
+      .order("internal_name"),
+    context.admin.from("app_settings").select("settings").eq("workshop_id", context.widget.tenant_id).maybeSingle(),
+  ]);
+  if (shopsResult.error) return publicError("service_unavailable", 503, context.requestId);
+  const shops = shopsResult.data;
   const allowedShops = context.widget.shop_id
     ? (shops || []).filter((shop) => shop.id === context.widget.shop_id)
     : shops || [];
+  const publicConfig = sanitizePublicConfig(context.widget);
+  const workshopSettings =
+    settingsResult.data?.settings && typeof settingsResult.data.settings === "object"
+      ? (settingsResult.data.settings as Record<string, unknown>)
+      : {};
+  if (workshopSettings.customerReceptionMode === "mobile") {
+    publicConfig.features = { ...publicConfig.features, walkIn: false };
+  }
   return publicSuccess(
     context,
     {
-      ...sanitizePublicConfig(context.widget),
+      ...publicConfig,
       shops: allowedShops.map((shop) => publicShopDto(shop)),
       sessionToken: createWidgetToken(context.widget, context.hostOrigin),
     },

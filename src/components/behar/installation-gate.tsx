@@ -4,10 +4,26 @@ import { useEffect, useRef, useState } from "react";
 
 import { LicenseActivation } from "@/components/behar/license-activation";
 import { OnboardingWizard } from "@/components/behar/onboarding-wizard";
-import { useBeharStore } from "@/lib/behar-store";
+import { type WorkshopSettings, useBeharStore } from "@/lib/behar-store";
 import { ensureCloudStateForLicense, normalizeLicenseKey } from "@/lib/workshop-sync";
 
 type AppEntryState = "loading_local" | "license" | "loading_cloud" | "dashboard" | "onboarding";
+
+export function isWorkshopConfigurationComplete(settings: WorkshopSettings): boolean {
+  const phone = String(settings.phone || "").replace(/[\s().-]/g, "");
+  const email = String(settings.email || "").trim();
+  const postalCode = String(settings.postalCode || "").trim();
+  const siret = String(settings.siret || "").replace(/\D/g, "");
+  const identityIsComplete =
+    String(settings.name || "").trim().length >= 3 &&
+    /^\+\d{7,15}$/.test(phone) &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) &&
+    String(settings.address || "").trim().length >= 6 &&
+    String(settings.city || "").trim().length >= 2;
+  if (!identityIsComplete) return false;
+  if (settings.country === "CH") return /^\d{4}$/.test(postalCode);
+  return /^\d{5}$/.test(postalCode) && /^\d{14}$/.test(siret) && !/^0+$/.test(siret);
+}
 
 function getAppEntryState({
   hasHydrated,
@@ -18,6 +34,7 @@ function getAppEntryState({
   normalizedActiveKey,
   cloudCheckedKey,
   onboardingCompleted,
+  workshopConfigurationComplete,
 }: {
   hasHydrated: boolean;
   hydrationTimedOut: boolean;
@@ -27,6 +44,7 @@ function getAppEntryState({
   normalizedActiveKey: string;
   cloudCheckedKey: string;
   onboardingCompleted: boolean;
+  workshopConfigurationComplete: boolean;
 }): AppEntryState {
   if (!hasHydrated && !hydrationTimedOut) return "loading_local";
   if (!licenseActivated) return "license";
@@ -36,7 +54,7 @@ function getAppEntryState({
   // gate) ré-affichait le plein écran "Chargement de l'atelier cloud…" le temps
   // d'un nouvel aller-retour Supabase — d'où l'impression que le comptoir
   // "tourne en rond" juste après une modification.
-  if (onboardingCompleted) return "dashboard";
+  if (onboardingCompleted && workshopConfigurationComplete) return "dashboard";
   // Pas encore onboardé sur cet appareil : on attend le cloud pour savoir si la
   // licence possède déjà un atelier (évite de relancer l'onboarding à tort).
   if (!isAutomatedBrowser && (cloudLoading || (normalizedActiveKey && cloudCheckedKey !== normalizedActiveKey))) {
@@ -45,12 +63,19 @@ function getAppEntryState({
   return "onboarding";
 }
 
-export function InstallationGate({ children }: { children: React.ReactNode }) {
+export function InstallationGate({
+  children,
+  deferOnboarding = false,
+}: {
+  children: React.ReactNode;
+  deferOnboarding?: boolean;
+}) {
   const hasHydrated = useBeharStore((s) => s._hasHydrated);
   const setHasHydrated = useBeharStore((s) => s.setHasHydrated);
   const licenseActivated = useBeharStore((s) => s.licenseActivated);
   const licenseKey = useBeharStore((s) => s.licenseKey);
   const onboardingCompleted = useBeharStore((s) => s.onboardingCompleted);
+  const workshopSettings = useBeharStore((s) => s.workshopSettings);
   const [hydrationTimedOut, setHydrationTimedOut] = useState(false);
   const [cloudCheckedKey, setCloudCheckedKey] = useState("");
   const [cloudLoading, setCloudLoading] = useState(false);
@@ -104,6 +129,7 @@ export function InstallationGate({ children }: { children: React.ReactNode }) {
     normalizedActiveKey,
     cloudCheckedKey,
     onboardingCompleted,
+    workshopConfigurationComplete: isWorkshopConfigurationComplete(workshopSettings),
   });
 
   switch (entryState) {
@@ -128,8 +154,8 @@ export function InstallationGate({ children }: { children: React.ReactNode }) {
         </div>
       );
     case "dashboard":
-      return <>{children}</>;
+      return children;
     case "onboarding":
-      return <OnboardingWizard />;
+      return deferOnboarding ? children : <OnboardingWizard />;
   }
 }
