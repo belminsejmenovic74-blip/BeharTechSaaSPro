@@ -22,7 +22,8 @@ export default function AdminLicensesPage() {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreatingFounder, setIsCreatingFounder] = useState(false);
-  const [founderForm, setFounderForm] = useState({ workshopName: "", email: "", licenseKey: "" });
+  const [founderForm, setFounderForm] = useState({ workshopName: "", email: "" });
+  const [lastGeneratedClientKey, setLastGeneratedClientKey] = useState("");
 
   useEffect(() => {
     isAdminAuthed().then((ok) => {
@@ -83,7 +84,8 @@ export default function AdminLicensesPage() {
     setIsCreatingFounder(false);
     if (res.success) {
       toast.success(res.message);
-      setFounderForm({ workshopName: "", email: "", licenseKey: "" });
+      setLastGeneratedClientKey(res.licenseKey || "");
+      setFounderForm({ workshopName: "", email: "" });
       loadLicenses();
     } else {
       toast.error(res.message);
@@ -179,7 +181,7 @@ export default function AdminLicensesPage() {
                 <Crown className="size-4 text-[#D69E2E]" />
               </h2>
               <p className="mt-0.5 text-sm text-[#62625E]">
-                Pour tes premiers clients : aucun abonnement à choisir, aucun paiement et aucune nouvelle clé.
+                Saisis l’e-mail : Clerk envoie l’invitation et la clé d’accès est générée automatiquement.
               </p>
             </div>
           </div>
@@ -188,7 +190,7 @@ export default function AdminLicensesPage() {
           </span>
         </div>
 
-        <form onSubmit={handleCreateFounder} className="grid gap-4 p-6 lg:grid-cols-[1fr_1fr_1fr_auto] lg:items-end">
+        <form onSubmit={handleCreateFounder} className="grid gap-4 p-6 lg:grid-cols-[1fr_1fr_auto] lg:items-end">
           <label className="grid gap-2 text-sm font-semibold text-[#343431]">
             Nom de l’atelier
             <input
@@ -210,26 +212,32 @@ export default function AdminLicensesPage() {
               className="h-11 rounded-xl border border-[#DEDDD8] bg-white px-3.5 font-normal text-[#1A1916] outline-none transition focus:border-[#2A9D8F] focus:ring-2 focus:ring-[#2A9D8F]/10"
             />
           </label>
-          <label className="grid gap-2 text-sm font-semibold text-[#343431]">
-            Clé déjà remise
-            <input
-              required
-              value={founderForm.licenseKey}
-              onChange={(event) =>
-                setFounderForm((value) => ({ ...value, licenseKey: event.target.value.toUpperCase() }))
-              }
-              placeholder="BTP-XXXX-XXXX-XXXX"
-              className="h-11 rounded-xl border border-[#DEDDD8] bg-white px-3.5 font-mono font-normal uppercase text-[#1A1916] outline-none transition focus:border-[#2A9D8F] focus:ring-2 focus:ring-[#2A9D8F]/10"
-            />
-          </label>
           <PrimaryButton type="submit" disabled={isCreatingFounder} className="h-11 gap-2 lg:px-5">
             <Mail className="size-4" />
             {isCreatingFounder ? "Création…" : "Créer et inviter"}
           </PrimaryButton>
         </form>
+        {lastGeneratedClientKey && (
+          <div className="mx-6 mb-5 flex flex-col gap-3 rounded-xl border border-[#B9DDD8] bg-[#F3FAF9] p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-[#237F74]">Clé d’accès générée</p>
+              <p className="mt-1 font-mono text-sm font-semibold text-[#1A1916]">{lastGeneratedClientKey}</p>
+            </div>
+            <SecondaryButton
+              type="button"
+              className="gap-2"
+              onClick={async () => {
+                await navigator.clipboard.writeText(lastGeneratedClientKey);
+                toast.success("Clé copiée");
+              }}
+            >
+              <Copy className="size-4" /> Copier
+            </SecondaryButton>
+          </div>
+        )}
         <div className="border-t border-[#EFEFEB] px-6 py-3 text-xs text-[#74746F]">
-          La clé rattache automatiquement les anciennes données de l’atelier. Le client clique sur l’e-mail reçu et
-          arrive directement dans son espace.
+          Le client clique sur l’e-mail Clerk, choisit son mot de passe puis accède à son atelier avec sa licence
+          active.
         </div>
       </section>
 

@@ -7,7 +7,8 @@ import { getSupabaseAdmin } from "@/lib/supabase/server";
 const bodySchema = z.object({ code: z.string().regex(/^[a-f0-9]{64}$/i) });
 
 type Handoff = {
-  user_id: string;
+  user_id: string | null;
+  clerk_user_id: string | null;
   workshop_id: string;
   license_id: string;
   license_key: string;
@@ -23,16 +24,16 @@ export async function POST(request: Request) {
 
   const { data, error } = await admin.rpc("redeem_workshop_handoff_v2", { p_code: body.data.code });
   const handoff = data as Handoff | null;
-  if (error || !handoff?.user_id || !handoff.workshop_id || !handoff.license_key) {
+  const subjectId = handoff?.clerk_user_id || handoff?.user_id;
+  if (error || !subjectId || !handoff?.workshop_id || !handoff.license_key) {
     return NextResponse.json({ error: "Ce lien de connexion est expire ou deja utilise." }, { status: 401 });
   }
 
-  const { data: member } = await admin
-    .from("organization_members")
-    .select("role, status")
-    .eq("user_id", handoff.user_id)
-    .eq("workshop_id", handoff.workshop_id)
-    .maybeSingle();
+  let memberQuery = admin.from("organization_members").select("role, status").eq("workshop_id", handoff.workshop_id);
+  memberQuery = handoff.clerk_user_id
+    ? memberQuery.eq("clerk_user_id", handoff.clerk_user_id)
+    : memberQuery.eq("user_id", handoff.user_id!);
+  const { data: member } = await memberQuery.maybeSingle();
   if (member?.status !== "active") return NextResponse.json({ error: "Acces entreprise refuse." }, { status: 403 });
 
   const response = NextResponse.json({
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
   response.cookies.set(
     APP_SESSION_COOKIE,
     createAppSession({
-      userId: handoff.user_id,
+      userId: subjectId,
       workshopId: handoff.workshop_id,
       licenseId: handoff.license_id,
       role: member.role,

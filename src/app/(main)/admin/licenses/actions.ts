@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { getClerkAdmin } from "@/lib/server/clerk-admin";
 import crypto from "node:crypto";
 import type { GenerateLicensesResult, LicenseKeyStatus } from "@/lib/supabase/license-types";
 
@@ -12,19 +13,17 @@ function sha256(content: string) {
 }
 
 const ADMIN_COOKIE = "btp_admin";
-const PORTAL_CALLBACK_URL =
-  process.env.NEXT_PUBLIC_PORTAL_AUTH_CALLBACK_URL || "https://behartechpro.fr/auth/callback?next=/client";
 
 export type FounderClientInput = {
   workshopName: string;
   email: string;
-  licenseKey: string;
 };
 
 export type FounderClientResult = {
   success: boolean;
   message: string;
   existingUser?: boolean;
+  licenseKey?: string;
 };
 
 /** Empreinte attendue dans le cookie de session admin, dérivée du secret serveur. */
@@ -72,24 +71,12 @@ function normalizeFounderInput(input: FounderClientInput) {
   return {
     workshopName: input.workshopName?.trim() || "",
     email: input.email?.trim().toLowerCase() || "",
-    licenseKey: input.licenseKey?.trim().toUpperCase() || "",
   };
-}
-
-async function findAuthUserByEmail(supabase: NonNullable<ReturnType<typeof getSupabaseAdmin>>, email: string) {
-  for (let page = 1; page <= 10; page += 1) {
-    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 100 });
-    if (error) throw error;
-    const match = data.users.find((user) => user.email?.toLowerCase() === email);
-    if (match) return match;
-    if (data.users.length < 100) break;
-  }
-  return null;
 }
 
 /**
  * Donne un acces direct a un client historique : aucune inscription et aucun
- * checkout. La cle existante reste l'identite de son atelier et de ses donnees.
+ * checkout. Clerk envoie l'invitation et Supabase conserve la licence/metier.
  */
 export async function createFounderClient(input: FounderClientInput): Promise<FounderClientResult> {
   if (!(await isAdmin())) return { success: false, message: "Non autorisé" };
@@ -101,76 +88,56 @@ export async function createFounderClient(input: FounderClientInput): Promise<Fo
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
     return { success: false, message: "L’adresse e-mail est invalide." };
   }
-  if (values.licenseKey.length < 12) {
-    return { success: false, message: "Indique la clé complète déjà remise au client." };
-  }
-
   const supabase = getSupabaseAdmin();
   if (!supabase) return { success: false, message: "Supabase non configuré sur le serveur." };
+  const clerk = getClerkAdmin();
+  if (!clerk) return { success: false, message: "Clerk non configuré sur le serveur." };
 
+  const provisionId = crypto.randomUUID();
+  let actualProvisionId: string = provisionId;
+  const licenseKey = generateRandomKey();
   try {
-    let user = await findAuthUserByEmail(supabase, values.email);
-    const existingUser = Boolean(user);
-
-    if (!user) {
-      const { data, error } = await supabase.auth.admin.inviteUserByEmail(values.email, {
-        redirectTo: PORTAL_CALLBACK_URL,
-        data: {
-          company_name: values.workshopName,
-          selected_plan: "business",
-          billing_interval: "month",
-          founder_client: true,
-        },
-      });
-      if (error) throw error;
-      user = data.user;
-    }
-
-    if (!user) throw new Error("Le compte Supabase n’a pas pu être créé.");
-
-    const { error: metadataError } = await supabase.auth.admin.updateUserById(user.id, {
-      app_metadata: { ...user.app_metadata, founder_access: true, plan: "business" },
-      user_metadata: {
-        ...user.user_metadata,
-        company_name: values.workshopName,
-        selected_plan: "business",
-        billing_interval: "month",
-        founder_client: true,
-      },
-    });
-    if (metadataError) throw metadataError;
-
-    const { error: provisionError } = await supabase.rpc("admin_provision_founder_client", {
-      p_user_id: user.id,
+    const { data: provision, error: clerkProvisionError } = await supabase.rpc("admin_prepare_clerk_founder_client", {
+      p_provision_id: provisionId,
       p_email: values.email,
       p_workshop_name: values.workshopName,
-      p_license_key: values.licenseKey,
+      p_license_key: licenseKey,
     });
-    if (provisionError) throw provisionError;
+    if (clerkProvisionError) throw clerkProvisionError;
 
-    if (existingUser) {
-      const { error: emailError } = await supabase.auth.signInWithOtp({
-        email: values.email,
-        options: { emailRedirectTo: PORTAL_CALLBACK_URL, shouldCreateUser: false },
-      });
-      if (emailError) {
-        return {
-          success: true,
-          existingUser: true,
-          message: `Accès fondateur activé, mais l’e-mail n’est pas parti : ${emailError.message}`,
-        };
-      }
-    }
+    actualProvisionId = String((provision as { provision_id?: string } | null)?.provision_id || provisionId);
+    const marketingUrl = (process.env.NEXT_PUBLIC_MARKETING_URL || "https://behartechpro.fr").replace(/\/+$/, "");
+    const invitation = await clerk.invitations.createInvitation({
+      emailAddress: values.email,
+      redirectUrl: `${marketingUrl}/inscription`,
+      notify: true,
+      ignoreExisting: true,
+      publicMetadata: {
+        invitation_kind: "founder_client",
+        provision_id: actualProvisionId,
+        company_name: values.workshopName,
+        plan: "business",
+      },
+    });
+    await supabase
+      .from("clerk_client_invitations")
+      .update({ clerk_invitation_id: invitation.id, status: "pending", failure_reason: null })
+      .eq("id", actualProvisionId);
 
     revalidatePath("/admin/licenses");
     return {
       success: true,
-      existingUser,
-      message: existingUser
-        ? "Accès fondateur activé et nouveau lien de connexion envoyé."
-        : "Compte fondateur créé. L’invitation de connexion a été envoyée.",
+      licenseKey,
+      message: "Invitation Clerk envoyée. Le client choisira son mot de passe depuis l’e-mail reçu.",
     };
   } catch (error) {
+    await supabase
+      .from("clerk_client_invitations")
+      .update({
+        status: "failed",
+        failure_reason: error instanceof Error ? error.message.slice(0, 500) : "Erreur Clerk",
+      })
+      .eq("id", actualProvisionId);
     console.error("Founder client provisioning failed", error);
     return {
       success: false,
