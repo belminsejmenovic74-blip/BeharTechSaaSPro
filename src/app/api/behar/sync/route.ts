@@ -10,6 +10,7 @@ import { getCurrentAppSession } from "@/lib/auth/app-session";
 import { isLicenseActive } from "@/lib/server/verify-license";
 import { normalizePartReference } from "@/lib/stock-reference";
 import { syncWidgetShopFromLicense } from "@/lib/server/widget-license-data";
+import { syncPayloadToErpNext } from "@/lib/server/erpnext/payload-sync";
 
 export const dynamic = "force-dynamic";
 
@@ -798,5 +799,18 @@ export async function POST(request: Request) {
   }));
   if (stockMovements.length) await supabase.from("stock_movements").upsert(stockMovements, { onConflict: "id" });
 
-  return NextResponse.json({ ok: true });
+  try {
+    const erpnext = await syncPayloadToErpNext(payload);
+    return NextResponse.json({ ok: true, erpnext });
+  } catch (error) {
+    console.error("[behar-sync] ERPNext synchronization failed", {
+      workshopId,
+      message: error instanceof Error ? error.message.slice(0, 500) : "Erreur ERPNext inconnue",
+    });
+    return NextResponse.json({
+      ok: true,
+      erpnext: { enabled: true, eligible: true, synchronized: false },
+      warning: "Les données cloud sont enregistrées, mais ERPNext est temporairement indisponible.",
+    });
+  }
 }
