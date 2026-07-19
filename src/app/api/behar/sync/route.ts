@@ -861,9 +861,10 @@ export async function POST(request: Request) {
       workshopId,
       message: error instanceof Error ? error.message.slice(0, 500) : "Erreur ERPNext inconnue",
     });
-    return NextResponse.json(
-      { error: "Les données cloud sont enregistrées, mais la synchronisation ERPNext a échoué. Réessayez." },
-      { status: 502 },
-    );
+    return NextResponse.json({
+      ok: true,
+      erpnext: { enabled: true, eligible: true, synchronized: false },
+      warning: "Les données cloud sont enregistrées, mais ERPNext est temporairement indisponible.",
+    });
   }
 }

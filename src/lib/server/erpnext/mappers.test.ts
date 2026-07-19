@@ -11,13 +11,21 @@ import {
 describe("mappages ERPNext", () => {
   it("lie un client à son identifiant SaaS et à la boutique réelle", () => {
     expect(
-      mapCustomerToErpNext({ id: "customer-1", name: "Jean Dupont", shopName: "Boutique principale" }),
+      mapCustomerToErpNext({
+        id: "customer-1",
+        name: "Jean Dupont",
+        shopName: "Boutique principale",
+        email: "jean@example.com",
+        phone: "+33600000000",
+      }),
     ).toMatchObject({
       customer_name: "Jean Dupont",
       customer_type: "Individual",
       custom_identifiant_client_behar_tech_pro: "customer-1",
       custom_boutique_rattachee: "Boutique principale",
       custom_consentement_marketing: 0,
+      email_id: "jean@example.com",
+      mobile_no: "+33600000000",
     });
   });
 

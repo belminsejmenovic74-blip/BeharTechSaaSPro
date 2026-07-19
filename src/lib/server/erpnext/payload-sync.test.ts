@@ -13,6 +13,7 @@ function config(enabled = true): ErpNextConfig {
     baseUrl: "https://erp.example.com",
     apiKey: "key",
     apiSecret: "secret",
+    workshopId: "workshop-1",
     company: "Behar Tech Pro",
     branch: "Boutique principale",
     warehouse: "Entrepôt principal - BTP",
@@ -20,6 +21,9 @@ function config(enabled = true): ErpNextConfig {
     supplierGroup: "Fournisseurs BEHAR TECH PRO",
     itemGroup: "Articles synchronisés BEHAR TECH PRO",
     territory: "All Territories",
+    currency: "EUR",
+    sellingPriceList: "Standard Selling",
+    buyingPriceList: "Standard Buying",
     requestTimeoutMs: 5_000,
   };
 }
@@ -97,23 +101,64 @@ describe("synchronisation du payload ERPNext", () => {
       config: config(false),
       client: { upsertByExternalId } as unknown as ErpNextClient,
     });
-    expect(result.enabled).toBe(false);
+    expect(result).toEqual({
+      enabled: false,
+      eligible: false,
+      customers: 0,
+      suppliers: 0,
+      items: 0,
+      itemPrices: 0,
+    });
+    expect(upsertByExternalId).not.toHaveBeenCalled();
+  });
+
+  it("ignore tout atelier qui n’est pas explicitement autorisé", async () => {
+    const upsertByExternalId = vi.fn();
+    const result = await syncPayloadToErpNext(payload(), {
+      config: { ...config(), workshopId: "another-workshop" },
+      client: { upsertByExternalId } as unknown as ErpNextClient,
+    });
+
+    expect(result).toEqual({
+      enabled: true,
+      eligible: false,
+      customers: 0,
+      suppliers: 0,
+      items: 0,
+      itemPrices: 0,
+    });
     expect(upsertByExternalId).not.toHaveBeenCalled();
   });
 
   it("synchronise les trois référentiels avec des identifiants isolés par atelier", async () => {
     const upsertByExternalId = vi.fn().mockResolvedValue({ action: "created", document: { name: "DOC-1" } });
+    const list = vi.fn().mockResolvedValue([]);
+    const create = vi.fn().mockResolvedValue({ name: "PRICE-1" });
     const result = await syncPayloadToErpNext(payload(), {
       config: config(),
-      client: { upsertByExternalId } as unknown as ErpNextClient,
+      client: { upsertByExternalId, list, create } as unknown as ErpNextClient,
     });
 
-    expect(result).toEqual({ enabled: true, customers: 1, suppliers: 1, items: 1 });
+    expect(result).toEqual({
+      enabled: true,
+      eligible: true,
+      customers: 1,
+      suppliers: 1,
+      items: 1,
+      itemPrices: 2,
+    });
     expect(upsertByExternalId).toHaveBeenCalledTimes(3);
     expect(upsertByExternalId.mock.calls.map(([call]) => call.externalId)).toEqual([
       "workshop-1:client-1",
       "workshop-1:supplier-1",
       "workshop-1:item-1",
     ]);
+    expect(create).toHaveBeenCalledTimes(2);
+    expect(create.mock.calls.map(([, document]) => document)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ price_list: "Standard Selling", price_list_rate: 99, currency: "EUR" }),
+        expect.objectContaining({ price_list: "Standard Buying", price_list_rate: 50, currency: "EUR" }),
+      ]),
+    );
   });
 });

@@ -8,6 +8,8 @@ export type ErpNextCustomerInput = {
   id: string;
   name: string;
   shopName: string;
+  email?: string;
+  phone?: string;
   customerGroup?: string;
   territory?: string;
   marketingConsent?: boolean;
@@ -101,6 +103,8 @@ export function mapCustomerToErpNext(input: ErpNextCustomerInput): Record<string
       customer_name: requireText(input.name, "Le nom du client"),
       customer_group: input.customerGroup?.trim(),
       territory: input.territory?.trim(),
+      email_id: input.email?.trim(),
+      mobile_no: input.phone?.trim(),
       custom_identifiant_client_behar_tech_pro: requireText(input.id, "L’identifiant client"),
       custom_boutique_rattachee: requireText(input.shopName, "La boutique"),
     }),

@@ -43,4 +43,54 @@ export async function syncItem(client: ErpNextClient, input: ErpNextItemInput) {
   });
 }
 
+export type ErpNextItemPriceInput = {
+  itemCode: string;
+  priceList: string;
+  currency: string;
+  rate: number;
+};
+
+export async function syncItemPrice(client: ErpNextClient, input: ErpNextItemPriceInput) {
+  if (!Number.isFinite(input.rate) || input.rate < 0) {
+    throw new Error("Le prix ERPNext doit être un nombre positif ou nul.");
+  }
+
+  const itemCode = input.itemCode.trim();
+  const priceList = input.priceList.trim();
+  const currency = input.currency.trim();
+  if (!itemCode || !priceList || !currency) {
+    throw new Error("Le code article, la liste de prix et la devise ERPNext sont requis.");
+  }
+
+  const existing = await client.list<{ name: string }>("Item Price", {
+    fields: ["name"],
+    filters: [
+      ["item_code", "=", itemCode],
+      ["price_list", "=", priceList],
+      ["currency", "=", currency],
+      ["uom", "=", "Unit"],
+    ],
+    limit: 1,
+  });
+  const document = {
+    item_code: itemCode,
+    price_list: priceList,
+    currency,
+    uom: "Unit",
+    price_list_rate: input.rate,
+  };
+
+  if (existing[0]?.name) {
+    return {
+      action: "updated" as const,
+      document: await client.update("Item Price", existing[0].name, document),
+    };
+  }
+
+  return {
+    action: "created" as const,
+    document: await client.create("Item Price", document),
+  };
+}
+
 export { EXTERNAL_ID_FIELDS };

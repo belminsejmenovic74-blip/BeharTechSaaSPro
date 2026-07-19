@@ -13,6 +13,7 @@ L’absence de clé ne doit donc jamais empêcher l’application de fonctionner
 - `ERPNEXT_BASE_URL`
 - `ERPNEXT_API_KEY`
 - `ERPNEXT_API_SECRET`
+- `ERPNEXT_WORKSHOP_ID`
 - `ERPNEXT_COMPANY`
 - `ERPNEXT_DEFAULT_BRANCH`
 - `ERPNEXT_DEFAULT_WAREHOUSE`
@@ -20,12 +21,18 @@ L’absence de clé ne doit donc jamais empêcher l’application de fonctionner
 - `ERPNEXT_DEFAULT_SUPPLIER_GROUP`
 - `ERPNEXT_DEFAULT_ITEM_GROUP`
 - `ERPNEXT_DEFAULT_TERRITORY`
+- `ERPNEXT_CURRENCY`
+- `ERPNEXT_SELLING_PRICE_LIST`
+- `ERPNEXT_BUYING_PRICE_LIST`
 - `ERPNEXT_REQUEST_TIMEOUT_MS`
 - `ERPNEXT_SYNC_ENABLED`
 
 `ERPNEXT_COMPANY` doit contenir le nom interne exact du document ERPNext. Il reste actuellement
 `Behar Tech Pro` pendant la phase provisoire ; la raison sociale légale affichée est « BEHAR TECH PRO ».
 Il faudra mettre cette variable à jour si le document ERPNext est renommé après l’immatriculation.
+
+`ERPNEXT_WORKSHOP_ID` est obligatoire dès que la synchronisation est activée. Il verrouille le connecteur
+sur un seul atelier SaaS : les payloads d’un autre locataire sont ignorés et ne quittent jamais le logiciel.
 
 L’utilisateur associé au token doit être un utilisateur technique distinct. Il ne doit pas recevoir le rôle
 `System Manager` ni le profil `Administrateur BEHAR TECH PRO`.
@@ -53,10 +60,13 @@ mouvement de stock ou un rapprochement dédié afin de préserver le grand livre
 - Les paiements Stripe, SumUp et PayPal sont enregistrés comme externes ; ils ne sont pas encaissés par ERPNext.
 - La synchronisation doit être testée avec des fixtures et des appels simulés avant activation sur le site réel.
 
-La route serveur `/api/behar/sync` propage désormais les clients, fournisseurs et articles vers ERPNext après
+La route serveur `/api/behar/sync` propage désormais les clients, fournisseurs, articles et leurs prix
+d’achat/vente vers ERPNext après
 la validation de la session, de la licence et de l’isolation atelier. Les identifiants externes sont préfixés
 par l’atelier afin d’éviter les collisions entre locataires. Les factures, paiements et mouvements de stock
 ne sont pas envoyés par cette étape tant que leurs workflows comptables et légaux ne sont pas activés.
+Une panne ERPNext ne remet pas en cause l’enregistrement déjà réussi dans le cloud du logiciel : la réponse
+reste positive avec un avertissement, afin de préserver le fonctionnement local-first exigé par le PRD.
 
 La route `GET /api/erpnext/status` permet un diagnostic de production. Elle exige le jeton serveur
 `ADMIN_ACCESS_TOKEN`, ne renvoie jamais les clés ERPNext et vérifie le jeton technique avec l’API Frappe.

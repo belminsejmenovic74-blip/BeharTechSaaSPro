@@ -5,13 +5,15 @@ import type { NormalizedBusinessState } from "@/lib/data/normalized-sync";
 import type { ErpNextClient } from "./client";
 import type { ErpNextConfig } from "./config";
 import { getErpNextClient, readErpNextConfig } from "./index";
-import { syncCustomer, syncItem, syncSupplier } from "./sync";
+import { syncCustomer, syncItem, syncItemPrice, syncSupplier } from "./sync";
 
 export type ErpNextPayloadSyncSummary = {
   enabled: boolean;
+  eligible: boolean;
   customers: number;
   suppliers: number;
   items: number;
+  itemPrices: number;
 };
 
 function cleanText(value: unknown, fallback = ""): string {
@@ -64,16 +66,23 @@ export async function syncPayloadToErpNext(
 ): Promise<ErpNextPayloadSyncSummary> {
   const config = dependencies.config ?? readErpNextConfig();
   const client = dependencies.client ?? getErpNextClient();
-  if (!config.enabled || !client) return { enabled: false, customers: 0, suppliers: 0, items: 0 };
+  if (!config.enabled || !client) {
+    return { enabled: false, eligible: false, customers: 0, suppliers: 0, items: 0, itemPrices: 0 };
+  }
 
   const workshopId = cleanText(payload.workshopId);
   if (!workshopId) throw new Error("L’identifiant atelier est requis pour la synchronisation ERPNext.");
+  if (workshopId !== config.workshopId) {
+    return { enabled: true, eligible: false, customers: 0, suppliers: 0, items: 0, itemPrices: 0 };
+  }
 
   await runLimited(payload.customers ?? [], (customer) =>
     syncCustomer(client, {
       id: externalId(workshopId, customer.id),
       name: cleanText(customer.name, "Client"),
       shopName: config.branch,
+      email: cleanText(customer.email) || undefined,
+      phone: cleanText(customer.phone) || undefined,
       customerGroup: config.customerGroup,
       territory: config.territory,
     }),
@@ -89,10 +98,12 @@ export async function syncPayloadToErpNext(
     }),
   );
 
-  await runLimited(payload.stockItems ?? [], (item) =>
-    syncItem(client, {
+  let itemPrices = 0;
+  await runLimited(payload.stockItems ?? [], async (item) => {
+    const code = itemCode(item);
+    await syncItem(client, {
       id: externalId(workshopId, item.id),
-      sku: itemCode(item),
+      sku: code,
       name: cleanText(item.name || item.part, "Article"),
       itemGroup: config.itemGroup,
       deviceType: cleanText(item.deviceType) || undefined,
@@ -101,13 +112,29 @@ export async function syncPayloadToErpNext(
       warrantyMonths: warrantyMonths(item.supplierWarranty),
       compatibleModels: item.compatibleModels,
       active: item.active,
-    }),
-  );
+    });
+
+    const prices = [
+      { rate: item.salePrice, priceList: config.sellingPriceList },
+      { rate: item.purchasePrice, priceList: config.buyingPriceList },
+    ].filter((price) => Number.isFinite(price.rate) && price.rate >= 0);
+    for (const price of prices) {
+      await syncItemPrice(client, {
+        itemCode: code,
+        priceList: price.priceList,
+        currency: config.currency,
+        rate: price.rate,
+      });
+      itemPrices += 1;
+    }
+  });
 
   return {
     enabled: true,
+    eligible: true,
     customers: payload.customers?.length ?? 0,
     suppliers: payload.suppliers?.length ?? 0,
     items: payload.stockItems?.length ?? 0,
+    itemPrices,
   };
 }

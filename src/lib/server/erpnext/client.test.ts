@@ -10,6 +10,7 @@ function config(overrides: Partial<ErpNextConfig> = {}): ErpNextConfig {
     baseUrl: "https://erp.example.com",
     apiKey: "key-value",
     apiSecret: "secret-value",
+    workshopId: "workshop-1",
     company: "Behar Tech Pro",
     branch: "Boutique principale",
     warehouse: "Entrepôt principal - BTP",
@@ -17,6 +18,9 @@ function config(overrides: Partial<ErpNextConfig> = {}): ErpNextConfig {
     supplierGroup: "Fournisseurs BEHAR TECH PRO",
     itemGroup: "Articles synchronisés BEHAR TECH PRO",
     territory: "All Territories",
+    currency: "EUR",
+    sellingPriceList: "Standard Selling",
+    buyingPriceList: "Standard Buying",
     requestTimeoutMs: 5_000,
     ...overrides,
   };
@@ -45,6 +49,7 @@ describe("ERPNext configuration", () => {
       ERPNEXT_BASE_URL: "https://erp.example.com",
       ERPNEXT_API_KEY: "key-value",
       ERPNEXT_API_SECRET: "secret-value",
+      ERPNEXT_WORKSHOP_ID: "workshop-1",
     });
     expect(JSON.stringify(status)).not.toContain("key-value");
     expect(JSON.stringify(status)).not.toContain("secret-value");

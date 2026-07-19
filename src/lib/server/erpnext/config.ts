@@ -10,6 +10,7 @@ export type ErpNextConfig = {
   baseUrl: string;
   apiKey: string;
   apiSecret: string;
+  workshopId: string;
   company: string;
   branch: string;
   warehouse: string;
@@ -17,6 +18,9 @@ export type ErpNextConfig = {
   supplierGroup: string;
   itemGroup: string;
   territory: string;
+  currency: string;
+  sellingPriceList: string;
+  buyingPriceList: string;
   requestTimeoutMs: number;
 };
 
@@ -48,11 +52,12 @@ export function readErpNextConfig(env: Environment = process.env): ErpNextConfig
   const baseUrl = normalizeBaseUrl(env.ERPNEXT_BASE_URL);
   const apiKey = env.ERPNEXT_API_KEY?.trim() ?? "";
   const apiSecret = env.ERPNEXT_API_SECRET?.trim() ?? "";
-  const configured = Boolean(baseUrl && apiKey && apiSecret);
+  const workshopId = env.ERPNEXT_WORKSHOP_ID?.trim() ?? "";
+  const configured = Boolean(baseUrl && apiKey && apiSecret && workshopId);
 
   if (enabled && !configured) {
     throw new Error(
-      "La synchronisation ERPNext est activée mais ERPNEXT_BASE_URL, ERPNEXT_API_KEY ou ERPNEXT_API_SECRET manque.",
+      "La synchronisation ERPNext est activée mais son URL, ses identifiants ou ERPNEXT_WORKSHOP_ID manque.",
     );
   }
 
@@ -62,6 +67,7 @@ export function readErpNextConfig(env: Environment = process.env): ErpNextConfig
     baseUrl,
     apiKey,
     apiSecret,
+    workshopId,
     company: env.ERPNEXT_COMPANY?.trim() || "Behar Tech Pro",
     branch: env.ERPNEXT_DEFAULT_BRANCH?.trim() || "Boutique principale",
     warehouse: env.ERPNEXT_DEFAULT_WAREHOUSE?.trim() || "Entrepôt principal - BTP",
@@ -69,6 +75,9 @@ export function readErpNextConfig(env: Environment = process.env): ErpNextConfig
     supplierGroup: env.ERPNEXT_DEFAULT_SUPPLIER_GROUP?.trim() || "Fournisseurs BEHAR TECH PRO",
     itemGroup: env.ERPNEXT_DEFAULT_ITEM_GROUP?.trim() || "Articles synchronisés BEHAR TECH PRO",
     territory: env.ERPNEXT_DEFAULT_TERRITORY?.trim() || "All Territories",
+    currency: env.ERPNEXT_CURRENCY?.trim() || "EUR",
+    sellingPriceList: env.ERPNEXT_SELLING_PRICE_LIST?.trim() || "Standard Selling",
+    buyingPriceList: env.ERPNEXT_BUYING_PRICE_LIST?.trim() || "Standard Buying",
     requestTimeoutMs: parseTimeout(env.ERPNEXT_REQUEST_TIMEOUT_MS),
   };
 }
@@ -78,6 +87,7 @@ export function getErpNextSafeStatus(env: Environment = process.env) {
   return {
     enabled: config.enabled,
     configured: config.configured,
+    workshopScoped: Boolean(config.workshopId),
     baseUrl: config.baseUrl || null,
     company: config.company,
     branch: config.branch,
@@ -86,5 +96,8 @@ export function getErpNextSafeStatus(env: Environment = process.env) {
     supplierGroup: config.supplierGroup,
     itemGroup: config.itemGroup,
     territory: config.territory,
+    currency: config.currency,
+    sellingPriceList: config.sellingPriceList,
+    buyingPriceList: config.buyingPriceList,
   };
 }
