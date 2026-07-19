@@ -31,10 +31,16 @@ L’utilisateur associé au token doit être un utilisateur technique distinct. 
 Les champs `custom_identifiant_*_behar_tech_pro` servent de clés d’idempotence. Un même objet BEHAR TECH PRO
 doit mettre à jour le document ERPNext existant au lieu de créer un doublon.
 
+Les quantités de stock ne sont jamais envoyées dans la création d’un `Item`. Elles devront passer par un
+mouvement de stock ou un rapprochement dédié afin de préserver le grand livre de stock ERPNext.
+
 ## Garde-fous
 
 - Aucun `DELETE` ERPNext n’est exposé par le client.
 - Les factures doivent rester en brouillon tant que l’entreprise n’est pas immatriculée.
+- Le code bloque actuellement toute synchronisation de facture tant que `legalInvoicingEnabled` n’est pas
+  explicitement activé après confirmation de l’immatriculation. Même ensuite, le document produit reste un
+  brouillon (`docstatus = 0`) et ne modifie pas le stock.
 - Le statut actuel est « TVA non applicable, article 293 B du CGI ».
 - Les paiements Stripe, SumUp et PayPal sont enregistrés comme externes ; ils ne sont pas encaissés par ERPNext.
 - La synchronisation doit être testée avec des fixtures et des appels simulés avant activation sur le site réel.
