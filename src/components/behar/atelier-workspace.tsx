@@ -285,10 +285,10 @@ function isOverdue(repair: Repair) {
 function resultTone(result: RepairTestResult) {
   if (result === "OK") return "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]";
   if (result === "KO" || result === "Défaut constaté") return "border-[#F2D4D1] bg-[#FFFFFF] text-[#B42318]";
-  if (result === "Non testable") return "border-[#E8E8E5] bg-[#FFFFFF] text-[#71717A]";
+  if (result === "Non testable") return "border-[#E4E7EC] bg-[#FFFFFF] text-[#71717A]";
   if (result === "Test repoussé") return "border-[#FEF0C7] bg-[#FFFFFF] text-[#B54708]";
-  if (result === "Non applicable") return "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]";
-  return "border-[#E8E8E5] bg-white text-[#6B6B6B]";
+  if (result === "Non applicable") return "border-[#E4E7EC] bg-[#FFFFFF] text-[#667085]";
+  return "border-[#E4E7EC] bg-white text-[#667085]";
 }
 
 function defaultChecklist(repair: Repair, final = false): RepairChecklistItem[] {
@@ -759,10 +759,10 @@ export function AtelierWorkspace() {
               <span className="inline-flex size-11 items-center justify-center rounded-[14px] bg-[#FFFFFF] text-[#2A9D8F]">
                 <Wrench className="size-5" />
               </span>
-              <h2 className="mt-5 font-semibold text-[#1A1916] text-[30px] leading-tight tracking-tight">
+              <h2 className="mt-5 font-semibold text-[#101828] text-[30px] leading-tight tracking-tight">
                 File d'attente atelier prête à recevoir les dossiers comptoir.
               </h2>
-              <p className="mt-3 text-[#6B6B6B] text-sm leading-6">
+              <p className="mt-3 text-[#667085] text-sm leading-6">
                 Dès qu'une prise en charge est créée au comptoir, elle apparaît ici avec le client, l'appareil, la
                 panne, la date promise et les actions technicien.
               </p>
@@ -774,15 +774,15 @@ export function AtelierWorkspace() {
                 ["En réparation", "Intervention atelier"],
               ].map(([status, label], index) => (
                 <div
-                  className="rounded-[16px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
+                  className="rounded-[16px] border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.035)]"
                   key={label}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-[#1A1916] text-sm">Étape {index + 1}</span>
+                    <span className="font-semibold text-[#101828] text-sm">Étape {index + 1}</span>
                     <StatusBadge status={status} />
                   </div>
-                  <p className="mt-3 text-[#1A1916] text-sm">{label}</p>
-                  <p className="mt-1 text-[#6B6B6B] text-xs">Synchronisé avec le dossier central</p>
+                  <p className="mt-3 text-[#101828] text-sm">{label}</p>
+                  <p className="mt-1 text-[#667085] text-xs">Synchronisé avec le dossier central</p>
                 </div>
               ))}
             </div>
@@ -840,7 +840,7 @@ export function AtelierWorkspace() {
               const columnRepairs = filteredRepairs.filter((repair) => column.statuses.includes(repair.status));
               return (
                 <section
-                  className="min-h-[620px] rounded-[18px] border border-[#E8E8E5] bg-white p-3 shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
+                  className="min-h-[620px] rounded-[18px] border border-[#E4E7EC] bg-white p-3 shadow-[0_1px_2px_rgba(16,24,40,0.035)]"
                   key={column.title}
                 >
                   <div className="mb-3 flex items-start justify-between">
@@ -849,11 +849,11 @@ export function AtelierWorkspace() {
                         <column.icon className="size-4" />
                       </span>
                       <div>
-                        <h3 className="font-semibold text-[#1A1916] text-[14px]">{column.title}</h3>
-                        <p className="text-[#6B6B6B] text-[11px]">{column.caption}</p>
+                        <h3 className="font-semibold text-[#101828] text-[14px]">{column.title}</h3>
+                        <p className="text-[#667085] text-[11px]">{column.caption}</p>
                       </div>
                     </div>
-                    <span className="rounded-full bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#6B6B6B] text-[11px]">
+                    <span className="rounded-full bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#667085] text-[11px]">
                       {columnRepairs.length}
                     </span>
                   </div>
@@ -868,7 +868,7 @@ export function AtelierWorkspace() {
                       />
                     ))}
                     {!columnRepairs.length && (
-                      <div className="rounded-[14px] border border-dashed border-[#E8E8E5] p-4 text-center text-[#8A8A8A] text-xs">
+                      <div className="rounded-[14px] border border-dashed border-[#E4E7EC] p-4 text-center text-[#98A2B3] text-xs">
                         Aucun dossier
                       </div>
                     )}
@@ -1323,7 +1323,7 @@ export function AtelierWorkspace() {
     <div className="space-y-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <button
-          className="inline-flex items-center gap-2 font-medium text-[#6B6B6B] text-sm transition hover:text-[#1A1916]"
+          className="inline-flex items-center gap-2 font-medium text-[#667085] text-sm transition hover:text-[#101828]"
           onClick={() => setView("queue")}
           type="button"
         >
@@ -1343,20 +1343,20 @@ export function AtelierWorkspace() {
       </div>
 
       <Panel className="overflow-hidden">
-        <div className="grid gap-5 border-[#E8E8E5] border-b p-5 lg:grid-cols-[1.15fr_1fr_0.85fr]">
+        <div className="grid gap-5 border-[#E4E7EC] border-b p-5 lg:grid-cols-[1.15fr_1fr_0.85fr]">
           <div className="flex min-w-0 gap-4">
             <RealDeviceVisual
               brand={selectedRepair.brandName}
-              className="size-[74px] rounded-[14px] border border-[#E8E8E5]"
+              className="size-[74px] rounded-[14px] border border-[#E4E7EC]"
               model={selectedRepair.deviceModel || selectedRepair.model}
               type={selectedRepair.deviceType}
             />
             <div className="min-w-0">
-              <p className="font-semibold text-[#1A1916] text-[18px] leading-tight">{selectedRepair.number}</p>
-              <h2 className="mt-1 truncate font-semibold text-[#1A1916] text-[24px] leading-tight tracking-tight">
+              <p className="font-semibold text-[#101828] text-[18px] leading-tight">{selectedRepair.number}</p>
+              <h2 className="mt-1 truncate font-semibold text-[#101828] text-[24px] leading-tight tracking-tight">
                 {formatDeviceLabel(selectedRepair, selectedRepair.device)}
               </h2>
-              <p className="mt-1 text-[#6B6B6B] text-sm">{selectedRepair.issue}</p>
+              <p className="mt-1 text-[#667085] text-sm">{selectedRepair.issue}</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm">
@@ -1379,7 +1379,7 @@ export function AtelierWorkspace() {
               <button
                 className={cn(
                   "inline-flex h-9 shrink-0 items-center gap-2 rounded-[10px] px-3 font-semibold text-[12px] transition",
-                  active ? "bg-[#FFFFFF] text-[#167B70]" : "text-[#6B6B6B] hover:bg-[#FFFFFF] hover:text-[#1A1916]",
+                  active ? "bg-[#FFFFFF] text-[#167B70]" : "text-[#667085] hover:bg-[#FFFFFF] hover:text-[#101828]",
                 )}
                 key={tab.id}
                 onClick={() => setView(tab.id)}
@@ -1397,7 +1397,7 @@ export function AtelierWorkspace() {
         <div className="grid gap-4 lg:grid-cols-[1.25fr_0.9fr_0.72fr]">
           <Panel className="p-5">
             <SectionTitle title="Résumé dossier" />
-            <p className="mt-3 text-[#1A1916] text-sm leading-6">
+            <p className="mt-3 text-[#101828] text-sm leading-6">
               {selectedRepair.notes ||
                 `Le client signale : ${selectedRepair.issue}. Le dossier suit le cycle atelier central et reste visible au comptoir, au client et au dashboard.`}
             </p>
@@ -1465,8 +1465,8 @@ export function AtelierWorkspace() {
           <Panel className="p-5">
             <SectionTitle title="Prochaine action" />
             <div className="mt-4 rounded-[16px] bg-[#FFFFFF] p-4">
-              <p className="font-semibold text-[#1A1916] text-sm">{nextActionLabel(selectedRepair)}</p>
-              <p className="mt-1 text-[#6B6B6B] text-xs leading-5">
+              <p className="font-semibold text-[#101828] text-sm">{nextActionLabel(selectedRepair)}</p>
+              <p className="mt-1 text-[#667085] text-xs leading-5">
                 Le statut, le stock, le suivi client et l'historique seront mis à jour depuis ce dossier central.
               </p>
               <PrimaryButton className="mt-4 w-full" onClick={() => setView(nextActionView(selectedRepair))}>
@@ -1479,7 +1479,7 @@ export function AtelierWorkspace() {
                 .slice(-4)
                 .reverse()
                 .map((entry) => (
-                  <div className="border-[#E8E8E5] border-l-2 pl-3 text-[#6B6B6B] text-xs" key={entry}>
+                  <div className="border-[#E4E7EC] border-l-2 pl-3 text-[#667085] text-xs" key={entry}>
                     {entry}
                   </div>
                 ))}
@@ -1501,9 +1501,9 @@ export function AtelierWorkspace() {
               />
               <DiagnosticCard title="Réparation possible" value={selectedRepair.repairability || "Oui"} tone="green" />
             </div>
-            <div className="mt-5 overflow-hidden rounded-[16px] border border-[#E8E8E5]">
+            <div className="mt-5 overflow-hidden rounded-[16px] border border-[#E4E7EC]">
               <table className="w-full text-sm">
-                <thead className="bg-[#FFFFFF] text-left text-[#6B6B6B] text-xs">
+                <thead className="bg-[#FFFFFF] text-left text-[#667085] text-xs">
                   <tr>
                     <th className="px-4 py-3">Test</th>
                     <th className="px-4 py-3">Résultat</th>
@@ -1585,10 +1585,10 @@ export function AtelierWorkspace() {
       {view === "parts" && (
         <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
           <Panel className="overflow-hidden">
-            <div className="flex flex-wrap items-center justify-between border-[#E8E8E5] border-b p-5 gap-3">
+            <div className="flex flex-wrap items-center justify-between border-[#E4E7EC] border-b p-5 gap-3">
               <div>
                 <SectionTitle title="Pièces utilisées" />
-                <span className="text-[#6B6B6B] text-xs font-normal mt-0.5 block">
+                <span className="text-[#667085] text-xs font-normal mt-0.5 block">
                   Tapez une référence, scannez un QR code ou cherchez par nom/modèle compatible.
                 </span>
               </div>
@@ -1596,16 +1596,16 @@ export function AtelierWorkspace() {
                 {showAllStock ? "Voir uniquement compatibles" : "Voir tout le stock"}
               </SecondaryButton>
             </div>
-            <div className="border-[#E8E8E5] border-b bg-[#FFFFFF] p-4">
+            <div className="border-[#E4E7EC] border-b bg-[#FFFFFF] p-4">
               <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
                 <div className="relative">
                   <label className="sr-only" htmlFor="atelier-part-reference">
                     Scanner ou saisir une référence
                   </label>
-                  <QrCode className="-translate-y-1/2 absolute top-1/2 left-3 size-4 text-[#6B6B6B]" />
+                  <QrCode className="-translate-y-1/2 absolute top-1/2 left-3 size-4 text-[#667085]" />
                   <input
                     id="atelier-part-reference"
-                    className="h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-white pr-3 pl-10 text-[#1A1916] text-sm outline-none transition placeholder:text-[#8A8A85] focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
+                    className="h-11 w-full rounded-[12px] border border-[#E4E7EC] bg-white pr-3 pl-10 text-[#101828] text-sm outline-none transition placeholder:text-[#98A2B3] focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
                     onChange={(event) => setPartSearch(event.target.value)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter") selectPartFromSearch();
@@ -1628,13 +1628,13 @@ export function AtelierWorkspace() {
                   Réinitialiser
                 </SecondaryButton>
               </div>
-              <p className="mt-2 text-[#6B6B6B] text-xs">
+              <p className="mt-2 text-[#667085] text-xs">
                 Un scanner douchette peut saisir directement l'URL QR ou la référence lue sur l'étiquette.
               </p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[980px] text-sm">
-                <thead className="bg-[#FFFFFF] text-left text-[#6B6B6B] text-xs">
+                <thead className="bg-[#FFFFFF] text-left text-[#667085] text-xs">
                   <tr>
                     <th className="px-4 py-3">Pièce</th>
                     <th className="px-4 py-3">Référence</th>
@@ -1651,8 +1651,8 @@ export function AtelierWorkspace() {
                     <tr>
                       <td colSpan={12} className="px-4 py-8 text-center">
                         <div className="flex flex-col items-center justify-center gap-3">
-                          <Package className="size-8 text-[#A3A3A3]" />
-                          <p className="text-[#6B6B6B] text-sm font-medium">
+                          <Package className="size-8 text-[#98A2B3]" />
+                          <p className="text-[#667085] text-sm font-medium">
                             Aucune pièce trouvée pour ce dossier ou cette recherche.
                           </p>
                           <SecondaryButton className="h-9 text-xs px-4 mt-1" onClick={() => setShowAllStock(true)}>
@@ -1667,8 +1667,8 @@ export function AtelierWorkspace() {
                       return (
                         <tr
                           className={cn(
-                            "cursor-pointer border-[#E8E8E5] border-t transition hover:bg-[#FAFAF8]",
-                            focusedStockItem?.id === item.id && "bg-[#FAFAF8]",
+                            "cursor-pointer border-[#E4E7EC] border-t transition hover:bg-[#F9FAFB]",
+                            focusedStockItem?.id === item.id && "bg-[#F9FAFB]",
                           )}
                           key={item.id}
                           onClick={() => setFocusedStockItemId(item.id)}
@@ -1677,19 +1677,19 @@ export function AtelierWorkspace() {
                             <div className="flex items-center gap-3">
                               <RealProductVisual
                                 category={item.categoryName}
-                                className="size-10 rounded-[10px] border border-[#E8E8E5]"
+                                className="size-10 rounded-[10px] border border-[#E4E7EC]"
                                 name={item.displayName || item.name}
                               />
                               <div>
-                                <p className="font-semibold text-[#1A1916]">{item.displayName || item.name}</p>
-                                <p className="text-[#6B6B6B] text-xs">{item.quality || "Qualité à compléter"}</p>
+                                <p className="font-semibold text-[#101828]">{item.displayName || item.name}</p>
+                                <p className="text-[#667085] text-xs">{item.quality || "Qualité à compléter"}</p>
                               </div>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-[#6B6B6B]">
+                          <td className="px-4 py-3 text-[#667085]">
                             <PartReferenceLink reference={item.sku || item.reference} />
                           </td>
-                          <td className="px-4 py-3 text-[#6B6B6B]">
+                          <td className="px-4 py-3 text-[#667085]">
                             {item.compatibleModels.join(" / ") || "Compatibilité à vérifier"}
                           </td>
                           <td className="px-4 py-3">
@@ -1698,14 +1698,14 @@ export function AtelierWorkspace() {
                           <td className="px-4 py-3">
                             <span
                               className={
-                                item.stock <= item.threshold ? "font-semibold text-[#B42318]" : "text-[#1A1916]"
+                                item.stock <= item.threshold ? "font-semibold text-[#B42318]" : "text-[#101828]"
                               }
                             >
                               {item.stock}
                             </span>
                           </td>
                           {canViewSupplier && (
-                            <td className="px-4 py-3 text-[#6B6B6B]">{item.primarySupplier || item.supplier}</td>
+                            <td className="px-4 py-3 text-[#667085]">{item.primarySupplier || item.supplier}</td>
                           )}
                           {canViewPurchasePrice && (
                             <td className="px-4 py-3">{formatEuro(item.averagePurchasePrice ?? item.purchasePrice)}</td>
@@ -1747,18 +1747,18 @@ export function AtelierWorkspace() {
           <Panel className="p-5">
             <SectionTitle title="Pièce sélectionnée" />
             {focusedStockItem ? (
-              <div className="mt-4 rounded-[16px] border border-[#E8E8E5] bg-white p-4">
+              <div className="mt-4 rounded-[16px] border border-[#E4E7EC] bg-white p-4">
                 <div className="flex items-start gap-3">
                   <RealProductVisual
                     category={focusedStockItem.categoryName}
-                    className="size-12 rounded-[12px] border border-[#E8E8E5]"
+                    className="size-12 rounded-[12px] border border-[#E4E7EC]"
                     name={focusedStockItem.displayName || focusedStockItem.name}
                   />
                   <div className="min-w-0">
-                    <p className="font-semibold text-[#1A1916] text-sm">
+                    <p className="font-semibold text-[#101828] text-sm">
                       {focusedStockItem.displayName || focusedStockItem.name}
                     </p>
-                    <div className="mt-1 text-[#6B6B6B] text-xs">
+                    <div className="mt-1 text-[#667085] text-xs">
                       <PartReferenceLink reference={focusedStockItem.sku || focusedStockItem.reference} />
                     </div>
                   </div>
@@ -1797,15 +1797,15 @@ export function AtelierWorkspace() {
                   ].map(([label, value]) => (
                     <div
                       key={label}
-                      className="flex items-start justify-between gap-3 rounded-[10px] bg-[#FAFAF8] px-3 py-2"
+                      className="flex items-start justify-between gap-3 rounded-[10px] bg-[#F9FAFB] px-3 py-2"
                     >
-                      <dt className="text-[#6B6B6B] text-xs">{label}</dt>
-                      <dd className="max-w-[58%] text-right font-semibold text-[#1A1916] text-xs">{value}</dd>
+                      <dt className="text-[#667085] text-xs">{label}</dt>
+                      <dd className="max-w-[58%] text-right font-semibold text-[#101828] text-xs">{value}</dd>
                     </div>
                   ))}
                 </dl>
                 {focusedOriginLine && canViewSupplier && (
-                  <p className="mt-3 text-[#6B6B6B] text-xs">
+                  <p className="mt-3 text-[#667085] text-xs">
                     Origine : {focusedOriginLine.supplierName} · {focusedOriginLine.quantityPurchased} achetée(s)
                   </p>
                 )}
@@ -1835,20 +1835,20 @@ export function AtelierWorkspace() {
                 </div>
               </div>
             ) : (
-              <p className="mt-4 rounded-[14px] bg-[#FAFAF8] p-4 text-[#6B6B6B] text-sm">
+              <p className="mt-4 rounded-[14px] bg-[#F9FAFB] p-4 text-[#667085] text-sm">
                 Cherchez ou scannez une référence pour afficher la traçabilité de la pièce.
               </p>
             )}
 
-            <div className="mt-6 border-[#E8E8E5] border-t pt-5">
+            <div className="mt-6 border-[#E4E7EC] border-t pt-5">
               <SectionTitle title={`Pièces du dossier (${selectedRepair.parts.length})`} />
               <div className="mt-4 space-y-3">
                 {selectedRepair.parts.map((part) => (
-                  <div className="rounded-[14px] border border-[#E8E8E5] p-3" key={part.stockItemId}>
+                  <div className="rounded-[14px] border border-[#E4E7EC] p-3" key={part.stockItemId}>
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="font-semibold text-[#1A1916] text-sm">{part.name}</p>
-                        <div className="text-[#6B6B6B] text-xs">
+                        <p className="font-semibold text-[#101828] text-sm">{part.name}</p>
+                        <div className="text-[#667085] text-xs">
                           <PartReferenceLink reference={part.sku || part.reference} />
                         </div>
                       </div>
@@ -1867,12 +1867,12 @@ export function AtelierWorkspace() {
                   </div>
                 ))}
                 {!selectedRepair.parts.length && (
-                  <p className="text-[#6B6B6B] text-sm">Aucune pièce utilisée pour ce dossier.</p>
+                  <p className="text-[#667085] text-sm">Aucune pièce utilisée pour ce dossier.</p>
                 )}
               </div>
               {canViewMoney && (
                 <div className="mt-5 rounded-[16px] bg-[#FFFFFF] p-4">
-                  <p className="text-[#6B6B6B] text-xs">Marge brute pièces</p>
+                  <p className="text-[#667085] text-xs">Marge brute pièces</p>
                   <p className="mt-1 font-semibold text-[#167B70] text-[24px]">
                     {formatEuro(
                       selectedRepair.parts.reduce(
@@ -1892,11 +1892,11 @@ export function AtelierWorkspace() {
         <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
           <Panel className="p-5">
             <SectionTitle title="Mode intervention" />
-            <div className="mt-5 rounded-[18px] border border-[#E8E8E5] bg-[#FFFFFF] p-5">
-              <p className="text-[#6B6B6B] text-sm">Temps de main-d'oeuvre réel optionnel</p>
+            <div className="mt-5 rounded-[18px] border border-[#E4E7EC] bg-[#FFFFFF] p-5">
+              <p className="text-[#667085] text-sm">Temps de main-d'oeuvre réel optionnel</p>
               <div className="mt-2 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                 <div>
-                  <p className="font-semibold text-[#1A1916] text-[48px] leading-none tracking-tight">
+                  <p className="font-semibold text-[#101828] text-[48px] leading-none tracking-tight">
                     {formatSeconds(elapsed)}
                   </p>
                   <p className="mt-2 text-[#167B70] text-sm">
@@ -1927,18 +1927,18 @@ export function AtelierWorkspace() {
                   {selectedRepair.parts
                     .filter((part) => part.confirmed)
                     .map((part) => (
-                      <p className="text-[#1A1916] text-sm" key={part.stockItemId}>
+                      <p className="text-[#101828] text-sm" key={part.stockItemId}>
                         {part.name} x{part.quantity}
                       </p>
                     ))}
                   {!selectedRepair.parts.some((part) => part.confirmed) && (
-                    <p className="text-[#6B6B6B] text-sm">Aucune pièce utilisée.</p>
+                    <p className="text-[#667085] text-sm">Aucune pièce utilisée.</p>
                   )}
                 </div>
               </Panel>
               <Panel className="p-4">
                 <SectionTitle title="Notes techniques" small />
-                <p className="mt-3 rounded-[12px] bg-[#FFFFFF] p-3 text-[#6B6B6B] text-sm">
+                <p className="mt-3 rounded-[12px] bg-[#FFFFFF] p-3 text-[#667085] text-sm">
                   {selectedRepair.intervention?.notes ||
                     selectedRepair.repairNotes ||
                     "Connecteurs à manipuler avec précaution."}
@@ -1981,9 +1981,9 @@ export function AtelierWorkspace() {
               {evidenceCategories.map((category) => {
                 const photos = (selectedRepair.workshopPhotos ?? []).filter((photo) => photo.category === category);
                 return (
-                  <div className="rounded-[16px] border border-[#E8E8E5] p-4" key={category}>
+                  <div className="rounded-[16px] border border-[#E4E7EC] p-4" key={category}>
                     <div className="flex items-center justify-between">
-                      <p className="font-semibold text-[#1A1916] text-sm">{category}</p>
+                      <p className="font-semibold text-[#101828] text-sm">{category}</p>
                       <label className="inline-flex cursor-pointer items-center gap-1.5 font-semibold text-[#167B70] text-xs">
                         <ImagePlus className="size-4" />
                         Ajouter photo
@@ -2004,13 +2004,13 @@ export function AtelierWorkspace() {
                           // biome-ignore lint/performance/noImgElement: photo locale en data URL, pas d'optimisation Next/Image possible
                           <img
                             alt={photo.label}
-                            className="size-24 shrink-0 rounded-[12px] border border-[#E8E8E5] object-cover"
+                            className="size-24 shrink-0 rounded-[12px] border border-[#E4E7EC] object-cover"
                             key={photo.id}
                             src={photo.dataUrl}
                           />
                         ) : (
                           <div
-                            className="grid size-24 shrink-0 place-items-center rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] text-center text-[#6B6B6B] text-[11px]"
+                            className="grid size-24 shrink-0 place-items-center rounded-[12px] border border-[#E4E7EC] bg-[#FFFFFF] text-center text-[#667085] text-[11px]"
                             key={photo.id}
                           >
                             <Camera className="mb-1 size-5 text-[#2A9D8F]" />
@@ -2019,7 +2019,7 @@ export function AtelierWorkspace() {
                         ),
                       )}
                       {!photos.length && (
-                        <div className="rounded-[12px] border border-dashed border-[#E8E8E5] px-4 py-8 text-[#8A8A8A] text-sm">
+                        <div className="rounded-[12px] border border-dashed border-[#E4E7EC] px-4 py-8 text-[#98A2B3] text-sm">
                           Aucune photo
                         </div>
                       )}
@@ -2056,7 +2056,7 @@ export function AtelierWorkspace() {
             </div>
             <div className="mt-5 rounded-[16px] bg-[#FFFFFF] p-4">
               <p className="font-semibold text-[#167B70] text-sm">Accord client enregistré</p>
-              <p className="mt-1 text-[#6B6B6B] text-xs">
+              <p className="mt-1 text-[#667085] text-xs">
                 Photos horodatées, signature et document de prise en charge liés au dossier.
               </p>
             </div>
@@ -2068,9 +2068,9 @@ export function AtelierWorkspace() {
         <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
           <Panel className="p-5">
             <SectionTitle title="Test final" />
-            <div className="mt-4 overflow-hidden rounded-[16px] border border-[#E8E8E5]">
+            <div className="mt-4 overflow-hidden rounded-[16px] border border-[#E4E7EC]">
               <table className="w-full text-sm">
-                <thead className="bg-[#FFFFFF] text-left text-[#6B6B6B] text-xs">
+                <thead className="bg-[#FFFFFF] text-left text-[#667085] text-xs">
                   <tr>
                     <th className="px-4 py-3">Point</th>
                     <th className="px-4 py-3">Résultat</th>
@@ -2091,9 +2091,9 @@ export function AtelierWorkspace() {
               </table>
             </div>
             <label className="mt-4 block">
-              <span className="font-medium text-[#1A1916] text-sm">Remarque finale</span>
+              <span className="font-medium text-[#101828] text-sm">Remarque finale</span>
               <textarea
-                className="mt-2 min-h-24 w-full rounded-[12px] border border-[#E8E8E5] bg-white p-3 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+                className="mt-2 min-h-24 w-full rounded-[12px] border border-[#E4E7EC] bg-white p-3 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
                 value={finalComment}
                 onChange={(event) => setFinalComment(event.target.value)}
                 placeholder="Remplacement effectué. Toutes les fonctions vérifiées."
@@ -2107,8 +2107,8 @@ export function AtelierWorkspace() {
                 <span className="mx-auto grid size-16 place-items-center rounded-full bg-[#2A9D8F] text-white">
                   <ShieldCheck className="size-8" />
                 </span>
-                <p className="mt-4 font-semibold text-[#1A1916]">Contrôle qualité flexible.</p>
-                <p className="mt-1 text-[#6B6B6B] text-sm">
+                <p className="mt-4 font-semibold text-[#101828]">Contrôle qualité flexible.</p>
+                <p className="mt-1 text-[#667085] text-sm">
                   OK, défaut, non applicable ou non testé avec note : le dossier peut refléter la réalité terrain.
                 </p>
               </div>
@@ -2124,10 +2124,10 @@ export function AtelierWorkspace() {
               <SecondaryButton className="mt-3 w-full" onClick={() => markWorkshopOutcome("Test non applicable")}>
                 Test non applicable
               </SecondaryButton>
-              <div className="mt-5 rounded-[16px] border border-[#E8E8E5] p-4">
-                <label className="font-medium text-[#1A1916] text-sm">Exception atelier</label>
+              <div className="mt-5 rounded-[16px] border border-[#E4E7EC] p-4">
+                <label className="font-medium text-[#101828] text-sm">Exception atelier</label>
                 <textarea
-                  className="mt-2 min-h-20 w-full rounded-[12px] border border-[#E8E8E5] p-3 text-sm outline-none"
+                  className="mt-2 min-h-20 w-full rounded-[12px] border border-[#E4E7EC] p-3 text-sm outline-none"
                   value={impossibleReason}
                   onChange={(event) => setImpossibleReason(event.target.value)}
                   placeholder="Raison obligatoire pour test impossible ou refusé"
@@ -2157,15 +2157,15 @@ export function AtelierWorkspace() {
             <div className="mt-5 space-y-3">
               {relatedAudit.slice(0, 10).map((entry) => (
                 <div
-                  className="grid gap-3 rounded-[16px] border border-[#E8E8E5] p-4 md:grid-cols-[140px_1fr_170px]"
+                  className="grid gap-3 rounded-[16px] border border-[#E4E7EC] p-4 md:grid-cols-[140px_1fr_170px]"
                   key={entry.id}
                 >
-                  <p className="text-[#6B6B6B] text-xs">{entry.createdAt}</p>
+                  <p className="text-[#667085] text-xs">{entry.createdAt}</p>
                   <div>
-                    <p className="font-semibold text-[#1A1916] text-sm">{entry.action}</p>
-                    <p className="mt-1 text-[#6B6B6B] text-sm">{entry.message}</p>
+                    <p className="font-semibold text-[#101828] text-sm">{entry.action}</p>
+                    <p className="mt-1 text-[#667085] text-sm">{entry.message}</p>
                   </div>
-                  <p className="text-[#6B6B6B] text-xs">
+                  <p className="text-[#667085] text-xs">
                     {entry.actorName} · {entry.actorRole}
                   </p>
                 </div>
@@ -2173,7 +2173,7 @@ export function AtelierWorkspace() {
               {!relatedAudit.length &&
                 selectedRepair.history.map((entry, index) => (
                   <div
-                    className="rounded-[16px] border border-[#E8E8E5] p-4 text-[#1A1916] text-sm"
+                    className="rounded-[16px] border border-[#E4E7EC] p-4 text-[#101828] text-sm"
                     key={`${entry}-${index}`}
                   >
                     {entry}
@@ -2184,7 +2184,7 @@ export function AtelierWorkspace() {
           <div className="space-y-4">
             <Panel className="p-5">
               <SectionTitle title="Notes internes" />
-              <p className="mt-1 text-[#8A8A8A] text-xs">
+              <p className="mt-1 text-[#98A2B3] text-xs">
                 Visible uniquement par l'équipe atelier, jamais par le client.
               </p>
               <div className="mt-4 space-y-3">
@@ -2193,17 +2193,17 @@ export function AtelierWorkspace() {
                   .map((message) => (
                     <div className="rounded-[14px] bg-[#FFFFFF] p-3" key={message.id}>
                       <div className="flex items-center justify-between">
-                        <p className="font-semibold text-[#1A1916] text-sm">{message.authorName}</p>
-                        <p className="text-[#8A8A8A] text-xs">{formatIsoToDisplay(message.createdAt)}</p>
+                        <p className="font-semibold text-[#101828] text-sm">{message.authorName}</p>
+                        <p className="text-[#98A2B3] text-xs">{formatIsoToDisplay(message.createdAt)}</p>
                       </div>
-                      <p className="mt-1 text-[#6B6B6B] text-sm">{message.body}</p>
+                      <p className="mt-1 text-[#667085] text-sm">{message.body}</p>
                     </div>
                   ))}
                 {!(selectedRepair.messages ?? []).some((message) => message.visibility === "internal") && (
-                  <p className="text-[#8A8A8A] text-sm">Aucune note interne pour ce dossier.</p>
+                  <p className="text-[#98A2B3] text-sm">Aucune note interne pour ce dossier.</p>
                 )}
               </div>
-              <div className="mt-4 space-y-2 rounded-[14px] border border-[#E8E8E5] p-3">
+              <div className="mt-4 space-y-2 rounded-[14px] border border-[#E4E7EC] p-3">
                 <div className="flex flex-wrap gap-1.5">
                   {noteTags.map((tag) => (
                     <button
@@ -2211,7 +2211,7 @@ export function AtelierWorkspace() {
                         "rounded-full px-2.5 py-1 font-semibold text-[11px] transition",
                         noteTag === tag
                           ? "bg-[#FFFFFF] text-[#167B70]"
-                          : "bg-[#FFFFFF] text-[#6B6B6B] hover:text-[#1A1916]",
+                          : "bg-[#FFFFFF] text-[#667085] hover:text-[#101828]",
                       )}
                       key={tag}
                       onClick={() => setNoteTag(tag)}
@@ -2222,7 +2222,7 @@ export function AtelierWorkspace() {
                   ))}
                 </div>
                 <textarea
-                  className="min-h-20 w-full rounded-[12px] border border-[#E8E8E5] bg-white p-3 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+                  className="min-h-20 w-full rounded-[12px] border border-[#E4E7EC] bg-white p-3 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
                   onChange={(event) => setNoteDraft(event.target.value)}
                   placeholder="Nouvelle note interne…"
                   value={noteDraft}
@@ -2245,24 +2245,24 @@ export function AtelierWorkspace() {
                   .map((message) => (
                     <div className="rounded-[14px] bg-[#FFFFFF] p-3" key={message.id}>
                       <div className="flex items-center justify-between">
-                        <p className="font-semibold text-[#1A1916] text-sm">{message.authorName}</p>
+                        <p className="font-semibold text-[#101828] text-sm">{message.authorName}</p>
                         <span className="rounded-full bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#167B70] text-[10px]">
                           Suivi client
                         </span>
                       </div>
-                      <p className="mt-1 text-[#6B6B6B] text-sm">{message.body}</p>
-                      <p className="mt-1 text-[#8A8A8A] text-[10px]">{formatIsoToDisplay(message.createdAt)}</p>
+                      <p className="mt-1 text-[#667085] text-sm">{message.body}</p>
+                      <p className="mt-1 text-[#98A2B3] text-[10px]">{formatIsoToDisplay(message.createdAt)}</p>
                     </div>
                   ))}
                 {!(selectedRepair.messages ?? []).some((message) => message.visibility === "client") && (
-                  <p className="text-[#8A8A8A] text-sm">Aucun message client pour le moment.</p>
+                  <p className="text-[#98A2B3] text-sm">Aucun message client pour le moment.</p>
                 )}
               </div>
-              <div className="mt-4 space-y-2 rounded-[14px] border border-[#E8E8E5] p-3">
+              <div className="mt-4 space-y-2 rounded-[14px] border border-[#E4E7EC] p-3">
                 <div className="flex flex-wrap gap-1.5">
                   {clientMessageTemplates.map((template) => (
                     <button
-                      className="rounded-full bg-[#FFFFFF] px-2.5 py-1 text-[#6B6B6B] text-[11px] transition hover:text-[#1A1916]"
+                      className="rounded-full bg-[#FFFFFF] px-2.5 py-1 text-[#667085] text-[11px] transition hover:text-[#101828]"
                       key={template}
                       onClick={() => setClientDraft(template)}
                       type="button"
@@ -2272,7 +2272,7 @@ export function AtelierWorkspace() {
                   ))}
                 </div>
                 <textarea
-                  className="min-h-20 w-full rounded-[12px] border border-[#E8E8E5] bg-white p-3 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+                  className="min-h-20 w-full rounded-[12px] border border-[#E4E7EC] bg-white p-3 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
                   onChange={(event) => setClientDraft(event.target.value)}
                   placeholder="Message au client…"
                   value={clientDraft}
@@ -2281,7 +2281,7 @@ export function AtelierWorkspace() {
                   <Send className="mr-2 size-4" />
                   Envoyer au client
                 </PrimaryButton>
-                <p className="text-[#8A8A8A] text-[11px]">
+                <p className="text-[#98A2B3] text-[11px]">
                   Le message est publié sur le suivi client et envoyé par SMS si un numéro est connu. Le statut du
                   dossier reste inchangé.
                 </p>
@@ -2297,21 +2297,21 @@ export function AtelierWorkspace() {
             <SectionTitle title={`Documents (${relatedDocuments.length})`} />
             <div className="mt-4 space-y-2">
               {relatedDocuments.map((document) => (
-                <div className="rounded-[14px] border border-[#E8E8E5] p-3" key={document.id}>
+                <div className="rounded-[14px] border border-[#E4E7EC] p-3" key={document.id}>
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-semibold text-[#1A1916] text-sm">{document.title}</p>
+                    <p className="font-semibold text-[#101828] text-sm">{document.title}</p>
                     {document.fileUrl && (
                       <span className="shrink-0 rounded-full bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#167B70] text-[10px]">
                         Client
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-[#6B6B6B] text-xs">
+                  <p className="mt-1 text-[#667085] text-xs">
                     {document.type} · {document.createdAt}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <button
-                      className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#E8E8E5] px-2.5 py-1 font-semibold text-[#167B70] text-xs hover:bg-[#FFFFFF]"
+                      className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#E4E7EC] px-2.5 py-1 font-semibold text-[#167B70] text-xs hover:bg-[#FFFFFF]"
                       onClick={() => downloadDoc(document)}
                       type="button"
                     >
@@ -2320,7 +2320,7 @@ export function AtelierWorkspace() {
                     </button>
                     {isClientPublishable(document) && (
                       <button
-                        className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#E8E8E5] px-2.5 py-1 font-semibold text-[#6B6B6B] text-xs hover:bg-[#FFFFFF]"
+                        className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#E4E7EC] px-2.5 py-1 font-semibold text-[#667085] text-xs hover:bg-[#FFFFFF]"
                         onClick={() => void publishDocToClient(document)}
                         type="button"
                       >
@@ -2346,7 +2346,7 @@ export function AtelierWorkspace() {
             </div>
           </Panel>
           <Panel className="overflow-hidden">
-            <div className="flex items-center justify-between border-[#E8E8E5] border-b p-5">
+            <div className="flex items-center justify-between border-[#E4E7EC] border-b p-5">
               <SectionTitle title="Aperçu rapport réparation" />
               <div className="flex gap-2">
                 <SecondaryButton className="h-9 px-3" onClick={downloadRepairReport}>
@@ -2367,12 +2367,12 @@ export function AtelierWorkspace() {
               </div>
             </div>
             <div className="p-6">
-              <div className="mx-auto max-w-[720px] rounded-[8px] border border-[#DADADA] bg-white p-8 shadow-[0_12px_30px_rgba(26,25,22,0.08)]">
-                <div className="flex items-start justify-between border-[#E8E8E5] border-b pb-5">
-                  <p className="font-bold text-[#1A1916] text-lg">BEHAR · TECH PRO</p>
+              <div className="mx-auto max-w-[720px] rounded-[8px] border border-[#D0D5DD] bg-white p-8 shadow-[0_12px_30px_rgba(16,24,40,0.08)]">
+                <div className="flex items-start justify-between border-[#E4E7EC] border-b pb-5">
+                  <p className="font-bold text-[#101828] text-lg">BEHAR · TECH PRO</p>
                   <div className="text-right">
-                    <p className="font-semibold text-[#1A1916]">RAPPORT DE RÉPARATION</p>
-                    <p className="text-[#6B6B6B] text-sm">{selectedRepair.number}</p>
+                    <p className="font-semibold text-[#101828]">RAPPORT DE RÉPARATION</p>
+                    <p className="text-[#667085] text-sm">{selectedRepair.number}</p>
                   </div>
                 </div>
                 <div className="mt-6 grid gap-6 text-sm md:grid-cols-2">
@@ -2390,26 +2390,26 @@ export function AtelierWorkspace() {
                     }
                   />
                 </div>
-                <p className="mt-8 text-[#6B6B6B] text-sm">
+                <p className="mt-8 text-[#667085] text-sm">
                   Les documents client n'affichent pas les prix d'achat, marge, fournisseur ou notes internes sensibles.
                 </p>
               </div>
-              <div className="mt-5 rounded-[16px] border border-[#E8E8E5] bg-white p-4">
+              <div className="mt-5 rounded-[16px] border border-[#E4E7EC] bg-white p-4">
                 <div
                   className="flex items-center gap-3 cursor-pointer"
                   onClick={() => setSelectedQrRepairId(selectedRepair.id)}
                 >
-                  <QrCode className="size-10 text-[#1A1916] shrink-0" />
+                  <QrCode className="size-10 text-[#101828] shrink-0" />
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-[#1A1916] text-sm">Lien de suivi client</p>
-                    <p className="truncate text-[#6B6B6B] text-xs">{publicUrl || "Générer le lien"}</p>
+                    <p className="font-semibold text-[#101828] text-sm">Lien de suivi client</p>
+                    <p className="truncate text-[#667085] text-xs">{publicUrl || "Générer le lien"}</p>
                   </div>
                 </div>
                 <div className="mt-3 flex gap-2 border-t border-[#FFFFFF] pt-3">
                   <button
                     type="button"
                     onClick={() => setSelectedQrRepairId(selectedRepair.id)}
-                    className="flex-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white font-semibold text-[#1A1916] text-xs transition hover:bg-[#FFFFFF]"
+                    className="flex-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E4E7EC] bg-white font-semibold text-[#101828] text-xs transition hover:bg-[#FFFFFF]"
                   >
                     Afficher QR
                   </button>
@@ -2424,7 +2424,7 @@ export function AtelierWorkspace() {
                         toast.error("Impossible de copier");
                       }
                     }}
-                    className="flex-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white font-semibold text-[#1A1916] text-xs transition hover:bg-[#FFFFFF]"
+                    className="flex-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E4E7EC] bg-white font-semibold text-[#101828] text-xs transition hover:bg-[#FFFFFF]"
                   >
                     Copier lien
                   </button>
@@ -2454,11 +2454,11 @@ export function AtelierWorkspace() {
                     repair.originalRepairId === selectedRepair.id || repair.id === selectedRepair.originalRepairId,
                 )
                 .map((repair) => (
-                  <div className="rounded-[16px] border border-[#E8E8E5] p-4" key={repair.id}>
+                  <div className="rounded-[16px] border border-[#E4E7EC] p-4" key={repair.id}>
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="font-semibold text-[#1A1916]">{repair.sav?.savNumber || repair.number}</p>
-                        <p className="mt-1 text-[#6B6B6B] text-sm">{repair.issue}</p>
+                        <p className="font-semibold text-[#101828]">{repair.sav?.savNumber || repair.number}</p>
+                        <p className="mt-1 text-[#667085] text-sm">{repair.issue}</p>
                       </div>
                       <StatusBadge status={repair.sav?.status || repair.status} />
                     </div>
@@ -2475,12 +2475,12 @@ export function AtelierWorkspace() {
               {!repairs.some(
                 (repair) =>
                   repair.originalRepairId === selectedRepair.id || repair.id === selectedRepair.originalRepairId,
-              ) && <p className="text-[#6B6B6B] text-sm">Aucun SAV lié à ce dossier.</p>}
+              ) && <p className="text-[#667085] text-sm">Aucun SAV lié à ce dossier.</p>}
             </div>
           </Panel>
           <Panel className="p-5">
             <SectionTitle title="Créer un retour" />
-            <p className="mt-3 text-[#6B6B6B] text-sm leading-6">
+            <p className="mt-3 text-[#667085] text-sm leading-6">
               Un SAV crée un nouveau dossier lié à la réparation initiale. L'ancien dossier n'est jamais écrasé.
             </p>
             <PrimaryButton className="mt-5 w-full" onClick={createSav}>
@@ -2519,24 +2519,24 @@ function RepairQueueCard({
   const readyLabel = repairReadyStatusLabel(repair.status, repair.paymentStatus);
   return (
     <button
-      className="w-full rounded-[15px] border border-[#E8E8E5] bg-white p-3 text-left shadow-[0_1px_2px_rgba(26,25,22,0.035)] transition hover:-translate-y-0.5 hover:border-[#2A9D8F]/35 hover:shadow-[0_10px_24px_rgba(26,25,22,0.07)]"
+      className="w-full rounded-[15px] border border-[#E4E7EC] bg-white p-3 text-left shadow-[0_1px_2px_rgba(16,24,40,0.035)] transition hover:-translate-y-0.5 hover:border-[#2A9D8F]/35 hover:shadow-[0_10px_24px_rgba(16,24,40,0.07)]"
       onClick={onOpen}
       type="button"
     >
       <div className="flex items-start justify-between gap-3">
-        <span className="font-semibold text-[#1A1916] text-xs">{repair.number}</span>
-        <span className="truncate text-[#6B6B6B] text-xs">{displayCustomerName(customer)}</span>
+        <span className="font-semibold text-[#101828] text-xs">{repair.number}</span>
+        <span className="truncate text-[#667085] text-xs">{displayCustomerName(customer)}</span>
       </div>
       <div className="mt-3 flex gap-3">
         <RealDeviceVisual
           brand={repair.brandName}
-          className="size-11 rounded-[10px] border border-[#E8E8E5]"
+          className="size-11 rounded-[10px] border border-[#E4E7EC]"
           model={repair.deviceModel || repair.model}
           type={repair.deviceType}
         />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold text-[#1A1916] text-sm">{formatDeviceLabel(repair, repair.device)}</p>
-          <p className="mt-0.5 line-clamp-2 text-[#1A1916] text-xs">{repair.issue}</p>
+          <p className="truncate font-semibold text-[#101828] text-sm">{formatDeviceLabel(repair, repair.device)}</p>
+          <p className="mt-0.5 line-clamp-2 text-[#101828] text-xs">{repair.issue}</p>
         </div>
       </div>
       <div className="mt-3 flex flex-wrap gap-1.5">
@@ -2549,7 +2549,7 @@ function RepairQueueCard({
         {repair.subStatus && <StatusBadge status={repair.subStatus} />}
         {isOverdue(repair) && <StatusBadge status="En retard" />}
       </div>
-      <div className="mt-3 flex items-center justify-between text-[#6B6B6B] text-xs">
+      <div className="mt-3 flex items-center justify-between text-[#667085] text-xs">
         <span>{repair.technician || "Atelier"}</span>
         <span className="inline-flex items-center gap-1">
           <Clock className="size-3.5" />
@@ -2572,16 +2572,16 @@ function WorkshopMetric({
 }: Readonly<{ label: string; value: string; helper: string; tone?: "neutral" | "danger" | "amber" | "green" }>) {
   return (
     <Panel className="p-4">
-      <p className="text-[#6B6B6B] text-xs">{label}</p>
+      <p className="text-[#667085] text-xs">{label}</p>
       <p
         className={cn(
           "mt-2 font-semibold text-[28px] leading-none tracking-tight",
-          tone === "danger" ? "text-[#B42318]" : tone === "green" ? "text-[#167B70]" : "text-[#1A1916]",
+          tone === "danger" ? "text-[#B42318]" : tone === "green" ? "text-[#167B70]" : "text-[#101828]",
         )}
       >
         {value}
       </p>
-      <p className="mt-2 text-[#6B6B6B] text-xs">{helper}</p>
+      <p className="mt-2 text-[#667085] text-xs">{helper}</p>
     </Panel>
   );
 }
@@ -2589,24 +2589,24 @@ function WorkshopMetric({
 function SummaryCell({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <div>
-      <p className="text-[#6B6B6B] text-xs">{label}</p>
-      <p className="mt-1 truncate font-semibold text-[#1A1916] text-sm">{value}</p>
+      <p className="text-[#667085] text-xs">{label}</p>
+      <p className="mt-1 truncate font-semibold text-[#101828] text-sm">{value}</p>
     </div>
   );
 }
 
 function InfoLine({ label, value }: Readonly<{ label: string; value: React.ReactNode }>) {
   return (
-    <div className="flex items-start justify-between gap-4 border-[#E8E8E5] border-b py-2.5 last:border-b-0">
-      <dt className="text-[#6B6B6B] text-sm">{label}</dt>
-      <dd className="max-w-[60%] text-right font-medium text-[#1A1916] text-sm">{value}</dd>
+    <div className="flex items-start justify-between gap-4 border-[#E4E7EC] border-b py-2.5 last:border-b-0">
+      <dt className="text-[#667085] text-sm">{label}</dt>
+      <dd className="max-w-[60%] text-right font-medium text-[#101828] text-sm">{value}</dd>
     </div>
   );
 }
 
 function SectionTitle({ title, small }: Readonly<{ title: string; small?: boolean }>) {
   return (
-    <h3 className={cn("font-semibold text-[#1A1916] tracking-tight", small ? "text-[15px]" : "text-[18px]")}>
+    <h3 className={cn("font-semibold text-[#101828] tracking-tight", small ? "text-[15px]" : "text-[18px]")}>
       {title}
     </h3>
   );
@@ -2619,13 +2619,13 @@ function ActionButton({ label, onClick, danger }: Readonly<{ label: string; onCl
         "flex h-10 w-full items-center justify-between rounded-[12px] border px-3 font-semibold text-sm transition",
         danger
           ? "border-[#F2D4D1] text-[#B42318] hover:bg-[#FFFFFF]"
-          : "border-[#E8E8E5] text-[#1A1916] hover:bg-[#FFFFFF]",
+          : "border-[#E4E7EC] text-[#101828] hover:bg-[#FFFFFF]",
       )}
       onClick={onClick}
       type="button"
     >
       {label}
-      <ChevronRight className="size-4 text-[#A3A3A3]" />
+      <ChevronRight className="size-4 text-[#98A2B3]" />
     </button>
   );
 }
@@ -2639,11 +2639,11 @@ function DiagnosticCard({
     <div
       className={cn(
         "rounded-[16px] border p-4",
-        tone === "green" ? "border-[#D7EFEA] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white",
+        tone === "green" ? "border-[#D7EFEA] bg-[#FFFFFF]" : "border-[#E4E7EC] bg-white",
       )}
     >
-      <p className="font-semibold text-[#1A1916] text-sm">{title}</p>
-      <p className="mt-3 text-[#6B6B6B] text-sm leading-6">{value}</p>
+      <p className="font-semibold text-[#101828] text-sm">{title}</p>
+      <p className="mt-3 text-[#667085] text-sm leading-6">{value}</p>
     </div>
   );
 }
@@ -2661,7 +2661,7 @@ function ChecklistRow({
   compact?: boolean;
 }>) {
   return (
-    <tr className="border-[#E8E8E5] border-t">
+    <tr className="border-[#E4E7EC] border-t">
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
           {item.result === "OK" ? (
@@ -2669,9 +2669,9 @@ function ChecklistRow({
           ) : item.result === "Défaut constaté" || item.result === "KO" ? (
             <X className="size-4 text-[#B42318]" />
           ) : (
-            <Circle className="size-4 text-[#A3A3A3]" />
+            <Circle className="size-4 text-[#98A2B3]" />
           )}
-          <span className="font-medium text-[#1A1916]">{item.label}</span>
+          <span className="font-medium text-[#101828]">{item.label}</span>
         </div>
       </td>
       <td className="px-4 py-3">
@@ -2680,7 +2680,7 @@ function ChecklistRow({
             <button
               className={cn(
                 "rounded-[8px] border px-2 py-1 font-semibold text-[11px]",
-                item.result === result ? resultTone(result) : "border-[#E8E8E5] bg-white text-[#6B6B6B]",
+                item.result === result ? resultTone(result) : "border-[#E4E7EC] bg-white text-[#667085]",
               )}
               key={result}
               onClick={() => onChange(result)}
@@ -2694,13 +2694,13 @@ function ChecklistRow({
       <td className="px-4 py-3">
         {onCommentChange ? (
           <input
-            className="h-9 w-full min-w-[160px] rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-xs outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+            className="h-9 w-full min-w-[160px] rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-xs outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
             value={item.comment ?? ""}
             onChange={(event) => onCommentChange(event.target.value)}
             placeholder={item.result === "Non testé" ? "Note requise" : "Note optionnelle"}
           />
         ) : (
-          <span className="text-[#6B6B6B]">{item.comment || "À compléter si nécessaire"}</span>
+          <span className="text-[#667085]">{item.comment || "À compléter si nécessaire"}</span>
         )}
       </td>
     </tr>
@@ -2710,8 +2710,8 @@ function ChecklistRow({
 function TextBox({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <div>
-      <p className="font-semibold text-[#1A1916] text-sm">{label}</p>
-      <p className="mt-2 min-h-20 rounded-[12px] border border-[#E8E8E5] bg-white p-3 text-[#6B6B6B] text-sm leading-6">
+      <p className="font-semibold text-[#101828] text-sm">{label}</p>
+      <p className="mt-2 min-h-20 rounded-[12px] border border-[#E4E7EC] bg-white p-3 text-[#667085] text-sm leading-6">
         {value}
       </p>
     </div>
@@ -2731,7 +2731,7 @@ function ProgressPanel({ repair }: Readonly<{ repair: Repair }>) {
           <div className="flex items-center justify-between text-sm" key={step}>
             <span
               className={cn(
-                "text-[#6B6B6B]",
+                "text-[#667085]",
                 repair.intervention?.currentStep === step && "font-semibold text-[#167B70]",
               )}
             >
@@ -2740,7 +2740,7 @@ function ProgressPanel({ repair }: Readonly<{ repair: Repair }>) {
             {index * 20 < progress ? (
               <Check className="size-4 text-[#2A9D8F]" />
             ) : (
-              <Circle className="size-4 text-[#DADADA]" />
+              <Circle className="size-4 text-[#D0D5DD]" />
             )}
           </div>
         ))}
@@ -2757,7 +2757,7 @@ function columnTone(tone: QueueColumn["tone"]) {
   if (tone === "amber") return "bg-[#FFFFFF] text-[#936100]";
   if (tone === "green") return "bg-[#FFFFFF] text-[#167B70]";
   if (tone === "purple") return "bg-[#FFFFFF] text-[#5D4BA8]";
-  return "bg-[#FFFFFF] text-[#6B6B6B]";
+  return "bg-[#FFFFFF] text-[#667085]";
 }
 
 function nextActionLabel(repair: Repair) {

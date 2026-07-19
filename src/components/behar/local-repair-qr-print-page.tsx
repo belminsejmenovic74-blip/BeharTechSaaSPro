@@ -88,16 +88,16 @@ export function LocalRepairQrPrintPage({ repairId }: Readonly<{ repairId: string
 
   if (!hydrated) {
     return (
-      <main className="grid min-h-screen place-items-center bg-white text-[#6B6B6B]">Chargement du QR Code...</main>
+      <main className="grid min-h-screen place-items-center bg-white text-[#667085]">Chargement du QR Code...</main>
     );
   }
 
   if (!repair) {
     return (
-      <main className="grid min-h-screen place-items-center bg-white p-8 text-center text-[#1A1916]">
+      <main className="grid min-h-screen place-items-center bg-white p-8 text-center text-[#101828]">
         <div>
           <h1 className="font-bold text-xl">Dossier introuvable</h1>
-          <p className="mt-2 text-[#6B6B6B]">Impossible d'imprimer le QR Code de suivi.</p>
+          <p className="mt-2 text-[#667085]">Impossible d'imprimer le QR Code de suivi.</p>
         </div>
       </main>
     );

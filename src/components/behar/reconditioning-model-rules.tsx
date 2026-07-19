@@ -123,7 +123,7 @@ const modeBadgeTone = (mode: ReconditioningCalculationMode) => {
 const SOURCE_BADGE_TONE: Record<PartCostSource, string> = {
   stock: "border-[#D7EFEA] bg-[#ECF8F4] text-[#147065]",
   manual: "border-[#D9E7FF] bg-[#F3F7FF] text-[#2563EB]",
-  default: "border-[#E8E5DF] bg-[#F7F7F5] text-[#6B6B6B]",
+  default: "border-[#E4E7EC] bg-[#F5F7FA] text-[#667085]",
   missing: "border-[#F0D9D6] bg-[#FCF4F3] text-[#B4342A]",
 };
 
@@ -296,7 +296,7 @@ export function ReconditioningModelRules() {
       >
         <div className="mb-3.5 grid gap-2.5 lg:grid-cols-[minmax(0,1fr)_auto]">
           <label className="relative block">
-            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6B6B6B]" />
+            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#667085]" />
             <input
               className={cn(inputCls, "pl-9")}
               onChange={(event) => setSearch(event.target.value)}
@@ -321,9 +321,9 @@ export function ReconditioningModelRules() {
               0,
             );
             return (
-              <div className="overflow-hidden rounded-[16px] border border-[#E8E5DF] bg-white" key={typeGroup.type}>
+              <div className="overflow-hidden rounded-[16px] border border-[#E4E7EC] bg-white" key={typeGroup.type}>
                 <button
-                  className="flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left transition hover:bg-[#F7F7F5]"
+                  className="flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left transition hover:bg-[#F5F7FA]"
                   onClick={() => setOpenTypes((current) => ({ ...current, [typeGroup.type]: !typeOpen }))}
                   type="button"
                 >
@@ -331,22 +331,22 @@ export function ReconditioningModelRules() {
                     {typeOpen ? (
                       <ChevronDown className="size-4 text-[#147065]" />
                     ) : (
-                      <ChevronRight className="size-4 text-[#6B6B6B]" />
+                      <ChevronRight className="size-4 text-[#667085]" />
                     )}
-                    <span className="font-semibold text-[#1A1916] text-[13px]">{typeGroup.label}</span>
+                    <span className="font-semibold text-[#101828] text-[13px]">{typeGroup.label}</span>
                   </span>
-                  <span className="text-[#6B6B6B] text-xs">{rowCount} stockages</span>
+                  <span className="text-[#667085] text-xs">{rowCount} stockages</span>
                 </button>
 
                 {typeOpen && (
-                  <div className="space-y-2 border-[#E8E5DF] border-t bg-[#FAFAF8] p-2.5">
+                  <div className="space-y-2 border-[#E4E7EC] border-t bg-[#F9FAFB] p-2.5">
                     {typeGroup.brands.map((brand) => {
                       const brandKey = `${typeGroup.type}:${brand.name}`;
                       const brandOpen = openBrands[brandKey] ?? brand.name === "Apple";
                       return (
-                        <div className="overflow-hidden rounded-[14px] border border-[#E8E5DF] bg-white" key={brand.id}>
+                        <div className="overflow-hidden rounded-[14px] border border-[#E4E7EC] bg-white" key={brand.id}>
                           <button
-                            className="flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left transition hover:bg-[#F7F7F5]"
+                            className="flex w-full items-center justify-between gap-3 px-3.5 py-2.5 text-left transition hover:bg-[#F5F7FA]"
                             onClick={() => setOpenBrands((current) => ({ ...current, [brandKey]: !brandOpen }))}
                             type="button"
                           >
@@ -354,17 +354,17 @@ export function ReconditioningModelRules() {
                               {brandOpen ? (
                                 <ChevronDown className="size-4 text-[#147065]" />
                               ) : (
-                                <ChevronRight className="size-4 text-[#6B6B6B]" />
+                                <ChevronRight className="size-4 text-[#667085]" />
                               )}
-                              <span className="font-semibold text-[#1A1916] text-[13px]">{brand.name}</span>
+                              <span className="font-semibold text-[#101828] text-[13px]">{brand.name}</span>
                             </span>
-                            <span className="text-[#6B6B6B] text-xs">
+                            <span className="text-[#667085] text-xs">
                               {brand.models.length} modèle{brand.models.length > 1 ? "s" : ""}
                             </span>
                           </button>
 
                           {brandOpen && (
-                            <div className="divide-y divide-[#F1F1EF] border-[#E8E5DF] border-t">
+                            <div className="divide-y divide-[#F2F4F7] border-[#E4E7EC] border-t">
                               {brand.models.map((model) => (
                                 <CatalogModelRows key={model.id} model={model} onOpen={openStorage} rules={rules} />
                               ))}
@@ -380,7 +380,7 @@ export function ReconditioningModelRules() {
           })}
 
           {catalog.length === 0 && (
-            <p className="rounded-[18px] border border-[#E8E5DF] border-dashed bg-white px-4 py-8 text-center text-[#6B6B6B] text-sm">
+            <p className="rounded-[18px] border border-[#E4E7EC] border-dashed bg-white px-4 py-8 text-center text-[#667085] text-sm">
               Aucun modèle trouvé dans le catalogue appareils.
             </p>
           )}
@@ -393,8 +393,8 @@ export function ReconditioningModelRules() {
       >
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           {GRADE_KEYS.map((grade) => (
-            <div className="rounded-[13px] border border-[#E8E5DF] p-2.5 text-center" key={grade}>
-              <p className="font-semibold text-[#1A1916] text-[14px]">{grade}</p>
+            <div className="rounded-[13px] border border-[#E4E7EC] p-2.5 text-center" key={grade}>
+              <p className="font-semibold text-[#101828] text-[14px]">{grade}</p>
               <div className="mt-2 flex items-center justify-center gap-1.5">
                 <input
                   className={cn(inputCls, "h-8 w-14 text-right text-[12px]")}
@@ -403,9 +403,9 @@ export function ReconditioningModelRules() {
                   type="number"
                   value={rules.gradePct[grade]}
                 />
-                <span className="text-[#6B6B6B] text-[12px]">%</span>
+                <span className="text-[#667085] text-[12px]">%</span>
               </div>
-              <p className="mt-1.5 text-[#9B9B96] text-[11px]">
+              <p className="mt-1.5 text-[#98A2B3] text-[11px]">
                 Ex. cible 560 € → − {formatMoney(Math.round((560 * rules.gradePct[grade]) / 100))}
               </p>
             </div>
@@ -442,11 +442,11 @@ function CatalogModelRows({
   return (
     <div className="px-3 py-2.5">
       <button
-        className="mb-2 flex w-full items-center gap-2.5 rounded-[12px] px-2 py-1.5 text-left transition hover:bg-[#F7F7F5]"
+        className="mb-2 flex w-full items-center gap-2.5 rounded-[12px] px-2 py-1.5 text-left transition hover:bg-[#F5F7FA]"
         onClick={() => onOpen(model, model.storages[0])}
         type="button"
       >
-        <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-[10px] border border-[#E8E5DF] bg-[#FAFAF8]">
+        <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-[10px] border border-[#E4E7EC] bg-[#F9FAFB]">
           {image ? (
             <img alt="" className="h-full w-full object-contain p-1.5" src={image} />
           ) : (
@@ -454,8 +454,8 @@ function CatalogModelRows({
           )}
         </span>
         <span className="min-w-0">
-          <span className="block truncate font-semibold text-[#1A1916] text-[13px]">{model.modelName}</span>
-          <span className="block truncate text-[#6B6B6B] text-[11.5px]">
+          <span className="block truncate font-semibold text-[#101828] text-[13px]">{model.modelName}</span>
+          <span className="block truncate text-[#667085] text-[11.5px]">
             {model.storages.length} stockage{model.storages.length > 1 ? "s" : ""} disponible
             {model.storages.length > 1 ? "s" : ""}
           </span>
@@ -465,7 +465,7 @@ function CatalogModelRows({
       <div className="overflow-x-auto">
         <table className="w-full min-w-[720px] border-collapse text-left">
           <thead>
-            <tr className="text-[#8A8A85] text-[11px] uppercase tracking-wide">
+            <tr className="text-[#98A2B3] text-[11px] uppercase tracking-wide">
               <th className="px-2 py-2 font-semibold">Modèle</th>
               <th className="px-2 py-2 font-semibold">Stockage</th>
               <th className="px-2 py-2 font-semibold">Couleurs</th>
@@ -484,10 +484,10 @@ function CatalogModelRows({
               const activeRule = exactRule?.active ? exactRule : null;
               const mode = activeRule?.calculationMode ?? rules.defaultMode;
               return (
-                <tr className="border-[#F1F1EF] border-t transition hover:bg-[#FCFCFB]" key={storage.label}>
+                <tr className="border-[#F2F4F7] border-t transition hover:bg-[#FCFCFD]" key={storage.label}>
                   <td className="px-2 py-2.5">
                     <button
-                      className="max-w-[220px] truncate font-semibold text-[#1A1916] text-[12.5px] hover:text-[#147065]"
+                      className="max-w-[220px] truncate font-semibold text-[#101828] text-[12.5px] hover:text-[#147065]"
                       onClick={() => onOpen(model, storage)}
                       type="button"
                     >
@@ -496,7 +496,7 @@ function CatalogModelRows({
                   </td>
                   <td className="px-2 py-2.5">
                     <button
-                      className="rounded-[8px] border border-[#E8E5DF] bg-white px-2 py-0.5 font-semibold text-[#1A1916] text-[11.5px] transition hover:border-[#2A9D8F]/50 hover:bg-[#ECF8F4]"
+                      className="rounded-[8px] border border-[#E4E7EC] bg-white px-2 py-0.5 font-semibold text-[#101828] text-[11.5px] transition hover:border-[#2A9D8F]/50 hover:bg-[#ECF8F4]"
                       onClick={() => onOpen(model, storage)}
                       type="button"
                     >
@@ -507,14 +507,14 @@ function CatalogModelRows({
                     <div className="flex max-w-[220px] flex-wrap gap-1.5">
                       {storage.colors.slice(0, 3).map((color) => (
                         <span
-                          className="rounded-full border border-[#E8E5DF] bg-white px-2 py-0.5 text-[#6B6B6B] text-[10.5px]"
+                          className="rounded-full border border-[#E4E7EC] bg-white px-2 py-0.5 text-[#667085] text-[10.5px]"
                           key={color.label}
                         >
                           {color.label}
                         </span>
                       ))}
                       {storage.colors.length > 3 && (
-                        <span className="text-[#9B9B96] text-[11px]">+{storage.colors.length - 3}</span>
+                        <span className="text-[#98A2B3] text-[11px]">+{storage.colors.length - 3}</span>
                       )}
                     </div>
                   </td>
@@ -527,7 +527,7 @@ function CatalogModelRows({
                         "inline-flex h-[22px] max-w-full items-center truncate whitespace-nowrap rounded-full border px-2 font-semibold text-[10.5px]",
                         activeRule
                           ? "border-[#D7EFEA] bg-[#ECF8F4] text-[#147065]"
-                          : "border-[#E8E5DF] bg-[#F7F7F5] text-[#6B6B6B]",
+                          : "border-[#E4E7EC] bg-[#F5F7FA] text-[#667085]",
                       )}
                     >
                       {activeRule ? "Règle spécifique" : "Valeurs par défaut"}
@@ -640,19 +640,19 @@ function ReconditioningModelConfigModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-[#1A1916]/25 p-3 backdrop-blur-[2px]"
+      className="fixed inset-0 z-50 grid place-items-center bg-[#101828]/25 p-3 backdrop-blur-[2px]"
       role="presentation"
     >
       <div
         aria-modal="true"
-        className="flex max-h-[92vh] w-full max-w-[920px] flex-col overflow-hidden rounded-[20px] border border-[#E8E5DF] bg-[#FAFAF8] shadow-[0_24px_80px_rgba(26,25,22,0.20)]"
+        className="flex max-h-[92vh] w-full max-w-[920px] flex-col overflow-hidden rounded-[20px] border border-[#E4E7EC] bg-[#F9FAFB] shadow-[0_24px_80px_rgba(16,24,40,0.20)]"
         role="dialog"
       >
         {/* Header sticky */}
-        <header className="border-[#E8E5DF] border-b bg-white px-4 pt-3.5 pb-3">
+        <header className="border-[#E4E7EC] border-b bg-white px-4 pt-3.5 pb-3">
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-[12px] border border-[#E8E5DF] bg-[#FAFAF8]">
+              <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-[12px] border border-[#E4E7EC] bg-[#F9FAFB]">
                 {image ? (
                   <img alt="" className="h-full w-full object-contain p-1.5" src={image} />
                 ) : (
@@ -660,8 +660,8 @@ function ReconditioningModelConfigModal({
                 )}
               </span>
               <div className="min-w-0">
-                <p className="text-[#6B6B6B] text-[11.5px]">{selected.model.brandName} · Configuration reprise</p>
-                <h2 className="truncate font-semibold text-[#1A1916] text-[16px] tracking-tight">
+                <p className="text-[#667085] text-[11.5px]">{selected.model.brandName} · Configuration reprise</p>
+                <h2 className="truncate font-semibold text-[#101828] text-[16px] tracking-tight">
                   {selected.model.modelName} · {selected.storage.label}
                 </h2>
                 <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -671,7 +671,7 @@ function ReconditioningModelConfigModal({
                       "inline-flex h-6 items-center rounded-full border px-2.5 font-semibold text-[11px]",
                       activeRule
                         ? "border-[#D7EFEA] bg-[#ECF8F4] text-[#147065]"
-                        : "border-[#E8E5DF] bg-[#F7F7F5] text-[#6B6B6B]",
+                        : "border-[#E4E7EC] bg-[#F5F7FA] text-[#667085]",
                     )}
                   >
                     {activeRule ? "Règle spécifique" : "Valeurs par défaut"}
@@ -680,7 +680,7 @@ function ReconditioningModelConfigModal({
               </div>
             </div>
             <button
-              className="grid size-8 shrink-0 place-items-center rounded-[9px] text-[#6B6B6B] transition hover:bg-[#F7F7F5] hover:text-[#1A1916]"
+              className="grid size-8 shrink-0 place-items-center rounded-[9px] text-[#667085] transition hover:bg-[#F5F7FA] hover:text-[#101828]"
               onClick={closeWithGuard}
               type="button"
             >
@@ -703,7 +703,7 @@ function ReconditioningModelConfigModal({
                     "inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 font-semibold text-[11.5px] transition",
                     isCurrent
                       ? "border-[#2A9D8F] bg-[#ECF8F4] text-[#147065]"
-                      : "border-[#E8E5DF] bg-white text-[#6B6B6B] hover:border-[#2A9D8F]/45 hover:text-[#1A1916]",
+                      : "border-[#E4E7EC] bg-white text-[#667085] hover:border-[#2A9D8F]/45 hover:text-[#101828]",
                   )}
                   key={storage.label}
                   onClick={() => switchStorage(storage.label)}
@@ -788,14 +788,14 @@ function ReconditioningModelConfigModal({
           </ModalPanel>
 
           <ModalPanel subtitle="Décote, validation manuelle ou blocage — propres à ce modèle." title="Défauts">
-            <div className="overflow-hidden rounded-[14px] border border-[#E8E5DF] bg-white">
+            <div className="overflow-hidden rounded-[14px] border border-[#E4E7EC] bg-white">
               {DEFECT_KEYS.map((key) => {
                 const entry = draft.defects[key];
                 const linkedPart = DEFECT_TO_PART[key];
                 return (
                   <div
                     className={cn(
-                      "flex flex-wrap items-center gap-x-2.5 gap-y-2 border-[#F1F1EF] border-b px-3 py-2 last:border-0",
+                      "flex flex-wrap items-center gap-x-2.5 gap-y-2 border-[#F2F4F7] border-b px-3 py-2 last:border-0",
                       !entry.active && "opacity-45",
                     )}
                     key={key}
@@ -813,9 +813,9 @@ function ReconditioningModelConfigModal({
                       }
                     />
                     <span className="min-w-[130px] flex-1">
-                      <span className="block font-semibold text-[#1A1916] text-[12.5px]">{DEFECT_LABELS[key]}</span>
+                      <span className="block font-semibold text-[#101828] text-[12.5px]">{DEFECT_LABELS[key]}</span>
                       {linkedPart && (
-                        <span className="block text-[#9B9B96] text-[11px]">Pièce liée : {PART_LABELS[linkedPart]}</span>
+                        <span className="block text-[#98A2B3] text-[11px]">Pièce liée : {PART_LABELS[linkedPart]}</span>
                       )}
                     </span>
                     <select
@@ -851,7 +851,7 @@ function ReconditioningModelConfigModal({
                         />
                       </div>
                     ) : (
-                      <span className="w-[110px] text-right text-[#9B9B96] text-[12px]">—</span>
+                      <span className="w-[110px] text-right text-[#98A2B3] text-[12px]">—</span>
                     )}
                   </div>
                 );
@@ -863,7 +863,7 @@ function ReconditioningModelConfigModal({
             subtitle={`Pièces compatibles avec ${selected.model.modelName}, reliées au stock. Le stock n'est jamais décrémenté ici.`}
             title="Pièces + main-d'œuvre"
           >
-            <div className="overflow-hidden rounded-[14px] border border-[#E8E5DF] bg-white">
+            <div className="overflow-hidden rounded-[14px] border border-[#E4E7EC] bg-white">
               {PART_KEYS.map((key) => (
                 <PartCostRow
                   compatible={compatibleByKey[key]}
@@ -927,7 +927,7 @@ function ReconditioningModelConfigModal({
         </div>
 
         {/* Footer sticky */}
-        <footer className="border-[#E8E5DF] border-t bg-white px-4 py-3">
+        <footer className="border-[#E4E7EC] border-t bg-white px-4 py-3">
           {errors.length > 0 && <p className="mb-2 text-[#B4342A] text-[12px]">{errors.join(" ")}</p>}
           <div className="flex items-center justify-end gap-2">
             <GhostButton className="px-4" onClick={closeWithGuard}>
@@ -975,10 +975,10 @@ function PartCostRow({
   const total = piece != null ? piece + (labor ?? 0) : null;
 
   return (
-    <div className={cn("border-[#F1F1EF] border-b px-3 py-2.5 last:border-0", !entry.active && "opacity-45")}>
+    <div className={cn("border-[#F2F4F7] border-b px-3 py-2.5 last:border-0", !entry.active && "opacity-45")}>
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
         <Toggle on={entry.active} onToggle={() => onPatch({ active: !entry.active })} />
-        <span className="min-w-[110px] font-semibold text-[#1A1916] text-[12.5px]">{PART_LABELS[partKey]}</span>
+        <span className="min-w-[110px] font-semibold text-[#101828] text-[12.5px]">{PART_LABELS[partKey]}</span>
         <span
           className={cn(
             "inline-flex h-6 items-center whitespace-nowrap rounded-full border px-2 font-semibold text-[10.5px]",
@@ -1013,18 +1013,18 @@ function PartCostRow({
             ))}
           </select>
         ) : (
-          <span className="text-[#9B9B96] text-[12px]">Aucune pièce trouvée dans le stock</span>
+          <span className="text-[#98A2B3] text-[12px]">Aucune pièce trouvée dans le stock</span>
         )}
 
         {entry.stockItemId ? (
-          <span className="whitespace-nowrap text-[#6B6B6B] text-[12px]">
+          <span className="whitespace-nowrap text-[#667085] text-[12px]">
             Prix achat :{" "}
-            <strong className="text-[#1A1916]">
+            <strong className="text-[#101828]">
               {stockPrice != null ? formatMoney(stockPrice) : "à renseigner dans le stock"}
             </strong>
           </span>
         ) : (
-          <label className="flex items-center gap-1.5 whitespace-nowrap text-[#6B6B6B] text-[12px]">
+          <label className="flex items-center gap-1.5 whitespace-nowrap text-[#667085] text-[12px]">
             Pièce
             <input
               className={cn(inputCls, "h-8 w-[88px] text-right text-[12px]", manualPrice == null && "border-[#F0D9D6]")}
@@ -1037,7 +1037,7 @@ function PartCostRow({
           </label>
         )}
 
-        <label className="flex items-center gap-1.5 whitespace-nowrap text-[#6B6B6B] text-[12px]">
+        <label className="flex items-center gap-1.5 whitespace-nowrap text-[#667085] text-[12px]">
           MO
           <input
             className={cn(inputCls, "h-8 w-[72px] text-right text-[12px]")}
@@ -1067,10 +1067,10 @@ function BatteryStockHint({
   const bestFallback = compatible.find((candidate) => candidate.purchasePrice != null);
   const shown = price ?? bestFallback?.purchasePrice ?? null;
   return (
-    <p className="mt-2.5 rounded-[12px] border border-[#E8E5DF] bg-[#FAFAF8] px-3 py-2 text-[#6B6B6B] text-[11.5px]">
+    <p className="mt-2.5 rounded-[12px] border border-[#E4E7EC] bg-[#F9FAFB] px-3 py-2 text-[#667085] text-[11.5px]">
       Coût remplacement batterie :{" "}
       {shown != null ? (
-        <strong className="text-[#1A1916]">{formatMoney(shown)}</strong>
+        <strong className="text-[#101828]">{formatMoney(shown)}</strong>
       ) : (
         <strong className="text-[#B4342A]">à renseigner</strong>
       )}{" "}
@@ -1087,21 +1087,21 @@ function ReconditioningDefaultModeModal({ onClose }: Readonly<{ onClose: () => v
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-[#1A1916]/25 p-3 backdrop-blur-[2px]"
+      className="fixed inset-0 z-50 grid place-items-center bg-[#101828]/25 p-3 backdrop-blur-[2px]"
       role="presentation"
     >
       <div
         aria-modal="true"
-        className="w-full max-w-[620px] rounded-[20px] border border-[#E8E5DF] bg-white p-4 shadow-[0_24px_80px_rgba(26,25,22,0.20)]"
+        className="w-full max-w-[620px] rounded-[20px] border border-[#E4E7EC] bg-white p-4 shadow-[0_24px_80px_rgba(16,24,40,0.20)]"
         role="dialog"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Mode par défaut</h2>
-            <p className="mt-1 text-[#6B6B6B] text-[12.5px]">Utilisé quand un modèle n'a pas de règle spécifique.</p>
+            <h2 className="font-semibold text-[#101828] text-[17px] tracking-tight">Mode par défaut</h2>
+            <p className="mt-1 text-[#667085] text-[12.5px]">Utilisé quand un modèle n'a pas de règle spécifique.</p>
           </div>
           <button
-            className="grid size-8 place-items-center rounded-[9px] text-[#6B6B6B] transition hover:bg-[#F7F7F5] hover:text-[#1A1916]"
+            className="grid size-8 place-items-center rounded-[9px] text-[#667085] transition hover:bg-[#F5F7FA] hover:text-[#101828]"
             onClick={onClose}
             type="button"
           >
@@ -1141,14 +1141,14 @@ function ReconditioningCalculationModeSelector({
             "rounded-[14px] border p-3 text-left transition",
             mode === candidate
               ? "border-[#2A9D8F] bg-[#ECF8F4] shadow-[0_10px_24px_rgba(42,157,143,0.12)]"
-              : "border-[#E8E5DF] bg-white hover:border-[#2A9D8F]/45",
+              : "border-[#E4E7EC] bg-white hover:border-[#2A9D8F]/45",
           )}
           key={candidate}
           onClick={() => onChange(candidate)}
           type="button"
         >
-          <span className="font-semibold text-[#1A1916] text-[13px]">{CALCULATION_MODE_TITLES[candidate]}</span>
-          <span className="mt-1 block text-[#6B6B6B] text-[11.5px] leading-snug">
+          <span className="font-semibold text-[#101828] text-[13px]">{CALCULATION_MODE_TITLES[candidate]}</span>
+          <span className="mt-1 block text-[#667085] text-[11.5px] leading-snug">
             {CALCULATION_MODE_DESCRIPTIONS[candidate]}
           </span>
         </button>
@@ -1240,9 +1240,9 @@ function ModalPanel({
   children,
 }: Readonly<{ title: string; subtitle?: string; children: React.ReactNode }>) {
   return (
-    <section className="rounded-[16px] border border-[#E8E5DF] bg-white p-3.5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-      <h3 className="font-semibold text-[#1A1916] text-[13.5px]">{title}</h3>
-      {subtitle && <p className="mt-0.5 text-[#6B6B6B] text-[11.5px] leading-snug">{subtitle}</p>}
+    <section className="rounded-[16px] border border-[#E4E7EC] bg-white p-3.5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+      <h3 className="font-semibold text-[#101828] text-[13.5px]">{title}</h3>
+      {subtitle && <p className="mt-0.5 text-[#667085] text-[11.5px] leading-snug">{subtitle}</p>}
       <div className="mt-2.5">{children}</div>
     </section>
   );
@@ -1251,7 +1251,7 @@ function ModalPanel({
 function Field({ label, children }: Readonly<{ label: string; children: React.ReactNode }>) {
   return (
     <label className="block space-y-1">
-      <span className="font-medium text-[#1A1916] text-[12px]">{label}</span>
+      <span className="font-medium text-[#101828] text-[12px]">{label}</span>
       {children}
     </label>
   );
@@ -1267,7 +1267,7 @@ function MoneyInput({ value, onChange }: Readonly<{ value: number; onChange: (va
         type="number"
         value={value || ""}
       />
-      <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-[#6B6B6B] text-[11.5px]">
+      <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-[#667085] text-[11.5px]">
         €
       </span>
     </div>
@@ -1284,7 +1284,7 @@ function MoneySuffixInput({ value, onChange }: Readonly<{ value: number; onChang
         type="number"
         value={value}
       />
-      <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-[#9B9B96] text-[11.5px]">
+      <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-[#98A2B3] text-[11.5px]">
         €
       </span>
     </div>
@@ -1302,7 +1302,7 @@ function PercentInput({ value, onChange }: Readonly<{ value: number; onChange: (
         type="number"
         value={value}
       />
-      <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-[#6B6B6B] text-[11.5px]">
+      <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-[#667085] text-[11.5px]">
         %
       </span>
     </div>
@@ -1315,8 +1315,8 @@ function ToggleField({
   onChange,
 }: Readonly<{ checked: boolean; label: string; onChange: (checked: boolean) => void }>) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-[12px] border border-[#E8E5DF] bg-[#FAFAF8] px-3 py-2">
-      <span className="font-medium text-[#1A1916] text-[12px]">{label}</span>
+    <div className="flex items-center justify-between gap-3 rounded-[12px] border border-[#E4E7EC] bg-[#F9FAFB] px-3 py-2">
+      <span className="font-medium text-[#101828] text-[12px]">{label}</span>
       <Toggle on={checked} onToggle={() => onChange(!checked)} />
     </div>
   );
@@ -1337,7 +1337,7 @@ function ModeBadge({ mode, inherited }: Readonly<{ mode: ReconditioningCalculati
 
 function InfoPill({ label }: Readonly<{ label: string }>) {
   return (
-    <span className="inline-flex h-7 items-center rounded-full border border-[#E8E5DF] bg-white px-2.5 font-semibold text-[#6B6B6B] text-[11px]">
+    <span className="inline-flex h-7 items-center rounded-full border border-[#E4E7EC] bg-white px-2.5 font-semibold text-[#667085] text-[11px]">
       {label}
     </span>
   );
@@ -1347,7 +1347,7 @@ export function Toggle({ on, onToggle }: Readonly<{ on: boolean; onToggle: () =>
   return (
     <button
       aria-checked={on}
-      className={cn("relative h-5 w-9 shrink-0 rounded-full transition", on ? "bg-[#2A9D8F]" : "bg-[#E8E5DF]")}
+      className={cn("relative h-5 w-9 shrink-0 rounded-full transition", on ? "bg-[#2A9D8F]" : "bg-[#E4E7EC]")}
       onClick={onToggle}
       role="switch"
       type="button"

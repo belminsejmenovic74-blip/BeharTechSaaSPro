@@ -197,9 +197,9 @@ export function DashboardWorkspace() {
       {reconditioningFiles.length > 0 && (
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Reconditionnement</h2>
+            <h2 className="font-semibold text-[#101828] text-[17px] tracking-tight">Reconditionnement</h2>
             <Link
-              className="text-[#6B6B6B] text-[12px] transition-colors hover:text-[#1A1916]"
+              className="text-[#667085] text-[12px] transition-colors hover:text-[#101828]"
               href="/dashboard/reconditionnement"
             >
               Ouvrir le module →
@@ -208,54 +208,54 @@ export function DashboardWorkspace() {
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Link
               href="/dashboard/reconditionnement"
-              className="flex min-h-[92px] items-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_3px_rgba(26,25,22,0.04)] transition hover:border-[#2A9D8F]/40"
+              className="flex min-h-[92px] items-center gap-3 rounded-[14px] border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_3px_rgba(16,24,40,0.04)] transition hover:border-[#2A9D8F]/40"
             >
               <span className="grid size-8 shrink-0 place-items-center text-[#2A9D8F]">
                 <CheckCheck className="size-[18px]" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="flex items-center justify-between gap-2">
-                  <b className="truncate text-[#1A1916] text-sm">Prêts à vendre</b>
-                  <strong className="text-[#1A1916] text-lg tabular-nums">{recondKpis.prets}</strong>
+                  <b className="truncate text-[#101828] text-sm">Prêts à vendre</b>
+                  <strong className="text-[#101828] text-lg tabular-nums">{recondKpis.prets}</strong>
                 </span>
-                <span className="mt-1 block truncate text-[#6B6B6B] text-xs">téléphones reconditionnés</span>
+                <span className="mt-1 block truncate text-[#667085] text-xs">téléphones reconditionnés</span>
               </span>
             </Link>
             <Link
               href="/dashboard/reconditionnement"
-              className="flex min-h-[92px] items-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_3px_rgba(26,25,22,0.04)] transition hover:border-[#2A9D8F]/40"
+              className="flex min-h-[92px] items-center gap-3 rounded-[14px] border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_3px_rgba(16,24,40,0.04)] transition hover:border-[#2A9D8F]/40"
             >
               <span className="grid size-8 shrink-0 place-items-center text-[#2A9D8F]">
                 <Package className="size-[18px]" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="flex items-center justify-between gap-2">
-                  <b className="truncate text-[#1A1916] text-sm">Valeur stock</b>
-                  <strong className="text-[#1A1916] text-lg tabular-nums">{formatEuro(recondKpis.valeurStock)}</strong>
+                  <b className="truncate text-[#101828] text-sm">Valeur stock</b>
+                  <strong className="text-[#101828] text-lg tabular-nums">{formatEuro(recondKpis.valeurStock)}</strong>
                 </span>
-                <span className="mt-1 block truncate text-[#6B6B6B] text-xs">potentiel (non vendu)</span>
+                <span className="mt-1 block truncate text-[#667085] text-xs">potentiel (non vendu)</span>
               </span>
             </Link>
             <Link
               href="/dashboard/reconditionnement"
-              className="flex min-h-[92px] items-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_3px_rgba(26,25,22,0.04)] transition hover:border-[#2A9D8F]/40"
+              className="flex min-h-[92px] items-center gap-3 rounded-[14px] border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_3px_rgba(16,24,40,0.04)] transition hover:border-[#2A9D8F]/40"
             >
               <span className="grid size-8 shrink-0 place-items-center text-[#2A9D8F]">
                 <TrendingUp className="size-[18px]" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="flex items-center justify-between gap-2">
-                  <b className="truncate text-[#1A1916] text-sm">Marge potentielle</b>
-                  <strong className="text-[#1A1916] text-lg tabular-nums">
+                  <b className="truncate text-[#101828] text-sm">Marge potentielle</b>
+                  <strong className="text-[#101828] text-lg tabular-nums">
                     {formatEuro(recondKpis.margeEstimeeTotale)}
                   </strong>
                 </span>
-                <span className="mt-1 block truncate text-[#6B6B6B] text-xs">estimée, non vendus</span>
+                <span className="mt-1 block truncate text-[#667085] text-xs">estimée, non vendus</span>
               </span>
             </Link>
             <Link
               href="/dashboard/reconditionnement"
-              className="flex min-h-[92px] items-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_3px_rgba(26,25,22,0.04)] transition hover:border-[#2A9D8F]/40"
+              className="flex min-h-[92px] items-center gap-3 rounded-[14px] border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_3px_rgba(16,24,40,0.04)] transition hover:border-[#2A9D8F]/40"
             >
               <span
                 className={`grid size-8 shrink-0 place-items-center ${recondKpis.bloques > 0 ? "text-[#B4342A]" : "text-[#2A9D8F]"}`}
@@ -264,10 +264,10 @@ export function DashboardWorkspace() {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="flex items-center justify-between gap-2">
-                  <b className="truncate text-[#1A1916] text-sm">Bloqués</b>
-                  <strong className="text-[#1A1916] text-lg tabular-nums">{recondKpis.bloques}</strong>
+                  <b className="truncate text-[#101828] text-sm">Bloqués</b>
+                  <strong className="text-[#101828] text-lg tabular-nums">{recondKpis.bloques}</strong>
                 </span>
-                <span className="mt-1 block truncate text-[#6B6B6B] text-xs">à débloquer / décider</span>
+                <span className="mt-1 block truncate text-[#667085] text-xs">à débloquer / décider</span>
               </span>
             </Link>
           </div>
@@ -277,13 +277,13 @@ export function DashboardWorkspace() {
       <Panel className="p-4">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
-            <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Entrées prévues aujourd'hui</h2>
-            <p className="mt-1 text-[#6B6B6B] text-[13px]">
+            <h2 className="font-semibold text-[#101828] text-[17px] tracking-tight">Entrées prévues aujourd'hui</h2>
+            <p className="mt-1 text-[#667085] text-[13px]">
               Appareils attendus à l'atelier, séparés des réparations réelles.
             </p>
           </div>
           <Link
-            className="inline-flex items-center gap-1.5 text-[#6B6B6B] text-[13px] transition-colors hover:text-[#6B6B6B]"
+            className="inline-flex items-center gap-1.5 text-[#667085] text-[13px] transition-colors hover:text-[#667085]"
             href="/dashboard/rendez-vous"
           >
             Tous les RDV
@@ -291,7 +291,7 @@ export function DashboardWorkspace() {
           </Link>
         </div>
         {todaysAppointmentRows.length === 0 ? (
-          <div className="rounded-[14px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] px-4 py-6 text-center text-[#6B6B6B] text-sm">
+          <div className="rounded-[14px] border border-dashed border-[#E4E7EC] bg-[#FFFFFF] px-4 py-6 text-center text-[#667085] text-sm">
             Aucun appareil prévu aujourd'hui.
           </div>
         ) : (
@@ -310,18 +310,18 @@ export function DashboardWorkspace() {
                 !linkedRepair && status !== "Arrivé" && status !== "Annulé" && status !== "Non venu";
               const canCreateRepair = !linkedRepair && status === "Arrivé";
               return (
-                <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4" key={appointment.id}>
+                <div className="rounded-[16px] border border-[#E4E7EC] bg-[#FFFFFF] p-4" key={appointment.id}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="font-mono font-semibold text-[#1A1916] text-sm">{appointment.time || "—"}</p>
-                      <p className="mt-1 truncate font-semibold text-[#1A1916] text-sm">
+                      <p className="font-mono font-semibold text-[#101828] text-sm">{appointment.time || "—"}</p>
+                      <p className="mt-1 truncate font-semibold text-[#101828] text-sm">
                         {customer?.name || "Client comptoir"}
                       </p>
                     </div>
                     <AppointmentBadge status={status} />
                   </div>
-                  <p className="mt-3 truncate font-medium text-[#1A1916] text-sm">{appointment.device}</p>
-                  <p className="mt-1 truncate text-[#6B6B6B] text-[13px]">{appointment.issue}</p>
+                  <p className="mt-3 truncate font-medium text-[#101828] text-sm">{appointment.device}</p>
+                  <p className="mt-1 truncate text-[#667085] text-[13px]">{appointment.issue}</p>
                   <div className="mt-4 grid grid-cols-2 gap-2">
                     {linkedRepair ? (
                       <Link
@@ -335,7 +335,7 @@ export function DashboardWorkspace() {
                     ) : (
                       <>
                         <button
-                          className="inline-flex h-9 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3 font-medium text-[#1A1916] text-xs disabled:cursor-not-allowed disabled:opacity-45"
+                          className="inline-flex h-9 items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white px-3 font-medium text-[#101828] text-xs disabled:cursor-not-allowed disabled:opacity-45"
                           disabled={!canMarkArrived}
                           onClick={() => {
                             store.updateAppointment(appointment.id, { confirmed: true, status: "Arrivé" });
@@ -347,7 +347,7 @@ export function DashboardWorkspace() {
                           Marquer arrivé
                         </button>
                         <button
-                          className="inline-flex h-9 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3 font-medium text-[#1A1916] text-xs disabled:cursor-not-allowed disabled:opacity-45"
+                          className="inline-flex h-9 items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white px-3 font-medium text-[#101828] text-xs disabled:cursor-not-allowed disabled:opacity-45"
                           disabled={!canCreateRepair}
                           onClick={() => {
                             const repairId = store.createRepairFromAppointment(appointment.id);
@@ -376,9 +376,9 @@ export function DashboardWorkspace() {
       <section className="grid items-stretch gap-5 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[minmax(0,1fr)_340px]">
         <Panel className="flex h-[500px] min-w-0 flex-col p-4">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Flux des réparations</h2>
+            <h2 className="font-semibold text-[#101828] text-[17px] tracking-tight">Flux des réparations</h2>
             <Link
-              className="inline-flex items-center gap-1.5 text-[#6B6B6B] text-[13px] hover:text-[#6B6B6B] transition-colors"
+              className="inline-flex items-center gap-1.5 text-[#667085] text-[13px] hover:text-[#667085] transition-colors"
               href="/dashboard/reparations"
             >
               Voir toutes les réparations
@@ -403,10 +403,10 @@ export function DashboardWorkspace() {
         {selected && customer && (
           <Panel className="p-5">
             <div className="mb-5 flex items-start justify-between">
-              <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">{selected.device}</h2>
+              <h2 className="font-semibold text-[#101828] text-[17px] tracking-tight">{selected.device}</h2>
               <Link
                 aria-label="Ouvrir le dossier réparation"
-                className="rounded-full p-1 text-[#6B6B6B] transition hover:bg-[#FFFFFF] hover:text-[#1A1916]"
+                className="rounded-full p-1 text-[#667085] transition hover:bg-[#FFFFFF] hover:text-[#101828]"
                 href={`/dashboard/dossiers/_/?id=${selected.id}`}
                 onClick={() => store.setSelected("repair", selected.id)}
               >
@@ -445,7 +445,7 @@ export function DashboardWorkspace() {
                     </PrimaryButton>
                   ) : null}
                   <Link
-                    className="flex h-10 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3 font-medium text-[#1A1916] text-[13px] transition hover:border-[#2A9D8F]/40"
+                    className="flex h-10 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white px-3 font-medium text-[#101828] text-[13px] transition hover:border-[#2A9D8F]/40"
                     href={`/dashboard/dossiers/_/?id=${selected.id}`}
                     onClick={() => store.setSelected("repair", selected.id)}
                   >
@@ -461,8 +461,8 @@ export function DashboardWorkspace() {
 
       <Panel className="p-4">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Factures émises par jour</h2>
-          <span className="text-[#6B6B6B] text-[13px]">30 derniers jours</span>
+          <h2 className="font-semibold text-[#101828] text-[17px] tracking-tight">Factures émises par jour</h2>
+          <span className="text-[#667085] text-[13px]">30 derniers jours</span>
         </div>
         <RevenueChart />
       </Panel>
@@ -470,24 +470,24 @@ export function DashboardWorkspace() {
       {canViewAuditLog && (
         <Panel className="p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Activité récente</h2>
-            <span className="text-[#6B6B6B] text-[12px]">{recentAuditLogs.length} actions</span>
+            <h2 className="font-semibold text-[#101828] text-[17px] tracking-tight">Activité récente</h2>
+            <span className="text-[#667085] text-[12px]">{recentAuditLogs.length} actions</span>
           </div>
           {recentAuditLogs.length === 0 ? (
-            <p className="rounded-[12px] bg-[#FFFFFF] px-4 py-5 text-center text-[#6B6B6B] text-sm">
+            <p className="rounded-[12px] bg-[#FFFFFF] px-4 py-5 text-center text-[#667085] text-sm">
               Aucune activité tracée pour le moment.
             </p>
           ) : (
-            <div className="divide-y divide-[#E8E8E5]">
+            <div className="divide-y divide-[#E4E7EC]">
               {recentAuditLogs.map((entry) => (
                 <div className="flex items-start justify-between gap-4 py-3" key={entry.id}>
                   <div className="min-w-0">
-                    <p className="truncate font-medium text-[#1A1916] text-sm">{entry.message}</p>
-                    <p className="mt-1 text-[#6B6B6B] text-xs">
+                    <p className="truncate font-medium text-[#101828] text-sm">{entry.message}</p>
+                    <p className="mt-1 text-[#667085] text-xs">
                       {entry.actorName} · {entry.action}
                     </p>
                   </div>
-                  <span className="shrink-0 text-[#8A8A8A] text-xs">{entry.createdAt}</span>
+                  <span className="shrink-0 text-[#98A2B3] text-xs">{entry.createdAt}</span>
                 </div>
               ))}
             </div>
@@ -555,7 +555,7 @@ function AppointmentBadge({ status }: Readonly<{ status: string }>) {
         ? "bg-[#FFFFFF] text-[#B42318]"
         : status === "Confirmé"
           ? "bg-[#FFFFFF] text-[#167B70]"
-          : "bg-[#FFFFFF] text-[#6B6B6B]";
+          : "bg-[#FFFFFF] text-[#667085]";
   return <span className={`shrink-0 rounded-full px-2.5 py-1 font-semibold text-[11px] ${tone}`}>{status}</span>;
 }
 
@@ -573,7 +573,7 @@ function SecondaryKpiStrip({
     <section className="flex items-center gap-2" data-testid="dashboard-secondary-kpis">
       <button
         aria-label="KPI précédents"
-        className="grid size-9 shrink-0 place-items-center rounded-[10px] border border-[#E8E8E5] bg-white text-[#6B6B6B] transition hover:border-[#2A9D8F]/40 hover:text-[#1A1916] disabled:cursor-not-allowed disabled:opacity-40"
+        className="grid size-9 shrink-0 place-items-center rounded-[10px] border border-[#E4E7EC] bg-white text-[#667085] transition hover:border-[#2A9D8F]/40 hover:text-[#101828] disabled:cursor-not-allowed disabled:opacity-40"
         disabled={!canNavigate}
         onClick={() => setPage((current) => (current - 1 + pageCount) % pageCount)}
         type="button"
@@ -585,21 +585,21 @@ function SecondaryKpiStrip({
           const Icon = item.icon;
           return (
             <Link
-              className="flex h-11 min-w-0 items-center gap-2.5 rounded-[12px] border border-[#E8E8E5] bg-white px-3.5 transition hover:border-[#2A9D8F]/40"
+              className="flex h-11 min-w-0 items-center gap-2.5 rounded-[12px] border border-[#E4E7EC] bg-white px-3.5 transition hover:border-[#2A9D8F]/40"
               data-testid={dashboardTestId(item.label)}
               href={item.href}
               key={item.label}
             >
-              <Icon className="size-4 shrink-0 text-[#6B6B6B]" />
-              <span className="min-w-0 flex-1 truncate text-[#6B6B6B] text-[13px]">{item.label}</span>
-              <span className="shrink-0 font-semibold text-[#1A1916] text-sm tabular-nums">{item.value}</span>
+              <Icon className="size-4 shrink-0 text-[#667085]" />
+              <span className="min-w-0 flex-1 truncate text-[#667085] text-[13px]">{item.label}</span>
+              <span className="shrink-0 font-semibold text-[#101828] text-sm tabular-nums">{item.value}</span>
             </Link>
           );
         })}
       </div>
       <button
         aria-label="KPI suivants"
-        className="grid size-9 shrink-0 place-items-center rounded-[10px] border border-[#E8E8E5] bg-white text-[#6B6B6B] transition hover:border-[#2A9D8F]/40 hover:text-[#1A1916] disabled:cursor-not-allowed disabled:opacity-40"
+        className="grid size-9 shrink-0 place-items-center rounded-[10px] border border-[#E4E7EC] bg-white text-[#667085] transition hover:border-[#2A9D8F]/40 hover:text-[#101828] disabled:cursor-not-allowed disabled:opacity-40"
         disabled={!canNavigate}
         onClick={() => setPage((current) => (current + 1) % pageCount)}
         type="button"

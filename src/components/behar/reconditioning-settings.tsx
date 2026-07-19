@@ -36,14 +36,14 @@ export function ReconditioningSettings() {
     <div className="space-y-4">
       {/* Sous-navigation + marges du moteur */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-[12px] border border-[#E8E5DF] bg-white p-1 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+        <div className="flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-[12px] border border-[#E4E7EC] bg-white p-1 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
           {SECTIONS.map((s) => (
             <button
               className={cn(
                 "h-8 whitespace-nowrap rounded-[9px] px-3 font-semibold text-[12px] transition",
                 section === s.key
                   ? "bg-[#2A9D8F] text-white shadow-[0_2px_6px_rgba(42,157,143,0.24)]"
-                  : "text-[#6B6B6B] hover:bg-[#F7F7F5] hover:text-[#1A1916]",
+                  : "text-[#667085] hover:bg-[#F5F7FA] hover:text-[#101828]",
               )}
               key={s.key}
               onClick={() => setSection(s.key)}
@@ -83,7 +83,7 @@ export function ReconditioningSettings() {
               }
             }}
           >
-            <RotateCcw className="size-3.5 text-[#6B6B6B]" />
+            <RotateCcw className="size-3.5 text-[#667085]" />
             Valeurs par défaut
           </GhostButton>
         </div>

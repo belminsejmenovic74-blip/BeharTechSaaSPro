@@ -340,7 +340,7 @@ export function CustomersWorkspace() {
       <ToolbarSelect>Tous les appareils</ToolbarSelect>
       <ToolbarSelect>Source</ToolbarSelect>
       <SecondaryButton
-        className={filterVip ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1A1916]" : ""}
+        className={filterVip ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#101828]" : ""}
         onClick={() => setFilterVip(!filterVip)}
       >
         VIP uniquement
@@ -367,33 +367,33 @@ export function CustomersWorkspace() {
           const totalSpent = filteredCustomers.reduce((s, c) => s + (c.totalSpent ?? 0), 0);
           return (
             <section className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 scrollbar-none">
-              <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+              <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
                 <span className="grid size-9 place-items-center text-[#2A9D8F]">
                   <span className="font-bold text-[14px]">{totalCustomers}</span>
                 </span>
-                <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium">Clients</p>
-                <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">
+                <p className="mt-3 text-[#667085] text-[11px] font-medium">Clients</p>
+                <p className="mt-1.5 font-bold text-[#101828] text-[20px] leading-none tabular-nums">
                   {totalCustomers}
                 </p>
-                <p className="mt-1.5 text-[#6B6B6B] text-[10px] font-medium">enregistrés</p>
+                <p className="mt-1.5 text-[#667085] text-[10px] font-medium">enregistrés</p>
               </div>
-              <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+              <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
                 <span className="grid size-9 place-items-center text-[#C99A2E]">
                   <span className="text-[16px]">★</span>
                 </span>
-                <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium">VIP</p>
-                <p className="mt-1.5 font-bold text-[#6B6B6B] text-[20px] leading-none tabular-nums">{vipCount}</p>
-                <p className="mt-1.5 text-[#6B6B6B] text-[10px] font-medium">clients prioritaires</p>
+                <p className="mt-3 text-[#667085] text-[11px] font-medium">VIP</p>
+                <p className="mt-1.5 font-bold text-[#667085] text-[20px] leading-none tabular-nums">{vipCount}</p>
+                <p className="mt-1.5 text-[#667085] text-[10px] font-medium">clients prioritaires</p>
               </div>
-              <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+              <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
                 <span className="grid size-9 place-items-center font-semibold text-[#2A9D8F] text-[11px]">
                   {store.workshopInfo.currency}
                 </span>
-                <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium">CA cumulé</p>
-                <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">
+                <p className="mt-3 text-[#667085] text-[11px] font-medium">CA cumulé</p>
+                <p className="mt-1.5 font-bold text-[#101828] text-[20px] leading-none tabular-nums">
                   {formatEuro(totalSpent)}
                 </p>
-                <p className="mt-1.5 text-[#6B6B6B] text-[10px] font-medium">historique</p>
+                <p className="mt-1.5 text-[#667085] text-[10px] font-medium">historique</p>
               </div>
             </section>
           );
@@ -401,7 +401,7 @@ export function CustomersWorkspace() {
 
         <ul className="space-y-2.5">
           {filteredCustomers.length === 0 ? (
-            <li className="rounded-[18px] bg-white p-10 text-center text-[#6B6B6B] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+            <li className="rounded-[18px] bg-white p-10 text-center text-[#667085] text-sm shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
               Aucun client.
             </li>
           ) : (
@@ -413,26 +413,26 @@ export function CustomersWorkspace() {
                     store.setSelected("customer", customer.id);
                     setMobileDetailOpen(true);
                   }}
-                  className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
+                  className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition active:scale-[0.99]"
                 >
                   <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#FFFFFF] font-semibold text-[#2A9D8F] text-[12px] uppercase">
                     {customer.initials}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline justify-between gap-2">
-                      <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
+                      <p className="truncate font-semibold text-[#101828] text-[14px] tracking-tight">
                         {displayCustomerName(customer)}
                       </p>
-                      <p className="shrink-0 font-bold text-[#1A1916] text-[14px] tabular-nums">
+                      <p className="shrink-0 font-bold text-[#101828] text-[14px] tabular-nums">
                         {formatEuro(customer.totalSpent)}
                       </p>
                     </div>
-                    <p className="mt-0.5 truncate text-[#6B6B6B] text-[11.5px]">
+                    <p className="mt-0.5 truncate text-[#667085] text-[11.5px]">
                       {customer.device || "—"} · {customer.phone || "—"}
                     </p>
                     <div className="mt-2 flex items-center justify-between gap-2">
                       <StatusBadge className="h-6 px-2 text-[10px] font-medium" status={customer.status} />
-                      <span className="text-[#6B6B6B] text-[11px]">{formatIsoToDisplay(customer.lastVisit)}</span>
+                      <span className="text-[#667085] text-[11px]">{formatIsoToDisplay(customer.lastVisit)}</span>
                     </div>
                   </div>
                 </button>
@@ -447,11 +447,11 @@ export function CustomersWorkspace() {
           <table className={tableClassName}>
             <thead className={tableHeadClassName}>
               <tr>
-                <th className="px-4 py-3 text-left font-semibold text-[#6B6B6B] text-xs">Nom</th>
-                <th className="px-4 py-3 text-left font-semibold text-[#6B6B6B] text-xs">Appareil</th>
-                <th className="px-4 py-3 text-left font-semibold text-[#6B6B6B] text-xs">Dernière visite</th>
-                <th className="px-4 py-3 text-left font-semibold text-[#6B6B6B] text-xs">Total dépensé</th>
-                <th className="px-4 py-3 text-left font-semibold text-[#6B6B6B] text-xs">Statut</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#667085] text-xs">Nom</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#667085] text-xs">Appareil</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#667085] text-xs">Dernière visite</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#667085] text-xs">Total dépensé</th>
+                <th className="px-4 py-3 text-left font-semibold text-[#667085] text-xs">Statut</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -462,26 +462,26 @@ export function CustomersWorkspace() {
                   key={customer.id}
                   onClick={() => store.setSelected("customer", customer.id)}
                 >
-                  <td className="border-[#E8E8E5] border-b px-4 py-3 text-[#1A1916]">
+                  <td className="border-[#E4E7EC] border-b px-4 py-3 text-[#101828]">
                     <div className="flex items-center gap-3">
-                      <span className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] font-semibold text-[#1A1916] text-[11px] uppercase">
+                      <span className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] font-semibold text-[#101828] text-[11px] uppercase">
                         {customer.initials}
                       </span>
                       <span className="font-semibold text-sm">{displayCustomerName(customer)}</span>
                     </div>
                   </td>
-                  <td className="border-[#E8E8E5] border-b px-4 py-3 text-[#1A1916] text-sm">{customer.device}</td>
-                  <td className="border-[#E8E8E5] border-b px-4 py-3 text-[#1A1916] text-sm">
+                  <td className="border-[#E4E7EC] border-b px-4 py-3 text-[#101828] text-sm">{customer.device}</td>
+                  <td className="border-[#E4E7EC] border-b px-4 py-3 text-[#101828] text-sm">
                     {formatIsoToDisplay(customer.lastVisit)}
                   </td>
-                  <td className="border-[#E8E8E5] border-b px-4 py-3 font-semibold text-[#1A1916] text-sm tabular-nums">
+                  <td className="border-[#E4E7EC] border-b px-4 py-3 font-semibold text-[#101828] text-sm tabular-nums">
                     {formatEuro(customer.totalSpent)}
                   </td>
-                  <td className="border-[#E8E8E5] border-b px-4 py-3 text-[#1A1916]">
+                  <td className="border-[#E4E7EC] border-b px-4 py-3 text-[#101828]">
                     <StatusBadge className="h-6 px-2 text-[10px] font-medium" status={customer.status} />
                   </td>
-                  <td className="border-[#E8E8E5] border-b px-4 py-3 text-[#1A1916]">
-                    <ChevronRight className="ml-auto size-4 text-[#6B6B6B]" />
+                  <td className="border-[#E4E7EC] border-b px-4 py-3 text-[#101828]">
+                    <ChevronRight className="ml-auto size-4 text-[#667085]" />
                   </td>
                 </tr>
               ))}
@@ -493,7 +493,7 @@ export function CustomersWorkspace() {
           <Panel
             className={cn(
               mobileDetailOpen ? "fixed inset-0 z-40 overflow-y-auto bg-white p-5 flex flex-col" : "hidden",
-              "md:relative md:inset-auto md:z-auto md:flex md:min-h-0 md:flex-col md:overflow-hidden md:rounded-[20px] md:bg-white md:border md:border-[#E8E8E5] md:shadow-[0_1px_3px_rgba(26,25,22,0.04),0_8px_24px_rgba(26,25,22,0.025)] md:p-5 md:h-full",
+              "md:relative md:inset-auto md:z-auto md:flex md:min-h-0 md:flex-col md:overflow-hidden md:rounded-[20px] md:bg-white md:border md:border-[#E4E7EC] md:shadow-[0_1px_3px_rgba(16,24,40,0.04),0_8px_24px_rgba(16,24,40,0.025)] md:p-5 md:h-full",
             )}
           >
             {/* Mobile back button */}
@@ -501,27 +501,27 @@ export function CustomersWorkspace() {
               <button
                 type="button"
                 onClick={() => setMobileDetailOpen(false)}
-                className="grid size-9 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white text-[#1A1916] transition active:scale-90"
+                className="grid size-9 place-items-center rounded-[12px] border border-[#E4E7EC] bg-white text-[#101828] transition active:scale-90"
                 aria-label="Retour"
               >
                 <ArrowLeft className="size-4" />
               </button>
-              <span className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Détail client</span>
+              <span className="font-semibold text-[#101828] text-[15px] tracking-tight">Détail client</span>
             </div>
             <div className="mb-5 flex shrink-0 items-start gap-4">
-              <span className="grid size-14 place-items-center rounded-2xl bg-[#FFFFFF] font-semibold text-[#1A1916] text-xl">
+              <span className="grid size-14 place-items-center rounded-2xl bg-[#FFFFFF] font-semibold text-[#101828] text-xl">
                 {selectedCustomer.initials}
               </span>
               <div className="min-w-0 flex-1">
-                <h2 className="font-semibold text-[#1A1916] text-xl tracking-tight leading-tight">
+                <h2 className="font-semibold text-[#101828] text-xl tracking-tight leading-tight">
                   {displayCustomerName(selectedCustomer)}
                 </h2>
                 <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
-                  <p className="flex items-center gap-1.5 font-medium text-[#6B6B6B] text-[13px]">
+                  <p className="flex items-center gap-1.5 font-medium text-[#667085] text-[13px]">
                     <MessageCircle className="size-3.5 text-[#2A9D8F]" />
                     {selectedCustomer.phone}
                   </p>
-                  <p className="flex items-center gap-1.5 font-medium text-[#6B6B6B] text-[13px]">
+                  <p className="flex items-center gap-1.5 font-medium text-[#667085] text-[13px]">
                     <Mail className="size-3.5 text-[#2A9D8F]" />
                     {selectedCustomer.email}
                   </p>
@@ -533,7 +533,7 @@ export function CustomersWorkspace() {
                 onClick={() => setEditing(selectedCustomer)}
                 type="button"
               >
-                <MoreHorizontal className="size-5 text-[#6B6B6B]" />
+                <MoreHorizontal className="size-5 text-[#667085]" />
               </button>
             </div>
 
@@ -542,7 +542,7 @@ export function CustomersWorkspace() {
               <button
                 onClick={() => setTab("resume")}
                 className={`flex-1 rounded-[10px] py-2 text-center text-xs font-medium transition-all ${
-                  tab === "resume" ? "bg-white text-[#2A9D8F] shadow-sm" : "text-[#6B6B6B] hover:text-[#1A1916]"
+                  tab === "resume" ? "bg-white text-[#2A9D8F] shadow-sm" : "text-[#667085] hover:text-[#101828]"
                 }`}
               >
                 Résumé
@@ -550,7 +550,7 @@ export function CustomersWorkspace() {
               <button
                 onClick={() => setTab("documents")}
                 className={`flex-1 rounded-[10px] py-2 text-center text-xs font-medium transition-all ${
-                  tab === "documents" ? "bg-white text-[#2A9D8F] shadow-sm" : "text-[#6B6B6B] hover:text-[#1A1916]"
+                  tab === "documents" ? "bg-white text-[#2A9D8F] shadow-sm" : "text-[#667085] hover:text-[#101828]"
                 }`}
               >
                 Documents ({clientDocCount})
@@ -558,7 +558,7 @@ export function CustomersWorkspace() {
               <button
                 onClick={() => setTab("historique")}
                 className={`flex-1 rounded-[10px] py-2 text-center text-xs font-medium transition-all ${
-                  tab === "historique" ? "bg-white text-[#2A9D8F] shadow-sm" : "text-[#6B6B6B] hover:text-[#1A1916]"
+                  tab === "historique" ? "bg-white text-[#2A9D8F] shadow-sm" : "text-[#667085] hover:text-[#101828]"
                 }`}
               >
                 Historique ({historyItems.length})
@@ -579,7 +579,7 @@ export function CustomersWorkspace() {
                       className="py-2.5"
                       label="Total dépensé"
                       value={
-                        <span className="text-lg font-semibold text-[#1A1916] tabular-nums">
+                        <span className="text-lg font-semibold text-[#101828] tabular-nums">
                           {formatEuro(selectedCustomer.totalSpent)}
                         </span>
                       }
@@ -631,8 +631,8 @@ export function CustomersWorkspace() {
                   </div>
                   <div className="mt-4 rounded-[16px] bg-[#FFFFFF] p-4 border border-[#FFFFFF]">
                     <div className="mb-3 flex items-center justify-between gap-3">
-                      <h3 className="font-medium text-[#6B6B6B] text-[12px] uppercase tracking-wider">Dossiers liés</h3>
-                      <span className="rounded-[8px] border border-[#E8E8E5] bg-white px-2 py-0.5 text-[#6B6B6B] text-[11px]">
+                      <h3 className="font-medium text-[#667085] text-[12px] uppercase tracking-wider">Dossiers liés</h3>
+                      <span className="rounded-[8px] border border-[#E4E7EC] bg-white px-2 py-0.5 text-[#667085] text-[11px]">
                         {selectedCustomerSummary?.repairs.length ?? 0}
                       </span>
                     </div>
@@ -643,13 +643,13 @@ export function CustomersWorkspace() {
                             <Link
                               key={repair.id}
                               href={`/dashboard/dossiers/_/?id=${repair.id}`}
-                              className="flex items-center justify-between gap-3 rounded-[12px] border border-[#E8E8E5] bg-white px-3 py-2.5 transition hover:border-[#2A9D8F]/40"
+                              className="flex items-center justify-between gap-3 rounded-[12px] border border-[#E4E7EC] bg-white px-3 py-2.5 transition hover:border-[#2A9D8F]/40"
                             >
                               <span className="min-w-0">
-                                <span className="block truncate font-semibold text-[#1A1916] text-[12px]">
+                                <span className="block truncate font-semibold text-[#101828] text-[12px]">
                                   {repair.number} · {repair.deviceModel || repair.device}
                                 </span>
-                                <span className="block truncate text-[#6B6B6B] text-[11px]">
+                                <span className="block truncate text-[#667085] text-[11px]">
                                   {repair.issue || "Intervention"} · {repair.status}
                                 </span>
                               </span>
@@ -662,14 +662,14 @@ export function CustomersWorkspace() {
                         })}
                       </div>
                     ) : (
-                      <p className="mb-4 rounded-[12px] border border-[#E8E8E5] bg-white px-3 py-4 text-center text-[#6B6B6B] text-[12px]">
+                      <p className="mb-4 rounded-[12px] border border-[#E4E7EC] bg-white px-3 py-4 text-center text-[#667085] text-[12px]">
                         Dossiers liés : aucun dossier lié à ce client.
                       </p>
                     )}
-                    <h3 className="mb-2 font-medium text-[#6B6B6B] text-[12px] uppercase tracking-wider">
+                    <h3 className="mb-2 font-medium text-[#667085] text-[12px] uppercase tracking-wider">
                       Notes internes
                     </h3>
-                    <p className="text-[#6B6B6B] text-[13px] leading-relaxed italic">
+                    <p className="text-[#667085] text-[13px] leading-relaxed italic">
                       {selectedCustomer.notes || "Aucune note particulière pour ce client."}
                     </p>
                   </div>
@@ -679,9 +679,9 @@ export function CustomersWorkspace() {
                 <div className="overflow-y-auto pr-2 custom-scrollbar flex-1">
                   {clientDocGroups.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-10 text-center">
-                      <ReceiptText className="size-8 mb-3 text-[#A3A3A3]" />
-                      <p className="text-[13px] font-medium text-[#6B6B6B]">Aucun document pour ce client</p>
-                      <p className="mt-1 text-[12px] text-[#A3A3A3]">
+                      <ReceiptText className="size-8 mb-3 text-[#98A2B3]" />
+                      <p className="text-[13px] font-medium text-[#667085]">Aucun document pour ce client</p>
+                      <p className="mt-1 text-[12px] text-[#98A2B3]">
                         Bons, devis, factures et reçus apparaîtront ici.
                       </p>
                     </div>
@@ -691,12 +691,12 @@ export function CustomersWorkspace() {
                         <div key={group.key}>
                           <div className="mb-2 flex items-center justify-between gap-2">
                             <div className="min-w-0">
-                              <p className="truncate font-semibold text-[#1A1916] text-[13px]">{group.title}</p>
+                              <p className="truncate font-semibold text-[#101828] text-[13px]">{group.title}</p>
                               {group.subtitle ? (
-                                <p className="truncate text-[#6B6B6B] text-[11px]">{group.subtitle}</p>
+                                <p className="truncate text-[#667085] text-[11px]">{group.subtitle}</p>
                               ) : null}
                             </div>
-                            <span className="shrink-0 rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[#6B6B6B] text-[11px]">
+                            <span className="shrink-0 rounded-[7px] border border-[#E4E7EC] bg-[#FFFFFF] px-2 py-0.5 text-[#667085] text-[11px]">
                               {group.docs.length}
                             </span>
                           </div>
@@ -705,13 +705,13 @@ export function CustomersWorkspace() {
                               <Link
                                 key={doc.id}
                                 href={getInternalDocumentUrl(doc)}
-                                className="flex items-center justify-between gap-3 rounded-2xl border border-[#E8E8E5] bg-white p-3 transition hover:border-[#2A9D8F]/40 hover:shadow-md"
+                                className="flex items-center justify-between gap-3 rounded-2xl border border-[#E4E7EC] bg-white p-3 transition hover:border-[#2A9D8F]/40 hover:shadow-md"
                               >
                                 <div className="min-w-0">
-                                  <p className="truncate font-medium text-[#1A1916] text-[13px]">
+                                  <p className="truncate font-medium text-[#101828] text-[13px]">
                                     {docLabel[doc.type] ?? "Document"}
                                   </p>
-                                  <p className="truncate text-[#6B6B6B] text-[11px]">{doc.createdAt}</p>
+                                  <p className="truncate text-[#667085] text-[11px]">{doc.createdAt}</p>
                                 </div>
                                 <ChevronRight className="size-4 shrink-0 text-[#2A9D8F]" />
                               </Link>
@@ -756,41 +756,41 @@ export function CustomersWorkspace() {
                             className="group flex items-start gap-4 rounded-2xl border border-transparent bg-[#FFFFFF] p-3.5 transition-colors hover:border-[#2A9D8F]/30 hover:bg-white"
                             key={`${title}-${detail}-${time}`}
                           >
-                            <span className="grid size-10 shrink-0 place-items-center rounded-2xl border border-[#E8E8E5] bg-white text-[#2A9D8F] shadow-sm">
+                            <span className="grid size-10 shrink-0 place-items-center rounded-2xl border border-[#E4E7EC] bg-white text-[#2A9D8F] shadow-sm">
                               <Icon className="size-4" />
                             </span>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center justify-between gap-2">
-                                <p className="font-semibold text-[#1A1916] text-sm leading-tight tracking-tight">
+                                <p className="font-semibold text-[#101828] text-sm leading-tight tracking-tight">
                                   {title}
                                 </p>
-                                <span className="text-[#8A8A8A] text-[9px] font-medium uppercase whitespace-nowrap">
+                                <span className="text-[#98A2B3] text-[9px] font-medium uppercase whitespace-nowrap">
                                   {formatIsoToDisplay(time)}
                                 </span>
                               </div>
-                              <p className="mt-1 text-[#6B6B6B] text-[12px] leading-snug">{detail}</p>
+                              <p className="mt-1 text-[#667085] text-[12px] leading-snug">{detail}</p>
                               {type === "repair" && (
-                                <div className="mt-3 space-y-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3 py-2.5">
+                                <div className="mt-3 space-y-2 rounded-[12px] border border-[#E4E7EC] bg-white px-3 py-2.5">
                                   <div className="grid gap-2 text-[11px] sm:grid-cols-2">
-                                    <span className="text-[#6B6B6B]">
+                                    <span className="text-[#667085]">
                                       Appareil :{" "}
-                                      <b className="font-semibold text-[#1A1916]">{device || "Non renseigné"}</b>
+                                      <b className="font-semibold text-[#101828]">{device || "Non renseigné"}</b>
                                     </span>
-                                    <span className="text-[#6B6B6B]">
-                                      Statut : <b className="font-semibold text-[#1A1916]">{status || "—"}</b>
+                                    <span className="text-[#667085]">
+                                      Statut : <b className="font-semibold text-[#101828]">{status || "—"}</b>
                                     </span>
-                                    <span className="text-[#6B6B6B]">
-                                      Garantie : <b className="font-semibold text-[#1A1916]">{warranty || "—"}</b>
+                                    <span className="text-[#667085]">
+                                      Garantie : <b className="font-semibold text-[#101828]">{warranty || "—"}</b>
                                     </span>
-                                    <span className="text-[#6B6B6B]">
+                                    <span className="text-[#667085]">
                                       Documents :{" "}
-                                      <b className="font-semibold text-[#1A1916]">
+                                      <b className="font-semibold text-[#101828]">
                                         {documentsCount ?? 0} · {documentsLabel || "Aucun document lié"}
                                       </b>
                                     </span>
                                   </div>
                                   <div>
-                                    <p className="mb-1 text-[#6B6B6B] text-[11px]">Pièces utilisées</p>
+                                    <p className="mb-1 text-[#667085] text-[11px]">Pièces utilisées</p>
                                     {parts?.length ? (
                                       <div className="flex flex-wrap gap-1.5">
                                         {parts.map((part) => (
@@ -807,7 +807,7 @@ export function CustomersWorkspace() {
                                         ))}
                                       </div>
                                     ) : (
-                                      <p className="text-[#8A8A85] text-[11px]">Aucune pièce utilisée.</p>
+                                      <p className="text-[#98A2B3] text-[11px]">Aucune pièce utilisée.</p>
                                     )}
                                   </div>
                                 </div>
@@ -818,9 +818,9 @@ export function CustomersWorkspace() {
                       )
                     ) : (
                       <div className="flex flex-col items-center justify-center py-10 text-center">
-                        <ReceiptText className="size-8 mb-3 text-[#A3A3A3]" />
-                        <p className="text-[13px] font-medium text-[#6B6B6B]">Aucun historique disponible</p>
-                        <p className="mt-1 text-[12px] text-[#A3A3A3]">
+                        <ReceiptText className="size-8 mb-3 text-[#98A2B3]" />
+                        <p className="text-[13px] font-medium text-[#667085]">Aucun historique disponible</p>
+                        <p className="mt-1 text-[12px] text-[#98A2B3]">
                           Les dossiers, devis et règlements apparaîtront ici.
                         </p>
                       </div>
@@ -830,7 +830,7 @@ export function CustomersWorkspace() {
               )}
             </div>
 
-            <div className="mt-5 grid shrink-0 gap-2 border-[#E8E8E5] border-t pt-5">
+            <div className="mt-5 grid shrink-0 gap-2 border-[#E4E7EC] border-t pt-5">
               <PrimaryButton
                 className="h-11 w-full"
                 onClick={() => {
@@ -938,7 +938,7 @@ function CustomerModal({ onClose, initial }: Readonly<{ onClose: () => void; ini
   });
 
   const inputClass =
-    "h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+    "h-11 w-full rounded-xl border border-[#E4E7EC] bg-white px-3 outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
   const { suggestions: addressSuggestions } = useAddressAutocomplete(address, country);
   const phoneInfo = phoneParts(phone);
   const phoneLocal = formatPhoneLocal(phoneInfo.prefix, phoneInfo.local);
@@ -966,9 +966,9 @@ function CustomerModal({ onClose, initial }: Readonly<{ onClose: () => void; ini
     setPostalCode(nextPostalCode);
   };
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1A1916]/24 p-0 md:p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#101828]/24 p-0 md:p-4">
       <Panel className="mx-auto my-0 min-h-svh max-w-none overflow-y-auto rounded-none p-5 md:my-8 md:max-h-[calc(100svh-4rem)] md:max-w-xl md:min-h-0 md:rounded-[20px] md:p-6">
-        <h2 className="font-semibold text-2xl text-[#1A1916]">{initial ? "Modifier client" : "Nouveau client"}</h2>
+        <h2 className="font-semibold text-2xl text-[#101828]">{initial ? "Modifier client" : "Nouveau client"}</h2>
         <form
           className="mt-5 space-y-4"
           onSubmit={(event) => {
@@ -1044,9 +1044,9 @@ function CustomerModal({ onClose, initial }: Readonly<{ onClose: () => void; ini
           {duplicateCustomer ? (
             <div className="rounded-2xl border border-[#D7EFEA] bg-[#FFFFFF] p-3 text-sm">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <span className="text-[#1A1916]">
+                <span className="text-[#101828]">
                   <b>Client déjà connu</b>
-                  <span className="block text-[#6B6B6B]">
+                  <span className="block text-[#667085]">
                     {duplicateCustomer.name}
                     {duplicateCustomer.phone ? ` · ${duplicateCustomer.phone}` : ""}
                   </span>
@@ -1151,7 +1151,7 @@ function CustomerModal({ onClose, initial }: Readonly<{ onClose: () => void; ini
             placeholder="Tags"
           />
           <textarea
-            className="min-h-24 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 py-2 outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
+            className="min-h-24 w-full rounded-xl border border-[#E4E7EC] bg-white px-3 py-2 outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
             defaultValue={initial?.notes}
             name="notes"
             placeholder="Notes client"
@@ -1179,7 +1179,7 @@ function AppointmentFromCustomerModal({ customerId, onClose }: Readonly<{ custom
   const [error, setError] = useState("");
 
   const inputClass =
-    "h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+    "h-11 w-full rounded-xl border border-[#E4E7EC] bg-white px-3 outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1203,15 +1203,15 @@ function AppointmentFromCustomerModal({ customerId, onClose }: Readonly<{ custom
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1A1916]/24 p-0 md:p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#101828]/24 p-0 md:p-4">
       <Panel className="mx-auto my-0 min-h-svh max-w-none overflow-y-auto rounded-none p-5 md:my-8 md:max-w-md md:min-h-0 md:rounded-[20px] md:p-6">
-        <h2 className="font-semibold text-xl text-[#1A1916]">Nouveau rendez-vous</h2>
-        <p className="mt-1 text-sm text-[#6B6B6B]">
-          Client : <span className="font-semibold text-[#1A1916]">{displayCustomerName(customer ?? undefined)}</span>
+        <h2 className="font-semibold text-xl text-[#101828]">Nouveau rendez-vous</h2>
+        <p className="mt-1 text-sm text-[#667085]">
+          Client : <span className="font-semibold text-[#101828]">{displayCustomerName(customer ?? undefined)}</span>
         </p>
         <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
           <label className="block text-sm">
-            <span className="text-[#6B6B6B] mb-1 block">Date du rendez-vous *</span>
+            <span className="text-[#667085] mb-1 block">Date du rendez-vous *</span>
             <input
               className={inputClass}
               type="date"
@@ -1224,7 +1224,7 @@ function AppointmentFromCustomerModal({ customerId, onClose }: Readonly<{ custom
             />
           </label>
           <label className="block text-sm">
-            <span className="text-[#6B6B6B] mb-1 block">Heure *</span>
+            <span className="text-[#667085] mb-1 block">Heure *</span>
             <input
               className={inputClass}
               type="time"
@@ -1237,7 +1237,7 @@ function AppointmentFromCustomerModal({ customerId, onClose }: Readonly<{ custom
             />
           </label>
           <label className="block text-sm">
-            <span className="text-[#6B6B6B] mb-1 block">Motif du rendez-vous *</span>
+            <span className="text-[#667085] mb-1 block">Motif du rendez-vous *</span>
             <input
               className={inputClass}
               placeholder="Ex: Diagnostic écran, Devis réparation..."

@@ -20,10 +20,10 @@ export function PageHeader({
   return (
     <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="font-bold text-[#1A1916] text-[28px] leading-[1.05] tracking-[-0.025em] md:text-[34px]">
+        <h1 className="font-bold text-[#101828] text-[28px] leading-[1.05] tracking-[-0.025em] md:text-[34px]">
           {title}
         </h1>
-        {subtitle && <p className="mt-2 text-[#6B6B6B] text-[15px]">{subtitle}</p>}
+        {subtitle && <p className="mt-2 text-[#667085] text-[15px]">{subtitle}</p>}
       </div>
       {action}
     </div>
@@ -34,7 +34,7 @@ export function PortalCard({ children, className }: Readonly<{ children: ReactNo
   return (
     <section
       className={cn(
-        "rounded-[18px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] md:p-6",
+        "rounded-[18px] border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] md:p-6",
         className,
       )}
     >

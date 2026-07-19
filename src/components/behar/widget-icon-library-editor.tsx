@@ -151,7 +151,7 @@ export function WidgetIconLibraryEditor({
             onClick={() => setActiveTarget(target)}
             className={cn(
               "flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border p-2 text-[10px] font-semibold",
-              activeTarget === target ? "border-[#2A9D8F] bg-[#EAF7F5]" : "border-[#E8E8E5]",
+              activeTarget === target ? "border-[#2A9D8F] bg-[#EAF7F5]" : "border-[#E4E7EC]",
             )}
           >
             <WidgetIcon choice={config.icons[target]} className="text-[#2A9D8F]" />
@@ -160,7 +160,7 @@ export function WidgetIconLibraryEditor({
         ))}
       </div>
 
-      <div className="rounded-2xl border border-[#E8E8E5] p-3">
+      <div className="rounded-2xl border border-[#E4E7EC] p-3">
         <p className="mb-3 text-sm font-bold">{WIDGET_ICON_LABELS[activeTarget]}</p>
         <div className="grid grid-cols-3 gap-2">
           <ModeButton
@@ -199,7 +199,7 @@ export function WidgetIconLibraryEditor({
                 onClick={() => setChoice(activeTarget, { libraryIcon: name })}
                 className={cn(
                   "grid aspect-square place-items-center rounded-xl border",
-                  choice.libraryIcon === name ? "border-[#2A9D8F] bg-[#EAF7F5] text-[#17766B]" : "border-[#E8E8E5]",
+                  choice.libraryIcon === name ? "border-[#2A9D8F] bg-[#EAF7F5] text-[#17766B]" : "border-[#E4E7EC]",
                 )}
               >
                 <WidgetIcon choice={{ mode: "library", libraryIcon: name, size: 20 }} />
@@ -235,7 +235,7 @@ export function WidgetIconLibraryEditor({
           <p className="mb-2 text-xs font-bold">Images importées</p>
           <div className="grid grid-cols-3 gap-2">
             {targetAssets.map((asset) => (
-              <div key={asset.id} className="relative rounded-xl border border-[#E8E8E5] p-2">
+              <div key={asset.id} className="relative rounded-xl border border-[#E4E7EC] p-2">
                 <button
                   type="button"
                   onClick={() =>
@@ -271,7 +271,7 @@ export function WidgetIconLibraryEditor({
           <Loader2 className="size-3.5 animate-spin" /> Optimisation du média…
         </div>
       ) : null}
-      <label className="flex items-center justify-between gap-3 rounded-xl border border-[#E8E8E5] p-3 text-xs font-semibold">
+      <label className="flex items-center justify-between gap-3 rounded-xl border border-[#E4E7EC] p-3 text-xs font-semibold">
         Mention « Propulsé par Behar Tech Pro »
         <input
           type="checkbox"
@@ -303,7 +303,7 @@ function ModeButton({
       onClick={onClick}
       className={cn(
         "flex h-16 flex-col items-center justify-center gap-1 rounded-xl border text-[10px] font-semibold",
-        active ? "border-[#2A9D8F] bg-[#EAF7F5]" : "border-[#E8E8E5]",
+        active ? "border-[#2A9D8F] bg-[#EAF7F5]" : "border-[#E4E7EC]",
       )}
     >
       {icon}

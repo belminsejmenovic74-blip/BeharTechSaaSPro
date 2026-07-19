@@ -71,7 +71,7 @@ export function MobileTopbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 flex h-[60px] items-center justify-between border-[#E8E8E5] border-b bg-white px-4 md:hidden">
+      <header className="sticky top-0 z-40 flex h-[60px] items-center justify-between border-[#E4E7EC] border-b bg-white px-4 md:hidden">
         <Link
           href="/dashboard"
           className="flex items-center transition active:scale-95"
@@ -85,7 +85,7 @@ export function MobileTopbar() {
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Ouvrir le menu"
-          className="relative grid size-10 place-items-center rounded-[10px] border border-[#E8E8E5] bg-white text-[#1A1916] transition-colors active:bg-[#F1F1ED]"
+          className="relative grid size-10 place-items-center rounded-[10px] border border-[#E4E7EC] bg-white text-[#101828] transition-colors active:bg-[#F2F4F7]"
         >
           <Menu className="size-[18px]" />
           {unreadCount > 0 && (
@@ -100,29 +100,29 @@ export function MobileTopbar() {
             type="button"
             onClick={() => setOpen(false)}
             aria-label="Fermer"
-            className="absolute inset-0 bg-[#1A1916]/30 animate-in fade-in duration-200"
+            className="absolute inset-0 bg-[#101828]/30 animate-in fade-in duration-200"
           />
           <aside className="absolute inset-0 flex flex-col bg-white animate-in fade-in slide-in-from-right-2 duration-200">
-            <div className="flex items-center justify-between border-b border-[#E8E8E5] bg-white px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3">
+            <div className="flex items-center justify-between border-b border-[#E4E7EC] bg-white px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-3">
               <BeharLogo size="sm" />
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Fermer le menu"
-                className="grid size-9 shrink-0 place-items-center rounded-[9px] bg-[#F1F1ED] text-[#1A1916] transition-colors active:bg-[#E8E8E5]"
+                className="grid size-9 shrink-0 place-items-center rounded-[9px] bg-[#F2F4F7] text-[#101828] transition-colors active:bg-[#E4E7EC]"
               >
                 <X className="size-4" />
               </button>
             </div>
 
-            <div className="mx-4 mt-4 flex items-center justify-between gap-3 rounded-[12px] border border-[#E8E8E5] bg-white px-4 py-3">
+            <div className="mx-4 mt-4 flex items-center justify-between gap-3 rounded-[12px] border border-[#E4E7EC] bg-white px-4 py-3">
               <div className="flex min-w-0 items-center gap-3">
                 <span className="grid size-10 shrink-0 place-items-center rounded-[10px] bg-[#EAF6F3] font-semibold text-[#167B70]">
                   {currentUser.name.charAt(0).toUpperCase()}
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate font-semibold text-[#1A1916] text-[14px] leading-tight">{currentUser.name}</p>
-                  <p className="mt-0.5 text-[#6B6B6B] text-[11.5px]">{roleLabel}</p>
+                  <p className="truncate font-semibold text-[#101828] text-[14px] leading-tight">{currentUser.name}</p>
+                  <p className="mt-0.5 text-[#667085] text-[11.5px]">{roleLabel}</p>
                 </div>
               </div>
               <button
@@ -151,7 +151,7 @@ export function MobileTopbar() {
                       prefetch={false}
                       onClick={() => setOpen(false)}
                       className={cn(
-                        "group flex min-h-12 items-center gap-3.5 rounded-[10px] px-3 py-2.5 transition-colors active:bg-[#F1F1ED]",
+                        "group flex min-h-12 items-center gap-3.5 rounded-[10px] px-3 py-2.5 transition-colors active:bg-[#F2F4F7]",
                         active && "bg-[#EAF6F3]",
                       )}
                     >
@@ -165,7 +165,7 @@ export function MobileTopbar() {
                       </span>
                       <span
                         className={cn(
-                          "font-medium text-[#1A1916] text-[14.5px] tracking-tight",
+                          "font-medium text-[#101828] text-[14.5px] tracking-tight",
                           active && "font-semibold text-[#2A9D8F]",
                         )}
                       >

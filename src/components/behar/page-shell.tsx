@@ -39,10 +39,10 @@ export function PageShell({
       <header className={cn("mb-5 shrink-0", fitScreen && "md:mb-4", "lg:mb-6")}>
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
-            <h1 className="font-semibold text-[#1A1916] text-[30px] leading-[1.08] tracking-[-0.025em] md:text-[30px] lg:text-[32px]">
+            <h1 className="font-semibold text-[#101828] text-[30px] leading-[1.08] tracking-[-0.025em] md:text-[30px] lg:text-[32px]">
               {title}
             </h1>
-            {subtitle && <p className="mt-1.5 text-[#6B6B6B] text-[14px] leading-5">{subtitle}</p>}
+            {subtitle && <p className="mt-1.5 text-[#667085] text-[14px] leading-5">{subtitle}</p>}
           </div>
           {actions && <div className="hidden items-center gap-2 md:flex 2xl:gap-3">{actions}</div>}
         </div>

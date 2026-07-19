@@ -69,9 +69,7 @@ const FR_METHOD_TABS: ReadonlyArray<{ value: MethodFilter; label: string }> = [
   { value: "Chèque", label: "Chèque" },
   { value: "Autre", label: "Autre" },
 ];
-const CH_METHOD_TABS: ReadonlyArray<{ value: MethodFilter; label: string }> = [
-  ...FR_METHOD_TABS,
-];
+const CH_METHOD_TABS: ReadonlyArray<{ value: MethodFilter; label: string }> = [...FR_METHOD_TABS];
 
 type KpiTone = "teal" | "amber" | "blue" | "violet" | "rose";
 
@@ -81,9 +79,9 @@ function formatPaymentMethodLabel(method: PaymentMethod): string {
 
 const KPI_TONES: Record<KpiTone, { bg: string; text: string }> = {
   teal: { bg: "bg-[#FFFFFF]", text: "text-[#2A9D8F]" },
-  amber: { bg: "bg-[#FFFFFF]", text: "text-[#6B6B6B]" },
-  blue: { bg: "bg-[#FFFFFF]", text: "text-[#6B6B6B]" },
-  violet: { bg: "bg-[#FFFFFF]", text: "text-[#6B6B6B]" },
+  amber: { bg: "bg-[#FFFFFF]", text: "text-[#667085]" },
+  blue: { bg: "bg-[#FFFFFF]", text: "text-[#667085]" },
+  violet: { bg: "bg-[#FFFFFF]", text: "text-[#667085]" },
   rose: { bg: "bg-[#FFFFFF]", text: "text-[#C7494E]" },
 };
 
@@ -102,15 +100,15 @@ function KpiCard({
 }>) {
   const t = KPI_TONES[tone];
   return (
-    <div className="rounded-[18px] border border-[#EAE7DF] bg-white p-5 shadow-[0_4px_14px_rgba(26,25,22,0.025)]">
+    <div className="rounded-[18px] border border-[#EAE7DF] bg-white p-5 shadow-[0_4px_14px_rgba(16,24,40,0.025)]">
       <div className="flex items-center gap-3">
         <span className={cn("grid size-9 place-items-center rounded-[10px]", t.bg, t.text)}>
           <Icon className="size-[18px]" />
         </span>
-        <span className="text-[#6B6B6B] text-sm">{label}</span>
+        <span className="text-[#667085] text-sm">{label}</span>
       </div>
-      <div className="mt-4 font-semibold text-[#1A1916] text-[24px] leading-none tracking-tight">{value}</div>
-      {helper && <div className="mt-2 text-[#6B6B6B] text-xs">{helper}</div>}
+      <div className="mt-4 font-semibold text-[#101828] text-[24px] leading-none tracking-tight">{value}</div>
+      {helper && <div className="mt-2 text-[#667085] text-xs">{helper}</div>}
     </div>
   );
 }
@@ -175,9 +173,7 @@ export function PaymentsWorkspace() {
   const pendingTotal = store.invoices
     .filter(
       (inv) =>
-        inv.status !== "Payée" &&
-        inv.status !== "Annulée" &&
-        (inv.currency ?? currentCurrency) === currentCurrency,
+        inv.status !== "Payée" && inv.status !== "Annulée" && (inv.currency ?? currentCurrency) === currentCurrency,
     )
     .reduce((sum, inv) => sum + inv.lines.reduce((s, l) => s + l.quantity * l.unitPrice, 0), 0);
   const overdueTotal = 0;
@@ -205,7 +201,12 @@ export function PaymentsWorkspace() {
       <section className="grid max-w-full min-w-0 gap-3 pb-1 min-[360px]:flex min-[360px]:overflow-x-auto md:hidden scrollbar-none">
         <MobileKpi label="Règlements ce mois" value={formatEuro(totalRegle)} helper="factures réglées" tone="teal" />
         <MobileKpi label="En attente" value={formatEuro(pendingTotal)} helper="à régler" tone="amber" />
-        <MobileKpi label="Aujourd'hui" value={formatEuro(todayAmount)} helper={`${todayCount} règlements`} tone="teal" />
+        <MobileKpi
+          label="Aujourd'hui"
+          value={formatEuro(todayAmount)}
+          helper={`${todayCount} règlements`}
+          tone="teal"
+        />
       </section>
 
       <section className="hidden md:grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -247,9 +248,9 @@ export function PaymentsWorkspace() {
                 <TabBar tabs={methodTabs} value={methodFilter} onChange={setMethodFilter} />
               </div>
               <label className="relative block w-full min-w-0 max-w-[280px]">
-                <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6B6B6B]" />
+                <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#667085]" />
                 <input
-                  className="h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white pr-4 pl-10 text-sm outline-none transition placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+                  className="h-10 w-full rounded-[12px] border border-[#E4E7EC] bg-white pr-4 pl-10 text-sm outline-none transition placeholder:text-[#667085] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
                   placeholder="Rechercher un paiement, client..."
                   type="search"
                   value={search}
@@ -266,10 +267,10 @@ export function PaymentsWorkspace() {
             </SecondaryButton>
           </div>
 
-          <div className="overflow-hidden rounded-[18px] border border-[#EAE7DF] bg-white shadow-[0_4px_14px_rgba(26,25,22,0.025)]">
+          <div className="overflow-hidden rounded-[18px] border border-[#EAE7DF] bg-white shadow-[0_4px_14px_rgba(16,24,40,0.025)]">
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full min-w-[820px] border-collapse text-sm">
-                <thead className="bg-[#FFFFFF] text-[#6B6B6B] text-xs uppercase tracking-wide">
+                <thead className="bg-[#FFFFFF] text-[#667085] text-xs uppercase tracking-wide">
                   <tr>
                     <th className="px-4 py-3 text-left font-medium">Référence</th>
                     <th className="px-4 py-3 text-left font-medium">Client</th>
@@ -285,7 +286,7 @@ export function PaymentsWorkspace() {
                 <tbody>
                   {filteredPayments.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="px-6 py-14 text-center text-[#6B6B6B]">
+                      <td colSpan={9} className="px-6 py-14 text-center text-[#667085]">
                         Aucun paiement pour ces critères.
                       </td>
                     </tr>
@@ -303,25 +304,25 @@ export function PaymentsWorkspace() {
                       return (
                         <tr
                           className={cn(
-                            "cursor-pointer border-[#E8E8E5] border-t transition hover:bg-[#FFFFFF]",
+                            "cursor-pointer border-[#E4E7EC] border-t transition hover:bg-[#FFFFFF]",
                             active && "bg-[#FFFFFF]",
                           )}
                           key={payment.id}
                           onClick={() => store.setSelected("payment", payment.id)}
                         >
                           <td className="px-4 py-3 font-mono text-[#2A9D8F] text-[12.5px]">{payment.paymentNumber}</td>
-                          <td className="px-4 py-3 text-[#1A1916]">{displayCustomerName(entryCustomer)}</td>
-                          <td className="px-4 py-3 text-[#6B6B6B]">
+                          <td className="px-4 py-3 text-[#101828]">{displayCustomerName(entryCustomer)}</td>
+                          <td className="px-4 py-3 text-[#667085]">
                             {entryInvoice?.number ?? entrySale?.number ?? "—"}
                           </td>
-                          <td className="max-w-[200px] truncate px-4 py-3 text-[#6B6B6B]">
+                          <td className="max-w-[200px] truncate px-4 py-3 text-[#667085]">
                             {entryRepair ? `${entryRepair.number} · ${entryRepair.device}` : "—"}
                           </td>
-                          <td className="px-4 py-3 text-[#1A1916]">{formatPaymentMethodLabel(payment.method)}</td>
-                          <td className="px-4 py-3 text-right font-semibold text-[#1A1916]">
+                          <td className="px-4 py-3 text-[#101828]">{formatPaymentMethodLabel(payment.method)}</td>
+                          <td className="px-4 py-3 text-right font-semibold text-[#101828]">
                             {formatCurrency(payment.amount, payment.currency ?? currentCurrency)}
                           </td>
-                          <td className="px-4 py-3 text-[#6B6B6B]">{payment.date}</td>
+                          <td className="px-4 py-3 text-[#667085]">{payment.date}</td>
                           <td className="px-4 py-3">
                             <StatusPill tone={PAYMENT_STATUS_TONE[payment.status] as PillTone}>
                               {payment.status}
@@ -330,7 +331,7 @@ export function PaymentsWorkspace() {
                           <td className="px-4 py-3 text-right">
                             <button
                               type="button"
-                              className="grid size-7 place-items-center rounded-md text-[#6B6B6B] hover:bg-[#FFFFFF] hover:text-[#1A1916]"
+                              className="grid size-7 place-items-center rounded-md text-[#667085] hover:bg-[#FFFFFF] hover:text-[#101828]"
                               onClick={(event) => event.stopPropagation()}
                               aria-label="Plus d'options"
                             >
@@ -347,7 +348,7 @@ export function PaymentsWorkspace() {
             {/* Vue cartes mobile premium */}
             <div className="md:hidden space-y-2.5 bg-[#FFFFFF] p-3">
               {filteredPayments.length === 0 ? (
-                <p className="rounded-[16px] bg-white px-4 py-10 text-center text-[#6B6B6B] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+                <p className="rounded-[16px] bg-white px-4 py-10 text-center text-[#667085] text-sm shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
                   Aucun paiement.
                 </p>
               ) : (
@@ -359,22 +360,22 @@ export function PaymentsWorkspace() {
                     <button
                       key={payment.id}
                       onClick={() => store.setSelected("payment", payment.id)}
-                      className="block w-full rounded-[18px] bg-white p-3.5 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
+                      className="block w-full rounded-[18px] bg-white p-3.5 text-left shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition active:scale-[0.99]"
                       type="button"
                     >
                       <div className="flex items-start gap-3">
                         <PaymentMethodTile method={payment.method} />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-baseline justify-between gap-2">
-                            <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
+                            <p className="truncate font-semibold text-[#101828] text-[14px] tracking-tight">
                               {displayCustomerName(entryCustomer)}
                             </p>
-                            <p className="shrink-0 font-bold text-[#1A1916] text-[15px] tabular-nums">
+                            <p className="shrink-0 font-bold text-[#101828] text-[15px] tabular-nums">
                               {formatCurrency(payment.amount, payment.currency ?? currentCurrency)}
                             </p>
                           </div>
                           <p className="mt-0.5 font-mono text-[#2A9D8F] text-[11px]">{payment.paymentNumber}</p>
-                          <p className="mt-0.5 truncate text-[#6B6B6B] text-[11.5px]">
+                          <p className="mt-0.5 truncate text-[#667085] text-[11.5px]">
                             {entryInvoice?.number ?? entrySale?.number ?? "—"} · {payment.date}
                           </p>
                           {payment.status !== "Payé" && (
@@ -395,10 +396,10 @@ export function PaymentsWorkspace() {
         </div>
 
         {selected && (
-          <Panel className="rounded-[18px] border-[#EAE7DF] p-5 shadow-[0_4px_14px_rgba(26,25,22,0.025)]">
+          <Panel className="rounded-[18px] border-[#EAE7DF] p-5 shadow-[0_4px_14px_rgba(16,24,40,0.025)]">
             <div className="mb-5">
-              <p className="text-[#6B6B6B] text-xs">Transaction</p>
-              <h2 className="mt-1 font-semibold text-[#1A1916] text-xl">{selected.paymentNumber}</h2>
+              <p className="text-[#667085] text-xs">Transaction</p>
+              <h2 className="mt-1 font-semibold text-[#101828] text-xl">{selected.paymentNumber}</h2>
               <div className="mt-3">
                 <StatusPill tone={PAYMENT_STATUS_TONE[selected.status] as PillTone}>{selected.status}</StatusPill>
               </div>
@@ -410,21 +411,21 @@ export function PaymentsWorkspace() {
                   <CreditCard className="size-5" />
                 </span>
                 <div>
-                  <p className="text-[#6B6B6B] text-xs">Montant réglé</p>
-                  <p className="font-semibold text-2xl text-[#1A1916]">
+                  <p className="text-[#667085] text-xs">Montant réglé</p>
+                  <p className="font-semibold text-2xl text-[#101828]">
                     {formatCurrency(selected.amount, selected.currency ?? currentCurrency)}
                   </p>
                 </div>
               </div>
             </div>
 
-            <dl className="divide-y divide-[#E8E8E5]">
+            <dl className="divide-y divide-[#E4E7EC]">
               <DetailRow
                 label="Client"
                 value={
                   <Link
                     href={`/dashboard/clients?id=${customer?.id}`}
-                    className="font-semibold text-[#1A1916] hover:text-[#2A9D8F] transition-colors"
+                    className="font-semibold text-[#101828] hover:text-[#2A9D8F] transition-colors"
                   >
                     {displayCustomerName(customer ?? undefined)}
                   </Link>
@@ -461,7 +462,7 @@ export function PaymentsWorkspace() {
                     <Link
                       href="/dashboard/reparations"
                       onClick={() => store.setSelected("repair", repair.id)}
-                      className="font-semibold text-[#1A1916] hover:text-[#2A9D8F] transition-colors"
+                      className="font-semibold text-[#101828] hover:text-[#2A9D8F] transition-colors"
                     >
                       {repair.device} - {repair.issue}
                     </Link>
@@ -475,7 +476,7 @@ export function PaymentsWorkspace() {
                 label="Statut"
                 value={
                   <select
-                    className="rounded-[8px] border border-[#E8E8E5] bg-white px-2 py-1 text-sm"
+                    className="rounded-[8px] border border-[#E4E7EC] bg-white px-2 py-1 text-sm"
                     onChange={(event) => {
                       store.updatePaymentStatus(selected.id, event.target.value as PaymentStatus);
                       toast.success("Statut paiement mis à jour");
@@ -492,7 +493,7 @@ export function PaymentsWorkspace() {
               {selected.note && <DetailRow label="Note" value={selected.note} />}
             </dl>
 
-            <div className="mt-5 grid gap-2 border-[#E8E8E5] border-t pt-4">
+            <div className="mt-5 grid gap-2 border-[#E4E7EC] border-t pt-4">
               <PrimaryButton
                 className="w-full"
                 onClick={() => {
@@ -573,8 +574,8 @@ export function PaymentsWorkspace() {
               )}
             </div>
 
-            <div className="mt-5 border-[#E8E8E5] border-t pt-4">
-              <h3 className="mb-3 font-semibold text-[#1A1916] text-sm">Historique</h3>
+            <div className="mt-5 border-[#E4E7EC] border-t pt-4">
+              <h3 className="mb-3 font-semibold text-[#101828] text-sm">Historique</h3>
               <Timeline
                 items={[
                   "Lien envoyé",
@@ -685,33 +686,33 @@ function CreatePaymentModal({
           <button
             className={cn(
               "flex flex-col items-center gap-2 rounded-xl border p-4 transition-all",
-              sourceType === "invoice" ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white",
+              sourceType === "invoice" ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E4E7EC] bg-white",
             )}
             onClick={() => {
               setSourceType("invoice");
               setSelectedId("");
             }}
           >
-            <FileText className={cn("size-6", sourceType === "invoice" ? "text-[#2A9D8F]" : "text-[#6B6B6B]")} />
+            <FileText className={cn("size-6", sourceType === "invoice" ? "text-[#2A9D8F]" : "text-[#667085]")} />
             <span className="text-sm font-semibold">Depuis une facture</span>
           </button>
           <button
             className={cn(
               "flex flex-col items-center gap-2 rounded-xl border p-4 transition-all",
-              sourceType === "repair" ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white",
+              sourceType === "repair" ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E4E7EC] bg-white",
             )}
             onClick={() => {
               setSourceType("repair");
               setSelectedId("");
             }}
           >
-            <Wrench className={cn("size-6", sourceType === "repair" ? "text-[#2A9D8F]" : "text-[#6B6B6B]")} />
+            <Wrench className={cn("size-6", sourceType === "repair" ? "text-[#2A9D8F]" : "text-[#667085]")} />
             <span className="text-sm font-semibold">Depuis une réparation</span>
           </button>
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-[#6B6B6B]">Sélectionner l'élément</label>
+          <label className="text-sm font-medium text-[#667085]">Sélectionner l'élément</label>
           <Select value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
             <option value="">-- Choisir --</option>
             {sourceType === "invoice"
@@ -748,7 +749,7 @@ function CreatePaymentModal({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-[#6B6B6B]">Mode de paiement</label>
+          <label className="text-sm font-medium text-[#667085]">Mode de paiement</label>
           <Select value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
             <option value="" disabled>
               Sélectionner...
@@ -762,9 +763,7 @@ function CreatePaymentModal({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-[#6B6B6B]">
-            Référence paiement (facultatif)
-          </label>
+          <label className="text-sm font-medium text-[#667085]">Référence paiement (facultatif)</label>
           <Textarea
             placeholder="Ex : SumUp-2026-0042, virement, chèque..."
             value={note}
@@ -793,29 +792,35 @@ function MobileKpi({
   tone,
 }: Readonly<{ label: string; value: string; helper?: string; tone: "teal" | "amber" }>) {
   const t =
-    tone === "teal" ? { bg: "bg-[#FFFFFF]", text: "text-[#2A9D8F]" } : { bg: "bg-[#FFFFFF]", text: "text-[#6B6B6B]" };
+    tone === "teal" ? { bg: "bg-[#FFFFFF]", text: "text-[#2A9D8F]" } : { bg: "bg-[#FFFFFF]", text: "text-[#667085]" };
   return (
-    <div className="w-full shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)] min-[360px]:w-[44%]">
+    <div className="w-full shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)] min-[360px]:w-[44%]">
       <span className={cn("grid size-9 place-items-center rounded-[10px]", t.bg, t.text)}>
         <Wallet className="size-[18px]" strokeWidth={2} />
       </span>
-      <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium leading-tight tracking-tight">{label}</p>
+      <p className="mt-3 text-[#667085] text-[11px] font-medium leading-tight tracking-tight">{label}</p>
       <p className={cn("mt-1.5 font-bold text-[20px] leading-none tracking-tight tabular-nums", t.text)}>{value}</p>
-      {helper && <p className="mt-1.5 truncate text-[#6B6B6B] text-[10px] font-medium">{helper}</p>}
+      {helper && <p className="mt-1.5 truncate text-[#667085] text-[10px] font-medium">{helper}</p>}
     </div>
   );
 }
 
 function PaymentMethodTile({ method }: Readonly<{ method: PaymentMethod }>) {
   const config = (() => {
-    if (method === "Carte bancaire" || method === "SumUp" || method === "Stripe" || method === "Carte" || method === "TPE externe")
+    if (
+      method === "Carte bancaire" ||
+      method === "SumUp" ||
+      method === "Stripe" ||
+      method === "Carte" ||
+      method === "TPE externe"
+    )
       return { Icon: CreditCard, bg: "bg-[#FFFFFF]", color: "text-[#2A9D8F]", label: formatPaymentMethodLabel(method) };
     if (method === "Espèces" || method === "Espèces hors Behar Tech")
-      return { Icon: Banknote, bg: "bg-[#FFFFFF]", color: "text-[#6B6B6B]", label: formatPaymentMethodLabel(method) };
+      return { Icon: Banknote, bg: "bg-[#FFFFFF]", color: "text-[#667085]", label: formatPaymentMethodLabel(method) };
     if (method === "Virement")
-      return { Icon: Landmark, bg: "bg-[#FFFFFF]", color: "text-[#6B6B6B]", label: "Virement" };
-    if (method === "Chèque") return { Icon: FileText, bg: "bg-[#FFFFFF]", color: "text-[#6B6B6B]", label: "Chèque" };
-    return { Icon: Link2, bg: "bg-[#FFFFFF]", color: "text-[#6B6B6B]", label: formatPaymentMethodLabel(method) };
+      return { Icon: Landmark, bg: "bg-[#FFFFFF]", color: "text-[#667085]", label: "Virement" };
+    if (method === "Chèque") return { Icon: FileText, bg: "bg-[#FFFFFF]", color: "text-[#667085]", label: "Chèque" };
+    return { Icon: Link2, bg: "bg-[#FFFFFF]", color: "text-[#667085]", label: formatPaymentMethodLabel(method) };
   })();
   const { Icon, bg, color, label } = config;
   return (

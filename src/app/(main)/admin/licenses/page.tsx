@@ -121,18 +121,18 @@ export default function AdminLicensesPage() {
           onSubmit={handleLogin}
           className="w-full max-w-sm rounded-2xl border border-[#EAE8E3] bg-white p-8 shadow-sm"
         >
-          <div className="flex items-center gap-2 text-[#1A1916]">
+          <div className="flex items-center gap-2 text-[#101828]">
             <KeyRound className="size-5 text-[#2A9D8F]" />
             <h1 className="text-lg font-semibold">Espace administrateur</h1>
           </div>
-          <p className="mt-1 text-sm text-[#6B6B6B]">Cet espace gère les licences clients. L'accès est réservé.</p>
+          <p className="mt-1 text-sm text-[#667085]">Cet espace gère les licences clients. L'accès est réservé.</p>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Mot de passe"
             autoFocus
-            className="mt-6 w-full rounded-xl border border-[#EAE8E3] bg-white px-4 py-2.5 text-[#1A1916] outline-none focus:border-[#2A9D8F]"
+            className="mt-6 w-full rounded-xl border border-[#EAE8E3] bg-white px-4 py-2.5 text-[#101828] outline-none focus:border-[#2A9D8F]"
           />
           <PrimaryButton type="submit" disabled={isSubmitting || authState === "checking"} className="mt-4 w-full">
             {isSubmitting ? "Vérification…" : "Accéder"}
@@ -146,11 +146,11 @@ export default function AdminLicensesPage() {
     <div className="p-8 max-w-[1200px] mx-auto space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#1A1916] flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-[#101828] flex items-center gap-2">
             <KeyRound className="size-8 text-[#2A9D8F]" />
             Licences & Téléchargements
           </h1>
-          <p className="text-[#6B6B6B] mt-1">Gérez les accès de vos clients et les liens de téléchargement.</p>
+          <p className="text-[#667085] mt-1">Gérez les accès de vos clients et les liens de téléchargement.</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -170,13 +170,13 @@ export default function AdminLicensesPage() {
       </div>
 
       <section className="overflow-hidden rounded-2xl border border-[#D8EDEA] bg-white shadow-sm">
-        <div className="flex flex-col gap-3 border-b border-[#E8E8E5] bg-[#F3FAF9] px-6 py-5 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-3 border-b border-[#E4E7EC] bg-[#F3FAF9] px-6 py-5 md:flex-row md:items-center md:justify-between">
           <div className="flex items-start gap-3">
             <div className="rounded-xl bg-[#2A9D8F] p-2.5 text-white">
               <UserPlus className="size-5" />
             </div>
             <div>
-              <h2 className="flex items-center gap-2 text-lg font-bold text-[#1A1916]">
+              <h2 className="flex items-center gap-2 text-lg font-bold text-[#101828]">
                 Donner un accès client fondateur
                 <Crown className="size-4 text-[#D69E2E]" />
               </h2>
@@ -198,7 +198,7 @@ export default function AdminLicensesPage() {
               value={founderForm.workshopName}
               onChange={(event) => setFounderForm((value) => ({ ...value, workshopName: event.target.value }))}
               placeholder="Ex. Réparation Mobile Lyon"
-              className="h-11 rounded-xl border border-[#DEDDD8] bg-white px-3.5 font-normal text-[#1A1916] outline-none transition focus:border-[#2A9D8F] focus:ring-2 focus:ring-[#2A9D8F]/10"
+              className="h-11 rounded-xl border border-[#DEDDD8] bg-white px-3.5 font-normal text-[#101828] outline-none transition focus:border-[#2A9D8F] focus:ring-2 focus:ring-[#2A9D8F]/10"
             />
           </label>
           <label className="grid gap-2 text-sm font-semibold text-[#343431]">
@@ -209,7 +209,7 @@ export default function AdminLicensesPage() {
               value={founderForm.email}
               onChange={(event) => setFounderForm((value) => ({ ...value, email: event.target.value }))}
               placeholder="client@atelier.fr"
-              className="h-11 rounded-xl border border-[#DEDDD8] bg-white px-3.5 font-normal text-[#1A1916] outline-none transition focus:border-[#2A9D8F] focus:ring-2 focus:ring-[#2A9D8F]/10"
+              className="h-11 rounded-xl border border-[#DEDDD8] bg-white px-3.5 font-normal text-[#101828] outline-none transition focus:border-[#2A9D8F] focus:ring-2 focus:ring-[#2A9D8F]/10"
             />
           </label>
           <PrimaryButton type="submit" disabled={isCreatingFounder} className="h-11 gap-2 lg:px-5">
@@ -221,7 +221,7 @@ export default function AdminLicensesPage() {
           <div className="mx-6 mb-5 flex flex-col gap-3 rounded-xl border border-[#B9DDD8] bg-[#F3FAF9] p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-[#237F74]">Clé d’accès générée</p>
-              <p className="mt-1 font-mono text-sm font-semibold text-[#1A1916]">{lastGeneratedClientKey}</p>
+              <p className="mt-1 font-mono text-sm font-semibold text-[#101828]">{lastGeneratedClientKey}</p>
             </div>
             <SecondaryButton
               type="button"
@@ -254,23 +254,23 @@ export default function AdminLicensesPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-[#E8E8E5] shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-[#E4E7EC] shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-[#FAFAF8] border-b border-[#E8E8E5]">
+            <thead className="bg-[#F9FAFB] border-b border-[#E4E7EC]">
               <tr>
-                <th className="px-6 py-4 font-bold text-[#1A1916]">Aperçu de la Clé</th>
-                <th className="px-6 py-4 font-bold text-[#1A1916]">Statut</th>
-                <th className="px-6 py-4 font-bold text-[#1A1916]">Plan</th>
-                <th className="px-6 py-4 font-bold text-[#1A1916]">Création</th>
-                <th className="px-6 py-4 font-bold text-[#1A1916]">Téléchargements</th>
-                <th className="px-6 py-4 font-bold text-[#1A1916]">Actions</th>
+                <th className="px-6 py-4 font-bold text-[#101828]">Aperçu de la Clé</th>
+                <th className="px-6 py-4 font-bold text-[#101828]">Statut</th>
+                <th className="px-6 py-4 font-bold text-[#101828]">Plan</th>
+                <th className="px-6 py-4 font-bold text-[#101828]">Création</th>
+                <th className="px-6 py-4 font-bold text-[#101828]">Téléchargements</th>
+                <th className="px-6 py-4 font-bold text-[#101828]">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#E8E8E5]">
+            <tbody className="divide-y divide-[#E4E7EC]">
               {licenses.map((lic) => (
-                <tr key={lic.id} className="hover:bg-[#FAFAF8]/50 transition-colors">
-                  <td className="px-6 py-4 font-mono font-medium text-[#1A1916]">{lic.key_preview}</td>
+                <tr key={lic.id} className="hover:bg-[#F9FAFB]/50 transition-colors">
+                  <td className="px-6 py-4 font-mono font-medium text-[#101828]">{lic.key_preview}</td>
                   <td className="px-6 py-4">
                     {lic.status === "active" ? (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#E5F5F3] text-[#2A9D8F] text-xs font-bold">
@@ -282,15 +282,15 @@ export default function AdminLicensesPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-6 py-4 uppercase text-xs font-bold text-[#6B6B6B]">
+                  <td className="px-6 py-4 uppercase text-xs font-bold text-[#667085]">
                     {lic.founder_access ? "Fondateur" : lic.plan}
                   </td>
-                  <td className="px-6 py-4 text-[#6B6B6B]">{new Date(lic.created_at).toLocaleDateString("fr-FR")}</td>
+                  <td className="px-6 py-4 text-[#667085]">{new Date(lic.created_at).toLocaleDateString("fr-FR")}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-[#1A1916]">{lic.download_count}</span>
+                      <span className="font-bold text-[#101828]">{lic.download_count}</span>
                       {lic.last_downloaded_at && (
-                        <span className="text-xs text-[#A3A3A3]">
+                        <span className="text-xs text-[#98A2B3]">
                           ({new Date(lic.last_downloaded_at).toLocaleDateString("fr-FR")})
                         </span>
                       )}
@@ -311,7 +311,7 @@ export default function AdminLicensesPage() {
                             "Le lien complet n'est disponible qu'à la création ou via l'export CSV pour des raisons de sécurité.",
                           );
                         }}
-                        className="p-2 text-[#6B6B6B] hover:text-[#2A9D8F] hover:bg-[#E5F5F3] rounded-lg transition-colors"
+                        className="p-2 text-[#667085] hover:text-[#2A9D8F] hover:bg-[#E5F5F3] rounded-lg transition-colors"
                         title="Copier le lien (indisponible pour les anciennes clés sécurisées)"
                       >
                         <Copy className="size-4" />
@@ -320,7 +320,7 @@ export default function AdminLicensesPage() {
                       {lic.status === "active" && (
                         <button
                           onClick={() => handleDeactivate(lic.id)}
-                          className="p-2 text-[#6B6B6B] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-2 text-[#667085] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Désactiver la licence"
                         >
                           <Ban className="size-4" />
@@ -333,7 +333,7 @@ export default function AdminLicensesPage() {
 
               {licenses.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-[#6B6B6B]">
+                  <td colSpan={6} className="px-6 py-8 text-center text-[#667085]">
                     Aucune licence générée pour le moment.
                   </td>
                 </tr>

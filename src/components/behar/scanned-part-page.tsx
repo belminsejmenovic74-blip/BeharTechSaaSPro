@@ -58,9 +58,9 @@ function InfoRow({
   mono?: boolean;
 }>) {
   return (
-    <div className="flex items-start justify-between gap-4 border-[#E8E8E5] border-b py-3 last:border-0">
-      <dt className="text-[#6B6B6B] text-sm">{label}</dt>
-      <dd className={cn("min-w-0 text-right font-semibold text-[#1A1916] text-sm", mono && "font-mono")}>{value}</dd>
+    <div className="flex items-start justify-between gap-4 border-[#E4E7EC] border-b py-3 last:border-0">
+      <dt className="text-[#667085] text-sm">{label}</dt>
+      <dd className={cn("min-w-0 text-right font-semibold text-[#101828] text-sm", mono && "font-mono")}>{value}</dd>
     </div>
   );
 }
@@ -75,10 +75,10 @@ function Section({
   children: ReactNode;
 }>) {
   return (
-    <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+    <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
       <div className="mb-3 flex items-center gap-2">
         <Icon className="size-4 text-[#2A9D8F]" />
-        <h2 className="font-semibold text-[#1A1916] text-base">{title}</h2>
+        <h2 className="font-semibold text-[#101828] text-base">{title}</h2>
       </div>
       {children}
     </section>
@@ -132,9 +132,9 @@ export function ScannedPartPage({ scanToken }: Readonly<{ scanToken: string }>) 
 
   if (!store._hasHydrated) {
     return (
-      <main className="min-h-screen bg-[#FAFAF8] px-4 py-5 text-[#1A1916]">
+      <main className="min-h-screen bg-[#F9FAFB] px-4 py-5 text-[#101828]">
         <BeharLogo size="md" />
-        <div className="mt-12 rounded-[18px] border border-[#E8E8E5] bg-white p-5 text-[#6B6B6B] text-sm">
+        <div className="mt-12 rounded-[18px] border border-[#E4E7EC] bg-white p-5 text-[#667085] text-sm">
           Chargement de la pièce scannée…
         </div>
       </main>
@@ -143,17 +143,17 @@ export function ScannedPartPage({ scanToken }: Readonly<{ scanToken: string }>) 
 
   if (!item) {
     return (
-      <main className="min-h-screen bg-[#FAFAF8] px-4 py-5 text-[#1A1916]">
+      <main className="min-h-screen bg-[#F9FAFB] px-4 py-5 text-[#101828]">
         <BeharLogo size="md" />
-        <section className="mt-8 rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+        <section className="mt-8 rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
           <div className="grid size-12 place-items-center rounded-[14px] bg-[#FBEBEB] text-[#B42318]">
             <AlertTriangle className="size-6" />
           </div>
-          <h1 className="mt-5 font-semibold text-[#1A1916] text-2xl tracking-tight">Pièce introuvable</h1>
-          <p className="mt-2 text-[#6B6B6B] text-sm">
+          <h1 className="mt-5 font-semibold text-[#101828] text-2xl tracking-tight">Pièce introuvable</h1>
+          <p className="mt-2 text-[#667085] text-sm">
             La référence scannée ne correspond à aucune pièce stockée sur cet appareil.
           </p>
-          <p className="mt-4 rounded-[12px] bg-[#FAFAF8] px-3 py-2 font-mono text-[#1A1916] text-sm">
+          <p className="mt-4 rounded-[12px] bg-[#F9FAFB] px-3 py-2 font-mono text-[#101828] text-sm">
             {scanToken.startsWith("sp_") ? "QR non reconnu" : displayText(scanToken)}
           </p>
           <SecondaryButton className="mt-5 w-full" onClick={() => router.push("/dashboard/stock")}>
@@ -167,11 +167,11 @@ export function ScannedPartPage({ scanToken }: Readonly<{ scanToken: string }>) 
 
   if (item.scanEnabled === false) {
     return (
-      <main className="min-h-screen bg-[#FAFAF8] px-4 py-5 text-[#1A1916]">
+      <main className="min-h-screen bg-[#F9FAFB] px-4 py-5 text-[#101828]">
         <BeharLogo size="md" />
-        <section className="mx-auto mt-8 max-w-2xl rounded-[20px] border border-[#E8E8E5] bg-white p-5">
+        <section className="mx-auto mt-8 max-w-2xl rounded-[20px] border border-[#E4E7EC] bg-white p-5">
           <h1 className="font-semibold text-2xl">Pièce introuvable</h1>
-          <p className="mt-2 text-[#6B6B6B] text-sm">Ce QR code n'est plus actif.</p>
+          <p className="mt-2 text-[#667085] text-sm">Ce QR code n'est plus actif.</p>
         </section>
       </main>
     );
@@ -179,11 +179,11 @@ export function ScannedPartPage({ scanToken }: Readonly<{ scanToken: string }>) 
 
   if (item.active === false) {
     return (
-      <main className="min-h-screen bg-[#FAFAF8] px-4 py-5 text-[#1A1916]">
+      <main className="min-h-screen bg-[#F9FAFB] px-4 py-5 text-[#101828]">
         <BeharLogo size="md" />
-        <section className="mx-auto mt-8 max-w-2xl rounded-[20px] border border-[#E8E8E5] bg-white p-5">
+        <section className="mx-auto mt-8 max-w-2xl rounded-[20px] border border-[#E4E7EC] bg-white p-5">
           <h1 className="font-semibold text-2xl">Pièce archivée</h1>
-          <p className="mt-2 text-[#6B6B6B] text-sm">Cette référence existe mais n'est plus active dans le stock.</p>
+          <p className="mt-2 text-[#667085] text-sm">Cette référence existe mais n'est plus active dans le stock.</p>
         </section>
       </main>
     );
@@ -196,23 +196,23 @@ export function ScannedPartPage({ scanToken }: Readonly<{ scanToken: string }>) 
   const invoiceUrl = originInvoice?.originalFileUrl;
 
   return (
-    <main className="min-h-screen bg-[#FAFAF8] px-4 py-5 text-[#1A1916]">
+    <main className="min-h-screen bg-[#F9FAFB] px-4 py-5 text-[#101828]">
       <div className="mx-auto max-w-2xl">
         <header className="flex items-center justify-between gap-3">
           <BeharLogo size="md" />
-          <span className="rounded-full border border-[#E8E8E5] bg-white px-3 py-1 font-medium text-[#6B6B6B] text-xs">
+          <span className="rounded-full border border-[#E4E7EC] bg-white px-3 py-1 font-medium text-[#667085] text-xs">
             Scan pièce
           </span>
         </header>
 
-        <section className="mt-6 rounded-[22px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+        <section className="mt-6 rounded-[22px] border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
           <div className="flex items-start gap-4">
             <div className="grid size-14 shrink-0 place-items-center rounded-[16px] bg-[#ECF8F5] text-[#167B70]">
               <Package className="size-7" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="font-semibold text-[#6B6B6B] text-sm">Pièce scannée</p>
-              <h1 className="mt-1 font-semibold text-[#1A1916] text-2xl leading-tight tracking-tight">
+              <p className="font-semibold text-[#667085] text-sm">Pièce scannée</p>
+              <h1 className="mt-1 font-semibold text-[#101828] text-2xl leading-tight tracking-tight">
                 {item.displayName ?? item.name}
               </h1>
               <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -221,7 +221,7 @@ export function ScannedPartPage({ scanToken }: Readonly<{ scanToken: string }>) 
             </div>
           </div>
 
-          <dl className="mt-5 rounded-[16px] bg-[#FAFAF8] px-4">
+          <dl className="mt-5 rounded-[16px] bg-[#F9FAFB] px-4">
             <InfoRow label="Référence interne" mono value={displayText(primaryReference)} />
             {item.internalCode && item.internalCode !== primaryReference && (
               <InfoRow label="Code interne" mono value={displayText(item.internalCode)} />
@@ -250,7 +250,7 @@ export function ScannedPartPage({ scanToken }: Readonly<{ scanToken: string }>) 
         <div className="mt-4 grid gap-3">
           {connected && (
             <Section icon={FileText} title="Origine">
-              <dl className="rounded-[14px] bg-[#FAFAF8] px-3">
+              <dl className="rounded-[14px] bg-[#F9FAFB] px-3">
                 <InfoRow
                   label="Fournisseur"
                   value={displayText(originInvoice?.supplierName ?? originLine?.supplierName)}
@@ -273,13 +273,13 @@ export function ScannedPartPage({ scanToken }: Readonly<{ scanToken: string }>) 
             <Section icon={Package} title="Lots disponibles">
               <div className="space-y-2">
                 {lots.map((lot) => (
-                  <div className="rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] p-3" key={lot.id}>
+                  <div className="rounded-[14px] border border-[#E4E7EC] bg-[#F9FAFB] p-3" key={lot.id}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="font-semibold text-[#1A1916] text-sm">
+                        <p className="font-semibold text-[#101828] text-sm">
                           {displayText(lot.supplierName, "Fournisseur non renseigné")}
                         </p>
-                        <p className="mt-1 truncate text-[#6B6B6B] text-xs">
+                        <p className="mt-1 truncate text-[#667085] text-xs">
                           {displayText(lot.invoiceNumber, "Sans facture")} · reçu le {shortDate(lot.purchaseDate)}
                         </p>
                       </div>
@@ -288,12 +288,12 @@ export function ScannedPartPage({ scanToken }: Readonly<{ scanToken: string }>) 
                       </p>
                     </div>
                     {canViewPurchasePrice && lot.unitCost != null && (
-                      <p className="mt-2 text-[#6B6B6B] text-xs">Prix d'achat : {formatEuro(lot.unitCost)}</p>
+                      <p className="mt-2 text-[#667085] text-xs">Prix d'achat : {formatEuro(lot.unitCost)}</p>
                     )}
                   </div>
                 ))}
                 {!lots.length && (
-                  <p className="rounded-[14px] bg-[#FAFAF8] px-3 py-4 text-[#6B6B6B] text-sm">
+                  <p className="rounded-[14px] bg-[#F9FAFB] px-3 py-4 text-[#667085] text-sm">
                     Aucun lot structuré ; le stock de la pièce reste disponible.
                   </p>
                 )}
@@ -305,14 +305,14 @@ export function ScannedPartPage({ scanToken }: Readonly<{ scanToken: string }>) 
             <Section icon={History} title="Historique">
               <div className="space-y-2">
                 {trace.movements.slice(0, 8).map((movement) => (
-                  <div key={movement.id} className="rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] px-3 py-3">
+                  <div key={movement.id} className="rounded-[14px] border border-[#E4E7EC] bg-[#F9FAFB] px-3 py-3">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="font-semibold text-[#1A1916] text-sm">{MOVEMENT_LABELS[movement.movementType]}</p>
-                        <p className="mt-1 text-[#6B6B6B] text-xs">
+                        <p className="font-semibold text-[#101828] text-sm">{MOVEMENT_LABELS[movement.movementType]}</p>
+                        <p className="mt-1 text-[#667085] text-xs">
                           {movement.reason || movement.note || "Mouvement stock"}
                         </p>
-                        <p className="mt-1 font-mono text-[#8A8A85] text-[11px]">{shortDate(movement.createdAt)}</p>
+                        <p className="mt-1 font-mono text-[#98A2B3] text-[11px]">{shortDate(movement.createdAt)}</p>
                       </div>
                       <p
                         className={cn(
@@ -327,7 +327,7 @@ export function ScannedPartPage({ scanToken }: Readonly<{ scanToken: string }>) 
                   </div>
                 ))}
                 {!trace.movements.length && (
-                  <p className="rounded-[14px] bg-[#FAFAF8] px-3 py-4 text-[#6B6B6B] text-sm">
+                  <p className="rounded-[14px] bg-[#F9FAFB] px-3 py-4 text-[#667085] text-sm">
                     Aucun mouvement stock lié à cette référence.
                   </p>
                 )}
@@ -341,15 +341,15 @@ export function ScannedPartPage({ scanToken }: Readonly<{ scanToken: string }>) 
                 {trace.repairUsages.map(({ repair, customer, part, usedAt }) => (
                   <div
                     key={`${repair.id}-${part.stockItemId}-${part.reference}`}
-                    className="rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] p-3"
+                    className="rounded-[14px] border border-[#E4E7EC] bg-[#F9FAFB] p-3"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="font-semibold text-[#1A1916] text-sm">{repair.number}</p>
-                        <p className="mt-1 text-[#6B6B6B] text-xs">
+                        <p className="font-semibold text-[#101828] text-sm">{repair.number}</p>
+                        <p className="mt-1 text-[#667085] text-xs">
                           {customer?.name || "Client"} · {repair.device || repair.model || "Appareil"}
                         </p>
-                        <p className="mt-1 text-[#6B6B6B] text-xs">{shortDate(usedAt)}</p>
+                        <p className="mt-1 text-[#667085] text-xs">{shortDate(usedAt)}</p>
                       </div>
                       <StatusBadge status={repair.status} />
                     </div>
@@ -362,7 +362,7 @@ export function ScannedPartPage({ scanToken }: Readonly<{ scanToken: string }>) 
                   </div>
                 ))}
                 {!trace.repairUsages.length && (
-                  <p className="rounded-[14px] bg-[#FAFAF8] px-3 py-4 text-[#6B6B6B] text-sm">
+                  <p className="rounded-[14px] bg-[#F9FAFB] px-3 py-4 text-[#667085] text-sm">
                     Aucune réparation liée à cette pièce.
                   </p>
                 )}
@@ -371,7 +371,7 @@ export function ScannedPartPage({ scanToken }: Readonly<{ scanToken: string }>) 
           )}
         </div>
 
-        <div className="sticky bottom-0 -mx-4 mt-4 border-[#E8E8E5] border-t bg-[#FAFAF8]/95 px-4 py-3 backdrop-blur">
+        <div className="sticky bottom-0 -mx-4 mt-4 border-[#E4E7EC] border-t bg-[#F9FAFB]/95 px-4 py-3 backdrop-blur">
           <div className="mx-auto grid max-w-2xl gap-2">
             {connected && (
               <PrimaryButton disabled={!canUseStockItem || availableStock <= 0} onClick={useInRepair}>
@@ -398,7 +398,7 @@ export function ScannedPartPage({ scanToken }: Readonly<{ scanToken: string }>) 
           </div>
         </div>
 
-        <p className="mt-4 pb-5 text-center text-[#8A8A85] text-xs">Accès sécurisé Behar Tech Pro</p>
+        <p className="mt-4 pb-5 text-center text-[#98A2B3] text-xs">Accès sécurisé Behar Tech Pro</p>
       </div>
     </main>
   );

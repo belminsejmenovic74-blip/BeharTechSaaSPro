@@ -80,8 +80,8 @@ export function ReconditioningDeviceDetail({ fileId, onBack }: Readonly<{ fileId
 
   if (!file) {
     return (
-      <div className="rounded-[20px] border border-[#E8E5DF] bg-white p-8 text-center">
-        <p className="text-[#6B6B6B] text-sm">Appareil introuvable.</p>
+      <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-8 text-center">
+        <p className="text-[#667085] text-sm">Appareil introuvable.</p>
         <GhostButton className="mt-4" onClick={onBack}>
           <ArrowLeft className="size-4" />
           Retour
@@ -185,9 +185,9 @@ function DeviceDetailInner({ file, onBack }: Readonly<{ file: ReconditioningFile
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="rounded-[20px] border border-[#E8E5DF] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+      <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
         <button
-          className="inline-flex items-center gap-1.5 text-[#6B6B6B] text-[13px] transition hover:text-[#1A1916]"
+          className="inline-flex items-center gap-1.5 text-[#667085] text-[13px] transition hover:text-[#101828]"
           onClick={onBack}
           type="button"
         >
@@ -196,7 +196,7 @@ function DeviceDetailInner({ file, onBack }: Readonly<{ file: ReconditioningFile
         </button>
         <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
           <div className="flex min-w-0 items-start gap-4">
-            <span className="grid size-[72px] shrink-0 place-items-center overflow-hidden rounded-[16px] border border-[#E8E5DF] bg-[#FAFAF8] text-[#6B6B6B]">
+            <span className="grid size-[72px] shrink-0 place-items-center overflow-hidden rounded-[16px] border border-[#E4E7EC] bg-[#F9FAFB] text-[#667085]">
               {image ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img alt={deviceTitle(file)} className="size-full object-contain p-1.5" src={image} />
@@ -205,12 +205,12 @@ function DeviceDetailInner({ file, onBack }: Readonly<{ file: ReconditioningFile
               )}
             </span>
             <div className="min-w-0">
-              <h2 className="truncate font-semibold text-[#1A1916] text-[20px] tracking-tight">{deviceTitle(file)}</h2>
-              <p className="mt-0.5 text-[#6B6B6B] text-[12.5px]">
+              <h2 className="truncate font-semibold text-[#101828] text-[20px] tracking-tight">{deviceTitle(file)}</h2>
+              <p className="mt-0.5 text-[#667085] text-[12.5px]">
                 {[file.storage, file.color].filter(Boolean).join(" · ") || "Stockage / couleur à compléter"} · Réf.{" "}
                 {file.number}
               </p>
-              <p className="mt-0.5 text-[#6B6B6B] text-[12.5px]">{file.imei || file.serial || "IMEI non renseigné"}</p>
+              <p className="mt-0.5 text-[#667085] text-[12.5px]">{file.imei || file.serial || "IMEI non renseigné"}</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <StatusBadge status={file.status} />
                 <GradeBadge grade={file.condition?.grade ?? file.cosmeticGrade} />
@@ -218,7 +218,7 @@ function DeviceDetailInner({ file, onBack }: Readonly<{ file: ReconditioningFile
                   className={cn(
                     "font-semibold text-[12.5px]",
                     headerMargin == null
-                      ? "text-[#9B9B96]"
+                      ? "text-[#98A2B3]"
                       : headerMargin.amount >= 0
                         ? "text-[#147065]"
                         : "text-[#B4342A]",
@@ -253,7 +253,7 @@ function DeviceDetailInner({ file, onBack }: Readonly<{ file: ReconditioningFile
           </p>
         )}
         {file.status === "Refusé" && (
-          <p className="mt-3 rounded-[12px] border border-[#E8E5DF] bg-[#F7F7F5] px-3.5 py-2.5 text-[#6B6B6B] text-[12.5px]">
+          <p className="mt-3 rounded-[12px] border border-[#E4E7EC] bg-[#F5F7FA] px-3.5 py-2.5 text-[#667085] text-[12.5px]">
             Reprise refusée{file.refusedReason ? ` : ${file.refusedReason}` : ""} — conservée pour l'historique.
           </p>
         )}
@@ -272,7 +272,7 @@ function DeviceDetailInner({ file, onBack }: Readonly<{ file: ReconditioningFile
         />
         <InitialDiagnosticSection file={file} />
         <SectionCard subtitle="Photos reprises et photos de vente." title="Photos">
-          <p className="mt-4 mb-2 font-medium text-[#1A1916] text-[13px]">Photos avant</p>
+          <p className="mt-4 mb-2 font-medium text-[#101828] text-[13px]">Photos avant</p>
           <div className="grid max-w-[430px] grid-cols-3 gap-3">
             <PhotoSlot label="Face" onChange={(v) => setPhoto(file.id, "face", v)} value={file.photos.face} />
             <PhotoSlot label="Dos" onChange={(v) => setPhoto(file.id, "dos", v)} value={file.photos.dos} />
@@ -400,7 +400,7 @@ function DeviceDetailInner({ file, onBack }: Readonly<{ file: ReconditioningFile
             </GhostButton>
           </div>
           {file.status !== "Vendu" && (
-            <p className="mt-3 text-[#9B9B96] text-[12px]">
+            <p className="mt-3 text-[#98A2B3] text-[12px]">
               La facture / le reçu sera disponible après la vente (mode comptoir).
             </p>
           )}
@@ -440,7 +440,7 @@ export function ReconditioningFinancialSummary({
           label="Prix de revente"
           value={file.prixVentePrevu > 0 ? formatMoney(file.prixVentePrevu) : "À compléter"}
         />
-        <div className="border-[#F1F1EF] border-t pt-1.5">
+        <div className="border-[#F2F4F7] border-t pt-1.5">
           <FinRow
             label="Marge prévue"
             tone={estMargin == null ? undefined : estMargin.amount >= 0 ? "good" : "bad"}
@@ -659,11 +659,11 @@ function FinalQualityControlSection({
             title="Contrôle qualité final"
           >
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)]">
-              <div className="rounded-[14px] border border-[#E8E5DF] bg-[#FAFAF8] p-3.5">
+              <div className="rounded-[14px] border border-[#E4E7EC] bg-[#F9FAFB] p-3.5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="font-semibold text-[#1A1916] text-sm">{file.number}</p>
-                    <p className="mt-0.5 text-[#6B6B6B] text-[12.5px]">
+                    <p className="font-semibold text-[#101828] text-sm">{file.number}</p>
+                    <p className="mt-0.5 text-[#667085] text-[12.5px]">
                       {deviceTitle(file)} ·{" "}
                       {[file.storage, file.color].filter(Boolean).join(" · ") || "Stockage / couleur à compléter"}
                     </p>
@@ -685,8 +685,8 @@ function FinalQualityControlSection({
                 </div>
               </div>
 
-              <div className="rounded-[14px] border border-[#E8E5DF] bg-white p-3.5">
-                <p className="font-semibold text-[#1A1916] text-sm">Données publiques de vente</p>
+              <div className="rounded-[14px] border border-[#E4E7EC] bg-white p-3.5">
+                <p className="font-semibold text-[#101828] text-sm">Données publiques de vente</p>
                 <div className="mt-3 grid gap-2">
                   <FieldLabel label="Grade final">
                     <select
@@ -777,30 +777,30 @@ function FinalQualityControlSection({
                 const score = scoreFor(group.items, file);
                 return (
                   <details
-                    className="rounded-[14px] border border-[#E8E5DF] bg-white"
+                    className="rounded-[14px] border border-[#E4E7EC] bg-white"
                     key={group.id}
                     open={index === 0}
                   >
                     <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-3">
                       <span className="flex min-w-0 items-center gap-2">
-                        <ChevronDown className="size-4 shrink-0 text-[#9B9B96]" />
-                        <span className="truncate font-semibold text-[#1A1916] text-sm">{group.title}</span>
+                        <ChevronDown className="size-4 shrink-0 text-[#98A2B3]" />
+                        <span className="truncate font-semibold text-[#101828] text-sm">{group.title}</span>
                       </span>
-                      <span className="shrink-0 rounded-full border border-[#E8E5DF] px-2.5 py-1 font-semibold text-[#6B6B6B] text-[11.5px]">
+                      <span className="shrink-0 rounded-full border border-[#E4E7EC] px-2.5 py-1 font-semibold text-[#667085] text-[11.5px]">
                         {score.treated} / {score.total} contrôlés
                       </span>
                     </summary>
-                    <div className="space-y-2 border-[#F1F1EF] border-t p-3">
+                    <div className="space-y-2 border-[#F2F4F7] border-t p-3">
                       {group.items.map((item) => {
                         const state = qaState(file, item);
                         return (
                           <div
-                            className="grid gap-2 rounded-[12px] bg-[#FAFAF8] p-2.5 lg:grid-cols-[minmax(150px,1fr)_auto]"
+                            className="grid gap-2 rounded-[12px] bg-[#F9FAFB] p-2.5 lg:grid-cols-[minmax(150px,1fr)_auto]"
                             key={`${item.kind}-${item.key}`}
                           >
                             <div className="min-w-0">
-                              <p className="truncate font-medium text-[#1A1916] text-[12.5px]">{item.label}</p>
-                              <p className="text-[#9B9B96] text-[11px]">
+                              <p className="truncate font-medium text-[#101828] text-[12.5px]">{item.label}</p>
+                              <p className="text-[#98A2B3] text-[11px]">
                                 {item.required ? "Obligatoire" : "Optionnel / selon modèle"}
                               </p>
                             </div>
@@ -814,8 +814,8 @@ function FinalQualityControlSection({
                                         ? "border-[#CDEBE4] bg-[#ECF8F4] text-[#147065]"
                                         : option === "Défaut final"
                                           ? "border-[#F0D9D6] bg-[#FCF4F3] text-[#B4342A]"
-                                          : "border-[#E8E5DF] bg-white text-[#1A1916]"
-                                      : "border-[#E8E5DF] bg-white text-[#6B6B6B] hover:border-[#2A9D8F]/40",
+                                          : "border-[#E4E7EC] bg-white text-[#101828]"
+                                      : "border-[#E4E7EC] bg-white text-[#667085] hover:border-[#2A9D8F]/40",
                                   )}
                                   key={option}
                                   onClick={() => setQaState(item, option)}
@@ -851,7 +851,7 @@ function FinalQualityControlSection({
                     key={`${item.kind}-${item.key}`}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="font-semibold text-[#1A1916]">{item.label}</p>
+                      <p className="font-semibold text-[#101828]">{item.label}</p>
                       <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-[#C05621] text-[11px]">
                         {state}
                       </span>
@@ -882,7 +882,7 @@ function FinalQualityControlSection({
 
         <aside className="space-y-4 xl:sticky xl:top-4 xl:self-start">
           <SectionCard subtitle={`${ready.readyCount} / ${ready.items.length} éléments prêts`} title="Validation vente">
-            <div className="h-2 overflow-hidden rounded-full bg-[#F1F1EF]">
+            <div className="h-2 overflow-hidden rounded-full bg-[#F2F4F7]">
               <div
                 className="h-full rounded-full bg-[#2A9D8F]"
                 style={{ width: `${Math.round((ready.readyCount / ready.items.length) * 100)}%` }}
@@ -896,7 +896,7 @@ function FinalQualityControlSection({
                   ) : (
                     <AlertTriangle className="size-4 shrink-0 text-[#C05621]" />
                   )}
-                  <span className={item.done ? "text-[#1A1916]" : "text-[#C05621]"}>{item.label}</span>
+                  <span className={item.done ? "text-[#101828]" : "text-[#C05621]"}>{item.label}</span>
                 </div>
               ))}
             </div>
@@ -944,7 +944,7 @@ function FinalQualityControlSection({
 
           <SectionCard subtitle="Aperçu QR client" title="Ce que verra le client">
             <div className="flex gap-3">
-              <span className="grid size-14 shrink-0 place-items-center rounded-[12px] border border-[#E8E5DF] bg-[#FAFAF8] text-[#9B9B96]">
+              <span className="grid size-14 shrink-0 place-items-center rounded-[12px] border border-[#E4E7EC] bg-[#F9FAFB] text-[#98A2B3]">
                 {file.photos.cote ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img alt="Photo publique" className="size-full rounded-[12px] object-cover" src={file.photos.cote} />
@@ -953,9 +953,9 @@ function FinalQualityControlSection({
                 )}
               </span>
               <div className="min-w-0">
-                <p className="truncate font-semibold text-[#1A1916] text-sm">{certificateData.workshopName}</p>
-                <p className="truncate text-[#1A1916] text-[13px]">{deviceTitle(file)}</p>
-                <p className="text-[#6B6B6B] text-[12px]">
+                <p className="truncate font-semibold text-[#101828] text-sm">{certificateData.workshopName}</p>
+                <p className="truncate text-[#101828] text-[13px]">{deviceTitle(file)}</p>
+                <p className="text-[#667085] text-[12px]">
                   {[file.storage, file.color].filter(Boolean).join(" · ") || "Détails à compléter"}
                 </p>
               </div>
@@ -1058,8 +1058,8 @@ function TraceabilitySection({ file }: Readonly<{ file: ReconditioningFile }>) {
         <InfoRow label="Étiquette interne" value={file.internalLabelGeneratedAt ? "Générée" : "À générer"} />
       </div>
       {file.parts.length > 0 && (
-        <div className="mt-4 overflow-hidden rounded-[14px] border border-[#E8E5DF]">
-          <div className="grid grid-cols-[minmax(0,1fr)_110px_95px_85px] gap-2 bg-[#F7F7F5] px-3 py-2 font-semibold text-[#6B6B6B] text-[11px]">
+        <div className="mt-4 overflow-hidden rounded-[14px] border border-[#E4E7EC]">
+          <div className="grid grid-cols-[minmax(0,1fr)_110px_95px_85px] gap-2 bg-[#F5F7FA] px-3 py-2 font-semibold text-[#667085] text-[11px]">
             <span>Pièce</span>
             <span>Fournisseur</span>
             <span>Stock</span>
@@ -1067,12 +1067,12 @@ function TraceabilitySection({ file }: Readonly<{ file: ReconditioningFile }>) {
           </div>
           {file.parts.map((part) => (
             <div
-              className="grid grid-cols-[minmax(0,1fr)_110px_95px_85px] gap-2 border-[#F1F1EF] border-t px-3 py-2 text-[12px]"
+              className="grid grid-cols-[minmax(0,1fr)_110px_95px_85px] gap-2 border-[#F2F4F7] border-t px-3 py-2 text-[12px]"
               key={part.id}
             >
-              <span className="min-w-0 truncate font-medium text-[#1A1916]">
+              <span className="min-w-0 truncate font-medium text-[#101828]">
                 {part.label || "Pièce atelier"}
-                <span className="block truncate font-normal text-[#9B9B96]">
+                <span className="block truncate font-normal text-[#98A2B3]">
                   {part.sku || part.reference ? (
                     <PartReferenceLink reference={part.sku || part.reference} />
                   ) : (
@@ -1080,15 +1080,15 @@ function TraceabilitySection({ file }: Readonly<{ file: ReconditioningFile }>) {
                   )}
                 </span>
               </span>
-              <span className="truncate text-[#6B6B6B]">{part.supplier || file.supplierName || "Interne"}</span>
-              <span className="text-[#6B6B6B]">
+              <span className="truncate text-[#667085]">{part.supplier || file.supplierName || "Interne"}</span>
+              <span className="text-[#667085]">
                 {part.stockBefore != null && part.stockAfter != null
                   ? `${part.stockBefore} → ${part.stockAfter}`
                   : part.stockDecremented
                     ? "Décrémenté"
                     : "Manuel"}
               </span>
-              <span className="text-right font-semibold text-[#1A1916]">
+              <span className="text-right font-semibold text-[#101828]">
                 {formatMoney(safeNumber(part.cost) * Math.max(1, safeNumber(part.quantity)))}
               </span>
             </div>
@@ -1100,11 +1100,11 @@ function TraceabilitySection({ file }: Readonly<{ file: ReconditioningFile }>) {
           .reverse()
           .slice(0, 8)
           .map((event) => (
-            <div className="flex items-start gap-2 border-[#F7F7F5] border-b pb-2 last:border-0" key={event.id}>
-              <Clock3 className="mt-0.5 size-3.5 shrink-0 text-[#9B9B96]" />
+            <div className="flex items-start gap-2 border-[#F5F7FA] border-b pb-2 last:border-0" key={event.id}>
+              <Clock3 className="mt-0.5 size-3.5 shrink-0 text-[#98A2B3]" />
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-[#1A1916] text-[12.5px]">{event.title}</p>
-                <p className="text-[#9B9B96] text-[11px]">
+                <p className="truncate font-medium text-[#101828] text-[12.5px]">{event.title}</p>
+                <p className="text-[#98A2B3] text-[11px]">
                   {new Date(event.at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}
                   {event.by ? ` · ${event.by}` : ""}
                 </p>
@@ -1190,7 +1190,7 @@ function WorkshopSection({ file }: Readonly<{ file: ReconditioningFile }>) {
       subtitle={`Pièces réellement utilisées : le stock est décrémenté et les coûts réels remplacent les estimations. ${compatibleParts.length > 0 ? `${compatibleParts.length} pièce${compatibleParts.length > 1 ? "s" : ""} compatible${compatibleParts.length > 1 ? "s" : ""} avec ${[file.brand, file.model].filter(Boolean).join(" ") || "ce modèle"}.` : "Aucune pièce compatible trouvée dans le stock — tout le stock est proposé."}`}
       title="Atelier"
     >
-      <div className="mb-3 grid gap-3 rounded-[14px] border border-[#E8E5DF] bg-[#FAFAF8] p-3 text-[13px] sm:grid-cols-4">
+      <div className="mb-3 grid gap-3 rounded-[14px] border border-[#E4E7EC] bg-[#F9FAFB] p-3 text-[13px] sm:grid-cols-4">
         <InfoRow label="Statut atelier" value={workshopStatus} />
         <InfoRow label="Technicien" value="Technicien atelier" />
         <InfoRow label="Total atelier" value={workshopSynced ? formatMoney(workshopTotal) : "À compléter"} />
@@ -1206,23 +1206,23 @@ function WorkshopSection({ file }: Readonly<{ file: ReconditioningFile }>) {
         </span>
       </div>
       {compatibleParts.length > 0 && otherParts.length > 0 && (
-        <label className="mb-3 flex w-fit cursor-pointer items-center gap-2 text-[#6B6B6B] text-[12.5px]">
+        <label className="mb-3 flex w-fit cursor-pointer items-center gap-2 text-[#667085] text-[12.5px]">
           <input checked={showAllStock} onChange={(e) => setShowAllStock(e.target.checked)} type="checkbox" />
           Afficher tout le stock (pas seulement les pièces compatibles)
         </label>
       )}
       {file.parts.length === 0 ? (
-        <p className="rounded-[14px] border border-[#E8E5DF] border-dashed px-4 py-6 text-center text-[#9B9B96] text-[13px]">
+        <p className="rounded-[14px] border border-[#E4E7EC] border-dashed px-4 py-6 text-center text-[#98A2B3] text-[13px]">
           Aucune pièce pour le moment.
         </p>
       ) : (
         <div className="space-y-2">
           {file.parts.map((part) => (
             <div
-              className="flex flex-wrap items-center gap-2.5 rounded-[14px] border border-[#E8E5DF] px-3.5 py-2.5"
+              className="flex flex-wrap items-center gap-2.5 rounded-[14px] border border-[#E4E7EC] px-3.5 py-2.5"
               key={part.id}
             >
-              <Wrench className={cn("size-4 shrink-0", part.stockDecremented ? "text-[#147065]" : "text-[#9B9B96]")} />
+              <Wrench className={cn("size-4 shrink-0", part.stockDecremented ? "text-[#147065]" : "text-[#98A2B3]")} />
               <input
                 className={cn(inputCls, "h-9 min-w-[140px] flex-1")}
                 onChange={(e) => updatePart(file.id, part.id, { label: e.target.value })}
@@ -1255,7 +1255,7 @@ function WorkshopSection({ file }: Readonly<{ file: ReconditioningFile }>) {
                   type="number"
                   value={part.quantity || 1}
                 />
-                <span className="text-[#6B6B6B] text-[12px]">qté</span>
+                <span className="text-[#667085] text-[12px]">qté</span>
                 <input
                   className={cn(inputCls, "h-9 w-24 text-right")}
                   min={0}
@@ -1263,9 +1263,9 @@ function WorkshopSection({ file }: Readonly<{ file: ReconditioningFile }>) {
                   type="number"
                   value={part.cost}
                 />
-                <span className="text-[#6B6B6B] text-[12px]">€</span>
+                <span className="text-[#667085] text-[12px]">€</span>
               </div>
-              <span className="min-w-18 text-right font-semibold text-[#1A1916] text-[12.5px]">
+              <span className="min-w-18 text-right font-semibold text-[#101828] text-[12.5px]">
                 {formatMoney(safeNumber(part.cost) * Math.max(1, safeNumber(part.quantity)))}
               </span>
               {part.stockDecremented && (
@@ -1274,7 +1274,7 @@ function WorkshopSection({ file }: Readonly<{ file: ReconditioningFile }>) {
                 </span>
               )}
               <button
-                className="ml-auto grid size-8 place-items-center rounded-[8px] text-[#9B9B96] transition hover:bg-[#FCF4F3] hover:text-[#B4342A]"
+                className="ml-auto grid size-8 place-items-center rounded-[8px] text-[#98A2B3] transition hover:bg-[#FCF4F3] hover:text-[#B4342A]"
                 onClick={() => removePart(file.id, part.id)}
                 title="Retirer la pièce (restaure le stock)"
                 type="button"
@@ -1305,8 +1305,8 @@ function WorkshopSection({ file }: Readonly<{ file: ReconditioningFile }>) {
           />
         </FieldLabel>
       </div>
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-[#F1F1EF] border-t pt-3">
-        <div className="text-[#6B6B6B] text-[12.5px]">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-[#F2F4F7] border-t pt-3">
+        <div className="text-[#667085] text-[12.5px]">
           Pièces {formatMoney(partsTotal)} · Main-d'œuvre {formatMoney(laborTotal)} · Total réel{" "}
           {workshopSynced ? formatMoney(workshopTotal) : "À compléter"}
         </div>
@@ -1325,9 +1325,9 @@ function WorkshopSection({ file }: Readonly<{ file: ReconditioningFile }>) {
 
 function InfoRow({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
-    <div className="flex items-center justify-between gap-2 border-[#F7F7F5] border-b py-1 last:border-0">
-      <span className="text-[#6B6B6B]">{label}</span>
-      <span className="font-medium text-[#1A1916]">{value}</span>
+    <div className="flex items-center justify-between gap-2 border-[#F5F7FA] border-b py-1 last:border-0">
+      <span className="text-[#667085]">{label}</span>
+      <span className="font-medium text-[#101828]">{value}</span>
     </div>
   );
 }
@@ -1373,15 +1373,15 @@ function PublicSalePhotoGallery({ file }: Readonly<{ file: ReconditioningFile }>
   };
 
   return (
-    <div className="rounded-[14px] border border-[#E8E5DF] bg-[#FAFAF8] p-3.5">
+    <div className="rounded-[14px] border border-[#E4E7EC] bg-[#F9FAFB] p-3.5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="font-semibold text-[#1A1916] text-[13px]">Photos de vente</p>
-          <p className="mt-0.5 text-[#6B6B6B] text-[12px]">
+          <p className="font-semibold text-[#101828] text-[13px]">Photos de vente</p>
+          <p className="mt-0.5 text-[#667085] text-[12px]">
             Une photo principale en haut, puis vos photos de détail sur la page client.
           </p>
         </div>
-        <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-[9px] border border-[#E8E5DF] bg-white px-3 font-semibold text-[#1A1916] text-[12px] transition hover:border-[#2A9D8F]/45">
+        <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-[9px] border border-[#E4E7EC] bg-white px-3 font-semibold text-[#101828] text-[12px] transition hover:border-[#2A9D8F]/45">
           <Plus className="size-3.5 text-[#2A9D8F]" />
           {busy ? "Ajout…" : "Ajouter une photo"}
           <input
@@ -1397,7 +1397,7 @@ function PublicSalePhotoGallery({ file }: Readonly<{ file: ReconditioningFile }>
       </div>
 
       {displayPrimary ? (
-        <div className="mt-3 overflow-hidden rounded-[12px] border border-[#E8E5DF] bg-white">
+        <div className="mt-3 overflow-hidden rounded-[12px] border border-[#E4E7EC] bg-white">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             alt={`Photo principale de ${deviceTitle(file)}`}
@@ -1407,7 +1407,7 @@ function PublicSalePhotoGallery({ file }: Readonly<{ file: ReconditioningFile }>
           <p className="px-3 py-2 font-semibold text-[#147065] text-[11px]">Photo principale affichée en haut</p>
         </div>
       ) : (
-        <div className="mt-3 grid min-h-32 place-items-center rounded-[12px] border border-[#E8E5DF] border-dashed bg-white px-4 text-center text-[#6B6B6B] text-[12px]">
+        <div className="mt-3 grid min-h-32 place-items-center rounded-[12px] border border-[#E4E7EC] border-dashed bg-white px-4 text-center text-[#667085] text-[12px]">
           Ajoutez la photo principale du téléphone.
         </div>
       )}
@@ -1416,7 +1416,7 @@ function PublicSalePhotoGallery({ file }: Readonly<{ file: ReconditioningFile }>
         <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
           {publicPhotos.map((photo) => (
             <div
-              className="group relative overflow-hidden rounded-[10px] border border-[#E8E5DF] bg-white"
+              className="group relative overflow-hidden rounded-[10px] border border-[#E4E7EC] bg-white"
               key={photo.id}
             >
               <button className="block w-full" onClick={() => setPrimaryMedia(file.id, photo.id)} type="button">
@@ -1451,11 +1451,11 @@ function PublicSalePhotoGallery({ file }: Readonly<{ file: ReconditioningFile }>
 function FinRow({ label, value, tone }: Readonly<{ label: string; value: string; tone?: "good" | "bad" }>) {
   return (
     <div className="flex items-center justify-between gap-3 py-1">
-      <span className="text-[#6B6B6B]">{label}</span>
+      <span className="text-[#667085]">{label}</span>
       <span
         className={cn(
           "font-semibold",
-          tone === "good" ? "text-[#147065]" : tone === "bad" ? "text-[#B4342A]" : "text-[#1A1916]",
+          tone === "good" ? "text-[#147065]" : tone === "bad" ? "text-[#B4342A]" : "text-[#101828]",
         )}
       >
         {value}
@@ -1472,7 +1472,7 @@ function DocButton({
 }: Readonly<{ fileId: string; doc: string; label: string; onOpen?: () => void }>) {
   return (
     <button
-      className="flex flex-col items-center gap-1.5 rounded-[14px] border border-[#E8E5DF] bg-white px-2 py-3.5 font-semibold text-[#1A1916] text-[12px] transition hover:border-[#2A9D8F]/45"
+      className="flex flex-col items-center gap-1.5 rounded-[14px] border border-[#E4E7EC] bg-white px-2 py-3.5 font-semibold text-[#101828] text-[12px] transition hover:border-[#2A9D8F]/45"
       onClick={
         onOpen ??
         (() =>

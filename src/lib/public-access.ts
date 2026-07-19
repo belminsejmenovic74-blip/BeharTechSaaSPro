@@ -120,7 +120,7 @@ export async function generateQrCodeDataUrl(value: string): Promise<string> {
     errorCorrectionLevel: "M",
     margin: 1,
     width: 320,
-    color: { dark: "#1A1916", light: "#FFFFFF" },
+    color: { dark: "#101828", light: "#FFFFFF" },
   });
 }
 

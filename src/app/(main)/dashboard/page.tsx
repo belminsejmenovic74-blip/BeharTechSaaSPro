@@ -17,8 +17,8 @@ export default function Page() {
       title="Tableau de bord"
       subtitle="Vue d'ensemble de l'atelier."
       actions={
-        <div className="hidden md:inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3.5 font-medium text-[#1A1916] text-sm">
-          <CalendarDays className="size-4 text-[#6B6B6B]" />
+        <div className="hidden md:inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white px-3.5 font-medium text-[#101828] text-sm">
+          <CalendarDays className="size-4 text-[#667085]" />
           {new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
         </div>
       }
@@ -48,9 +48,7 @@ function MobileDashboard() {
   const store = useBeharStore();
   const today = useToday();
 
-  const repairsInProgress = store.repairs.filter(
-    (r) => r.status !== "Prêt" && !isTerminalRepairStatus(r.status),
-  );
+  const repairsInProgress = store.repairs.filter((r) => r.status !== "Prêt" && !isTerminalRepairStatus(r.status));
 
   const todayKey = today ? today.toLocaleDateString("fr-FR") : "";
   const todayIso = today ? toIsoDate(today) : "";
@@ -104,7 +102,9 @@ function MobileDashboard() {
           iconBg="bg-[#FFFFFF]"
           iconColor="text-[#2A9D8F]"
           label="Reçus aujourd'hui"
-          value={String(store.repairs.filter((r) => (r.droppedAt || r.createdAt || "").slice(0, 10) === todayIso).length)}
+          value={String(
+            store.repairs.filter((r) => (r.droppedAt || r.createdAt || "").slice(0, 10) === todayIso).length,
+          )}
           subline="Créés aujourd'hui"
         />
         <KpiCard
@@ -135,8 +135,8 @@ function MobileDashboard() {
               <CalendarDays className="size-[17px]" />
             </span>
             <div>
-              <p className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Entrées prévues aujourd'hui</p>
-              <p className="mt-0.5 text-[#6B6B6B] text-[11.5px]">
+              <p className="font-semibold text-[#101828] text-[15px] tracking-tight">Entrées prévues aujourd'hui</p>
+              <p className="mt-0.5 text-[#667085] text-[11.5px]">
                 {todayLabel ? `${todayLabel.charAt(0).toUpperCase()}${todayLabel.slice(1)}` : "—"}
               </p>
             </div>
@@ -156,14 +156,14 @@ function MobileDashboard() {
             prefetch={false}
             className="mt-4 flex items-center gap-3 rounded-[14px] bg-[#FFFFFF] px-4 py-3 transition active:scale-[0.99]"
           >
-            <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white text-[#6B6B6B]">
+            <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white text-[#667085]">
               <CalendarDays className="size-[15px]" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-[#1A1916] text-[13px]">Aucune entrée prévue</p>
-              <p className="mt-0.5 text-[#6B6B6B] text-[11.5px]">Touchez pour planifier la journée.</p>
+              <p className="font-medium text-[#101828] text-[13px]">Aucune entrée prévue</p>
+              <p className="mt-0.5 text-[#667085] text-[11.5px]">Touchez pour planifier la journée.</p>
             </div>
-            <ChevronRight className="size-4 shrink-0 text-[#A3A3A3]" />
+            <ChevronRight className="size-4 shrink-0 text-[#98A2B3]" />
           </Link>
         ) : (
           <ul className="mt-3 divide-y divide-[#FFFFFF]">
@@ -180,20 +180,20 @@ function MobileDashboard() {
                     ? "bg-[#FFFFFF] text-[#167B70]"
                     : status === "Annulé" || status === "Non venu"
                       ? "bg-[#FFFFFF] text-[#B42318]"
-                      : "bg-[#FFFFFF] text-[#6B6B6B]";
+                      : "bg-[#FFFFFF] text-[#667085]";
               return (
                 <li key={appt.id} className="flex items-center gap-3 py-2.5">
                   <span className="flex w-12 shrink-0 flex-col items-center">
                     <span className="size-1.5 rounded-full bg-[#2A9D8F]" aria-hidden />
-                    <span className="mt-1 font-semibold text-[#1A1916] text-[13px] tabular-nums">
+                    <span className="mt-1 font-semibold text-[#101828] text-[13px] tabular-nums">
                       {appt.time || "—"}
                     </span>
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold text-[#1A1916] text-[13px]">
+                    <p className="truncate font-semibold text-[#101828] text-[13px]">
                       {customer?.name || "Client comptoir"}
                     </p>
-                    <p className="mt-0.5 truncate text-[#6B6B6B] text-[11.5px]">
+                    <p className="mt-0.5 truncate text-[#667085] text-[11.5px]">
                       {appt.device}
                       {appt.issue ? ` · ${appt.issue}` : ""}
                     </p>
@@ -214,8 +214,8 @@ function MobileDashboard() {
       <SectionCard>
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Pipeline réparations</p>
-            <p className="mt-0.5 text-[#6B6B6B] text-[11.5px]">
+            <p className="font-semibold text-[#101828] text-[15px] tracking-tight">Pipeline réparations</p>
+            <p className="mt-0.5 text-[#667085] text-[11.5px]">
               {pipelineTotal} dossier{pipelineTotal > 1 ? "s" : ""} actif{pipelineTotal > 1 ? "s" : ""}
             </p>
           </div>
@@ -237,11 +237,11 @@ function MobileDashboard() {
                 key={step.key}
                 className="flex flex-col items-center gap-1.5 rounded-[14px] bg-[#FFFFFF] px-1.5 py-3 transition active:scale-[0.96]"
               >
-                <span className="grid size-9 place-items-center rounded-full bg-white text-[#2A9D8F] shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+                <span className="grid size-9 place-items-center rounded-full bg-white text-[#2A9D8F] shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
                   <Wrench className="size-[15px]" />
                 </span>
-                <span className="font-bold text-[#1A1916] text-[18px] tabular-nums leading-none">{step.value}</span>
-                <span className="text-center text-[#6B6B6B] text-[10.5px] font-medium leading-tight">{step.label}</span>
+                <span className="font-bold text-[#101828] text-[18px] tabular-nums leading-none">{step.value}</span>
+                <span className="text-center text-[#667085] text-[10.5px] font-medium leading-tight">{step.label}</span>
                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#FFFFFF]">
                   <div
                     className="h-full rounded-full bg-[#2A9D8F] transition-all"
@@ -257,14 +257,14 @@ function MobileDashboard() {
       {/* Activité récente */}
       <SectionCard>
         <div className="flex items-center justify-between">
-          <p className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Activité récente</p>
+          <p className="font-semibold text-[#101828] text-[15px] tracking-tight">Activité récente</p>
           {recentActivity.length > 0 && (
-            <span className="text-[#6B6B6B] text-[11.5px]">{recentActivity.length} événements</span>
+            <span className="text-[#667085] text-[11.5px]">{recentActivity.length} événements</span>
           )}
         </div>
 
         {recentActivity.length === 0 ? (
-          <p className="mt-4 rounded-[12px] bg-[#FFFFFF] px-4 py-5 text-center text-[#6B6B6B] text-[13px]">
+          <p className="mt-4 rounded-[12px] bg-[#FFFFFF] px-4 py-5 text-center text-[#667085] text-[13px]">
             Aucune activité pour l'instant.
           </p>
         ) : (
@@ -275,10 +275,10 @@ function MobileDashboard() {
                   <ActivityIcon action={log.action} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-[#1A1916] text-[13px] leading-tight">{log.message}</p>
-                  <p className="mt-0.5 text-[#6B6B6B] text-[11px]">{formatRelative(log.createdAt)}</p>
+                  <p className="truncate font-medium text-[#101828] text-[13px] leading-tight">{log.message}</p>
+                  <p className="mt-0.5 text-[#667085] text-[11px]">{formatRelative(log.createdAt)}</p>
                 </div>
-                <ChevronRight className="size-4 shrink-0 text-[#A3A3A3]" />
+                <ChevronRight className="size-4 shrink-0 text-[#98A2B3]" />
               </li>
             ))}
           </ul>
@@ -312,18 +312,18 @@ function KpiCard({
     <Link
       href={href}
       prefetch={false}
-      className="block rounded-[16px] border border-[#E8E8E5] bg-white p-4 transition active:scale-[0.98]"
+      className="block rounded-[16px] border border-[#E4E7EC] bg-white p-4 transition active:scale-[0.98]"
     >
       <span className={`grid size-8 place-items-center ${iconColor}`}>{icon}</span>
-      <p className="mt-3 text-[#6B6B6B] text-[11.5px] font-medium leading-tight tracking-tight">{label}</p>
-      <p className="mt-1.5 font-bold text-[#1A1916] text-[24px] leading-none tracking-tight tabular-nums">{value}</p>
-      <p className="mt-1.5 truncate text-[#6B6B6B] text-[10.5px] font-medium leading-tight">{subline}</p>
+      <p className="mt-3 text-[#667085] text-[11.5px] font-medium leading-tight tracking-tight">{label}</p>
+      <p className="mt-1.5 font-bold text-[#101828] text-[24px] leading-none tracking-tight tabular-nums">{value}</p>
+      <p className="mt-1.5 truncate text-[#667085] text-[10.5px] font-medium leading-tight">{subline}</p>
     </Link>
   );
 }
 
 function SectionCard({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <section className="rounded-[16px] border border-[#E8E8E5] bg-white p-5">{children}</section>;
+  return <section className="rounded-[16px] border border-[#E4E7EC] bg-white p-5">{children}</section>;
 }
 
 function FocusRepair({ repair }: Readonly<{ repair: any }>) {
@@ -331,7 +331,7 @@ function FocusRepair({ repair }: Readonly<{ repair: any }>) {
   return (
     <SectionCard>
       <div className="flex items-center justify-between">
-        <p className="font-semibold text-[#1A1916] text-[15px] tracking-tight">En atelier</p>
+        <p className="font-semibold text-[#101828] text-[15px] tracking-tight">En atelier</p>
         <Link
           href={`/dashboard/reparations?selectedId=${repair.id}`}
           prefetch={false}
@@ -341,15 +341,15 @@ function FocusRepair({ repair }: Readonly<{ repair: any }>) {
         </Link>
       </div>
       <div className="mt-4 flex items-start gap-3">
-        <span className="grid size-12 shrink-0 place-items-center rounded-[14px] bg-[#FFFFFF] text-[#1A1916]">
+        <span className="grid size-12 shrink-0 place-items-center rounded-[14px] bg-[#FFFFFF] text-[#101828]">
           <Wrench className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold text-[#1A1916] text-[15px] tracking-tight">
+          <p className="truncate font-semibold text-[#101828] text-[15px] tracking-tight">
             {customer?.name ?? "Client"}
           </p>
-          <p className="mt-0.5 truncate text-[#1A1916] text-[13px]">{repair.device}</p>
-          <p className="mt-0.5 truncate text-[#6B6B6B] text-[12px]">{repair.issue}</p>
+          <p className="mt-0.5 truncate text-[#101828] text-[13px]">{repair.device}</p>
+          <p className="mt-0.5 truncate text-[#667085] text-[12px]">{repair.issue}</p>
         </div>
         <StatusBadge status={repair.status} />
       </div>
@@ -358,14 +358,11 @@ function FocusRepair({ repair }: Readonly<{ repair: any }>) {
 }
 
 function ActivityIcon({ action }: Readonly<{ action: string }>) {
-  if (action.startsWith("payment") || action.includes("paid"))
-    return <FileText className="size-[16px]" />;
+  if (action.startsWith("payment") || action.includes("paid")) return <FileText className="size-[16px]" />;
   if (action.startsWith("repair")) return <Wrench className="size-[16px]" />;
-  if (action.startsWith("appointment") || action.startsWith("rendez"))
-    return <CalendarDays className="size-[16px]" />;
+  if (action.startsWith("appointment") || action.startsWith("rendez")) return <CalendarDays className="size-[16px]" />;
   if (action.startsWith("stock")) return <Package className="size-[16px]" />;
-  if (action.startsWith("alert") || action.includes("low"))
-    return <AlertTriangle className="size-[16px]" />;
+  if (action.startsWith("alert") || action.includes("low")) return <AlertTriangle className="size-[16px]" />;
   return <Clock className="size-[16px]" />;
 }
 

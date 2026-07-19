@@ -118,10 +118,10 @@ async function responseError(response: Response) {
 
 function Kpi({ label, value, hint }: Readonly<{ label: string; value: string; hint?: string }>) {
   return (
-    <div className="rounded-[14px] border border-[#E8E8E5] bg-[#FCFCFB] p-4">
-      <p className="text-[#6B6B6B] text-xs font-medium">{label}</p>
-      <p className="mt-2 font-semibold text-[#1A1916] text-xl tracking-tight">{value}</p>
-      {hint && <p className="mt-1 text-[#8A8A8A] text-[11px]">{hint}</p>}
+    <div className="rounded-[14px] border border-[#E4E7EC] bg-[#FCFCFD] p-4">
+      <p className="text-[#667085] text-xs font-medium">{label}</p>
+      <p className="mt-2 font-semibold text-[#101828] text-xl tracking-tight">{value}</p>
+      {hint && <p className="mt-1 text-[#98A2B3] text-[11px]">{hint}</p>}
     </div>
   );
 }
@@ -255,7 +255,7 @@ export function AccountingExportWorkspace() {
           <AlertCircle className="mt-0.5 size-5 shrink-0" />
           <div>
             <h2 className="font-semibold">Droits insuffisants</h2>
-            <p className="mt-1 text-sm text-[#6B6B6B]">Votre rôle ne permet pas d'exporter les données comptables.</p>
+            <p className="mt-1 text-sm text-[#667085]">Votre rôle ne permet pas d'exporter les données comptables.</p>
           </div>
         </div>
       </Panel>
@@ -269,7 +269,7 @@ export function AccountingExportWorkspace() {
           <AlertCircle className="mt-0.5 size-5 shrink-0" />
           <div>
             <h2 className="font-semibold">Synchronisation nécessaire</h2>
-            <p className="mt-1 text-sm text-[#6B6B6B]">
+            <p className="mt-1 text-sm text-[#667085]">
               Reconnectez l'atelier pour charger les données comptables sécurisées.
             </p>
           </div>
@@ -281,11 +281,11 @@ export function AccountingExportWorkspace() {
   return (
     <div className="space-y-5">
       <Panel className="overflow-hidden">
-        <div className="border-[#E8E8E5] border-b px-5 py-4 md:px-6">
+        <div className="border-[#E4E7EC] border-b px-5 py-4 md:px-6">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="font-semibold text-[#1A1916]">Périmètre de l'export</h2>
-              <p className="mt-1 text-[#6B6B6B] text-sm">
+              <h2 className="font-semibold text-[#101828]">Périmètre de l'export</h2>
+              <p className="mt-1 text-[#667085] text-sm">
                 Uniquement les factures validées ; les devis sont toujours exclus.
               </p>
             </div>
@@ -373,8 +373,8 @@ export function AccountingExportWorkspace() {
       <Panel className="p-5 md:p-6">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h2 className="font-semibold text-[#1A1916]">Résumé avant export</h2>
-            <p className="mt-1 text-[#6B6B6B] text-sm">Chiffre d'affaires facturé, net des avoirs.</p>
+            <h2 className="font-semibold text-[#101828]">Résumé avant export</h2>
+            <p className="mt-1 text-[#667085] text-sm">Chiffre d'affaires facturé, net des avoirs.</p>
           </div>
           {loadingPreview && <Loader2 className="size-5 animate-spin text-[#2A9D8F]" />}
         </div>
@@ -407,7 +407,7 @@ export function AccountingExportWorkspace() {
       <Panel className="p-5 md:p-6">
         <div>
           <div>
-            <h2 className="font-semibold text-[#1A1916]">Format à générer</h2>
+            <h2 className="font-semibold text-[#101828]">Format à générer</h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {formatOptions.map((option) => {
                 const Icon = option.icon;
@@ -420,7 +420,7 @@ export function AccountingExportWorkspace() {
                       "flex min-h-24 items-start gap-3 rounded-[14px] border p-4 text-left transition",
                       selected
                         ? "border-[#2A9D8F] bg-[#F4FBF9]"
-                        : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/40",
+                        : "border-[#E4E7EC] bg-white hover:border-[#2A9D8F]/40",
                       disabled && "cursor-not-allowed opacity-50",
                     )}
                     disabled={disabled}
@@ -433,7 +433,7 @@ export function AccountingExportWorkspace() {
                     </span>
                     <span>
                       <strong className="block text-sm">{option.title}</strong>
-                      <span className="mt-1 block text-[#6B6B6B] text-xs leading-5">{option.description}</span>
+                      <span className="mt-1 block text-[#667085] text-xs leading-5">{option.description}</span>
                     </span>
                   </button>
                 );
@@ -455,17 +455,17 @@ export function AccountingExportWorkspace() {
       </Panel>
 
       <Panel className="overflow-hidden">
-        <div className="flex items-center justify-between border-[#E8E8E5] border-b px-5 py-4 md:px-6">
+        <div className="flex items-center justify-between border-[#E4E7EC] border-b px-5 py-4 md:px-6">
           <div className="flex items-center gap-3">
             <History className="size-5 text-[#2A9D8F]" />
             <div>
               <h2 className="font-semibold">Historique des exports</h2>
-              <p className="text-[#6B6B6B] text-xs">50 dernières générations sécurisées</p>
+              <p className="text-[#667085] text-xs">50 dernières générations sécurisées</p>
             </div>
           </div>
           <button
             aria-label="Actualiser l'historique"
-            className="grid size-9 place-items-center rounded-[10px] border border-[#E8E8E5]"
+            className="grid size-9 place-items-center rounded-[10px] border border-[#E4E7EC]"
             onClick={() => void loadHistory()}
             type="button"
           >
@@ -474,7 +474,7 @@ export function AccountingExportWorkspace() {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[860px] text-sm">
-            <thead className="bg-[#FCFCFB] text-left text-[#6B6B6B] text-xs">
+            <thead className="bg-[#FCFCFD] text-left text-[#667085] text-xs">
               <tr>
                 <th className="px-5 py-3 font-medium">Généré le</th>
                 <th className="px-4 py-3 font-medium">Période</th>
@@ -502,7 +502,7 @@ export function AccountingExportWorkspace() {
                   <td className="px-4 py-3.5">{entry.invoice_count}</td>
                   <td className="px-5 py-3.5 text-right">
                     <button
-                      className="inline-flex items-center gap-2 rounded-[9px] border border-[#E8E8E5] px-3 py-2 font-medium text-xs hover:border-[#2A9D8F]/40"
+                      className="inline-flex items-center gap-2 rounded-[9px] border border-[#E4E7EC] px-3 py-2 font-medium text-xs hover:border-[#2A9D8F]/40"
                       onClick={() => void downloadAgain(entry)}
                       type="button"
                     >
@@ -513,7 +513,7 @@ export function AccountingExportWorkspace() {
               ))}
               {!history.length && !loadingHistory && (
                 <tr>
-                  <td className="px-5 py-10 text-center text-[#6B6B6B]" colSpan={7}>
+                  <td className="px-5 py-10 text-center text-[#667085]" colSpan={7}>
                     Aucun export généré pour le moment.
                   </td>
                 </tr>
@@ -532,23 +532,23 @@ export function AccountingExportWorkspace() {
             <DialogTitle>Confirmer l'export des factures</DialogTitle>
             <DialogDescription>Vérifiez le périmètre avant de générer et d'archiver le fichier.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 rounded-[14px] border border-[#E8E8E5] bg-[#FCFCFB] p-4">
+          <div className="space-y-3 rounded-[14px] border border-[#E4E7EC] bg-[#FCFCFD] p-4">
             <div className="flex justify-between gap-4">
-              <span className="text-[#6B6B6B]">Période</span>
+              <span className="text-[#667085]">Période</span>
               <strong>
                 {frenchDate(filters.startDate)} – {frenchDate(filters.endDate)}
               </strong>
             </div>
             <div className="flex justify-between gap-4">
-              <span className="text-[#6B6B6B]">Factures</span>
+              <span className="text-[#667085]">Factures</span>
               <strong>{preview.summary.invoiceCount}</strong>
             </div>
             <div className="flex justify-between gap-4">
-              <span className="text-[#6B6B6B]">Format</span>
+              <span className="text-[#667085]">Format</span>
               <strong>{chosenFormat.title}</strong>
             </div>
-            <div className="border-[#E8E8E5] border-t pt-3">
-              <p className="text-[#6B6B6B] text-xs font-medium uppercase tracking-wide">Fichiers générés</p>
+            <div className="border-[#E4E7EC] border-t pt-3">
+              <p className="text-[#667085] text-xs font-medium uppercase tracking-wide">Fichiers générés</p>
               <p className="mt-2 flex items-center gap-2 text-sm">
                 <CheckCircle2 className="size-4 text-[#2A9D8F]" />
                 {formatType === "zip"
@@ -570,10 +570,10 @@ export function AccountingExportWorkspace() {
       </Dialog>
 
       <style jsx>{`
-        .filter-chip { height: 36px; border: 1px solid #e8e8e5; border-radius: 10px; background: white; padding: 0 12px; font-size: 12px; font-weight: 600; color: #4f4f4b; }
+        .filter-chip { height: 36px; border: 1px solid #e4e7ec; border-radius: 10px; background: white; padding: 0 12px; font-size: 12px; font-weight: 600; color: #4f4f4b; }
         .filter-chip:hover { border-color: rgba(42, 157, 143, .45); color: #167b70; }
-        .field-label { display: flex; flex-direction: column; gap: 7px; color: #6b6b6b; font-size: 12px; font-weight: 600; }
-        .field-control { height: 42px; width: 100%; min-width: 0; border: 1px solid #e8e8e5; border-radius: 11px; background: white; padding: 0 11px; color: #1a1916; font-size: 13px; outline: none; }
+        .field-label { display: flex; flex-direction: column; gap: 7px; color: #667085; font-size: 12px; font-weight: 600; }
+        .field-control { height: 42px; width: 100%; min-width: 0; border: 1px solid #e4e7ec; border-radius: 11px; background: white; padding: 0 11px; color: #101828; font-size: 13px; outline: none; }
         .field-control:focus { border-color: rgba(42, 157, 143, .6); box-shadow: 0 0 0 3px rgba(42, 157, 143, .1); }
       `}</style>
     </div>

@@ -62,8 +62,8 @@ export default function PortalTrackingPage() {
       <PageHeader title="Mon suivi" subtitle="Les memes dossiers, rendez-vous et envois que dans le SaaS." />
       <PortalCard>
         <div className="grid gap-3 md:grid-cols-[1fr_190px_190px]">
-          <label className="flex h-11 items-center gap-2 rounded-xl border border-[#E8E8E5] bg-white px-3">
-            <Search className="size-4 text-[#8A8A8A]" />
+          <label className="flex h-11 items-center gap-2 rounded-xl border border-[#E4E7EC] bg-white px-3">
+            <Search className="size-4 text-[#98A2B3]" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -74,7 +74,7 @@ export default function PortalTrackingPage() {
           <select
             value={kind}
             onChange={(event) => setKind(event.target.value as Kind)}
-            className="h-11 rounded-xl border border-[#E8E8E5] bg-white px-3 text-sm"
+            className="h-11 rounded-xl border border-[#E4E7EC] bg-white px-3 text-sm"
           >
             <option value="all">Tous les types</option>
             <option value="repairs">Reparations</option>
@@ -84,7 +84,7 @@ export default function PortalTrackingPage() {
           <select
             value={status}
             onChange={(event) => setStatus(event.target.value)}
-            className="h-11 rounded-xl border border-[#E8E8E5] bg-white px-3 text-sm"
+            className="h-11 rounded-xl border border-[#E4E7EC] bg-white px-3 text-sm"
             disabled={kind !== "all" && kind !== "repairs"}
           >
             <option value="all">Tous les statuts</option>
@@ -108,7 +108,7 @@ export default function PortalTrackingPage() {
                   <strong className="block truncate text-sm">
                     {repair.number} · {customerName(repair.customerId)}
                   </strong>
-                  <small className="block truncate text-[#6B6B6B]">
+                  <small className="block truncate text-[#667085]">
                     {repair.device} · {repair.issue}
                   </small>
                 </span>
@@ -130,7 +130,7 @@ export default function PortalTrackingPage() {
                     {appointment.clientName || customerName(appointment.customerId)} · {appointment.date}{" "}
                     {appointment.time}
                   </strong>
-                  <small className="block truncate text-[#6B6B6B]">
+                  <small className="block truncate text-[#667085]">
                     {appointment.device} · {appointment.issue}
                   </small>
                 </span>
@@ -156,9 +156,9 @@ export default function PortalTrackingPage() {
                   <strong className="block truncate text-sm">
                     {message.subject || message.channel} · {customerName(message.customerId)}
                   </strong>
-                  <small className="block truncate text-[#6B6B6B]">{message.body}</small>
+                  <small className="block truncate text-[#667085]">{message.body}</small>
                 </span>
-                <small className="text-[#8A8A8A]">{message.createdAt}</small>
+                <small className="text-[#98A2B3]">{message.createdAt}</small>
               </div>
             ))}
           </TrackingSection>
@@ -190,7 +190,7 @@ function TrackingSection({
         {hasItems ? (
           children
         ) : (
-          <p className="rounded-xl bg-[#F6F7F9] px-4 py-6 text-center text-[#6B6B6B] text-sm">{empty}</p>
+          <p className="rounded-xl bg-[#F6F7F9] px-4 py-6 text-center text-[#667085] text-sm">{empty}</p>
         )}
       </div>
     </PortalCard>

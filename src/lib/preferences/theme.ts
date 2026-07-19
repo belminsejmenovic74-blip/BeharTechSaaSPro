@@ -19,7 +19,7 @@ export const THEME_PRESET_OPTIONS = [
     label: "Brutalist",
     value: "brutalist",
     primary: {
-      light: "#1A1916",
+      light: "#101828",
       dark: "#ffffff",
     },
   },

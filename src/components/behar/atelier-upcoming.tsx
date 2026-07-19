@@ -14,7 +14,7 @@ const STATUS_TONE: Record<UpcomingStatusKey, string> = {
   to_confirm: "bg-[#FBF6EA] text-[#8A6D1B] border-[#EBD9B4]",
   confirmed: "bg-[#ECF8F4] text-[#167B70] border-[#BFE7DD]",
   arrived: "bg-[#EAF2FF] text-[#2B5FB3] border-[#C6D9F5]",
-  no_show: "bg-[#F7F7F5] text-[#8A8A85] border-[#E8E8E5]",
+  no_show: "bg-[#F5F7FA] text-[#98A2B3] border-[#E4E7EC]",
   cancelled: "bg-[#FBECEC] text-[#B4232A] border-[#F0CBCD]",
   converted: "bg-[#F1EEFB] text-[#5B45A8] border-[#D9CFF2]",
 };
@@ -51,13 +51,13 @@ export function AtelierUpcoming() {
   if (upcoming.length === 0) return null;
 
   return (
-    <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
+    <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.035)]">
       <header className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h2 className="font-semibold text-[#1A1916] text-lg tracking-tight">À venir</h2>
-          <p className="text-[#6B6B6B] text-xs">Rendez-vous pris en ligne — à confirmer puis prendre en charge.</p>
+          <h2 className="font-semibold text-[#101828] text-lg tracking-tight">À venir</h2>
+          <p className="text-[#667085] text-xs">Rendez-vous pris en ligne — à confirmer puis prendre en charge.</p>
         </div>
-        <span className="rounded-full bg-[#F1F0EC] px-2.5 py-1 font-medium text-[#6B6B6B] text-xs">
+        <span className="rounded-full bg-[#F1F0EC] px-2.5 py-1 font-medium text-[#667085] text-xs">
           {upcoming.length} rendez-vous
         </span>
       </header>
@@ -98,11 +98,11 @@ function UpcomingCard({
   const price = typeof appointment.customerPrice === "number" ? formatEuro(appointment.customerPrice) : "Sur devis";
 
   return (
-    <article className="rounded-[14px] border border-[#E8E8E5] bg-white p-4">
+    <article className="rounded-[14px] border border-[#E4E7EC] bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold text-[#1A1916] text-sm">
+            <span className="font-semibold text-[#101828] text-sm">
               {appointment.date} · {appointment.time}
             </span>
             <span className="rounded-full border border-[#BFE7DD] bg-[#ECF8F4] px-2 py-0.5 font-medium text-[#167B70] text-[11px]">
@@ -112,13 +112,13 @@ function UpcomingCard({
               {STATUS_LABEL[key]}
             </span>
           </div>
-          <p className="mt-1.5 truncate font-medium text-[#1A1916] text-sm">
+          <p className="mt-1.5 truncate font-medium text-[#101828] text-sm">
             {appointment.clientName || "Client"}
             {appointment.clientPhone ? (
-              <span className="text-[#6B6B6B] text-xs"> · {appointment.clientPhone}</span>
+              <span className="text-[#667085] text-xs"> · {appointment.clientPhone}</span>
             ) : null}
           </p>
-          <p className="truncate text-[#6B6B6B] text-xs">
+          <p className="truncate text-[#667085] text-xs">
             {appointment.device}
             {appointment.deviceModel && appointment.device !== appointment.deviceModel
               ? ` · ${appointment.deviceModel}`
@@ -129,9 +129,9 @@ function UpcomingCard({
           </p>
         </div>
         <div className="text-right">
-          <p className="font-semibold text-[#1A1916] text-sm">{price}</p>
+          <p className="font-semibold text-[#101828] text-sm">{price}</p>
           {appointment.availabilityLabel ? (
-            <p className="text-[#6B6B6B] text-xs">{appointment.availabilityLabel}</p>
+            <p className="text-[#667085] text-xs">{appointment.availabilityLabel}</p>
           ) : null}
         </div>
       </div>
@@ -191,7 +191,7 @@ function ActionButton({
       className={
         primary
           ? "rounded-[10px] bg-[#2A9D8F] px-3 py-1.5 font-semibold text-white text-xs transition hover:brightness-95"
-          : "rounded-[10px] border border-[#E8E8E5] bg-white px-3 py-1.5 font-medium text-[#1A1916] text-xs transition hover:border-[#2A9D8F]"
+          : "rounded-[10px] border border-[#E4E7EC] bg-white px-3 py-1.5 font-medium text-[#101828] text-xs transition hover:border-[#2A9D8F]"
       }
     >
       {children}

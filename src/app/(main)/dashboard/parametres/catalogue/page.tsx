@@ -496,7 +496,7 @@ export default function CataloguePrixPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link
             href="/dashboard/parametres"
-            className="inline-flex items-center gap-2 text-[#6B6B6B] text-sm hover:text-[#1A1916]"
+            className="inline-flex items-center gap-2 text-[#667085] text-sm hover:text-[#101828]"
           >
             <ArrowLeft className="size-4" /> Retour aux paramètres
           </Link>
@@ -510,7 +510,7 @@ export default function CataloguePrixPage() {
             </SecondaryButton>
             <Link
               href="/dashboard/parametres/reconditionnement"
-              className="inline-flex h-10 items-center justify-center rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-semibold text-[#1A1916] text-sm transition hover:border-[#2A9D8F]/45"
+              className="inline-flex h-10 items-center justify-center rounded-[12px] border border-[#E4E7EC] bg-white px-4 font-semibold text-[#101828] text-sm transition hover:border-[#2A9D8F]/45"
             >
               Reconditionnement
             </Link>
@@ -523,7 +523,7 @@ export default function CataloguePrixPage() {
         <Panel className="p-5">
           <div className="grid gap-3 md:grid-cols-6">
             <label className="relative md:col-span-2">
-              <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6B6B6B]" />
+              <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#667085]" />
               <input
                 value={search}
                 onChange={(event) => {
@@ -531,7 +531,7 @@ export default function CataloguePrixPage() {
                   setPage(1);
                 }}
                 placeholder="Rechercher (marque, modèle, pièce, SKU…)"
-                className="h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white pr-3 pl-10 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+                className="h-10 w-full rounded-[12px] border border-[#E4E7EC] bg-white pr-3 pl-10 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
               />
             </label>
             <FilterSelect
@@ -591,33 +591,33 @@ export default function CataloguePrixPage() {
                 })),
               ]}
             />
-            <span className="text-[#6B6B6B] text-sm">
+            <span className="text-[#667085] text-sm">
               {filtered.length} ligne{filtered.length > 1 ? "s" : ""} sur {items.length}
             </span>
-            <div className="inline-flex rounded-[12px] border border-[#E8E8E5] bg-white p-1 text-xs">
+            <div className="inline-flex rounded-[12px] border border-[#E4E7EC] bg-white p-1 text-xs">
               {(["FR", "CH"] as const).map((country) => (
                 <button
                   key={country}
                   type="button"
                   onClick={() => setMarketCountry(country)}
                   className={`rounded-[9px] px-3 py-1 font-semibold transition ${
-                    marketCountry === country ? "bg-[#FFFFFF] text-[#167B70]" : "text-[#6B6B6B]"
+                    marketCountry === country ? "bg-[#FFFFFF] text-[#167B70]" : "text-[#667085]"
                   }`}
                 >
                   {country === "CH" ? "Suisse · CHF" : "France · EUR"}
                 </button>
               ))}
             </div>
-            <div className="ml-auto inline-flex rounded-[12px] border border-[#E8E8E5] bg-white p-1 text-xs">
+            <div className="ml-auto inline-flex rounded-[12px] border border-[#E4E7EC] bg-white p-1 text-xs">
               <button
-                className={`rounded-[9px] px-3 py-1 transition ${view === "tree" ? "bg-[#FFFFFF] text-[#167B70]" : "text-[#6B6B6B] hover:text-[#1A1916]"}`}
+                className={`rounded-[9px] px-3 py-1 transition ${view === "tree" ? "bg-[#FFFFFF] text-[#167B70]" : "text-[#667085] hover:text-[#101828]"}`}
                 onClick={() => setView("tree")}
                 type="button"
               >
                 Arborescence
               </button>
               <button
-                className={`rounded-[9px] px-3 py-1 transition ${view === "table" ? "bg-[#FFFFFF] text-[#167B70]" : "text-[#6B6B6B] hover:text-[#1A1916]"}`}
+                className={`rounded-[9px] px-3 py-1 transition ${view === "table" ? "bg-[#FFFFFF] text-[#167B70]" : "text-[#667085] hover:text-[#101828]"}`}
                 onClick={() => setView("table")}
                 type="button"
               >
@@ -647,7 +647,7 @@ export default function CataloguePrixPage() {
           <Panel className="overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1200px] border-collapse text-sm">
-                <thead className="bg-[#FFFFFF] text-[#6B6B6B] text-xs uppercase tracking-wide">
+                <thead className="bg-[#FFFFFF] text-[#667085] text-xs uppercase tracking-wide">
                   <tr>
                     <Th>Marque</Th>
                     <Th>Modèle</Th>
@@ -669,7 +669,7 @@ export default function CataloguePrixPage() {
                 <tbody>
                   {visible.length === 0 ? (
                     <tr>
-                      <td colSpan={15} className="px-4 py-12 text-center text-[#6B6B6B]">
+                      <td colSpan={15} className="px-4 py-12 text-center text-[#667085]">
                         Aucune ligne. Ajoutez un prix ou modifiez vos filtres.
                       </td>
                     </tr>
@@ -677,7 +677,7 @@ export default function CataloguePrixPage() {
                     visible.map((item) => {
                       const marketPrice = getPriceBookMarketPrice(item, marketCountry);
                       return (
-                        <tr key={item.id} className="border-[#E8E8E5] border-t hover:bg-[#FFFFFF]">
+                        <tr key={item.id} className="border-[#E4E7EC] border-t hover:bg-[#FFFFFF]">
                           <Td>{item.marque}</Td>
                           <Td>{item.modele}</Td>
                           <Td>{item.reparation}</Td>
@@ -688,7 +688,7 @@ export default function CataloguePrixPage() {
                             {formatEuroPriceBook(marketPrice.prixVentePiece, marketConfig.currency)}
                           </Td>
                           <Td align="right">{formatEuroPriceBook(marketPrice.mainOeuvre, marketConfig.currency)}</Td>
-                          <Td align="right" className="font-semibold text-[#1A1916]">
+                          <Td align="right" className="font-semibold text-[#101828]">
                             {marketPrice.hasPrice
                               ? formatEuroPriceBook(marketPrice.prixClientTotal, marketConfig.currency)
                               : "À définir"}
@@ -724,7 +724,7 @@ export default function CataloguePrixPage() {
                                 <button
                                   type="button"
                                   onClick={() => router.push("/dashboard/stock")}
-                                  className="text-[10px] text-[#6B6B6B] hover:text-[#167B70] underline"
+                                  className="text-[10px] text-[#667085] hover:text-[#167B70] underline"
                                 >
                                   Voir dans Stock
                                 </button>
@@ -732,7 +732,7 @@ export default function CataloguePrixPage() {
                             </div>
                           </Td>
                           <Td>
-                            <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[#6B6B6B] text-xs">
+                            <span className="rounded-[7px] border border-[#E4E7EC] bg-[#FFFFFF] px-2 py-0.5 text-[#667085] text-xs">
                               {PRICE_BOOK_SOURCE_LABELS[item.source]}
                             </span>
                           </Td>
@@ -743,7 +743,7 @@ export default function CataloguePrixPage() {
                               className={`rounded-[7px] border px-2 py-0.5 text-xs ${
                                 item.isActive
                                   ? "border-[#D7EFEA] bg-[#FFFFFF] text-[#1d6f65]"
-                                  : "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]"
+                                  : "border-[#E4E7EC] bg-[#FFFFFF] text-[#667085]"
                               }`}
                             >
                               {item.isActive ? "Actif" : "Inactif"}
@@ -754,7 +754,7 @@ export default function CataloguePrixPage() {
                               <button
                                 type="button"
                                 onClick={() => openEdit(item)}
-                                className="grid size-8 place-items-center rounded-lg text-[#6B6B6B] hover:bg-[#FFFFFF] hover:text-[#1A1916]"
+                                className="grid size-8 place-items-center rounded-lg text-[#667085] hover:bg-[#FFFFFF] hover:text-[#101828]"
                                 aria-label="Modifier"
                               >
                                 <Pencil className="size-4" />
@@ -762,7 +762,7 @@ export default function CataloguePrixPage() {
                               <button
                                 type="button"
                                 onClick={() => handleDelete(item)}
-                                className="grid size-8 place-items-center rounded-lg text-[#6B6B6B] hover:bg-red-50 hover:text-red-600"
+                                className="grid size-8 place-items-center rounded-lg text-[#667085] hover:bg-red-50 hover:text-red-600"
                                 aria-label="Supprimer"
                               >
                                 <Trash2 className="size-4" />
@@ -777,8 +777,8 @@ export default function CataloguePrixPage() {
               </table>
             </div>
             {totalPages > 1 && (
-              <div className="flex items-center justify-between border-[#E8E8E5] border-t px-4 py-3 text-sm">
-                <span className="text-[#6B6B6B]">
+              <div className="flex items-center justify-between border-[#E4E7EC] border-t px-4 py-3 text-sm">
+                <span className="text-[#667085]">
                   Page {safePage} / {totalPages}
                 </span>
                 <div className="flex gap-2">
@@ -838,7 +838,7 @@ function Td({
   className,
 }: Readonly<{ children: React.ReactNode; align?: "left" | "right"; className?: string }>) {
   return (
-    <td className={`px-3 py-2 ${align === "right" ? "text-right" : "text-left"} text-[#1A1916] ${className ?? ""}`}>
+    <td className={`px-3 py-2 ${align === "right" ? "text-right" : "text-left"} text-[#101828] ${className ?? ""}`}>
       {children}
     </td>
   );
@@ -895,8 +895,8 @@ function FormDialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[18px] bg-white p-6 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-semibold text-[#1A1916] text-xl">{form.id ? "Modifier le prix" : "Ajouter un prix"}</h2>
-          <button type="button" onClick={onCancel} className="text-[#6B6B6B] text-sm hover:text-[#1A1916]">
+          <h2 className="font-semibold text-[#101828] text-xl">{form.id ? "Modifier le prix" : "Ajouter un prix"}</h2>
+          <button type="button" onClick={onCancel} className="text-[#667085] text-sm hover:text-[#101828]">
             Fermer
           </button>
         </div>
@@ -988,7 +988,7 @@ function FormDialog({
               className={inputClass}
             />
           </Field>
-          <div className="md:col-span-2 mt-2 rounded-[10px] bg-[#FFFFFF] px-3 py-2 font-semibold text-[#1A1916] text-sm">
+          <div className="md:col-span-2 mt-2 rounded-[10px] bg-[#FFFFFF] px-3 py-2 font-semibold text-[#101828] text-sm">
             Tarif France · EUR
           </div>
           <Field label="Prix achat (EUR)">
@@ -1116,7 +1116,7 @@ function FormDialog({
 }
 
 const inputClass =
-  "h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10";
+  "h-10 w-full rounded-[12px] border border-[#E4E7EC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10";
 
 function Field({
   label,
@@ -1125,7 +1125,7 @@ function Field({
 }: Readonly<{ label: string; children: React.ReactNode; className?: string }>) {
   return (
     <label className={`block ${className ?? ""}`}>
-      <span className="mb-1 block font-medium text-[#1A1916] text-xs">{label}</span>
+      <span className="mb-1 block font-medium text-[#101828] text-xs">{label}</span>
       {children}
     </label>
   );
@@ -1144,10 +1144,10 @@ function Stat({
 }>) {
   return (
     <div>
-      <div className="text-[#6B6B6B] text-xs">{label}</div>
+      <div className="text-[#667085] text-xs">{label}</div>
       <div
         className={`font-semibold text-lg ${
-          highlight ? "text-[#1A1916]" : tone === "danger" ? "text-red-600" : "text-[#2A9D8F]"
+          highlight ? "text-[#101828]" : tone === "danger" ? "text-red-600" : "text-[#2A9D8F]"
         }`}
       >
         {value}
@@ -1172,36 +1172,36 @@ function ImportPreviewDialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[18px] bg-white p-6 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-semibold text-[#1A1916] text-xl">Aperçu avant import</h2>
-          <button type="button" onClick={onCancel} className="text-[#6B6B6B] text-sm hover:text-[#1A1916]">
+          <h2 className="font-semibold text-[#101828] text-xl">Aperçu avant import</h2>
+          <button type="button" onClick={onCancel} className="text-[#667085] text-sm hover:text-[#101828]">
             Fermer
           </button>
         </div>
 
         <div className="mb-6 grid grid-cols-3 gap-4">
-          <div className="rounded-xl border border-[#E8E8E5] p-4 text-center">
-            <div className="text-[#6B6B6B] text-xs">Lignes valides</div>
+          <div className="rounded-xl border border-[#E4E7EC] p-4 text-center">
+            <div className="text-[#667085] text-xs">Lignes valides</div>
             <div className="mt-1 font-semibold text-[#2A9D8F] text-2xl">{preview.validLines.length}</div>
           </div>
-          <div className="rounded-xl border border-[#E8E8E5] p-4 text-center">
-            <div className="text-[#6B6B6B] text-xs">Lignes en erreur</div>
+          <div className="rounded-xl border border-[#E4E7EC] p-4 text-center">
+            <div className="text-[#667085] text-xs">Lignes en erreur</div>
             <div
-              className={`mt-1 font-semibold text-2xl ${preview.errorCount > 0 ? "text-red-500" : "text-[#1A1916]"}`}
+              className={`mt-1 font-semibold text-2xl ${preview.errorCount > 0 ? "text-red-500" : "text-[#101828]"}`}
             >
               {preview.errorCount}
             </div>
           </div>
-          <div className="rounded-xl border border-[#E8E8E5] p-4 text-center">
-            <div className="text-[#6B6B6B] text-xs">Total lu</div>
-            <div className="mt-1 font-semibold text-[#1A1916] text-2xl">
+          <div className="rounded-xl border border-[#E4E7EC] p-4 text-center">
+            <div className="text-[#667085] text-xs">Total lu</div>
+            <div className="mt-1 font-semibold text-[#101828] text-2xl">
               {preview.validLines.length + preview.errorCount}
             </div>
           </div>
         </div>
 
         <div className="mb-6">
-          <label className="mb-2 block font-medium text-[#1A1916] text-sm">Que faire en cas de doublon ?</label>
-          <div className="text-xs text-[#6B6B6B] mb-2">
+          <label className="mb-2 block font-medium text-[#101828] text-sm">Que faire en cas de doublon ?</label>
+          <div className="text-xs text-[#667085] mb-2">
             Un doublon est détecté par SKU/référence si présent, sinon par type + marque + modèle + réparation.
             correspondent.
           </div>
@@ -1225,10 +1225,10 @@ function ImportPreviewDialog({
         </div>
 
         <div className="mb-6">
-          <h3 className="mb-2 font-medium text-[#1A1916] text-sm">Aperçu des premières lignes</h3>
-          <div className="overflow-x-auto rounded-xl border border-[#E8E8E5]">
+          <h3 className="mb-2 font-medium text-[#101828] text-sm">Aperçu des premières lignes</h3>
+          <div className="overflow-x-auto rounded-xl border border-[#E4E7EC]">
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#FFFFFF] text-[#6B6B6B]">
+              <thead className="bg-[#FFFFFF] text-[#667085]">
                 <tr>
                   <th className="px-3 py-2 font-medium">Modèle</th>
                   <th className="px-3 py-2 font-medium">Réparation</th>
@@ -1237,7 +1237,7 @@ function ImportPreviewDialog({
                   <th className="px-3 py-2 font-medium text-right">M.O.</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E8E8E5]">
+              <tbody className="divide-y divide-[#E4E7EC]">
                 {preview.validLines.slice(0, 5).map((line, i) => (
                   <tr key={i}>
                     <td className="px-3 py-2">{line.modele}</td>
@@ -1251,7 +1251,7 @@ function ImportPreviewDialog({
             </table>
           </div>
           {preview.validLines.length > 5 && (
-            <div className="mt-2 text-center text-[#6B6B6B] text-xs">
+            <div className="mt-2 text-center text-[#667085] text-xs">
               Et {preview.validLines.length - 5} autres lignes...
             </div>
           )}
@@ -1332,7 +1332,7 @@ function QualityField({
         />
       )}
       {category && !isQualityValidForCategory(value, category) && value && value !== "Autre" && (
-        <p className="text-[11px] text-[#6B6B6B]">
+        <p className="text-[11px] text-[#667085]">
           La qualité « {value} » n'est pas standard pour la catégorie « {category} ».
         </p>
       )}

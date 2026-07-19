@@ -7,7 +7,7 @@
  * position/affichage des flèches et direction des demi-cercles ("down" / "up").
  *
  * Aucune couleur / DA n'est définie ici : elle vit dans landing-page.module.css
- * (fond #FAFAF8, texte #1A1916, secondaire #6B6B6B, accent #2A9D8F).
+ * (fond #F9FAFB, texte #101828, secondaire #667085, accent #2A9D8F).
  */
 
 /** Icônes disponibles (mappées vers lucide-react dans ./_shared). */

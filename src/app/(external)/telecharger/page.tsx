@@ -48,10 +48,10 @@ export default function DownloadPage() {
         </div>
 
         <div className="text-center">
-          <h1 className="font-bold text-[#1A1916] text-[34px] tracking-[-0.02em] leading-tight">
+          <h1 className="font-bold text-[#101828] text-[34px] tracking-[-0.02em] leading-tight">
             Télécharger Behar Tech Pro
           </h1>
-          <p className="mt-4 text-[14px] leading-6 text-[#6B6B6B]">
+          <p className="mt-4 text-[14px] leading-6 text-[#667085]">
             Logiciel d'atelier de réparation avec installation rapide, postes dédiés et synchronisation cloud.
           </p>
         </div>
@@ -65,26 +65,23 @@ export default function DownloadPage() {
                 key={item.label}
                 disabled
                 type="button"
-                className="group inline-flex min-h-16 items-center justify-between gap-4 rounded-[14px] bg-[#FFFFFF] border border-[#E8E8E5] px-5 text-left text-gray-400 cursor-not-allowed w-full shadow-sm"
+                className="group inline-flex min-h-16 items-center justify-between gap-4 rounded-[14px] bg-[#FFFFFF] border border-[#E4E7EC] px-5 text-left text-gray-400 cursor-not-allowed w-full shadow-sm"
               >
                 <span className="inline-flex min-w-0 items-center gap-3">
                   <Icon className="size-5 shrink-0 text-gray-400" strokeWidth={1.8} />
                   <span className="min-w-0">
-                    <span className="block text-[15px] font-semibold leading-5 text-[#1A1916]/40">{item.label}</span>
+                    <span className="block text-[15px] font-semibold leading-5 text-[#101828]/40">{item.label}</span>
                     <span className="block text-[12px] leading-5 text-gray-400">{item.detail}</span>
                   </span>
                 </span>
-                <Download
-                  className="size-4 shrink-0 text-gray-400"
-                  strokeWidth={2}
-                />
+                <Download className="size-4 shrink-0 text-gray-400" strokeWidth={2} />
               </button>
             );
           })}
 
           <a
             href="/dashboard"
-            className="group inline-flex h-14 items-center justify-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white text-[15px] font-semibold text-[#1A1916] shadow-[0_4px_16px_rgba(26,25,22,0.06)] transition hover:border-[#DADADA] hover:bg-[#FFFFFF] active:scale-[0.98]"
+            className="group inline-flex h-14 items-center justify-center gap-3 rounded-[14px] border border-[#E4E7EC] bg-white text-[15px] font-semibold text-[#101828] shadow-[0_4px_16px_rgba(16,24,40,0.06)] transition hover:border-[#D0D5DD] hover:bg-[#FFFFFF] active:scale-[0.98]"
           >
             <span>Ouvrir Behar Tech Pro dans le navigateur</span>
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
@@ -126,7 +123,7 @@ export default function DownloadPage() {
           />
         </div>
 
-        <p className="mt-10 text-center text-xs text-[#6B6B6B]">Version application : {APP_VERSION}</p>
+        <p className="mt-10 text-center text-xs text-[#667085]">Version application : {APP_VERSION}</p>
       </div>
     </div>
   );
@@ -146,15 +143,15 @@ function InstallCard({
   commandHint?: string;
 }>) {
   return (
-    <section className="rounded-[16px] border border-[#E8E8E5] bg-white p-5 shadow-[0_2px_10px_rgba(26,25,22,0.04)]">
-      <h2 className="font-semibold text-[#1A1916] text-[15px] tracking-tight">{title}</h2>
+    <section className="rounded-[16px] border border-[#E4E7EC] bg-white p-5 shadow-[0_2px_10px_rgba(16,24,40,0.04)]">
+      <h2 className="font-semibold text-[#101828] text-[15px] tracking-tight">{title}</h2>
       {warning && (
         <div className="mt-3 flex items-start gap-2 rounded-[10px] bg-[#FFFFFF] px-3 py-2">
-          <ShieldAlert className="size-4 shrink-0 text-[#6B6B6B] mt-0.5" strokeWidth={2} />
+          <ShieldAlert className="size-4 shrink-0 text-[#667085] mt-0.5" strokeWidth={2} />
           <p className="text-[12px] leading-5 text-[#8C5B0E]">{warning}</p>
         </div>
       )}
-      <ol className="mt-3 space-y-1.5 text-[12.5px] text-[#1A1916]">
+      <ol className="mt-3 space-y-1.5 text-[12.5px] text-[#101828]">
         {steps.map((step, idx) => (
           <li key={idx} className="flex gap-2">
             <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-[#FFFFFF] text-[10px] font-bold text-[#167B70]">
@@ -165,11 +162,11 @@ function InstallCard({
         ))}
       </ol>
       {command && (
-        <div className="mt-3 overflow-x-auto rounded-[10px] bg-[#1A1916] px-3 py-2.5">
+        <div className="mt-3 overflow-x-auto rounded-[10px] bg-[#101828] px-3 py-2.5">
           <code className="block whitespace-nowrap font-mono text-[11.5px] text-[#FFFFFF]">{command}</code>
         </div>
       )}
-      {commandHint && <p className="mt-2 text-[11.5px] leading-5 text-[#6B6B6B]">{commandHint}</p>}
+      {commandHint && <p className="mt-2 text-[11.5px] leading-5 text-[#667085]">{commandHint}</p>}
     </section>
   );
 }

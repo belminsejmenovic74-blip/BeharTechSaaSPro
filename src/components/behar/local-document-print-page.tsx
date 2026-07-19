@@ -19,7 +19,7 @@ import {
   LocalPrintableDocument,
 } from "./local-printable-document";
 
-const COLORS = { bg: "#FFFFFF", text: "#1A1916", sub: "#6B6B6B", accent: "#2A9D8F", border: "#E8E8E5" };
+const COLORS = { bg: "#FFFFFF", text: "#101828", sub: "#667085", accent: "#2A9D8F", border: "#E4E7EC" };
 
 export function LocalDocumentPrintPage({
   documentId,
@@ -62,7 +62,8 @@ export function LocalDocumentPrintPage({
 
   const blocked = publicMode && isInternalDocument(document);
   const title = blocked ? "Document privé" : getDocumentPreviewTitle(document);
-  const shopName = store.workshopInfo.brand || store.workshopInfo.commercialName || store.workshopInfo.name || "Atelier";
+  const shopName =
+    store.workshopInfo.brand || store.workshopInfo.commercialName || store.workshopInfo.name || "Atelier";
 
   useEffect(() => {
     if (!hydrated || !autoPrint || blocked || !document) return;
@@ -114,12 +115,18 @@ export function LocalDocumentPrintPage({
             <span className="truncate font-bold tracking-tight">{shopName}</span>
           </div>
           {publicMode ? (
-            <span className="rounded-[8px] border bg-white px-3 py-1.5 font-semibold text-[12px]" style={{ borderColor: COLORS.border, color: COLORS.sub }}>
+            <span
+              className="rounded-[8px] border bg-white px-3 py-1.5 font-semibold text-[12px]"
+              style={{ borderColor: COLORS.border, color: COLORS.sub }}
+            >
               Document client
             </span>
           ) : (
             <div className="flex items-center gap-2">
-              <span className="hidden h-10 items-center gap-2 rounded-[10px] border bg-white px-3 text-[13px] sm:inline-flex" style={{ borderColor: COLORS.border }}>
+              <span
+                className="hidden h-10 items-center gap-2 rounded-[10px] border bg-white px-3 text-[13px] sm:inline-flex"
+                style={{ borderColor: COLORS.border }}
+              >
                 <span className="size-2 rounded-full" style={{ background: COLORS.accent }} />
                 En ligne
               </span>
@@ -137,7 +144,9 @@ export function LocalDocumentPrintPage({
         </div>
       </header>
 
-      <div className={`mx-auto grid w-full gap-5 px-5 py-5 ${publicMode ? "max-w-[1040px] lg:grid-cols-[minmax(0,1fr)_190px]" : "max-w-[1240px] lg:grid-cols-[190px_minmax(0,1fr)_190px]"}`}>
+      <div
+        className={`mx-auto grid w-full gap-5 px-5 py-5 ${publicMode ? "max-w-[1040px] lg:grid-cols-[minmax(0,1fr)_190px]" : "max-w-[1240px] lg:grid-cols-[190px_minmax(0,1fr)_190px]"}`}
+      >
         {!publicMode && (
           <aside className="no-print">
             <h1 className="font-bold text-[26px] leading-tight tracking-tight">{title}</h1>
@@ -157,10 +166,15 @@ export function LocalDocumentPrintPage({
           {publicMode && (
             <div className="no-print mb-5">
               <h1 className="font-bold text-[26px] leading-tight tracking-tight">{title}</h1>
-              <p className="mt-1 text-[14px]" style={{ color: COLORS.sub }}>Document partagé par {shopName}.</p>
+              <p className="mt-1 text-[14px]" style={{ color: COLORS.sub }}>
+                Document partagé par {shopName}.
+              </p>
             </div>
           )}
-          <div className="mx-auto w-full max-w-[850px] rounded-[16px] border bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.035)] print:border-0 print:bg-white print:p-0 print:shadow-none" style={{ borderColor: COLORS.border }}>
+          <div
+            className="mx-auto w-full max-w-[850px] rounded-[16px] border bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.035)] print:border-0 print:bg-white print:p-0 print:shadow-none"
+            style={{ borderColor: COLORS.border }}
+          >
             {blocked ? (
               <div className="grid min-h-[520px] place-items-center rounded-[14px] bg-white p-10 text-center">
                 <div>
@@ -207,7 +221,10 @@ export function LocalDocumentPrintPage({
               {downloading ? "PDF..." : "Télécharger"}
             </button>
             {document ? (
-              <p className="mt-2 rounded-[12px] border bg-white p-3 text-[12px] leading-relaxed" style={{ borderColor: COLORS.border, color: COLORS.sub }}>
+              <p
+                className="mt-2 rounded-[12px] border bg-white p-3 text-[12px] leading-relaxed"
+                style={{ borderColor: COLORS.border, color: COLORS.sub }}
+              >
                 {getDocumentTypeLabel(document.type)}
                 <br />
                 {document.title}

@@ -89,7 +89,7 @@ export function Combobox({
     <div className={cn("relative", className)} ref={wrapRef}>
       <div className="relative">
         {leftIcon ? (
-          <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[#6B6B6B]">
+          <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[#667085]">
             {leftIcon}
           </span>
         ) : null}
@@ -100,7 +100,7 @@ export function Combobox({
           aria-expanded={open}
           autoComplete="off"
           className={cn(
-            "h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-4 pr-10 text-[#1A1916] text-sm outline-none transition placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10 disabled:cursor-not-allowed disabled:opacity-50",
+            "h-11 w-full rounded-[12px] border border-[#E4E7EC] bg-white px-4 pr-10 text-[#101828] text-sm outline-none transition placeholder:text-[#667085] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10 disabled:cursor-not-allowed disabled:opacity-50",
             leftIcon ? "pl-10" : "",
             inputClassName,
           )}
@@ -143,18 +143,18 @@ export function Combobox({
         />
         <ChevronDown
           className={cn(
-            "pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#6B6B6B] transition",
+            "pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#667085] transition",
             open ? "rotate-180" : "",
           )}
         />
       </div>
       {open && (
         <ul
-          className="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] py-1 shadow-[0_18px_42px_rgba(26,25,22,0.10)]"
+          className="absolute z-30 mt-1 max-h-64 w-full overflow-y-auto rounded-[12px] border border-[#E4E7EC] bg-[#FFFFFF] py-1 shadow-[0_18px_42px_rgba(16,24,40,0.10)]"
           id={listId}
           role="listbox"
         >
-          {filtered.length === 0 && !showCreate && <li className="px-3 py-2 text-[#6B6B6B] text-xs">{emptyLabel}</li>}
+          {filtered.length === 0 && !showCreate && <li className="px-3 py-2 text-[#667085] text-xs">{emptyLabel}</li>}
           {filtered.map((entry, index) => {
             const selected = entry === value;
             const active = index === highlight;
@@ -163,7 +163,7 @@ export function Combobox({
                 aria-selected={selected}
                 className={cn(
                   "flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-sm",
-                  active ? "bg-[#FFFFFF] text-[#1A1916]" : "text-[#1A1916] hover:bg-[#FFFFFF]",
+                  active ? "bg-[#FFFFFF] text-[#101828]" : "text-[#101828] hover:bg-[#FFFFFF]",
                 )}
                 key={entry}
                 onMouseDown={(e) => {
@@ -181,7 +181,7 @@ export function Combobox({
           {showCreate && (
             <li
               className={cn(
-                "flex cursor-pointer items-center gap-2 border-[#E8E8E5] border-t px-3 py-2 text-[#167B70] text-sm",
+                "flex cursor-pointer items-center gap-2 border-[#E4E7EC] border-t px-3 py-2 text-[#167B70] text-sm",
                 highlight === filtered.length ? "bg-[#FFFFFF]" : "hover:bg-[#FFFFFF]",
               )}
               onMouseDown={(e) => {

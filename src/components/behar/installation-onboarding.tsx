@@ -93,7 +93,9 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
       nextErrors.push("La ville est obligatoire.");
     }
     if (!countryConfig.postalCodePattern.test(postalCode)) {
-      nextErrors.push(draft.country === "CH" ? "Le NPA suisse doit contenir 4 chiffres." : "Le code postal doit contenir 5 chiffres.");
+      nextErrors.push(
+        draft.country === "CH" ? "Le NPA suisse doit contenir 4 chiffres." : "Le code postal doit contenir 5 chiffres.",
+      );
     }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
       nextErrors.push("L’email atelier est invalide.");
@@ -182,9 +184,9 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
 
   return (
     <div className="fixed inset-0 z-[100] overflow-y-auto bg-white p-5 md:p-8">
-      <div className="mx-auto max-w-5xl rounded-[24px] border border-[#E8E8E5] bg-white p-6 shadow-[0_20px_60px_rgba(26,25,22,0.08)] md:p-8">
-        <h1 className="font-semibold text-[#1A1916] text-3xl tracking-tight">Configurer votre atelier</h1>
-        <p className="mt-2 text-[#6B6B6B] text-sm">
+      <div className="mx-auto max-w-5xl rounded-[24px] border border-[#E4E7EC] bg-white p-6 shadow-[0_20px_60px_rgba(16,24,40,0.08)] md:p-8">
+        <h1 className="font-semibold text-[#101828] text-3xl tracking-tight">Configurer votre atelier</h1>
+        <p className="mt-2 text-[#667085] text-sm">
           Ces informations apparaîtront sur vos devis, factures, reçus et documents client.
         </p>
 
@@ -196,15 +198,15 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
           </div>
         ) : null}
 
-        <section className="mt-7 grid gap-4 rounded-[18px] border border-[#E8E8E5] bg-[#FFFFFF] p-4 md:grid-cols-2">
-          <h2 className="md:col-span-2 font-semibold text-[#1A1916] text-lg">Identité atelier</h2>
+        <section className="mt-7 grid gap-4 rounded-[18px] border border-[#E4E7EC] bg-[#FFFFFF] p-4 md:grid-cols-2">
+          <h2 className="md:col-span-2 font-semibold text-[#101828] text-lg">Identité atelier</h2>
           <Field label="Nom de l’atelier">
             <input className={inputCls} value={draft.name || ""} onChange={(e) => setField("name", e.target.value)} />
           </Field>
           <Field label="Logo atelier">
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-3">
-                <label className="inline-flex h-10 cursor-pointer items-center rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-sm text-[#1A1916]">
+                <label className="inline-flex h-10 cursor-pointer items-center rounded-[12px] border border-[#E4E7EC] bg-white px-3 text-sm text-[#101828]">
                   {draft.logoUrl ? "Changer logo" : "Choisir logo"}
                   <input
                     type="file"
@@ -227,7 +229,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
                   </span>
                 )}
               </div>
-              <p className="text-[12px] text-[#6B6B6B] leading-relaxed">
+              <p className="text-[12px] text-[#667085] leading-relaxed">
                 Si vous importez un logo, il apparaîtra automatiquement sur vos documents.
               </p>
             </div>
@@ -247,8 +249,8 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
           </Field>
         </section>
 
-        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E8E8E5] bg-[#FFFFFF] p-4 md:grid-cols-2">
-          <h2 className="md:col-span-2 font-semibold text-[#1A1916] text-lg">Adresse</h2>
+        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E4E7EC] bg-[#FFFFFF] p-4 md:grid-cols-2">
+          <h2 className="md:col-span-2 font-semibold text-[#101828] text-lg">Adresse</h2>
           <Field label="Adresse">
             <input
               className={inputCls}
@@ -262,10 +264,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
               value={draft.postalCode || ""}
               inputMode="numeric"
               onChange={(e) =>
-                setField(
-                  "postalCode",
-                  e.target.value.replace(/\D/g, "").slice(0, draft.country === "CH" ? 4 : 5),
-                )
+                setField("postalCode", e.target.value.replace(/\D/g, "").slice(0, draft.country === "CH" ? 4 : 5))
               }
             />
           </Field>
@@ -290,12 +289,11 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
                   vatApplicable: false,
                   taxRegime: "not_subject_to_vat",
                   vatRate: 0,
-                  tvaMention:
-                    country === "CH"
-                      ? "Non assujetti à la TVA"
-                      : "TVA non applicable, art. 293 B du CGI",
+                  tvaMention: country === "CH" ? "Non assujetti à la TVA" : "TVA non applicable, art. 293 B du CGI",
                   acceptedPaymentMethods:
-                    country === "CH" ? [...SWISS_PAYMENT_OPTIONS] : ["Espèces hors Behar Tech", "TPE externe", "Virement"],
+                    country === "CH"
+                      ? [...SWISS_PAYMENT_OPTIONS]
+                      : ["Espèces hors Behar Tech", "TPE externe", "Virement"],
                 }));
               }}
             >
@@ -305,26 +303,42 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
           </Field>
         </section>
 
-        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E8E8E5] bg-[#FFFFFF] p-4 md:grid-cols-2">
-          <h2 className="md:col-span-2 font-semibold text-[#1A1916] text-lg">Informations légales</h2>
+        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E4E7EC] bg-[#FFFFFF] p-4 md:grid-cols-2">
+          <h2 className="md:col-span-2 font-semibold text-[#101828] text-lg">Informations légales</h2>
           {draft.country === "CH" ? (
             <>
               <Field label="Canton">
-                <input className={inputCls} value={draft.swissCanton || ""} onChange={(e) => setField("swissCanton", e.target.value)} />
+                <input
+                  className={inputCls}
+                  value={draft.swissCanton || ""}
+                  onChange={(e) => setField("swissCanton", e.target.value)}
+                />
               </Field>
               <Field label="IDE / UID entreprise suisse">
-                <input className={inputCls} value={draft.swissUid || ""} onChange={(e) => setField("swissUid", e.target.value)} />
+                <input
+                  className={inputCls}
+                  value={draft.swissUid || ""}
+                  onChange={(e) => setField("swissUid", e.target.value)}
+                />
               </Field>
               {draft.vatApplicable ? (
                 <Field label="Numéro TVA suisse">
-                  <input className={inputCls} value={draft.swissVatNumber || ""} onChange={(e) => setField("swissVatNumber", e.target.value)} />
+                  <input
+                    className={inputCls}
+                    value={draft.swissVatNumber || ""}
+                    onChange={(e) => setField("swissVatNumber", e.target.value)}
+                  />
                 </Field>
               ) : null}
             </>
           ) : (
             <>
               <Field label="SIREN / SIRET (Obligatoire)">
-                <input className={inputCls} value={draft.siret || ""} onChange={(e) => setField("siret", e.target.value)} />
+                <input
+                  className={inputCls}
+                  value={draft.siret || ""}
+                  onChange={(e) => setField("siret", e.target.value)}
+                />
               </Field>
               <Field label="TVA intracommunautaire (optionnel)">
                 <input
@@ -360,8 +374,8 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
           ) : null}
         </section>
 
-        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E8E8E5] bg-[#FFFFFF] p-4 md:grid-cols-4">
-          <h2 className="md:col-span-4 font-semibold text-[#1A1916] text-lg">Numérotation documents</h2>
+        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E4E7EC] bg-[#FFFFFF] p-4 md:grid-cols-4">
+          <h2 className="md:col-span-4 font-semibold text-[#101828] text-lg">Numérotation documents</h2>
           <Field label="Préfixe réparation">
             <input
               className={inputCls}
@@ -428,8 +442,8 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
           </Field>
         </section>
 
-        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E8E8E5] bg-[#FFFFFF] p-4 md:grid-cols-2">
-          <h2 className="md:col-span-2 font-semibold text-[#1A1916] text-lg">Paiements / horaires / conditions</h2>
+        <section className="mt-4 grid gap-4 rounded-[18px] border border-[#E4E7EC] bg-[#FFFFFF] p-4 md:grid-cols-2">
+          <h2 className="md:col-span-2 font-semibold text-[#101828] text-lg">Paiements / horaires / conditions</h2>
           <Field label="Paiements acceptés">
             <div className="grid grid-cols-2 gap-2 text-sm">
               {(draft.country === "CH" ? SWISS_PAYMENT_OPTIONS : PAYMENT_OPTIONS).map((option) => {
@@ -496,7 +510,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
               />
               Activer client comptoir / client de passage
             </label>
-            <p className="mt-2 text-[#6B6B6B] text-xs">
+            <p className="mt-2 text-[#667085] text-xs">
               Permet de facturer un client de passage sans créer une fiche client complète.
             </p>
           </Field>
@@ -515,7 +529,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
 
 function Field({ label, children }: Readonly<{ label: string; children: ReactNode }>) {
   return (
-    <label className="text-[#6B6B6B] text-sm">
+    <label className="text-[#667085] text-sm">
       {label}
       <div className="mt-1">{children}</div>
     </label>
@@ -523,6 +537,6 @@ function Field({ label, children }: Readonly<{ label: string; children: ReactNod
 }
 
 const inputCls =
-  "h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-sm outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+  "h-10 w-full rounded-[12px] border border-[#E4E7EC] bg-white px-3 text-[#101828] text-sm outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
 const areaCls =
-  "min-h-[76px] w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 py-2 text-[#1A1916] text-sm outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+  "min-h-[76px] w-full rounded-[12px] border border-[#E4E7EC] bg-white px-3 py-2 text-[#101828] text-sm outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";

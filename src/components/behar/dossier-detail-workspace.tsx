@@ -213,10 +213,10 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
 
   if (!repair) {
     return (
-      <div className="rounded-[20px] border border-dashed border-[#E8E8E5] bg-white p-10 text-center">
-        <FolderOpen className="mx-auto size-10 text-[#6B6B6B]" />
-        <h2 className="mt-4 font-semibold text-[#1A1916] text-xl">Dossier introuvable</h2>
-        <p className="mt-2 text-[#6B6B6B] text-sm">Le dossier demandé n'existe pas dans l'atelier.</p>
+      <div className="rounded-[20px] border border-dashed border-[#E4E7EC] bg-white p-10 text-center">
+        <FolderOpen className="mx-auto size-10 text-[#667085]" />
+        <h2 className="mt-4 font-semibold text-[#101828] text-xl">Dossier introuvable</h2>
+        <p className="mt-2 text-[#667085] text-sm">Le dossier demandé n'existe pas dans l'atelier.</p>
         <SecondaryButton className="mt-5" onClick={() => router.push("/dashboard/reparations")}>
           Retour aux réparations
         </SecondaryButton>
@@ -323,7 +323,7 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
       {/* Desktop view */}
       <div className="hidden md:block space-y-5">
         <Link
-          className="inline-flex items-center gap-2 text-[#6B6B6B] text-sm hover:text-[#1A1916]"
+          className="inline-flex items-center gap-2 text-[#667085] text-sm hover:text-[#101828]"
           href="/dashboard/reparations"
         >
           <ArrowLeft className="size-4" />
@@ -332,8 +332,8 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
 
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="font-semibold text-[#1A1916] text-[28px] tracking-tight">Dossier #{repair.number}</h1>
-            <p className="mt-0.5 text-[#6B6B6B] text-sm">Suivi complet du dossier</p>
+            <h1 className="font-semibold text-[#101828] text-[28px] tracking-tight">Dossier #{repair.number}</h1>
+            <p className="mt-0.5 text-[#667085] text-sm">Suivi complet du dossier</p>
           </div>
           <div className="flex flex-wrap justify-end gap-2">
             <StatusPill status={repair.status} />
@@ -343,27 +343,27 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
         </div>
 
         {/* En-tête : client / appareil / problème / intervention / montant */}
-        <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+        <section className="rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
           <div className="flex flex-col gap-5 divide-y divide-[#FFFFFF] lg:flex-row lg:items-center lg:divide-x lg:divide-y-0">
             <div className="flex min-w-0 items-center gap-3 lg:pr-6">
               <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#FFFFFF] font-semibold text-[#167B70]">
                 {(displayCustomerName(customer) || "C").slice(0, 2).toUpperCase()}
               </span>
               <div className="min-w-0">
-                <p className="truncate font-semibold text-[#1A1916]">{displayCustomerName(customer) || "Client"}</p>
-                <p className="truncate text-[#6B6B6B] text-sm">{customer?.phone || "Téléphone non renseigné"}</p>
+                <p className="truncate font-semibold text-[#101828]">{displayCustomerName(customer) || "Client"}</p>
+                <p className="truncate text-[#667085] text-sm">{customer?.phone || "Téléphone non renseigné"}</p>
               </div>
             </div>
             <div className="flex min-w-0 items-center gap-3 pt-5 lg:px-6 lg:pt-0">
               <RealDeviceVisual
                 brand={repair.brandName}
-                className="size-20 rounded-[18px] border border-[#E8E8E5] bg-[#FFFFFF] p-2 shadow-[0_10px_24px_rgba(26,25,22,0.045)]"
+                className="size-20 rounded-[18px] border border-[#E4E7EC] bg-[#FFFFFF] p-2 shadow-[0_10px_24px_rgba(16,24,40,0.045)]"
                 model={repair.deviceModel || repair.model || repair.device}
                 type={repair.deviceType}
               />
               <div className="min-w-0">
-                <p className="truncate font-semibold text-[#1A1916]">{formatDeviceLabel(repair, repair.device)}</p>
-                <p className="truncate text-[#6B6B6B] text-xs">
+                <p className="truncate font-semibold text-[#101828]">{formatDeviceLabel(repair, repair.device)}</p>
+                <p className="truncate text-[#667085] text-xs">
                   {repair.imei ? `IMEI : ${repair.imei}` : "IMEI / S/N non renseigné"}
                 </p>
               </div>
@@ -378,7 +378,7 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
               <HeaderCol className="lg:px-6" label="Restitution" value={readyDisplayLabel} />
             )}
             <div className="pt-5 lg:pl-6 lg:pt-0">
-              <p className="text-[#6B6B6B] text-xs">Montant dossier</p>
+              <p className="text-[#667085] text-xs">Montant dossier</p>
               <p className="mt-1 font-semibold text-[#167B70] text-2xl tracking-tight">{formatEuro(dossierTotal)}</p>
             </div>
           </div>
@@ -388,14 +388,14 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
         <Stepper activeIndex={activeIndex} />
 
         {/* Onglets */}
-        <div className="flex gap-1 overflow-x-auto border-[#E8E8E5] border-b pb-px">
+        <div className="flex gap-1 overflow-x-auto border-[#E4E7EC] border-b pb-px">
           {tabs.map((entry) => (
             <button
               className={cn(
                 "shrink-0 border-b-2 px-3.5 pb-2.5 text-sm font-semibold transition",
                 tab === entry
-                  ? "border-[#2A9D8F] text-[#1A1916]"
-                  : "border-transparent text-[#6B6B6B] hover:text-[#1A1916]",
+                  ? "border-[#2A9D8F] text-[#101828]"
+                  : "border-transparent text-[#667085] hover:text-[#101828]",
               )}
               key={entry}
               onClick={() => setTab(entry)}
@@ -422,7 +422,7 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
             total={dossierTotal}
           />
         ) : (
-          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+          <section className="rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
             {tab === "Fiche d'entrée" && <FicheEntreeTab customer={customer} documents={documents} repair={repair} />}
             {tab === "Diagnostic" && <DiagnosticTab repair={repair} />}
             {tab === "Réparation" && <RepairTab onAdvance={advance} repair={repair} />}
@@ -442,7 +442,7 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
       </div>
 
       {/* Mobile view */}
-      <div className="block md:hidden space-y-5 px-1 py-1 min-h-screen text-[#1A1916]">
+      <div className="block md:hidden space-y-5 px-1 py-1 min-h-screen text-[#101828]">
         <MobileRepairHeader repair={repair} customer={customer} readyDisplayLabel={readyDisplayLabel} />
 
         <MobileRepairSummaryCard
@@ -593,8 +593,8 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
 function HeaderCol({ className, label, value }: Readonly<{ label: string; value: string; className?: string }>) {
   return (
     <div className={cn("min-w-0 pt-5 lg:pt-0", className)}>
-      <p className="text-[#6B6B6B] text-xs">{label}</p>
-      <p className="mt-1 truncate font-medium text-[#1A1916] text-sm">{value}</p>
+      <p className="text-[#667085] text-xs">{label}</p>
+      <p className="mt-1 truncate font-medium text-[#101828] text-sm">{value}</p>
     </div>
   );
 }
@@ -621,15 +621,15 @@ function ClosureSettlementModal({
   return (
     <Modal isOpen={isOpen} maxWidth="max-w-2xl" onClose={onClose} title="Clôturer le dossier">
       <div className="space-y-5">
-        <section className="flex items-center gap-4 rounded-[15px] border border-[#E8E8E5] bg-white p-4">
+        <section className="flex items-center gap-4 rounded-[15px] border border-[#E4E7EC] bg-white p-4">
           <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#F1FAF8] text-[#2A9D8F]">
             <Smartphone className="size-5" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="font-semibold text-[#1A1916] text-sm">
+            <p className="font-semibold text-[#101828] text-sm">
               {repair.number} · {repair.deviceModel || repair.device || "Appareil"}
             </p>
-            <p className="mt-1 text-[#6B6B6B] text-sm">
+            <p className="mt-1 text-[#667085] text-sm">
               {invoice ? `Facture ${invoice.number}` : "Facture à générer"} ·{" "}
               <span className="font-semibold text-[#167B70]">{formatEuro(total)} TTC</span>
             </p>
@@ -637,23 +637,23 @@ function ClosureSettlementModal({
         </section>
 
         <section>
-          <h3 className="font-semibold text-[#1A1916] text-sm">Vérifications avant clôture</h3>
-          <div className="mt-3 divide-y divide-[#EFEFEC] rounded-[15px] border border-[#E8E8E5] bg-white px-4">
+          <h3 className="font-semibold text-[#101828] text-sm">Vérifications avant clôture</h3>
+          <div className="mt-3 divide-y divide-[#EFEFEC] rounded-[15px] border border-[#E4E7EC] bg-white px-4">
             {["Réparation terminée", "Tests finaux effectués", "Appareil remis au client"].map((label) => (
               <div className="flex items-center gap-3 py-3" key={label}>
                 <CheckCircle2 className="size-5 text-[#2A9D8F]" />
-                <span className="text-[#1A1916] text-sm">{label}</span>
+                <span className="text-[#101828] text-sm">{label}</span>
               </div>
             ))}
           </div>
         </section>
 
         <section className="rounded-[15px] border border-[#F0D9A7] bg-[#FFFDF8] p-4">
-          <h3 className="font-semibold text-[#1A1916] text-sm">Demande de paiement</h3>
-          <p className="mt-1.5 text-[#6B6B6B] text-sm">
+          <h3 className="font-semibold text-[#101828] text-sm">Demande de paiement</h3>
+          <p className="mt-1.5 text-[#667085] text-sm">
             Le règlement est géré en dehors de Behar Tech Pro. La clôture du dossier reste indépendante.
           </p>
-          <p className="mt-3 text-[#8A8A8A] text-xs">
+          <p className="mt-3 text-[#98A2B3] text-xs">
             {customer?.name || "Client"} · montant issu de la facture finalisée
           </p>
           <button
@@ -682,7 +682,7 @@ function ClosureSettlementModal({
 function StatusPill({ status }: Readonly<{ status: RepairStatus }>) {
   const tone =
     status === "Rendu" || status === "Clôturé"
-      ? "bg-[#FFFFFF] text-[#6B6B6B]"
+      ? "bg-[#FFFFFF] text-[#667085]"
       : status === "Prêt"
         ? "bg-[#FFFFFF] text-[#0B7A56]"
         : status === "Annulé" || status === "Irréparable"
@@ -702,7 +702,7 @@ function StatusPill({ status }: Readonly<{ status: RepairStatus }>) {
 
 function Stepper({ activeIndex }: Readonly<{ activeIndex: number }>) {
   return (
-    <section className="rounded-[20px] border border-[#E8E8E5] bg-white px-4 py-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+    <section className="rounded-[20px] border border-[#E4E7EC] bg-white px-4 py-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
       <div className="flex items-start">
         {progression.map((entry, index) => {
           const done = index < activeIndex;
@@ -724,7 +724,7 @@ function Stepper({ activeIndex }: Readonly<{ activeIndex: number }>) {
                       ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
                       : current
                         ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
-                        : "border-[#E8E8E5] bg-white text-[#6B6B6B]",
+                        : "border-[#E4E7EC] bg-white text-[#667085]",
                   )}
                 >
                   {done ? <Check className="size-4" /> : index + 1}
@@ -743,7 +743,7 @@ function Stepper({ activeIndex }: Readonly<{ activeIndex: number }>) {
               <span
                 className={cn(
                   "mt-2 text-center text-[11px] font-medium leading-tight",
-                  reached ? "text-[#1A1916]" : "text-[#6B6B6B]",
+                  reached ? "text-[#101828]" : "text-[#667085]",
                 )}
               >
                 {stepShortLabel[entry]}
@@ -825,8 +825,8 @@ const ACTIVITY_STEPS: Array<{ status: RepairStatus; title: string; desc: string 
 function ActivityCard({ repair }: Readonly<{ repair: Repair }>) {
   const activeIndex = Math.max(0, progression.indexOf(repair.status));
   return (
-    <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-      <h3 className="font-semibold text-[#1A1916]">Activité du dossier</h3>
+    <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+      <h3 className="font-semibold text-[#101828]">Activité du dossier</h3>
       <ol className="mt-4 space-y-1">
         {ACTIVITY_STEPS.map((step, index) => {
           const done = index < activeIndex;
@@ -843,7 +843,7 @@ function ActivityCard({ repair }: Readonly<{ repair: Repair }>) {
                       ? "bg-[#FFFFFF] text-[#2A9D8F]"
                       : current
                         ? "bg-[#2A9D8F] text-white"
-                        : "bg-[#FFFFFF] text-[#8A8A8A]",
+                        : "bg-[#FFFFFF] text-[#98A2B3]",
                   )}
                 >
                   {done ? <Check className="size-3.5" /> : current ? <Clock className="size-3.5" /> : index + 1}
@@ -853,8 +853,8 @@ function ActivityCard({ repair }: Readonly<{ repair: Repair }>) {
                 ) : null}
               </div>
               <div className={cn("pb-3", pending && "opacity-60")}>
-                <p className="font-semibold text-[#1A1916] text-sm leading-tight">{step.title}</p>
-                <p className="mt-0.5 text-[#6B6B6B] text-xs">{pending ? "En attente" : step.desc}</p>
+                <p className="font-semibold text-[#101828] text-sm leading-tight">{step.title}</p>
+                <p className="mt-0.5 text-[#667085] text-xs">{pending ? "En attente" : step.desc}</p>
               </div>
             </li>
           );
@@ -879,11 +879,11 @@ function DiagnosticNotesCard({ repair }: Readonly<{ repair: Repair }>) {
     toast.success("Diagnostic enregistré.");
   };
   return (
-    <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+    <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-[#1A1916]">Diagnostic / Notes</h3>
+        <h3 className="font-semibold text-[#101828]">Diagnostic / Notes</h3>
         <button
-          className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#E8E8E5] px-2.5 py-1 text-[#6B6B6B] text-xs font-medium hover:bg-[#FFFFFF]"
+          className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#E4E7EC] px-2.5 py-1 text-[#667085] text-xs font-medium hover:bg-[#FFFFFF]"
           onClick={() => (editing ? save() : setEditing(true))}
           type="button"
         >
@@ -894,13 +894,13 @@ function DiagnosticNotesCard({ repair }: Readonly<{ repair: Repair }>) {
       {editing ? (
         <div className="mt-4 space-y-3">
           <textarea
-            className="min-h-[80px] w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 py-2 text-sm outline-none focus:border-[#2A9D8F]"
+            className="min-h-[80px] w-full rounded-[12px] border border-[#E4E7EC] bg-white px-3 py-2 text-sm outline-none focus:border-[#2A9D8F]"
             onChange={(event) => setConstat(event.target.value)}
             placeholder="Constat technique…"
             value={constat}
           />
           <textarea
-            className="min-h-[60px] w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 py-2 text-sm outline-none focus:border-[#2A9D8F]"
+            className="min-h-[60px] w-full rounded-[12px] border border-[#E4E7EC] bg-white px-3 py-2 text-sm outline-none focus:border-[#2A9D8F]"
             onChange={(event) => setIntervention(event.target.value)}
             placeholder="Intervention prévue…"
             value={intervention}
@@ -934,8 +934,8 @@ function DiagnosticNotesCard({ repair }: Readonly<{ repair: Repair }>) {
 function FactBlock({ label, value }: Readonly<{ label: string; value?: string }>) {
   return (
     <div>
-      <p className="text-[#6B6B6B] text-xs">{label}</p>
-      <p className="mt-0.5 whitespace-pre-line font-medium text-[#1A1916] text-sm">{value || "Non renseigné"}</p>
+      <p className="text-[#667085] text-xs">{label}</p>
+      <p className="mt-0.5 whitespace-pre-line font-medium text-[#101828] text-sm">{value || "Non renseigné"}</p>
     </div>
   );
 }
@@ -1043,11 +1043,11 @@ function RepairPartsTraceabilitySection({ compact = false, repair }: Readonly<{ 
   };
 
   return (
-    <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+    <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="font-semibold text-[#1A1916]">Pièces utilisées</h3>
-          <p className="mt-1 text-[#6B6B6B] text-xs">
+          <h3 className="font-semibold text-[#101828]">Pièces utilisées</h3>
+          <p className="mt-1 text-[#667085] text-xs">
             Traçabilité stock, facture fournisseur et dossier client reliés par référence.
           </p>
         </div>
@@ -1057,7 +1057,7 @@ function RepairPartsTraceabilitySection({ compact = false, repair }: Readonly<{ 
       </div>
 
       {rows.length === 0 ? (
-        <div className="mt-4 rounded-[12px] border border-dashed border-[#E8E8E5] bg-[#FAFAF8] px-4 py-5 text-center text-[#6B6B6B] text-sm">
+        <div className="mt-4 rounded-[12px] border border-dashed border-[#E4E7EC] bg-[#F9FAFB] px-4 py-5 text-center text-[#667085] text-sm">
           Aucune pièce utilisée sur ce dossier.
         </div>
       ) : (
@@ -1105,15 +1105,15 @@ function RepairPartsTraceabilitySection({ compact = false, repair }: Readonly<{ 
             return (
               <article
                 className={cn(
-                  "rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] p-4",
+                  "rounded-[14px] border border-[#E4E7EC] bg-[#F9FAFB] p-4",
                   compact ? "space-y-3" : "space-y-4",
                 )}
                 key={`${row.part.stockItemId}-${row.reference}`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-semibold text-[#1A1916] text-sm">{row.part.name}</p>
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-[#6B6B6B] text-xs">
+                    <p className="font-semibold text-[#101828] text-sm">{row.part.name}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-[#667085] text-xs">
                       <span>
                         Réf. <PartReferenceLink reference={row.reference} />
                       </span>
@@ -1170,22 +1170,22 @@ function RepairPartsTraceabilitySection({ compact = false, repair }: Readonly<{ 
                 <ol className="grid gap-2 lg:grid-cols-5">
                   {timeline.map((step, index) => (
                     <li
-                      className="rounded-[12px] border border-[#E8E8E5] bg-white p-3"
+                      className="rounded-[12px] border border-[#E4E7EC] bg-white p-3"
                       key={`${row.reference}-${step.label}`}
                     >
                       <div className="flex items-center gap-2">
                         <span
                           className={cn(
                             "grid size-6 shrink-0 place-items-center rounded-full text-[11px] font-semibold",
-                            step.done ? "bg-[#2A9D8F] text-white" : "bg-[#F1F1EE] text-[#6B6B6B]",
+                            step.done ? "bg-[#2A9D8F] text-white" : "bg-[#F1F1EE] text-[#667085]",
                           )}
                         >
                           {step.done ? <Check className="size-3.5" /> : index + 1}
                         </span>
-                        <p className="font-semibold text-[#1A1916] text-xs">{step.label}</p>
+                        <p className="font-semibold text-[#101828] text-xs">{step.label}</p>
                       </div>
-                      <p className="mt-2 line-clamp-2 text-[#6B6B6B] text-[11px]">{step.meta}</p>
-                      <p className="mt-1 font-mono text-[#8A8A85] text-[10px]">{traceDate(step.date)}</p>
+                      <p className="mt-2 line-clamp-2 text-[#667085] text-[11px]">{step.meta}</p>
+                      <p className="mt-1 font-mono text-[#98A2B3] text-[10px]">{traceDate(step.date)}</p>
                     </li>
                   ))}
                 </ol>
@@ -1200,9 +1200,9 @@ function RepairPartsTraceabilitySection({ compact = false, repair }: Readonly<{ 
 
 function TraceMetric({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
-    <div className="rounded-[10px] border border-[#E8E8E5] bg-white px-3 py-2">
-      <p className="text-[#6B6B6B] text-[11px]">{label}</p>
-      <p className="mt-0.5 truncate font-semibold text-[#1A1916] text-xs">{value}</p>
+    <div className="rounded-[10px] border border-[#E4E7EC] bg-white px-3 py-2">
+      <p className="text-[#667085] text-[11px]">{label}</p>
+      <p className="mt-0.5 truncate font-semibold text-[#101828] text-xs">{value}</p>
     </div>
   );
 }
@@ -1233,11 +1233,11 @@ function DocumentsLiesCard({
       return { doc, amount, number, statusLabel };
     });
   return (
-    <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-      <h3 className="font-semibold text-[#1A1916]">Documents liés</h3>
+    <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+      <h3 className="font-semibold text-[#101828]">Documents liés</h3>
       <ul className="mt-3 space-y-2">
         {rows.length === 0 ? (
-          <li className="rounded-[12px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] px-3 py-4 text-center text-[#6B6B6B] text-xs">
+          <li className="rounded-[12px] border border-dashed border-[#E4E7EC] bg-[#FFFFFF] px-3 py-4 text-center text-[#667085] text-xs">
             Aucun document lié.
           </li>
         ) : (
@@ -1250,14 +1250,14 @@ function DocumentsLiesCard({
                 <FileText className="size-4" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold text-[#1A1916] text-sm">
+                <p className="truncate font-semibold text-[#101828] text-sm">
                   {docLabel[doc.type] ?? doc.title}
                   {number ? ` · ${number}` : ""}
                 </p>
-                <p className="truncate text-[#6B6B6B] text-xs">{doc.title}</p>
+                <p className="truncate text-[#667085] text-xs">{doc.title}</p>
               </div>
               {amount ? (
-                <span className="shrink-0 font-semibold text-[#1A1916] text-sm">{formatEuro(amount)}</span>
+                <span className="shrink-0 font-semibold text-[#101828] text-sm">{formatEuro(amount)}</span>
               ) : null}
               {statusLabel ? (
                 <span className="shrink-0 rounded-full bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#167B70] text-[11px]">
@@ -1268,7 +1268,7 @@ function DocumentsLiesCard({
                 <button
                   type="button"
                   title="Ouvrir le document"
-                  className="grid size-7 place-items-center rounded-[8px] text-[#6B6B6B] hover:bg-white"
+                  className="grid size-7 place-items-center rounded-[8px] text-[#667085] hover:bg-white"
                   onClick={() => {
                     const target = getPrintableTarget(doc as any);
                     if (target) {
@@ -1283,7 +1283,7 @@ function DocumentsLiesCard({
                 <button
                   type="button"
                   title="Télécharger le PDF"
-                  className="grid size-7 place-items-center rounded-[8px] text-[#6B6B6B] hover:bg-white"
+                  className="grid size-7 place-items-center rounded-[8px] text-[#667085] hover:bg-white"
                   onClick={() => {
                     const target = getPrintableTarget(doc as any);
                     if (target) {
@@ -1298,7 +1298,7 @@ function DocumentsLiesCard({
                 <button
                   type="button"
                   title="Copier le lien du document"
-                  className="grid size-7 place-items-center rounded-[8px] text-[#6B6B6B] hover:bg-white"
+                  className="grid size-7 place-items-center rounded-[8px] text-[#667085] hover:bg-white"
                   onClick={async () => {
                     try {
                       const url = getShareableDocumentUrl(doc as any);
@@ -1356,8 +1356,8 @@ function SuiviClientCard({ repair }: Readonly<{ repair: Repair }>) {
   };
 
   return (
-    <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-      <h3 className="font-semibold text-[#1A1916]">Suivi client</h3>
+    <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+      <h3 className="font-semibold text-[#101828]">Suivi client</h3>
       <div className="mt-3 flex items-center gap-4">
         {qr ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -1370,11 +1370,11 @@ function SuiviClientCard({ repair }: Readonly<{ repair: Repair }>) {
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-[#6B6B6B] text-xs">Le client peut suivre l'avancement de son dossier en ligne.</p>
-          <div className="mt-2 flex items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-[#FFFFFF] px-2.5 py-1.5">
+          <p className="text-[#667085] text-xs">Le client peut suivre l'avancement de son dossier en ligne.</p>
+          <div className="mt-2 flex items-center gap-2 rounded-[10px] border border-[#E4E7EC] bg-[#FFFFFF] px-2.5 py-1.5">
             <span className="min-w-0 flex-1 truncate text-[#1E7A6E] text-xs">{trackingUrl || "Lien en cours…"}</span>
             <button
-              className="grid size-6 shrink-0 place-items-center rounded-[7px] text-[#6B6B6B] hover:bg-white"
+              className="grid size-6 shrink-0 place-items-center rounded-[7px] text-[#667085] hover:bg-white"
               onClick={copyLink}
               type="button"
             >
@@ -1385,7 +1385,7 @@ function SuiviClientCard({ repair }: Readonly<{ repair: Repair }>) {
             <button
               type="button"
               onClick={() => setIsModalOpen(true)}
-              className="inline-flex h-7 items-center justify-center rounded-[8px] border border-[#E8E8E5] px-2.5 text-xs font-semibold text-[#1A1916] hover:bg-[#FFFFFF]"
+              className="inline-flex h-7 items-center justify-center rounded-[8px] border border-[#E4E7EC] px-2.5 text-xs font-semibold text-[#101828] hover:bg-[#FFFFFF]"
             >
               Afficher QR Code
             </button>
@@ -1426,8 +1426,8 @@ function ActionsCard({
   const canAdvance = Boolean(target) && !isTerminalRepairStatus(repair.status);
   const canMarkReturned = repair.status === "Prêt";
   return (
-    <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-      <h3 className="font-semibold text-[#1A1916]">Actions</h3>
+    <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+      <h3 className="font-semibold text-[#101828]">Actions</h3>
       <div className="mt-4 space-y-2">
         <PrimaryButton className="w-full justify-between" disabled={!canAdvance} onClick={onAdvance}>
           <span className="inline-flex items-center gap-2">
@@ -1441,7 +1441,7 @@ function ActionsCard({
         <ActionRow icon={<Receipt className="size-4" />} label="Créer la facture" onClick={onCreateInvoice} />
         <ActionRow icon={<Printer className="size-4" />} label="Imprimer documents" onClick={onPrint} />
         <Link
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-medium text-[#1A1916] text-sm hover:bg-[#FFFFFF]"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-medium text-[#101828] text-sm hover:bg-[#FFFFFF]"
           href="/dashboard/factures"
         >
           <Receipt className="size-4" />
@@ -1475,7 +1475,7 @@ function ActionsCard({
 function ActionRow({ icon, label, onClick }: Readonly<{ icon: React.ReactNode; label: string; onClick: () => void }>) {
   return (
     <button
-      className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-medium text-[#1A1916] text-sm hover:bg-[#FFFFFF]"
+      className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-medium text-[#101828] text-sm hover:bg-[#FFFFFF]"
       onClick={onClick}
       type="button"
     >
@@ -1502,13 +1502,13 @@ function InfosDossierCard({
     ["Garantie", workshop?.defaultWarranty || "3 mois sur la pièce"],
   ];
   return (
-    <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-      <h3 className="font-semibold text-[#1A1916]">Informations dossier</h3>
+    <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+      <h3 className="font-semibold text-[#101828]">Informations dossier</h3>
       <dl className="mt-3 divide-y divide-[#FFFFFF]">
         {rows.map(([label, value]) => (
           <div className="flex items-center justify-between gap-3 py-2" key={label}>
-            <dt className="text-[#6B6B6B] text-xs">{label}</dt>
-            <dd className="truncate text-right font-medium text-[#1A1916] text-sm">{value}</dd>
+            <dt className="text-[#667085] text-xs">{label}</dt>
+            <dd className="truncate text-right font-medium text-[#101828] text-sm">{value}</dd>
           </div>
         ))}
       </dl>
@@ -1577,7 +1577,7 @@ function FicheEntreeTab({
             </button>
             <button
               type="button"
-              className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 text-sm font-semibold text-[#1A1916] hover:bg-[#FFFFFF]"
+              className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white px-4 text-sm font-semibold text-[#101828] hover:bg-[#FFFFFF]"
               onClick={() => download("intake", repair.id)}
             >
               <Download className="size-4" />
@@ -1585,7 +1585,7 @@ function FicheEntreeTab({
             </button>
             <button
               type="button"
-              className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 text-sm font-semibold text-[#1A1916] hover:bg-[#FFFFFF]"
+              className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white px-4 text-sm font-semibold text-[#101828] hover:bg-[#FFFFFF]"
               onClick={async () => {
                 try {
                   const url = getShareableDocumentUrl(intakeDoc);
@@ -1687,9 +1687,9 @@ function DiagnosticTab({ repair }: Readonly<{ repair: Repair }>) {
         onSave={save}
       />
       <aside className="space-y-3">
-        <div className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-          <h4 className="font-semibold text-sm text-[#1A1916]">Actions diagnostic</h4>
-          <p className="text-xs text-[#6B6B6B] mt-1 mb-4">
+        <div className="rounded-[18px] border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+          <h4 className="font-semibold text-sm text-[#101828]">Actions diagnostic</h4>
+          <p className="text-xs text-[#667085] mt-1 mb-4">
             Générez le rapport de diagnostic officiel et de tests de l'appareil.
           </p>
           <SecondaryButton className="w-full" onClick={createDiagnosticReport}>
@@ -1811,7 +1811,7 @@ function InvoiceTab({
         />
       ))}
       <div className="rounded-[16px] border border-[#D7EFEA] bg-[#F1FAF8] p-4">
-        <p className="font-semibold text-[#1A1916] text-sm">Paiement externe</p>
+        <p className="font-semibold text-[#101828] text-sm">Paiement externe</p>
         <p className="mt-1 text-[#47706B] text-sm">
           Le règlement est géré en dehors de Behar Tech Pro par le prestataire sélectionné.
         </p>
@@ -1837,7 +1837,7 @@ function DocumentsTab({
   const { preview } = useDocument();
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-2 rounded-[16px] border border-[#E8E8E5] bg-white p-4">
+      <div className="flex flex-wrap gap-2 rounded-[16px] border border-[#E4E7EC] bg-white p-4">
         <SecondaryButton
           onClick={() => {
             if (!printRepairQr(repair.id)) toast.error("QR de suivi indisponible.");
@@ -1875,12 +1875,12 @@ function DocumentsTab({
         const target = getPrintableTarget(document as any);
         return (
           <div
-            className="flex flex-col gap-3 rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4 md:flex-row md:items-center md:justify-between"
+            className="flex flex-col gap-3 rounded-[16px] border border-[#E4E7EC] bg-[#FFFFFF] p-4 md:flex-row md:items-center md:justify-between"
             key={document.id}
           >
             <div>
-              <p className="font-semibold text-[#1A1916]">{docLabel[document.type] ?? document.title}</p>
-              <p className="text-[#6B6B6B] text-sm">{document.title}</p>
+              <p className="font-semibold text-[#101828]">{docLabel[document.type] ?? document.title}</p>
+              <p className="text-[#667085] text-sm">{document.title}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <SecondaryButton
@@ -1972,7 +1972,7 @@ function NotesTab({
   return (
     <div className="grid gap-5 lg:grid-cols-2">
       <NoteColumn
-        accent="#6B6B6B"
+        accent="#667085"
         badgeLabel="Interne"
         badgeTone="internal"
         draft={internalDraft}
@@ -2011,7 +2011,7 @@ function NoteBadge({ label, tone }: Readonly<{ label: string; tone: "internal" |
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold text-[10px] uppercase tracking-wide",
-        internal ? "bg-[#FFFFFF] text-[#6B6B6B]" : "bg-[#FFFFFF] text-[#167B70]",
+        internal ? "bg-[#FFFFFF] text-[#667085]" : "bg-[#FFFFFF] text-[#167B70]",
       )}
     >
       {internal ? <Lock className="size-3" /> : <MessageSquare className="size-3" />}
@@ -2050,18 +2050,18 @@ function NoteColumn({
   emptyLabel: string;
 }>) {
   return (
-    <div className="rounded-[18px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
+    <div className="rounded-[18px] border border-[#E4E7EC] bg-[#FFFFFF] p-4">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2" style={{ color: accent }}>
           {icon}
-          <p className="font-semibold text-[#1A1916] text-sm">{title}</p>
+          <p className="font-semibold text-[#101828] text-sm">{title}</p>
         </div>
         <NoteBadge label={badgeLabel} tone={badgeTone} />
       </div>
-      <p className="mt-0.5 text-[#6B6B6B] text-xs">{hint}</p>
+      <p className="mt-0.5 text-[#667085] text-xs">{hint}</p>
       <ul className="mt-3 space-y-2">
         {notes.length === 0 ? (
-          <li className="rounded-[12px] border border-dashed border-[#E8E8E5] bg-white px-3 py-4 text-center text-[#6B6B6B] text-xs">
+          <li className="rounded-[12px] border border-dashed border-[#E4E7EC] bg-white px-3 py-4 text-center text-[#667085] text-xs">
             {emptyLabel}
           </li>
         ) : (
@@ -2071,18 +2071,18 @@ function NoteColumn({
             .map((note) => (
               <li className="rounded-[12px] border border-[#FFFFFF] bg-white px-3 py-2.5" key={note.id}>
                 <div className="mb-1.5 flex items-center justify-between gap-2">
-                  <span className="truncate font-medium text-[#1A1916] text-[11px]">
+                  <span className="truncate font-medium text-[#101828] text-[11px]">
                     {note.authorName} · {formatIsoToDisplay(note.createdAt)}
                   </span>
                   <NoteBadge label={badgeLabel} tone={badgeTone} />
                 </div>
-                <p className="whitespace-pre-line text-[#1A1916] text-sm">{note.body}</p>
+                <p className="whitespace-pre-line text-[#101828] text-sm">{note.body}</p>
               </li>
             ))
         )}
       </ul>
       <textarea
-        className="mt-3 min-h-[80px] w-full rounded-[14px] border border-[#E8E8E5] bg-white px-3 py-2 text-sm outline-none focus:border-[#2A9D8F]"
+        className="mt-3 min-h-[80px] w-full rounded-[14px] border border-[#E4E7EC] bg-white px-3 py-2 text-sm outline-none focus:border-[#2A9D8F]"
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         ref={textareaRef}
@@ -2101,10 +2101,10 @@ function HistoryTab({ items }: Readonly<{ items: string[] }>) {
       {items.map((entry, index) => (
         <li className="flex gap-3" key={`${entry}_${index}`}>
           <span className="mt-1 size-2.5 rounded-full bg-[#2A9D8F]" />
-          <p className="text-[#1A1916] text-sm">{entry}</p>
+          <p className="text-[#101828] text-sm">{entry}</p>
         </li>
       ))}
-      {items.length === 0 ? <li className="text-[#6B6B6B] text-sm">Aucun événement pour le moment.</li> : null}
+      {items.length === 0 ? <li className="text-[#667085] text-sm">Aucun événement pour le moment.</li> : null}
     </ol>
   );
 }
@@ -2116,8 +2116,8 @@ function InfoGrid({ items }: Readonly<{ items: Array<[string, string]> }>) {
     <div className="grid gap-3 md:grid-cols-2">
       {items.map(([label, value]) => (
         <div className="min-w-0 rounded-[14px] border border-[#FFFFFF] bg-[#FFFFFF] p-3" key={label}>
-          <p className="text-[#6B6B6B] text-[11px] uppercase tracking-wide">{label}</p>
-          <p className="mt-1 truncate font-semibold text-[#1A1916] text-sm">{value}</p>
+          <p className="text-[#667085] text-[11px] uppercase tracking-wide">{label}</p>
+          <p className="mt-1 truncate font-semibold text-[#101828] text-sm">{value}</p>
         </div>
       ))}
     </div>
@@ -2126,9 +2126,9 @@ function InfoGrid({ items }: Readonly<{ items: Array<[string, string]> }>) {
 
 function TextBlock({ label, value }: Readonly<{ label: string; value?: string }>) {
   return (
-    <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
-      <p className="font-semibold text-[#1A1916] text-sm">{label}</p>
-      <p className="mt-2 whitespace-pre-line text-[#6B6B6B] text-sm">{value || "Non renseigné"}</p>
+    <div className="rounded-[16px] border border-[#E4E7EC] bg-[#FFFFFF] p-4">
+      <p className="font-semibold text-[#101828] text-sm">{label}</p>
+      <p className="mt-2 whitespace-pre-line text-[#667085] text-sm">{value || "Non renseigné"}</p>
     </div>
   );
 }
@@ -2146,9 +2146,9 @@ function EditorGrid({
     <div className="space-y-4">
       {fields.map((field) => (
         <label className="block" key={field.label}>
-          <span className="font-semibold text-[#1A1916] text-sm">{field.label}</span>
+          <span className="font-semibold text-[#101828] text-sm">{field.label}</span>
           <textarea
-            className="mt-2 min-h-[96px] w-full rounded-[14px] border border-[#E8E8E5] bg-white px-3 py-2 text-sm outline-none focus:border-[#2A9D8F]"
+            className="mt-2 min-h-[96px] w-full rounded-[14px] border border-[#E4E7EC] bg-white px-3 py-2 text-sm outline-none focus:border-[#2A9D8F]"
             onChange={(event) => field.onChange?.(event.target.value)}
             readOnly={field.readOnly || !field.onChange}
             value={field.value}
@@ -2162,8 +2162,8 @@ function EditorGrid({
 
 function EmptyLinked({ action, onClick, title }: Readonly<{ title: string; action: string; onClick: () => void }>) {
   return (
-    <div className="rounded-[18px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] p-8 text-center">
-      <p className="font-semibold text-[#1A1916]">{title}</p>
+    <div className="rounded-[18px] border border-dashed border-[#E4E7EC] bg-[#FFFFFF] p-8 text-center">
+      <p className="font-semibold text-[#101828]">{title}</p>
       <PrimaryButton className="mt-4" onClick={onClick}>
         {action}
       </PrimaryButton>
@@ -2179,10 +2179,10 @@ function LinkedRow({
   title,
 }: Readonly<{ title: string; subtitle: string; status: string; href: string; onOpen: () => void }>) {
   return (
-    <div className="flex flex-col gap-3 rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4 md:flex-row md:items-center md:justify-between">
+    <div className="flex flex-col gap-3 rounded-[16px] border border-[#E4E7EC] bg-[#FFFFFF] p-4 md:flex-row md:items-center md:justify-between">
       <div>
-        <p className="font-semibold text-[#1A1916]">{title}</p>
-        <p className="text-[#6B6B6B] text-sm">{subtitle}</p>
+        <p className="font-semibold text-[#101828]">{title}</p>
+        <p className="text-[#667085] text-sm">{subtitle}</p>
       </div>
       <div className="flex items-center gap-2">
         <StatusBadge status={status} />
@@ -2211,20 +2211,20 @@ function MobileRepairHeader({
       <div className="flex items-center justify-between">
         <Link
           href="/dashboard/reparations"
-          className="inline-flex items-center gap-1.5 text-[#6B6B6B] text-xs font-semibold hover:text-[#1A1916] bg-white border border-[#E8E8E5] px-3.5 py-2 rounded-full shadow-[0_1px_2px_rgba(26,25,22,0.02)]"
+          className="inline-flex items-center gap-1.5 text-[#667085] text-xs font-semibold hover:text-[#101828] bg-white border border-[#E4E7EC] px-3.5 py-2 rounded-full shadow-[0_1px_2px_rgba(16,24,40,0.02)]"
         >
           <ArrowLeft className="size-3.5" />
           Retour
         </Link>
         <div className="flex items-center gap-1.5">
-          <span className="font-black text-[11px] tracking-wider text-[#6B6B6B]">BEHAR • TECH</span>
+          <span className="font-black text-[11px] tracking-wider text-[#667085]">BEHAR • TECH</span>
           <span className="px-1.5 py-0.5 text-[9px] font-black bg-[#FFFFFF] text-[#167B70] rounded-[6px] tracking-wide shadow-sm">
             PRO
           </span>
         </div>
         <button
           type="button"
-          className="p-2 rounded-full bg-white border border-[#E8E8E5] text-[#1A1916] hover:bg-[#FFFFFF] shadow-[0_1px_2px_rgba(26,25,22,0.02)]"
+          className="p-2 rounded-full bg-white border border-[#E4E7EC] text-[#101828] hover:bg-[#FFFFFF] shadow-[0_1px_2px_rgba(16,24,40,0.02)]"
         >
           <Menu className="size-4" />
         </button>
@@ -2232,7 +2232,7 @@ function MobileRepairHeader({
 
       {/* Titre & Statut */}
       <div className="flex items-center justify-between pt-1">
-        <h1 className="text-[22px] font-semibold text-[#1A1916] tracking-tight">Dossier #{repair.number}</h1>
+        <h1 className="text-[22px] font-semibold text-[#101828] tracking-tight">Dossier #{repair.number}</h1>
         <div className="flex flex-col items-end gap-1">
           <StatusPill status={repair.status} />
           {repair.status === "Prêt" && <StatusBadge status={readyDisplayLabel} />}
@@ -2241,16 +2241,16 @@ function MobileRepairHeader({
       </div>
 
       {/* Appareil & Client Row (Miniature intégrée) */}
-      <div className="flex items-center gap-3 bg-[#FFFFFF] rounded-[16px] p-3 border border-[#E8E8E5]/60 shadow-[0_2px_6px_rgba(26,25,22,0.015)]">
+      <div className="flex items-center gap-3 bg-[#FFFFFF] rounded-[16px] p-3 border border-[#E4E7EC]/60 shadow-[0_2px_6px_rgba(16,24,40,0.015)]">
         <RealDeviceVisual
           brand={repair.brandName}
-          className="size-11 shrink-0 rounded-[12px] border border-[#E8E8E5] bg-white p-1.5 shadow-[0_4px_12px_rgba(26,25,22,0.02)]"
+          className="size-11 shrink-0 rounded-[12px] border border-[#E4E7EC] bg-white p-1.5 shadow-[0_4px_12px_rgba(16,24,40,0.02)]"
           model={repair.deviceModel || repair.model || repair.device}
           type={repair.deviceType}
         />
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-bold text-[#1A1916] truncate">{formatDeviceLabel(repair, repair.device)}</p>
-          <p className="text-[11px] text-[#6B6B6B] mt-0.5 truncate">{displayCustomerName(customer) || "Client"}</p>
+          <p className="text-[13px] font-bold text-[#101828] truncate">{formatDeviceLabel(repair, repair.device)}</p>
+          <p className="text-[11px] text-[#667085] mt-0.5 truncate">{displayCustomerName(customer) || "Client"}</p>
         </div>
       </div>
     </div>
@@ -2269,18 +2269,18 @@ function MobileRepairSummaryCard({
   formatDossier: (val: number) => string;
 }>) {
   return (
-    <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
+    <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_4px_12px_rgba(16,24,40,0.02)] space-y-4">
       {/* Device Visual Header */}
       <div className="flex items-center gap-3.5 pb-3 border-b border-[#FFFFFF]">
         <RealDeviceVisual
           brand={repair.brandName}
-          className="size-12 shrink-0 rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] p-1.5 shadow-[0_4px_12px_rgba(26,25,22,0.02)]"
+          className="size-12 shrink-0 rounded-[12px] border border-[#E4E7EC] bg-[#FFFFFF] p-1.5 shadow-[0_4px_12px_rgba(16,24,40,0.02)]"
           model={repair.deviceModel || repair.model || repair.device}
           type={repair.deviceType}
         />
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-bold text-[#1A1916] truncate">{formatDeviceLabel(repair, repair.device)}</h3>
-          <p className="text-xs text-[#6B6B6B] mt-0.5 truncate">
+          <h3 className="text-sm font-bold text-[#101828] truncate">{formatDeviceLabel(repair, repair.device)}</h3>
+          <p className="text-xs text-[#667085] mt-0.5 truncate">
             {repair.imei ? `IMEI : ${repair.imei}` : "IMEI : Non renseigné"}
           </p>
         </div>
@@ -2288,25 +2288,25 @@ function MobileRepairSummaryCard({
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Client</span>
-          <p className="text-sm font-semibold text-[#1A1916] mt-0.5 truncate">
+          <span className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block">Client</span>
+          <p className="text-sm font-semibold text-[#101828] mt-0.5 truncate">
             {displayCustomerName(customer) || "Client"}
           </p>
-          <p className="text-xs text-[#6B6B6B] mt-0.5 truncate">{customer?.phone || "Téléphone non renseigné"}</p>
+          <p className="text-xs text-[#667085] mt-0.5 truncate">{customer?.phone || "Téléphone non renseigné"}</p>
         </div>
         <div>
-          <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Problème</span>
-          <p className="text-sm font-semibold text-[#1A1916] mt-0.5 truncate">{repair.issue || "Non renseigné"}</p>
+          <span className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block">Problème</span>
+          <p className="text-sm font-semibold text-[#101828] mt-0.5 truncate">{repair.issue || "Non renseigné"}</p>
         </div>
         <div className="col-span-2">
-          <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Intervention</span>
-          <p className="text-sm font-semibold text-[#1A1916] mt-0.5 truncate">
+          <span className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block">Intervention</span>
+          <p className="text-sm font-semibold text-[#101828] mt-0.5 truncate">
             {repair.recommendedIntervention || repair.issueType || "Diagnostic"}
           </p>
         </div>
       </div>
       <div className="pt-3 border-t border-[#FFFFFF] flex items-center justify-between">
-        <span className="text-xs font-bold text-[#6B6B6B] uppercase tracking-wider">Montant dossier</span>
+        <span className="text-xs font-bold text-[#667085] uppercase tracking-wider">Montant dossier</span>
         <span className="text-xl font-bold text-[#167B70] tracking-tight">{formatDossier(dossierTotal)}</span>
       </div>
     </div>
@@ -2346,7 +2346,7 @@ function MobileRepairStepper({
   const activeIndex = getActiveStepIndex(status);
 
   return (
-    <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-4 shadow-[0_4px_12px_rgba(26,25,22,0.02)] overflow-x-auto scrollbar-none">
+    <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-4 shadow-[0_4px_12px_rgba(16,24,40,0.02)] overflow-x-auto scrollbar-none">
       <div className="flex items-center min-w-[560px] py-1">
         {steps.map((step, index) => {
           const isCompleted = index < activeIndex;
@@ -2369,7 +2369,7 @@ function MobileRepairStepper({
                         ? "border-[#2A9D8F] bg-[#2A9D8F] text-white shadow-sm"
                         : isCurrent
                           ? "border-[#2A9D8F] bg-white text-[#2A9D8F] shadow-[0_0_0_2px_rgba(42,157,143,0.1)] scale-110"
-                          : "border-[#E8E8E5] bg-white text-[#6B6B6B]",
+                          : "border-[#E4E7EC] bg-white text-[#667085]",
                     )}
                   >
                     {isCompleted ? <Check className="size-4" /> : index + 1}
@@ -2384,7 +2384,7 @@ function MobileRepairStepper({
                 <span
                   className={cn(
                     "mt-2 text-center text-[11px] font-semibold tracking-tight whitespace-nowrap",
-                    isCurrent ? "text-[#1A1916] font-bold" : isCompleted ? "text-[#2A9D8F]" : "text-[#6B6B6B]",
+                    isCurrent ? "text-[#101828] font-bold" : isCompleted ? "text-[#2A9D8F]" : "text-[#667085]",
                   )}
                 >
                   {step}
@@ -2418,7 +2418,7 @@ function MobileRepairTabs({
   ];
 
   return (
-    <div className="flex gap-2 overflow-x-auto py-1.5 scrollbar-none border-b border-[#E8E8E5]">
+    <div className="flex gap-2 overflow-x-auto py-1.5 scrollbar-none border-b border-[#E4E7EC]">
       {tabsList.map((t) => {
         const active = activeTab === t;
         return (
@@ -2430,7 +2430,7 @@ function MobileRepairTabs({
               "h-11 shrink-0 px-4 rounded-full text-[13px] font-bold transition-all duration-200 outline-none",
               active
                 ? "bg-[#2A9D8F] text-white shadow-[0_2px_8px_rgba(42,157,143,0.25)]"
-                : "bg-white border border-[#E8E8E5] text-[#6B6B6B] hover:text-[#1A1916]",
+                : "bg-white border border-[#E4E7EC] text-[#667085] hover:text-[#101828]",
             )}
           >
             {t}
@@ -2512,28 +2512,28 @@ function MobileSuiviClientCard({ repair }: Readonly<{ repair: Repair }>) {
   };
 
   return (
-    <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
-      <h3 className="text-[15px] font-bold text-[#1A1916]">Suivi client en direct</h3>
+    <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_4px_12px_rgba(16,24,40,0.02)] space-y-4">
+      <h3 className="text-[15px] font-bold text-[#101828]">Suivi client en direct</h3>
 
       <div className="flex flex-col items-center gap-3">
         {qr ? (
           <img
             alt="QR Code de suivi"
-            className="size-32 rounded-[16px] border border-[#E8E8E5] bg-white p-2 shadow-sm"
+            className="size-32 rounded-[16px] border border-[#E4E7EC] bg-white p-2 shadow-sm"
             src={qr}
           />
         ) : (
-          <div className="size-32 rounded-[16px] bg-[#FFFFFF] border border-dashed border-[#E8E8E5] flex items-center justify-center text-xs text-[#6B6B6B]">
+          <div className="size-32 rounded-[16px] bg-[#FFFFFF] border border-dashed border-[#E4E7EC] flex items-center justify-center text-xs text-[#667085]">
             Génération du QR...
           </div>
         )}
-        <p className="text-xs text-[#6B6B6B] text-center max-w-[240px] leading-relaxed">
+        <p className="text-xs text-[#667085] text-center max-w-[240px] leading-relaxed">
           Le client peut suivre sa réparation en scannant ce QR code.
         </p>
       </div>
 
       <div className="space-y-1.5">
-        <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">
+        <span className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block">
           Partager ou copier le lien
         </span>
         <button
@@ -2622,7 +2622,7 @@ function MobileOverviewSection({
             <button
               type="button"
               onClick={() => onNotes("internal")}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-bold text-[#101828] text-sm hover:bg-[#FFFFFF] transition"
             >
               <Lock className="size-4" />
               Ajouter diagnostic / note
@@ -2630,7 +2630,7 @@ function MobileOverviewSection({
             <button
               type="button"
               onClick={onPrint}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-bold text-[#101828] text-sm hover:bg-[#FFFFFF] transition"
             >
               <Printer className="size-4" />
               Imprimer documents
@@ -2644,7 +2644,7 @@ function MobileOverviewSection({
             <button
               type="button"
               onClick={() => onNotes("internal")}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-bold text-[#101828] text-sm hover:bg-[#FFFFFF] transition"
             >
               <Pencil className="size-4" />
               Modifier diagnostic
@@ -2683,7 +2683,7 @@ function MobileOverviewSection({
               <button
                 type="button"
                 onClick={() => setViewingMobileDoc(quoteDoc)}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-bold text-[#101828] text-sm hover:bg-[#FFFFFF] transition"
               >
                 <FileText className="size-4" />
                 Voir le devis
@@ -2692,7 +2692,7 @@ function MobileOverviewSection({
             <button
               type="button"
               onClick={() => onNotes("client")}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-bold text-[#101828] text-sm hover:bg-[#FFFFFF] transition"
             >
               <MessageSquare className="size-4" />
               Relancer le client
@@ -2728,7 +2728,7 @@ function MobileOverviewSection({
               <button
                 type="button"
                 onClick={() => setViewingMobileDoc(quoteDoc)}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-bold text-[#101828] text-sm hover:bg-[#FFFFFF] transition"
               >
                 <FileText className="size-4" />
                 Voir le devis
@@ -2743,7 +2743,7 @@ function MobileOverviewSection({
             <button
               type="button"
               onClick={() => onNotes("internal")}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-bold text-[#101828] text-sm hover:bg-[#FFFFFF] transition"
             >
               <Lock className="size-4" />
               Ajouter note interne
@@ -2779,7 +2779,7 @@ function MobileOverviewSection({
             <button
               type="button"
               onClick={() => onNotes("client")}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-bold text-[#101828] text-sm hover:bg-[#FFFFFF] transition"
             >
               <MessageSquare className="size-4" />
               Prévenir le client
@@ -2827,7 +2827,7 @@ function MobileOverviewSection({
               <button
                 type="button"
                 onClick={() => setViewingMobileDoc(invoiceDoc)}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-bold text-[#101828] text-sm hover:bg-[#FFFFFF] transition"
               >
                 <Receipt className="size-4" />
                 Voir la facture
@@ -2836,7 +2836,7 @@ function MobileOverviewSection({
             <button
               type="button"
               onClick={onPrint}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] transition"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-bold text-[#101828] text-sm hover:bg-[#FFFFFF] transition"
             >
               <Printer className="size-4" />
               Imprimer les documents
@@ -2852,16 +2852,16 @@ function MobileOverviewSection({
   return (
     <div className="space-y-4">
       {/* 1. Carte Activité du dossier */}
-      <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
-        <h3 className="text-[15px] font-bold text-[#1A1916]">Activité du dossier</h3>
-        <ol className="relative border-l border-[#E8E8E5] ml-2 space-y-3.5">
+      <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_4px_12px_rgba(16,24,40,0.02)] space-y-4">
+        <h3 className="text-[15px] font-bold text-[#101828]">Activité du dossier</h3>
+        <ol className="relative border-l border-[#E4E7EC] ml-2 space-y-3.5">
           {visibleHistory.map((item, idx) => (
             <li key={`${item}_${idx}`} className="relative pl-5">
               <span className="absolute left-[-5px] top-1.5 flex size-2 bg-[#2A9D8F] rounded-full ring-4 ring-white" />
-              <p className="text-[13px] font-semibold text-[#1A1916] leading-snug">{item}</p>
+              <p className="text-[13px] font-semibold text-[#101828] leading-snug">{item}</p>
             </li>
           ))}
-          {history.length === 0 && <p className="text-xs text-[#6B6B6B] pl-2">Aucun événement enregistré.</p>}
+          {history.length === 0 && <p className="text-xs text-[#667085] pl-2">Aucun événement enregistré.</p>}
         </ol>
         {history.length > 3 && (
           <button
@@ -2875,11 +2875,11 @@ function MobileOverviewSection({
       </div>
 
       {/* 2. Carte Documents Liés */}
-      <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
-        <h3 className="text-[15px] font-bold text-[#1A1916]">Documents liés</h3>
+      <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_4px_12px_rgba(16,24,40,0.02)] space-y-4">
+        <h3 className="text-[15px] font-bold text-[#101828]">Documents liés</h3>
         <ul className="space-y-2.5">
           {deduplicatedDocs.length === 0 ? (
-            <li className="rounded-[12px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] px-3 py-5 text-center text-[#6B6B6B] text-xs">
+            <li className="rounded-[12px] border border-dashed border-[#E4E7EC] bg-[#FFFFFF] px-3 py-5 text-center text-[#667085] text-xs">
               Aucun document lié.
             </li>
           ) : (
@@ -2901,18 +2901,18 @@ function MobileOverviewSection({
                   onClick={() => setViewingMobileDoc(doc)}
                   className="w-full flex items-center gap-3 rounded-[12px] border border-[#FFFFFF] bg-[#FFFFFF] p-3 text-left transition hover:bg-[#FFFFFF] outline-none"
                 >
-                  <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white text-[#2A9D8F] border border-[#E8E8E5]">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white text-[#2A9D8F] border border-[#E4E7EC]">
                     <FileText className="size-4.5" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-bold text-[#1A1916]">
+                    <p className="truncate text-[13px] font-bold text-[#101828]">
                       {docLabel[doc.type] ?? doc.title}
                       {number ? ` · ${number}` : ""}
                     </p>
-                    <p className="truncate text-[#6B6B6B] text-[11px] mt-0.5">{doc.title}</p>
+                    <p className="truncate text-[#667085] text-[11px] mt-0.5">{doc.title}</p>
                   </div>
                   {amount > 0 && (
-                    <span className="shrink-0 font-semibold text-[#1A1916] text-[12px] mr-1">
+                    <span className="shrink-0 font-semibold text-[#101828] text-[12px] mr-1">
                       {formatCurrency(amount, q?.currency ?? inv?.currency ?? repair.currency)}
                     </span>
                   )}
@@ -2921,7 +2921,7 @@ function MobileOverviewSection({
                       {statusLabel}
                     </span>
                   )}
-                  <ChevronRight className="size-4 text-[#8A8A8A] shrink-0" />
+                  <ChevronRight className="size-4 text-[#98A2B3] shrink-0" />
                 </button>
               );
             })
@@ -2930,8 +2930,8 @@ function MobileOverviewSection({
       </div>
 
       {/* 3. Carte Actions Rapides */}
-      <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
-        <h3 className="text-[15px] font-bold text-[#1A1916]">Actions rapides</h3>
+      <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_4px_12px_rgba(16,24,40,0.02)] space-y-4">
+        <h3 className="text-[15px] font-bold text-[#101828]">Actions rapides</h3>
         <div className="space-y-2.5">{renderStatusActions()}</div>
       </div>
 
@@ -2999,7 +2999,7 @@ function MobileEntrySheetSection({
             </button>
             <button
               type="button"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#E8E8E5] bg-white px-4 text-xs font-bold text-[#1A1916] shadow-sm hover:bg-[#FFFFFF]"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#E4E7EC] bg-white px-4 text-xs font-bold text-[#101828] shadow-sm hover:bg-[#FFFFFF]"
               onClick={() => {
                 const target = getPrintableTarget(intakeDoc);
                 if (target) download(target.type, target.id);
@@ -3013,24 +3013,24 @@ function MobileEntrySheetSection({
       )}
 
       {/* 1. Tableau Checklist */}
-      <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
-        <h3 className="text-[15px] font-bold text-[#1A1916]">État de l'appareil à l'entrée</h3>
+      <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_4px_12px_rgba(16,24,40,0.02)] space-y-4">
+        <h3 className="text-[15px] font-bold text-[#101828]">État de l'appareil à l'entrée</h3>
         <dl className="divide-y divide-[#FFFFFF]">
           {checklist.map(({ label, value }) => (
             <div className="flex items-center justify-between py-3 text-sm" key={label}>
-              <dt className="text-[#6B6B6B] font-semibold">{label}</dt>
-              <dd className="text-[#1A1916] font-bold text-right truncate max-w-[200px]">{value}</dd>
+              <dt className="text-[#667085] font-semibold">{label}</dt>
+              <dd className="text-[#101828] font-bold text-right truncate max-w-[200px]">{value}</dd>
             </div>
           ))}
         </dl>
       </div>
 
       {/* 2. Photos */}
-      <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-3">
-        <h3 className="text-[15px] font-bold text-[#1A1916]">Photos à l'entrée</h3>
+      <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_4px_12px_rgba(16,24,40,0.02)] space-y-3">
+        <h3 className="text-[15px] font-bold text-[#101828]">Photos à l'entrée</h3>
         {photos.length === 0 ? (
-          <div className="flex flex-col items-center justify-center text-center rounded-[12px] bg-[#FFFFFF] border border-dashed border-[#E8E8E5] px-4 py-8 text-[#6B6B6B]">
-            <Camera className="size-6 text-[#8A8A8A] mb-2" />
+          <div className="flex flex-col items-center justify-center text-center rounded-[12px] bg-[#FFFFFF] border border-dashed border-[#E4E7EC] px-4 py-8 text-[#667085]">
+            <Camera className="size-6 text-[#98A2B3] mb-2" />
             <p className="text-xs">Aucune photo ajoutée à l'entrée.</p>
           </div>
         ) : (
@@ -3040,7 +3040,7 @@ function MobileEntrySheetSection({
                 key={photo.id}
                 type="button"
                 onClick={() => setActivePhotoIndex(index)}
-                className="h-24 w-full rounded-[12px] overflow-hidden border border-[#E8E8E5] focus:outline-none focus:ring-2 focus:ring-[#2A9D8F] active:scale-95 transition"
+                className="h-24 w-full rounded-[12px] overflow-hidden border border-[#E4E7EC] focus:outline-none focus:ring-2 focus:ring-[#2A9D8F] active:scale-95 transition"
               >
                 <img
                   src={photo.dataUrl || (photo as any).url}
@@ -3054,24 +3054,24 @@ function MobileEntrySheetSection({
       </div>
 
       {/* 3. Signature */}
-      <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-3">
-        <h3 className="text-[15px] font-bold text-[#1A1916]">Signature client</h3>
+      <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_4px_12px_rgba(16,24,40,0.02)] space-y-3">
+        <h3 className="text-[15px] font-bold text-[#101828]">Signature client</h3>
         {condition?.signatureDataUrl ? (
           <div className="space-y-3">
-            <div className="border border-[#E8E8E5] rounded-[14px] bg-[#FFFFFF] p-3 flex justify-center">
+            <div className="border border-[#E4E7EC] rounded-[14px] bg-[#FFFFFF] p-3 flex justify-center">
               <img src={condition.signatureDataUrl} alt="Signature client" className="h-20 max-w-full object-contain" />
             </div>
-            <p className="text-[11px] text-[#6B6B6B] text-center leading-snug">
+            <p className="text-[11px] text-[#667085] text-center leading-snug">
               Signé le {formatIsoToDisplay(condition.signatureSignedAt || condition.signedAt || "")} par{" "}
               {condition.signerName || "le client"}.
             </p>
           </div>
         ) : (
           <div className="space-y-4">
-            <p className="text-xs text-[#6B6B6B]">Aucune signature enregistrée.</p>
+            <p className="text-xs text-[#667085]">Aucune signature enregistrée.</p>
             <button
               type="button"
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#FFFFFF] text-[#6B6B6B] font-semibold text-sm cursor-not-allowed"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#FFFFFF] text-[#667085] font-semibold text-sm cursor-not-allowed"
               disabled
             >
               Signature en attente
@@ -3113,13 +3113,13 @@ function MobileDiagnosticSection({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
+      <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_4px_12px_rgba(16,24,40,0.02)] space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-[15px] font-bold text-[#1A1916]">Constat technique</h3>
+          <h3 className="text-[15px] font-bold text-[#101828]">Constat technique</h3>
           <button
             type="button"
             onClick={() => (isEditing ? save() : setIsEditing(true))}
-            className="inline-flex items-center gap-1 rounded-full border border-[#E8E8E5] px-3 py-1 bg-[#FFFFFF] text-[#6B6B6B] text-xs font-bold hover:bg-[#FFFFFF] outline-none"
+            className="inline-flex items-center gap-1 rounded-full border border-[#E4E7EC] px-3 py-1 bg-[#FFFFFF] text-[#667085] text-xs font-bold hover:bg-[#FFFFFF] outline-none"
           >
             <Pencil className="size-3" />
             {isEditing ? "Enregistrer" : "Modifier"}
@@ -3129,22 +3129,22 @@ function MobileDiagnosticSection({
         {isEditing ? (
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Constat</label>
+              <label className="text-[11px] font-bold text-[#667085] uppercase tracking-wider block">Constat</label>
               <textarea
                 value={constat}
                 onChange={(e) => setConstat(e.target.value)}
-                className="w-full rounded-[14px] border border-[#E8E8E5] p-3 text-xs min-h-[90px] outline-none focus:border-[#2A9D8F]"
+                className="w-full rounded-[14px] border border-[#E4E7EC] p-3 text-xs min-h-[90px] outline-none focus:border-[#2A9D8F]"
                 placeholder="Décrire la panne constatée..."
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider block">
+              <label className="text-[11px] font-bold text-[#667085] uppercase tracking-wider block">
                 Intervention prévue
               </label>
               <textarea
                 value={intervention}
                 onChange={(e) => setIntervention(e.target.value)}
-                className="w-full rounded-[14px] border border-[#E8E8E5] p-3 text-xs min-h-[70px] outline-none focus:border-[#2A9D8F]"
+                className="w-full rounded-[14px] border border-[#E4E7EC] p-3 text-xs min-h-[70px] outline-none focus:border-[#2A9D8F]"
                 placeholder="Remplacement d'écran, soudure..."
               />
             </div>
@@ -3152,30 +3152,30 @@ function MobileDiagnosticSection({
         ) : (
           <div className="space-y-4">
             <div className="space-y-1">
-              <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Constat</span>
-              <p className="text-xs text-[#1A1916] font-medium leading-relaxed bg-[#FFFFFF] rounded-[12px] p-3 border border-[#E8E8E5] whitespace-pre-wrap">
+              <span className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block">Constat</span>
+              <p className="text-xs text-[#101828] font-medium leading-relaxed bg-[#FFFFFF] rounded-[12px] p-3 border border-[#E4E7EC] whitespace-pre-wrap">
                 {repair.diagnosticNotes || "Aucun constat technique."}
               </p>
             </div>
             <div className="space-y-1">
-              <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">
+              <span className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block">
                 Intervention recommandée
               </span>
-              <p className="text-xs text-[#1A1916] font-medium leading-relaxed bg-[#FFFFFF] rounded-[12px] p-3 border border-[#E8E8E5] whitespace-pre-wrap">
+              <p className="text-xs text-[#101828] font-medium leading-relaxed bg-[#FFFFFF] rounded-[12px] p-3 border border-[#E4E7EC] whitespace-pre-wrap">
                 {repair.recommendedIntervention || "Aucune intervention spécifiée."}
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4 pt-1">
               <div>
-                <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Technicien</span>
-                <p className="text-xs font-bold text-[#1A1916] mt-0.5">{repair.technician || "Atelier principal"}</p>
+                <span className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block">Technicien</span>
+                <p className="text-xs font-bold text-[#101828] mt-0.5">{repair.technician || "Atelier principal"}</p>
               </div>
               <div>
-                <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">
+                <span className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block">
                   Temps estimé
                 </span>
-                <p className="text-xs font-bold text-[#1A1916] mt-0.5">
+                <p className="text-xs font-bold text-[#101828] mt-0.5">
                   {repair.estimatedDoneAt ? formatIsoToDisplay(repair.estimatedDoneAt) : "Non précisé"}
                 </p>
               </div>
@@ -3216,7 +3216,7 @@ function MobileDiagnosticSection({
         <button
           type="button"
           onClick={onNotes}
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-sm hover:bg-[#FFFFFF] shadow-sm"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-bold text-[#101828] text-sm hover:bg-[#FFFFFF] shadow-sm"
         >
           <Lock className="size-4" />
           Ajouter une note
@@ -3264,16 +3264,16 @@ function MobilePartsSection({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-[14px] font-bold text-[#1A1916]">
+        <h3 className="text-[14px] font-bold text-[#101828]">
           Pièces compatibles avec {repair.brandName} {repair.deviceModel || repair.model || repair.device}
         </h3>
-        <p className="text-xs text-[#6B6B6B] mt-0.5">{compatibleItems.length} références compatibles</p>
+        <p className="text-xs text-[#667085] mt-0.5">{compatibleItems.length} références compatibles</p>
       </div>
 
       <div className="space-y-2.5">
         {itemsToShow.length === 0 ? (
-          <div className="rounded-[20px] border border-dashed border-[#E8E8E5] bg-white p-6 text-center">
-            <p className="text-xs text-[#6B6B6B]">Aucune pièce compatible trouvée.</p>
+          <div className="rounded-[20px] border border-dashed border-[#E4E7EC] bg-white p-6 text-center">
+            <p className="text-xs text-[#667085]">Aucune pièce compatible trouvée.</p>
             {!showAllStock && (
               <button
                 type="button"
@@ -3288,13 +3288,13 @@ function MobilePartsSection({
           itemsToShow.map((item) => (
             <div
               key={item.id}
-              className="rounded-[16px] border border-[#E8E8E5] bg-white p-4 shadow-[0_2px_8px_rgba(26,25,22,0.015)] flex items-center justify-between gap-3"
+              className="rounded-[16px] border border-[#E4E7EC] bg-white p-4 shadow-[0_2px_8px_rgba(16,24,40,0.015)] flex items-center justify-between gap-3"
             >
               <div className="min-w-0 flex-1">
-                <h4 className="text-[13px] font-bold text-[#1A1916] truncate">{item.name}</h4>
-                <div className="text-[11px] text-[#6B6B6B] mt-0.5 truncate">
+                <h4 className="text-[13px] font-bold text-[#101828] truncate">{item.name}</h4>
+                <div className="text-[11px] text-[#667085] mt-0.5 truncate">
                   Réf. <PartReferenceLink reference={item.sku || item.reference} /> · Stock :{" "}
-                  <span className="font-bold text-[#1A1916]">{item.stock}</span>
+                  <span className="font-bold text-[#101828]">{item.stock}</span>
                 </div>
                 <p className="text-xs font-bold text-[#167B70] mt-1">{formatPartsCurrency(item.salePrice)}</p>
               </div>
@@ -3348,8 +3348,8 @@ function MobileQuoteSection({
 
   if (!quote) {
     return (
-      <div className="rounded-[20px] border border-dashed border-[#E8E8E5] bg-white p-8 text-center space-y-4">
-        <p className="font-semibold text-sm text-[#1A1916]">Aucun devis lié à ce dossier</p>
+      <div className="rounded-[20px] border border-dashed border-[#E4E7EC] bg-white p-8 text-center space-y-4">
+        <p className="font-semibold text-sm text-[#101828]">Aucun devis lié à ce dossier</p>
         {!canCreateQuote ? (
           <div className="space-y-2">
             <button
@@ -3388,12 +3388,12 @@ function MobileQuoteSection({
         return (
           <div
             key={q.id}
-            className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4"
+            className="rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_4px_12px_rgba(16,24,40,0.02)] space-y-4"
           >
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-bold text-[15px] text-[#1A1916]">Devis {q.number}</h4>
-                <p className="text-xs text-[#6B6B6B] mt-0.5">Statut : {q.status}</p>
+                <h4 className="font-bold text-[15px] text-[#101828]">Devis {q.number}</h4>
+                <p className="text-xs text-[#667085] mt-0.5">Statut : {q.status}</p>
               </div>
               <span className="text-[15px] font-bold text-[#167B70]">
                 {formatCurrency(getQuoteTotal(q), q.currency ?? repair.currency)}
@@ -3404,10 +3404,10 @@ function MobileQuoteSection({
               {q.lines?.map((line: any, idx: number) => (
                 <div key={`${line.description}_${idx}`} className="flex justify-between items-start text-xs">
                   <div className="min-w-0 flex-1 pr-3">
-                    <p className="font-bold text-[#1A1916] leading-tight truncate">{line.description}</p>
-                    <p className="text-[#6B6B6B] mt-0.5">Qté : {line.quantity}</p>
+                    <p className="font-bold text-[#101828] leading-tight truncate">{line.description}</p>
+                    <p className="text-[#667085] mt-0.5">Qté : {line.quantity}</p>
                   </div>
-                  <span className="font-bold text-[#1A1916] shrink-0">
+                  <span className="font-bold text-[#101828] shrink-0">
                     {formatCurrency(line.total, q.currency ?? repair.currency)}
                   </span>
                 </div>
@@ -3416,11 +3416,11 @@ function MobileQuoteSection({
 
             <div className="border-t border-[#FFFFFF] pt-3.5 space-y-1.5 text-xs text-right">
               <div className="flex justify-between">
-                <span className="text-[#6B6B6B]">Sous-total :</span>
-                <span className="font-semibold text-[#1A1916]">{formatQuoteCurrency(subtotal)}</span>
+                <span className="text-[#667085]">Sous-total :</span>
+                <span className="font-semibold text-[#101828]">{formatQuoteCurrency(subtotal)}</span>
               </div>
               <div className="flex justify-between pt-1 border-t border-[#FFFFFF]">
-                <span className="font-bold text-[#1A1916]">Total :</span>
+                <span className="font-bold text-[#101828]">Total :</span>
                 <span className="font-bold text-[15px] text-[#167B70]">{formatQuoteCurrency(total)}</span>
               </div>
             </div>
@@ -3430,7 +3430,7 @@ function MobileQuoteSection({
                 <button
                   type="button"
                   onClick={() => setViewingMobileDoc(doc)}
-                  className="flex-1 h-9 rounded-full border border-[#E8E8E5] bg-[#FFFFFF] text-[#1A1916] text-[12px] font-bold flex items-center justify-center gap-1 shadow-sm hover:bg-[#FFFFFF]"
+                  className="flex-1 h-9 rounded-full border border-[#E4E7EC] bg-[#FFFFFF] text-[#101828] text-[12px] font-bold flex items-center justify-center gap-1 shadow-sm hover:bg-[#FFFFFF]"
                 >
                   <ExternalLink className="size-3.5" />
                   Aperçu PDF
@@ -3478,10 +3478,10 @@ function MobileInvoiceSection({
 
   if (!invoice) {
     return (
-      <div className="space-y-4 rounded-[20px] border border-dashed border-[#E8E8E5] bg-white p-8 text-center">
-        <p className="font-semibold text-[#1A1916] text-sm">Aucune facture liée à ce dossier</p>
+      <div className="space-y-4 rounded-[20px] border border-dashed border-[#E4E7EC] bg-white p-8 text-center">
+        <p className="font-semibold text-[#101828] text-sm">Aucune facture liée à ce dossier</p>
         <button
-          className="inline-flex h-11 w-full items-center justify-center rounded-[12px] bg-[#2A9D8F] px-6 font-semibold text-sm text-white disabled:cursor-not-allowed disabled:bg-[#F1F1EF] disabled:text-[#A7A7A2]"
+          className="inline-flex h-11 w-full items-center justify-center rounded-[12px] bg-[#2A9D8F] px-6 font-semibold text-sm text-white disabled:cursor-not-allowed disabled:bg-[#F2F4F7] disabled:text-[#A7A7A2]"
           disabled={!canCreateInvoice}
           onClick={onCreate}
           type="button"
@@ -3489,7 +3489,7 @@ function MobileInvoiceSection({
           Créer une facture
         </button>
         {!canCreateInvoice ? (
-          <p className="text-[#6B6B6B] text-xs">Un devis accepté ou un montant total est requis.</p>
+          <p className="text-[#667085] text-xs">Un devis accepté ou un montant total est requis.</p>
         ) : null}
       </div>
     );
@@ -3503,13 +3503,13 @@ function MobileInvoiceSection({
         );
         return (
           <div
-            className="space-y-4 rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)]"
+            className="space-y-4 rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_4px_12px_rgba(16,24,40,0.02)]"
             key={entry.id}
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h4 className="font-bold text-[#1A1916] text-[15px]">Facture {entry.number}</h4>
-                <p className="mt-0.5 text-[#6B6B6B] text-[11px]">
+                <h4 className="font-bold text-[#101828] text-[15px]">Facture {entry.number}</h4>
+                <p className="mt-0.5 text-[#667085] text-[11px]">
                   Créée le {formatIsoToDisplay(entry.createdAt || "")}
                 </p>
               </div>
@@ -3518,8 +3518,8 @@ function MobileInvoiceSection({
               </span>
             </div>
 
-            <div className="flex items-center justify-between rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] p-4">
-              <span className="font-semibold text-[#6B6B6B] text-xs uppercase tracking-wider">Total TTC</span>
+            <div className="flex items-center justify-between rounded-[14px] border border-[#E4E7EC] bg-[#F9FAFB] p-4">
+              <span className="font-semibold text-[#667085] text-xs uppercase tracking-wider">Total TTC</span>
               <span className="font-bold text-[#167B70] text-lg">
                 {formatCurrency(getInvoiceTotal(entry), entry.currency)}
               </span>
@@ -3541,7 +3541,7 @@ function MobileInvoiceSection({
 
             {document ? (
               <button
-                className="flex h-9 w-full items-center justify-center gap-1 rounded-full border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-[12px]"
+                className="flex h-9 w-full items-center justify-center gap-1 rounded-full border border-[#E4E7EC] bg-white font-bold text-[#101828] text-[12px]"
                 onClick={() => setViewingMobileDoc(document)}
                 type="button"
               >
@@ -3552,7 +3552,7 @@ function MobileInvoiceSection({
           </div>
         );
       })}
-      <p className="text-center text-[#6B6B6B] text-[11px] italic">
+      <p className="text-center text-[#667085] text-[11px] italic">
         Aucune donnée bancaire n’est saisie ou stockée dans Behar Tech Pro.
       </p>
     </div>
@@ -3582,13 +3582,13 @@ function MobileDocumentsSection({
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-[14px] font-bold text-[#1A1916]">Documents liés au dossier</h3>
-        <p className="text-xs text-[#6B6B6B] mt-0.5">{deduplicatedDocs.length} documents émis</p>
+        <h3 className="text-[14px] font-bold text-[#101828]">Documents liés au dossier</h3>
+        <p className="text-xs text-[#667085] mt-0.5">{deduplicatedDocs.length} documents émis</p>
       </div>
 
       <div className="space-y-3">
         {deduplicatedDocs.length === 0 ? (
-          <div className="rounded-[20px] border border-dashed border-[#E8E8E5] bg-white p-8 text-center text-xs text-[#6B6B6B]">
+          <div className="rounded-[20px] border border-dashed border-[#E4E7EC] bg-white p-8 text-center text-xs text-[#667085]">
             Aucun document disponible pour le moment.
           </div>
         ) : (
@@ -3606,18 +3606,18 @@ function MobileDocumentsSection({
             return (
               <div
                 key={doc.id}
-                className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 shadow-[0_2px_8px_rgba(26,25,22,0.015)] space-y-3"
+                className="rounded-[18px] border border-[#E4E7EC] bg-white p-4 shadow-[0_2px_8px_rgba(16,24,40,0.015)] space-y-3"
               >
                 <div className="flex items-center gap-3">
-                  <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#2A9D8F] border border-[#E8E8E5]/50">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#2A9D8F] border border-[#E4E7EC]/50">
                     <FileText className="size-4.5" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-bold text-[#1A1916]">
+                    <p className="truncate text-[13px] font-bold text-[#101828]">
                       {docLabel[doc.type] ?? doc.title}
                       {number ? ` · ${number}` : ""}
                     </p>
-                    <p className="truncate text-[#6B6B6B] text-[11px] mt-0.5">{doc.title}</p>
+                    <p className="truncate text-[#667085] text-[11px] mt-0.5">{doc.title}</p>
                   </div>
                   {statusLabel && (
                     <span className="shrink-0 rounded-full bg-[#FFFFFF] px-2.5 py-0.5 font-bold text-[#167B70] text-[10px]">
@@ -3627,8 +3627,8 @@ function MobileDocumentsSection({
                 </div>
 
                 <div className="flex justify-between items-center bg-[#FFFFFF] rounded-[10px] px-3 py-2 text-xs">
-                  <span className="text-[#6B6B6B]">Montant :</span>
-                  <span className="font-bold text-[#1A1916]">
+                  <span className="text-[#667085]">Montant :</span>
+                  <span className="font-bold text-[#101828]">
                     {amount > 0 ? formatCurrency(amount, q?.currency ?? inv?.currency ?? repair.currency) : "—"}
                   </span>
                 </div>
@@ -3637,7 +3637,7 @@ function MobileDocumentsSection({
                   <button
                     type="button"
                     onClick={() => setViewingMobileDoc(doc)}
-                    className="h-9 rounded-full bg-[#FFFFFF] border border-[#E8E8E5] text-[#1A1916] text-[10px] font-bold flex items-center justify-center gap-1 hover:bg-[#FFFFFF] active:scale-95 transition outline-none"
+                    className="h-9 rounded-full bg-[#FFFFFF] border border-[#E4E7EC] text-[#101828] text-[10px] font-bold flex items-center justify-center gap-1 hover:bg-[#FFFFFF] active:scale-95 transition outline-none"
                     title="Voir"
                   >
                     <ExternalLink className="size-3" />
@@ -3649,7 +3649,7 @@ function MobileDocumentsSection({
                       const targetStr = getPrintableTarget(doc);
                       if (targetStr) download(targetStr.type, targetStr.id);
                     }}
-                    className="h-9 rounded-full bg-[#FFFFFF] border border-[#E8E8E5] text-[#1A1916] text-[10px] font-bold flex items-center justify-center gap-1 hover:bg-[#FFFFFF] active:scale-95 transition outline-none"
+                    className="h-9 rounded-full bg-[#FFFFFF] border border-[#E4E7EC] text-[#101828] text-[10px] font-bold flex items-center justify-center gap-1 hover:bg-[#FFFFFF] active:scale-95 transition outline-none"
                     title="Télécharger"
                   >
                     <Download className="size-3" />
@@ -3661,7 +3661,7 @@ function MobileDocumentsSection({
                       const targetStr = getPrintableTarget(doc);
                       if (targetStr) print(targetStr.type, targetStr.id);
                     }}
-                    className="h-9 rounded-full bg-[#FFFFFF] border border-[#E8E8E5] text-[#1A1916] text-[10px] font-bold flex items-center justify-center gap-1 hover:bg-[#FFFFFF] active:scale-95 transition outline-none"
+                    className="h-9 rounded-full bg-[#FFFFFF] border border-[#E4E7EC] text-[#101828] text-[10px] font-bold flex items-center justify-center gap-1 hover:bg-[#FFFFFF] active:scale-95 transition outline-none"
                     title="Imprimer"
                   >
                     <Printer className="size-3" />
@@ -3751,13 +3751,13 @@ function MobileNotesHistorySection({
   return (
     <div className="space-y-4">
       {/* Segmented Control */}
-      <div className="flex bg-[#FFFFFF] p-1 rounded-full border border-[#E8E8E5]">
+      <div className="flex bg-[#FFFFFF] p-1 rounded-full border border-[#E4E7EC]">
         <button
           type="button"
           onClick={() => setActiveSegment("internal")}
           className={cn(
             "flex-1 h-9 rounded-full text-xs font-bold transition-all outline-none",
-            activeSegment === "internal" ? "bg-[#2A9D8F] text-white shadow-sm" : "text-[#6B6B6B] hover:text-[#1A1916]",
+            activeSegment === "internal" ? "bg-[#2A9D8F] text-white shadow-sm" : "text-[#667085] hover:text-[#101828]",
           )}
         >
           <Lock className="inline size-3.5 mr-1" />
@@ -3768,7 +3768,7 @@ function MobileNotesHistorySection({
           onClick={() => setActiveSegment("client")}
           className={cn(
             "flex-1 h-9 rounded-full text-xs font-bold transition-all outline-none",
-            activeSegment === "client" ? "bg-[#2A9D8F] text-white shadow-sm" : "text-[#6B6B6B] hover:text-[#1A1916]",
+            activeSegment === "client" ? "bg-[#2A9D8F] text-white shadow-sm" : "text-[#667085] hover:text-[#101828]",
           )}
         >
           <MessageSquare className="inline size-3.5 mr-1" />
@@ -3777,25 +3777,25 @@ function MobileNotesHistorySection({
       </div>
 
       {activeSegment === "internal" ? (
-        <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-4 space-y-4">
+        <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-4 space-y-4">
           <div>
-            <h4 className="text-[13px] font-bold text-[#1A1916]">Notes internes (Atelier)</h4>
-            <p className="text-[11px] text-[#6B6B6B] mt-0.5">Visibles uniquement par l'équipe.</p>
+            <h4 className="text-[13px] font-bold text-[#101828]">Notes internes (Atelier)</h4>
+            <p className="text-[11px] text-[#667085] mt-0.5">Visibles uniquement par l'équipe.</p>
           </div>
 
           <ul className="space-y-2.5">
             {internalNotes.length === 0 ? (
-              <li className="rounded-[12px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] px-3 py-4 text-center text-[#6B6B6B] text-xs">
+              <li className="rounded-[12px] border border-dashed border-[#E4E7EC] bg-[#FFFFFF] px-3 py-4 text-center text-[#667085] text-xs">
                 Aucune note interne.
               </li>
             ) : (
               [...internalNotes].reverse().map((note) => (
                 <li key={note.id} className="rounded-[12px] border border-[#FFFFFF] bg-[#FFFFFF] p-3 text-xs space-y-1">
-                  <div className="flex justify-between text-[10px] text-[#6B6B6B]">
-                    <span className="font-bold text-[#1A1916]">{note.authorName}</span>
+                  <div className="flex justify-between text-[10px] text-[#667085]">
+                    <span className="font-bold text-[#101828]">{note.authorName}</span>
                     <span>{formatIsoToDisplay(note.createdAt)}</span>
                   </div>
-                  <p className="text-[#1A1916] whitespace-pre-wrap leading-relaxed">{note.body}</p>
+                  <p className="text-[#101828] whitespace-pre-wrap leading-relaxed">{note.body}</p>
                 </li>
               ))
             )}
@@ -3807,7 +3807,7 @@ function MobileNotesHistorySection({
               value={internalDraft}
               onChange={(e) => setInternalDraft(e.target.value)}
               placeholder="Ajouter une note de diagnostic, défaut constaté..."
-              className="w-full rounded-[12px] border border-[#E8E8E5] p-3 text-xs min-h-[80px] outline-none focus:border-[#2A9D8F] bg-[#FFFFFF]"
+              className="w-full rounded-[12px] border border-[#E4E7EC] p-3 text-xs min-h-[80px] outline-none focus:border-[#2A9D8F] bg-[#FFFFFF]"
             />
             <button
               type="button"
@@ -3820,25 +3820,25 @@ function MobileNotesHistorySection({
           </div>
         </div>
       ) : (
-        <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-4 space-y-4">
+        <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-4 space-y-4">
           <div>
-            <h4 className="text-[13px] font-bold text-[#1A1916]">Notes client (Suivi)</h4>
-            <p className="text-[11px] text-[#6B6B6B] mt-0.5">Visibles en direct par le client sur son lien de suivi.</p>
+            <h4 className="text-[13px] font-bold text-[#101828]">Notes client (Suivi)</h4>
+            <p className="text-[11px] text-[#667085] mt-0.5">Visibles en direct par le client sur son lien de suivi.</p>
           </div>
 
           <ul className="space-y-2.5">
             {clientNotes.length === 0 ? (
-              <li className="rounded-[12px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] px-3 py-4 text-center text-[#6B6B6B] text-xs">
+              <li className="rounded-[12px] border border-dashed border-[#E4E7EC] bg-[#FFFFFF] px-3 py-4 text-center text-[#667085] text-xs">
                 Aucune note client.
               </li>
             ) : (
               [...clientNotes].reverse().map((note) => (
                 <li key={note.id} className="rounded-[12px] border border-[#FFFFFF] bg-[#FFFFFF] p-3 text-xs space-y-1">
-                  <div className="flex justify-between text-[10px] text-[#6B6B6B]">
-                    <span className="font-bold text-[#1A1916]">{note.authorName}</span>
+                  <div className="flex justify-between text-[10px] text-[#667085]">
+                    <span className="font-bold text-[#101828]">{note.authorName}</span>
                     <span>{formatIsoToDisplay(note.createdAt)}</span>
                   </div>
-                  <p className="text-[#1A1916] whitespace-pre-wrap leading-relaxed">{note.body}</p>
+                  <p className="text-[#101828] whitespace-pre-wrap leading-relaxed">{note.body}</p>
                 </li>
               ))
             )}
@@ -3850,7 +3850,7 @@ function MobileNotesHistorySection({
               value={clientDraft}
               onChange={(e) => setClientDraft(e.target.value)}
               placeholder="Ex: Pièce reçue, réparation commencée..."
-              className="w-full rounded-[12px] border border-[#E8E8E5] p-3 text-xs min-h-[80px] outline-none focus:border-[#2A9D8F] bg-[#FFFFFF]"
+              className="w-full rounded-[12px] border border-[#E4E7EC] p-3 text-xs min-h-[80px] outline-none focus:border-[#2A9D8F] bg-[#FFFFFF]"
             />
             <button
               type="button"
@@ -3903,10 +3903,10 @@ function MobileFinalTestSection({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_4px_12px_rgba(26,25,22,0.02)] space-y-4">
+      <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_4px_12px_rgba(16,24,40,0.02)] space-y-4">
         <div>
-          <h3 className="text-[15px] font-bold text-[#1A1916]">Contrôle qualité & Tests finaux</h3>
-          <p className="text-xs text-[#6B6B6B] mt-0.5">
+          <h3 className="text-[15px] font-bold text-[#101828]">Contrôle qualité & Tests finaux</h3>
+          <p className="text-xs text-[#667085] mt-0.5">
             Cochez les points vérifiés sur l'appareil avant remise au client.
           </p>
         </div>
@@ -3917,13 +3917,13 @@ function MobileFinalTestSection({
               key={t.id}
               type="button"
               onClick={() => toggleTest(t.id)}
-              className="w-full flex items-center justify-between p-3 rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] text-left active:scale-[0.99] transition outline-none"
+              className="w-full flex items-center justify-between p-3 rounded-[12px] border border-[#E4E7EC] bg-[#FFFFFF] text-left active:scale-[0.99] transition outline-none"
             >
-              <span className="text-xs font-bold text-[#1A1916]">{t.label}</span>
+              <span className="text-xs font-bold text-[#101828]">{t.label}</span>
               <span
                 className={cn(
                   "size-5 rounded-full border flex items-center justify-center transition-all",
-                  t.checked ? "bg-[#2A9D8F] border-[#2A9D8F] text-white" : "border-[#E8E8E5] bg-white text-transparent",
+                  t.checked ? "bg-[#2A9D8F] border-[#2A9D8F] text-white" : "border-[#E4E7EC] bg-white text-transparent",
                 )}
               >
                 <Check className="size-3" />
@@ -3957,12 +3957,12 @@ function MobileFinalTestSection({
             Valider les tests et passer à "Prêt"
           </button>
         ) : isPrêt ? (
-          <div className="bg-white border border-[#E8E8E5] rounded-[20px] p-4 text-center space-y-3">
-            <p className="text-xs text-[#6B6B6B]">L'appareil a passé les tests de contrôle qualité.</p>
+          <div className="bg-white border border-[#E4E7EC] rounded-[20px] p-4 text-center space-y-3">
+            <p className="text-xs text-[#667085]">L'appareil a passé les tests de contrôle qualité.</p>
             <button
               type="button"
               onClick={() => setMobileTab("Facture")}
-              className="flex h-9 w-full items-center justify-center gap-2 rounded-full border border-[#E8E8E5] text-[#1A1916] text-xs font-bold bg-[#FFFFFF] hover:bg-[#FFFFFF]"
+              className="flex h-9 w-full items-center justify-center gap-2 rounded-full border border-[#E4E7EC] text-[#101828] text-xs font-bold bg-[#FFFFFF] hover:bg-[#FFFFFF]"
             >
               <Receipt className="size-3.5" />
               Gérer la facture
@@ -3977,14 +3977,14 @@ function MobileFinalTestSection({
             </button>
           </div>
         ) : isRendu ? (
-          <div className="bg-white border border-[#E8E8E5] rounded-[20px] p-4 text-center text-xs text-[#6B6B6B]">
+          <div className="bg-white border border-[#E4E7EC] rounded-[20px] p-4 text-center text-xs text-[#667085]">
             Dossier rendu et archivé. Le contrôle qualité a été validé.
           </div>
         ) : (
           <button
             type="button"
             onClick={() => setMobileTab("Vue d'ensemble")}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#FFFFFF] text-[#1A1916] font-semibold text-sm"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#FFFFFF] text-[#101828] font-semibold text-sm"
           >
             Retour à la vue d'ensemble
           </button>
@@ -4061,18 +4061,18 @@ function MobileDocumentViewerModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#1A1916]/18 flex flex-col justify-end sm:justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-[#FFFFFF] rounded-t-[28px] sm:rounded-[24px] max-h-[92vh] flex flex-col shadow-[0_1px_2px_rgba(26,25,22,0.035)] sm:max-w-md sm:w-full sm:mx-auto overflow-hidden animate-in slide-in-from-bottom duration-300">
+    <div className="fixed inset-0 z-50 bg-[#101828]/18 flex flex-col justify-end sm:justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+      <div className="bg-[#FFFFFF] rounded-t-[28px] sm:rounded-[24px] max-h-[92vh] flex flex-col shadow-[0_1px_2px_rgba(16,24,40,0.035)] sm:max-w-md sm:w-full sm:mx-auto overflow-hidden animate-in slide-in-from-bottom duration-300">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E8E8E5] bg-white">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E4E7EC] bg-white">
           <div className="min-w-0">
-            <h2 className="text-[15px] font-bold text-[#1A1916] truncate">{docLabel[doc.type] ?? doc.title}</h2>
-            <p className="text-[11px] text-[#6B6B6B] mt-0.5 truncate">Dossier #{repair.number}</p>
+            <h2 className="text-[15px] font-bold text-[#101828] truncate">{docLabel[doc.type] ?? doc.title}</h2>
+            <p className="text-[11px] text-[#667085] mt-0.5 truncate">Dossier #{repair.number}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full bg-[#FFFFFF] border border-[#E8E8E5] text-[#6B6B6B] hover:text-[#1A1916] outline-none"
+            className="p-1.5 rounded-full bg-[#FFFFFF] border border-[#E4E7EC] text-[#667085] hover:text-[#101828] outline-none"
           >
             <X className="size-4" />
           </button>
@@ -4080,18 +4080,18 @@ function MobileDocumentViewerModal({
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6">
-          <div className="bg-white rounded-[20px] border border-[#E8E8E5] p-4 shadow-[0_4px_12px_rgba(26,25,22,0.015)] space-y-4">
+          <div className="bg-white rounded-[20px] border border-[#E4E7EC] p-4 shadow-[0_4px_12px_rgba(16,24,40,0.015)] space-y-4">
             <div className="flex justify-between items-start">
               <div>
-                <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Appareil</span>
-                <h4 className="text-[13px] font-bold text-[#1A1916] mt-0.5">
+                <span className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block">Appareil</span>
+                <h4 className="text-[13px] font-bold text-[#101828] mt-0.5">
                   {formatDeviceLabel(repair, repair.device)}
                 </h4>
-                {repair.imei && <p className="text-[11px] text-[#6B6B6B] mt-0.5">IMEI: {repair.imei}</p>}
+                {repair.imei && <p className="text-[11px] text-[#667085] mt-0.5">IMEI: {repair.imei}</p>}
               </div>
               <RealDeviceVisual
                 brand={repair.brandName}
-                className="size-11 rounded-[10px] border border-[#E8E8E5] bg-[#FFFFFF] p-1 shadow-sm"
+                className="size-11 rounded-[10px] border border-[#E4E7EC] bg-[#FFFFFF] p-1 shadow-sm"
                 model={repair.deviceModel || repair.model || repair.device}
                 type={repair.deviceType}
               />
@@ -4099,12 +4099,12 @@ function MobileDocumentViewerModal({
 
             <div className="border-t border-[#FFFFFF] pt-3.5 grid grid-cols-2 gap-3 text-xs">
               <div>
-                <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Client</span>
-                <p className="font-bold text-[#1A1916] mt-0.5 truncate">{displayCustomerName(customer) || "Client"}</p>
+                <span className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block">Client</span>
+                <p className="font-bold text-[#101828] mt-0.5 truncate">{displayCustomerName(customer) || "Client"}</p>
               </div>
               <div>
-                <span className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block">Date</span>
-                <p className="font-bold text-[#1A1916] mt-0.5 truncate">
+                <span className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block">Date</span>
+                <p className="font-bold text-[#101828] mt-0.5 truncate">
                   {formatIsoToDisplay(doc.createdAt || repair.droppedAt || repair.createdAt || "")}
                 </p>
               </div>
@@ -4112,27 +4112,27 @@ function MobileDocumentViewerModal({
           </div>
 
           {isIntake && (
-            <div className="bg-white rounded-[20px] border border-[#E8E8E5] p-5 shadow-[0_4px_12px_rgba(26,25,22,0.015)] space-y-4">
-              <h3 className="text-[13px] font-bold text-[#1A1916] border-b border-[#FFFFFF] pb-2">
+            <div className="bg-white rounded-[20px] border border-[#E4E7EC] p-5 shadow-[0_4px_12px_rgba(16,24,40,0.015)] space-y-4">
+              <h3 className="text-[13px] font-bold text-[#101828] border-b border-[#FFFFFF] pb-2">
                 Contenu Bon de Prise en Charge
               </h3>
 
               <div className="space-y-3.5 text-xs">
                 <div>
-                  <span className="text-[#6B6B6B] font-bold block mb-1">Panne déclarée</span>
-                  <p className="bg-[#FFFFFF] rounded-[10px] p-2.5 border border-[#E8E8E5] text-[#1A1916] leading-relaxed">
+                  <span className="text-[#667085] font-bold block mb-1">Panne déclarée</span>
+                  <p className="bg-[#FFFFFF] rounded-[10px] p-2.5 border border-[#E4E7EC] text-[#101828] leading-relaxed">
                     {repair.issue || "Non renseigné"}
                   </p>
                 </div>
                 <div>
-                  <span className="text-[#6B6B6B] font-bold block mb-1">Défauts constatés</span>
-                  <p className="bg-[#FFFFFF] rounded-[10px] p-2.5 border border-[#E8E8E5] text-[#1A1916] leading-relaxed">
+                  <span className="text-[#667085] font-bold block mb-1">Défauts constatés</span>
+                  <p className="bg-[#FFFFFF] rounded-[10px] p-2.5 border border-[#E4E7EC] text-[#101828] leading-relaxed">
                     {repair.intakeCondition?.visibleDefects || "Aucun défaut majeur"}
                   </p>
                 </div>
                 <div>
-                  <span className="text-[#6B6B6B] font-bold block mb-1">Accessoires déposés</span>
-                  <p className="bg-[#FFFFFF] rounded-[10px] p-2.5 border border-[#E8E8E5] text-[#1A1916] leading-relaxed">
+                  <span className="text-[#667085] font-bold block mb-1">Accessoires déposés</span>
+                  <p className="bg-[#FFFFFF] rounded-[10px] p-2.5 border border-[#E4E7EC] text-[#101828] leading-relaxed">
                     {repair.intakeCondition?.accessories?.join(", ") || "Aucun accessoire"}
                   </p>
                 </div>
@@ -4141,14 +4141,14 @@ function MobileDocumentViewerModal({
           )}
 
           {(isQuote || isInvoice) && (
-            <div className="bg-white rounded-[20px] border border-[#E8E8E5] p-5 shadow-[0_4px_12px_rgba(26,25,22,0.015)] space-y-4">
-              <h3 className="text-[13px] font-bold text-[#1A1916] border-b border-[#FFFFFF] pb-2">
+            <div className="bg-white rounded-[20px] border border-[#E4E7EC] p-5 shadow-[0_4px_12px_rgba(16,24,40,0.015)] space-y-4">
+              <h3 className="text-[13px] font-bold text-[#101828] border-b border-[#FFFFFF] pb-2">
                 Détail des prestations
               </h3>
 
               <div className="space-y-3.5">
                 {lines?.length === 0 ? (
-                  <p className="text-xs text-[#6B6B6B] italic">Aucune ligne de facture/devis.</p>
+                  <p className="text-xs text-[#667085] italic">Aucune ligne de facture/devis.</p>
                 ) : (
                   lines?.map((line: any, index: number) => (
                     <div
@@ -4156,10 +4156,10 @@ function MobileDocumentViewerModal({
                       className="flex justify-between items-start text-xs border-b border-[#FFFFFF] pb-3 last:border-b-0 last:pb-0"
                     >
                       <div className="min-w-0 flex-1 pr-3">
-                        <p className="font-bold text-[#1A1916] truncate">{line.description}</p>
-                        <p className="text-[#6B6B6B] text-[10px] mt-0.5">Quantité : {line.quantity}</p>
+                        <p className="font-bold text-[#101828] truncate">{line.description}</p>
+                        <p className="text-[#667085] text-[10px] mt-0.5">Quantité : {line.quantity}</p>
                       </div>
-                      <span className="font-bold text-[#1A1916] shrink-0">
+                      <span className="font-bold text-[#101828] shrink-0">
                         {formatCurrency(line.total, doc.currency ?? repair.currency)}
                       </span>
                     </div>
@@ -4167,15 +4167,15 @@ function MobileDocumentViewerModal({
                 )}
               </div>
 
-              <div className="pt-4 border-t border-[#E8E8E5] space-y-2 text-xs">
+              <div className="pt-4 border-t border-[#E4E7EC] space-y-2 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-[#6B6B6B] font-semibold">Sous-total :</span>
-                  <span className="font-bold text-[#1A1916]">
+                  <span className="text-[#667085] font-semibold">Sous-total :</span>
+                  <span className="font-bold text-[#101828]">
                     {formatCurrency(subtotal, doc.currency ?? repair.currency)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center pt-2 border-t border-[#E8E8E5]">
-                  <span className="text-sm font-bold text-[#1A1916]">Total TTC :</span>
+                <div className="flex justify-between items-center pt-2 border-t border-[#E4E7EC]">
+                  <span className="text-sm font-bold text-[#101828]">Total TTC :</span>
                   <span className="text-lg font-black text-[#167B70]">
                     {formatCurrency(total, doc.currency ?? repair.currency)}
                   </span>
@@ -4186,7 +4186,7 @@ function MobileDocumentViewerModal({
         </div>
 
         {/* Footer actions */}
-        <div className="px-5 py-4 border-t border-[#E8E8E5] bg-white flex items-center gap-3">
+        <div className="px-5 py-4 border-t border-[#E4E7EC] bg-white flex items-center gap-3">
           <button
             type="button"
             onClick={handleShare}
@@ -4199,7 +4199,7 @@ function MobileDocumentViewerModal({
             type="button"
             disabled={!target}
             onClick={() => target && download(target.type, target.id)}
-            className="h-11 w-12 rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] text-[#1A1916] flex items-center justify-center hover:bg-[#FFFFFF] active:scale-95 transition shrink-0"
+            className="h-11 w-12 rounded-[12px] border border-[#E4E7EC] bg-[#FFFFFF] text-[#101828] flex items-center justify-center hover:bg-[#FFFFFF] active:scale-95 transition shrink-0"
             title="Télécharger PDF"
           >
             <Download className="size-4" />
@@ -4254,7 +4254,7 @@ function MobilePhotoLightbox({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 bg-[#1A1916] flex flex-col justify-between animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 bg-[#101828] flex flex-col justify-between animate-in fade-in duration-200"
     >
       {/* Top Header */}
       <div className="flex items-center justify-between px-5 py-4 text-white z-10">
@@ -4302,7 +4302,7 @@ function MobilePhotoLightbox({
       </div>
 
       {/* Footer Info */}
-      <div className="p-6 text-center text-white/80 text-xs bg-[#1A1916]">
+      <div className="p-6 text-center text-white/80 text-xs bg-[#101828]">
         <p className="font-semibold tracking-wide">{currentPhoto.name || currentPhoto.label || "Photo d'entrée"}</p>
       </div>
     </div>

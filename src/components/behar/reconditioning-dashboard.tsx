@@ -196,20 +196,20 @@ function ReconditioningKpiCards({
     <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-6">
       {cards.map((card) => (
         <div
-          className="min-h-[104px] rounded-[16px] border border-[#E8E5DF] bg-white px-3.5 py-3 shadow-[0_1px_2px_rgba(26,25,22,0.04)]"
+          className="min-h-[104px] rounded-[16px] border border-[#E4E7EC] bg-white px-3.5 py-3 shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
           key={card.label}
         >
           <div className="flex items-center gap-2">
             <card.icon className={cn("size-4 shrink-0", kpiIconTone(card.tone))} />
-            <p className="truncate text-[#6B6B6B] text-[12px]">{card.label}</p>
+            <p className="truncate text-[#667085] text-[12px]">{card.label}</p>
           </div>
-          <p className="mt-2 font-semibold text-[#1A1916] text-[21px] leading-none tracking-tight tabular-nums">
+          <p className="mt-2 font-semibold text-[#101828] text-[21px] leading-none tracking-tight tabular-nums">
             {card.value}
           </p>
           <p
             className={cn(
               "mt-1.5 truncate text-[11.5px]",
-              card.tone === "red" && atRisk > 0 ? "text-[#B4342A]" : "text-[#9B9B96]",
+              card.tone === "red" && atRisk > 0 ? "text-[#B4342A]" : "text-[#98A2B3]",
             )}
           >
             {card.hint}
@@ -256,16 +256,16 @@ function ReconditioningPipelineColumn({
   onShowDevices: () => void;
 }>) {
   return (
-    <section className="flex min-h-[194px] flex-col rounded-[16px] border border-[#E8E5DF] bg-white p-2.5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+    <section className="flex min-h-[194px] flex-col rounded-[16px] border border-[#E4E7EC] bg-white p-2.5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
       <div className="mb-2.5 flex items-center justify-between gap-2 px-1.5 pt-0.5">
-        <h2 className="truncate font-semibold text-[#1A1916] text-[12.5px]">{title}</h2>
-        <span className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-[#F1F1EF] px-1.5 font-semibold text-[#6B6B6B] text-[11px] tabular-nums">
+        <h2 className="truncate font-semibold text-[#101828] text-[12.5px]">{title}</h2>
+        <span className="grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-[#F2F4F7] px-1.5 font-semibold text-[#667085] text-[11px] tabular-nums">
           {files.length}
         </span>
       </div>
       <div className="space-y-2">
         {files.length === 0 ? (
-          <div className="grid min-h-[84px] place-items-center rounded-[12px] border border-[#E8E5DF] border-dashed bg-[#FAFAF8] px-3 text-center text-[#9B9B96] text-[12px]">
+          <div className="grid min-h-[84px] place-items-center rounded-[12px] border border-[#E4E7EC] border-dashed bg-[#F9FAFB] px-3 text-center text-[#98A2B3] text-[12px]">
             Aucun appareil
           </div>
         ) : (
@@ -276,7 +276,7 @@ function ReconditioningPipelineColumn({
       </div>
       {files.length > 0 && (
         <button
-          className="mt-2 h-8 w-full rounded-[10px] font-semibold text-[#6B6B6B] text-[11.5px] transition hover:bg-[#ECF8F4] hover:text-[#147065]"
+          className="mt-2 h-8 w-full rounded-[10px] font-semibold text-[#667085] text-[11.5px] transition hover:bg-[#ECF8F4] hover:text-[#147065]"
           onClick={onShowDevices}
           type="button"
         >
@@ -310,7 +310,7 @@ function ReconditioningPipelineCard({
 
   return (
     <article
-      className="cursor-pointer rounded-[12px] border border-[#E8E5DF] bg-[#FCFCFB] p-2.5 transition hover:border-[#2A9D8F]/40 hover:bg-white"
+      className="cursor-pointer rounded-[12px] border border-[#E4E7EC] bg-[#FCFCFD] p-2.5 transition hover:border-[#2A9D8F]/40 hover:bg-white"
       onClick={() => onOpenDevice(file.id)}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") onOpenDevice(file.id);
@@ -319,7 +319,7 @@ function ReconditioningPipelineCard({
       tabIndex={0}
     >
       <div className="grid grid-cols-[36px_minmax(0,1fr)] items-center gap-2.5">
-        <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-[10px] border border-[#E8E5DF] bg-white">
+        <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-[10px] border border-[#E4E7EC] bg-white">
           {image ? (
             <img alt="" className="h-full w-full object-contain p-1" src={image} />
           ) : (
@@ -327,10 +327,10 @@ function ReconditioningPipelineCard({
           )}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold text-[#1A1916] text-[12.5px] leading-tight">
+          <p className="truncate font-semibold text-[#101828] text-[12.5px] leading-tight">
             {getDeviceDisplayName(file)}
           </p>
-          <p className="mt-0.5 truncate text-[#9B9B96] text-[11px]">{getDeviceSubtitle(file)}</p>
+          <p className="mt-0.5 truncate text-[#98A2B3] text-[11px]">{getDeviceSubtitle(file)}</p>
         </div>
       </div>
       <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
@@ -342,14 +342,14 @@ function ReconditioningPipelineCard({
               À compléter
             </span>
           )}
-          {repairCost > 0 && <span className="truncate text-[#9B9B96] text-[11px]">Rép. {safeMoney(repairCost)}</span>}
+          {repairCost > 0 && <span className="truncate text-[#98A2B3] text-[11px]">Rép. {safeMoney(repairCost)}</span>}
         </span>
         <span className="flex max-w-[96px] shrink-0 items-baseline justify-end gap-1 leading-tight">
-          {primaryLabel && <span className="truncate text-[#9B9B96] text-[10px]">{primaryLabel}</span>}
+          {primaryLabel && <span className="truncate text-[#98A2B3] text-[10px]">{primaryLabel}</span>}
           <span
             className={cn(
               "font-semibold text-[12.5px] tabular-nums",
-              margin != null && margin >= 0 ? "text-[#147065]" : "text-[#1A1916]",
+              margin != null && margin >= 0 ? "text-[#147065]" : "text-[#101828]",
             )}
           >
             {primaryValue}

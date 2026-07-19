@@ -118,10 +118,10 @@ export function ReconditioningDevices({
         title="Tous les appareils repris"
       />
 
-      <div className="rounded-[18px] border border-[#E8E5DF] bg-white p-3 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+      <div className="rounded-[18px] border border-[#E4E7EC] bg-white p-3 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
         <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-[minmax(240px,1.4fr)_repeat(6,minmax(112px,0.8fr))_auto]">
           <label className="relative block">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-[#9B9B96]" />
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-[#98A2B3]" />
             <input
               className={cn(inputCls, "pl-9")}
               onChange={(event) => setQuery(event.target.value)}
@@ -159,7 +159,7 @@ export function ReconditioningDevices({
         />
       ) : (
         <>
-          <p className="text-[#6B6B6B] text-[12.5px]">
+          <p className="text-[#667085] text-[12.5px]">
             {visible.length} appareil{visible.length > 1 ? "s" : ""} affiché{visible.length > 1 ? "s" : ""}
             {filtersActive ? ` sur ${files.length}` : ""}
           </p>
@@ -182,7 +182,7 @@ function FilterSelect({
       className={cn(
         selectCls,
         "min-w-0 text-[12.5px]",
-        value ? "border-[#2A9D8F]/45 text-[#1A1916]" : "text-[#6B6B6B]",
+        value ? "border-[#2A9D8F]/45 text-[#101828]" : "text-[#667085]",
       )}
       onChange={(event) => onChange(event.target.value)}
       value={value}

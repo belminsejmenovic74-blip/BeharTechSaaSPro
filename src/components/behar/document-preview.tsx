@@ -107,12 +107,12 @@ export function DocumentPreview() {
       const numberLabel =
         document.type === "intake" && repair
           ? formatIntakeBonNumber(repair.number)
-          : sale?.number ??
+          : (sale?.number ??
             invoice?.number ??
             quote?.number ??
             repair?.number ??
             payment?.paymentNumber ??
-            document.id.slice(-6).toUpperCase();
+            document.id.slice(-6).toUpperCase());
 
       const amount =
         sale?.total ??
@@ -248,7 +248,8 @@ export function DocumentPreview() {
 
   // Regroupement par dossier atelier ou par client.
   const groups = useMemo(() => {
-    if (viewMode !== "byRepair" && viewMode !== "byClient") return [] as Array<{ key: string; title: string; subtitle: string; rows: typeof filtered }>;
+    if (viewMode !== "byRepair" && viewMode !== "byClient")
+      return [] as Array<{ key: string; title: string; subtitle: string; rows: typeof filtered }>;
     const map = new Map<string, { key: string; title: string; subtitle: string; rows: typeof filtered }>();
     for (const row of filtered) {
       const key = viewMode === "byRepair" ? (row.repair?.id ?? "__none__") : (row.customer?.id ?? "__none__");
@@ -276,8 +277,8 @@ export function DocumentPreview() {
       <button
         className={`w-full rounded-2xl border p-4 text-left transition ${
           active
-            ? "border-[#2A9D8F] bg-[#FFFFFF] shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
-            : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/40"
+            ? "border-[#2A9D8F] bg-[#FFFFFF] shadow-[0_1px_2px_rgba(16,24,40,0.035)]"
+            : "border-[#E4E7EC] bg-white hover:border-[#2A9D8F]/40"
         }`}
         data-document-id={row.document.id}
         data-document-type={row.document.type}
@@ -288,18 +289,20 @@ export function DocumentPreview() {
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[#6B6B6B] text-[10px] uppercase tracking-wide">
+            <span className="rounded-[7px] border border-[#E4E7EC] bg-[#FFFFFF] px-2 py-0.5 text-[#667085] text-[10px] uppercase tracking-wide">
               {TYPE_SHORT_LABEL[row.document.type]}
             </span>
-            <div className="mt-1 truncate font-semibold text-[#1A1916] text-sm">{row.listTitle}</div>
+            <div className="mt-1 truncate font-semibold text-[#101828] text-sm">{row.listTitle}</div>
           </div>
-          <span className="shrink-0 font-mono text-[#6B6B6B] text-[11px]">{row.numberLabel}</span>
+          <span className="shrink-0 font-mono text-[#667085] text-[11px]">{row.numberLabel}</span>
         </div>
-        <div className="mt-2 line-clamp-2 text-[#6B6B6B] text-xs">{row.contextLabel}</div>
-        <div className="mt-1 text-[#6B6B6B] text-[11px]">{row.document.createdAt}</div>
+        <div className="mt-2 line-clamp-2 text-[#667085] text-xs">{row.contextLabel}</div>
+        <div className="mt-1 text-[#667085] text-[11px]">{row.document.createdAt}</div>
         <div className="mt-2 flex items-center justify-between text-xs">
-          <span className="font-semibold text-[#1A1916]">{formatCurrency(row.amount, row.currency)}</span>
-          <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[#6B6B6B]">{row.statusLabel}</span>
+          <span className="font-semibold text-[#101828]">{formatCurrency(row.amount, row.currency)}</span>
+          <span className="rounded-[7px] border border-[#E4E7EC] bg-[#FFFFFF] px-2 py-0.5 text-[#667085]">
+            {row.statusLabel}
+          </span>
         </div>
       </button>
     );
@@ -307,12 +310,12 @@ export function DocumentPreview() {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
+      <div className="rounded-2xl border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.035)]">
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_160px]">
           <div className="relative">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#6B6B6B]" />
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#667085]" />
             <input
-              className="h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] pl-10 pr-3 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+              className="h-11 w-full rounded-[12px] border border-[#E4E7EC] bg-[#FFFFFF] pl-10 pr-3 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
               data-testid="documents-search"
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher : client, numéro, appareil, dossier..."
@@ -321,7 +324,7 @@ export function DocumentPreview() {
             />
           </div>
           <select
-            className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-sm outline-none focus:border-[#2A9D8F]"
+            className="h-11 rounded-[12px] border border-[#E4E7EC] bg-white px-3 text-[#101828] text-sm outline-none focus:border-[#2A9D8F]"
             onChange={(e) => setFilterType(e.target.value as FilterType)}
             value={filterType}
           >
@@ -332,7 +335,7 @@ export function DocumentPreview() {
             ))}
           </select>
           <select
-            className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-sm outline-none focus:border-[#2A9D8F]"
+            className="h-11 rounded-[12px] border border-[#E4E7EC] bg-white px-3 text-[#101828] text-sm outline-none focus:border-[#2A9D8F]"
             onChange={(e) => setFilterStatus(e.target.value as StatusFilter)}
             value={filterStatus}
           >
@@ -356,7 +359,7 @@ export function DocumentPreview() {
               className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
                 viewMode === entry.key
                   ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
-                  : "border-[#E8E8E5] bg-white text-[#1A1916] hover:border-[#2A9D8F]/45"
+                  : "border-[#E4E7EC] bg-white text-[#101828] hover:border-[#2A9D8F]/45"
               }`}
               key={entry.key}
               onClick={() => setViewMode(entry.key)}
@@ -367,12 +370,12 @@ export function DocumentPreview() {
           ))}
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-[#6B6B6B] text-xs">
+          <p className="text-[#667085] text-xs">
             {filtered.length} document{filtered.length > 1 ? "s" : ""} sur {enriched.length} · plus récents en haut
           </p>
           {filtersActive ? (
             <button
-              className="rounded-full border border-[#E8E8E5] bg-white px-3 py-1 text-[#6B6B6B] text-xs hover:border-[#2A9D8F]/45 hover:text-[#167B70]"
+              className="rounded-full border border-[#E4E7EC] bg-white px-3 py-1 text-[#667085] text-xs hover:border-[#2A9D8F]/45 hover:text-[#167B70]"
               onClick={() => {
                 setFilterType("all");
                 setFilterStatus("Tous");
@@ -389,9 +392,9 @@ export function DocumentPreview() {
       <div className="grid gap-5 xl:grid-cols-[420px_minmax(0,1fr)]">
         <aside className="space-y-2">
           {filtered.length === 0 && (
-            <div className="rounded-[16px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] py-10 text-center">
-              <p className="text-[13px] font-medium text-[#6B6B6B]">Aucun document ne correspond aux filtres.</p>
-              <p className="mt-1 text-[12px] text-[#A3A3A3]">Les bons, devis, factures et reçus apparaîtront ici.</p>
+            <div className="rounded-[16px] border border-dashed border-[#E4E7EC] bg-[#FFFFFF] py-10 text-center">
+              <p className="text-[13px] font-medium text-[#667085]">Aucun document ne correspond aux filtres.</p>
+              <p className="mt-1 text-[12px] text-[#98A2B3]">Les bons, devis, factures et reçus apparaîtront ici.</p>
             </div>
           )}
           {viewMode === "all" && filtered.map((row) => renderRow(row))}
@@ -399,12 +402,12 @@ export function DocumentPreview() {
           {(viewMode === "byRepair" || viewMode === "byClient") &&
             groups.map((group) => (
               <div className="space-y-2" key={group.key}>
-                <div className="sticky top-0 z-[1] flex items-center justify-between gap-2 rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] px-3 py-2">
+                <div className="sticky top-0 z-[1] flex items-center justify-between gap-2 rounded-[12px] border border-[#E4E7EC] bg-[#FFFFFF] px-3 py-2">
                   <div className="min-w-0">
-                    <p className="truncate font-semibold text-[#1A1916] text-[13px]">{group.title}</p>
-                    {group.subtitle ? <p className="truncate text-[#6B6B6B] text-[11px]">{group.subtitle}</p> : null}
+                    <p className="truncate font-semibold text-[#101828] text-[13px]">{group.title}</p>
+                    {group.subtitle ? <p className="truncate text-[#667085] text-[11px]">{group.subtitle}</p> : null}
                   </div>
-                  <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[#6B6B6B] text-[11px]">
+                  <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[#667085] text-[11px]">
                     {group.rows.length} doc{group.rows.length > 1 ? "s" : ""}
                   </span>
                 </div>
@@ -415,12 +418,12 @@ export function DocumentPreview() {
 
         {selected && selectedRow && (
           <section className="min-w-0" data-testid="document-preview-panel">
-            <div className="no-print mb-4 rounded-2xl border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
+            <div className="no-print mb-4 rounded-2xl border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.035)]">
               <div className="space-y-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="break-words font-semibold text-[#1A1916]">{selectedRow.titleLabel}</p>
-                    <p className="mt-1 break-words text-[#6B6B6B] text-sm">
+                    <p className="break-words font-semibold text-[#101828]">{selectedRow.titleLabel}</p>
+                    <p className="mt-1 break-words text-[#667085] text-sm">
                       {TYPE_LABEL[selected.type]} · {selectedRow.customerLabel}
                       {selectedRow.deviceLabel ? ` · ${selectedRow.deviceLabel}` : ""}
                     </p>
@@ -432,7 +435,7 @@ export function DocumentPreview() {
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 2xl:grid-cols-6">
                   {sourceHref(selected) && (
                     <Link
-                      className="inline-flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-[14px] border border-[#E8E8E5] bg-white px-3 text-center text-[#1A1916] text-xs leading-tight hover:border-[#2A9D8F]/50"
+                      className="inline-flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-[14px] border border-[#E4E7EC] bg-white px-3 text-center text-[#101828] text-xs leading-tight hover:border-[#2A9D8F]/50"
                       href={sourceHref(selected) as string}
                       onClick={() => {
                         if (selected.repairId) store.setSelected("repair", selected.repairId);
@@ -448,7 +451,7 @@ export function DocumentPreview() {
                   )}
                   <button
                     type="button"
-                    className="inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-[14px] border border-[#E8E8E5] bg-white px-3 text-center text-[#1A1916] text-xs leading-tight hover:border-[#2A9D8F]/50 font-semibold"
+                    className="inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-[14px] border border-[#E4E7EC] bg-white px-3 text-center text-[#101828] text-xs leading-tight hover:border-[#2A9D8F]/50 font-semibold"
                     onClick={() => {
                       const target = getPrintableTarget(selected);
                       if (target) {
@@ -558,13 +561,13 @@ function ResponsivePreviewFrame({ children }: Readonly<{ children: ReactNode }>)
   }, []);
 
   return (
-    <div className="rounded-2xl border border-[#E8E8E5] bg-white p-3 shadow-[0_1px_2px_rgba(26,25,22,0.035)] sm:p-4">
+    <div className="rounded-2xl border border-[#E4E7EC] bg-white p-3 shadow-[0_1px_2px_rgba(16,24,40,0.035)] sm:p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <p className="text-[#6B6B6B] text-sm">Aperçu du document</p>
-        <ExternalLink className="size-4 shrink-0 text-[#6B6B6B]" aria-hidden />
+        <p className="text-[#667085] text-sm">Aperçu du document</p>
+        <ExternalLink className="size-4 shrink-0 text-[#667085]" aria-hidden />
       </div>
       <div
-        className="relative w-full overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF]"
+        className="relative w-full overflow-hidden rounded-[14px] border border-[#E4E7EC] bg-[#FFFFFF]"
         ref={viewportRef}
         style={{ height: metrics.height || undefined, minHeight: metrics.height ? undefined : 420 }}
       >

@@ -60,11 +60,11 @@ const SETTING_GROUPS = [
 
 /* ── Helpers ──────────────────────────────────────── */
 const inputCls =
-  "h-11 w-full rounded-[14px] border border-[#E8E8E5] bg-white px-4 text-[15px] text-[#1A1916] outline-none transition-all duration-200 placeholder:text-[#A3A3A3] hover:border-[#DADADA] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/8";
+  "h-11 w-full rounded-[14px] border border-[#E4E7EC] bg-white px-4 text-[15px] text-[#101828] outline-none transition-all duration-200 placeholder:text-[#98A2B3] hover:border-[#D0D5DD] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/8";
 const areaCls =
-  "min-h-[88px] w-full rounded-[14px] border border-[#E8E8E5] bg-white px-4 py-3 text-[15px] text-[#1A1916] outline-none transition-all duration-200 placeholder:text-[#A3A3A3] hover:border-[#DADADA] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/8";
+  "min-h-[88px] w-full rounded-[14px] border border-[#E4E7EC] bg-white px-4 py-3 text-[15px] text-[#101828] outline-none transition-all duration-200 placeholder:text-[#98A2B3] hover:border-[#D0D5DD] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/8";
 const selectCls =
-  "h-11 w-full rounded-[14px] border border-[#E8E8E5] bg-white px-4 text-[15px] text-[#1A1916] outline-none transition-all duration-200 hover:border-[#DADADA] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/8 appearance-none";
+  "h-11 w-full rounded-[14px] border border-[#E4E7EC] bg-white px-4 text-[15px] text-[#101828] outline-none transition-all duration-200 hover:border-[#D0D5DD] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/8 appearance-none";
 
 const blockedValues = new Set(["hj", "test", "undefined", "null", "nan", "none", "aucun", "n/a"]);
 
@@ -197,13 +197,13 @@ function Field({
 }) {
   return (
     <label className="block space-y-1.5">
-      <span className="text-[13px] font-medium text-[#1A1916]">
+      <span className="text-[13px] font-medium text-[#101828]">
         {label}
         {required && <span className="text-[#2A9D8F] ml-0.5">*</span>}
       </span>
       {children}
       {error && <p className="text-[12px] text-[#DC3545] font-medium">{error}</p>}
-      {hint && !error && <p className="text-[11px] text-[#8A8A8A]">{hint}</p>}
+      {hint && !error && <p className="text-[11px] text-[#98A2B3]">{hint}</p>}
     </label>
   );
 }
@@ -228,8 +228,8 @@ function Section({
           <Icon className="size-[18px]" />
         </div>
         <div>
-          <h3 className="font-semibold text-[#1A1916] text-[15px] tracking-tight">{title}</h3>
-          {description && <p className="mt-0.5 text-[12px] text-[#8A8A8A] leading-relaxed">{description}</p>}
+          <h3 className="font-semibold text-[#101828] text-[15px] tracking-tight">{title}</h3>
+          {description && <p className="mt-0.5 text-[12px] text-[#98A2B3] leading-relaxed">{description}</p>}
         </div>
       </div>
       {children}
@@ -500,12 +500,12 @@ export default function SettingsPage() {
       <PageShell title="Réglages" subtitle="Accès réservé au gérant/admin.">
         <Panel className="max-w-xl p-6">
           <div className="flex items-start gap-3">
-            <div className="grid size-10 place-items-center rounded-[12px] bg-[#FFFFFF] text-[#6B6B6B]">
+            <div className="grid size-10 place-items-center rounded-[12px] bg-[#FFFFFF] text-[#667085]">
               <Shield className="size-5" />
             </div>
             <div>
-              <h2 className="font-semibold text-[#1A1916] text-lg">Paramètres non accessibles</h2>
-              <p className="mt-1 text-[#6B6B6B] text-sm">
+              <h2 className="font-semibold text-[#101828] text-lg">Paramètres non accessibles</h2>
+              <p className="mt-1 text-[#667085] text-sm">
                 Votre profil actuel ne permet pas d'ouvrir ou modifier les réglages atelier.
               </p>
             </div>
@@ -533,8 +533,8 @@ export default function SettingsPage() {
                 prefetch={false}
                 className={`shrink-0 px-4 py-2.5 text-[13px] font-medium transition-colors border-b-2 -mb-px ${
                   isActive || (t.key === "atelier" && pathname === "/dashboard/parametres")
-                    ? "border-[#2A9D8F] text-[#1A1916]"
-                    : "border-transparent text-[#6B6B6B] hover:text-[#1A1916]"
+                    ? "border-[#2A9D8F] text-[#101828]"
+                    : "border-transparent text-[#667085] hover:text-[#101828]"
                 }`}
               >
                 {t.label}
@@ -546,13 +546,13 @@ export default function SettingsPage() {
           <PrimaryButton onClick={save} className="h-10 w-full gap-2 px-5 sm:w-auto" disabled={!canEditSettings}>
             <Check className="size-4" /> Enregistrer les modifications
           </PrimaryButton>
-          <span className="max-w-full text-[12px] text-[#8A8A8A] sm:max-w-[180px]">
+          <span className="max-w-full text-[12px] text-[#98A2B3] sm:max-w-[180px]">
             {saved ? "Toutes les modifications sont enregistrées" : "Modifications non enregistrées"}
           </span>
         </div>
       </div>
 
-      <div className="mb-6 flex gap-2 overflow-x-auto rounded-[18px] border border-[#E8E8E5] bg-white p-2">
+      <div className="mb-6 flex gap-2 overflow-x-auto rounded-[18px] border border-[#E4E7EC] bg-white p-2">
         {SETTING_GROUPS.map((group) => (
           <button
             key={group.key}
@@ -561,7 +561,7 @@ export default function SettingsPage() {
             className={`shrink-0 rounded-[12px] px-4 py-2.5 text-[13px] font-semibold transition ${
               activeGroup === group.key
                 ? "bg-[#E9F7F4] text-[#1E7A6E] shadow-sm"
-                : "text-[#6B6B6B] hover:bg-[#F7F7F4] hover:text-[#1A1916]"
+                : "text-[#667085] hover:bg-[#F5F7FA] hover:text-[#101828]"
             }`}
           >
             {group.label}
@@ -642,7 +642,7 @@ export default function SettingsPage() {
               </Field>
               <Field label="Devise par défaut" hint="Déterminée automatiquement par le marché principal.">
                 <input
-                  className={`${inputCls} bg-[#FFFFFF] text-[#6B6B6B]`}
+                  className={`${inputCls} bg-[#FFFFFF] text-[#667085]`}
                   value={
                     draft.allowedMarkets?.includes("FR") && draft.allowedMarkets?.includes("CH")
                       ? "EUR et CHF (Choix modifiable par document)"
@@ -780,7 +780,7 @@ export default function SettingsPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <Field label="SIREN" hint="9 chiffres">
                         <input
-                          className={`${inputCls} bg-[#FFFFFF] text-[#6B6B6B]`}
+                          className={`${inputCls} bg-[#FFFFFF] text-[#667085]`}
                           value={siren}
                           readOnly
                           aria-readonly="true"
@@ -931,7 +931,7 @@ export default function SettingsPage() {
                           className={`h-11 rounded-[14px] border px-3 text-[13px] font-semibold transition ${
                             Number(draft.vatRate ?? 20) === rate
                               ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
-                              : "border-[#E8E8E5] bg-white text-[#1A1916] hover:border-[#DADADA]"
+                              : "border-[#E4E7EC] bg-white text-[#101828] hover:border-[#D0D5DD]"
                           }`}
                         >
                           {String(rate).replace(".", ",")} %
@@ -968,7 +968,7 @@ export default function SettingsPage() {
                       maxLength={120}
                       rows={2}
                     />
-                    <p className="text-right text-[10px] text-[#A3A3A3]">{(draft.tvaMention || "").length}/120</p>
+                    <p className="text-right text-[10px] text-[#98A2B3]">{(draft.tvaMention || "").length}/120</p>
                   </Field>
                 )}
               </div>
@@ -998,7 +998,7 @@ export default function SettingsPage() {
                       className={`h-11 w-full rounded-[14px] border px-4 text-left text-[13px] font-semibold transition ${
                         draft.twintEnabled
                           ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
-                          : "border-[#E8E8E5] bg-white text-[#6B6B6B]"
+                          : "border-[#E4E7EC] bg-white text-[#667085]"
                       }`}
                     >
                       {draft.twintEnabled ? "TWINT activé" : "Activer TWINT"}
@@ -1020,7 +1020,7 @@ export default function SettingsPage() {
                       placeholder="https://.../qr-twint.png"
                     />
                   </Field>
-                  <div className="rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] p-4 text-[12px] leading-relaxed text-[#6B6B6B]">
+                  <div className="rounded-[14px] border border-[#E4E7EC] bg-[#FFFFFF] p-4 text-[12px] leading-relaxed text-[#667085]">
                     Moyens proposés : Espèces · TWINT · Carte externe · Virement · Autre.
                   </div>
                 </div>
@@ -1202,12 +1202,12 @@ export default function SettingsPage() {
       <div className="mt-6 rounded-[16px] border border-[#FFFFFF] bg-[#FFFFFF] px-5 py-4 flex items-start gap-3 max-w-sm">
         <HelpCircle className="size-5 text-[#2A9D8F] shrink-0 mt-0.5" />
         <div>
-          <p className="text-[13px] font-semibold text-[#1A1916]">Besoin d'aide ?</p>
-          <p className="mt-0.5 text-[12px] text-[#6B6B6B]">Consultez notre centre d'aide ou contactez le support.</p>
+          <p className="text-[13px] font-semibold text-[#101828]">Besoin d'aide ?</p>
+          <p className="mt-0.5 text-[12px] text-[#667085]">Consultez notre centre d'aide ou contactez le support.</p>
           <button
             type="button"
             disabled
-            className="mt-2 inline-flex cursor-not-allowed items-center gap-1 text-[12px] font-medium text-[#6B6B6B]"
+            className="mt-2 inline-flex cursor-not-allowed items-center gap-1 text-[12px] font-medium text-[#667085]"
           >
             Centre d'aide bientôt disponible <ExternalLink className="size-3" />
           </button>
@@ -1273,9 +1273,9 @@ function CloudSyncBlock() {
   };
 
   return (
-    <div className="mt-4 rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] p-3">
-      <p className="font-semibold text-[#1A1916] text-[13px]">Sauvegarde</p>
-      <p className="mt-1 text-[#6B6B6B] text-[11.5px] leading-snug">
+    <div className="mt-4 rounded-[14px] border border-[#E4E7EC] bg-[#FFFFFF] p-3">
+      <p className="font-semibold text-[#101828] text-[13px]">Sauvegarde</p>
+      <p className="mt-1 text-[#667085] text-[11.5px] leading-snug">
         Vos données sont sauvegardées automatiquement. Vous pouvez aussi forcer une sauvegarde ou récupérer la dernière.
       </p>
 
@@ -1292,7 +1292,7 @@ function CloudSyncBlock() {
           type="button"
           onClick={onSave}
           disabled={busy !== null}
-          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[12.5px] font-medium text-[#1A1916] transition active:scale-95 disabled:opacity-50 hover:bg-[#FFFFFF]"
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[12.5px] font-medium text-[#101828] transition active:scale-95 disabled:opacity-50 hover:bg-[#FFFFFF]"
         >
           {busy === "upload" ? <Loader2 className="size-3.5 animate-spin" /> : <CloudUpload className="size-3.5" />}
           Sauvegarder
@@ -1301,7 +1301,7 @@ function CloudSyncBlock() {
           type="button"
           onClick={onRestore}
           disabled={busy !== null}
-          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[12.5px] font-medium text-[#1A1916] transition active:scale-95 disabled:opacity-50 hover:bg-[#FFFFFF]"
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[12.5px] font-medium text-[#101828] transition active:scale-95 disabled:opacity-50 hover:bg-[#FFFFFF]"
         >
           {busy === "restore" ? <Loader2 className="size-3.5 animate-spin" /> : <CloudDownload className="size-3.5" />}
           Restaurer
@@ -1362,7 +1362,7 @@ function InstallAppLink() {
 
   if (installed) {
     return (
-      <p className="mt-3 flex items-center gap-1.5 text-[12px] text-[#6B6B6B]">
+      <p className="mt-3 flex items-center gap-1.5 text-[12px] text-[#667085]">
         <Check className="size-3 text-[#2A9D8F]" /> Application installée
       </p>
     );
@@ -1392,7 +1392,7 @@ function InstallAppLink() {
       <button
         type="button"
         onClick={handleClick}
-        className="mt-3 flex items-center gap-1.5 text-[12px] text-[#6B6B6B] hover:text-[#2A9D8F] transition-colors"
+        className="mt-3 flex items-center gap-1.5 text-[12px] text-[#667085] hover:text-[#2A9D8F] transition-colors"
       >
         <Download className="size-3" /> Installer l'application
       </button>
@@ -1401,17 +1401,17 @@ function InstallAppLink() {
         <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true">
           <button
             type="button"
-            className="absolute inset-0 bg-[#1A1916]/40"
+            className="absolute inset-0 bg-[#101828]/40"
             onClick={() => setIosOpen(false)}
             aria-label="Fermer"
           />
-          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-[28px] bg-white pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_-20px_60px_rgba(26,25,22,0.18)]">
+          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-[28px] bg-white pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_-20px_60px_rgba(16,24,40,0.18)]">
             <div className="flex justify-center pt-2 pb-1">
               <span className="h-1 w-9 rounded-full bg-[#FFFFFF]" aria-hidden />
             </div>
             <div className="px-6 pt-3 pb-4">
-              <p className="font-semibold text-[#1A1916] text-[20px] tracking-tight">Installer sur iPhone / iPad</p>
-              <p className="mt-1 text-[#6B6B6B] text-[13px]">
+              <p className="font-semibold text-[#101828] text-[20px] tracking-tight">Installer sur iPhone / iPad</p>
+              <p className="mt-1 text-[#667085] text-[13px]">
                 Safari : touchez l'icône <strong>Partager</strong>, puis <strong>« Sur l'écran d'accueil »</strong>.
               </p>
             </div>
@@ -1419,7 +1419,7 @@ function InstallAppLink() {
               <button
                 type="button"
                 onClick={() => setIosOpen(false)}
-                className="w-full h-11 rounded-[12px] bg-[#1A1916] text-white font-semibold text-[14px]"
+                className="w-full h-11 rounded-[12px] bg-[#101828] text-white font-semibold text-[14px]"
               >
                 Compris
               </button>

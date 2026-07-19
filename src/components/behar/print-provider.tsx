@@ -27,7 +27,15 @@ import {
   DiagnosticReportDocument,
 } from "./printable-documents";
 
-type DocumentType = "intake" | "quote" | "invoice" | "payment" | "internal" | "summary" | "sale-receipt" | "diagnostic_report";
+type DocumentType =
+  | "intake"
+  | "quote"
+  | "invoice"
+  | "payment"
+  | "internal"
+  | "summary"
+  | "sale-receipt"
+  | "diagnostic_report";
 
 interface DocumentContextType {
   print: (type: DocumentType, id: string) => void;
@@ -69,7 +77,8 @@ function documentForTarget(documents: BeharDocument[], type: DocumentType, id: s
     if (type === "quote") return doc.type === "quote" && doc.quoteId === id;
     if (type === "invoice") return (doc.type === "invoice" || doc.type === "sale-invoice") && doc.invoiceId === id;
     if (type === "payment") return doc.type === "payment" && doc.paymentId === id;
-    if (type === "sale-receipt") return (doc.type === "sale-receipt" || doc.type === "sale-invoice") && doc.saleId === id;
+    if (type === "sale-receipt")
+      return (doc.type === "sale-receipt" || doc.type === "sale-invoice") && doc.saleId === id;
     return false;
   });
 }
@@ -151,7 +160,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
         docNumberValue = invoice.number || "";
         docCurrency = invoice.currency || "";
         hasCustomer = Boolean(invoice.customerId);
-        const total = invoice.lines?.reduce((acc, l) => acc + (l.quantity * l.unitPrice), 0) ?? 0;
+        const total = invoice.lines?.reduce((acc, l) => acc + l.quantity * l.unitPrice, 0) ?? 0;
         totalCalculable = Number.isFinite(total);
       } else {
         missing.push("Facture introuvable");
@@ -194,7 +203,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
     if (!docNumberValue?.trim()) {
       missing.push("Numéro de document");
     }
-    
+
     // Fallback to workshop currency if document currency is not set
     const finalCurrency = docCurrency?.trim() || state.workshopInfo?.currency || "EUR";
     if (!finalCurrency) {
@@ -225,9 +234,9 @@ export function PrintProvider({ children }: { children: ReactNode }) {
     if (newWin) {
       newWin.document.title = "Génération du PDF...";
       newWin.document.body.innerHTML = `
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; background-color: #FFFFFF; color: #1A1916; margin: 0;">
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; background-color: #FFFFFF; color: #101828; margin: 0;">
           <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Génération de l'aperçu PDF...</div>
-          <div style="font-size: 14px; color: #6B6B6B;">Veuillez patienter quelques instants.</div>
+          <div style="font-size: 14px; color: #667085;">Veuillez patienter quelques instants.</div>
         </div>
       `;
     }
@@ -236,47 +245,50 @@ export function PrintProvider({ children }: { children: ReactNode }) {
     setActiveDoc({ type, id, action: "preview", reqId });
   }, []);
 
-  const download = useCallback((type: DocumentType, id: string) => {
-    if (inFlightRef.current) {
-      toast.info("Un téléchargement est déjà en cours…");
-      return;
-    }
+  const download = useCallback(
+    (type: DocumentType, id: string) => {
+      if (inFlightRef.current) {
+        toast.info("Un téléchargement est déjà en cours…");
+        return;
+      }
 
-    const publishedDocument = documentForTarget(useBeharStore.getState().documents, type, id);
-    if (publishedDocument?.fileUrl) {
-      downloadDocumentPdf(publishedDocument);
-      return;
-    }
+      const publishedDocument = documentForTarget(useBeharStore.getState().documents, type, id);
+      if (publishedDocument?.fileUrl) {
+        downloadDocumentPdf(publishedDocument);
+        return;
+      }
 
-    const missingFields = getMissingIndispensableFields(type, id);
-    if (missingFields.length > 0) {
-      toast.error(
-        `Impossible de générer le document. Les informations indispensables suivantes sont manquantes : ${missingFields.join(", ")}`,
-      );
-      return;
-    }
+      const missingFields = getMissingIndispensableFields(type, id);
+      if (missingFields.length > 0) {
+        toast.error(
+          `Impossible de générer le document. Les informations indispensables suivantes sont manquantes : ${missingFields.join(", ")}`,
+        );
+        return;
+      }
 
-    const state = useBeharStore.getState();
-    const billingCountry =
-      type === "quote"
-        ? state.quotes.find((quote) => quote.id === id)?.billingCountry
-        : type === "invoice"
-          ? state.invoices.find((invoice) => invoice.id === id)?.billingCountry
-          : undefined;
+      const state = useBeharStore.getState();
+      const billingCountry =
+        type === "quote"
+          ? state.quotes.find((quote) => quote.id === id)?.billingCountry
+          : type === "invoice"
+            ? state.invoices.find((invoice) => invoice.id === id)?.billingCountry
+            : undefined;
 
-    const isComplete = billingCountry ? isWorkshopBillingProfileComplete(state.workshopInfo, billingCountry) : true;
+      const isComplete = billingCountry ? isWorkshopBillingProfileComplete(state.workshopInfo, billingCountry) : true;
 
-    if (!isComplete) {
-      setWarningModal({
-        type,
-        id,
-        action: "download",
-      });
-      return;
-    }
+      if (!isComplete) {
+        setWarningModal({
+          type,
+          id,
+          action: "download",
+        });
+        return;
+      }
 
-    setActiveDoc({ type, id, action: "download", reqId: ++reqCounterRef.current });
-  }, [getMissingIndispensableFields]);
+      setActiveDoc({ type, id, action: "download", reqId: ++reqCounterRef.current });
+    },
+    [getMissingIndispensableFields],
+  );
 
   const uploadResolveRef = useRef<((ok: boolean) => void) | null>(null);
 
@@ -488,20 +500,20 @@ export function PrintProvider({ children }: { children: ReactNode }) {
         settled = true;
         clearTimeout(safetyTimer);
         clearTimeout(startTimer);
-        
+
         toast.dismiss(processingToast);
         inFlightRef.current = false;
-        
+
         if (kind !== "ok" && newWin) {
           newWin.document.body.innerHTML = `
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; background-color: #FFFFFF; color: #1A1916; margin: 0; padding: 20px; text-align: center;">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; background-color: #FFFFFF; color: #101828; margin: 0; padding: 20px; text-align: center;">
               <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #D9383A;">Erreur de génération</div>
-              <div style="font-size: 14px; color: #6B6B6B; margin-bottom: 16px;">${payload || "Impossible de prévisualiser ce document."}</div>
-              <button onclick="window.close()" style="height: 36px; padding: 0 16px; border: none; border-radius: 8px; background-color: #1A1916; color: white; font-weight: 600; cursor: pointer; border: 1px solid #1A1916;">Fermer l'onglet</button>
+              <div style="font-size: 14px; color: #667085; margin-bottom: 16px;">${payload || "Impossible de prévisualiser ce document."}</div>
+              <button onclick="window.close()" style="height: 36px; padding: 0 16px; border: none; border-radius: 8px; background-color: #101828; color: white; font-weight: 600; cursor: pointer; border: 1px solid #101828;">Fermer l'onglet</button>
             </div>
           `;
         }
-        
+
         pendingPreviewsRef.current.delete(currentReqId);
         setActiveDoc((current) => (current?.reqId === currentReqId ? null : current));
       };
@@ -520,7 +532,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
           }
 
           const docElement = hiddenContainerRef.current.querySelector(
-            '[data-pdf-paginate="true"], .print-document'
+            '[data-pdf-paginate="true"], .print-document',
           ) as HTMLElement | null;
           if (!docElement) {
             finish("missing", "Document lié introuvable.");
@@ -530,7 +542,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
           const filename = getFilename(activeDoc.type, activeDoc.id);
 
           const blob = await generatePdfFromElement(docElement, filename, "blob");
-          
+
           if (!cancelled && blob) {
             const blobUrl = URL.createObjectURL(blob);
             if (newWin) {
@@ -650,9 +662,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
             }
             return;
           }
-          const json = (await response.json().catch(() => null)) as
-            | { url?: string; storagePath?: string }
-            | null;
+          const json = (await response.json().catch(() => null)) as { url?: string; storagePath?: string } | null;
           if (json?.url && activeDoc.documentId) {
             storeRef.current.updateDocument(activeDoc.documentId, {
               fileUrl: json.url,
@@ -684,7 +694,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
                   label: "Ouvrir",
                   onClick: () => {
                     window.open(blobUrl, "_blank");
-                  }
+                  },
                 },
                 duration: 15000,
               });
@@ -859,7 +869,11 @@ export function PrintProvider({ children }: { children: ReactNode }) {
           zIndex: -1,
         }}
       >
-        {(activeDoc?.action === "download" || activeDoc?.action === "upload" || activeDoc?.action === "preview" || activeDoc?.action === "print") && renderDocument()}
+        {(activeDoc?.action === "download" ||
+          activeDoc?.action === "upload" ||
+          activeDoc?.action === "preview" ||
+          activeDoc?.action === "print") &&
+          renderDocument()}
       </div>
 
       <Modal
@@ -872,8 +886,9 @@ export function PrintProvider({ children }: { children: ReactNode }) {
         maxWidth="max-w-md"
       >
         <div className="space-y-4">
-          <p className="text-sm text-[#6B6B6B] leading-relaxed">
-            Certaines informations légales sont incomplètes. Le document peut être généré, mais vérifiez vos paramètres avec votre comptable.
+          <p className="text-sm text-[#667085] leading-relaxed">
+            Certaines informations légales sont incomplètes. Le document peut être généré, mais vérifiez vos paramètres
+            avec votre comptable.
           </p>
           <div className="flex flex-col gap-2 pt-2">
             <PrimaryButton

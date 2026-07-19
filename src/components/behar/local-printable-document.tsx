@@ -125,7 +125,7 @@ export function getDocumentFileName(document: BeharDocument, store: BeharStoreSn
 
 function MissingDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <div className="mx-auto grid min-h-[520px] w-full max-w-[794px] place-items-center rounded-[18px] border border-[#E8E8E5] bg-white p-10 text-center text-[#6B6B6B]">
+    <div className="mx-auto grid min-h-[520px] w-full max-w-[794px] place-items-center rounded-[18px] border border-[#E4E7EC] bg-white p-10 text-center text-[#667085]">
       <p>{children}</p>
     </div>
   );

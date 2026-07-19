@@ -104,14 +104,14 @@ export function UpdateChecker() {
   // Cas web : pas d'updater, juste un message rassurant.
   if (!isDesktop) {
     return (
-      <div className="rounded-[14px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+      <div className="rounded-[14px] border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
         <div className="flex items-start gap-3">
           <span className="grid size-9 shrink-0 place-items-center text-[#2A9D8F]">
             <CheckCircle2 className="size-[18px]" strokeWidth={2.2} />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="font-semibold text-[#1A1916] text-[14px]">Version web à jour</p>
-            <p className="mt-0.5 text-[#6B6B6B] text-[12.5px] leading-5">
+            <p className="font-semibold text-[#101828] text-[14px]">Version web à jour</p>
+            <p className="mt-0.5 text-[#667085] text-[12.5px] leading-5">
               La version web (navigateur) se met à jour automatiquement à chaque ouverture. Aucune action manuelle
               requise.
             </p>
@@ -123,14 +123,14 @@ export function UpdateChecker() {
 
   // Cas desktop (Tauri) : UI complète check / install.
   return (
-    <div className="rounded-[14px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+    <div className="rounded-[14px] border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
       <div className="flex items-start gap-3">
         <span className="grid size-9 shrink-0 place-items-center text-[#2A9D8F]">
           <ShieldCheck className="size-[18px]" strokeWidth={2.2} />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-[#1A1916] text-[14px]">Mises à jour de l'application</p>
-          <p className="mt-0.5 text-[#6B6B6B] text-[12.5px] leading-5">
+          <p className="font-semibold text-[#101828] text-[14px]">Mises à jour de l'application</p>
+          <p className="mt-0.5 text-[#667085] text-[12.5px] leading-5">
             Vérifie si une nouvelle version de Behar Tech Pro est disponible. La mise à jour est téléchargée, signée et
             vérifiée avant d'être appliquée.
           </p>
@@ -140,7 +140,7 @@ export function UpdateChecker() {
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#FFFFFF]">
                 <div className="h-full rounded-full bg-[#2A9D8F] transition-all" style={{ width: `${progress}%` }} />
               </div>
-              <p className="mt-1.5 text-[#6B6B6B] text-[11.5px]">Téléchargement {progress}%…</p>
+              <p className="mt-1.5 text-[#667085] text-[11.5px]">Téléchargement {progress}%…</p>
             </div>
           )}
 
@@ -151,7 +151,7 @@ export function UpdateChecker() {
           )}
 
           {status === "up-to-date" && (
-            <p className="mt-2 text-[#6B6B6B] text-[12.5px]">Vous êtes sur la dernière version.</p>
+            <p className="mt-2 text-[#667085] text-[12.5px]">Vous êtes sur la dernière version.</p>
           )}
 
           {status === "error" && errorMsg && <p className="mt-2 text-[#B42318] text-[11.5px]">Erreur : {errorMsg}</p>}
@@ -161,7 +161,7 @@ export function UpdateChecker() {
               type="button"
               onClick={check}
               disabled={status === "checking" || status === "downloading"}
-              className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3.5 text-[#1A1916] text-[13px] font-semibold transition active:scale-95 disabled:opacity-50"
+              className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white px-3.5 text-[#101828] text-[13px] font-semibold transition active:scale-95 disabled:opacity-50"
             >
               {status === "checking" ? (
                 <Loader2 className="size-4 animate-spin" />

@@ -256,7 +256,7 @@ export const DEFAULT_WIDGET_CMS_CONFIG: EditableWidgetConfig = {
     primaryColor: "#2A9D8F",
     buttonColor: "#2A9D8F",
     buttonTextColor: "#FFFFFF",
-    textColor: "#1A1916",
+    textColor: "#101828",
     backgroundColor: "#FFFFFF",
     radius: 14,
     logoUrl: "",

@@ -59,8 +59,8 @@ export function AccueilLicenseBridge({ children }: Readonly<{ children: ReactNod
     return (
       <div className="fixed inset-0 z-[120] flex items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
-          <div className="size-10 animate-spin rounded-full border-2 border-[#E8E8E5] border-t-[#2A9D8F]" />
-          <p className="text-[#6B6B6B] text-sm">Connexion à votre atelier…</p>
+          <div className="size-10 animate-spin rounded-full border-2 border-[#E4E7EC] border-t-[#2A9D8F]" />
+          <p className="text-[#667085] text-sm">Connexion à votre atelier…</p>
         </div>
       </div>
     );

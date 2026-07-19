@@ -74,7 +74,7 @@ export function PhoneCaptureView({ token }: Readonly<{ token: string }>) {
   }
 
   return (
-    <div className="min-h-svh bg-[#FFFFFF] px-4 py-6 text-[#1A1916]">
+    <div className="min-h-svh bg-[#FFFFFF] px-4 py-6 text-[#101828]">
       <div className="mx-auto w-full max-w-[460px]">
         <div className="flex items-center justify-between">
           <BeharLogo size="sm" />
@@ -90,7 +90,7 @@ export function PhoneCaptureView({ token }: Readonly<{ token: string }>) {
         </div>
 
         <h1 className="mt-5 font-semibold text-[22px] leading-tight tracking-tight">Photos de l'appareil</h1>
-        <p className="mt-1 text-[#6B6B6B] text-sm">
+        <p className="mt-1 text-[#667085] text-sm">
           Prenez les photos : elles s'ajoutent automatiquement sur l'ordinateur.
         </p>
 
@@ -102,7 +102,7 @@ export function PhoneCaptureView({ token }: Readonly<{ token: string }>) {
               <label
                 className={cn(
                   "flex items-center gap-3 rounded-[16px] border bg-white p-3 transition active:scale-[0.99]",
-                  thumb ? "border-[#CDEBE4]" : "border-[#E8E8E5]",
+                  thumb ? "border-[#CDEBE4]" : "border-[#E4E7EC]",
                 )}
                 key={slot.key}
               >
@@ -113,19 +113,19 @@ export function PhoneCaptureView({ token }: Readonly<{ token: string }>) {
                   onChange={(e) => onFile(slot.key, e)}
                   type="file"
                 />
-                <span className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF]">
+                <span className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-[12px] border border-[#E4E7EC] bg-[#FFFFFF]">
                   {thumb ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img alt={slot.label} className="size-full object-cover" src={thumb} />
                   ) : isBusy ? (
                     <Loader2 className="size-5 animate-spin text-[#2A9D8F]" />
                   ) : (
-                    <Camera className="size-5 text-[#6B6B6B]" />
+                    <Camera className="size-5 text-[#667085]" />
                   )}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block font-semibold text-[#1A1916] text-sm">{slot.label}</span>
-                  <span className="block text-[#6B6B6B] text-xs">
+                  <span className="block font-semibold text-[#101828] text-sm">{slot.label}</span>
+                  <span className="block text-[#667085] text-xs">
                     {thumb ? "Envoyée — touchez pour reprendre" : isBusy ? "Envoi…" : "Toucher pour photographier"}
                   </span>
                 </span>
@@ -139,7 +139,7 @@ export function PhoneCaptureView({ token }: Readonly<{ token: string }>) {
           })}
         </div>
 
-        <p className="mt-6 text-center text-[#9A9A95] text-xs">
+        <p className="mt-6 text-center text-[#98A2B3] text-xs">
           Gardez cette page ouverte pendant la prise de photos. Behar Tech Pro.
         </p>
       </div>
@@ -155,11 +155,11 @@ function CenterMessage({
   return (
     <div className="grid min-h-svh place-items-center bg-[#FFFFFF] px-6 text-center">
       <div className="max-w-xs">
-        <div className="mx-auto grid size-12 place-items-center rounded-[14px] bg-white text-[#6B6B6B] shadow-[0_1px_3px_rgba(26,25,22,0.06)]">
+        <div className="mx-auto grid size-12 place-items-center rounded-[14px] bg-white text-[#667085] shadow-[0_1px_3px_rgba(16,24,40,0.06)]">
           <Icon className="size-6" />
         </div>
-        <p className="mt-4 font-semibold text-[#1A1916] text-lg">{title}</p>
-        <p className="mt-1 text-[#6B6B6B] text-sm">{text}</p>
+        <p className="mt-4 font-semibold text-[#101828] text-lg">{title}</p>
+        <p className="mt-1 text-[#667085] text-sm">{text}</p>
       </div>
     </div>
   );

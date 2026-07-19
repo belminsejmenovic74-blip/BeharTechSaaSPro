@@ -102,10 +102,10 @@ export function ClientPortalContent({ section }: Readonly<{ section: ClientSecti
             <span className="mt-6 grid size-14 place-items-center rounded-[17px] border border-[#DCEAE7] bg-white text-[#2A9D8F] shadow-[0_8px_24px_rgba(42,157,143,0.12)]">
               <Icon className="size-6" />
             </span>
-            <h2 className="mt-5 text-[23px] font-semibold tracking-tight text-[#1A1916]">
+            <h2 className="mt-5 text-[23px] font-semibold tracking-tight text-[#101828]">
               {isSms ? "Communications SMS" : "Communications par e-mail"}
             </h2>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-[#6B6B6B]">
+            <p className="mt-2 max-w-xl text-sm leading-6 text-[#667085]">
               {isSms
                 ? "Envoyez les confirmations, suivis et rappels directement depuis les dossiers clients."
                 : "Envoyez vos documents, confirmations et informations de suivi depuis le même espace."}
@@ -122,7 +122,7 @@ export function ClientPortalContent({ section }: Readonly<{ section: ClientSecti
   if (section === "paiements") {
     return (
       <PortalPage>
-        <p className="mb-2 font-semibold text-[#6B6B6B] text-xs uppercase tracking-[0.18em]">Intégrations</p>
+        <p className="mb-2 font-semibold text-[#667085] text-xs uppercase tracking-[0.18em]">Intégrations</p>
         <ExternalPaymentIntegrations />
       </PortalPage>
     );
@@ -133,12 +133,12 @@ export function ClientPortalContent({ section }: Readonly<{ section: ClientSecti
   return (
     <PortalPage>
       <PageHeader title={content.title} subtitle={content.subtitle} />
-      <div className="max-w-3xl rounded-[20px] border border-[#E9E9E6] bg-white p-6 shadow-[0_12px_36px_rgba(26,25,22,0.04)] sm:p-8">
+      <div className="max-w-3xl rounded-[20px] border border-[#E9E9E6] bg-white p-6 shadow-[0_12px_36px_rgba(16,24,40,0.04)] sm:p-8">
         <span className="grid size-12 place-items-center rounded-[14px] border border-[#E9E9E6] text-[#2A9D8F]">
           <Icon className="size-5" />
         </span>
-        <h2 className="mt-5 font-semibold text-[#1A1916] text-xl">{content.title}</h2>
-        <p className="mt-2 max-w-xl text-[#6B6B6B] text-sm leading-6">{content.subtitle}</p>
+        <h2 className="mt-5 font-semibold text-[#101828] text-xl">{content.title}</h2>
+        <p className="mt-2 max-w-xl text-[#667085] text-sm leading-6">{content.subtitle}</p>
         <Link
           className="mt-6 inline-flex h-11 items-center justify-center rounded-[12px] border border-[#2A9D8F] px-5 font-semibold text-[#167B70] text-sm transition hover:bg-[#F0FAF8]"
           href={content.href}
@@ -146,7 +146,7 @@ export function ClientPortalContent({ section }: Readonly<{ section: ClientSecti
           {content.action}
         </Link>
       </div>
-      <div className="mt-5 flex items-start gap-3 rounded-[16px] border border-[#E9E9E6] bg-white p-5 text-[#6B6B6B] text-sm">
+      <div className="mt-5 flex items-start gap-3 rounded-[16px] border border-[#E9E9E6] bg-white p-5 text-[#667085] text-sm">
         <Building2 className="mt-0.5 size-5 shrink-0 text-[#2A9D8F]" />
         Ces réglages utilisent la même organisation, les mêmes boutiques et les mêmes données que le SaaS.
       </div>

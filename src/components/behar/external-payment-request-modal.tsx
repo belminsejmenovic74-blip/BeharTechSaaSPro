@@ -251,7 +251,7 @@ export function ExternalPaymentRequestModal({
         {step === "provider" ? (
           <>
             <div>
-              <h3 className="font-semibold text-[#1A1916] text-[16px]">Choisir un service</h3>
+              <h3 className="font-semibold text-[#101828] text-[16px]">Choisir un service</h3>
               {loading ? (
                 <div className="grid h-32 place-items-center">
                   <Loader2 className="size-6 animate-spin text-[#2A9D8F]" />
@@ -264,7 +264,7 @@ export function ExternalPaymentRequestModal({
                         "relative flex min-h-[98px] items-center gap-3 rounded-[15px] border bg-white p-4 text-left transition",
                         selectedProvider === connection.provider
                           ? "border-[#2A9D8F] bg-[#F4FBF9] shadow-[0_0_0_1px_rgba(42,157,143,.08)]"
-                          : "border-[#E8E8E5] hover:border-[#2A9D8F]/45",
+                          : "border-[#E4E7EC] hover:border-[#2A9D8F]/45",
                       )}
                       key={connection.provider}
                       onClick={() => setSelectedProvider(connection.provider)}
@@ -280,8 +280,8 @@ export function ExternalPaymentRequestModal({
                   ))}
                 </div>
               ) : (
-                <div className="mt-3 rounded-[15px] border border-[#E8E8E5] bg-[#FAFAF8] p-5">
-                  <p className="font-semibold text-[#1A1916]">Aucun service de paiement n’est encore configuré.</p>
+                <div className="mt-3 rounded-[15px] border border-[#E4E7EC] bg-[#F9FAFB] p-5">
+                  <p className="font-semibold text-[#101828]">Aucun service de paiement n’est encore configuré.</p>
                   <Link
                     className="mt-3 inline-flex font-semibold text-[#167B70] text-sm"
                     href="/client?section=paiements"
@@ -312,7 +312,7 @@ export function ExternalPaymentRequestModal({
         {step === "channel" ? (
           <>
             <div>
-              <h3 className="font-semibold text-[#1A1916] text-[16px]">Choisir le mode d’envoi</h3>
+              <h3 className="font-semibold text-[#101828] text-[16px]">Choisir le mode d’envoi</h3>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <ChannelCard
                   active={deliveryChannel === "link"}
@@ -338,12 +338,12 @@ export function ExternalPaymentRequestModal({
               </div>
             </div>
             {deliveryChannel === "terminal" && selectedReader ? (
-              <div className="flex items-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-4">
-                <span className="grid size-11 place-items-center rounded-[11px] border border-[#E8E8E5] text-[#2A9D8F]">
+              <div className="flex items-center gap-3 rounded-[14px] border border-[#E4E7EC] bg-white p-4">
+                <span className="grid size-11 place-items-center rounded-[11px] border border-[#E4E7EC] text-[#2A9D8F]">
                   <Smartphone className="size-5" />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-[#1A1916] text-sm">{selectedReader.reader_name}</p>
+                  <p className="font-semibold text-[#101828] text-sm">{selectedReader.reader_name}</p>
                   <p className="mt-0.5 flex items-center gap-1.5 text-[#2A9D8F] text-xs">
                     <span className="size-1.5 rounded-full bg-current" />
                     Associé
@@ -351,7 +351,7 @@ export function ExternalPaymentRequestModal({
                 </div>
                 {readers.length > 1 ? (
                   <select
-                    className="h-10 rounded-[10px] border border-[#E8E8E5] px-3 text-sm"
+                    className="h-10 rounded-[10px] border border-[#E4E7EC] px-3 text-sm"
                     onChange={(event) => setReaderId(event.target.value)}
                     value={readerId}
                   >
@@ -435,23 +435,23 @@ function InvoiceSummary({
   shopName: string;
 }>) {
   return (
-    <section className="rounded-[16px] border border-[#E8E8E5] bg-white p-4 sm:p-5">
+    <section className="rounded-[16px] border border-[#E4E7EC] bg-white p-4 sm:p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <span className="grid size-10 shrink-0 place-items-center text-[#2A9D8F]">
           <FileText className="size-6" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-[#1A1916] text-[16px]">Facture {invoice.number}</p>
-          <p className="mt-0.5 truncate text-[#1A1916] text-sm">
+          <p className="font-semibold text-[#101828] text-[16px]">Facture {invoice.number}</p>
+          <p className="mt-0.5 truncate text-[#101828] text-sm">
             {customer?.name || "Client"} · {device}
           </p>
-          <p className="mt-1 text-[#8A8A8A] text-xs">{shopName}</p>
+          <p className="mt-1 text-[#98A2B3] text-xs">{shopName}</p>
         </div>
         <div className="sm:text-right">
-          <p className="font-bold text-[#1A1916] text-[28px] tracking-tight tabular-nums">
+          <p className="font-bold text-[#101828] text-[28px] tracking-tight tabular-nums">
             {formatCurrency(total, currency)} <span className="text-sm">TTC</span>
           </p>
-          <p className="mt-1 text-[#8A8A8A] text-[11px]">
+          <p className="mt-1 text-[#98A2B3] text-[11px]">
             HT {formatCurrency(totalHt, currency)} · TVA {formatCurrency(vatAmount, currency)}
           </p>
         </div>
@@ -479,15 +479,15 @@ function ChannelCard({
     <button
       className={cn(
         "relative min-h-[150px] rounded-[16px] border p-5 text-left transition disabled:cursor-not-allowed disabled:opacity-40",
-        active ? "border-[#2A9D8F] bg-[#F4FBF9]" : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/40",
+        active ? "border-[#2A9D8F] bg-[#F4FBF9]" : "border-[#E4E7EC] bg-white hover:border-[#2A9D8F]/40",
       )}
       disabled={disabled}
       onClick={onClick}
       type="button"
     >
       <Icon className="size-8 text-[#2A9D8F]" />
-      <p className="mt-5 font-semibold text-[#1A1916] text-[16px]">{label}</p>
-      <p className="mt-1 text-[#6B6B6B] text-sm">{description}</p>
+      <p className="mt-5 font-semibold text-[#101828] text-[16px]">{label}</p>
+      <p className="mt-1 text-[#667085] text-sm">{description}</p>
       {active ? <CheckCircle2 className="absolute top-4 right-4 size-5 text-[#2A9D8F]" /> : null}
     </button>
   );
@@ -546,12 +546,12 @@ function SuccessView({
   const terminal = created.delivery_channel === "terminal";
   return (
     <div className="space-y-5 text-center">
-      <span className="mx-auto grid size-14 place-items-center rounded-full border border-[#E8E8E5] text-[#2A9D8F]">
+      <span className="mx-auto grid size-14 place-items-center rounded-full border border-[#E4E7EC] text-[#2A9D8F]">
         <Check className="size-6" />
       </span>
       <div>
-        <h3 className="font-semibold text-[#1A1916] text-[24px]">{terminal ? "Demande transmise" : "Demande créée"}</h3>
-        <p className="mt-2 text-[#6B6B6B] text-sm">
+        <h3 className="font-semibold text-[#101828] text-[24px]">{terminal ? "Demande transmise" : "Demande créée"}</h3>
+        <p className="mt-2 text-[#667085] text-sm">
           {terminal
             ? `Demande transmise au terminal ${readerName || providerLabel}.`
             : `Demande créée via ${providerLabel}.`}
@@ -560,9 +560,9 @@ function SuccessView({
       {hostedUrl ? (
         <div className="grid gap-4 border-[#EFEFEC] border-t pt-5 text-left sm:grid-cols-[1fr_180px]">
           <div>
-            <p className="mb-2 font-medium text-[#1A1916] text-xs">Lien de paiement hébergé par {providerLabel}</p>
-            <div className="flex h-12 items-center rounded-[12px] border border-[#E8E8E5] bg-white px-3">
-              <span className="min-w-0 flex-1 truncate text-[#1A1916] text-xs">{hostedUrl}</span>
+            <p className="mb-2 font-medium text-[#101828] text-xs">Lien de paiement hébergé par {providerLabel}</p>
+            <div className="flex h-12 items-center rounded-[12px] border border-[#E4E7EC] bg-white px-3">
+              <span className="min-w-0 flex-1 truncate text-[#101828] text-xs">{hostedUrl}</span>
               <button
                 aria-label="Copier le lien"
                 className="grid size-9 place-items-center"
@@ -592,7 +592,7 @@ function SuccessView({
             </div>
           </div>
           {qrDataUrl ? (
-            <div className="rounded-[14px] border border-[#E8E8E5] bg-white p-3">
+            <div className="rounded-[14px] border border-[#E4E7EC] bg-white p-3">
               {/* biome-ignore lint/performance/noImgElement: QR code généré localement. */}
               <img alt={`QR code ${providerLabel}`} className="w-full" src={qrDataUrl} />
             </div>
@@ -610,7 +610,7 @@ function SuccessView({
           Ouvrir dans {providerLabel}
         </a>
       ) : null}
-      <p className="text-[#6B6B6B] text-xs">
+      <p className="text-[#667085] text-xs">
         Le paiement est réalisé et conservé hors de BEHAR TECH PRO par votre prestataire de paiement. Consultez son
         résultat directement dans {providerLabel}.
       </p>
@@ -629,7 +629,7 @@ function SuccessAction({
   onClick,
 }: Readonly<{ icon: typeof Copy; label: string; href?: string; external?: boolean; onClick?: () => void }>) {
   const className =
-    "inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3 font-semibold text-[#167B70] text-xs transition hover:border-[#2A9D8F]/50";
+    "inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white px-3 font-semibold text-[#167B70] text-xs transition hover:border-[#2A9D8F]/50";
   if (href)
     return (
       <a

@@ -676,9 +676,9 @@ export function RepairsWorkspace() {
       {/* Mobile : barre recherche compacte + chips statut horizontaux */}
       <div className="md:hidden">
         <label className="relative block">
-          <Search className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3.5 size-4 text-[#6B6B6B]" />
+          <Search className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3.5 size-4 text-[#667085]" />
           <Input
-            className="h-12 rounded-[14px] border-[#E8E8E5] bg-white pr-4 pl-10 text-sm placeholder:text-[#6B6B6B]"
+            className="h-12 rounded-[14px] border-[#E4E7EC] bg-white pr-4 pl-10 text-sm placeholder:text-[#667085]"
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Rechercher…"
             type="search"
@@ -697,14 +697,14 @@ export function RepairsWorkspace() {
                 onClick={() => setStatusFilter(s as RepairStatus | "all")}
                 className={cn(
                   "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-[12.5px] font-semibold tracking-tight transition active:scale-95",
-                  active ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : "border-[#E8E8E5] bg-white text-[#1A1916]",
+                  active ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : "border-[#E4E7EC] bg-white text-[#101828]",
                 )}
               >
                 {label}
                 <span
                   className={cn(
                     "rounded-full px-1.5 py-px text-[10px] font-bold",
-                    active ? "bg-white text-white" : "bg-[#FFFFFF] text-[#6B6B6B]",
+                    active ? "bg-white text-white" : "bg-[#FFFFFF] text-[#667085]",
                   )}
                 >
                   {count}
@@ -749,9 +749,9 @@ export function RepairsWorkspace() {
       <div className="hidden shrink-0 md:flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
         <div className="flex w-full min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
           <label className="relative block w-full min-w-[200px] max-w-[400px] sm:max-w-[320px]">
-            <Search className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3.5 size-4 text-[#6B6B6B]" />
+            <Search className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3.5 size-4 text-[#667085]" />
             <Input
-              className="h-11 rounded-[14px] border-[#E8E8E5] bg-white pr-4 pl-10 text-sm placeholder:text-[#6B6B6B]"
+              className="h-11 rounded-[14px] border-[#E4E7EC] bg-white pr-4 pl-10 text-sm placeholder:text-[#667085]"
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher dossier, appareil, client…"
               type="search"
@@ -760,7 +760,7 @@ export function RepairsWorkspace() {
           </label>
           <select
             className={cn(
-              "h-11 cursor-pointer rounded-[14px] border border-[#E8E8E5] bg-white px-3.5 font-medium text-[#1A1916] text-sm shadow-[0_4px_14px_rgba(26,25,22,0.025)] outline-none transition focus:border-[#2A9D8F]",
+              "h-11 cursor-pointer rounded-[14px] border border-[#E4E7EC] bg-white px-3.5 font-medium text-[#101828] text-sm shadow-[0_4px_14px_rgba(16,24,40,0.025)] outline-none transition focus:border-[#2A9D8F]",
             )}
             onChange={(event) =>
               setStatusFilter(event.target.value === "all" ? "all" : (event.target.value as RepairStatus))
@@ -775,7 +775,7 @@ export function RepairsWorkspace() {
             ))}
           </select>
           <select
-            className="h-11 cursor-pointer rounded-[14px] border border-[#E8E8E5] bg-white px-3.5 font-medium text-[#1A1916] text-sm outline-none transition focus:border-[#2A9D8F]"
+            className="h-11 cursor-pointer rounded-[14px] border border-[#E4E7EC] bg-white px-3.5 font-medium text-[#101828] text-sm outline-none transition focus:border-[#2A9D8F]"
             onChange={(event) => setPaymentFilter(event.target.value as typeof paymentFilter)}
             value={paymentFilter}
           >
@@ -799,8 +799,8 @@ export function RepairsWorkspace() {
       {/* Mobile : liste verticale (pas de kanban — il déborde sur iPhone) */}
       <div className="md:hidden">
         {filteredRepairs.length === 0 ? (
-          <div className="rounded-[20px] bg-white p-10 text-center shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-            <p className="text-[#6B6B6B] text-sm">
+          <div className="rounded-[20px] bg-white p-10 text-center shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+            <p className="text-[#667085] text-sm">
               {search || statusFilter !== "all"
                 ? "Aucun dossier ne correspond aux filtres."
                 : "Aucun dossier pour l'instant."}
@@ -826,20 +826,20 @@ export function RepairsWorkspace() {
                       setSelected("repair", repair.id);
                       setMobileDetailOpen(true);
                     }}
-                    className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
+                    className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition active:scale-[0.99]"
                   >
-                    <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FFFFFF] text-[#1A1916]">
+                    <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FFFFFF] text-[#101828]">
                       <Wrench className="size-[18px]" strokeWidth={1.8} />
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline justify-between gap-2">
-                        <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
+                        <p className="truncate font-semibold text-[#101828] text-[14px] tracking-tight">
                           {displayCustomerName(customer)}
                         </p>
-                        <span className="shrink-0 font-mono text-[#6B6B6B] text-[10.5px]">{repair.number}</span>
+                        <span className="shrink-0 font-mono text-[#667085] text-[10.5px]">{repair.number}</span>
                       </div>
-                      <p className="mt-0.5 truncate text-[#1A1916] text-[13px]">{formatDeviceLabel(repair)}</p>
-                      <p className="mt-0.5 truncate text-[#6B6B6B] text-[12px]">{repair.issue}</p>
+                      <p className="mt-0.5 truncate text-[#101828] text-[13px]">{formatDeviceLabel(repair)}</p>
+                      <p className="mt-0.5 truncate text-[#667085] text-[12px]">{repair.issue}</p>
                       {linkedAppointment && (
                         <p className="mt-0.5 inline-flex items-center gap-1 text-[#2A9D8F] text-[11px] font-medium">
                           <CalendarDays className="size-3" />
@@ -883,7 +883,7 @@ export function RepairsWorkspace() {
         <div className="hidden md:flex md:min-h-0 md:h-full md:flex-col md:overflow-hidden">
           {!(detailMode === "intake" && selectedRepair) &&
             (filteredRepairs.length === 0 ? (
-              <div className="flex min-h-[340px] flex-1 items-center justify-center rounded-[20px] border border-[#E8E8E5] bg-white px-6 text-center text-[#6B6B6B] text-sm shadow-[0_12px_40px_rgba(26,25,22,0.045)]">
+              <div className="flex min-h-[340px] flex-1 items-center justify-center rounded-[20px] border border-[#E4E7EC] bg-white px-6 text-center text-[#667085] text-sm shadow-[0_12px_40px_rgba(16,24,40,0.045)]">
                 {search || statusFilter !== "all" || paymentFilter !== "all"
                   ? "Aucun dossier ne correspond aux filtres."
                   : "Aucun dossier pour l'instant."}
@@ -907,7 +907,7 @@ export function RepairsWorkspace() {
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
             <Panel className="w-full max-w-md p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-bold text-lg text-[#1A1916]">Choisir un devis</h3>
+                <h3 className="font-bold text-lg text-[#101828]">Choisir un devis</h3>
                 <button onClick={() => setImportOpen(false)}>
                   <X className="size-5" />
                 </button>
@@ -937,13 +937,13 @@ export function RepairsWorkspace() {
                           setModal("create");
                           setImportOpen(false);
                         }}
-                        className="w-full flex items-center justify-between p-3 rounded-xl border border-[#E8E8E5] hover:border-[#2A9D8F] hover:bg-[#FFFFFF] transition-all text-left"
+                        className="w-full flex items-center justify-between p-3 rounded-xl border border-[#E4E7EC] hover:border-[#2A9D8F] hover:bg-[#FFFFFF] transition-all text-left"
                       >
                         <div>
-                          <p className="font-bold text-sm text-[#1A1916]">
+                          <p className="font-bold text-sm text-[#101828]">
                             {q.number} — {c?.name}
                           </p>
-                          <p className="text-xs text-[#6B6B6B]">{q.lines[0]?.description || "Sans description"}</p>
+                          <p className="text-xs text-[#667085]">{q.lines[0]?.description || "Sans description"}</p>
                         </div>
                         <span className="text-xs font-bold text-[#2A9D8F]">
                           {formatCurrency(
@@ -959,26 +959,26 @@ export function RepairsWorkspace() {
           </div>
         )}
 
-        <Panel className="flex min-h-0 flex-col overflow-hidden rounded-none md:rounded-[20px] border-0 md:border md:border-[#E8E8E5] bg-white p-4 md:p-[18px] shadow-none md:shadow-[0_12px_40px_rgba(26,25,22,0.045)] xl:max-h-[calc(100svh-168px)]">
+        <Panel className="flex min-h-0 flex-col overflow-hidden rounded-none md:rounded-[20px] border-0 md:border md:border-[#E4E7EC] bg-white p-4 md:p-[18px] shadow-none md:shadow-[0_12px_40px_rgba(16,24,40,0.045)] xl:max-h-[calc(100svh-168px)]">
           {/* Mobile back button */}
           <div className="md:hidden -mx-4 -mt-4 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#FFFFFF] bg-white px-4 py-3">
             <button
               type="button"
               onClick={() => setMobileDetailOpen(false)}
-              className="grid size-9 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white text-[#1A1916] transition active:scale-90"
+              className="grid size-9 place-items-center rounded-[12px] border border-[#E4E7EC] bg-white text-[#101828] transition active:scale-90"
               aria-label="Retour à la liste"
             >
               <ArrowLeft className="size-4" />
             </button>
-            <span className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Détail réparation</span>
+            <span className="font-semibold text-[#101828] text-[15px] tracking-tight">Détail réparation</span>
           </div>
           {selectedRepair ? (
             <div className="flex min-h-0 flex-1 flex-col">
-              <div className="mb-4 shrink-0 border-[#E8E8E5] border-b pb-4">
+              <div className="mb-4 shrink-0 border-[#E4E7EC] border-b pb-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-semibold text-[#1A1916] text-[11px] uppercase tracking-[0.08em]">Réparation</p>
-                    <h2 className="mt-1 truncate font-semibold text-[#1A1916] text-[22px] leading-tight tracking-tight">
+                    <p className="font-semibold text-[#101828] text-[11px] uppercase tracking-[0.08em]">Réparation</p>
+                    <h2 className="mt-1 truncate font-semibold text-[#101828] text-[22px] leading-tight tracking-tight">
                       {selectedRepair.number}
                     </h2>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -994,11 +994,11 @@ export function RepairsWorkspace() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
-                          className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3.5 font-medium text-[#1A1916] text-sm hover:bg-[#FFFFFF]"
+                          className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white px-3.5 font-medium text-[#101828] text-sm hover:bg-[#FFFFFF]"
                           type="button"
                         >
                           Actions
-                          <MoreHorizontal className="size-4 text-[#6B6B6B]" />
+                          <MoreHorizontal className="size-4 text-[#667085]" />
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-[220px]" sideOffset={6}>
@@ -1107,7 +1107,7 @@ export function RepairsWorkspace() {
 
                     <button
                       aria-label="Fermer le panneau"
-                      className="grid size-10 place-items-center rounded-[12px] text-[#6B6B6B] hover:bg-[#FFFFFF]"
+                      className="grid size-10 place-items-center rounded-[12px] text-[#667085] hover:bg-[#FFFFFF]"
                       onClick={() => setSelected("repair", "")}
                       type="button"
                     >
@@ -1134,14 +1134,14 @@ export function RepairsWorkspace() {
                 />
               ) : (
                 <div className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1 pb-4">
-                  <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] px-5 py-4">
+                  <div className="rounded-[16px] border border-[#E4E7EC] bg-[#FFFFFF] px-5 py-4">
                     {primaryAction ? (
                       <>
                         {selectedRepair.status === "Prêt" && primaryInvoice?.status !== "Payée" && resteAPayer > 0 && (
-                          <div className="mt-4 space-y-2 rounded-[12px] border border-[#E8E8E5] bg-white p-3">
-                            <p className="text-[#6B6B6B] text-xs">Moyen de règlement indiqué</p>
+                          <div className="mt-4 space-y-2 rounded-[12px] border border-[#E4E7EC] bg-white p-3">
+                            <p className="text-[#667085] text-xs">Moyen de règlement indiqué</p>
                             <select
-                              className="h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-2 text-sm outline-none focus:border-[#2A9D8F]"
+                              className="h-10 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-2 text-sm outline-none focus:border-[#2A9D8F]"
                               onChange={(event) => setRepairPayMethod(event.target.value as PaymentMethod)}
                               value={repairPayMethod}
                             >
@@ -1155,7 +1155,7 @@ export function RepairsWorkspace() {
                               ))}
                             </select>
                             <textarea
-                              className="min-h-[48px] w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 py-2 text-xs outline-none placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]"
+                              className="min-h-[48px] w-full rounded-[10px] border border-[#E4E7EC] bg-white px-3 py-2 text-xs outline-none placeholder:text-[#667085] focus:border-[#2A9D8F]"
                               onChange={(e) => setPaymentNote(e.target.value)}
                               placeholder="Note facultative…"
                               value={paymentNote}
@@ -1181,11 +1181,11 @@ export function RepairsWorkspace() {
                           {primaryAction.label}
                         </PrimaryButton>
                         {subtleHintCounter ? (
-                          <p className="mt-3 text-[#6B6B6B] text-[11px] leading-relaxed">{subtleHintCounter}</p>
+                          <p className="mt-3 text-[#667085] text-[11px] leading-relaxed">{subtleHintCounter}</p>
                         ) : null}
                       </>
                     ) : (
-                      <p className="mt-3 text-[#6B6B6B] text-sm">Aucune action disponible pour ce statut.</p>
+                      <p className="mt-3 text-[#667085] text-sm">Aucune action disponible pour ce statut.</p>
                     )}
                   </div>
 
@@ -1197,11 +1197,11 @@ export function RepairsWorkspace() {
                     Ouvrir le dossier complet
                   </Link>
 
-                  <section className="rounded-[16px] border border-[#E8E8E5]/90 bg-white px-[18px] py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
-                    <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Client</h3>
+                  <section className="rounded-[16px] border border-[#E4E7EC]/90 bg-white px-[18px] py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+                    <h3 className="font-semibold text-[#101828] text-xs uppercase tracking-[0.06em]">Client</h3>
                     <Link
                       href={`/dashboard/clients?id=${selectedCustomer?.id}`}
-                      className="mt-3 block font-semibold text-[#1A1916] text-lg hover:text-[#2A9D8F] transition-colors"
+                      className="mt-3 block font-semibold text-[#101828] text-lg hover:text-[#2A9D8F] transition-colors"
                     >
                       {displayCustomerName(selectedCustomer)}
                     </Link>
@@ -1215,7 +1215,7 @@ export function RepairsWorkspace() {
                       </button>
                     ) : null}
                     {!isCounterCustomer(selectedCustomer) && selectedCustomer ? (
-                      <div className="mt-2 space-y-1 text-[#6B6B6B] text-sm">
+                      <div className="mt-2 space-y-1 text-[#667085] text-sm">
                         {selectedCustomer.phone && selectedCustomer.phone !== "Non renseigné" ? (
                           <p>{selectedCustomer.phone}</p>
                         ) : (
@@ -1230,9 +1230,9 @@ export function RepairsWorkspace() {
                     ) : null}
                   </section>
 
-                  <section className="rounded-[16px] border border-[#E8E8E5]/90 bg-white px-[18px] py-4">
-                    <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">Appareil</h3>
-                    <p className="mt-3 font-semibold text-[#1A1916] text-[15px]">
+                  <section className="rounded-[16px] border border-[#E4E7EC]/90 bg-white px-[18px] py-4">
+                    <h3 className="font-semibold text-[#101828] text-xs uppercase tracking-[0.06em]">Appareil</h3>
+                    <p className="mt-3 font-semibold text-[#101828] text-[15px]">
                       {[
                         selectedRepair.deviceType,
                         selectedRepair.brandName,
@@ -1242,30 +1242,30 @@ export function RepairsWorkspace() {
                         .join(" · ") || selectedRepair.device}
                     </p>
                     {selectedRepair.imei?.trim() ? (
-                      <p className="mt-1 text-[#6B6B6B] text-[13px]">IMEI / série : {selectedRepair.imei.trim()}</p>
+                      <p className="mt-1 text-[#667085] text-[13px]">IMEI / série : {selectedRepair.imei.trim()}</p>
                     ) : null}
-                    <p className="mt-3 text-[#1A1916] text-sm">{selectedRepair.issue}</p>
+                    <p className="mt-3 text-[#101828] text-sm">{selectedRepair.issue}</p>
                   </section>
 
-                  <section className="rounded-[16px] border border-[#E8E8E5]/90 bg-white px-[18px] py-4">
+                  <section className="rounded-[16px] border border-[#E4E7EC]/90 bg-white px-[18px] py-4">
                     <div className="flex items-end justify-between gap-3">
                       <div>
-                        <h3 className="font-semibold text-[#1A1916] text-xs uppercase tracking-[0.06em]">
+                        <h3 className="font-semibold text-[#101828] text-xs uppercase tracking-[0.06em]">
                           Total client
                         </h3>
-                        <p className="mt-2 font-semibold text-[#1A1916] text-[26px] leading-none tabular-nums">
+                        <p className="mt-2 font-semibold text-[#101828] text-[26px] leading-none tabular-nums">
                           {formatRepairAmount(selectedRepair, totalClientAmount)}
                           {workshopInfo.vatApplicable ? (
-                            <span className="ml-1.5 text-xs font-medium text-[#6B6B6B]">TTC</span>
+                            <span className="ml-1.5 text-xs font-medium text-[#667085]">TTC</span>
                           ) : null}
                         </p>
                       </div>
-                      <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#6B6B6B] text-[11px]">
+                      <span className="rounded-[7px] border border-[#E4E7EC] bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#667085] text-[11px]">
                         {paymentLabel}
                       </span>
                     </div>
                     {resteAPayer > 0 ? (
-                      <p className="mt-3 text-[#6B6B6B] text-[13px]">
+                      <p className="mt-3 text-[#667085] text-[13px]">
                         Total TTC facturé{" "}
                         <span className="font-semibold text-[#2A9D8F]">
                           {formatRepairAmount(selectedRepair, resteAPayer)}
@@ -1274,9 +1274,9 @@ export function RepairsWorkspace() {
                     ) : null}
                   </section>
 
-                  <section className="rounded-[16px] border border-[#E8E8E5] px-[14px] py-4">
+                  <section className="rounded-[16px] border border-[#E4E7EC] px-[14px] py-4">
                     <div className="flex items-center justify-between gap-3">
-                      <h3 className="font-semibold text-[#1A1916] text-sm">Produits et accessoires</h3>
+                      <h3 className="font-semibold text-[#101828] text-sm">Produits et accessoires</h3>
                       {(selectedRepair.repairSaleLines?.length ?? 0) > 0 ? (
                         <span className="rounded-[7px] border border-[#D7EFEA] bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#147065] text-xs">
                           {selectedRepair.repairSaleLines?.length ?? 0}
@@ -1291,7 +1291,7 @@ export function RepairsWorkspace() {
                       <div className="mt-3 grid grid-cols-[minmax(0,1fr)_80px_auto] gap-2">
                         <select
                           aria-label="Produit du stock"
-                          className="h-10 rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-sm"
+                          className="h-10 rounded-[12px] border border-[#E4E7EC] bg-white px-3 text-sm"
                           onChange={(event) => {
                             setSelectedStockItemId(event.target.value);
                             setPartQuantity(1);
@@ -1318,7 +1318,7 @@ export function RepairsWorkspace() {
                         </select>
                         <input
                           aria-label="Quantité"
-                          className="h-10 rounded-[12px] border border-[#E8E8E5] bg-white px-2 text-center text-sm"
+                          className="h-10 rounded-[12px] border border-[#E4E7EC] bg-white px-2 text-center text-sm"
                           max={maxPartQuantity}
                           min={1}
                           onBlur={() => setPartQuantity(normalizePartQuantity(partQuantity))}
@@ -1338,14 +1338,14 @@ export function RepairsWorkspace() {
                       </div>
                     )}
                     {!primaryInvoice && repairPaidAmount <= 0 && accessoryStockItems.length === 0 ? (
-                      <p className="mt-3 rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] p-3 text-[#6B6B6B] text-xs">
+                      <p className="mt-3 rounded-[12px] border border-[#E4E7EC] bg-[#FFFFFF] p-3 text-[#667085] text-xs">
                         Aucun accessoire de comptoir disponible dans le stock. Les pièces techniques restent dans la
                         zone stock/réparation.
                       </p>
                     ) : null}
                     <div className="mt-4 space-y-2">
                       {(selectedRepair.repairSaleLines?.length ?? 0) === 0 ? (
-                        <p className="text-[#6B6B6B] text-xs">Aucun produit ajouté à cette réparation.</p>
+                        <p className="text-[#667085] text-xs">Aucun produit ajouté à cette réparation.</p>
                       ) : (
                         (selectedRepair.repairSaleLines ?? []).map((line) => (
                           <div
@@ -1353,15 +1353,15 @@ export function RepairsWorkspace() {
                             key={line.id}
                           >
                             <div className="min-w-0">
-                              <p className="font-medium text-[#1A1916]">{line.name}</p>
-                              <p className="text-[#6B6B6B] text-xs">
+                              <p className="font-medium text-[#101828]">{line.name}</p>
+                              <p className="text-[#667085] text-xs">
                                 {line.sku ? `SKU ${line.sku} · ` : ""}Qté {line.quantity} ·{" "}
                                 {formatRepairAmount(selectedRepair, line.unitPrice)} / u · ligne{" "}
                                 {formatRepairAmount(selectedRepair, line.total)}
                               </p>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[10px] font-semibold text-[#6B6B6B]">
+                              <span className="rounded-[7px] border border-[#E4E7EC] bg-[#FFFFFF] px-2 py-0.5 text-[10px] font-semibold text-[#667085]">
                                 {line.status === "draft"
                                   ? "À remettre"
                                   : line.status === "confirmed"
@@ -1413,7 +1413,7 @@ export function RepairsWorkspace() {
                     </div>
                   </section>
 
-                  <p className="px-1 pt-1 text-[#6B6B6B] text-[12px] leading-relaxed">
+                  <p className="px-1 pt-1 text-[#667085] text-[12px] leading-relaxed">
                     Documents, anti-litige, suivi client et historique complet sont dans le dossier.
                   </p>
                 </div>
@@ -1422,7 +1422,7 @@ export function RepairsWorkspace() {
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4 py-14 text-center">
               <DeviceThumb />
-              <p className="text-[#1A1916] text-sm">Sélectionnez une carte ou créez une prise en charge.</p>
+              <p className="text-[#101828] text-sm">Sélectionnez une carte ou créez une prise en charge.</p>
               <SecondaryButton className="h-10" onClick={() => openCreate()}>
                 Nouvelle prise en charge
               </SecondaryButton>
@@ -1485,17 +1485,17 @@ function PlannedEntriesPanel({
     <Panel className="shrink-0 p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
-          <h2 className="font-semibold text-[#1A1916] text-[15px] tracking-tight md:text-[17px]">Entrées prévues</h2>
-          <p className="mt-1 text-[#6B6B6B] text-[12px] md:text-[13px]">
+          <h2 className="font-semibold text-[#101828] text-[15px] tracking-tight md:text-[17px]">Entrées prévues</h2>
+          <p className="mt-1 text-[#667085] text-[12px] md:text-[13px]">
             Rendez-vous confirmés ou en attente, pas encore dans le pipeline atelier.
           </p>
         </div>
-        <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#6B6B6B] text-xs">
+        <span className="rounded-[7px] border border-[#E4E7EC] bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#667085] text-xs">
           {appointments.length}
         </span>
       </div>
       {appointments.length === 0 ? (
-        <div className="rounded-[14px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] px-4 py-5 text-center text-[#6B6B6B] text-sm">
+        <div className="rounded-[14px] border border-dashed border-[#E4E7EC] bg-[#FFFFFF] px-4 py-5 text-center text-[#667085] text-sm">
           Aucun rendez-vous à transformer pour le moment.
         </div>
       ) : (
@@ -1505,13 +1505,13 @@ function PlannedEntriesPanel({
             const status = normalizeAppointmentStatus(appointment.status, appointment.confirmed);
             const arrived = status === "Arrivé";
             return (
-              <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4" key={appointment.id}>
+              <div className="rounded-[16px] border border-[#E4E7EC] bg-[#FFFFFF] p-4" key={appointment.id}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-mono font-semibold text-[#1A1916] text-xs">
+                    <p className="font-mono font-semibold text-[#101828] text-xs">
                       {appointment.date} · {appointment.time}
                     </p>
-                    <p className="mt-1 truncate font-semibold text-[#1A1916] text-sm">
+                    <p className="mt-1 truncate font-semibold text-[#101828] text-sm">
                       {customer?.name || "Client comptoir"}
                     </p>
                   </div>
@@ -1519,8 +1519,8 @@ function PlannedEntriesPanel({
                     {status}
                   </span>
                 </div>
-                <p className="mt-3 truncate font-medium text-[#1A1916] text-sm">{appointment.device}</p>
-                <p className="mt-1 truncate text-[#6B6B6B] text-[13px]">{appointment.issue}</p>
+                <p className="mt-3 truncate font-medium text-[#101828] text-sm">{appointment.device}</p>
+                <p className="mt-1 truncate text-[#667085] text-[13px]">{appointment.issue}</p>
                 <div className="mt-4 grid grid-cols-3 gap-2">
                   <SecondaryButton className="h-9 px-2 text-xs" onClick={() => onOpenAppointment(appointment)}>
                     RDV

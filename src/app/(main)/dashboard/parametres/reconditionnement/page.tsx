@@ -19,7 +19,7 @@ export default function ReconditioningSettingsPage() {
     >
       <div className="mb-4">
         <Link
-          className="inline-flex items-center gap-2 text-[#6B6B6B] text-sm transition hover:text-[#1A1916]"
+          className="inline-flex items-center gap-2 text-[#667085] text-sm transition hover:text-[#101828]"
           href="/dashboard/reconditionnement"
         >
           <ArrowLeft className="size-4" />
@@ -29,7 +29,7 @@ export default function ReconditioningSettingsPage() {
       {mounted ? (
         <ReconditioningSettings />
       ) : (
-        <div className="h-[480px] animate-pulse rounded-[20px] border border-[#E8E5DF] bg-white" />
+        <div className="h-[480px] animate-pulse rounded-[20px] border border-[#E4E7EC] bg-white" />
       )}
     </PageShell>
   );

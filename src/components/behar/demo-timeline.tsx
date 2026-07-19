@@ -15,7 +15,7 @@ export function DemoTimeline({ items, compact }: Readonly<{ items: readonly stri
           >
             {index + 1}
           </span>
-          <span className="text-[#1A1916]">{item}</span>
+          <span className="text-[#101828]">{item}</span>
         </li>
       ))}
     </ol>

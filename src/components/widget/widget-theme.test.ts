@@ -56,7 +56,7 @@ describe("formatDuration", () => {
 
 describe("buildTheme — contraste et variables CSS", () => {
   it("choisit un texte lisible sur la couleur primaire", () => {
-    expect(buildTheme({ primaryColor: "#FFFFFF" }).onPrimary).toBe("#1A1916");
+    expect(buildTheme({ primaryColor: "#FFFFFF" }).onPrimary).toBe("#101828");
     expect(buildTheme({ primaryColor: "#000000" }).onPrimary).toBe("#FFFFFF");
   });
 

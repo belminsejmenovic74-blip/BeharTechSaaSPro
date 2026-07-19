@@ -120,27 +120,27 @@ export function InstallButton({ className }: Readonly<{ className?: string }>) {
         <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true">
           <button
             type="button"
-            className="absolute inset-0 bg-[#1A1916]/40"
+            className="absolute inset-0 bg-[#101828]/40"
             onClick={() => setIosOpen(false)}
             aria-label="Fermer"
           />
-          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-[28px] bg-white pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_-20px_60px_rgba(26,25,22,0.18)]">
+          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-[28px] bg-white pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_-20px_60px_rgba(16,24,40,0.18)]">
             <div className="flex justify-center pt-2 pb-1">
               <span className="h-1 w-9 rounded-full bg-[#FFFFFF]" aria-hidden />
             </div>
             <div className="flex items-start justify-between gap-3 px-6 pt-3 pb-4">
               <div>
-                <p className="font-semibold text-[#1A1916] text-[22px] leading-tight tracking-tight">
+                <p className="font-semibold text-[#101828] text-[22px] leading-tight tracking-tight">
                   Installer sur iPhone / iPad
                 </p>
-                <p className="mt-1.5 text-[#6B6B6B] text-[13px]">
+                <p className="mt-1.5 text-[#667085] text-[13px]">
                   Suivez ces étapes pour ajouter Behar Tech Pro à votre écran d'accueil.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIosOpen(false)}
-                className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#6B6B6B] active:scale-90"
+                className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#667085] active:scale-90"
                 aria-label="Fermer"
               >
                 <X className="size-4" strokeWidth={2.2} />
@@ -151,7 +151,7 @@ export function InstallButton({ className }: Readonly<{ className?: string }>) {
                 <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#2A9D8F] font-semibold text-white text-[14px]">
                   1
                 </span>
-                <div className="text-[#1A1916] text-[14px] leading-snug">
+                <div className="text-[#101828] text-[14px] leading-snug">
                   Ouvrez ce site dans <strong>Safari</strong> (pas dans une autre app).
                 </div>
               </li>
@@ -159,7 +159,7 @@ export function InstallButton({ className }: Readonly<{ className?: string }>) {
                 <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#2A9D8F] font-semibold text-white text-[14px]">
                   2
                 </span>
-                <div className="text-[#1A1916] text-[14px] leading-snug">
+                <div className="text-[#101828] text-[14px] leading-snug">
                   Touchez l'icône{" "}
                   <span className="inline-flex items-center gap-1 rounded-md bg-white px-1.5 py-0.5">
                     <Share className="size-3.5 text-[#2A9D8F]" /> Partager
@@ -171,7 +171,7 @@ export function InstallButton({ className }: Readonly<{ className?: string }>) {
                 <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#2A9D8F] font-semibold text-white text-[14px]">
                   3
                 </span>
-                <div className="text-[#1A1916] text-[14px] leading-snug">
+                <div className="text-[#101828] text-[14px] leading-snug">
                   Faites défiler puis touchez <strong>« Sur l'écran d'accueil »</strong>.
                 </div>
               </li>
@@ -179,14 +179,14 @@ export function InstallButton({ className }: Readonly<{ className?: string }>) {
                 <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#2A9D8F] font-semibold text-white text-[14px]">
                   4
                 </span>
-                <div className="text-[#1A1916] text-[14px] leading-snug">
+                <div className="text-[#101828] text-[14px] leading-snug">
                   Validez. L'icône <strong>Behar Tech</strong> apparaît sur votre écran d'accueil comme une vraie
                   application.
                 </div>
               </li>
               <li className="flex items-start gap-3 rounded-[16px] border border-[#FFFFFF] bg-[#FFFFFF] p-4">
                 <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-[#2A9D8F]" />
-                <div className="text-[#1A1916] text-[13px] leading-snug">
+                <div className="text-[#101828] text-[13px] leading-snug">
                   L'application fonctionne ensuite en plein écran avec sauvegarde cloud.
                 </div>
               </li>

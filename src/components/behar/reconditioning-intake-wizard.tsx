@@ -338,7 +338,7 @@ export function NewReconditioningIntakeWizard({
   return (
     <div className="mx-auto w-full max-w-[1180px]">
       {/* Stepper */}
-      <div className="flex items-center gap-2 overflow-x-auto rounded-[18px] border border-[#E8E5DF] bg-white px-4 py-3.5 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+      <div className="flex items-center gap-2 overflow-x-auto rounded-[18px] border border-[#E4E7EC] bg-white px-4 py-3.5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
         {STEPS.map((s, i) => {
           const stepState = step === s.id ? "active" : s.id < step ? "done" : "todo";
           return (
@@ -353,7 +353,7 @@ export function NewReconditioningIntakeWizard({
                     "grid size-9 shrink-0 place-items-center rounded-full font-semibold text-[13px] transition",
                     stepState === "active" && "bg-[#2A9D8F] text-white",
                     stepState === "done" && "bg-[#ECF8F4] text-[#147065]",
-                    stepState === "todo" && "bg-[#F7F7F5] text-[#6B6B6B]",
+                    stepState === "todo" && "bg-[#F5F7FA] text-[#667085]",
                   )}
                 >
                   {stepState === "done" ? <Check className="size-4" /> : s.id}
@@ -361,20 +361,20 @@ export function NewReconditioningIntakeWizard({
                 <span
                   className={cn(
                     "hidden whitespace-nowrap font-semibold text-[13px] md:block",
-                    stepState === "active" ? "text-[#1A1916]" : "text-[#6B6B6B]",
+                    stepState === "active" ? "text-[#101828]" : "text-[#667085]",
                   )}
                 >
                   {s.label}
                 </span>
               </button>
-              {i < STEPS.length - 1 && <span className="mx-2 h-px flex-1 bg-[#E8E5DF]" />}
+              {i < STEPS.length - 1 && <span className="mx-2 h-px flex-1 bg-[#E4E7EC]" />}
             </div>
           );
         })}
       </div>
 
       <div className={cn("mt-4 grid gap-4", step === 5 && "lg:grid-cols-[minmax(0,1fr)_380px]")}>
-        <div className="rounded-[20px] border border-[#E8E5DF] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)] lg:p-7">
+        <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] lg:p-7">
           {step === 1 && (
             <StepDevice
               customers={customers.map((c) => c.name)}
@@ -426,7 +426,7 @@ export function NewReconditioningIntakeWizard({
             />
           )}
 
-          <div className="mt-7 flex items-center justify-between gap-3 border-[#F1F1EF] border-t pt-5">
+          <div className="mt-7 flex items-center justify-between gap-3 border-[#F2F4F7] border-t pt-5">
             <GhostButton className="h-13 px-6" onClick={() => (step === 1 ? onClose() : setStep(step - 1))}>
               <ArrowLeft className="size-5" />
               {step === 1 ? "Annuler" : "Retour"}
@@ -446,8 +446,8 @@ export function NewReconditioningIntakeWizard({
 
       {/* Estimation en direct (étapes 2 à 4) */}
       {step > 1 && step < 5 && (
-        <div className="sticky bottom-3 mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-[#D7EFEA] bg-[#F7FCFA]/95 px-5 py-3.5 shadow-[0_8px_24px_rgba(26,25,22,0.08)] backdrop-blur">
-          <span className="text-[#6B6B6B] text-[13px]">
+        <div className="sticky bottom-3 mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-[#D7EFEA] bg-[#F7FCFA]/95 px-5 py-3.5 shadow-[0_8px_24px_rgba(16,24,40,0.08)] backdrop-blur">
+          <span className="text-[#667085] text-[13px]">
             {[state.brand, state.model, state.storage].filter(Boolean).join(" ") || "Appareil"}
             {state.batteryTier
               ? ` · Batterie ${BATTERY_TIER_LABELS.find((t) => t.key === state.batteryTier)?.label}`
@@ -545,7 +545,7 @@ function StepDevice({
         </FieldLabel>
       </div>
 
-      <p className="mb-2.5 font-semibold text-[#1A1916] text-[13.5px]">Marque</p>
+      <p className="mb-2.5 font-semibold text-[#101828] text-[13.5px]">Marque</p>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {brands.map((brand) => (
           <BigCard
@@ -585,7 +585,7 @@ function StepDevice({
 
       {!state.customBrand && state.brand && (
         <>
-          <p className="mt-6 mb-2.5 font-semibold text-[#1A1916] text-[13.5px]">Modèle</p>
+          <p className="mt-6 mb-2.5 font-semibold text-[#101828] text-[13.5px]">Modèle</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {models.map((model) => {
               const configured = ruleModels.includes(model);
@@ -656,7 +656,7 @@ function StepStorageColor({
         title="Stockage & couleur"
       />
 
-      <p className="mb-2.5 font-semibold text-[#1A1916] text-[13.5px]">Stockage</p>
+      <p className="mb-2.5 font-semibold text-[#101828] text-[13.5px]">Stockage</p>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {storages.map(({ storage, target }) => (
           <BigCard
@@ -669,7 +669,7 @@ function StepStorageColor({
         ))}
       </div>
 
-      <p className="mt-6 mb-2.5 font-semibold text-[#1A1916] text-[13.5px]">Couleur</p>
+      <p className="mt-6 mb-2.5 font-semibold text-[#101828] text-[13.5px]">Couleur</p>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
         {[...colors, "Autre"].map((color) => (
           <BigCard active={state.color === color} key={color} label={color} onClick={() => patch({ color })} small />
@@ -717,7 +717,7 @@ function StepBatteryGrade({
         title="Batterie & état"
       />
 
-      <p className="mb-2.5 flex items-center gap-2 font-semibold text-[#1A1916] text-[13.5px]">
+      <p className="mb-2.5 flex items-center gap-2 font-semibold text-[#101828] text-[13.5px]">
         <Battery className="size-4 text-[#2A9D8F]" />
         Santé batterie
       </p>
@@ -742,7 +742,7 @@ function StepBatteryGrade({
         </p>
       )}
 
-      <p className="mt-6 mb-2.5 font-semibold text-[#1A1916] text-[13.5px]">Grade esthétique</p>
+      <p className="mt-6 mb-2.5 font-semibold text-[#101828] text-[13.5px]">Grade esthétique</p>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {GRADES.map(({ grade, label }) => {
           const deduction = grade === "HS" ? null : calculateGradeDeduction(rules, ruleItem, grade, calcTarget);
@@ -806,7 +806,7 @@ function StepDefectsParts({
         title="Défauts & pièces"
       />
 
-      <p className="mb-2.5 font-semibold text-[#1A1916] text-[13.5px]">Défauts constatés</p>
+      <p className="mb-2.5 font-semibold text-[#101828] text-[13.5px]">Défauts constatés</p>
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
         {allDefectLines.map((line) => (
           <DefectCard
@@ -820,7 +820,7 @@ function StepDefectsParts({
         ))}
       </div>
 
-      <p className="mt-6 mb-2.5 font-semibold text-[#1A1916] text-[13.5px]">Blocages critiques</p>
+      <p className="mt-6 mb-2.5 font-semibold text-[#101828] text-[13.5px]">Blocages critiques</p>
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
         {BLOCKER_KEYS.map((key) => (
           <DefectCard
@@ -845,32 +845,32 @@ function StepDefectsParts({
         </div>
       )}
 
-      <p className="mt-6 mb-2.5 font-semibold text-[#1A1916] text-[13.5px]">Pièces estimées à changer</p>
+      <p className="mt-6 mb-2.5 font-semibold text-[#101828] text-[13.5px]">Pièces estimées à changer</p>
       {parts.length === 0 ? (
-        <p className="rounded-[14px] border border-[#E8E5DF] border-dashed px-4 py-5 text-center text-[#9B9B96] text-[13px]">
+        <p className="rounded-[14px] border border-[#E4E7EC] border-dashed px-4 py-5 text-center text-[#98A2B3] text-[13px]">
           Aucune pièce suggérée — cochez un défaut pour estimer la remise en état.
         </p>
       ) : (
         <div className="space-y-2">
           {parts.map((line) => (
             <div
-              className="flex flex-wrap items-center gap-x-2.5 gap-y-2 rounded-[13px] border border-[#E8E5DF] bg-[#FCFCFB] px-3 py-2.5"
+              className="flex flex-wrap items-center gap-x-2.5 gap-y-2 rounded-[13px] border border-[#E4E7EC] bg-[#FCFCFD] px-3 py-2.5"
               key={line.key}
             >
               <Wrench className="size-4 shrink-0 text-[#2A9D8F]" />
-              <span className="min-w-[110px] flex-1 font-semibold text-[#1A1916] text-[13px]">{line.label}</span>
+              <span className="min-w-[110px] flex-1 font-semibold text-[#101828] text-[13px]">{line.label}</span>
               <span
                 className={cn(
                   "inline-flex h-[22px] items-center whitespace-nowrap rounded-full border px-2 font-semibold text-[10.5px]",
                   line.source === "stock" && "border-[#D7EFEA] bg-[#ECF8F4] text-[#147065]",
                   line.source === "manual" && "border-[#D9E7FF] bg-[#F3F7FF] text-[#2563EB]",
-                  line.source === "default" && "border-[#E8E5DF] bg-[#F7F7F5] text-[#6B6B6B]",
+                  line.source === "default" && "border-[#E4E7EC] bg-[#F5F7FA] text-[#667085]",
                   line.source === "missing" && "border-[#F0D9D6] bg-[#FCF4F3] text-[#B4342A]",
                 )}
               >
                 {PART_COST_SOURCE_LABELS[line.source]}
               </span>
-              <label className="flex items-center gap-1.5 text-[#6B6B6B] text-[12px]">
+              <label className="flex items-center gap-1.5 text-[#667085] text-[12px]">
                 Pièce
                 <input
                   className={cn(
@@ -890,7 +890,7 @@ function StepDefectsParts({
                 />
                 €
               </label>
-              <label className="flex items-center gap-1.5 text-[#6B6B6B] text-[12px]">
+              <label className="flex items-center gap-1.5 text-[#667085] text-[12px]">
                 MO
                 <input
                   className={cn(inputCls, "h-8 w-[76px] text-right text-[12px]")}
@@ -905,13 +905,13 @@ function StepDefectsParts({
               </label>
               <span className="whitespace-nowrap font-semibold text-[13px]">
                 {isPriceKnown(line.piece) ? (
-                  <span className="text-[#1A1916]">= {formatMoney(line.piece + line.labor)}</span>
+                  <span className="text-[#101828]">= {formatMoney(line.piece + line.labor)}</span>
                 ) : (
                   <span className="text-[#B4342A]">À renseigner</span>
                 )}
               </span>
               <button
-                className="grid size-8 place-items-center rounded-[8px] text-[#9B9B96] transition hover:bg-[#FCF4F3] hover:text-[#B4342A]"
+                className="grid size-8 place-items-center rounded-[8px] text-[#98A2B3] transition hover:bg-[#FCF4F3] hover:text-[#B4342A]"
                 onClick={() => overridePart(line.key, "removed")}
                 title="Ne pas prévoir cette pièce"
                 type="button"
@@ -971,7 +971,7 @@ function StepOfferDecision({
           <p className="font-semibold text-[#9A6B1B] text-[13.5px]">
             Aucune règle pour {[state.brand, state.model, state.storage].filter(Boolean).join(" ") || "ce modèle"}
           </p>
-          <p className="mt-0.5 mb-3 text-[#6B6B6B] text-[12.5px]">
+          <p className="mt-0.5 mb-3 text-[#667085] text-[12.5px]">
             Indiquez un prix de revente cible manuel — vous pourrez créer la règle dans Paramètres → Catalogue de
             reprise.
           </p>
@@ -1025,7 +1025,7 @@ function StepOfferDecision({
           className={cn(
             "flex min-h-[110px] flex-col items-center justify-center gap-2 rounded-[18px] border-2 p-5 text-center transition",
             blocked || proposedPrice == null
-              ? "cursor-not-allowed border-[#E8E5DF] bg-[#F7F7F5] opacity-60"
+              ? "cursor-not-allowed border-[#E4E7EC] bg-[#F5F7FA] opacity-60"
               : "border-[#2A9D8F] bg-[#ECF8F4] hover:bg-[#DFF3ED]",
           )}
           disabled={blocked || proposedPrice == null}
@@ -1034,18 +1034,18 @@ function StepOfferDecision({
         >
           <CheckCircle2 className="size-7 text-[#147065]" />
           <span className="font-semibold text-[#147065] text-[15px]">Reprise acceptée</span>
-          <span className="text-[#6B6B6B] text-[12.5px]">
+          <span className="text-[#667085] text-[12.5px]">
             {proposedPrice != null ? `Achat ${formatMoney(proposedPrice)} — bon de reprise généré` : "Prix à compléter"}
           </span>
         </button>
         <button
-          className="flex min-h-[110px] flex-col items-center justify-center gap-2 rounded-[18px] border-2 border-[#E8E5DF] bg-white p-5 text-center transition hover:border-[#F0D9D6] hover:bg-[#FCF4F3]"
+          className="flex min-h-[110px] flex-col items-center justify-center gap-2 rounded-[18px] border-2 border-[#E4E7EC] bg-white p-5 text-center transition hover:border-[#F0D9D6] hover:bg-[#FCF4F3]"
           onClick={onRefuse}
           type="button"
         >
           <XCircle className="size-7 text-[#B4342A]" />
           <span className="font-semibold text-[#B4342A] text-[15px]">Reprise refusée</span>
-          <span className="text-[#6B6B6B] text-[12.5px]">Historique conservé — rien n'est ajouté au stock</span>
+          <span className="text-[#667085] text-[12.5px]">Historique conservé — rien n'est ajouté au stock</span>
         </button>
       </div>
       {!blocked && (
@@ -1079,14 +1079,14 @@ function OfferSummaryPanel({
 }>) {
   const color = state.color === "Autre" ? state.customColor : state.color;
   return (
-    <aside className="h-fit rounded-[20px] border border-[#E8E5DF] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.04)] lg:sticky lg:top-5">
+    <aside className="h-fit rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)] lg:sticky lg:top-5">
       <div className="flex items-center gap-2.5">
         <Smartphone className="size-4.5 text-[#2A9D8F]" />
         <div className="min-w-0">
-          <p className="truncate font-semibold text-[#1A1916] text-[14px]">
+          <p className="truncate font-semibold text-[#101828] text-[14px]">
             {[state.brand, state.model, state.storage].filter(Boolean).join(" ") || "Appareil"}
           </p>
-          <p className="truncate text-[#9B9B96] text-[11.5px]">
+          <p className="truncate text-[#98A2B3] text-[11.5px]">
             {[
               color,
               state.batteryTier
@@ -1115,20 +1115,20 @@ function OfferSummaryPanel({
         {calc.laborCost > 0 && <SummaryRow label="Main-d'œuvre estimée" negative value={formatMoney(calc.laborCost)} />}
         <SummaryRow label="Marge cible" negative value={formatMoney(calc.targetMarginAmount)} />
         <SummaryRow label="Risque" negative value={formatMoney(calc.riskAmount)} />
-        <div className="border-[#F1F1EF] border-t pt-1.5">
+        <div className="border-[#F2F4F7] border-t pt-1.5">
           <SummaryRow label="Prix de reprise max" strong value={formatMoney(calc.maxBuyback)} />
           <SummaryRow label="Prix conseillé" strong tone="accent" value={formatMoney(calc.suggestedOffer)} />
           <SummaryRow label="Prix proposé" strong tone="accent" value={formatMoney(proposedPrice)} />
         </div>
       </div>
 
-      <div className="mt-3 rounded-[12px] bg-[#F7F7F5] px-3.5 py-2.5">
+      <div className="mt-3 rounded-[12px] bg-[#F5F7FA] px-3.5 py-2.5">
         <div className="flex items-center justify-between text-[12.5px]">
-          <span className="text-[#6B6B6B]">Marge estimée après reprise</span>
+          <span className="text-[#667085]">Marge estimée après reprise</span>
           <span
             className={cn(
               "font-semibold",
-              margin == null ? "text-[#9B9B96]" : margin.amount >= 0 ? "text-[#147065]" : "text-[#B4342A]",
+              margin == null ? "text-[#98A2B3]" : margin.amount >= 0 ? "text-[#147065]" : "text-[#B4342A]",
             )}
           >
             {margin == null
@@ -1162,19 +1162,19 @@ function DoneCard({
 }>) {
   return (
     <div className="mx-auto grid w-full max-w-[560px] place-items-center py-8">
-      <div className="w-full rounded-[20px] border border-[#E8E5DF] bg-white p-8 text-center shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+      <div className="w-full rounded-[20px] border border-[#E4E7EC] bg-white p-8 text-center shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
         <span
           className={cn(
             "mx-auto grid size-14 place-items-center rounded-full",
-            accepted ? "bg-[#ECF8F4] text-[#147065]" : "bg-[#F7F7F5] text-[#6B6B6B]",
+            accepted ? "bg-[#ECF8F4] text-[#147065]" : "bg-[#F5F7FA] text-[#667085]",
           )}
         >
           {accepted ? <CheckCircle2 className="size-7" /> : <X className="size-7" />}
         </span>
-        <h2 className="mt-5 font-semibold text-[#1A1916] text-xl">
+        <h2 className="mt-5 font-semibold text-[#101828] text-xl">
           {accepted ? "Reprise acceptée" : "Reprise refusée"}
         </h2>
-        <p className="mt-1 text-[#6B6B6B] text-sm">
+        <p className="mt-1 text-[#667085] text-sm">
           Référence <span className="font-mono font-semibold text-[#167B70]">{number}</span>
           {accepted
             ? " — l'appareil est en statut Acheté, visible dans Appareils."
@@ -1220,7 +1220,7 @@ function StepTitle({ title, subtitle }: Readonly<{ title: string; subtitle: stri
   return (
     <div className="mb-5">
       <h2 className="font-semibold text-[#2A9D8F] text-[15px]">{title}</h2>
-      <p className="mt-0.5 text-[#6B6B6B] text-[13px]">{subtitle}</p>
+      <p className="mt-0.5 text-[#667085] text-[13px]">{subtitle}</p>
     </div>
   );
 }
@@ -1247,18 +1247,18 @@ function BigCard({
       className={cn(
         "flex flex-col items-center justify-center gap-1 rounded-[16px] border-2 px-3 text-center transition",
         small ? "min-h-[56px] py-2.5" : "min-h-[76px] py-3.5",
-        active ? "border-[#2A9D8F] bg-[#ECF8F4]" : "border-[#E8E5DF] bg-white hover:border-[#2A9D8F]/40",
+        active ? "border-[#2A9D8F] bg-[#ECF8F4]" : "border-[#E4E7EC] bg-white hover:border-[#2A9D8F]/40",
       )}
       onClick={onClick}
       type="button"
     >
-      <span className={cn("font-semibold text-[14.5px]", active ? "text-[#147065]" : "text-[#1A1916]")}>{label}</span>
-      {sub && <span className="text-[#6B6B6B] text-[11.5px]">{sub}</span>}
+      <span className={cn("font-semibold text-[14.5px]", active ? "text-[#147065]" : "text-[#101828]")}>{label}</span>
+      {sub && <span className="text-[#667085] text-[11.5px]">{sub}</span>}
       {badge && (
         <span
           className={cn(
             "font-semibold text-[11.5px]",
-            badgeTone === "danger" ? "text-[#B4342A]" : badgeTone === "good" ? "text-[#147065]" : "text-[#9B9B96]",
+            badgeTone === "danger" ? "text-[#B4342A]" : badgeTone === "good" ? "text-[#147065]" : "text-[#98A2B3]",
           )}
         >
           {badge}
@@ -1291,7 +1291,7 @@ function DefectCard({
           ? tone === "critical"
             ? "border-[#B4342A] bg-[#FCF4F3]"
             : "border-[#2A9D8F] bg-[#ECF8F4]"
-          : "border-[#E8E5DF] bg-white hover:border-[#2A9D8F]/40",
+          : "border-[#E4E7EC] bg-white hover:border-[#2A9D8F]/40",
       )}
       onClick={onClick}
       type="button"
@@ -1299,13 +1299,13 @@ function DefectCard({
       <span
         className={cn(
           "font-semibold text-[13px]",
-          active ? (tone === "critical" ? "text-[#B4342A]" : "text-[#147065]") : "text-[#1A1916]",
+          active ? (tone === "critical" ? "text-[#B4342A]" : "text-[#147065]") : "text-[#101828]",
         )}
       >
         {label}
       </span>
       {amount != null && amount > 0 && (
-        <span className={cn("font-semibold text-[12px]", active ? "text-[#B4342A]" : "text-[#9B9B96]")}>
+        <span className={cn("font-semibold text-[12px]", active ? "text-[#B4342A]" : "text-[#98A2B3]")}>
           − {formatMoney(amount)}
         </span>
       )}
@@ -1343,11 +1343,11 @@ function SummaryRow({
 }: Readonly<{ label: string; value: string; negative?: boolean; strong?: boolean; tone?: "accent" }>) {
   return (
     <div className="flex items-center justify-between gap-3 py-[3px]">
-      <span className={cn(strong ? "font-semibold text-[#1A1916]" : "text-[#6B6B6B]")}>{label}</span>
+      <span className={cn(strong ? "font-semibold text-[#101828]" : "text-[#667085]")}>{label}</span>
       <span
         className={cn(
           "font-semibold",
-          tone === "accent" ? "text-[#147065]" : negative ? "text-[#B4342A]" : "text-[#1A1916]",
+          tone === "accent" ? "text-[#147065]" : negative ? "text-[#B4342A]" : "text-[#101828]",
         )}
       >
         {negative && value !== "À compléter" ? `− ${value}` : value}

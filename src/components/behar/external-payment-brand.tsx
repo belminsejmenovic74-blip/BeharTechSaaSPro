@@ -36,7 +36,7 @@ export function ExternalPaymentBrand({
         </span>
       )}
       {provider !== "stripe" && provider !== "sumup" && provider !== "mollie" ? (
-        <span className={`${compact ? "text-sm" : "text-lg"} font-semibold text-[#1A1916]`}>{LABELS[provider]}</span>
+        <span className={`${compact ? "text-sm" : "text-lg"} font-semibold text-[#101828]`}>{LABELS[provider]}</span>
       ) : null}
     </span>
   );

@@ -85,7 +85,7 @@ export function OptionCard({
         "flex w-full items-center justify-between gap-3 rounded-[var(--w-radius)] border px-4 py-3 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--w-focus-ring,var(--w-tint))] disabled:opacity-50",
         selected
           ? "border-[var(--w-primary)] bg-[var(--w-tint)]"
-          : "border-[var(--w-border)] bg-white hover:border-[#B9B9B4] hover:bg-[#FAFAF8]",
+          : "border-[var(--w-border)] bg-white hover:border-[#B9B9B4] hover:bg-[#F9FAFB]",
       )}
     >
       <span className="flex min-w-0 items-center gap-3">
@@ -238,13 +238,13 @@ export function WidgetProgress({ steps, current }: { steps: string[]; current: n
               />
             ) : null}
             {index < current ? (
-              <span className="relative z-10 grid size-4 place-items-center rounded-full bg-[#FAFAF8] text-[var(--w-primary)]">
+              <span className="relative z-10 grid size-4 place-items-center rounded-full bg-[#F9FAFB] text-[var(--w-primary)]">
                 <Check className="size-3.5" strokeWidth={2.5} />
               </span>
             ) : null}
             <span
               className={cn(
-                "relative z-10 truncate bg-[#FAFAF8] px-2 text-xs font-medium",
+                "relative z-10 truncate bg-[#F9FAFB] px-2 text-xs font-medium",
                 index === current ? "text-[var(--w-text)]" : "text-[var(--w-muted)]",
               )}
             >

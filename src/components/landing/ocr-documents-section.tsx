@@ -37,7 +37,7 @@ function Step({ n, title }: { n: number; title: string }) {
 }
 function FlowArrow() {
   return (
-    <div className={s.ocrArrow} style={{ alignSelf: "center", color: "rgba(26,25,22,0.25)", paddingTop: 40 }}>
+    <div className={s.ocrArrow} style={{ alignSelf: "center", color: "rgba(16,24,40,0.25)", paddingTop: 40 }}>
       <ArrowRight size={22} />
     </div>
   );
@@ -61,7 +61,7 @@ export function OcrDocumentsSection() {
               padding: "8px 14px",
               fontSize: 13,
               color: DA.text,
-              boxShadow: "0 8px 20px rgba(26,25,22,0.05)",
+              boxShadow: "0 8px 20px rgba(16,24,40,0.05)",
             }}
           >
             <span style={{ fontWeight: 800, color: "#111" }}>a</span>
@@ -75,7 +75,7 @@ export function OcrDocumentsSection() {
             border: BORDER,
             borderRadius: 26,
             background: DA.card,
-            boxShadow: "0 20px 60px rgba(26,25,22,0.08)",
+            boxShadow: "0 20px 60px rgba(16,24,40,0.08)",
             padding: "clamp(24px,3.5vw,44px)",
           }}
         >

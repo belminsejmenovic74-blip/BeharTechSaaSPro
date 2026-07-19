@@ -77,8 +77,8 @@ export function RevenueChart() {
 
   return (
     <div className="w-full">
-      <p className="mb-2 text-[12px] text-[#6B6B6B]">
-        Total période : <span className="font-semibold text-[#1A1916]">{formatMoneyShort(totalPeriod, currency)}</span>
+      <p className="mb-2 text-[12px] text-[#667085]">
+        Total période : <span className="font-semibold text-[#101828]">{formatMoneyShort(totalPeriod, currency)}</span>
       </p>
       <div className="h-[260px] w-full">
         <svg
@@ -106,7 +106,7 @@ export function RevenueChart() {
                   y1={y}
                   y2={y}
                 />
-                <text fill="#6B6B6B" fontSize="11" textAnchor="end" x={padding.left - 10} y={y + 4}>
+                <text fill="#667085" fontSize="11" textAnchor="end" x={padding.left - 10} y={y + 4}>
                   {formatMoneyShort(value, currency)}
                 </text>
               </g>
@@ -134,7 +134,7 @@ export function RevenueChart() {
           {points.map((point, index) =>
             index % xLabelStep === 0 || index === points.length - 1 ? (
               <text
-                fill="#6B6B6B"
+                fill="#667085"
                 fontSize="11"
                 key={`label-${point.iso}`}
                 textAnchor="middle"

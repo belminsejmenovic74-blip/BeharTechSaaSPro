@@ -93,8 +93,8 @@ export function ReconditioningPrintPage() {
     return (
       <div className="grid min-h-svh place-items-center bg-[#FFFFFF] px-6 text-center">
         <div>
-          <p className="font-semibold text-[#1A1916] text-lg">Dossier introuvable</p>
-          <p className="mt-1 text-[#6B6B6B] text-sm">
+          <p className="font-semibold text-[#101828] text-lg">Dossier introuvable</p>
+          <p className="mt-1 text-[#667085] text-sm">
             Ouvrez ce document depuis l'étape « Certificat & sortie » d'un dossier de reconditionnement.
           </p>
         </div>
@@ -105,10 +105,10 @@ export function ReconditioningPrintPage() {
   return (
     <div className="min-h-svh bg-[#FFFFFF] print:bg-white">
       {/* Toolbar (cachée à l'impression) */}
-      <div className="sticky top-0 z-10 border-[#E8E8E5] border-b bg-white print:hidden">
+      <div className="sticky top-0 z-10 border-[#E4E7EC] border-b bg-white print:hidden">
         <div className="mx-auto flex max-w-[860px] flex-wrap items-center justify-between gap-3 px-4 py-3">
           <button
-            className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-3 font-medium text-[#1A1916] text-sm transition hover:bg-[#FFFFFF]"
+            className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-[#E4E7EC] bg-white px-3 font-medium text-[#101828] text-sm transition hover:bg-[#FFFFFF]"
             onClick={() => window.close()}
             type="button"
           >
@@ -116,12 +116,12 @@ export function ReconditioningPrintPage() {
             Fermer
           </button>
 
-          <div className="inline-flex h-9 items-center rounded-[10px] border border-[#E8E8E5] bg-white p-1">
+          <div className="inline-flex h-9 items-center rounded-[10px] border border-[#E4E7EC] bg-white p-1">
             {DOC_TABS.map((tab) => (
               <button
                 className={cn(
                   "h-7 rounded-[7px] px-3 font-semibold text-[12px] transition",
-                  doc === tab.key ? "bg-[#2A9D8F] text-white" : "text-[#6B6B6B] hover:text-[#1A1916]",
+                  doc === tab.key ? "bg-[#2A9D8F] text-white" : "text-[#667085] hover:text-[#101828]",
                 )}
                 key={tab.key}
                 onClick={() => setDoc(tab.key)}
@@ -134,7 +134,7 @@ export function ReconditioningPrintPage() {
 
           <div className="flex items-center gap-2">
             <button
-              className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-3 font-medium text-[#1A1916] text-sm transition hover:bg-[#FFFFFF]"
+              className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-[#E4E7EC] bg-white px-3 font-medium text-[#101828] text-sm transition hover:bg-[#FFFFFF]"
               onClick={download}
               type="button"
             >
@@ -157,10 +157,10 @@ export function ReconditioningPrintPage() {
       <div className="mx-auto max-w-[860px] px-4 py-8 print:p-0">
         <div
           className={cn(
-            "mx-auto bg-white shadow-[0_1px_3px_rgba(26,25,22,0.06)] print:shadow-none",
+            "mx-auto bg-white shadow-[0_1px_3px_rgba(16,24,40,0.06)] print:shadow-none",
             doc === "etiquette" || doc === "interne"
               ? "w-fit rounded-[14px]"
-              : "w-full rounded-[16px] border border-[#E8E8E5] print:border-0",
+              : "w-full rounded-[16px] border border-[#E4E7EC] print:border-0",
           )}
           ref={printRef}
         >

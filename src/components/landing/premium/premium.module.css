@@ -43,10 +43,10 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  border: 1px solid rgba(26, 25, 22, 0.08);
+  border: 1px solid rgba(16, 24, 40, 0.08);
   background: #fff;
-  color: #1a1916;
-  box-shadow: 0 8px 20px rgba(26, 25, 22, 0.08);
+  color: #101828;
+  box-shadow: 0 8px 20px rgba(16, 24, 40, 0.08);
   cursor: pointer;
   transition: color 0.2s;
 }
@@ -70,10 +70,10 @@
   position: absolute;
   width: 168px;
   border-radius: 16px;
-  border: 1px solid rgba(26, 25, 22, 0.08);
+  border: 1px solid rgba(16, 24, 40, 0.08);
   background: #fff;
   padding: 12px 14px;
-  box-shadow: 0 16px 40px rgba(26, 25, 22, 0.08);
+  box-shadow: 0 16px 40px rgba(16, 24, 40, 0.08);
 }
 
 @media (max-width: 1024px) {

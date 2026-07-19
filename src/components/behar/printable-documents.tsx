@@ -24,10 +24,10 @@ import { generateQrDataUrl, publicAbsoluteUrl } from "@/lib/public-link";
 import { formatIntakeBonNumber } from "@/lib/utils";
 
 const COLORS = {
-  ink: "#1A1916",
-  muted: "#6B6B6B",
+  ink: "#101828",
+  muted: "#667085",
   accent: "#2A9D8F",
-  line: "#E8E8E8",
+  line: "#E4E7EC",
   soft: "#FFFFFF",
   accentSoft: "#FFFFFF",
 };
@@ -42,36 +42,36 @@ const DOC_THEME: Record<
     label: "DEVIS",
     accent: "#2A9D8F",
     soft: "#FFFFFF",
-    ink: "#1A1916",
-    chipText: "#1A1916",
+    ink: "#101828",
+    chipText: "#101828",
   },
   facture: {
     label: "FACTURE",
     accent: "#2A9D8F",
     soft: "#FFFFFF",
-    ink: "#1A1916",
-    chipText: "#1A1916",
+    ink: "#101828",
+    chipText: "#101828",
   },
   recu: {
     label: "CONFIRMATION DE RÈGLEMENT",
     accent: "#2A9D8F",
     soft: "#FFFFFF",
-    ink: "#1A1916",
-    chipText: "#1A1916",
+    ink: "#101828",
+    chipText: "#101828",
   },
   "recu-vente": {
     label: "REÇU DE VENTE",
     accent: "#2A9D8F",
     soft: "#FFFFFF",
-    ink: "#1A1916",
-    chipText: "#1A1916",
+    ink: "#101828",
+    chipText: "#101828",
   },
   "bon-prise-en-charge": {
     label: "BON DE PRISE EN CHARGE",
     accent: "#2A9D8F",
     soft: "#FFFFFF",
-    ink: "#1A1916",
-    chipText: "#1A1916",
+    ink: "#101828",
+    chipText: "#101828",
   },
 };
 
@@ -139,7 +139,7 @@ function serviceDescription(line: QuoteLine, repair?: Repair): string {
 
 function _Badge({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <span className="inline-flex rounded-[3px] border border-[#E8E8E8] px-2 py-0.5 font-semibold text-[#1A1916] text-[10px] uppercase tracking-wider">
+    <span className="inline-flex rounded-[3px] border border-[#E4E7EC] px-2 py-0.5 font-semibold text-[#101828] text-[10px] uppercase tracking-wider">
       {children}
     </span>
   );
@@ -148,8 +148,8 @@ function _Badge({ children }: Readonly<{ children: ReactNode }>) {
 function KeyValue({ label, value }: Readonly<{ label: string; value: ReactNode }>) {
   return (
     <div className="grid grid-cols-[128px_1fr] gap-3 text-[12px] leading-relaxed">
-      <span className="text-[#6B6B6B]">{label}</span>
-      <span className="font-medium text-[#1A1916]">{value}</span>
+      <span className="text-[#667085]">{label}</span>
+      <span className="font-medium text-[#101828]">{value}</span>
     </div>
   );
 }
@@ -158,7 +158,7 @@ export function DocumentSection({
   title,
   children,
   className = "",
-  borderColor = "border-[#E8E8E8]",
+  borderColor = "border-[#E4E7EC]",
 }: Readonly<{
   title: string;
   children: ReactNode;
@@ -242,12 +242,12 @@ function DocumentTrackingQr({ url }: Readonly<{ url?: string }>) {
   if (syncStatus === "syncing" || syncStatus === "error" || syncStatus === "offline") {
     return (
       <div className="flex shrink-0 flex-col items-center gap-1">
-        <div className="flex size-[80px] items-center justify-center rounded-[6px] border border-[#E8E8E8] bg-[#FAFAF8] p-1 text-center">
-          <span className="font-medium text-[#6B6B6B] text-[7px] leading-[1.1]">
+        <div className="flex size-[80px] items-center justify-center rounded-[6px] border border-[#E4E7EC] bg-[#F9FAFB] p-1 text-center">
+          <span className="font-medium text-[#667085] text-[7px] leading-[1.1]">
             {syncStatus === "syncing" ? "Synchronisation du suivi en cours..." : "Suivi cloud non disponible"}
           </span>
         </div>
-        <p className="max-w-[90px] text-center text-[#6B6B6B] text-[9px] leading-tight">Suivi client</p>
+        <p className="max-w-[90px] text-center text-[#667085] text-[9px] leading-tight">Suivi client</p>
       </div>
     );
   }
@@ -258,10 +258,10 @@ function DocumentTrackingQr({ url }: Readonly<{ url?: string }>) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         alt="QR code de suivi de la réparation"
-        className="size-[80px] rounded-[6px] border border-[#E8E8E8] bg-white p-1"
+        className="size-[80px] rounded-[6px] border border-[#E4E7EC] bg-white p-1"
         src={qr}
       />
-      <p className="max-w-[90px] text-center text-[#6B6B6B] text-[9px] leading-tight">Suivi client</p>
+      <p className="max-w-[90px] text-center text-[#667085] text-[9px] leading-tight">Suivi client</p>
     </div>
   );
 }
@@ -292,10 +292,10 @@ function DocumentHeader({
   };
 
   return (
-    <header className="flex flex-col items-start justify-between gap-5 border-[#E8E8E8] border-b pb-5 sm:flex-row sm:gap-8">
+    <header className="flex flex-col items-start justify-between gap-5 border-[#E4E7EC] border-b pb-5 sm:flex-row sm:gap-8">
       <div className="min-w-0 max-w-[470px] text-left">
-        <div className="text-[#6B6B6B] text-[12px] leading-relaxed">
-          <p className="mb-1 font-bold text-[#1A1916] text-[15px] tracking-tight">{atelierName}</p>
+        <div className="text-[#667085] text-[12px] leading-relaxed">
+          <p className="mb-1 font-bold text-[#101828] text-[15px] tracking-tight">{atelierName}</p>
           {isSet(workshop.address) && <p>{workshop.address}</p>}
           {isSet(workshop.postalCity) ? (
             <p>
@@ -331,9 +331,9 @@ function DocumentHeader({
 
       <div className="flex w-full flex-col items-start gap-4 sm:w-auto sm:flex-row sm:items-start sm:justify-end">
         <div className="min-w-0 text-left sm:min-w-[200px] sm:text-right">
-          <span className="mb-1 block font-bold text-[#1A1916] text-[15px] uppercase tracking-wide">{theme.label}</span>
-          <p className="font-mono font-semibold text-[#1A1916] text-[16px] tracking-tight">{dash(number)}</p>
-          <p className="mt-1 text-[#6B6B6B] text-[11px]">Émis le {date ? dateLabel(date) : "—"}</p>
+          <span className="mb-1 block font-bold text-[#101828] text-[15px] uppercase tracking-wide">{theme.label}</span>
+          <p className="font-mono font-semibold text-[#101828] text-[16px] tracking-tight">{dash(number)}</p>
+          <p className="mt-1 text-[#667085] text-[11px]">Émis le {date ? dateLabel(date) : "—"}</p>
           {badge ? (
             <p className="mt-1.5 font-semibold text-[#2A9D8F] text-[11px] uppercase tracking-wider">{badge}</p>
           ) : null}
@@ -364,7 +364,7 @@ function DocumentFooter({
       : "";
 
   return (
-    <footer className="mt-auto border-[#E8E8E8] border-t pt-4 text-[#6B6B6B] text-[9px] leading-relaxed">
+    <footer className="mt-auto border-[#E4E7EC] border-t pt-4 text-[#667085] text-[9px] leading-relaxed">
       {methods.length ? <p>Moyens de paiement acceptés : {methods.join(" · ")}</p> : null}
       {workshop.documentFooter && workshop.documentFooter !== "Non renseigné" ? <p>{workshop.documentFooter}</p> : null}
       <p>
@@ -402,7 +402,7 @@ export function DocumentPage({
   const ws = workshop ?? defaultWorkshopInfo;
   return (
     <article
-      className="print-document pdf-page relative mx-auto flex min-h-[1123px] w-full max-w-[860px] flex-col overflow-hidden rounded-[6px] border border-[#E8E8E8] bg-white p-8 text-[#1A1916] print:min-h-0 print:rounded-none print:border-0 print:p-0 print:shadow-none"
+      className="print-document pdf-page relative mx-auto flex min-h-[1123px] w-full max-w-[860px] flex-col overflow-hidden rounded-[6px] border border-[#E4E7EC] bg-white p-8 text-[#101828] print:min-h-0 print:rounded-none print:border-0 print:p-0 print:shadow-none"
       style={{ color: COLORS.ink, fontFamily: "Inter, SF Pro, system-ui, sans-serif" }}
     >
       <DocumentHeader badge={badge} date={date} number={number} qrSlot={qrSlot} type={type} workshop={ws} />
@@ -420,9 +420,9 @@ export function DocumentLegalBlock({
   children: ReactNode;
 }>) {
   return (
-    <section className="rounded-[6px] border border-[#E8E8E8] bg-white p-4">
+    <section className="rounded-[6px] border border-[#E4E7EC] bg-white p-4">
       <h3 className="mb-2 font-bold text-[#2A9D8F] text-[10.5px] uppercase tracking-wider">{title}</h3>
-      <div className="space-y-1 text-[#6B6B6B] text-[10px] leading-relaxed">{children}</div>
+      <div className="space-y-1 text-[#667085] text-[10px] leading-relaxed">{children}</div>
     </section>
   );
 }
@@ -461,17 +461,17 @@ export function DocumentPhotoPage({
       <div className="space-y-4">
         <div>
           <h2 className="font-bold text-[#2A9D8F] text-[13px] uppercase tracking-wider">{title}</h2>
-          <p className="mt-1 text-[#6B6B6B] text-[11px] leading-relaxed">{subtitle}</p>
+          <p className="mt-1 text-[#667085] text-[11px] leading-relaxed">{subtitle}</p>
         </div>
         <div className="grid grid-cols-2 gap-4">
           {photos.slice(0, 6).map((photo, idx) => (
-            <div className="overflow-hidden rounded-[6px] border border-[#E8E8E8] bg-white p-1" key={photo.id || idx}>
+            <div className="overflow-hidden rounded-[6px] border border-[#E4E7EC] bg-white p-1" key={photo.id || idx}>
               <img
                 alt={photo.name || `Photo ${idx + 1}`}
                 className="h-[200px] w-full rounded-[4px] object-cover"
                 src={photo.dataUrl}
               />
-              {photo.name ? <p className="mt-1.5 truncate px-1 text-[#6B6B6B] text-[10px]">{photo.name}</p> : null}
+              {photo.name ? <p className="mt-1.5 truncate px-1 text-[#667085] text-[10px]">{photo.name}</p> : null}
             </div>
           ))}
         </div>
@@ -503,25 +503,25 @@ function PremiumTable({
     ? rows
     : [{ id: "empty", description: "Prestation atelier", quantity: 1, unitPrice: 0, total: 0 }];
   return (
-    <section className="print-avoid-break overflow-hidden rounded-[6px] border border-[#E8E8E8] bg-white print:rounded-none">
-      <div className="grid grid-cols-[minmax(0,1fr)_42px_90px] border-[#E8E8E8] border-b bg-white px-3 py-2.5 font-bold text-[#6B6B6B] text-[10px] uppercase tracking-wider sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 print:grid-cols-[1fr_70px_112px_112px] print:px-4">
+    <section className="print-avoid-break overflow-hidden rounded-[6px] border border-[#E4E7EC] bg-white print:rounded-none">
+      <div className="grid grid-cols-[minmax(0,1fr)_42px_90px] border-[#E4E7EC] border-b bg-white px-3 py-2.5 font-bold text-[#667085] text-[10px] uppercase tracking-wider sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 print:grid-cols-[1fr_70px_112px_112px] print:px-4">
         <span>Désignation</span>
         <span className="text-center">Qté</span>
         <span className="hidden text-right sm:block print:block">Prix unitaire</span>
         <span className="text-right">Total</span>
       </div>
-      <div className="divide-y divide-[#E8E8E8]">
+      <div className="divide-y divide-[#E4E7EC]">
         {safeRows.map((line) => (
           <div
             className="grid grid-cols-[minmax(0,1fr)_42px_90px] items-center px-3 py-3.5 text-[11.5px] sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 print:grid-cols-[1fr_70px_112px_112px] print:px-4"
             key={line.id}
           >
-            <span className="font-medium text-[#1A1916]">{serviceDescription(line, repair)}</span>
-            <span className="text-center text-[#6B6B6B]">{text(line.quantity, "1")}</span>
-            <span className="hidden text-right text-[#6B6B6B] sm:block print:block">
+            <span className="font-medium text-[#101828]">{serviceDescription(line, repair)}</span>
+            <span className="text-center text-[#667085]">{text(line.quantity, "1")}</span>
+            <span className="hidden text-right text-[#667085] sm:block print:block">
               {money(line.unitPrice, currency)}
             </span>
-            <span className="text-right font-semibold text-[#1A1916]">
+            <span className="text-right font-semibold text-[#101828]">
               {money(line.total ?? (line.quantity ?? 0) * (line.unitPrice ?? 0), currency)}
             </span>
           </div>
@@ -538,30 +538,30 @@ function QuoteDevicesTable({ quote }: Readonly<{ quote: Quote }>) {
     <div className="space-y-4">
       {devices.map((device, index) => (
         <section
-          className="print-avoid-break overflow-hidden rounded-[6px] border border-[#E8E8E8] bg-white print:rounded-none"
+          className="print-avoid-break overflow-hidden rounded-[6px] border border-[#E4E7EC] bg-white print:rounded-none"
           key={device.id}
         >
-          <h3 className="border-[#E8E8E8] border-b bg-white px-4 py-2.5 font-bold text-[#2A9D8F] text-[12px] uppercase tracking-wider">
+          <h3 className="border-[#E4E7EC] border-b bg-white px-4 py-2.5 font-bold text-[#2A9D8F] text-[12px] uppercase tracking-wider">
             Appareil {index + 1} — {formatBrandModel(device.brand, device.model, `Appareil ${index + 1}`)}
           </h3>
-          <div className="grid grid-cols-[minmax(0,1fr)_42px_90px] border-[#E8E8E8] border-b bg-white px-3 py-2 font-bold text-[#6B6B6B] text-[10px] uppercase tracking-wider sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 print:grid-cols-[1fr_70px_112px_112px] print:px-4">
+          <div className="grid grid-cols-[minmax(0,1fr)_42px_90px] border-[#E4E7EC] border-b bg-white px-3 py-2 font-bold text-[#667085] text-[10px] uppercase tracking-wider sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 print:grid-cols-[1fr_70px_112px_112px] print:px-4">
             <span>Désignation</span>
             <span className="text-center">Qté</span>
             <span className="hidden text-right sm:block print:block">Prix unitaire</span>
             <span className="text-right">Montant</span>
           </div>
-          <div className="divide-y divide-[#E8E8E8]">
+          <div className="divide-y divide-[#E4E7EC]">
             {device.services.map((service) => (
               <div
                 className="grid grid-cols-[minmax(0,1fr)_42px_90px] items-center px-3 py-3 text-[11.5px] sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 print:grid-cols-[1fr_70px_112px_112px] print:px-4"
                 key={service.id}
               >
-                <span className="font-medium text-[#1A1916]">{service.label}</span>
-                <span className="text-center text-[#6B6B6B]">{service.quantity}</span>
-                <span className="hidden text-right text-[#6B6B6B] sm:block print:block">
+                <span className="font-medium text-[#101828]">{service.label}</span>
+                <span className="text-center text-[#667085]">{service.quantity}</span>
+                <span className="hidden text-right text-[#667085] sm:block print:block">
                   {money(service.priceTtc, quote.currency)}
                 </span>
-                <span className="text-right font-semibold text-[#1A1916]">
+                <span className="text-right font-semibold text-[#101828]">
                   {money(service.priceTtc * service.quantity, quote.currency)}
                 </span>
               </div>
@@ -571,12 +571,12 @@ function QuoteDevicesTable({ quote }: Readonly<{ quote: Quote }>) {
                 className="grid grid-cols-[minmax(0,1fr)_42px_90px] items-center px-3 py-3 text-[11.5px] sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 print:grid-cols-[1fr_70px_112px_112px] print:px-4"
                 key={accessory.id}
               >
-                <span className="font-medium text-[#1A1916]">{accessory.label}</span>
-                <span className="text-center text-[#6B6B6B]">1</span>
-                <span className="hidden text-right text-[#6B6B6B] sm:block print:block">
+                <span className="font-medium text-[#101828]">{accessory.label}</span>
+                <span className="text-center text-[#667085]">1</span>
+                <span className="hidden text-right text-[#667085] sm:block print:block">
                   {accessory.included ? "inclus" : money(accessory.priceTtc ?? 0, quote.currency)}
                 </span>
-                <span className="text-right font-semibold text-[#1A1916]">
+                <span className="text-right font-semibold text-[#101828]">
                   {accessory.included ? "inclus" : money(accessory.priceTtc ?? 0, quote.currency)}
                 </span>
               </div>
@@ -603,14 +603,14 @@ function TotalsCard({
   const vat = getVatSummary(lines, ws);
   const finalTotal = ws.vatApplicable ? vat.ttc : total;
   return (
-    <section className="ml-auto w-full max-w-[360px] rounded-[6px] border border-[#E8E8E8] bg-white p-4">
+    <section className="ml-auto w-full max-w-[360px] rounded-[6px] border border-[#E4E7EC] bg-white p-4">
       {ws.vatApplicable ? (
         <>
           <TotalLine label="Sous-total HT" value={money(vat.ht, currency)} />
           <TotalLine label={`TVA ${String(vat.rate * 100).replace(".", ",")}%`} value={money(vat.tva, currency)} />
         </>
       ) : (
-        <p className="mb-3 text-right text-[#6B6B6B] text-[11px]">
+        <p className="mb-3 text-right text-[#667085] text-[11px]">
           {text(
             ws.tvaMention,
             ws.country === "CH" ? "Non assujetti à la TVA" : "TVA non applicable, art. 293 B du CGI",
@@ -625,10 +625,10 @@ function TotalsCard({
 function TotalLine({ label, value, emphasize }: Readonly<{ label: string; value: string; emphasize?: boolean }>) {
   return (
     <div
-      className={`flex justify-between gap-5 border-[#E8E8E8] border-b py-2 last:border-b-0 ${emphasize ? "font-semibold text-[#1A1916]" : "text-[#6B6B6B]"}`}
+      className={`flex justify-between gap-5 border-[#E4E7EC] border-b py-2 last:border-b-0 ${emphasize ? "font-semibold text-[#101828]" : "text-[#667085]"}`}
     >
       <span>{label}</span>
-      <span className={emphasize ? "font-semibold text-[#1A1916] text-[16px]" : "text-[#1A1916]"}>{value}</span>
+      <span className={emphasize ? "font-semibold text-[#101828] text-[16px]" : "text-[#101828]"}>{value}</span>
     </div>
   );
 }
@@ -643,18 +643,18 @@ function SignatureGrid({ accord = false }: Readonly<{ accord?: boolean }>) {
 
 function SignatureBox({ title }: Readonly<{ title: string }>) {
   return (
-    <div className="rounded-[6px] border border-[#E8E8E8] bg-white p-4">
-      <p className="font-semibold text-[#6B6B6B] text-[11px] uppercase tracking-wide">{title}</p>
-      <div className="mt-14 border-[#E8E8E8] border-t pt-2 text-[#6B6B6B] text-[10px]">Date et signature</div>
+    <div className="rounded-[6px] border border-[#E4E7EC] bg-white p-4">
+      <p className="font-semibold text-[#667085] text-[11px] uppercase tracking-wide">{title}</p>
+      <div className="mt-14 border-[#E4E7EC] border-t pt-2 text-[#667085] text-[10px]">Date et signature</div>
     </div>
   );
 }
 
 function NoticeCard({ title, children }: Readonly<{ title: string; children: ReactNode }>) {
   return (
-    <section className="print-avoid-break rounded-[6px] border border-[#E8E8E8] bg-white p-4">
+    <section className="print-avoid-break rounded-[6px] border border-[#E4E7EC] bg-white p-4">
       <h3 className="mb-2 font-bold text-[#2A9D8F] text-[11px] uppercase tracking-wider">{title}</h3>
-      <div className="text-[#6B6B6B] text-[11.5px] leading-relaxed">{children}</div>
+      <div className="text-[#667085] text-[11.5px] leading-relaxed">{children}</div>
     </section>
   );
 }
@@ -707,7 +707,7 @@ function intakeAccessories(repair: Repair) {
 
 function _IntakeBox({ title, children }: Readonly<{ title: string; children: ReactNode }>) {
   return (
-    <section className="rounded-[10px] border border-[#E8E8E5] bg-white p-3">
+    <section className="rounded-[10px] border border-[#E4E7EC] bg-white p-3">
       <h3 className="mb-2 font-bold text-[#167B70] text-[11px] uppercase tracking-wide">{title}</h3>
       {children}
     </section>
@@ -717,8 +717,8 @@ function _IntakeBox({ title, children }: Readonly<{ title: string; children: Rea
 function IntakeKeyValue({ label, value }: Readonly<{ label: string; value: ReactNode }>) {
   return (
     <div className="grid grid-cols-[108px_1fr] gap-2 text-[11.5px] leading-relaxed">
-      <span className="text-[#6B6B6B]">{label}</span>
-      <span className="font-medium text-[#1A1916]">{value}</span>
+      <span className="text-[#667085]">{label}</span>
+      <span className="font-medium text-[#101828]">{value}</span>
     </div>
   );
 }
@@ -732,7 +732,7 @@ function PatternMini({ points }: Readonly<{ points?: number[] }>) {
         return (
           <span
             className={`grid size-5 place-items-center rounded-full border font-bold text-[8px] ${
-              order ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]" : "border-[#DADADA] bg-white text-transparent"
+              order ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]" : "border-[#D0D5DD] bg-white text-transparent"
             }`}
             key={point}
           >
@@ -750,12 +750,12 @@ function IntakeSignatureBlock({ repair }: Readonly<{ repair: Repair }>) {
   const hasSignature = Boolean(intake?.signatureDataUrl);
   return (
     <DocumentSection title="Signature">
-      <div className="min-h-[70px] rounded-[6px] border border-[#E8E8E8] border-dashed bg-white p-2">
+      <div className="min-h-[70px] rounded-[6px] border border-[#E4E7EC] border-dashed bg-white p-2">
         {hasSignature ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img alt="Signature client" className="h-[54px] w-full object-contain" src={intake?.signatureDataUrl} />
         ) : (
-          <div className="grid h-[54px] place-items-center text-[#6B6B6B] text-[11px]">À signer</div>
+          <div className="grid h-[54px] place-items-center text-[#667085] text-[11px]">À signer</div>
         )}
       </div>
       <div className="mt-2 grid gap-1">
@@ -778,8 +778,8 @@ function PaymentHero({
   return (
     <section className="rounded-[6px] border border-[#2A9D8F] bg-white p-6 text-center">
       <p className="font-bold text-[#2A9D8F] text-[12px] uppercase tracking-wider">Montant réglé</p>
-      <p className="mt-2 font-semibold text-[#1A1916] text-[32px] leading-none">{money(amount, currency)}</p>
-      <p className="mt-3 text-[#6B6B6B] text-[12px]">
+      <p className="mt-2 font-semibold text-[#101828] text-[32px] leading-none">{money(amount, currency)}</p>
+      <p className="mt-3 text-[#667085] text-[12px]">
         {paymentMethodLabel(method)} · {date ? dateLabel(date) : "—"}
       </p>
     </section>
@@ -812,7 +812,7 @@ export function RepairIntakeDocument({
 
   return (
     <div
-      className="print-document mx-auto flex w-full max-w-[794px] flex-col gap-6 text-[#1A1916]"
+      className="print-document mx-auto flex w-full max-w-[794px] flex-col gap-6 text-[#101828]"
       data-pdf-paginate="true"
     >
       <DocumentPage
@@ -860,35 +860,35 @@ export function RepairIntakeDocument({
         <section className="flex items-center justify-between gap-4 rounded-[6px] border border-[#2A9D8F] bg-white px-4 py-3">
           <div className="min-w-0">
             <p className="font-bold text-[#2A9D8F] text-[11px] uppercase tracking-wide">Montant estimé</p>
-            <p className="mt-0.5 text-[#6B6B6B] text-[10px] leading-tight">
+            <p className="mt-0.5 text-[#667085] text-[10px] leading-tight">
               Estimation convenue au dépôt — susceptible d'évoluer après diagnostic.
             </p>
           </div>
-          <p className="shrink-0 font-bold font-mono text-[#1A1916] text-[20px] tracking-tight">
+          <p className="shrink-0 font-bold font-mono text-[#101828] text-[20px] tracking-tight">
             {money(repair.total ?? repair.amount ?? 0, repair.currency)}{" "}
-            <span className="font-normal text-[#6B6B6B] text-[12px]">TTC</span>
+            <span className="font-normal text-[#667085] text-[12px]">TTC</span>
           </p>
         </section>
 
         {/* État d'entrée — compact 2 col */}
-        <section className="overflow-hidden rounded-[6px] border border-[#E8E8E8] bg-white">
-          <h3 className="border-[#E8E8E8] border-b px-4 py-2 font-bold text-[#2A9D8F] text-[11px] uppercase tracking-wide">
+        <section className="overflow-hidden rounded-[6px] border border-[#E4E7EC] bg-white">
+          <h3 className="border-[#E4E7EC] border-b px-4 py-2 font-bold text-[#2A9D8F] text-[11px] uppercase tracking-wide">
             État d'entrée appareil
           </h3>
-          <div className="grid grid-cols-2 divide-x divide-[#E8E8E8]">
-            <div className="divide-y divide-[#E8E8E8]">
+          <div className="grid grid-cols-2 divide-x divide-[#E4E7EC]">
+            <div className="divide-y divide-[#E4E7EC]">
               {leftRows.map(([label, key]) => (
                 <div className="grid grid-cols-[130px_1fr] gap-2 px-3 py-1.5 text-[11px]" key={key}>
-                  <span className="text-[#6B6B6B]">{label}</span>
-                  <span className="font-medium text-[#1A1916]">{intakeValue(repair, key)}</span>
+                  <span className="text-[#667085]">{label}</span>
+                  <span className="font-medium text-[#101828]">{intakeValue(repair, key)}</span>
                 </div>
               ))}
             </div>
-            <div className="divide-y divide-[#E8E8E8]">
+            <div className="divide-y divide-[#E4E7EC]">
               {rightRows.map(([label, key]) => (
                 <div className="grid grid-cols-[130px_1fr] gap-2 px-3 py-1.5 text-[11px]" key={key}>
-                  <span className="text-[#6B6B6B]">{label}</span>
-                  <span className="font-medium text-[#1A1916]">{intakeValue(repair, key)}</span>
+                  <span className="text-[#667085]">{label}</span>
+                  <span className="font-medium text-[#101828]">{intakeValue(repair, key)}</span>
                 </div>
               ))}
             </div>
@@ -898,15 +898,15 @@ export function RepairIntakeDocument({
         {/* Accessoires + Défauts + Déclaration */}
         <div className="grid grid-cols-3 gap-3">
           <DocumentSection title="Accessoires">
-            <p className="text-[#1A1916] text-[11px]">{accessories.length ? accessories.join(" · ") : "Aucun"}</p>
+            <p className="text-[#101828] text-[11px]">{accessories.length ? accessories.join(" · ") : "Aucun"}</p>
           </DocumentSection>
           <DocumentSection title="Défauts visibles">
-            <p className="whitespace-pre-wrap text-[#1A1916] text-[11px] leading-relaxed">
+            <p className="whitespace-pre-wrap text-[#101828] text-[11px] leading-relaxed">
               {text(repair.intakeCondition?.visibleDefects, "Aucun défaut signalé")}
             </p>
           </DocumentSection>
           <DocumentSection title="Déclaration client">
-            <p className="whitespace-pre-wrap text-[#1A1916] text-[11px] leading-relaxed">
+            <p className="whitespace-pre-wrap text-[#101828] text-[11px] leading-relaxed">
               {text(repair.intakeCondition?.customerStatement, "Aucune déclaration")}
             </p>
           </DocumentSection>
@@ -922,11 +922,11 @@ export function RepairIntakeDocument({
                 {customerValidationRows.map(([label, key]) => {
                   const checked = Boolean(repair.intakeCondition?.[key]);
                   return (
-                    <p key={key} className="flex items-start gap-2 text-[#1A1916]">
+                    <p key={key} className="flex items-start gap-2 text-[#101828]">
                       <span
                         className="mt-0.5 inline-flex size-3.5 shrink-0 items-center justify-center rounded-[3px] border font-bold text-[9px] leading-none"
                         style={{
-                          borderColor: checked ? "#2A9D8F" : "#E8E8E8",
+                          borderColor: checked ? "#2A9D8F" : "#E4E7EC",
                           backgroundColor: "#FFFFFF",
                           color: "#2A9D8F",
                         }}
@@ -941,7 +941,7 @@ export function RepairIntakeDocument({
             </DocumentSection>
           ) : (
             <DocumentSection title="Fait à">
-              <p className="text-[#1A1916] text-[11.5px]">
+              <p className="text-[#101828] text-[11.5px]">
                 Fait à {text(ws.city, "Annemasse")}, le {dateLabel(repair.droppedAt)}
               </p>
             </DocumentSection>
@@ -1030,7 +1030,7 @@ export function QuoteDocument({
       <DocumentIntro customer={customer} quote={quote} repair={repair} />
       {quote.notes ? (
         <DocumentSection title="Notes">
-          <p className="whitespace-pre-wrap text-[#1A1916] text-[11.5px] leading-relaxed">{text(quote.notes)}</p>
+          <p className="whitespace-pre-wrap text-[#101828] text-[11.5px] leading-relaxed">{text(quote.notes)}</p>
         </DocumentSection>
       ) : null}
       <QuoteDevicesTable quote={quote} />
@@ -1097,27 +1097,27 @@ function InvoiceLegalMentions({
 
   return (
     <section className="grid gap-4 md:grid-cols-2">
-      <div className="rounded-[6px] border border-[#E8E8E8] bg-white p-4">
+      <div className="rounded-[6px] border border-[#E4E7EC] bg-white p-4">
         <h3 className="mb-3 font-bold text-[#2A9D8F] text-[11px] uppercase tracking-wider">Informations facture</h3>
-        <div className="space-y-1.5 text-[#1A1916] text-[11.5px]">
+        <div className="space-y-1.5 text-[#101828] text-[11.5px]">
           <KeyValue label="Date d'émission" value={issuedAt} />
           <KeyValue label="Date de prestation" value={serviceDate} />
           <KeyValue label="Date d'échéance" value={dueLabel} />
         </div>
-        <p className="mt-3 text-[#6B6B6B] text-[10px] leading-relaxed">
+        <p className="mt-3 text-[#667085] text-[10px] leading-relaxed">
           Le règlement est géré en dehors de Behar Tech Pro par Stripe, SumUp ou le système de paiement du réparateur.
         </p>
         {ws.country === "FR" ? (
-          <p className="mt-3 text-[#6B6B6B] text-[10px] leading-relaxed">
+          <p className="mt-3 text-[#667085] text-[10px] leading-relaxed">
             Pas d'escompte pour règlement anticipé. En cas de retard de paiement, application des pénalités et frais
             prévus par le Code de commerce français.
           </p>
         ) : null}
       </div>
 
-      <div className="rounded-[6px] border border-[#E8E8E8] bg-white p-4">
+      <div className="rounded-[6px] border border-[#E4E7EC] bg-white p-4">
         <h3 className="mb-3 font-bold text-[#2A9D8F] text-[11px] uppercase tracking-wider">Émetteur</h3>
-        <div className="space-y-1.5 text-[#1A1916] text-[11.5px]">
+        <div className="space-y-1.5 text-[#101828] text-[11.5px]">
           <KeyValue label="Raison sociale" value={text(ws.name, "BEHAR • TECH PRO")} />
           {isSet(ws.commercialName) ? <KeyValue label="Nom commercial" value={ws.commercialName} /> : null}
           <KeyValue
@@ -1147,7 +1147,7 @@ function InvoiceLegalMentions({
           <KeyValue label="Contact" value={`${text(ws.email)} · ${text(ws.phone)}`} />
         </div>
         {!ws.vatApplicable ? (
-          <p className="mt-3 text-[#6B6B6B] text-[10px] leading-relaxed">
+          <p className="mt-3 text-[#667085] text-[10px] leading-relaxed">
             {text(
               ws.tvaMention,
               ws.country === "CH" ? "Non assujetti à la TVA" : "TVA non applicable, art. 293 B du CGI",
@@ -1157,22 +1157,22 @@ function InvoiceLegalMentions({
       </div>
 
       {ws.country === "FR" ? (
-        <div className="rounded-[6px] border border-[#E8E8E8] bg-white p-4 md:col-span-2">
+        <div className="rounded-[6px] border border-[#E4E7EC] bg-white p-4 md:col-span-2">
           <h3 className="mb-2 font-bold text-[#2A9D8F] text-[11px] uppercase tracking-wider">
             Médiation de la consommation
           </h3>
-          <p className="text-[#6B6B6B] text-[10px] leading-relaxed">
+          <p className="text-[#667085] text-[10px] leading-relaxed">
             Les coordonnées du médiateur de la consommation compétent sont disponibles sur demande auprès de l'atelier.
           </p>
         </div>
       ) : null}
 
       {isSet(ws.invoiceTerms) ? (
-        <div className="rounded-[6px] border border-[#E8E8E8] bg-white p-4 md:col-span-2">
+        <div className="rounded-[6px] border border-[#E4E7EC] bg-white p-4 md:col-span-2">
           <h3 className="mb-2 font-bold text-[#2A9D8F] text-[11px] uppercase tracking-wider">
             Mentions complémentaires
           </h3>
-          <p className="text-[#6B6B6B] text-[10px] leading-relaxed">{ws.invoiceTerms}</p>
+          <p className="text-[#667085] text-[10px] leading-relaxed">{ws.invoiceTerms}</p>
         </div>
       ) : null}
     </section>
@@ -1218,15 +1218,15 @@ export function PaymentReceiptDocument({
 function InternalPartsTable({ parts, currency }: Readonly<{ parts: RepairPart[]; currency?: WorkshopCurrency }>) {
   const rows = parts.length ? parts : [];
   return (
-    <section className="print-avoid-break overflow-hidden rounded-[6px] border border-[#E8E8E8] bg-white print:rounded-none">
-      <div className="grid grid-cols-[1fr_90px_90px_90px] border-[#E8E8E8] border-b bg-white px-5 py-2.5 font-bold text-[#6B6B6B] text-[10px] uppercase tracking-wider">
+    <section className="print-avoid-break overflow-hidden rounded-[6px] border border-[#E4E7EC] bg-white print:rounded-none">
+      <div className="grid grid-cols-[1fr_90px_90px_90px] border-[#E4E7EC] border-b bg-white px-5 py-2.5 font-bold text-[#667085] text-[10px] uppercase tracking-wider">
         <span>Pièce / fournisseur</span>
         <span className="text-right">Achat</span>
         <span className="text-right">Vente</span>
         <span className="text-right">Marge</span>
       </div>
       {rows.length ? (
-        <div className="divide-y divide-[#E8E8E8]">
+        <div className="divide-y divide-[#E4E7EC]">
           {rows.map((part, index) => {
             const purchase = Number.isFinite(part.purchasePrice) ? part.purchasePrice : 0;
             const sale = Number.isFinite(part.salePrice) ? part.salePrice : 0;
@@ -1236,21 +1236,21 @@ function InternalPartsTable({ parts, currency }: Readonly<{ parts: RepairPart[];
                 key={`${part.stockItemId}-${index}`}
               >
                 <span>
-                  <strong className="text-[#1A1916]">{text(part.name, "Pièce")}</strong>
+                  <strong className="text-[#101828]">{text(part.name, "Pièce")}</strong>
                   <br />
-                  <span className="text-[#6B6B6B]">
+                  <span className="text-[#667085]">
                     {dash(part.reference)} · Qté {text(part.quantity, "1")}
                   </span>
                 </span>
-                <span className="text-right text-[#1A1916]">{money(purchase, currency)}</span>
-                <span className="text-right text-[#1A1916]">{money(sale, currency)}</span>
+                <span className="text-right text-[#101828]">{money(purchase, currency)}</span>
+                <span className="text-right text-[#101828]">{money(sale, currency)}</span>
                 <span className="text-right font-semibold text-[#2A9D8F]">{money(sale - purchase, currency)}</span>
               </div>
             );
           })}
         </div>
       ) : (
-        <p className="px-5 py-4 text-[#6B6B6B] text-[12px]">Aucune pièce stock rattachée.</p>
+        <p className="px-5 py-4 text-[#667085] text-[12px]">Aucune pièce stock rattachée.</p>
       )}
     </section>
   );
@@ -1469,18 +1469,18 @@ export function DiagnosticReportDocument({
         <DocumentSection title="Tests réalisés & Résultats">
           <div className="mt-1 grid grid-cols-2 gap-x-6 gap-y-2">
             {checklist.map((item) => {
-              let textColor = "text-[#6B6B6B]"; // Neutral
+              let textColor = "text-[#667085]"; // Neutral
               if (item.result === "OK") textColor = "text-[#2A9D8F]";
               if (item.result === "KO" || item.result === "Défaut constaté") textColor = "text-[#B42318]";
               if (item.result === "Test repoussé") textColor = "text-[#B54708]";
-              if (item.result === "Non testable") textColor = "text-[#6B6B6B]";
+              if (item.result === "Non testable") textColor = "text-[#667085]";
 
               return (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between border-[#E8E8E8] border-b pb-1.5 text-[11.5px]"
+                  className="flex items-center justify-between border-[#E4E7EC] border-b pb-1.5 text-[11.5px]"
                 >
-                  <span className="font-medium text-[#1A1916]">{item.label}</span>
+                  <span className="font-medium text-[#101828]">{item.label}</span>
                   <span className={`font-bold text-[11px] ${textColor}`}>
                     {item.result}
                     {item.comment ? ` — ${item.comment}` : ""}
@@ -1500,7 +1500,7 @@ export function DiagnosticReportDocument({
               .map((photo, idx) => (
                 <div
                   key={photo.id || idx}
-                  className="h-20 w-full overflow-hidden rounded-[6px] border border-[#E8E8E8]"
+                  className="h-20 w-full overflow-hidden rounded-[6px] border border-[#E4E7EC]"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={photo.dataUrl} alt={`Diagnostic photo ${idx + 1}`} className="h-full w-full object-cover" />

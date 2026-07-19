@@ -48,13 +48,13 @@ import { cn } from "@/lib/utils";
 /* ─────────── Style tokens ─────────── */
 
 const inputCls =
-  "h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3.5 text-[#1A1916] text-sm outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+  "h-11 w-full rounded-[12px] border border-[#E4E7EC] bg-white px-3.5 text-[#101828] text-sm outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
 const selectCls = `${inputCls} appearance-none pr-9`;
 
 function Field({ label, children }: Readonly<{ label: string; children: React.ReactNode }>) {
   return (
     <label className="block space-y-1.5">
-      <span className="font-medium text-[#1A1916] text-[13px]">{label}</span>
+      <span className="font-medium text-[#101828] text-[13px]">{label}</span>
       {children}
     </label>
   );
@@ -82,7 +82,7 @@ export function ReconditioningWorkspace() {
   const active = files.find((file) => file.id === activeId);
 
   if (!mounted) {
-    return <div className="h-64 animate-pulse rounded-[18px] border border-[#E8E8E5] bg-white" />;
+    return <div className="h-64 animate-pulse rounded-[18px] border border-[#E4E7EC] bg-white" />;
   }
 
   if (active) {
@@ -184,7 +184,7 @@ function Board({
     <div className="space-y-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="relative w-full max-w-[380px]">
-          <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#9A9A95]" />
+          <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#98A2B3]" />
           <input
             className={cn(inputCls, "pl-10")}
             onChange={(e) => setQuery(e.target.value)}
@@ -193,7 +193,7 @@ function Board({
           />
         </div>
         <div className="flex items-center gap-2">
-          <span className="hidden items-center gap-1.5 text-[#6B6B6B] text-[12px] sm:inline-flex">
+          <span className="hidden items-center gap-1.5 text-[#667085] text-[12px] sm:inline-flex">
             <Smartphone className="size-3.5" />
             Achat client : mode Comptoir → « Acheter un téléphone »
           </span>
@@ -213,7 +213,7 @@ function Board({
                 "inline-flex h-9 items-center gap-1.5 rounded-[10px] border px-3 font-semibold text-[13px] transition",
                 filter === f.key
                   ? "border-[#2A9D8F] bg-[#ECF8F4] text-[#147065]"
-                  : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:text-[#1A1916]",
+                  : "border-[#E4E7EC] bg-white text-[#667085] hover:text-[#101828]",
               )}
               key={f.key}
               onClick={() => setFilter(f.key)}
@@ -223,7 +223,7 @@ function Board({
               <span
                 className={cn(
                   "rounded-[6px] px-1.5 text-[11px]",
-                  filter === f.key ? "bg-white text-[#147065]" : "bg-[#F7F7F5] text-[#8A8A85]",
+                  filter === f.key ? "bg-white text-[#147065]" : "bg-[#F5F7FA] text-[#98A2B3]",
                 )}
               >
                 {count}
@@ -234,12 +234,12 @@ function Board({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="font-semibold text-[#1A1916] text-[14px]">
+        <p className="font-semibold text-[#101828] text-[14px]">
           {visible.length} appareil{visible.length > 1 ? "s" : ""}
         </p>
         <div className="flex items-center gap-2">
           <select
-            className="h-10 cursor-pointer appearance-none rounded-[10px] border border-[#E8E8E5] bg-white px-3 pr-8 font-medium text-[#1A1916] text-[13px] outline-none focus:border-[#2A9D8F]/60"
+            className="h-10 cursor-pointer appearance-none rounded-[10px] border border-[#E4E7EC] bg-white px-3 pr-8 font-medium text-[#101828] text-[13px] outline-none focus:border-[#2A9D8F]/60"
             onChange={(e) => setSort(e.target.value as BoardSort)}
             value={sort}
           >
@@ -249,7 +249,7 @@ function Board({
               </option>
             ))}
           </select>
-          <div className="inline-flex h-10 items-center rounded-[10px] border border-[#E8E8E5] bg-white p-1">
+          <div className="inline-flex h-10 items-center rounded-[10px] border border-[#E4E7EC] bg-white p-1">
             {(
               [
                 ["grid", LayoutGrid],
@@ -259,7 +259,7 @@ function Board({
               <button
                 className={cn(
                   "grid h-8 w-9 place-items-center rounded-[7px] transition",
-                  layout === key ? "bg-[#ECF8F4] text-[#147065]" : "text-[#6B6B6B] hover:text-[#1A1916]",
+                  layout === key ? "bg-[#ECF8F4] text-[#147065]" : "text-[#667085] hover:text-[#101828]",
                 )}
                 key={key}
                 onClick={() => setLayout(key)}
@@ -274,12 +274,12 @@ function Board({
       </div>
 
       {visible.length === 0 ? (
-        <div className="grid place-items-center rounded-[18px] border border-dashed border-[#E8E8E5] bg-white px-6 py-16 text-center">
+        <div className="grid place-items-center rounded-[18px] border border-dashed border-[#E4E7EC] bg-white px-6 py-16 text-center">
           <span className="grid size-12 place-items-center rounded-[14px] bg-[#ECF8F4] text-[#2A9D8F]">
             <Smartphone className="size-6" />
           </span>
-          <p className="mt-4 font-semibold text-[#1A1916]">Aucun téléphone ici</p>
-          <p className="mt-1 max-w-md text-[#6B6B6B] text-sm">
+          <p className="mt-4 font-semibold text-[#101828]">Aucun téléphone ici</p>
+          <p className="mt-1 max-w-md text-[#667085] text-sm">
             Achetez un téléphone au comptoir (« Acheter un téléphone ») ou ajoutez un téléphone fournisseur : il
             apparaîtra ici pour être reconditionné.
           </p>
@@ -295,7 +295,7 @@ function Board({
       )}
 
       {visible.length > 0 && (
-        <p className="text-[#8A8A85] text-[12.5px]">
+        <p className="text-[#98A2B3] text-[12.5px]">
           Affichage 1 à {visible.length} sur {visible.length}
         </p>
       )}
@@ -315,9 +315,9 @@ function PhoneCard({ file, onOpen }: Readonly<{ file: ReconditioningFile; onOpen
   const hasMargin = real != null || file.prixVentePrevu > 0;
 
   return (
-    <article className="flex flex-col rounded-[16px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.035)] transition hover:border-[#2A9D8F]/50 hover:shadow-[0_12px_26px_rgba(26,25,22,0.06)]">
+    <article className="flex flex-col rounded-[16px] border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.035)] transition hover:border-[#2A9D8F]/50 hover:shadow-[0_12px_26px_rgba(16,24,40,0.06)]">
       <div className="flex items-start gap-3">
-        <span className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-[12px] border border-[#E8E8E5] bg-[#FAFAF8] text-[#6B6B6B]">
+        <span className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-[12px] border border-[#E4E7EC] bg-[#F9FAFB] text-[#667085]">
           {image ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img alt={device} className="size-full object-contain p-1" src={image} />
@@ -327,49 +327,49 @@ function PhoneCard({ file, onOpen }: Readonly<{ file: ReconditioningFile; onOpen
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <p className="truncate font-semibold text-[#1A1916] text-[15px]">{file.number}</p>
+            <p className="truncate font-semibold text-[#101828] text-[15px]">{file.number}</p>
             <RecondStatusPill status={file.status} />
           </div>
-          <p className="mt-0.5 truncate font-semibold text-[#1A1916] text-[16px]">{device}</p>
-          <p className="truncate text-[#6B6B6B] text-[12.5px]">{detail || "Stockage / couleur à compléter"}</p>
+          <p className="mt-0.5 truncate font-semibold text-[#101828] text-[16px]">{device}</p>
+          <p className="truncate text-[#667085] text-[12.5px]">{detail || "Stockage / couleur à compléter"}</p>
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-3 border-[#F1F1EF] border-t pt-3 text-[12.5px]">
+      <div className="mt-3 grid grid-cols-2 gap-3 border-[#F2F4F7] border-t pt-3 text-[12.5px]">
         <div>
-          <p className="text-[#6B6B6B] text-[11.5px]">Date d'achat</p>
-          <p className="mt-0.5 font-semibold text-[#1A1916]">{fmtDateTime(file.receivedAt || file.createdAt)}</p>
+          <p className="text-[#667085] text-[11.5px]">Date d'achat</p>
+          <p className="mt-0.5 font-semibold text-[#101828]">{fmtDateTime(file.receivedAt || file.createdAt)}</p>
         </div>
         <div>
-          <p className="text-[#6B6B6B] text-[11.5px]">Technicien</p>
-          <p className="mt-0.5 truncate font-semibold text-[#1A1916]">{file.technician || "Atelier principal"}</p>
+          <p className="text-[#667085] text-[11.5px]">Technicien</p>
+          <p className="mt-0.5 truncate font-semibold text-[#101828]">{file.technician || "Atelier principal"}</p>
         </div>
       </div>
 
-      <div className="mt-3 border-[#F1F1EF] border-t pt-3 text-[12.5px]">
-        <p className="text-[#6B6B6B] text-[11.5px]">Diagnostic initial</p>
-        <p className="mt-0.5 truncate font-semibold text-[#1A1916]">{initialProblemLabel(file)}</p>
+      <div className="mt-3 border-[#F2F4F7] border-t pt-3 text-[12.5px]">
+        <p className="text-[#667085] text-[11.5px]">Diagnostic initial</p>
+        <p className="mt-0.5 truncate font-semibold text-[#101828]">{initialProblemLabel(file)}</p>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-3 border-[#F1F1EF] border-t pt-3 text-[12.5px]">
+      <div className="mt-3 grid grid-cols-2 gap-3 border-[#F2F4F7] border-t pt-3 text-[12.5px]">
         <div>
-          <p className="text-[#6B6B6B] text-[11.5px]">Achat</p>
-          <p className="mt-0.5 font-semibold text-[#1A1916]">
+          <p className="text-[#667085] text-[11.5px]">Achat</p>
+          <p className="mt-0.5 font-semibold text-[#101828]">
             {file.prixAchat > 0 ? formatEuro(file.prixAchat) : "À compléter"}
           </p>
         </div>
         <div>
-          <p className="text-[#6B6B6B] text-[11.5px]">{real ? "Marge réelle" : "Marge estimée"}</p>
+          <p className="text-[#667085] text-[11.5px]">{real ? "Marge réelle" : "Marge estimée"}</p>
           <p className={cn("mt-0.5 font-semibold", marginValue >= 0 ? "text-[#147065]" : "text-[#B4342A]")}>
             {hasMargin ? `${marginValue >= 0 ? "+" : ""}${formatEuro(marginValue)}` : "À compléter"}
           </p>
         </div>
       </div>
 
-      <div className="mt-3 flex items-center justify-between gap-2 border-[#F1F1EF] border-t pt-3">
+      <div className="mt-3 flex items-center justify-between gap-2 border-[#F2F4F7] border-t pt-3">
         <span className="inline-flex min-w-0 items-center gap-1.5 text-[12px]">
-          <Tag className={cn("size-3.5 shrink-0", file.internalLabelPrintedAt ? "text-[#147065]" : "text-[#9A9A95]")} />
-          <span className={cn("truncate", file.internalLabelPrintedAt ? "text-[#147065]" : "text-[#6B6B6B]")}>
+          <Tag className={cn("size-3.5 shrink-0", file.internalLabelPrintedAt ? "text-[#147065]" : "text-[#98A2B3]")} />
+          <span className={cn("truncate", file.internalLabelPrintedAt ? "text-[#147065]" : "text-[#667085]")}>
             {file.internalLabelPrintedAt
               ? "Étiquette interne imprimée"
               : file.internalLabelGeneratedAt
@@ -396,9 +396,9 @@ function PhoneCard({ file, onOpen }: Readonly<{ file: ReconditioningFile; onOpen
 
 function PhoneTable({ files, onOpen }: Readonly<{ files: ReconditioningFile[]; onOpen: (id: string) => void }>) {
   return (
-    <div className="overflow-x-auto rounded-[16px] border border-[#E8E8E5] bg-white shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
+    <div className="overflow-x-auto rounded-[16px] border border-[#E4E7EC] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.035)]">
       <table className="w-full min-w-[960px] text-sm">
-        <thead className="border-[#E8E8E5] border-b text-left text-[#6B6B6B] text-xs">
+        <thead className="border-[#E4E7EC] border-b text-left text-[#667085] text-xs">
           <tr>
             <th className="px-4 py-3 font-semibold">Référence</th>
             <th className="px-4 py-3 font-semibold">Appareil</th>
@@ -418,25 +418,25 @@ function PhoneTable({ files, onOpen }: Readonly<{ files: ReconditioningFile[]; o
             const marginValue = real ? real.margeReelle : margin.margeBrute;
             const hasMargin = real != null || file.prixVentePrevu > 0;
             return (
-              <tr className="border-[#F1F1EF] border-b transition last:border-0 hover:bg-[#FAFAF8]" key={file.id}>
-                <td className="whitespace-nowrap px-4 py-3 font-semibold text-[#1A1916]">{file.number}</td>
+              <tr className="border-[#F2F4F7] border-b transition last:border-0 hover:bg-[#F9FAFB]" key={file.id}>
+                <td className="whitespace-nowrap px-4 py-3 font-semibold text-[#101828]">{file.number}</td>
                 <td className="px-4 py-3">
-                  <p className="font-medium text-[#1A1916]">
+                  <p className="font-medium text-[#101828]">
                     {[file.brand, file.model].filter(Boolean).join(" ") || "Appareil à définir"}
                   </p>
-                  <p className="text-[#9A9A95] text-[11.5px]">
+                  <p className="text-[#98A2B3] text-[11.5px]">
                     {[file.storage, file.color].filter(Boolean).join(" · ")}
                   </p>
                 </td>
-                <td className="px-4 py-3 text-[#6B6B6B]">{sourceLabel(file)}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-[#6B6B6B]">
+                <td className="px-4 py-3 text-[#667085]">{sourceLabel(file)}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-[#667085]">
                   {fmtDateTime(file.receivedAt || file.createdAt)}
                 </td>
-                <td className="max-w-[200px] truncate px-4 py-3 text-[#6B6B6B]">{initialProblemLabel(file)}</td>
+                <td className="max-w-[200px] truncate px-4 py-3 text-[#667085]">{initialProblemLabel(file)}</td>
                 <td className="px-4 py-3">
                   <RecondStatusPill status={file.status} />
                 </td>
-                <td className="whitespace-nowrap px-4 py-3 text-right font-medium text-[#1A1916] tabular-nums">
+                <td className="whitespace-nowrap px-4 py-3 text-right font-medium text-[#101828] tabular-nums">
                   {file.prixAchat > 0 ? formatEuro(file.prixAchat) : "—"}
                 </td>
                 <td
@@ -470,19 +470,19 @@ function ModalShell({
 }: Readonly<{ title: string; onClose: () => void; children: React.ReactNode }>) {
   return (
     <div
-      className="fixed inset-0 z-[70] grid place-items-center bg-[#1A1916]/40 p-4"
+      className="fixed inset-0 z-[70] grid place-items-center bg-[#101828]/40 p-4"
       onClick={onClose}
       role="presentation"
     >
       <div
-        className="w-full max-w-[520px] rounded-[20px] border border-[#E8E8E5] bg-white p-6 shadow-[0_24px_60px_rgba(26,25,22,0.25)]"
+        className="w-full max-w-[520px] rounded-[20px] border border-[#E4E7EC] bg-white p-6 shadow-[0_24px_60px_rgba(16,24,40,0.25)]"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
       >
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h3 className="font-semibold text-[#1A1916] text-lg">{title}</h3>
+          <h3 className="font-semibold text-[#101828] text-lg">{title}</h3>
           <button
-            className="grid size-9 place-items-center rounded-[10px] border border-[#E8E8E5] text-[#6B6B6B] transition hover:text-[#1A1916]"
+            className="grid size-9 place-items-center rounded-[10px] border border-[#E4E7EC] text-[#667085] transition hover:text-[#101828]"
             onClick={onClose}
             type="button"
           >
@@ -589,7 +589,7 @@ function SupplierModal({ onClose, onOpenFile }: Readonly<{ onClose: () => void; 
           <span className="mx-auto grid size-12 place-items-center rounded-full bg-[#ECF8F4] text-[#147065]">
             <CheckCircle2 className="size-6" />
           </span>
-          <p className="mt-3 text-[#6B6B6B] text-sm">
+          <p className="mt-3 text-[#667085] text-sm">
             {mode === "ready"
               ? "Le téléphone est en test final — le contrôle qualité débloquera l'étiquette et le QR."
               : "Le téléphone est dans la liste « À reconditionner »."}
@@ -632,27 +632,27 @@ function SupplierModal({ onClose, onOpenFile }: Readonly<{ onClose: () => void; 
       {mode === null ? (
         <div className="space-y-3">
           <button
-            className="flex w-full items-start gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-4 text-left transition hover:border-[#2A9D8F]/50"
+            className="flex w-full items-start gap-3 rounded-[14px] border border-[#E4E7EC] bg-white p-4 text-left transition hover:border-[#2A9D8F]/50"
             onClick={() => setMode("ready")}
             type="button"
           >
             <ShieldCheck className="mt-0.5 size-5 shrink-0 text-[#147065]" />
             <span>
-              <span className="block font-semibold text-[#1A1916] text-sm">Déjà reconditionné / prêt à vendre</span>
-              <span className="mt-0.5 block text-[#6B6B6B] text-[12px]">
+              <span className="block font-semibold text-[#101828] text-sm">Déjà reconditionné / prêt à vendre</span>
+              <span className="mt-0.5 block text-[#667085] text-[12px]">
                 Données publiques préremplies, contrôle qualité obligatoire avant QR.
               </span>
             </span>
           </button>
           <button
-            className="flex w-full items-start gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-4 text-left transition hover:border-[#2A9D8F]/50"
+            className="flex w-full items-start gap-3 rounded-[14px] border border-[#E4E7EC] bg-white p-4 text-left transition hover:border-[#2A9D8F]/50"
             onClick={() => setMode("work")}
             type="button"
           >
             <Wrench className="mt-0.5 size-5 shrink-0 text-[#9A6B1B]" />
             <span>
-              <span className="block font-semibold text-[#1A1916] text-sm">À reconditionner</span>
-              <span className="mt-0.5 block text-[#6B6B6B] text-[12px]">
+              <span className="block font-semibold text-[#101828] text-sm">À reconditionner</span>
+              <span className="mt-0.5 block text-[#667085] text-[12px]">
                 Le téléphone part dans l'atelier, section « À reconditionner ».
               </span>
             </span>

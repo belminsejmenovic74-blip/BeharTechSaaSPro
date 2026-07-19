@@ -11,7 +11,7 @@ import type { PublicCommercialDocumentDto } from "@/lib/public-dtos";
 import { getSupabase } from "@/lib/supabase/client";
 import { formatMoney, getDocumentFilename } from "@/lib/workshop-country";
 
-const COLORS = { bg: "#FFFFFF", text: "#1A1916", sub: "#6B6B6B", accent: "#2A9D8F", border: "#E8E8E5" };
+const COLORS = { bg: "#FFFFFF", text: "#101828", sub: "#667085", accent: "#2A9D8F", border: "#E4E7EC" };
 
 function isLocalhost() {
   if (typeof window === "undefined") return false;
@@ -105,7 +105,7 @@ export function PublicDocumentView({ kind, token }: { kind: PublicCommercialDocu
     return (
       <div className="grid min-h-screen place-items-center px-6" style={{ background: COLORS.bg, color: COLORS.text }}>
         <div
-          className="w-full max-w-md rounded-[18px] border bg-white p-8 text-center shadow-[0_1px_3px_rgba(26,25,22,0.04)]"
+          className="w-full max-w-md rounded-[18px] border bg-white p-8 text-center shadow-[0_1px_3px_rgba(16,24,40,0.04)]"
           style={{ borderColor: COLORS.border }}
         >
           <p className="font-bold text-lg">Lien introuvable</p>
@@ -137,9 +137,9 @@ export function PublicDocumentView({ kind, token }: { kind: PublicCommercialDocu
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7F5] px-4 py-6 print:bg-white print:p-0" style={{ color: COLORS.text }}>
+    <div className="min-h-screen bg-[#F5F7FA] px-4 py-6 print:bg-white print:p-0" style={{ color: COLORS.text }}>
       <div className="no-print mx-auto mb-4 flex w-full max-w-[794px] flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-[#6B6B6B] text-sm">
+        <div className="flex items-center gap-2 text-[#667085] text-sm">
           <FileText className="size-4" style={{ color: COLORS.accent }} />
           {title(kind)}
         </div>
@@ -165,12 +165,12 @@ export function PublicDocumentView({ kind, token }: { kind: PublicCommercialDocu
       </div>
 
       <article
-        className="print-document pdf-page mx-auto flex min-h-[1123px] w-full max-w-[794px] flex-col border border-[#E8E8E8] bg-white p-8 print:min-h-0 print:border-0 print:p-0"
+        className="print-document pdf-page mx-auto flex min-h-[1123px] w-full max-w-[794px] flex-col border border-[#E4E7EC] bg-white p-8 print:min-h-0 print:border-0 print:p-0"
         data-pdf-paginate="true"
         ref={documentRef}
       >
-        <header className="flex flex-col items-start justify-between gap-5 border-[#E8E8E8] border-b pb-5 sm:flex-row sm:gap-8">
-          <div className="min-w-0 text-[#6B6B6B] text-[12px] leading-relaxed">
+        <header className="flex flex-col items-start justify-between gap-5 border-[#E4E7EC] border-b pb-5 sm:flex-row sm:gap-8">
+          <div className="min-w-0 text-[#667085] text-[12px] leading-relaxed">
             <div className="mb-3 flex items-center gap-2.5">
               {data.workshop.logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -188,7 +188,7 @@ export function PublicDocumentView({ kind, token }: { kind: PublicCommercialDocu
                   <ShieldCheck className="size-5" />
                 </span>
               )}
-              <p className="font-bold text-[#1A1916] text-[16px] tracking-tight">{data.workshop.name}</p>
+              <p className="font-bold text-[#101828] text-[16px] tracking-tight">{data.workshop.name}</p>
             </div>
             {data.workshop.address ? <p>{data.workshop.address}</p> : null}
             {data.workshop.city ? (
@@ -204,11 +204,11 @@ export function PublicDocumentView({ kind, token }: { kind: PublicCommercialDocu
             {data.workshop.phone ? <p>{data.workshop.phone}</p> : null}
           </div>
           <div className="min-w-0 text-left sm:min-w-[200px] sm:text-right">
-            <p className="font-bold text-[#1A1916] text-[15px] uppercase tracking-wide">{title(kind)}</p>
-            <p className="mt-1 font-mono font-semibold text-[#1A1916] text-[16px] tracking-tight">
+            <p className="font-bold text-[#101828] text-[15px] uppercase tracking-wide">{title(kind)}</p>
+            <p className="mt-1 font-mono font-semibold text-[#101828] text-[16px] tracking-tight">
               {data.document.number}
             </p>
-            <p className="mt-1 text-[#6B6B6B] text-[11px]">Émis le {dateLabel(data.document.createdAt)}</p>
+            <p className="mt-1 text-[#667085] text-[11px]">Émis le {dateLabel(data.document.createdAt)}</p>
             <p className="mt-1.5 font-semibold text-[#2A9D8F] text-[11px] uppercase tracking-wider">
               {data.document.status}
             </p>
@@ -217,38 +217,38 @@ export function PublicDocumentView({ kind, token }: { kind: PublicCommercialDocu
 
         <main className="flex-1 space-y-5 py-5">
           <section className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-[6px] border border-[#E8E8E8] p-4">
+            <div className="rounded-[6px] border border-[#E4E7EC] p-4">
               <h2 className="font-bold text-[#2A9D8F] text-[10.5px] uppercase tracking-wider">Client</h2>
-              <p className="mt-3 font-semibold text-[#1A1916] text-[13px]">{data.client.displayName}</p>
+              <p className="mt-3 font-semibold text-[#101828] text-[13px]">{data.client.displayName}</p>
             </div>
-            <div className="rounded-[6px] border border-[#E8E8E8] p-4">
+            <div className="rounded-[6px] border border-[#E4E7EC] p-4">
               <h2 className="font-bold text-[#2A9D8F] text-[10.5px] uppercase tracking-wider">Dossier</h2>
-              <p className="mt-3 text-[#6B6B6B] text-[12px]">
+              <p className="mt-3 text-[#667085] text-[12px]">
                 Référence :{" "}
-                <span className="font-semibold text-[#1A1916]">
+                <span className="font-semibold text-[#101828]">
                   {data.relatedRepair?.number ?? data.document.number}
                 </span>
               </p>
-              <p className="mt-1 text-[#6B6B6B] text-[12px]">Statut : {data.document.status}</p>
+              <p className="mt-1 text-[#667085] text-[12px]">Statut : {data.document.status}</p>
             </div>
           </section>
 
-          <section className="overflow-hidden rounded-[6px] border border-[#E8E8E8]">
-            <div className="grid grid-cols-[minmax(0,1fr)_42px_90px] border-[#E8E8E8] border-b px-3 py-2.5 font-bold text-[#6B6B6B] text-[10px] uppercase tracking-wider sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 print:grid-cols-[1fr_70px_112px_112px] print:px-4">
+          <section className="overflow-hidden rounded-[6px] border border-[#E4E7EC]">
+            <div className="grid grid-cols-[minmax(0,1fr)_42px_90px] border-[#E4E7EC] border-b px-3 py-2.5 font-bold text-[#667085] text-[10px] uppercase tracking-wider sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 print:grid-cols-[1fr_70px_112px_112px] print:px-4">
               <span>Désignation</span>
               <span className="text-center">Qté</span>
               <span className="hidden text-right sm:block print:block">Prix unitaire</span>
               <span className="text-right">Total</span>
             </div>
-            <div className="divide-y divide-[#E8E8E8]">
+            <div className="divide-y divide-[#E4E7EC]">
               {data.lines.map((line) => (
                 <div
                   className="grid grid-cols-[minmax(0,1fr)_42px_90px] items-center px-3 py-3.5 text-[11.5px] sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 print:grid-cols-[1fr_70px_112px_112px] print:px-4"
                   key={`${line.label}-${line.quantity}-${line.totalTtc}`}
                 >
                   <span className="font-medium">{line.label}</span>
-                  <span className="text-center text-[#6B6B6B]">{line.quantity}</span>
-                  <span className="hidden text-right text-[#6B6B6B] sm:block print:block">
+                  <span className="text-center text-[#667085]">{line.quantity}</span>
+                  <span className="hidden text-right text-[#667085] sm:block print:block">
                     {formatMoney(line.unitPriceTtc, data.workshop.currency)}
                   </span>
                   <span className="text-right font-semibold">{formatMoney(line.totalTtc, data.workshop.currency)}</span>
@@ -257,25 +257,25 @@ export function PublicDocumentView({ kind, token }: { kind: PublicCommercialDocu
             </div>
           </section>
 
-          <section className="ml-auto w-full max-w-[360px] rounded-[6px] border border-[#E8E8E8] p-4">
-            <div className="flex items-center justify-between gap-4 font-bold text-[#1A1916]">
+          <section className="ml-auto w-full max-w-[360px] rounded-[6px] border border-[#E4E7EC] p-4">
+            <div className="flex items-center justify-between gap-4 font-bold text-[#101828]">
               <span>Total TTC</span>
               <span className="text-[22px]">{formatMoney(data.document.totalTtc, data.workshop.currency)}</span>
             </div>
           </section>
 
           {kind === "intake" ? (
-            <section className="rounded-[6px] border border-[#E8E8E8] p-4 text-[#6B6B6B] text-[10px] leading-relaxed">
+            <section className="rounded-[6px] border border-[#E4E7EC] p-4 text-[#667085] text-[10px] leading-relaxed">
               <p>
-                <strong className="text-[#1A1916]">Prise en charge.</strong> Le client confie l'appareil à l'atelier
+                <strong className="text-[#101828]">Prise en charge.</strong> Le client confie l'appareil à l'atelier
                 pour diagnostic ou intervention. Une sauvegarde préalable des données est recommandée.
               </p>
             </section>
           ) : null}
-          {data.workshop.vatMention ? <p className="text-[#6B6B6B] text-[10px]">{data.workshop.vatMention}</p> : null}
+          {data.workshop.vatMention ? <p className="text-[#667085] text-[10px]">{data.workshop.vatMention}</p> : null}
         </main>
 
-        <footer className="mt-auto border-[#E8E8E8] border-t pt-4 text-[#6B6B6B] text-[9px] leading-relaxed">
+        <footer className="mt-auto border-[#E4E7EC] border-t pt-4 text-[#667085] text-[9px] leading-relaxed">
           <p>{data.workshop.name} · Document client imprimable</p>
           <p>Document transmis par {data.workshop.name}</p>
         </footer>

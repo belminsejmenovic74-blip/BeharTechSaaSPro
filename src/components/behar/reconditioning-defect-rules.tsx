@@ -31,10 +31,10 @@ export function ReconditioningDefectRules() {
       subtitle="Appliqué quand un modèle n'a pas de règle spécifique. Les barèmes par modèle se règlent dans Catalogue de reprise → Configurer."
       title="Barème défauts par défaut"
     >
-      <div className="max-w-[620px] rounded-[16px] border border-[#E8E5DF] p-3.5">
+      <div className="max-w-[620px] rounded-[16px] border border-[#E4E7EC] p-3.5">
         <div className="flex items-center gap-2.5">
           <ShieldAlert className="size-4.5 shrink-0 text-[#2A9D8F]" />
-          <span className="font-semibold text-[#1A1916] text-[14px]">Montant, action et activation par défaut</span>
+          <span className="font-semibold text-[#101828] text-[14px]">Montant, action et activation par défaut</span>
         </div>
 
         <div className="mt-3 space-y-1">
@@ -48,7 +48,7 @@ export function ReconditioningDefectRules() {
                 )}
                 key={key}
               >
-                <span className="min-w-[150px] flex-1 text-[#1A1916] text-[12.5px]">{DEFECT_LABELS[key]}</span>
+                <span className="min-w-[150px] flex-1 text-[#101828] text-[12.5px]">{DEFECT_LABELS[key]}</span>
                 {entry.action === "decote" && (
                   <div className="flex items-center gap-1">
                     <span className="text-[#B4342A] text-[12px]">−</span>
@@ -59,7 +59,7 @@ export function ReconditioningDefectRules() {
                       type="number"
                       value={entry.amount}
                     />
-                    <span className="text-[#6B6B6B] text-[11.5px]">€</span>
+                    <span className="text-[#667085] text-[11.5px]">€</span>
                   </div>
                 )}
                 <select
@@ -79,7 +79,7 @@ export function ReconditioningDefectRules() {
           })}
         </div>
 
-        <p className="mt-3 text-[#9B9B96] text-[11.5px]">
+        <p className="mt-3 text-[#98A2B3] text-[11.5px]">
           {modelCount > 0
             ? `${modelCount} modèle${modelCount > 1 ? "s ont" : " a"} un barème défauts spécifique.`
             : "Aucun modèle n'a encore de barème défauts spécifique."}

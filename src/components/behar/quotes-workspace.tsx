@@ -179,9 +179,9 @@ export function QuotesWorkspace() {
       <div className="min-w-0">
         <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
           <label className="hidden md:block relative w-full max-w-[360px] min-w-[200px]">
-            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6B6B6B]" />
+            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#667085]" />
             <input
-              className="h-11 w-full rounded-[14px] border border-[#E8E8E5] bg-white pr-4 pl-10 text-sm outline-none transition placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+              className="h-11 w-full rounded-[14px] border border-[#E4E7EC] bg-white pr-4 pl-10 text-sm outline-none transition placeholder:text-[#667085] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
               placeholder="Rechercher un devis..."
               type="search"
               value={quoteSearch}
@@ -199,38 +199,38 @@ export function QuotesWorkspace() {
         {/* Mobile : KPI strip + recherche + cards */}
         <div className="md:hidden space-y-4">
           <section className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 scrollbar-none">
-            <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+            <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
               <span className="grid size-9 place-items-center text-[#2A9D8F]">
                 <FileText className="size-[18px]" />
               </span>
-              <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium leading-tight">Devis envoyés</p>
-              <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">{sentCount}</p>
-              <p className="mt-1.5 text-[#6B6B6B] text-[10px] font-medium">en attente</p>
+              <p className="mt-3 text-[#667085] text-[11px] font-medium leading-tight">Devis envoyés</p>
+              <p className="mt-1.5 font-bold text-[#101828] text-[20px] leading-none tabular-nums">{sentCount}</p>
+              <p className="mt-1.5 text-[#667085] text-[10px] font-medium">en attente</p>
             </div>
-            <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+            <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
               <span className="grid size-9 place-items-center text-[#2A9D8F]">
                 <FileText className="size-[18px]" />
               </span>
-              <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium leading-tight">Acceptés</p>
+              <p className="mt-3 text-[#667085] text-[11px] font-medium leading-tight">Acceptés</p>
               <p className="mt-1.5 font-bold text-[#2A9D8F] text-[20px] leading-none tabular-nums">{acceptedCount}</p>
-              <p className="mt-1.5 text-[#6B6B6B] text-[10px] font-medium">prêts à facturer</p>
+              <p className="mt-1.5 text-[#667085] text-[10px] font-medium">prêts à facturer</p>
             </div>
-            <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-              <span className="grid size-9 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#6B6B6B]">
+            <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+              <span className="grid size-9 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#667085]">
                 <FileText className="size-[18px]" />
               </span>
-              <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium leading-tight">Montant en cours</p>
-              <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">
+              <p className="mt-3 text-[#667085] text-[11px] font-medium leading-tight">Montant en cours</p>
+              <p className="mt-1.5 font-bold text-[#101828] text-[20px] leading-none tabular-nums">
                 {formatEuro(totalPending)}
               </p>
-              <p className="mt-1.5 text-[#6B6B6B] text-[10px] font-medium">non facturés</p>
+              <p className="mt-1.5 text-[#667085] text-[10px] font-medium">non facturés</p>
             </div>
           </section>
 
           <div className="relative">
-            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6B6B6B]" />
+            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#667085]" />
             <input
-              className="h-12 w-full rounded-[14px] border border-[#E8E8E5] bg-white pr-4 pl-10 text-sm outline-none focus:border-[#2A9D8F] placeholder:text-[#6B6B6B]"
+              className="h-12 w-full rounded-[14px] border border-[#E4E7EC] bg-white pr-4 pl-10 text-sm outline-none focus:border-[#2A9D8F] placeholder:text-[#667085]"
               placeholder="Rechercher un devis…"
               type="search"
               value={quoteSearch}
@@ -240,7 +240,7 @@ export function QuotesWorkspace() {
 
           <ul className="space-y-2.5">
             {visibleQuotes.length === 0 ? (
-              <li className="rounded-[18px] bg-white p-10 text-center text-[#6B6B6B] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+              <li className="rounded-[18px] bg-white p-10 text-center text-[#667085] text-sm shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
                 Aucun devis.
               </li>
             ) : (
@@ -255,22 +255,22 @@ export function QuotesWorkspace() {
                         store.setSelected("quote", quote.id);
                         setMobileDetailOpen(true);
                       }}
-                      className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
+                      className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition active:scale-[0.99]"
                     >
-                      <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FFFFFF] text-[#1A1916]">
+                      <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FFFFFF] text-[#101828]">
                         <FileText className="size-[18px]" strokeWidth={1.8} />
                       </span>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-baseline justify-between gap-2">
-                          <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
+                          <p className="truncate font-semibold text-[#101828] text-[14px] tracking-tight">
                             {displayCustomerName(entryCustomer)}
                           </p>
-                          <p className="shrink-0 font-bold text-[#1A1916] text-[15px] tabular-nums">
+                          <p className="shrink-0 font-bold text-[#101828] text-[15px] tabular-nums">
                             {formatCurrency(getQuoteTotal(quote), quote.currency ?? store.workshopInfo.currency)}
                           </p>
                         </div>
                         <p className="mt-0.5 font-mono text-[#2A9D8F] text-[11px]">{quote.number}</p>
-                        <p className="mt-0.5 truncate text-[#6B6B6B] text-[11.5px]">
+                        <p className="mt-0.5 truncate text-[#667085] text-[11.5px]">
                           {deviceLabel} · {formatIsoToDisplay(quote.date)}
                         </p>
                         <div className="mt-2">
@@ -311,18 +311,18 @@ export function QuotesWorkspace() {
                     key={quote.id}
                     onClick={() => store.setSelected("quote", quote.id)}
                   >
-                    <td className="border-[#E8E8E5] border-b px-5 py-4 font-medium">{quote.number}</td>
-                    <td className="border-[#E8E8E5] border-b px-5 py-4">{displayCustomerName(entryCustomer)}</td>
-                    <td className="border-[#E8E8E5] border-b px-5 py-4">{deviceLabel}</td>
-                    <td className="border-[#E8E8E5] border-b px-5 py-4">{formatIsoToDisplay(quote.date)}</td>
-                    <td className="border-[#E8E8E5] border-b px-5 py-4">
+                    <td className="border-[#E4E7EC] border-b px-5 py-4 font-medium">{quote.number}</td>
+                    <td className="border-[#E4E7EC] border-b px-5 py-4">{displayCustomerName(entryCustomer)}</td>
+                    <td className="border-[#E4E7EC] border-b px-5 py-4">{deviceLabel}</td>
+                    <td className="border-[#E4E7EC] border-b px-5 py-4">{formatIsoToDisplay(quote.date)}</td>
+                    <td className="border-[#E4E7EC] border-b px-5 py-4">
                       <StatusBadge status={quote.status} />
                     </td>
-                    <td className="border-[#E8E8E5] border-b px-5 py-4 font-semibold">
+                    <td className="border-[#E4E7EC] border-b px-5 py-4 font-semibold">
                       {formatCurrency(getQuoteTotal(quote), quote.currency ?? store.workshopInfo.currency)}
                     </td>
-                    <td className="border-[#E8E8E5] border-b px-5 py-4 text-right">
-                      <MoreHorizontal className="size-4 text-[#8A8A8A]" />
+                    <td className="border-[#E4E7EC] border-b px-5 py-4 text-right">
+                      <MoreHorizontal className="size-4 text-[#98A2B3]" />
                     </td>
                   </tr>
                 );
@@ -346,17 +346,17 @@ export function QuotesWorkspace() {
             <button
               type="button"
               onClick={() => setMobileDetailOpen(false)}
-              className="grid size-9 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white text-[#1A1916] transition active:scale-90"
+              className="grid size-9 place-items-center rounded-[12px] border border-[#E4E7EC] bg-white text-[#101828] transition active:scale-90"
               aria-label="Retour"
             >
               <ArrowLeft className="size-4" />
             </button>
-            <span className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Détail devis</span>
+            <span className="font-semibold text-[#101828] text-[15px] tracking-tight">Détail devis</span>
           </div>
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
-              <h2 className="font-semibold text-[#1A1916] text-xl">Devis #{selected.number}</h2>
-              <p className="text-xs text-[#6B6B6B] mt-1">Créé le {formatIsoToDisplay(selected.date)}</p>
+              <h2 className="font-semibold text-[#101828] text-xl">Devis #{selected.number}</h2>
+              <p className="text-xs text-[#667085] mt-1">Créé le {formatIsoToDisplay(selected.date)}</p>
               {(() => {
                 const linkedRepair = selected.repairId
                   ? store.repairs.find((repair) => repair.id === selected.repairId)
@@ -382,18 +382,18 @@ export function QuotesWorkspace() {
 
           <div className="space-y-6 flex-1 overflow-y-auto custom-scrollbar pr-2">
             <div>
-              <p className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider mb-2">Client</p>
-              <p className="font-bold text-[#1A1916]">{displayCustomerName(customer)}</p>
-              <p className="text-sm text-[#6B6B6B]">{customer?.phone}</p>
+              <p className="text-[10px] font-bold text-[#98A2B3] uppercase tracking-wider mb-2">Client</p>
+              <p className="font-bold text-[#101828]">{displayCustomerName(customer)}</p>
+              <p className="text-sm text-[#667085]">{customer?.phone}</p>
             </div>
 
             <div className="space-y-3">
-              <p className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider">Appareils du devis</p>
+              <p className="text-[10px] font-bold text-[#98A2B3] uppercase tracking-wider">Appareils du devis</p>
               {selectedDevices.map((device, index) => (
-                <div key={device.id} className="rounded-[16px] border border-[#E8E8E5] bg-white p-4">
+                <div key={device.id} className="rounded-[16px] border border-[#E4E7EC] bg-white p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-[#6E6E73] text-xs font-bold">Appareil {index + 1}</p>
+                      <p className="text-[#667085] text-xs font-bold">Appareil {index + 1}</p>
                       <p className="font-bold text-[#1D1D1F]">
                         {formatBrandModel(device.brand, device.model, `Appareil ${index + 1}`)}
                       </p>
@@ -417,20 +417,20 @@ export function QuotesWorkspace() {
             <div className="pt-2 space-y-1">
               {store.workshopInfo.vatApplicable ? (
                 <>
-                  <div className="flex justify-between text-xs text-[#6B6B6B]">
+                  <div className="flex justify-between text-xs text-[#667085]">
                     <span>Total HT</span>
                     <span className="font-medium">
                       {formatCurrency(getVatSummary(selected.lines, store.workshopInfo).ht, selectedCurrency)}
                     </span>
                   </div>
-                  <div className="flex justify-between text-xs text-[#6B6B6B]">
+                  <div className="flex justify-between text-xs text-[#667085]">
                     <span>TVA ({Math.round(getVatSummary(selected.lines, store.workshopInfo).rate * 1000) / 10}%)</span>
                     <span className="font-medium">
                       {formatCurrency(getVatSummary(selected.lines, store.workshopInfo).tva, selectedCurrency)}
                     </span>
                   </div>
                   <div className="flex justify-between items-end pt-2">
-                    <span className="text-sm font-bold text-[#1A1916]">TOTAL TTC</span>
+                    <span className="text-sm font-bold text-[#101828]">TOTAL TTC</span>
                     <span className="text-2xl font-bold text-[#2A9D8F]">
                       {formatCurrency(getVatSummary(selected.lines, store.workshopInfo).ttc, selectedCurrency)}
                     </span>
@@ -438,7 +438,7 @@ export function QuotesWorkspace() {
                 </>
               ) : (
                 <div className="flex justify-between items-end pt-2">
-                  <span className="text-sm font-bold text-[#1A1916]">TOTAL</span>
+                  <span className="text-sm font-bold text-[#101828]">TOTAL</span>
                   <span className="text-2xl font-bold text-[#2A9D8F]">
                     {formatCurrency(getQuoteTotal(selected), selectedCurrency)}
                   </span>
@@ -472,7 +472,7 @@ export function QuotesWorkspace() {
             )}
             <button
               onClick={() => print("quote", selected.id)}
-              className="w-full h-11 rounded-xl border border-[#E8E8E5] bg-white text-[#1A1916] font-bold text-sm hover:bg-[#FFFFFF] transition-all flex items-center justify-center gap-2"
+              className="w-full h-11 rounded-xl border border-[#E4E7EC] bg-white text-[#101828] font-bold text-sm hover:bg-[#FFFFFF] transition-all flex items-center justify-center gap-2"
               type="button"
             >
               <Printer className="size-4" />
@@ -488,7 +488,7 @@ export function QuotesWorkspace() {
                 });
                 toast.success("Message ajouté à l'historique client.");
               }}
-              className="w-full h-11 rounded-xl border border-[#E8E8E5] bg-white text-[#1A1916] font-bold text-sm hover:bg-[#FFFFFF] transition-all flex items-center justify-center gap-2"
+              className="w-full h-11 rounded-xl border border-[#E4E7EC] bg-white text-[#101828] font-bold text-sm hover:bg-[#FFFFFF] transition-all flex items-center justify-center gap-2"
               type="button"
             >
               <Mail className="size-4" />
@@ -499,7 +499,7 @@ export function QuotesWorkspace() {
                 store.setSelected("quote", selected.id);
                 setCreateModalOpen(true);
               }}
-              className="w-full h-11 rounded-xl border border-[#E8E8E5] bg-white text-[#1A1916] font-bold text-sm hover:bg-[#FFFFFF] transition-all flex items-center justify-center gap-2"
+              className="w-full h-11 rounded-xl border border-[#E4E7EC] bg-white text-[#101828] font-bold text-sm hover:bg-[#FFFFFF] transition-all flex items-center justify-center gap-2"
               type="button"
             >
               <Save className="size-4" />
@@ -518,7 +518,7 @@ export function QuotesWorkspace() {
             </button>
             <button
               onClick={() => download("quote", selected.id)}
-              className="w-full h-11 rounded-xl border border-[#E8E8E5] bg-white text-[#1A1916] font-bold text-sm hover:bg-[#FFFFFF] transition-all flex items-center justify-center gap-2"
+              className="w-full h-11 rounded-xl border border-[#E4E7EC] bg-white text-[#101828] font-bold text-sm hover:bg-[#FFFFFF] transition-all flex items-center justify-center gap-2"
               type="button"
             >
               <Download className="size-4" />
@@ -769,16 +769,16 @@ export function CreateQuoteModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-stretch justify-stretch bg-black/40 p-0 md:items-center md:justify-center md:p-4">
-      <div className="relative flex min-h-svh w-full max-w-none flex-col overflow-hidden rounded-none border border-[#E8E8E5] bg-white shadow-2xl animate-in fade-in zoom-in duration-200 md:h-[90vh] md:min-h-0 md:max-w-[1200px] md:rounded-[16px]">
+      <div className="relative flex min-h-svh w-full max-w-none flex-col overflow-hidden rounded-none border border-[#E4E7EC] bg-white shadow-2xl animate-in fade-in zoom-in duration-200 md:h-[90vh] md:min-h-0 md:max-w-[1200px] md:rounded-[16px]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#FFFFFF] bg-white md:px-8 md:py-6">
           <div>
-            <h2 className="text-[18px] font-bold text-[#1A1916] md:text-[22px]">Nouveau devis</h2>
-            <p className="mt-0.5 text-[12.5px] text-[#6B6B6B] md:mt-1 md:text-sm">Proposition commerciale</p>
+            <h2 className="text-[18px] font-bold text-[#101828] md:text-[22px]">Nouveau devis</h2>
+            <p className="mt-0.5 text-[12.5px] text-[#667085] md:mt-1 md:text-sm">Proposition commerciale</p>
           </div>
           <button
             onClick={onClose}
-            className="grid size-9 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white text-[#1A1916] transition hover:bg-[#FFFFFF] md:size-auto md:bg-transparent md:p-0"
+            className="grid size-9 place-items-center rounded-[12px] border border-[#E4E7EC] bg-white text-[#101828] transition hover:bg-[#FFFFFF] md:size-auto md:bg-transparent md:p-0"
             aria-label="Fermer"
           >
             <X className="size-5 md:size-6" />
@@ -790,7 +790,7 @@ export function CreateQuoteModal({
           <div className="flex-1 overflow-y-auto px-5 py-5 custom-scrollbar pb-32 md:px-8 md:py-8">
             {/* 1. Origine */}
             <div className="space-y-3 md:space-y-4">
-              <label className="text-[13px] font-bold text-[#1A1916] md:text-sm">Origine du devis</label>
+              <label className="text-[13px] font-bold text-[#101828] md:text-sm">Origine du devis</label>
               <div className="grid grid-cols-3 gap-2 md:gap-4">
                 {[
                   { id: "repair", label: "Depuis un dossier", icon: <Wrench /> },
@@ -805,14 +805,14 @@ export function CreateQuoteModal({
                     className={`relative flex flex-col items-center justify-center gap-2 rounded-[12px] border h-[86px] transition-all md:gap-3 md:h-[110px] ${
                       form.origin === opt.id
                         ? "border-[#2A9D8F] bg-[#FFFFFF] shadow-sm"
-                        : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/30"
+                        : "border-[#E4E7EC] bg-white hover:border-[#2A9D8F]/30"
                     }`}
                   >
-                    <div className={`${form.origin === opt.id ? "text-[#2A9D8F]" : "text-[#6B6B6B]"}`}>
+                    <div className={`${form.origin === opt.id ? "text-[#2A9D8F]" : "text-[#667085]"}`}>
                       {cloneElement(opt.icon as any, { className: "size-5 md:size-6" })}
                     </div>
                     <p
-                      className={`text-[11px] font-semibold text-center px-1 leading-tight md:text-xs md:px-2 ${form.origin === opt.id ? "text-[#167B70]" : "text-[#1A1916]"}`}
+                      className={`text-[11px] font-semibold text-center px-1 leading-tight md:text-xs md:px-2 ${form.origin === opt.id ? "text-[#167B70]" : "text-[#101828]"}`}
                     >
                       {opt.label}
                     </p>
@@ -827,7 +827,7 @@ export function CreateQuoteModal({
             </div>
 
             <div className="mt-5 rounded-[14px] border border-[#DDEFEA] bg-[#FFFFFF] p-4">
-              <p className="text-xs font-semibold text-[#1A1916]">Pays de facturation du dossier</p>
+              <p className="text-xs font-semibold text-[#101828]">Pays de facturation du dossier</p>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 {(["FR", "CH"] as const).map((country) => (
                   <button
@@ -838,7 +838,7 @@ export function CreateQuoteModal({
                     className={`h-10 rounded-[10px] border text-xs font-semibold ${
                       billingCountry === country
                         ? "border-[#2A9D8F] bg-white text-[#167B70]"
-                        : "border-[#E8E8E5] bg-white text-[#6B6B6B]"
+                        : "border-[#E4E7EC] bg-white text-[#667085]"
                     } disabled:cursor-not-allowed disabled:opacity-70`}
                   >
                     {country === "CH" ? "Suisse · CHF" : "France · EUR"}
@@ -848,7 +848,7 @@ export function CreateQuoteModal({
             </div>
 
             <div className="mt-4">
-              <p className="text-xs font-semibold text-[#1A1916]">Devise du document</p>
+              <p className="text-xs font-semibold text-[#101828]">Devise du document</p>
               <div className="mt-2 flex gap-2">
                 {(["EUR", "CHF"] as const).map((curr) => (
                   <button
@@ -858,7 +858,7 @@ export function CreateQuoteModal({
                     className={`h-9 px-4 rounded-[10px] border text-xs font-semibold transition ${
                       docCurrency === curr
                         ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
-                        : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:border-[#DADADA]"
+                        : "border-[#E4E7EC] bg-white text-[#667085] hover:border-[#D0D5DD]"
                     }`}
                   >
                     {curr === "EUR" ? "EUR (€)" : "CHF (CHF)"}
@@ -869,13 +869,13 @@ export function CreateQuoteModal({
 
             {/* Context Selection (Conditional) */}
             {form.origin !== "manual" && (
-              <div className="mt-8 p-4 rounded-xl bg-white border border-[#E8E8E5] space-y-4 animate-in slide-in-from-top-2 duration-300">
+              <div className="mt-8 p-4 rounded-xl bg-white border border-[#E4E7EC] space-y-4 animate-in slide-in-from-top-2 duration-300">
                 {form.origin === "repair" ? (
                   <div className="space-y-2">
-                    <p className="text-xs font-semibold text-[#6B6B6B]">Sélectionner le dossier</p>
+                    <p className="text-xs font-semibold text-[#667085]">Sélectionner le dossier</p>
                     <div className="relative">
                       <select
-                        className="h-11 w-full appearance-none rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
+                        className="h-11 w-full appearance-none rounded-[10px] border border-[#E4E7EC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
                         value={form.repairId}
                         onChange={(e) => setForm((f) => ({ ...f, repairId: e.target.value }))}
                       >
@@ -888,15 +888,15 @@ export function CreateQuoteModal({
                             </option>
                           ))}
                       </select>
-                      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[#8A8A8A]" />
+                      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[#98A2B3]" />
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <p className="text-xs font-semibold text-[#6B6B6B]">Sélectionner le client</p>
+                    <p className="text-xs font-semibold text-[#667085]">Sélectionner le client</p>
                     <div className="relative">
                       <select
-                        className="h-11 w-full appearance-none rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
+                        className="h-11 w-full appearance-none rounded-[10px] border border-[#E4E7EC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
                         value={form.customerId}
                         onChange={(e) => setForm((f) => ({ ...f, customerId: e.target.value }))}
                       >
@@ -907,7 +907,7 @@ export function CreateQuoteModal({
                           </option>
                         ))}
                       </select>
-                      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[#8A8A8A]" />
+                      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[#98A2B3]" />
                     </div>
                   </div>
                 )}
@@ -916,40 +916,40 @@ export function CreateQuoteModal({
 
             {/* 2. Informations */}
             <div className="mt-10 space-y-4">
-              <label className="text-sm font-bold text-[#1A1916]">Informations principales</label>
+              <label className="text-sm font-bold text-[#101828]">Informations principales</label>
               <div className="grid grid-cols-2 gap-x-6 gap-y-5">
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-[#6B6B6B]">Client</p>
+                  <p className="text-xs font-semibold text-[#667085]">Client</p>
                   <input
-                    className="h-11 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
+                    className="h-11 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
                     placeholder="Nom du client..."
                     value={form.customerName}
                     onChange={(e) => setForm({ ...form, customerName: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-[#6B6B6B]">Email client</p>
+                  <p className="text-xs font-semibold text-[#667085]">Email client</p>
                   <input
-                    className="h-11 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
+                    className="h-11 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
                     placeholder="Email (optionnel)..."
                     value={form.customerEmail}
                     onChange={(e) => setForm({ ...form, customerEmail: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-[#6B6B6B]">Téléphone</p>
+                  <p className="text-xs font-semibold text-[#667085]">Téléphone</p>
                   <input
-                    className="h-11 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
+                    className="h-11 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
                     placeholder="Numéro de téléphone..."
                     value={form.customerPhone}
                     onChange={(e) => setForm({ ...form, customerPhone: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-[#6B6B6B]">Validité (jours)</p>
+                  <p className="text-xs font-semibold text-[#667085]">Validité (jours)</p>
                   <input
                     type="number"
-                    className="h-11 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F]"
+                    className="h-11 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F]"
                     value={form.validityDays}
                     onChange={(e) => setForm({ ...form, validityDays: parseInt(e.target.value) })}
                   />
@@ -958,8 +958,8 @@ export function CreateQuoteModal({
             </div>
 
             {/* Appareil & problème guidés */}
-            <div className="mt-8 space-y-4 p-4 rounded-xl bg-white border border-[#E8E8E5]">
-              <label className="text-sm font-bold text-[#1A1916]">Appareil &amp; problème</label>
+            <div className="mt-8 space-y-4 p-4 rounded-xl bg-white border border-[#E4E7EC]">
+              <label className="text-sm font-bold text-[#101828]">Appareil &amp; problème</label>
               <DeviceSelector
                 deviceType={deviceState.deviceType}
                 brand={deviceState.brand}
@@ -980,7 +980,7 @@ export function CreateQuoteModal({
             {/* 3. Lignes */}
             <div className="mt-10 space-y-4">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-bold text-[#1A1916]">Lignes de devis</label>
+                <label className="text-sm font-bold text-[#101828]">Lignes de devis</label>
                 <button
                   onClick={handleAddLine}
                   className="flex items-center gap-1.5 text-xs font-bold text-[#2A9D8F] hover:text-[#238b7e] transition-colors"
@@ -998,7 +998,7 @@ export function CreateQuoteModal({
                   >
                     <div className="flex-1">
                       <input
-                        className="h-11 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F]"
+                        className="h-11 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F]"
                         placeholder="Description de la prestation..."
                         value={line.description}
                         onChange={(e) => handleLineChange(line.id, "description", e.target.value)}
@@ -1007,7 +1007,7 @@ export function CreateQuoteModal({
                     <div className="w-20">
                       <input
                         type="number"
-                        className="h-11 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-center text-sm outline-none focus:border-[#2A9D8F]"
+                        className="h-11 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-center text-sm outline-none focus:border-[#2A9D8F]"
                         placeholder="Qté"
                         value={line.quantity}
                         onChange={(e) => handleLineChange(line.id, "quantity", parseInt(e.target.value) || 0)}
@@ -1016,7 +1016,7 @@ export function CreateQuoteModal({
                     <div className="w-28">
                       <input
                         type="number"
-                        className="h-11 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-right text-sm outline-none focus:border-[#2A9D8F]"
+                        className="h-11 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-right text-sm outline-none focus:border-[#2A9D8F]"
                         placeholder="Prix Unit."
                         value={line.unitPrice}
                         onChange={(e) => handleLineChange(line.id, "unitPrice", parseFloat(e.target.value) || 0)}
@@ -1024,7 +1024,7 @@ export function CreateQuoteModal({
                     </div>
                     <button
                       onClick={() => handleRemoveLine(line.id)}
-                      className="flex size-11 items-center justify-center rounded-[10px] text-[#8A8A8A] transition hover:bg-red-50 hover:text-red-500"
+                      className="flex size-11 items-center justify-center rounded-[10px] text-[#98A2B3] transition hover:bg-red-50 hover:text-red-500"
                     >
                       <Trash2 className="size-4" />
                     </button>
@@ -1035,9 +1035,9 @@ export function CreateQuoteModal({
 
             {/* 4. Notes */}
             <div className="mt-10 space-y-4">
-              <label className="text-sm font-bold text-[#1A1916]">Notes & Conditions</label>
+              <label className="text-sm font-bold text-[#101828]">Notes & Conditions</label>
               <textarea
-                className="min-h-[100px] w-full rounded-[12px] border border-[#E8E8E5] bg-white p-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
+                className="min-h-[100px] w-full rounded-[12px] border border-[#E4E7EC] bg-white p-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
                 placeholder="Notes à l'attention du client ou conditions particulières..."
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -1048,11 +1048,11 @@ export function CreateQuoteModal({
           {/* Right Column - Preview (hidden on mobile) */}
           <div className="hidden lg:flex w-[440px] border-l border-[#FFFFFF] bg-[#FFFFFF] flex-col overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#FFFFFF] bg-white">
-              <span className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-widest">Aperçu en direct</span>
+              <span className="text-[10px] font-bold text-[#98A2B3] uppercase tracking-widest">Aperçu en direct</span>
               <div className="flex items-center gap-2">
                 <div className="size-1.5 rounded-full bg-[#FFFFFF]" />
                 <div className="size-1.5 rounded-full bg-[#FFFFFF]" />
-                <div className="px-2 py-0.5 rounded-full bg-[#FFFFFF] text-[9px] font-bold text-[#6B6B6B] uppercase">
+                <div className="px-2 py-0.5 rounded-full bg-[#FFFFFF] text-[9px] font-bold text-[#667085] uppercase">
                   Brouillon
                 </div>
               </div>
@@ -1060,13 +1060,13 @@ export function CreateQuoteModal({
 
             <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
               {/* Document Simulé */}
-              <div className="bg-white shadow-sm border border-[#E8E8E5] rounded-xl p-8 min-h-[500px] flex flex-col">
+              <div className="bg-white shadow-sm border border-[#E4E7EC] rounded-xl p-8 min-h-[500px] flex flex-col">
                 {/* Header Atelier */}
                 <div className="flex items-center gap-4 border-b border-[#FFFFFF] pb-8 mb-8">
                   <div />
                   <div>
-                    <h4 className="font-bold text-[#1A1916] text-sm">{workshopInfo?.name || "Atelier"}</h4>
-                    <p className="text-[10px] text-[#6B6B6B]">Proposition commerciale</p>
+                    <h4 className="font-bold text-[#101828] text-sm">{workshopInfo?.name || "Atelier"}</h4>
+                    <p className="text-[10px] text-[#667085]">Proposition commerciale</p>
                   </div>
                 </div>
 
@@ -1075,34 +1075,34 @@ export function CreateQuoteModal({
                     <div className="grid grid-cols-2 gap-8 text-[11px]">
                       <div className="space-y-4">
                         <div>
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A8A8A] mb-1">
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#98A2B3] mb-1">
                             DEVIS POUR
                           </p>
-                          <p className="font-bold text-[#1A1916]">{form.customerName}</p>
-                          <p className="text-[#6B6B6B]">{form.customerPhone || "—"}</p>
+                          <p className="font-bold text-[#101828]">{form.customerName}</p>
+                          <p className="text-[#667085]">{form.customerPhone || "—"}</p>
                         </div>
                         <div>
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A8A8A] mb-1">APPAREIL</p>
-                          <p className="font-bold text-[#1A1916]">{form.device || "—"}</p>
-                          <p className="text-[#6B6B6B] italic">{form.issue || "—"}</p>
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#98A2B3] mb-1">APPAREIL</p>
+                          <p className="font-bold text-[#101828]">{form.device || "—"}</p>
+                          <p className="text-[#667085] italic">{form.issue || "—"}</p>
                         </div>
                       </div>
                       <div className="space-y-4 text-right">
                         <div>
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A8A8A] mb-1">DATE</p>
-                          <p className="font-bold text-[#1A1916]">
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#98A2B3] mb-1">DATE</p>
+                          <p className="font-bold text-[#101828]">
                             {new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
                           </p>
                         </div>
                         <div>
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A8A8A] mb-1">VALIDITÉ</p>
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#98A2B3] mb-1">VALIDITÉ</p>
                           <p className="font-bold text-[#2A9D8F]">{form.validityDays} jours</p>
                         </div>
                       </div>
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between border-b border-[#FFFFFF] pb-2 text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider">
+                      <div className="flex items-center justify-between border-b border-[#FFFFFF] pb-2 text-[10px] font-bold text-[#98A2B3] uppercase tracking-wider">
                         <span>Description</span>
                         <span>Total</span>
                       </div>
@@ -1111,12 +1111,12 @@ export function CreateQuoteModal({
                         .map((l) => (
                           <div key={l.id} className="flex justify-between items-start text-[11px] gap-4">
                             <div className="flex-1">
-                              <p className="font-semibold text-[#1A1916]">{l.description}</p>
-                              <p className="text-[10px] text-[#6B6B6B]">
+                              <p className="font-semibold text-[#101828]">{l.description}</p>
+                              <p className="text-[10px] text-[#667085]">
                                 Qté : {l.quantity} x {formatCurrency(l.unitPrice, quoteCurrency)}
                               </p>
                             </div>
-                            <p className="font-bold text-[#1A1916]">
+                            <p className="font-bold text-[#101828]">
                               {formatCurrency(l.quantity * l.unitPrice, quoteCurrency)}
                             </p>
                           </div>
@@ -1126,16 +1126,16 @@ export function CreateQuoteModal({
                     <div className="mt-auto pt-8 border-t border-[#FFFFFF] space-y-2">
                       {billingWorkshop.vatApplicable ? (
                         <div className="space-y-1">
-                          <div className="flex justify-between text-[10px] text-[#6B6B6B]">
+                          <div className="flex justify-between text-[10px] text-[#667085]">
                             <span>Sous-total HT</span>
                             <span className="font-medium">{formatCurrency(previewVat.ht, quoteCurrency)}</span>
                           </div>
-                          <div className="flex justify-between text-[10px] text-[#6B6B6B]">
+                          <div className="flex justify-between text-[10px] text-[#667085]">
                             <span>TVA ({Math.round(previewVat.rate * 1000) / 10}%)</span>
                             <span className="font-medium">{formatCurrency(previewVat.tva, quoteCurrency)}</span>
                           </div>
                           <div className="flex justify-between items-end pt-2">
-                            <span className="text-xs font-bold text-[#1A1916]">TOTAL TTC</span>
+                            <span className="text-xs font-bold text-[#101828]">TOTAL TTC</span>
                             <span className="text-xl font-bold text-[#2A9D8F]">
                               {formatCurrency(previewVat.ttc, quoteCurrency)}
                             </span>
@@ -1143,7 +1143,7 @@ export function CreateQuoteModal({
                         </div>
                       ) : (
                         <div className="flex justify-between items-end pt-2">
-                          <span className="text-xs font-bold text-[#1A1916]">TOTAL ESTIMÉ</span>
+                          <span className="text-xs font-bold text-[#101828]">TOTAL ESTIMÉ</span>
                           <span className="text-xl font-bold text-[#2A9D8F]">
                             {formatCurrency(subtotal, quoteCurrency)}
                           </span>
@@ -1153,11 +1153,11 @@ export function CreateQuoteModal({
                   </div>
                 ) : (
                   <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
-                    <div className="size-12 rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] flex items-center justify-center mb-4">
-                      <FileText className="size-6 text-[#8A8A8A]" />
+                    <div className="size-12 rounded-[12px] border border-[#E4E7EC] bg-[#FFFFFF] flex items-center justify-center mb-4">
+                      <FileText className="size-6 text-[#98A2B3]" />
                     </div>
-                    <p className="text-sm font-bold text-[#1A1916] mb-1">Devis en cours de saisie</p>
-                    <p className="text-xs text-[#6B6B6B]">Les informations du devis s'afficheront ici.</p>
+                    <p className="text-sm font-bold text-[#101828] mb-1">Devis en cours de saisie</p>
+                    <p className="text-xs text-[#667085]">Les informations du devis s'afficheront ici.</p>
                   </div>
                 )}
               </div>
@@ -1170,13 +1170,13 @@ export function CreateQuoteModal({
           <div className="flex items-center gap-6">
             <button
               onClick={onClose}
-              className="text-sm font-bold text-[#6B6B6B] hover:text-[#1A1916] transition-colors"
+              className="text-sm font-bold text-[#667085] hover:text-[#101828] transition-colors"
             >
               Annuler
             </button>
             <button
               onClick={() => handleCreate("Brouillon")}
-              className="flex items-center gap-2 text-sm font-bold text-[#6B6B6B] hover:text-[#1A1916] transition-colors"
+              className="flex items-center gap-2 text-sm font-bold text-[#667085] hover:text-[#101828] transition-colors"
             >
               <Save className="size-4" />
               Enregistrer en brouillon

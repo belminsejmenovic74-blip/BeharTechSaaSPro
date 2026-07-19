@@ -110,7 +110,7 @@ function useStockLabelQr(item: StockItem | undefined) {
         errorCorrectionLevel: "M",
         margin: 2,
         width: 320,
-        color: { dark: "#1A1916", light: "#FFFFFF" },
+        color: { dark: "#101828", light: "#FFFFFF" },
       })
         .then((url) => {
           if (!cancelled) {
@@ -264,10 +264,10 @@ function TracePanel({
   children,
 }: Readonly<{ title: string; icon: LucideIcon; children: ReactNode }>) {
   return (
-    <section className="rounded-[12px] border border-[#E8E8E5] bg-white">
-      <div className="flex items-center gap-2 border-[#E8E8E5] border-b px-3 py-2.5">
+    <section className="rounded-[12px] border border-[#E4E7EC] bg-white">
+      <div className="flex items-center gap-2 border-[#E4E7EC] border-b px-3 py-2.5">
         <Icon className="size-4 text-[#2A9D8F]" />
-        <h3 className="font-semibold text-[#1A1916] text-sm">{title}</h3>
+        <h3 className="font-semibold text-[#101828] text-sm">{title}</h3>
       </div>
       {children}
     </section>
@@ -275,7 +275,7 @@ function TracePanel({
 }
 
 function EmptyLinkedState({ children }: Readonly<{ children: ReactNode }>) {
-  return <p className="p-3 text-[#6B6B6B] text-xs">{children}</p>;
+  return <p className="p-3 text-[#667085] text-xs">{children}</p>;
 }
 
 type StockLabelFormat = "thermal40" | "standard60" | "a4";
@@ -308,7 +308,7 @@ function printElement(element: HTMLElement, title: string, format: StockLabelFor
   <title>${title}</title>
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; background: #FFFFFF; color: #1A1916; font-family: Arial, sans-serif; }
+    body { margin: 0; background: #FFFFFF; color: #101828; font-family: Arial, sans-serif; }
     @page { size: ${format === "a4" ? "A4" : format === "thermal40" ? "40mm 25mm" : "60mm 30mm"}; margin: 0; }
     @media print {
       body { background: #fff; }
@@ -347,7 +347,7 @@ function StockLabelCard({
   };
 
   return (
-    <div className="grid shrink-0 overflow-hidden border border-[#1A1916] bg-white text-[#1A1916]" style={style}>
+    <div className="grid shrink-0 overflow-hidden border border-[#101828] bg-white text-[#101828]" style={style}>
       <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_auto] gap-[2mm]">
         <div className="flex min-w-0 flex-col overflow-hidden">
           <div className="truncate font-bold text-[5.5px] leading-none tracking-[0.06em]">BEHAR • TECH PRO</div>
@@ -374,7 +374,7 @@ function StockLabelCard({
             {firstNonEmpty(item.displayName, item.name, "Pièce")}
           </p>
           {compatibility && (
-            <p className={cn("mt-[0.7mm] truncate text-[#6B6B6B]", compact ? "text-[5px]" : "text-[6px]")}>
+            <p className={cn("mt-[0.7mm] truncate text-[#667085]", compact ? "text-[5px]" : "text-[6px]")}>
               {compatibility}
             </p>
           )}
@@ -388,7 +388,7 @@ function StockLabelCard({
           {smallCode && (
             <p
               className={cn(
-                "mt-auto truncate pt-[0.5mm] font-mono text-[#6B6B6B]",
+                "mt-auto truncate pt-[0.5mm] font-mono text-[#667085]",
                 compact ? "text-[4.5px]" : "text-[5px]",
               )}
             >
@@ -404,7 +404,7 @@ function StockLabelCard({
             // biome-ignore lint/performance/noImgElement: QR local data URL nécessaire pour impression thermique/PDF.
             <img alt={`QR ${reference}`} className="h-full w-full object-contain" src={qrDataUrl} />
           ) : (
-            <span className="text-[#6B6B6B] text-[6px]">QR</span>
+            <span className="text-[#667085] text-[6px]">QR</span>
           )}
         </div>
       </div>
@@ -478,18 +478,18 @@ function StockLabelPrintModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[80] grid place-items-center bg-[#1A1916]/30 p-4 backdrop-blur-sm">
-      <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[20px] border border-[#E8E8E5] bg-[#FAFAF8] shadow-2xl">
-        <div className="flex items-start justify-between gap-4 border-[#E8E8E5] border-b bg-white px-5 py-4">
+    <div className="fixed inset-0 z-[80] grid place-items-center bg-[#101828]/30 p-4 backdrop-blur-sm">
+      <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[20px] border border-[#E4E7EC] bg-[#F9FAFB] shadow-2xl">
+        <div className="flex items-start justify-between gap-4 border-[#E4E7EC] border-b bg-white px-5 py-4">
           <div>
-            <p className="font-semibold text-[#1A1916] text-lg">Étiquette pièce</p>
-            <p className="mt-1 text-[#6B6B6B] text-sm">
+            <p className="font-semibold text-[#101828] text-lg">Étiquette pièce</p>
+            <p className="mt-1 text-[#667085] text-sm">
               Référence interne, pièce compatible, variante, emplacement et QR sécurisé.
             </p>
           </div>
           <button
             aria-label="Fermer"
-            className="grid size-9 place-items-center rounded-full text-[#6B6B6B] transition hover:bg-[#FAFAF8]"
+            className="grid size-9 place-items-center rounded-full text-[#667085] transition hover:bg-[#F9FAFB]"
             onClick={onClose}
             type="button"
           >
@@ -497,9 +497,9 @@ function StockLabelPrintModal({
           </button>
         </div>
         <div className="grid min-h-0 flex-1 gap-4 overflow-hidden p-5 md:grid-cols-[260px_1fr]">
-          <aside className="space-y-4 rounded-[14px] border border-[#E8E8E5] bg-white p-4">
+          <aside className="space-y-4 rounded-[14px] border border-[#E4E7EC] bg-white p-4">
             <div>
-              <p className="font-semibold text-[#1A1916] text-sm">Format</p>
+              <p className="font-semibold text-[#101828] text-sm">Format</p>
               <div className="mt-3 grid gap-2">
                 {(
                   [
@@ -513,7 +513,7 @@ function StockLabelPrintModal({
                       "h-10 rounded-[10px] border px-3 text-left font-semibold text-sm transition",
                       format === value
                         ? "border-[#2A9D8F] bg-[#ECF8F5] text-[#167B70]"
-                        : "border-[#E8E8E5] bg-white text-[#1A1916] hover:border-[#2A9D8F]/50",
+                        : "border-[#E4E7EC] bg-white text-[#101828] hover:border-[#2A9D8F]/50",
                     )}
                     key={value}
                     onClick={() => setFormat(value)}
@@ -525,10 +525,10 @@ function StockLabelPrintModal({
               </div>
             </div>
             {format === "a4" && (
-              <label className="block text-[#6B6B6B] text-xs">
+              <label className="block text-[#667085] text-xs">
                 Nombre d'étiquettes
                 <input
-                  className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-sm outline-none focus:border-[#2A9D8F]/60"
+                  className="mt-1 h-10 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[#101828] text-sm outline-none focus:border-[#2A9D8F]/60"
                   max={40}
                   min={1}
                   onChange={(event) => setCopies(Number(event.target.value))}
@@ -542,10 +542,10 @@ function StockLabelPrintModal({
                 {qrError}
               </div>
             )}
-            <div className="rounded-[12px] bg-[#FAFAF8] p-3">
-              <p className="font-mono font-semibold text-[#1A1916] text-sm">{reference}</p>
-              <p className="mt-1 text-[#6B6B6B] text-xs">{stockLabelName(item)}</p>
-              {item.location && <p className="mt-1 text-[#6B6B6B] text-xs">{item.location}</p>}
+            <div className="rounded-[12px] bg-[#F9FAFB] p-3">
+              <p className="font-mono font-semibold text-[#101828] text-sm">{reference}</p>
+              <p className="mt-1 text-[#667085] text-xs">{stockLabelName(item)}</p>
+              {item.location && <p className="mt-1 text-[#667085] text-xs">{item.location}</p>}
             </div>
             <div className="grid gap-2">
               <PrimaryButton
@@ -561,7 +561,7 @@ function StockLabelPrintModal({
               </SecondaryButton>
             </div>
           </aside>
-          <div className="min-h-0 overflow-auto rounded-[14px] border border-[#E8E8E5] bg-[#F2F2EE] p-5">
+          <div className="min-h-0 overflow-auto rounded-[14px] border border-[#E4E7EC] bg-[#F2F2EE] p-5">
             <div ref={printRef} data-pdf-paginate={format === "a4" ? "true" : undefined}>
               <StockLabelPreview copies={copies} format={format} item={item} qrDataUrl={qrDataUrl} />
             </div>
@@ -647,7 +647,7 @@ function ModelSelector({
                 }
               }}
               placeholder={availableModels.length > 0 ? "Sélectionner ou saisir…" : "Saisir un modèle…"}
-              className="h-9 flex-1 rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[13px] text-[#1A1916] outline-none transition placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
+              className="h-9 flex-1 rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[13px] text-[#101828] outline-none transition placeholder:text-[#667085] focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
             />
             <button
               type="button"
@@ -743,7 +743,7 @@ function stockCategoryIcon(item: StockItem): LucideIcon {
 function StockItemThumbnail({ item }: Readonly<{ item: StockItem }>) {
   const Icon = stockCategoryIcon(item);
   return (
-    <span className="grid size-12 shrink-0 place-items-center rounded-[12px] border border-[#E8E8E5] bg-[#FAFAF8] text-[#2A9D8F] shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]">
+    <span className="grid size-12 shrink-0 place-items-center rounded-[12px] border border-[#E4E7EC] bg-[#F9FAFB] text-[#2A9D8F] shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]">
       <Icon className="size-5" strokeWidth={1.8} />
     </span>
   );
@@ -766,7 +766,7 @@ function PremiumStockKpiCard({
   warning,
 }: Readonly<{ icon: LucideIcon; label: string; value: string; helper: string; warning?: boolean }>) {
   return (
-    <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5 shadow-[0_18px_45px_rgba(26,25,22,0.04)]">
+    <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-5 shadow-[0_18px_45px_rgba(16,24,40,0.04)]">
       <div className="flex items-start justify-between gap-4">
         <span
           className={cn(
@@ -777,11 +777,11 @@ function PremiumStockKpiCard({
           <Icon className="size-4" />
         </span>
         <div className="min-w-0 text-right">
-          <p className="text-[#6B6B6B] text-[13px]">{label}</p>
-          <p className="mt-1 font-semibold text-[#1A1916] text-[30px] leading-none tracking-tight tabular-nums">
+          <p className="text-[#667085] text-[13px]">{label}</p>
+          <p className="mt-1 font-semibold text-[#101828] text-[30px] leading-none tracking-tight tabular-nums">
             {value}
           </p>
-          <p className="mt-2 text-[#6B6B6B] text-xs">{helper}</p>
+          <p className="mt-2 text-[#667085] text-xs">{helper}</p>
         </div>
       </div>
     </section>
@@ -804,12 +804,12 @@ function StockFilterSelect<T extends string>({
   return (
     <label className="relative block">
       {Icon && (
-        <Icon className="pointer-events-none absolute top-1/2 left-3.5 z-10 size-4 -translate-y-1/2 text-[#6B6B6B]" />
+        <Icon className="pointer-events-none absolute top-1/2 left-3.5 z-10 size-4 -translate-y-1/2 text-[#667085]" />
       )}
       <select
         aria-label={label}
         className={cn(
-          "h-11 min-w-[170px] appearance-none rounded-[12px] border border-[#E8E8E5] bg-white pr-10 text-[#1A1916] text-sm outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10",
+          "h-11 min-w-[170px] appearance-none rounded-[12px] border border-[#E4E7EC] bg-white pr-10 text-[#101828] text-sm outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10",
           Icon ? "pl-10" : "pl-4",
         )}
         onChange={(event) => onChange(event.target.value as T)}
@@ -821,7 +821,7 @@ function StockFilterSelect<T extends string>({
           </option>
         ))}
       </select>
-      <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#6B6B6B]" />
+      <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#667085]" />
     </label>
   );
 }
@@ -1020,14 +1020,14 @@ export function StockWorkspace() {
         </section>
 
         <Panel className="overflow-hidden rounded-[20px]">
-          <div className="flex gap-2 overflow-x-auto border-[#E8E8E5] border-b bg-white px-4 py-3">
+          <div className="flex gap-2 overflow-x-auto border-[#E4E7EC] border-b bg-white px-4 py-3">
             {categoryPills.map(({ label, value, count, icon: Icon }) => (
               <button
                 className={cn(
                   "inline-flex h-10 shrink-0 items-center gap-2 rounded-[12px] border px-3.5 font-semibold text-sm transition",
                   categoryFilter === value
                     ? "border-[#D7EFEA] bg-[#F2FAF8] text-[#167B70]"
-                    : "border-transparent bg-white text-[#6B6B6B] hover:border-[#E8E8E5] hover:text-[#1A1916]",
+                    : "border-transparent bg-white text-[#667085] hover:border-[#E4E7EC] hover:text-[#101828]",
                 )}
                 key={value}
                 onClick={() => setCategoryFilter(value)}
@@ -1035,18 +1035,18 @@ export function StockWorkspace() {
               >
                 <Icon className="size-4" />
                 {label}
-                <span className="rounded-full border border-[#E8E8E5] bg-white px-2 py-0.5 text-[#1A1916] text-xs">
+                <span className="rounded-full border border-[#E4E7EC] bg-white px-2 py-0.5 text-[#101828] text-xs">
                   {count}
                 </span>
               </button>
             ))}
           </div>
 
-          <div className="grid gap-3 border-[#E8E8E5] border-b bg-white px-4 py-4 lg:grid-cols-[minmax(320px,1fr)_auto_auto_auto]">
+          <div className="grid gap-3 border-[#E4E7EC] border-b bg-white px-4 py-4 lg:grid-cols-[minmax(320px,1fr)_auto_auto_auto]">
             <label className="relative block">
-              <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6B6B6B]" />
+              <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#667085]" />
               <input
-                className="h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-white pr-4 pl-10 text-[#1A1916] text-sm outline-none transition placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+                className="h-11 w-full rounded-[12px] border border-[#E4E7EC] bg-white pr-4 pl-10 text-[#101828] text-sm outline-none transition placeholder:text-[#667085] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
                 placeholder="Rechercher une pièce, référence, SKU ou modèle..."
                 type="search"
                 value={search}
@@ -1095,7 +1095,7 @@ export function StockWorkspace() {
 
           <div className="overflow-x-auto bg-white">
             <table className={`${tableClassName} min-w-[1060px]`}>
-              <thead className="border-[#E8E8E5] border-b bg-[#FAFAF8] text-left font-semibold text-[#6B6B6B] text-xs">
+              <thead className="border-[#E4E7EC] border-b bg-[#F9FAFB] text-left font-semibold text-[#667085] text-xs">
                 <tr>
                   <th className="px-5 py-4">Pièce</th>
                   <th className="px-5 py-4">Référence / SKU</th>
@@ -1107,11 +1107,11 @@ export function StockWorkspace() {
                   <th className="px-5 py-4 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E8E8E5]">
+              <tbody className="divide-y divide-[#E4E7EC]">
                 {filteredItems.map((item) => {
                   return (
                     <tr
-                      className="group cursor-pointer bg-white transition hover:bg-[#FAFAF8]"
+                      className="group cursor-pointer bg-white transition hover:bg-[#F9FAFB]"
                       key={item.id}
                       onClick={() => openItem(item)}
                     >
@@ -1119,12 +1119,12 @@ export function StockWorkspace() {
                         <div className="flex items-center gap-4">
                           <StockItemThumbnail item={item} />
                           <div className="min-w-0">
-                            <p className="truncate font-semibold text-[#1A1916] text-[15px]">
+                            <p className="truncate font-semibold text-[#101828] text-[15px]">
                               {item.displayName ?? item.name}
                             </p>
                             <div className="mt-1.5 flex flex-wrap items-center gap-2">
                               {item.supplierBrand && (
-                                <span className="text-[#6B6B6B] text-xs">{item.supplierBrand}</span>
+                                <span className="text-[#667085] text-xs">{item.supplierBrand}</span>
                               )}
                               <StockQualityBadge quality={item.quality} />
                             </div>
@@ -1137,15 +1137,15 @@ export function StockWorkspace() {
                           {item.internalCode &&
                             normalizePartReference(item.internalCode) !==
                               normalizePartReference(stockPrimaryReference(item)) && (
-                              <span className="font-mono text-[#8A8A85] text-[10.5px]">{item.internalCode}</span>
+                              <span className="font-mono text-[#98A2B3] text-[10.5px]">{item.internalCode}</span>
                             )}
                         </div>
                       </td>
-                      <td className="max-w-[220px] px-5 py-4 text-[#1A1916] text-sm">
+                      <td className="max-w-[220px] px-5 py-4 text-[#101828] text-sm">
                         {item.compatibleModels.length ? item.compatibleModels.join(" / ") : "Non défini"}
                       </td>
                       <td className="px-5 py-4">
-                        <span className="inline-flex h-9 items-center gap-2 rounded-[10px] bg-[#F2FAF8] px-3 text-[#6B6B6B] text-sm">
+                        <span className="inline-flex h-9 items-center gap-2 rounded-[10px] bg-[#F2FAF8] px-3 text-[#667085] text-sm">
                           {(() => {
                             const Icon = stockCategoryIcon(item);
                             return <Icon className="size-4 text-[#2A9D8F]" />;
@@ -1154,11 +1154,11 @@ export function StockWorkspace() {
                         </span>
                       </td>
                       <td className="px-5 py-4 text-right tabular-nums">
-                        <span className="font-semibold text-[#1A1916] text-lg">{item.stock}</span>
-                        <span className="block text-[#6B6B6B] text-xs">{stockUnitLabel(item.stock)}</span>
+                        <span className="font-semibold text-[#101828] text-lg">{item.stock}</span>
+                        <span className="block text-[#667085] text-xs">{stockUnitLabel(item.stock)}</span>
                       </td>
                       {canViewPurchasePrice && (
-                        <td className="px-5 py-4 text-right font-semibold text-[#1A1916] text-sm tabular-nums">
+                        <td className="px-5 py-4 text-right font-semibold text-[#101828] text-sm tabular-nums">
                           {formatEuro(stockAveragePrice(item))}
                         </td>
                       )}
@@ -1168,7 +1168,7 @@ export function StockWorkspace() {
                       <td className="px-5 py-4 text-right">
                         <button
                           aria-label={`Actions ${item.displayName || item.name}`}
-                          className="inline-grid size-8 place-items-center rounded-full text-[#6B6B6B] transition hover:bg-white hover:text-[#1A1916]"
+                          className="inline-grid size-8 place-items-center rounded-full text-[#667085] transition hover:bg-white hover:text-[#101828]"
                           onClick={(event) => {
                             event.stopPropagation();
                             openItem(item);
@@ -1185,27 +1185,27 @@ export function StockWorkspace() {
             </table>
             {filteredItems.length === 0 && (
               <div className="px-5 py-16 text-center">
-                <p className="font-semibold text-[#1A1916] text-sm">Aucune pièce trouvée</p>
-                <p className="mt-1 text-[#6B6B6B] text-sm">Essayez une autre recherche ou retirez un filtre.</p>
+                <p className="font-semibold text-[#101828] text-sm">Aucune pièce trouvée</p>
+                <p className="mt-1 text-[#667085] text-sm">Essayez une autre recherche ou retirez un filtre.</p>
               </div>
             )}
-            <div className="flex items-center justify-between border-[#E8E8E5] border-t bg-white px-5 py-4 text-[#6B6B6B] text-sm">
+            <div className="flex items-center justify-between border-[#E4E7EC] border-t bg-white px-5 py-4 text-[#667085] text-sm">
               <span>
                 1 à {filteredItems.length} sur {activeItems.length} pièces
               </span>
               <div className="flex items-center gap-2">
                 <button
-                  className="grid size-9 place-items-center rounded-[10px] border border-[#E8E8E5] text-[#B7B7B2]"
+                  className="grid size-9 place-items-center rounded-[10px] border border-[#E4E7EC] text-[#B7B7B2]"
                   disabled
                   type="button"
                 >
                   <ChevronDown className="size-4 rotate-90" />
                 </button>
-                <span className="grid size-9 place-items-center rounded-[10px] border border-[#E8E8E5] font-semibold text-[#1A1916]">
+                <span className="grid size-9 place-items-center rounded-[10px] border border-[#E4E7EC] font-semibold text-[#101828]">
                   1
                 </span>
                 <button
-                  className="grid size-9 place-items-center rounded-[10px] border border-[#E8E8E5] text-[#B7B7B2]"
+                  className="grid size-9 place-items-center rounded-[10px] border border-[#E4E7EC] text-[#B7B7B2]"
                   disabled
                   type="button"
                 >
@@ -1250,11 +1250,11 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
   const availableCategories = store.partCategories.filter((cat) => cat.deviceTypes.includes(item.deviceType));
 
   const inputClass =
-    "h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-right text-[15px] text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+    "h-10 w-full rounded-[12px] border border-[#E4E7EC] bg-white px-3 text-right text-[15px] text-[#101828] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
   const textInputClass =
-    "h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[15px] text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+    "h-10 w-full rounded-[12px] border border-[#E4E7EC] bg-white px-3 text-[15px] text-[#101828] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
   const rowClass = "flex items-start justify-between gap-3 py-3 border-b border-[#FFFFFF] last:border-0";
-  const labelClass = "shrink-0 w-[110px] text-[#6B6B6B] text-[13px] pt-2.5 font-medium";
+  const labelClass = "shrink-0 w-[110px] text-[#667085] text-[13px] pt-2.5 font-medium";
   const createTariffFromItem = () => {
     const purchasePrice = item.averagePurchasePrice ?? item.lastPurchasePrice ?? item.purchasePrice;
     const salePrice = item.salePrice > 0 ? item.salePrice : Math.round(purchasePrice * 1.8 * 100) / 100;
@@ -1291,7 +1291,7 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
         status={item.stock === 0 ? "Rupture" : item.stock <= item.threshold ? "Stock faible" : "En stock"}
       />
       {item.stock <= item.threshold && (
-        <p className="mb-3 rounded-[12px] bg-[#FFFFFF] px-3 py-2 text-[#6B6B6B] text-sm">
+        <p className="mb-3 rounded-[12px] bg-[#FFFFFF] px-3 py-2 text-[#667085] text-sm">
           Alerte stock bas : réapprovisionnement conseillé.
         </p>
       )}
@@ -1299,11 +1299,11 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
       <PartPlaceholder className="h-36 rounded-[16px] mb-4" />
       <div className="mb-4 grid grid-cols-[1fr_116px] gap-3">
         <div className="rounded-[16px] border border-[#FFFFFF] bg-[#FFFFFF] p-4">
-          <p className="text-[#6B6B6B] text-[11px] font-semibold uppercase tracking-[0.12em]">Référence centrale</p>
-          <p className="mt-2 font-mono font-semibold text-[#1A1916] text-sm">
+          <p className="text-[#667085] text-[11px] font-semibold uppercase tracking-[0.12em]">Référence centrale</p>
+          <p className="mt-2 font-mono font-semibold text-[#101828] text-sm">
             <PartReferenceLink reference={reference} />
           </p>
-          <p className="mt-1 font-mono text-[#8A8A85] text-[11px]">
+          <p className="mt-1 font-mono text-[#98A2B3] text-[11px]">
             {displayText(item.internalCode, "Code interne à compléter")}
           </p>
         </div>
@@ -1312,11 +1312,11 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
             // biome-ignore lint/performance/noImgElement: QR généré localement en data URL pour impression d'étiquette.
             <img alt={`QR ${reference}`} className="mx-auto size-[88px]" src={qrDataUrl} />
           ) : (
-            <div className="mx-auto grid size-[88px] place-items-center rounded-[8px] bg-[#FAFAF8] text-[#6B6B6B] text-xs">
+            <div className="mx-auto grid size-[88px] place-items-center rounded-[8px] bg-[#F9FAFB] text-[#667085] text-xs">
               QR
             </div>
           )}
-          <p className="mt-1 text-[#6B6B6B] text-[10px]">Étiquette</p>
+          <p className="mt-1 text-[#667085] text-[10px]">Étiquette</p>
         </div>
       </div>
 
@@ -1438,7 +1438,7 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
               "flex flex-1 items-center justify-between rounded-[12px] border px-3 py-2 text-left text-sm transition",
               item.counterSaleEnabled
                 ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]"
-                : "border-[#E8E8E5] bg-white text-[#6B6B6B]",
+                : "border-[#E4E7EC] bg-white text-[#667085]",
               !canManageStock && "cursor-not-allowed opacity-60",
             )}
             disabled={!canManageStock}
@@ -1477,8 +1477,8 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
         )}
         <div className={rowClass}>
           <span className={labelClass}>Prix client</span>
-          <div className="flex-1 rounded-[12px] border border-[#E8E8E5] bg-white px-3 py-2 text-right">
-            <p className={cn("text-[15px] font-semibold", tariff ? "text-[#1A1916]" : "text-[#6B6B6B]")}>
+          <div className="flex-1 rounded-[12px] border border-[#E4E7EC] bg-white px-3 py-2 text-right">
+            <p className={cn("text-[15px] font-semibold", tariff ? "text-[#101828]" : "text-[#667085]")}>
               {tariffPriceLabel(item, store.priceBookItems)}
             </p>
             <p className="mt-0.5 text-[11px] font-medium text-[#167B70]">
@@ -1542,16 +1542,16 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
 
       <div className="mb-4 space-y-3">
         <div className="rounded-[16px] border border-[#FFFFFF] bg-[#FFFFFF] p-4">
-          <h3 className="font-semibold text-[#1A1916] text-sm">Traçabilité liée</h3>
+          <h3 className="font-semibold text-[#101828] text-sm">Traçabilité liée</h3>
           <div className="mt-3 grid grid-cols-3 gap-2">
             {[
               ["Entrées", String(trace.supplierInvoiceLines.length || trace.purchases.length)],
               ["Sorties", String(trace.repairUsages.length)],
               ["Mouvements", String(trace.movements.length)],
             ].map(([label, value]) => (
-              <div key={label} className="rounded-[12px] bg-[#FAFAF8] px-3 py-2">
-                <p className="text-[#6B6B6B] text-[10px]">{label}</p>
-                <p className="mt-0.5 font-semibold text-[#1A1916] text-sm">{value}</p>
+              <div key={label} className="rounded-[12px] bg-[#F9FAFB] px-3 py-2">
+                <p className="text-[#667085] text-[10px]">{label}</p>
+                <p className="mt-0.5 font-semibold text-[#101828] text-sm">{value}</p>
               </div>
             ))}
           </div>
@@ -1559,11 +1559,11 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
             {trace.movements.slice(0, 4).map((movement) => (
               <div
                 key={movement.id}
-                className="flex items-center justify-between rounded-[12px] border border-[#E8E8E5] px-3 py-2"
+                className="flex items-center justify-between rounded-[12px] border border-[#E4E7EC] px-3 py-2"
               >
                 <div>
-                  <p className="font-semibold text-[#1A1916] text-xs">{MOVEMENT_LABELS[movement.movementType]}</p>
-                  <p className="text-[#6B6B6B] text-[11px]">{shortDate(movement.createdAt)}</p>
+                  <p className="font-semibold text-[#101828] text-xs">{MOVEMENT_LABELS[movement.movementType]}</p>
+                  <p className="text-[#667085] text-[11px]">{shortDate(movement.createdAt)}</p>
                 </div>
                 <p
                   className={cn(
@@ -1576,7 +1576,7 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
                 </p>
               </div>
             ))}
-            {!trace.movements.length && <p className="text-[#6B6B6B] text-xs">Aucun mouvement relié.</p>}
+            {!trace.movements.length && <p className="text-[#667085] text-xs">Aucun mouvement relié.</p>}
           </div>
         </div>
       </div>
@@ -1620,7 +1620,7 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
           Réapprovisionner
         </PrimaryButton>
         <select
-          className="h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[15px] text-[#1A1916] outline-none"
+          className="h-11 w-full rounded-[12px] border border-[#E4E7EC] bg-white px-3 text-[15px] text-[#101828] outline-none"
           disabled={store.repairs.length === 0}
           value={targetRepairId}
           onChange={(e) => setTargetRepairId(e.target.value)}
@@ -1649,15 +1649,15 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
           Utiliser dans une réparation
         </SecondaryButton>
         <div className="rounded-[16px] border border-[#FFFFFF] bg-[#FFFFFF] p-4">
-          <h3 className="font-semibold text-[#1A1916] text-sm">Tarifs liés</h3>
+          <h3 className="font-semibold text-[#101828] text-sm">Tarifs liés</h3>
           {linkedTariffs.length ? (
             <div className="mt-3 space-y-2">
               {linkedTariffs.slice(0, 3).map((entry) => (
-                <div key={entry.id} className="rounded-[12px] bg-[#FAFAF8] px-3 py-2">
-                  <p className="font-medium text-[#1A1916] text-xs">
+                <div key={entry.id} className="rounded-[12px] bg-[#F9FAFB] px-3 py-2">
+                  <p className="font-medium text-[#101828] text-xs">
                     {entry.modele} · {entry.reparation}
                   </p>
-                  <p className="mt-0.5 text-[#6B6B6B] text-xs">
+                  <p className="mt-0.5 text-[#667085] text-xs">
                     Prix client {formatEuro(entry.prixClientTotal)} · Marge {formatEuro(entry.marge)}
                   </p>
                 </div>
@@ -1674,7 +1674,7 @@ function StockDetailMobile({ item, onClose }: Readonly<{ item: StockItem; onClos
             </div>
           ) : (
             <div className="mt-3">
-              <p className="text-[#6B6B6B] text-xs">Aucun tarif client lié pour cette pièce.</p>
+              <p className="text-[#667085] text-xs">Aucun tarif client lié pour cette pièce.</p>
               <SecondaryButton className="mt-3 h-11 w-full" onClick={createTariffFromItem}>
                 Créer un tarif depuis cette pièce
               </SecondaryButton>
@@ -1744,9 +1744,9 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
   const availableCategories = store.partCategories.filter((cat) => cat.deviceTypes.includes(item.deviceType));
 
   const inputClass =
-    "h-9 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-right text-sm text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+    "h-9 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-right text-sm text-[#101828] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
   const textInputClass =
-    "h-9 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-sm text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+    "h-9 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-sm text-[#101828] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
   const createTariffFromItem = () => {
     const purchasePrice = item.averagePurchasePrice ?? item.lastPurchasePrice ?? item.purchasePrice;
     const salePrice = item.salePrice > 0 ? item.salePrice : Math.round(purchasePrice * 1.8 * 100) / 100;
@@ -1778,22 +1778,22 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
   return (
     <Panel className="overflow-y-auto rounded-[14px] p-4 md:max-h-[calc(100vh-11rem)]">
       <div className="mb-4">
-        <h2 className="font-semibold text-[#1A1916] text-xl leading-tight tracking-tight">
+        <h2 className="font-semibold text-[#101828] text-xl leading-tight tracking-tight">
           {item.displayName ?? item.name}
         </h2>
         <StatusBadge className="mt-3" status={stockStatusLabel(item)} />
         {item.stock <= item.threshold && (
-          <p className="mt-2 rounded-[10px] bg-[#FFFFFF] px-3 py-2 text-[#6B6B6B] text-sm">
+          <p className="mt-2 rounded-[10px] bg-[#FFFFFF] px-3 py-2 text-[#667085] text-sm">
             Alerte stock bas : réapprovisionnement conseillé.
           </p>
         )}
       </div>
-      <div className="rounded-[14px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.03)]">
+      <div className="rounded-[14px] border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-[#6B6B6B] text-[11px] font-semibold uppercase tracking-[0.12em]">Pièce atelier</p>
-            <p className="mt-1 truncate font-semibold text-[#1A1916] text-sm">{stockLabelName(item)}</p>
-            <p className="mt-1 text-[#6B6B6B] text-xs">
+            <p className="text-[#667085] text-[11px] font-semibold uppercase tracking-[0.12em]">Pièce atelier</p>
+            <p className="mt-1 truncate font-semibold text-[#101828] text-sm">{stockLabelName(item)}</p>
+            <p className="mt-1 text-[#667085] text-xs">
               {item.compatibleModels.length ? item.compatibleModels.join(" / ") : "Modèle à compléter"}
             </p>
           </div>
@@ -1807,17 +1807,17 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
             ["Réservé", String(Math.max(0, entries.reduce((sum, entry) => sum + entry.quantity, 0) - item.stock))],
             ["Factures", String(new Set(entries.map((entry) => entry.invoiceNumber).filter(Boolean)).size || 0)],
           ].map(([label, value]) => (
-            <div key={label} className="rounded-[10px] bg-[#FAFAF8] px-3 py-2 text-center">
-              <p className="text-[#6B6B6B] text-[10.5px]">{label}</p>
-              <p className="mt-1 font-semibold text-[#1A1916] text-sm tabular-nums">{value}</p>
+            <div key={label} className="rounded-[10px] bg-[#F9FAFB] px-3 py-2 text-center">
+              <p className="text-[#667085] text-[10.5px]">{label}</p>
+              <p className="mt-1 font-semibold text-[#101828] text-sm tabular-nums">{value}</p>
             </div>
           ))}
         </div>
       </div>
       <div className="mt-4 grid gap-3 md:grid-cols-[1fr_132px]">
-        <div className="rounded-[12px] border border-[#E8E8E5] bg-white p-3">
-          <p className="text-[#6B6B6B] text-xs font-semibold uppercase tracking-[0.12em]">Référence centrale</p>
-          <p className="mt-2 font-mono font-semibold text-[#1A1916] text-sm">
+        <div className="rounded-[12px] border border-[#E4E7EC] bg-white p-3">
+          <p className="text-[#667085] text-xs font-semibold uppercase tracking-[0.12em]">Référence centrale</p>
+          <p className="mt-2 font-mono font-semibold text-[#101828] text-sm">
             <PartReferenceLink reference={reference} />
           </p>
           <div className="mt-3 grid grid-cols-2 gap-2">
@@ -1827,26 +1827,26 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
               ["Prix moyen", formatEuro(item.averagePurchasePrice ?? item.purchasePrice ?? 0)],
               ["Dernier prix", formatEuro(item.lastPurchasePrice ?? item.purchasePrice ?? 0)],
             ].map(([label, value]) => (
-              <div key={label} className="rounded-[10px] bg-[#FAFAF8] px-2.5 py-2">
-                <p className="text-[#6B6B6B] text-[10.5px]">{label}</p>
-                <p className="mt-0.5 truncate font-semibold text-[#1A1916] text-xs">{value}</p>
+              <div key={label} className="rounded-[10px] bg-[#F9FAFB] px-2.5 py-2">
+                <p className="text-[#667085] text-[10.5px]">{label}</p>
+                <p className="mt-0.5 truncate font-semibold text-[#101828] text-xs">{value}</p>
               </div>
             ))}
           </div>
         </div>
-        <div className="rounded-[12px] border border-[#E8E8E5] bg-white p-3 text-center">
+        <div className="rounded-[12px] border border-[#E4E7EC] bg-white p-3 text-center">
           {qrDataUrl ? (
             // biome-ignore lint/performance/noImgElement: QR généré localement en data URL pour impression d'étiquette.
             <img alt={`QR ${reference}`} className="mx-auto size-[104px]" src={qrDataUrl} />
           ) : (
-            <div className="mx-auto grid size-[104px] place-items-center rounded-[8px] bg-[#FAFAF8] text-[#6B6B6B] text-xs">
+            <div className="mx-auto grid size-[104px] place-items-center rounded-[8px] bg-[#F9FAFB] text-[#667085] text-xs">
               QR
             </div>
           )}
-          <p className="mt-2 font-mono text-[#6B6B6B] text-[10px]">{reference}</p>
+          <p className="mt-2 font-mono text-[#667085] text-[10px]">{reference}</p>
         </div>
       </div>
-      <div className="mt-4 rounded-[12px] border border-[#E8E8E5] bg-white p-3">
+      <div className="mt-4 rounded-[12px] border border-[#E4E7EC] bg-white p-3">
         <dl className="grid gap-2">
           {[
             ["Modèle", item.compatibleModels.length ? item.compatibleModels.join(" / ") : "Non défini"],
@@ -1861,15 +1861,15 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
             ["Dernière facture", displayText(item.originSupplierInvoiceNumber)],
           ].map(([label, value]) => (
             <div key={label} className="flex items-start justify-between gap-3 py-1.5">
-              <dt className="text-[#6B6B6B] text-xs">{label}</dt>
-              <dd className="min-w-0 text-right font-medium text-[#1A1916] text-xs">{value}</dd>
+              <dt className="text-[#667085] text-xs">{label}</dt>
+              <dd className="min-w-0 text-right font-medium text-[#101828] text-xs">{value}</dd>
             </div>
           ))}
         </dl>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <PartReferenceLink
             reference={reference}
-            className="h-9 justify-center rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-center font-sans text-[#1A1916] text-xs no-underline hover:border-[#2A9D8F]/50 hover:no-underline"
+            className="h-9 justify-center rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-center font-sans text-[#101828] text-xs no-underline hover:border-[#2A9D8F]/50 hover:no-underline"
           >
             Voir fiche complète
           </PartReferenceLink>
@@ -1880,15 +1880,15 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
         </div>
       </div>
       <button
-        className="mt-4 flex h-10 w-full items-center justify-between rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-left font-semibold text-[#1A1916] text-xs transition hover:border-[#2A9D8F]/45"
+        className="mt-4 flex h-10 w-full items-center justify-between rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-left font-semibold text-[#101828] text-xs transition hover:border-[#2A9D8F]/45"
         onClick={() => setAdvancedOpen((value) => !value)}
         type="button"
       >
         <span>Paramètres avancés</span>
-        <span className="text-[#6B6B6B]">{advancedOpen ? "Masquer" : "Afficher"}</span>
+        <span className="text-[#667085]">{advancedOpen ? "Masquer" : "Afficher"}</span>
       </button>
       {advancedOpen && (
-        <dl className="mt-3 divide-y divide-[#E8E8E5] rounded-[12px] border border-[#E8E8E5] bg-white px-3">
+        <dl className="mt-3 divide-y divide-[#E4E7EC] rounded-[12px] border border-[#E4E7EC] bg-white px-3">
           <DetailRow
             className="py-2"
             label="Nom court"
@@ -2037,7 +2037,7 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
                   "flex w-full items-center justify-between rounded-[12px] border px-3 py-2 text-left text-sm transition",
                   item.counterSaleEnabled
                     ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]"
-                    : "border-[#E8E8E5] bg-white text-[#6B6B6B]",
+                    : "border-[#E4E7EC] bg-white text-[#667085]",
                   !canManageStock && "cursor-not-allowed opacity-60",
                 )}
                 disabled={!canManageStock}
@@ -2084,8 +2084,8 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
             className="py-2"
             label="Prix client"
             value={
-              <div className="rounded-[10px] border border-[#E8E8E5] bg-white px-3 py-2 text-right">
-                <p className={cn("text-sm font-semibold", tariff ? "text-[#1A1916]" : "text-[#6B6B6B]")}>
+              <div className="rounded-[10px] border border-[#E4E7EC] bg-white px-3 py-2 text-right">
+                <p className={cn("text-sm font-semibold", tariff ? "text-[#101828]" : "text-[#667085]")}>
                   {tariffPriceLabel(item, store.priceBookItems)}
                 </p>
                 <p className="mt-0.5 text-[11px] font-medium text-[#167B70]">
@@ -2167,23 +2167,23 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
           />
         </dl>
       )}
-      <div className="mt-4 space-y-4 border-[#E8E8E5] border-t pt-4">
+      <div className="mt-4 space-y-4 border-[#E4E7EC] border-t pt-4">
         <TracePanel title="Tarifs liés" icon={Tags}>
           {linkedTariffs.length ? (
             <div className="space-y-2 p-3">
               {linkedTariffs.map((entry) => (
-                <div key={entry.id} className="rounded-[10px] border border-[#E8E8E5] bg-white px-3 py-2">
+                <div key={entry.id} className="rounded-[10px] border border-[#E4E7EC] bg-white px-3 py-2">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-[#1A1916] text-xs">
+                      <p className="font-semibold text-[#101828] text-xs">
                         {entry.modele} · {entry.reparation}
                       </p>
-                      <p className="mt-0.5 text-[#6B6B6B] text-[11px]">
+                      <p className="mt-0.5 text-[#667085] text-[11px]">
                         {entry.piece} · {entry.qualite || "Qualité standard"}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-[#1A1916] text-xs">{formatEuro(entry.prixClientTotal)}</p>
+                      <p className="font-semibold text-[#101828] text-xs">{formatEuro(entry.prixClientTotal)}</p>
                       <p className="text-[#167B70] text-[11px]">Marge {formatEuro(entry.marge)}</p>
                     </div>
                   </div>
@@ -2198,7 +2198,7 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
             </div>
           ) : (
             <div className="p-3">
-              <p className="text-[#6B6B6B] text-xs">Aucun tarif client lié pour cette pièce.</p>
+              <p className="text-[#667085] text-xs">Aucun tarif client lié pour cette pièce.</p>
               <SecondaryButton className="mt-3 h-9 w-full text-xs" onClick={createTariffFromItem}>
                 Créer un tarif depuis cette pièce
               </SecondaryButton>
@@ -2206,7 +2206,7 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
           )}
         </TracePanel>
         <TracePanel title="Données fournisseur" icon={Package}>
-          <dl className="divide-y divide-[#E8E8E5] px-3 py-1">
+          <dl className="divide-y divide-[#E4E7EC] px-3 py-1">
             {[
               ["Nom brut fournisseur", displayText(item.rawName)],
               ["EAN", displayText(item.ean)],
@@ -2214,8 +2214,8 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
               ["Marque fournisseur", displayText(item.supplierBrand)],
             ].map(([label, value]) => (
               <div key={label} className="grid grid-cols-[120px_minmax(0,1fr)] gap-3 py-2">
-                <dt className="text-[#6B6B6B] text-xs">{label}</dt>
-                <dd className="min-w-0 break-words text-[#1A1916] text-xs font-medium">{value}</dd>
+                <dt className="text-[#667085] text-xs">{label}</dt>
+                <dd className="min-w-0 break-words text-[#101828] text-xs font-medium">{value}</dd>
               </div>
             ))}
           </dl>
@@ -2254,7 +2254,7 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
                         <span
                           className={cn(
                             "rounded-full px-2 py-0.5 font-semibold text-[11px]",
-                            entry.remainingQuantity > 0 ? "bg-[#E9F4F3] text-[#167B70]" : "bg-[#F1F1EE] text-[#6B6B6B]",
+                            entry.remainingQuantity > 0 ? "bg-[#E9F4F3] text-[#167B70]" : "bg-[#F1F1EE] text-[#667085]",
                           )}
                         >
                           {entry.remainingQuantity}
@@ -2269,7 +2269,7 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
                         <div className="flex justify-end gap-1.5">
                           {entry.invoiceUrl ? (
                             <button
-                              className="rounded-full border border-[#E8E8E5] px-2 py-1 text-[#1A1916] text-[11px]"
+                              className="rounded-full border border-[#E4E7EC] px-2 py-1 text-[#101828] text-[11px]"
                               onClick={() => window.open(entry.invoiceUrl, "_blank")}
                               type="button"
                             >
@@ -2277,7 +2277,7 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
                             </button>
                           ) : null}
                           <button
-                            className="rounded-full border border-[#E8E8E5] px-2 py-1 text-[#1A1916] text-[11px]"
+                            className="rounded-full border border-[#E4E7EC] px-2 py-1 text-[#101828] text-[11px]"
                             onClick={() => router.push("/dashboard/achats")}
                             type="button"
                           >
@@ -2327,7 +2327,7 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
                       <td className={cn(tableCellClassName, "px-3 py-2 text-xs")}>{repair.status}</td>
                       <td className={cn(tableCellClassName, "px-3 py-2 text-right")}>
                         <button
-                          className="rounded-full border border-[#E8E8E5] px-2 py-1 text-[#1A1916] text-[11px]"
+                          className="rounded-full border border-[#E4E7EC] px-2 py-1 text-[#101828] text-[11px]"
                           onClick={() => {
                             store.setSelected("repair", repair.id);
                             router.push(`/dashboard/dossiers/${repair.id}`);
@@ -2351,14 +2351,14 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
           {trace.movements.length || trace.saleUsages.length ? (
             <div className="space-y-2 p-3">
               {trace.movements.map((movement) => (
-                <div key={movement.id} className="rounded-[10px] border border-[#E8E8E5] bg-white px-3 py-2">
+                <div key={movement.id} className="rounded-[10px] border border-[#E4E7EC] bg-white px-3 py-2">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-[#1A1916] text-xs">{MOVEMENT_LABELS[movement.movementType]}</p>
-                      <p className="mt-0.5 text-[#6B6B6B] text-[11px]">
+                      <p className="font-semibold text-[#101828] text-xs">{MOVEMENT_LABELS[movement.movementType]}</p>
+                      <p className="mt-0.5 text-[#667085] text-[11px]">
                         {movement.reason || movement.note || movement.sourceModule}
                       </p>
-                      <p className="mt-1 font-mono text-[#8A8A85] text-[10.5px]">{shortDate(movement.createdAt)}</p>
+                      <p className="mt-1 font-mono text-[#98A2B3] text-[10.5px]">{shortDate(movement.createdAt)}</p>
                     </div>
                     <div className="text-right">
                       <p
@@ -2370,7 +2370,7 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
                         {movement.quantityDelta > 0 ? "+" : ""}
                         {movement.quantityDelta}
                       </p>
-                      <p className="text-[#6B6B6B] text-[11px]">
+                      <p className="text-[#667085] text-[11px]">
                         {movement.quantityBefore} → {movement.quantityAfter}
                       </p>
                     </div>
@@ -2380,15 +2380,15 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
               {trace.saleUsages.map(({ sale, line, customer }) => (
                 <div
                   key={`${sale.id}-${line.stockItemId}`}
-                  className="rounded-[10px] border border-[#E8E8E5] bg-white px-3 py-2"
+                  className="rounded-[10px] border border-[#E4E7EC] bg-white px-3 py-2"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-[#1A1916] text-xs">Vente comptoir</p>
-                      <p className="mt-0.5 text-[#6B6B6B] text-[11px]">
+                      <p className="font-semibold text-[#101828] text-xs">Vente comptoir</p>
+                      <p className="mt-0.5 text-[#667085] text-[11px]">
                         {sale.number} · {customer?.name || sale.customerName}
                       </p>
-                      <p className="mt-1 font-mono text-[#8A8A85] text-[10.5px]">{shortDate(sale.createdAt)}</p>
+                      <p className="mt-1 font-mono text-[#98A2B3] text-[10.5px]">{shortDate(sale.createdAt)}</p>
                     </div>
                     <p className="font-semibold text-[#B42318] text-sm tabular-nums">-{line.quantity}</p>
                   </div>
@@ -2400,7 +2400,7 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
           )}
         </TracePanel>
       </div>
-      <div className="mt-4 grid gap-2 border-[#E8E8E5] border-t pt-4">
+      <div className="mt-4 grid gap-2 border-[#E4E7EC] border-t pt-4">
         <div className="grid grid-cols-2 gap-2">
           <SecondaryButton
             className="h-10 w-full"
@@ -2471,7 +2471,7 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
           Utiliser dans une réparation
         </SecondaryButton>
         <select
-          className="h-9 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-sm text-[#1A1916] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
+          className="h-9 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-sm text-[#101828] outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
           disabled={store.repairs.length === 0}
           onChange={(event) => setTargetRepairId(event.target.value)}
           value={targetRepairId}
@@ -2484,11 +2484,11 @@ function StockDetail({ item }: Readonly<{ item: StockItem }>) {
           ))}
         </select>
         {store.repairs.length === 0 ? (
-          <p className="-mt-1 text-center text-[#6B6B6B] text-[11px]">
+          <p className="-mt-1 text-center text-[#667085] text-[11px]">
             Créez ou sélectionnez une réparation avant d'utiliser cette pièce.
           </p>
         ) : !targetRepairId ? (
-          <p className="-mt-1 text-center text-[#6B6B6B] text-[11px]">
+          <p className="-mt-1 text-center text-[#667085] text-[11px]">
             Sélectionnez une réparation avant d’utiliser cette pièce.
           </p>
         ) : null}
@@ -2537,9 +2537,9 @@ function StockDetailCard({
   action,
 }: Readonly<{ title: string; children: ReactNode; action?: ReactNode }>) {
   return (
-    <section className="min-w-0 rounded-[18px] border border-[#E8E8E5] bg-white p-5 shadow-[0_18px_45px_rgba(26,25,22,0.035)]">
+    <section className="min-w-0 rounded-[18px] border border-[#E4E7EC] bg-white p-5 shadow-[0_18px_45px_rgba(16,24,40,0.035)]">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="font-semibold text-[#1A1916] text-base">{title}</h2>
+        <h2 className="font-semibold text-[#101828] text-base">{title}</h2>
         {action}
       </div>
       {children}
@@ -2550,14 +2550,14 @@ function StockDetailCard({
 function StockDetailDataRow({ label, value }: Readonly<{ label: string; value: ReactNode }>) {
   return (
     <div className="flex items-start justify-between gap-4 py-2.5 text-sm">
-      <dt className="text-[#6B6B6B]">{label}</dt>
-      <dd className="min-w-0 text-right font-medium text-[#1A1916]">{value}</dd>
+      <dt className="text-[#667085]">{label}</dt>
+      <dd className="min-w-0 text-right font-medium text-[#101828]">{value}</dd>
     </div>
   );
 }
 
 function StockEmptyBlock({ children }: Readonly<{ children: ReactNode }>) {
-  return <p className="rounded-[12px] bg-[#FAFAF8] px-4 py-8 text-center text-[#6B6B6B] text-sm">{children}</p>;
+  return <p className="rounded-[12px] bg-[#F9FAFB] px-4 py-8 text-center text-[#667085] text-sm">{children}</p>;
 }
 
 function StockCompactTable({
@@ -2566,9 +2566,9 @@ function StockCompactTable({
   minWidth = 720,
 }: Readonly<{ headers: string[]; children: ReactNode; minWidth?: number }>) {
   return (
-    <div className="overflow-x-auto rounded-[14px] border border-[#E8E8E5]">
+    <div className="overflow-x-auto rounded-[14px] border border-[#E4E7EC]">
       <table className="w-full border-collapse text-sm" style={{ minWidth }}>
-        <thead className="border-[#E8E8E5] border-b bg-[#FAFAF8] text-left text-[#6B6B6B] text-xs">
+        <thead className="border-[#E4E7EC] border-b bg-[#F9FAFB] text-left text-[#667085] text-xs">
           <tr>
             {headers.map((header) => (
               <th className="px-4 py-3 font-semibold" key={header}>
@@ -2577,7 +2577,7 @@ function StockCompactTable({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-[#E8E8E5] bg-white">{children}</tbody>
+        <tbody className="divide-y divide-[#E4E7EC] bg-white">{children}</tbody>
       </table>
     </div>
   );
@@ -2612,14 +2612,14 @@ export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string
   const auditEntries = store.auditLogs.filter((entry) => entry.targetType === "stock" && entry.targetId === item?.id);
 
   if (!store._hasHydrated) {
-    return <Panel className="p-8 text-[#6B6B6B] text-sm">Chargement de la fiche pièce...</Panel>;
+    return <Panel className="p-8 text-[#667085] text-sm">Chargement de la fiche pièce...</Panel>;
   }
 
   if (!item) {
     return (
       <Panel className="p-8 text-center">
-        <h2 className="font-semibold text-[#1A1916] text-xl">Pièce introuvable</h2>
-        <p className="mt-2 text-[#6B6B6B] text-sm">La référence demandée n'existe pas dans le stock local.</p>
+        <h2 className="font-semibold text-[#101828] text-xl">Pièce introuvable</h2>
+        <p className="mt-2 text-[#667085] text-sm">La référence demandée n'existe pas dans le stock local.</p>
         <PrimaryButton className="mt-5" onClick={() => router.push("/dashboard/stock")}>
           Retour au stock
         </PrimaryButton>
@@ -2664,12 +2664,12 @@ export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string
       >
         {visibleLots.map((lot) => (
           <tr key={lot.id}>
-            <td className="px-4 py-3 font-mono text-[#1A1916] text-xs">{lot.id}</td>
-            <td className="px-4 py-3 text-[#1A1916]">{canViewSupplier ? lot.supplierName || "—" : "Masqué"}</td>
+            <td className="px-4 py-3 font-mono text-[#101828] text-xs">{lot.id}</td>
+            <td className="px-4 py-3 text-[#101828]">{canViewSupplier ? lot.supplierName || "—" : "Masqué"}</td>
             <td className="px-4 py-3 font-mono text-[#167B70] text-xs">{lot.invoiceNumber || "—"}</td>
             <td className="px-4 py-3 tabular-nums">{lot.quantityPurchased}</td>
             <td className="px-4 py-3 font-semibold text-[#167B70] tabular-nums">{lot.quantityRemaining}</td>
-            <td className="px-4 py-3 text-[#6B6B6B]">{shortDate(lot.purchaseDate || lot.createdAt)}</td>
+            <td className="px-4 py-3 text-[#667085]">{shortDate(lot.purchaseDate || lot.createdAt)}</td>
             <td className="px-4 py-3 text-right tabular-nums">
               {canViewPurchasePrice ? formatEuro(lot.unitCost ?? 0) : "Masqué"}
             </td>
@@ -2689,13 +2689,13 @@ export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string
       >
         {movements.map((movement) => (
           <tr key={movement.id}>
-            <td className="px-4 py-3 text-[#6B6B6B]">{shortDate(movement.createdAt)}</td>
+            <td className="px-4 py-3 text-[#667085]">{shortDate(movement.createdAt)}</td>
             <td className="px-4 py-3">
               <span className="rounded-full bg-[#F2FAF8] px-2.5 py-1 font-semibold text-[#167B70] text-xs">
                 {MOVEMENT_LABELS[movement.movementType]}
               </span>
             </td>
-            <td className="px-4 py-3 font-mono text-[#1A1916] text-xs">{movement.sourceId || movement.id}</td>
+            <td className="px-4 py-3 font-mono text-[#101828] text-xs">{movement.sourceId || movement.id}</td>
             <td
               className={cn(
                 "px-4 py-3 font-semibold tabular-nums",
@@ -2706,7 +2706,7 @@ export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string
               {movement.quantityDelta}
             </td>
             <td className="px-4 py-3 tabular-nums">{movement.quantityAfter}</td>
-            <td className="px-4 py-3 text-[#6B6B6B]">{movement.actorName || "—"}</td>
+            <td className="px-4 py-3 text-[#667085]">{movement.actorName || "—"}</td>
           </tr>
         ))}
       </StockCompactTable>
@@ -2722,7 +2722,7 @@ export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string
           <tr key={invoice.id}>
             <td className="px-4 py-3 font-mono text-[#167B70] text-xs">{invoice.invoiceNumber}</td>
             <td className="px-4 py-3">{canViewSupplier ? invoice.supplierName : "Masqué"}</td>
-            <td className="px-4 py-3 text-[#6B6B6B]">{shortDate(invoice.purchaseDate)}</td>
+            <td className="px-4 py-3 text-[#667085]">{shortDate(invoice.purchaseDate)}</td>
             <td className="px-4 py-3 font-semibold tabular-nums">
               {canViewPurchasePrice ? formatEuro(invoice.totalIncludingTax) : "Masqué"}
             </td>
@@ -2752,7 +2752,7 @@ export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string
     <div className="space-y-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <button
-          className="inline-flex w-fit items-center gap-2 rounded-[10px] px-1 font-medium text-[#6B6B6B] text-sm transition hover:text-[#1A1916]"
+          className="inline-flex w-fit items-center gap-2 rounded-[10px] px-1 font-medium text-[#667085] text-sm transition hover:text-[#101828]"
           onClick={() => router.push("/dashboard/stock")}
           type="button"
         >
@@ -2779,42 +2779,42 @@ export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string
           <div className="flex gap-5">
             <StockItemThumbnail item={item} />
             <div className="min-w-0">
-              <div className="mb-3 flex flex-wrap items-center gap-2 text-[#6B6B6B] text-sm">
+              <div className="mb-3 flex flex-wrap items-center gap-2 text-[#667085] text-sm">
                 <CategoryIcon className="size-4 text-[#2A9D8F]" />
                 <span>{item.categoryName || item.category}</span>
               </div>
-              <h1 className="font-semibold text-[#1A1916] text-3xl tracking-tight">{item.displayName || item.name}</h1>
+              <h1 className="font-semibold text-[#101828] text-3xl tracking-tight">{item.displayName || item.name}</h1>
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <StockQualityBadge quality={item.quality} />
-                <span className="text-[#6B6B6B] text-sm">
+                <span className="text-[#667085] text-sm">
                   Référence <span className="font-mono font-semibold text-[#167B70]">{reference}</span>
                 </span>
               </div>
-              <p className="mt-4 max-w-2xl text-[#6B6B6B] text-sm leading-6">
+              <p className="mt-4 max-w-2xl text-[#667085] text-sm leading-6">
                 {item.displayName || item.name} compatible{" "}
                 {item.compatibleModels.length ? item.compatibleModels.join(" / ") : "modèle à compléter"}.{" "}
                 {item.quality ? `Qualité ${item.quality}.` : "Qualité à compléter."}
               </p>
             </div>
           </div>
-          <div className="grid divide-y divide-[#E8E8E5] rounded-[16px] border border-[#E8E8E5] bg-[#FAFAF8] md:grid-cols-3 md:divide-x md:divide-y-0">
+          <div className="grid divide-y divide-[#E4E7EC] rounded-[16px] border border-[#E4E7EC] bg-[#F9FAFB] md:grid-cols-3 md:divide-x md:divide-y-0">
             {[
               ["Stock disponible", String(item.stock), stockUnitLabel(item.stock)],
               ["Prix moyen", canViewPurchasePrice ? formatEuro(averagePrice) : "Masqué", "HT"],
               ["Valeur totale stock", canViewPurchasePrice ? formatEuro(totalValue) : "Masqué", "HT"],
             ].map(([label, value, helper]) => (
               <div key={label} className="p-5 text-center">
-                <p className="text-[#6B6B6B] text-xs">{label}</p>
-                <p className="mt-4 font-semibold text-[#1A1916] text-2xl tabular-nums">{value}</p>
-                <p className="mt-2 text-[#6B6B6B] text-xs">{helper}</p>
+                <p className="text-[#667085] text-xs">{label}</p>
+                <p className="mt-4 font-semibold text-[#101828] text-2xl tabular-nums">{value}</p>
+                <p className="mt-2 text-[#667085] text-xs">{helper}</p>
               </div>
             ))}
           </div>
         </div>
-        <div className="flex items-center justify-between border-[#E8E8E5] border-t px-5 py-3">
+        <div className="flex items-center justify-between border-[#E4E7EC] border-t px-5 py-3">
           <StockStatusPill item={item} />
           <button
-            className="grid size-9 place-items-center rounded-full text-[#6B6B6B] hover:bg-[#FAFAF8]"
+            className="grid size-9 place-items-center rounded-full text-[#667085] hover:bg-[#F9FAFB]"
             type="button"
           >
             <EllipsisVertical className="size-4" />
@@ -2822,13 +2822,13 @@ export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string
         </div>
       </Panel>
 
-      <div className="overflow-x-auto border-[#E8E8E5] border-b">
+      <div className="overflow-x-auto border-[#E4E7EC] border-b">
         <div className="flex min-w-max gap-2">
           {stockDetailTabs.map((tab) => (
             <button
               className={cn(
                 "h-12 border-[#2A9D8F] border-b-2 px-4 font-semibold text-sm transition",
-                activeTab === tab.id ? "border-opacity-100 text-[#1A1916]" : "border-opacity-0 text-[#6B6B6B]",
+                activeTab === tab.id ? "border-opacity-100 text-[#101828]" : "border-opacity-0 text-[#667085]",
               )}
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -2945,9 +2945,9 @@ export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string
                   {linkedDocuments.map((document) => (
                     <div
                       key={document.id}
-                      className="flex items-center justify-between gap-3 rounded-[12px] border border-[#E8E8E5] px-3 py-2"
+                      className="flex items-center justify-between gap-3 rounded-[12px] border border-[#E4E7EC] px-3 py-2"
                     >
-                      <span className="truncate text-[#1A1916] text-sm">{document.title}</span>
+                      <span className="truncate text-[#101828] text-sm">{document.title}</span>
                       <button
                         className="text-[#167B70]"
                         onClick={() => document.fileUrl && window.open(document.fileUrl, "_blank")}
@@ -2969,14 +2969,14 @@ export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string
                 <div className="space-y-2">
                   {trace.repairUsages.slice(0, 4).map(({ repair, customer, part }) => (
                     <button
-                      className="flex w-full items-center justify-between gap-3 rounded-[12px] border border-[#E8E8E5] px-3 py-2 text-left transition hover:border-[#2A9D8F]/40"
+                      className="flex w-full items-center justify-between gap-3 rounded-[12px] border border-[#E4E7EC] px-3 py-2 text-left transition hover:border-[#2A9D8F]/40"
                       key={`${repair.id}-${part.stockItemId}`}
                       onClick={() => router.push(`/dashboard/dossiers/${repair.id}`)}
                       type="button"
                     >
                       <span>
-                        <span className="block font-mono font-semibold text-[#1A1916] text-xs">{repair.number}</span>
-                        <span className="block text-[#6B6B6B] text-xs">
+                        <span className="block font-mono font-semibold text-[#101828] text-xs">{repair.number}</span>
+                        <span className="block text-[#667085] text-xs">
                           {customer?.name || "Client"} · {repair.device}
                         </span>
                       </span>
@@ -3030,17 +3030,17 @@ export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string
       {activeTab === "labels" && (
         <StockDetailCard title="Étiquettes">
           <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
-            <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FAFAF8] p-4 text-center">
+            <div className="rounded-[16px] border border-[#E4E7EC] bg-[#F9FAFB] p-4 text-center">
               {qrDataUrl ? (
                 // biome-ignore lint/performance/noImgElement: data URL QR locale pour impression.
                 <img alt={`QR ${reference}`} className="mx-auto size-36" src={qrDataUrl} />
               ) : (
-                <div className="mx-auto grid size-36 place-items-center rounded-[12px] bg-white text-[#6B6B6B]">QR</div>
+                <div className="mx-auto grid size-36 place-items-center rounded-[12px] bg-white text-[#667085]">QR</div>
               )}
               <p className="mt-3 font-mono font-semibold text-[#167B70]">{reference}</p>
             </div>
             <div className="space-y-3">
-              <p className="text-[#6B6B6B] text-sm">
+              <p className="text-[#667085] text-sm">
                 L'étiquette contient la référence interne, le nom, la compatibilité, la variante, l'emplacement et le QR
                 sécurisé. Le SKU ou l'EAN n'apparaît qu'en petit lorsqu'il existe.
               </p>
@@ -3063,9 +3063,9 @@ export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string
           {auditEntries.length ? (
             <div className="space-y-2">
               {auditEntries.map((entry) => (
-                <div key={entry.id} className="rounded-[12px] border border-[#E8E8E5] px-4 py-3">
-                  <p className="font-semibold text-[#1A1916] text-sm">{entry.message}</p>
-                  <p className="mt-1 text-[#6B6B6B] text-xs">
+                <div key={entry.id} className="rounded-[12px] border border-[#E4E7EC] px-4 py-3">
+                  <p className="font-semibold text-[#101828] text-sm">{entry.message}</p>
+                  <p className="mt-1 text-[#667085] text-xs">
                     {entry.actorName} · {shortDate(entry.createdAt)} · {entry.action}
                   </p>
                 </div>
@@ -3127,8 +3127,8 @@ function StockMetricCard({
           <Icon className="size-4" />
         </span>
         <div className="min-w-0">
-          <p className="text-[#6B6B6B] text-[13px]">{label}</p>
-          <p className="mt-1 font-semibold text-[28px] text-[#1A1916] leading-none tracking-tight">{value}</p>
+          <p className="text-[#667085] text-[13px]">{label}</p>
+          <p className="mt-1 font-semibold text-[28px] text-[#101828] leading-none tracking-tight">{value}</p>
           {trend ? (
             <p
               className={
@@ -3138,7 +3138,7 @@ function StockMetricCard({
               {trend}
             </p>
           ) : null}
-          <p className="mt-0.5 text-[#8A8A8A] text-[12px]">{helper}</p>
+          <p className="mt-0.5 text-[#98A2B3] text-[12px]">{helper}</p>
         </div>
       </div>
     </Panel>
@@ -3333,12 +3333,12 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1A1916]/24 p-0 md:p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#101828]/24 p-0 md:p-4">
       <Panel className="mx-auto my-0 min-h-svh max-w-none overflow-y-auto rounded-none p-5 md:my-8 md:max-h-[calc(100svh-4rem)] md:max-w-2xl md:min-h-0 md:rounded-[20px] md:p-6">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="font-semibold text-2xl text-[#1A1916]">{isPart ? "Nouvelle pièce" : "Nouvel article"}</h2>
-            <p className="mt-1 text-[#6B6B6B] text-[13px]">
+            <h2 className="font-semibold text-2xl text-[#101828]">{isPart ? "Nouvelle pièce" : "Nouvel article"}</h2>
+            <p className="mt-1 text-[#667085] text-[13px]">
               {isPart
                 ? "Sélection guidée : marque → modèle → catégorie → gamme."
                 : "Accessoire ou prestation vendu directement au comptoir."}
@@ -3347,7 +3347,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
           <button
             type="button"
             onClick={onClose}
-            className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#1A1916] active:scale-90"
+            className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#101828] active:scale-90"
             aria-label="Fermer"
           >
             <X className="size-4" strokeWidth={2.2} />
@@ -3363,9 +3363,9 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
         >
           {/* §4 — type de produit : pièce de réparation ou article vendu au comptoir. */}
           <label className="block md:col-span-2">
-            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Type de produit</span>
+            <span className="text-[#667085] text-[11px] font-medium uppercase tracking-wider">Type de produit</span>
             <select
-              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              className="mt-1 h-11 w-full rounded-xl border border-[#E4E7EC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
               value={productCategory}
               onChange={(event) => {
                 const nextCategory = event.target.value as StockProductCategory;
@@ -3385,9 +3385,9 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
             <>
               {/* Type d'appareil */}
               <label className="block">
-                <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Type</span>
+                <span className="text-[#667085] text-[11px] font-medium uppercase tracking-wider">Type</span>
                 <select
-                  className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+                  className="mt-1 h-11 w-full rounded-xl border border-[#E4E7EC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
                   value={deviceType}
                   onChange={(event) => {
                     const nextType = event.target.value;
@@ -3417,9 +3417,9 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
 
               {/* Marque */}
               <label className="block">
-                <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Marque</span>
+                <span className="text-[#667085] text-[11px] font-medium uppercase tracking-wider">Marque</span>
                 <select
-                  className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+                  className="mt-1 h-11 w-full rounded-xl border border-[#E4E7EC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
                   value={brandName}
                   onChange={(event) => {
                     setBrandName(event.target.value);
@@ -3437,9 +3437,9 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
 
               {/* Modèle (sélection guidée — pas de saisie libre) */}
               <label className="block md:col-span-2">
-                <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Modèle</span>
+                <span className="text-[#667085] text-[11px] font-medium uppercase tracking-wider">Modèle</span>
                 <select
-                  className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+                  className="mt-1 h-11 w-full rounded-xl border border-[#E4E7EC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
                   value={selectedModel}
                   onChange={(event) => setSelectedModel(event.target.value)}
                   required
@@ -3455,9 +3455,9 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
 
               {/* Catégorie */}
               <label className="block">
-                <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Catégorie</span>
+                <span className="text-[#667085] text-[11px] font-medium uppercase tracking-wider">Catégorie</span>
                 <select
-                  className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+                  className="mt-1 h-11 w-full rounded-xl border border-[#E4E7EC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
                   value={categoryId}
                   onChange={(event) => {
                     const nextId = event.target.value;
@@ -3483,9 +3483,9 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
 
               {/* Gamme / Qualité (contextuelle selon la catégorie) */}
               <label className="block">
-                <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Gamme</span>
+                <span className="text-[#667085] text-[11px] font-medium uppercase tracking-wider">Gamme</span>
                 <select
-                  className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+                  className="mt-1 h-11 w-full rounded-xl border border-[#E4E7EC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
                   value={quality}
                   onChange={(event) => setQuality(event.target.value)}
                 >
@@ -3501,12 +3501,12 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
               {/* Champ libre quand la qualité = "Autre" */}
               {quality === "Autre" && (
                 <label className="block md:col-span-2">
-                  <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">
+                  <span className="text-[#667085] text-[11px] font-medium uppercase tracking-wider">
                     Préciser la qualité
                   </span>
                   <input
                     type="text"
-                    className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+                    className="mt-1 h-11 w-full rounded-xl border border-[#E4E7EC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
                     placeholder="Ex : Service Pack"
                     value={customQuality}
                     onChange={(e) => setCustomQuality(e.target.value)}
@@ -3515,24 +3515,24 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
               )}
 
               {/* Aperçu auto-rempli (nom / SKU) avec override possible */}
-              <div className="rounded-xl border border-[#E8E8E5] bg-[#FFFFFF] p-3 md:col-span-2">
-                <p className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Auto-rempli</p>
+              <div className="rounded-xl border border-[#E4E7EC] bg-[#FFFFFF] p-3 md:col-span-2">
+                <p className="text-[#667085] text-[11px] font-medium uppercase tracking-wider">Auto-rempli</p>
                 <div className="mt-2 grid gap-2 md:grid-cols-2">
                   <label className="block">
-                    <span className="text-[#6B6B6B] text-[11px]">Nom (modifiable)</span>
+                    <span className="text-[#667085] text-[11px]">Nom (modifiable)</span>
                     <input
                       type="text"
-                      className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[13.5px] outline-none focus:border-[#2A9D8F]"
+                      className="mt-1 h-10 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[13.5px] outline-none focus:border-[#2A9D8F]"
                       placeholder={suggestedName || "Sélectionnez un modèle"}
                       value={nameOverride}
                       onChange={(e) => setNameOverride(e.target.value)}
                     />
                   </label>
                   <label className="block">
-                    <span className="text-[#6B6B6B] text-[11px]">SKU (modifiable)</span>
+                    <span className="text-[#667085] text-[11px]">SKU (modifiable)</span>
                     <input
                       type="text"
-                      className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[13.5px] font-mono outline-none focus:border-[#2A9D8F]"
+                      className="mt-1 h-10 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[13.5px] font-mono outline-none focus:border-[#2A9D8F]"
                       placeholder={suggestedSku || "Sélectionnez un modèle"}
                       value={skuOverride}
                       onChange={(e) => setSkuOverride(e.target.value)}
@@ -3542,7 +3542,7 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
               </div>
 
               {!linkedPriceBook && selectedModel && (
-                <div className="rounded-xl border border-[#E8E8E5] bg-white p-3 text-[12px] text-[#6B6B6B] md:col-span-2">
+                <div className="rounded-xl border border-[#E4E7EC] bg-white p-3 text-[12px] text-[#667085] md:col-span-2">
                   Aucun tarif client lié pour cette sélection. Vous pourrez en créer un dans Paramètres → Tarifs /
                   Prestations.
                 </div>
@@ -3552,13 +3552,13 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
 
           {/* §4 — article comptoir : saisie directe nom + prix de vente, sans modèle. */}
           {!isPart && (
-            <div className="rounded-xl border border-[#E8E8E5] bg-[#FFFFFF] p-3 md:col-span-2">
-              <p className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Article comptoir</p>
+            <div className="rounded-xl border border-[#E4E7EC] bg-[#FFFFFF] p-3 md:col-span-2">
+              <p className="text-[#667085] text-[11px] font-medium uppercase tracking-wider">Article comptoir</p>
               <div className="mt-2 grid gap-2 md:grid-cols-2">
                 <label className="block">
-                  <span className="text-[#6B6B6B] text-[11px]">Nom de l'article *</span>
+                  <span className="text-[#667085] text-[11px]">Nom de l'article *</span>
                   <input
-                    className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[13.5px] outline-none focus:border-[#2A9D8F]"
+                    className="mt-1 h-10 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[13.5px] outline-none focus:border-[#2A9D8F]"
                     onChange={(e) => setNameOverride(e.target.value)}
                     placeholder="Ex : Coque silicone iPhone 15"
                     type="text"
@@ -3566,9 +3566,9 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-[#6B6B6B] text-[11px]">SKU (optionnel)</span>
+                  <span className="text-[#667085] text-[11px]">SKU (optionnel)</span>
                   <input
-                    className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 font-mono text-[13.5px] outline-none focus:border-[#2A9D8F]"
+                    className="mt-1 h-10 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-3 font-mono text-[13.5px] outline-none focus:border-[#2A9D8F]"
                     onChange={(e) => setSkuOverride(e.target.value)}
                     placeholder="ACC-…"
                     type="text"
@@ -3576,9 +3576,9 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
                   />
                 </label>
                 <label className="block">
-                  <span className="text-[#6B6B6B] text-[11px]">Prix de vente TTC</span>
+                  <span className="text-[#667085] text-[11px]">Prix de vente TTC</span>
                   <input
-                    className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[13.5px] outline-none focus:border-[#2A9D8F]"
+                    className="mt-1 h-10 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[13.5px] outline-none focus:border-[#2A9D8F]"
                     min="0"
                     onChange={(e) => setSalePrice(e.target.value)}
                     placeholder="0,00"
@@ -3592,10 +3592,10 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
           )}
 
           {/* §4 — visibilité comptoir (utile pour pièces ET accessoires). */}
-          <label className="flex items-center justify-between gap-3 rounded-xl border border-[#E8E8E5] bg-white px-3 py-2.5 md:col-span-2">
-            <span className="text-[#1A1916] text-[13.5px]">
+          <label className="flex items-center justify-between gap-3 rounded-xl border border-[#E4E7EC] bg-white px-3 py-2.5 md:col-span-2">
+            <span className="text-[#101828] text-[13.5px]">
               Visible en vente comptoir
-              <span className="block text-[#6B6B6B] text-[11px]">Proposé dans l'écran de vente directe.</span>
+              <span className="block text-[#667085] text-[11px]">Proposé dans l'écran de vente directe.</span>
             </span>
             <button
               aria-checked={counterVisible}
@@ -3618,61 +3618,61 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
 
           {/* Données internes : prix achat, fournisseur, quantité, seuil */}
           <label className="block">
-            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Fournisseur</span>
+            <span className="text-[#667085] text-[11px] font-medium uppercase tracking-wider">Fournisseur</span>
             <input
               type="text"
-              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              className="mt-1 h-11 w-full rounded-xl border border-[#E4E7EC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
               placeholder="UTOPYA, etc."
               value={supplier}
               onChange={(e) => setSupplier(e.target.value)}
             />
           </label>
           <label className="block">
-            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Emplacement</span>
+            <span className="text-[#667085] text-[11px] font-medium uppercase tracking-wider">Emplacement</span>
             <input
               type="text"
-              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              className="mt-1 h-11 w-full rounded-xl border border-[#E4E7EC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
               placeholder="Ex. Tiroir A3"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
             />
           </label>
           <label className="block">
-            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">
+            <span className="text-[#667085] text-[11px] font-medium uppercase tracking-wider">
               Prix d'achat atelier
             </span>
             <input
               type="number"
               step="0.01"
               min="0"
-              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              className="mt-1 h-11 w-full rounded-xl border border-[#E4E7EC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
               placeholder="À renseigner"
               value={purchasePrice}
               onChange={(e) => setPurchasePrice(e.target.value)}
             />
           </label>
           <label className="block">
-            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Quantité</span>
+            <span className="text-[#667085] text-[11px] font-medium uppercase tracking-wider">Quantité</span>
             <input
               type="number"
               min="0"
-              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              className="mt-1 h-11 w-full rounded-xl border border-[#E4E7EC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
               value={stockQty}
               onChange={(e) => setStockQty(e.target.value)}
             />
           </label>
           <label className="block">
-            <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">Seuil d'alerte</span>
+            <span className="text-[#667085] text-[11px] font-medium uppercase tracking-wider">Seuil d'alerte</span>
             <input
               type="number"
               min="0"
-              className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
+              className="mt-1 h-11 w-full rounded-xl border border-[#E4E7EC] bg-white px-3 text-[14px] outline-none focus:border-[#2A9D8F]"
               value={threshold}
               onChange={(e) => setThreshold(e.target.value)}
             />
           </label>
 
-          <div className="rounded-xl border border-[#E8E8E5] bg-[#FFFFFF] px-3 py-2.5 text-[12.5px] text-[#6B6B6B] md:col-span-2">
+          <div className="rounded-xl border border-[#E4E7EC] bg-[#FFFFFF] px-3 py-2.5 text-[12.5px] text-[#667085] md:col-span-2">
             Le prix client est défini dans <strong>Paramètres → Tarifs / Prestations</strong>. Stock = inventaire
             interne, Catalogue = tarifs client.
           </div>

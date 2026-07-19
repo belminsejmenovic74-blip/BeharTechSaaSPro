@@ -128,16 +128,16 @@ export function RevolutTerminalManager({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Gérer les terminaux Revolut" maxWidth="max-w-xl">
       <div className="space-y-5">
-        <p className="text-[#6B6B6B] text-sm leading-relaxed">
+        <p className="text-[#667085] text-sm leading-relaxed">
           Choisissez une location physique puis un Terminal en mode « Pay at Counter ». Seuls leurs identifiants et le
           nom local sont conservés pour cette boutique.
         </p>
 
-        <div className="grid gap-3 rounded-[16px] border border-[#E8E8E5] bg-[#FAFAF8] p-4 sm:grid-cols-2">
+        <div className="grid gap-3 rounded-[16px] border border-[#E4E7EC] bg-[#F9FAFB] p-4 sm:grid-cols-2">
           <label className="grid gap-1.5 text-sm">
-            <span className="font-semibold text-[#1A1916]">Location Revolut</span>
+            <span className="font-semibold text-[#101828]">Location Revolut</span>
             <select
-              className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
+              className="h-11 rounded-[12px] border border-[#E4E7EC] bg-white px-3 outline-none focus:border-[#2A9D8F]"
               disabled={loading || locations.length === 0}
               onChange={(event) => void selectLocation(event.target.value)}
               value={locationId}
@@ -150,9 +150,9 @@ export function RevolutTerminalManager({
             </select>
           </label>
           <label className="grid gap-1.5 text-sm">
-            <span className="font-semibold text-[#1A1916]">Terminal disponible</span>
+            <span className="font-semibold text-[#101828]">Terminal disponible</span>
             <select
-              className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
+              className="h-11 rounded-[12px] border border-[#E4E7EC] bg-white px-3 outline-none focus:border-[#2A9D8F]"
               disabled={loading || available.length === 0}
               onChange={(event) => selectTerminal(event.target.value)}
               value={terminalId}
@@ -165,9 +165,9 @@ export function RevolutTerminalManager({
             </select>
           </label>
           <label className="grid gap-1.5 text-sm sm:col-span-2">
-            <span className="font-semibold text-[#1A1916]">Nom dans Behar Tech Pro</span>
+            <span className="font-semibold text-[#101828]">Nom dans Behar Tech Pro</span>
             <input
-              className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
+              className="h-11 rounded-[12px] border border-[#E4E7EC] bg-white px-3 outline-none focus:border-[#2A9D8F]"
               maxLength={80}
               onChange={(event) => setTerminalName(event.target.value)}
               placeholder="Comptoir principal"
@@ -191,7 +191,7 @@ export function RevolutTerminalManager({
 
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-3">
-            <h3 className="font-semibold text-[#1A1916] text-sm">Terminaux de cette boutique</h3>
+            <h3 className="font-semibold text-[#101828] text-sm">Terminaux de cette boutique</h3>
             <button
               className="inline-flex items-center gap-1 text-[#167B70] text-xs"
               disabled={loading}
@@ -204,19 +204,19 @@ export function RevolutTerminalManager({
           {saved.length ? (
             saved.map((terminal) => (
               <div
-                className="flex items-center justify-between gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-3"
+                className="flex items-center justify-between gap-3 rounded-[14px] border border-[#E4E7EC] bg-white p-3"
                 key={terminal.id}
               >
                 <div className="min-w-0">
-                  <p className="truncate font-semibold text-[#1A1916] text-sm">{terminal.terminal_name}</p>
-                  <p className="truncate font-mono text-[#8A8A8A] text-[10px]">{terminal.terminal_id}</p>
-                  <p className="truncate text-[#8A8A8A] text-[10px]">
+                  <p className="truncate font-semibold text-[#101828] text-sm">{terminal.terminal_name}</p>
+                  <p className="truncate font-mono text-[#98A2B3] text-[10px]">{terminal.terminal_id}</p>
+                  <p className="truncate text-[#98A2B3] text-[10px]">
                     {locations.find((location) => location.id === terminal.location_id)?.name || terminal.location_id}
                   </p>
                 </div>
                 <button
                   aria-label={`Dissocier ${terminal.terminal_name}`}
-                  className="grid size-9 shrink-0 place-items-center rounded-[10px] border border-[#E8E8E5] text-[#6B6B6B] hover:border-red-200 hover:text-red-600"
+                  className="grid size-9 shrink-0 place-items-center rounded-[10px] border border-[#E4E7EC] text-[#667085] hover:border-red-200 hover:text-red-600"
                   disabled={loading}
                   onClick={() => void remove(terminal)}
                   type="button"
@@ -226,7 +226,7 @@ export function RevolutTerminalManager({
               </div>
             ))
           ) : (
-            <p className="rounded-[14px] border border-dashed border-[#D9D9D4] p-4 text-center text-[#8A8A8A] text-sm">
+            <p className="rounded-[14px] border border-dashed border-[#D9D9D4] p-4 text-center text-[#98A2B3] text-sm">
               Aucun Revolut Terminal associé.
             </p>
           )}

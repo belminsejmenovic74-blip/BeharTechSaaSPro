@@ -593,16 +593,16 @@ export function ComptoirWorkspace({ initialScreen = "home" }: Readonly<{ initial
   }
 
   return (
-    <div className="behar-app fixed inset-0 z-50 flex h-svh w-svw flex-col bg-white text-[#1A1916]">
+    <div className="behar-app fixed inset-0 z-50 flex h-svh w-svw flex-col bg-white text-[#101828]">
       {/* Header — minimal, aligné sur l'image */}
-      <header className="flex shrink-0 items-center justify-between gap-3 border-[#E8E8E5] border-b bg-white px-6 py-4 lg:px-10">
+      <header className="flex shrink-0 items-center justify-between gap-3 border-[#E4E7EC] border-b bg-white px-6 py-4 lg:px-10">
         <BeharLogo size="sm" />
 
         <div className="flex items-center gap-3">
           {hasPermission("canViewDashboard") ? (
             <Link
               href="/dashboard"
-              className="hidden h-10 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-3.5 text-[13px] font-medium text-[#4F4F4B] transition hover:border-[#CFE9E4] hover:text-[#167B70] sm:inline-flex"
+              className="hidden h-10 items-center gap-2 rounded-[10px] border border-[#E4E7EC] bg-white px-3.5 text-[13px] font-medium text-[#4F4F4B] transition hover:border-[#CFE9E4] hover:text-[#167B70] sm:inline-flex"
             >
               <LayoutDashboard className="size-4" /> Dashboard
             </Link>
@@ -610,12 +610,12 @@ export function ComptoirWorkspace({ initialScreen = "home" }: Readonly<{ initial
           {hasPermission("canAccessWorkshopMode") ? (
             <Link
               href="/atelier"
-              className="hidden h-10 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-3.5 text-[13px] font-medium text-[#4F4F4B] transition hover:border-[#CFE9E4] hover:text-[#167B70] md:inline-flex"
+              className="hidden h-10 items-center gap-2 rounded-[10px] border border-[#E4E7EC] bg-white px-3.5 text-[13px] font-medium text-[#4F4F4B] transition hover:border-[#CFE9E4] hover:text-[#167B70] md:inline-flex"
             >
               <Wrench className="size-4" /> Atelier
             </Link>
           ) : null}
-          <span className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-[14px]">
+          <span className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[#E4E7EC] bg-white px-4 text-[14px]">
             <span className="size-2.5 rounded-full bg-[#2A9D8F]" />
             Session active
           </span>
@@ -628,7 +628,7 @@ export function ComptoirWorkspace({ initialScreen = "home" }: Readonly<{ initial
               logout();
               router.push("/comptoir");
             }}
-            className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-4 font-medium text-[14px] active:scale-[0.97]"
+            className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[#E4E7EC] bg-white px-4 font-medium text-[14px] active:scale-[0.97]"
             title="Quitter le mode comptoir"
           >
             <LogOut className="size-4" />
@@ -641,10 +641,10 @@ export function ComptoirWorkspace({ initialScreen = "home" }: Readonly<{ initial
       <main className="flex-1 overflow-y-auto px-6 py-8 lg:px-12 lg:py-10">
         <div className="mx-auto w-full max-w-[1180px]">
           <div className="mb-6 lg:mb-8">
-            <h1 className="font-bold text-[#1A1916] text-[28px] leading-[1.1] tracking-[-0.02em] lg:text-[34px]">
+            <h1 className="font-bold text-[#101828] text-[28px] leading-[1.1] tracking-[-0.02em] lg:text-[34px]">
               Comptoir
             </h1>
-            <p className="mt-1.5 text-[#6B6B6B] text-[14px] tracking-tight lg:text-[15px]">
+            <p className="mt-1.5 text-[#667085] text-[14px] tracking-tight lg:text-[15px]">
               Créer, retrouver ou poursuivre un dossier.
             </p>
           </div>
@@ -658,7 +658,7 @@ export function ComptoirWorkspace({ initialScreen = "home" }: Readonly<{ initial
                   key={tile.id}
                   type="button"
                   onClick={tile.onClick}
-                  className="group flex min-h-[148px] flex-col items-center justify-center rounded-[16px] border border-[#E8E8E5] bg-white p-6 text-center shadow-[0_1px_2px_rgba(26,25,22,0.035)] transition hover:border-[#DADADA] active:scale-[0.98]"
+                  className="group flex min-h-[148px] flex-col items-center justify-center rounded-[16px] border border-[#E4E7EC] bg-white p-6 text-center shadow-[0_1px_2px_rgba(16,24,40,0.035)] transition hover:border-[#D0D5DD] active:scale-[0.98]"
                 >
                   {isPrimary ? (
                     <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-[#2A9D8F] text-white">
@@ -670,8 +670,8 @@ export function ComptoirWorkspace({ initialScreen = "home" }: Readonly<{ initial
                     </span>
                   )}
                   <div className="min-w-0 pt-5">
-                    <p className="font-bold text-[#1A1916] text-[15.5px] tracking-tight md:text-[16px]">{tile.label}</p>
-                    <p className="mt-0.5 text-[#6B6B6B] text-[12.5px] leading-snug md:text-[13px]">
+                    <p className="font-bold text-[#101828] text-[15.5px] tracking-tight md:text-[16px]">{tile.label}</p>
+                    <p className="mt-0.5 text-[#667085] text-[12.5px] leading-snug md:text-[13px]">
                       {tile.description}
                     </p>
                   </div>
@@ -681,9 +681,9 @@ export function ComptoirWorkspace({ initialScreen = "home" }: Readonly<{ initial
           </div>
 
           {visiblePrimary.length === 0 && (
-            <div className="mx-auto mt-12 max-w-md rounded-[20px] border border-[#FFFFFF] bg-white p-8 text-center shadow-[0_1px_4px_rgba(26,25,22,0.04)]">
-              <p className="font-semibold text-[#1A1916] text-[16px]">Aucune action disponible</p>
-              <p className="mt-2 text-[#6B6B6B] text-[13.5px]">
+            <div className="mx-auto mt-12 max-w-md rounded-[20px] border border-[#FFFFFF] bg-white p-8 text-center shadow-[0_1px_4px_rgba(16,24,40,0.04)]">
+              <p className="font-semibold text-[#101828] text-[16px]">Aucune action disponible</p>
+              <p className="mt-2 text-[#667085] text-[13.5px]">
                 Ce compte n'a pas les permissions nécessaires pour les actions Comptoir. Contactez le gérant.
               </p>
             </div>
@@ -691,7 +691,7 @@ export function ComptoirWorkspace({ initialScreen = "home" }: Readonly<{ initial
 
           {/* Section "Aujourd'hui" */}
           <section className="mt-7 lg:mt-9">
-            <h2 className="mb-3 font-semibold text-[#1A1916] text-[15px] tracking-tight">Aujourd'hui</h2>
+            <h2 className="mb-3 font-semibold text-[#101828] text-[15px] tracking-tight">Aujourd'hui</h2>
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
               <TodayStat
                 icon={<FolderOpen className="size-[18px]" />}
@@ -723,7 +723,7 @@ export function ComptoirWorkspace({ initialScreen = "home" }: Readonly<{ initial
       </main>
 
       {/* Footer */}
-      <footer className="shrink-0 border-[#E8E8E5] border-t bg-white px-6 py-3 text-center text-[#6B6B6B] text-[11px] lg:px-10">
+      <footer className="shrink-0 border-[#E4E7EC] border-t bg-white px-6 py-3 text-center text-[#667085] text-[11px] lg:px-10">
         {workshopInfo.name} · {workshopInfo.phone || ""} · Behar Tech Pro
       </footer>
     </div>
@@ -748,7 +748,7 @@ function SignaturePad({ value, onChange }: Readonly<{ value: string; onChange: (
     ctx.lineWidth = 2.2;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.strokeStyle = "#1A1916";
+    ctx.strokeStyle = "#101828";
   }, []);
 
   const point = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -804,17 +804,17 @@ function SignaturePad({ value, onChange }: Readonly<{ value: string; onChange: (
         onPointerMove={move}
         onPointerUp={end}
         onPointerCancel={end}
-        className="h-[140px] w-full touch-none rounded-[14px] border border-[#E8E8E5] bg-white"
+        className="h-[140px] w-full touch-none rounded-[14px] border border-[#E4E7EC] bg-white"
       />
       <button
         type="button"
         onClick={clear}
-        className="absolute right-2 top-2 rounded-full border border-[#E8E8E5] bg-white px-2.5 py-1 font-medium text-[#6B6B6B] text-[11px] hover:bg-[#FFFFFF]"
+        className="absolute right-2 top-2 rounded-full border border-[#E4E7EC] bg-white px-2.5 py-1 font-medium text-[#667085] text-[11px] hover:bg-[#FFFFFF]"
       >
         Effacer
       </button>
       {!value && (
-        <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-[#A3A3A3] text-[12.5px]">
+        <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-[#98A2B3] text-[12.5px]">
           Signer ici avec le doigt ou le stylet
         </p>
       )}
@@ -1088,8 +1088,8 @@ function CounterChrome({
   const hasPermission = useBeharStore((state) => state.hasPermission);
 
   return (
-    <div className="behar-app fixed inset-0 z-50 flex h-svh w-svw flex-col bg-white text-[#1A1916]">
-      <header className="flex h-[72px] shrink-0 items-center justify-between gap-3 border-[#E8E8E5] border-b bg-white px-8 lg:px-12">
+    <div className="behar-app fixed inset-0 z-50 flex h-svh w-svw flex-col bg-white text-[#101828]">
+      <header className="flex h-[72px] shrink-0 items-center justify-between gap-3 border-[#E4E7EC] border-b bg-white px-8 lg:px-12">
         <button type="button" onClick={onHome} className="flex min-h-[52px] items-center active:scale-[0.99]">
           <BeharLogo size="sm" />
         </button>
@@ -1097,7 +1097,7 @@ function CounterChrome({
           {hasPermission("canViewDashboard") ? (
             <Link
               href="/dashboard"
-              className="hidden h-10 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-3.5 text-[13px] font-medium text-[#4F4F4B] transition hover:border-[#CFE9E4] hover:text-[#167B70] sm:inline-flex"
+              className="hidden h-10 items-center gap-2 rounded-[10px] border border-[#E4E7EC] bg-white px-3.5 text-[13px] font-medium text-[#4F4F4B] transition hover:border-[#CFE9E4] hover:text-[#167B70] sm:inline-flex"
             >
               <LayoutDashboard className="size-4" /> Dashboard
             </Link>
@@ -1105,19 +1105,19 @@ function CounterChrome({
           {hasPermission("canAccessWorkshopMode") ? (
             <Link
               href="/atelier"
-              className="hidden h-10 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-3.5 text-[13px] font-medium text-[#4F4F4B] transition hover:border-[#CFE9E4] hover:text-[#167B70] md:inline-flex"
+              className="hidden h-10 items-center gap-2 rounded-[10px] border border-[#E4E7EC] bg-white px-3.5 text-[13px] font-medium text-[#4F4F4B] transition hover:border-[#CFE9E4] hover:text-[#167B70] md:inline-flex"
             >
               <Wrench className="size-4" /> Atelier
             </Link>
           ) : null}
-          <span className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-[14px]">
+          <span className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[#E4E7EC] bg-white px-4 text-[14px]">
             <span className="size-2.5 rounded-full bg-[#2A9D8F]" /> Session active
           </span>
           <CounterClock />
           <button
             type="button"
             onClick={onLogout}
-            className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-4 font-medium active:scale-[0.97]"
+            className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[#E4E7EC] bg-white px-4 font-medium active:scale-[0.97]"
           >
             <LogOut className="size-4" /> Quitter
           </button>
@@ -1159,7 +1159,7 @@ function CounterStepper({
               onClick={() => onStep?.(index)}
               className={cn(
                 "flex min-h-[52px] items-center gap-2 rounded-[14px] px-2 text-left text-[13px] font-semibold transition active:scale-[0.98]",
-                index <= current ? "text-[#1E7A6E]" : "text-[#6E6E73]",
+                index <= current ? "text-[#1E7A6E]" : "text-[#667085]",
               )}
             >
               <span
@@ -1169,7 +1169,7 @@ function CounterStepper({
                     ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
                     : active
                       ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
-                      : "border-[#D9D6CF] bg-white text-[#6E6E73]",
+                      : "border-[#D9D6CF] bg-white text-[#667085]",
                 )}
               >
                 {done ? <Check className="size-4" /> : index + 1}
@@ -1198,7 +1198,7 @@ function SelectTile({
         "relative flex min-h-[72px] flex-col items-center justify-center gap-1.5 rounded-[14px] border bg-white px-3 py-3 text-center font-semibold text-[13.5px] leading-tight transition active:scale-[0.97]",
         active
           ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
-          : "border-[#E8E8E5] text-[#1D1D1F] hover:border-[#D9D6CF]",
+          : "border-[#E4E7EC] text-[#1D1D1F] hover:border-[#D9D6CF]",
         className,
       )}
     >
@@ -1223,7 +1223,7 @@ function ChipButton({
       onClick={onClick}
       className={cn(
         "inline-flex min-h-[52px] items-center justify-center gap-2 rounded-[14px] border px-4 font-semibold text-[13px] transition active:scale-[0.97]",
-        active ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
+        active ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : "border-[#E4E7EC] bg-white text-[#1D1D1F]",
       )}
     >
       {active && <Check className="size-4" />} {children}
@@ -1246,30 +1246,30 @@ function MoneySummary({
   return (
     <div className="space-y-4">
       {showPriceCard && (
-        <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-6 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
+        <section className="rounded-[20px] border border-[#E4E7EC] bg-white p-6 shadow-[0_1px_2px_rgba(16,24,40,0.035)]">
           <p className="font-bold text-[15px]">Prix client</p>
           <p className="mt-4 font-black text-[#1E7A6E] text-[38px] tracking-tight tabular-nums">{formatEuro(amount)}</p>
-          <p className="mt-1 text-[#6E6E73]">{ws.vatApplicable ? "TTC" : ""}</p>
+          <p className="mt-1 text-[#667085]">{ws.vatApplicable ? "TTC" : ""}</p>
         </section>
       )}
       {lines && (
-        <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-6 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
+        <section className="rounded-[20px] border border-[#E4E7EC] bg-white p-6 shadow-[0_1px_2px_rgba(16,24,40,0.035)]">
           <p className="mb-4 font-bold text-[15px]">Récapitulatif</p>
           <dl className="space-y-3">
             {lines.map((line) => (
               <div key={line.label} className="grid grid-cols-[120px_1fr] gap-3 text-[14px]">
-                <dt className="text-[#6E6E73]">{line.label}</dt>
+                <dt className="text-[#667085]">{line.label}</dt>
                 <dd className="font-semibold">{line.value || "—"}</dd>
               </div>
             ))}
           </dl>
-          <div className="mt-5 flex items-center justify-between border-[#E8E8E5] border-t pt-4 font-bold">
+          <div className="mt-5 flex items-center justify-between border-[#E4E7EC] border-t pt-4 font-bold">
             <span>Total estimé</span>
             <span className="text-[#1E7A6E] tabular-nums">
               {formatEuro(amount)} {ws.vatApplicable ? "TTC" : ""}
             </span>
           </div>
-          {footer && <div className="mt-5 border-[#E8E8E5] border-t pt-4">{footer}</div>}
+          {footer && <div className="mt-5 border-[#E4E7EC] border-t pt-4">{footer}</div>}
         </section>
       )}
     </div>
@@ -1305,13 +1305,13 @@ function ExistingCustomerSearch({
         <div className="flex min-h-[52px] items-center justify-between rounded-[14px] border border-[#2A9D8F] bg-[#FFFFFF] px-4 text-[#1E7A6E]">
           <span>
             <b>{selected.name}</b>
-            <span className="ml-2 text-[#6E6E73]">{selected.phone || selected.email || ""}</span>
+            <span className="ml-2 text-[#667085]">{selected.phone || selected.email || ""}</span>
           </span>
           <Check className="size-5" />
         </div>
       )}
       {query.trim().length < 2 ? (
-        <p className="rounded-[14px] bg-white px-4 py-3 text-[#6E6E73] text-sm">
+        <p className="rounded-[14px] bg-white px-4 py-3 text-[#667085] text-sm">
           Tapez au moins 2 caractères pour chercher dans la base clients.
         </p>
       ) : (
@@ -1328,12 +1328,12 @@ function ExistingCustomerSearch({
                 "grid min-h-[56px] grid-cols-[1fr_auto] items-center gap-3 rounded-[14px] border px-4 text-left transition active:scale-[0.98]",
                 customer.id === value
                   ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
-                  : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
+                  : "border-[#E4E7EC] bg-white text-[#1D1D1F]",
               )}
             >
               <span>
                 <b className="block">{customer.name}</b>
-                <span className="text-[#6E6E73] text-sm">
+                <span className="text-[#667085] text-sm">
                   {[customer.phone, customer.email].filter(Boolean).join(" · ") || "Client enregistré"}
                 </span>
               </span>
@@ -1345,7 +1345,7 @@ function ExistingCustomerSearch({
             </button>
           ))}
           {filteredCustomers.length === 0 && (
-            <p className="rounded-[14px] border border-dashed border-[#D9D6CF] bg-white px-4 py-4 text-center text-[#6E6E73] text-sm">
+            <p className="rounded-[14px] border border-dashed border-[#D9D6CF] bg-white px-4 py-4 text-center text-[#667085] text-sm">
               Aucun client trouvé.
             </p>
           )}
@@ -1360,7 +1360,7 @@ function CounterInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
     <input
       {...props}
       className={cn(
-        "h-[52px] w-full rounded-[14px] border border-[#E8E8E5] bg-white px-4 text-[15px] outline-none placeholder:text-[#9A9AA0] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/10",
+        "h-[52px] w-full rounded-[14px] border border-[#E4E7EC] bg-white px-4 text-[15px] outline-none placeholder:text-[#9A9AA0] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/10",
         props.className,
       )}
     />
@@ -1372,7 +1372,7 @@ function CounterTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement
     <textarea
       {...props}
       className={cn(
-        "min-h-[96px] w-full rounded-[14px] border border-[#E8E8E5] bg-white px-4 py-3 text-[15px] outline-none placeholder:text-[#9A9AA0] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/10",
+        "min-h-[96px] w-full rounded-[14px] border border-[#E4E7EC] bg-white px-4 py-3 text-[15px] outline-none placeholder:text-[#9A9AA0] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/10",
         props.className,
       )}
     />
@@ -1662,7 +1662,7 @@ function ModelTouchSelector({
                   "relative min-h-[52px] rounded-[14px] border px-3 text-center font-bold text-[13px] transition active:scale-[0.97]",
                   compactText(value) === compactText(entry)
                     ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
-                    : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
+                    : "border-[#E4E7EC] bg-white text-[#1D1D1F]",
                 )}
               >
                 {compactText(value) === compactText(entry) && <Check className="mr-1 inline size-4" />}
@@ -1683,14 +1683,14 @@ function ModelTouchSelector({
             <button
               type="button"
               onClick={() => setExpanded((prev) => !prev)}
-              className="h-[44px] w-full rounded-[12px] border border-[#E8E8E5] bg-white font-semibold text-[#1E7A6E] text-sm active:scale-[0.98]"
+              className="h-[44px] w-full rounded-[12px] border border-[#E4E7EC] bg-white font-semibold text-[#1E7A6E] text-sm active:scale-[0.98]"
             >
               {expanded ? "Voir moins de modèles" : "Voir plus de modèles"}
             </button>
           )}
         </>
       ) : (
-        <p className="rounded-[12px] bg-white px-3 py-2 text-[#6E6E73] text-xs">
+        <p className="rounded-[12px] bg-white px-3 py-2 text-[#667085] text-xs">
           Choisissez d'abord une marque pour afficher les modèles tactiles.
         </p>
       )}
@@ -2242,12 +2242,12 @@ function CounterIntakeScreen({
   return (
     <div className="mx-auto max-w-[1180px]">
       <h1 className="font-black text-[32px] tracking-tight">Nouvelle prise en charge</h1>
-      <p className="mt-1 text-[#6E6E73]">Créer un dossier rapidement.</p>
+      <p className="mt-1 text-[#667085]">Créer un dossier rapidement.</p>
       <CounterStepper steps={intakeStepLabels} current={step} onStep={(next) => setStep(next)} />
 
       {step === 0 && (
         <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <section className="space-y-4 rounded-[20px] border border-[#E8E8E5] bg-white p-5">
+          <section className="space-y-4 rounded-[20px] border border-[#E4E7EC] bg-white p-5">
             {allowedMarkets.length > 1 && (
               <div className="rounded-[16px] border border-[#DDEFEA] bg-[#FFFFFF] p-4">
                 <p className="font-bold text-[14px]">Pays de facturation / marché</p>
@@ -2297,9 +2297,9 @@ function CounterIntakeScreen({
                 </div>
                 {duplicateCustomer ? (
                   <div className="flex flex-col gap-3 rounded-[14px] border border-[#D7EFEA] bg-[#FFFFFF] p-3 text-sm md:flex-row md:items-center md:justify-between">
-                    <span className="text-[#1A1916]">
+                    <span className="text-[#101828]">
                       <b>Client déjà connu</b>
-                      <span className="block text-[#6B6B6B]">
+                      <span className="block text-[#667085]">
                         {duplicateCustomer.name}
                         {duplicateCustomer.phone ? ` · ${duplicateCustomer.phone}` : ""}
                       </span>
@@ -2348,8 +2348,8 @@ function CounterIntakeScreen({
                 3
               </div>
               <div>
-                <h2 className="font-bold text-[#1A1916] text-[16px] leading-tight">Problème / Prestation</h2>
-                <p className="text-[12px] text-[#6B6B6B] mt-0.5">Sélectionnez une catégorie puis une prestation</p>
+                <h2 className="font-bold text-[#101828] text-[16px] leading-tight">Problème / Prestation</h2>
+                <p className="text-[12px] text-[#667085] mt-0.5">Sélectionnez une catégorie puis une prestation</p>
               </div>
             </div>
 
@@ -2376,14 +2376,14 @@ function CounterIntakeScreen({
                         "relative flex items-center justify-between gap-3 rounded-[14px] border p-3 lg:p-4 text-left transition active:scale-[0.98] shrink-0 min-w-[130px] lg:min-w-0 lg:w-full",
                         isSelected
                           ? "border-[#2A9D8F] bg-[#E6F4F1] text-[#1E7A6E]"
-                          : "border-[#E8E8E5] bg-white hover:border-[#D0D0CD] text-[#1A1916]",
+                          : "border-[#E4E7EC] bg-white hover:border-[#D0D0CD] text-[#101828]",
                       )}
                     >
                       <div className="flex items-center gap-3">
                         <div
                           className={cn(
                             "grid size-9 shrink-0 place-items-center rounded-[10px] transition",
-                            isSelected ? "bg-[#1E7A6E] text-white" : "bg-[#FAFAF8] text-[#6B6B6B]",
+                            isSelected ? "bg-[#1E7A6E] text-white" : "bg-[#F9FAFB] text-[#667085]",
                           )}
                         >
                           <Icon className="size-4.5" />
@@ -2401,7 +2401,7 @@ function CounterIntakeScreen({
               </div>
 
               {/* Right Column - Dynamic Details Panel */}
-              <div className="flex-1 rounded-[18px] border border-[#E8E8E5] bg-white p-5 lg:p-6 shadow-sm flex flex-col justify-between">
+              <div className="flex-1 rounded-[18px] border border-[#E4E7EC] bg-white p-5 lg:p-6 shadow-sm flex flex-col justify-between">
                 {activeFamilyId ? (
                   (() => {
                     const family = PRESTATION_FAMILIES.find((f) => f.id === activeFamilyId)!;
@@ -2412,8 +2412,8 @@ function CounterIntakeScreen({
                         <div>
                           {/* Title & Subtext */}
                           <div>
-                            <h3 className="text-[17px] font-black text-[#1A1916]">{family.label}</h3>
-                            <p className="text-[12px] text-[#6B6B6B] mt-0.5">
+                            <h3 className="text-[17px] font-black text-[#101828]">{family.label}</h3>
+                            <p className="text-[12px] text-[#667085] mt-0.5">
                               {family.id === "ecran"
                                 ? "Choisissez le type de réparation écran"
                                 : family.id === "batterie"
@@ -2429,7 +2429,7 @@ function CounterIntakeScreen({
                           {/* Step 1: Subtype choices (only show if family has > 1 subType) */}
                           {family.subTypes.length >= 1 && (
                             <div className="mt-4">
-                              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8A8A8A] mb-2">
+                              <label className="block text-[11px] font-bold uppercase tracking-wider text-[#98A2B3] mb-2">
                                 Étape 1 : type de réparation
                               </label>
                               <div className="grid grid-cols-2 gap-3">
@@ -2449,8 +2449,8 @@ function CounterIntakeScreen({
                                         isSubActive
                                           ? "border-[#2A9D8F] bg-white ring-1 ring-[#2A9D8F]"
                                           : isSubSelected
-                                            ? "border-[#E8E8E5] bg-[#FAFAF8] text-[#1E7A6E]"
-                                            : "border-[#E8E8E5] bg-white hover:border-[#D0D0CD]",
+                                            ? "border-[#E4E7EC] bg-[#F9FAFB] text-[#1E7A6E]"
+                                            : "border-[#E4E7EC] bg-white hover:border-[#D0D0CD]",
                                       )}
                                     >
                                       <div
@@ -2463,7 +2463,7 @@ function CounterIntakeScreen({
                                       >
                                         {isSubSelected && <Check className="size-3" />}
                                       </div>
-                                      <span className="font-bold text-[13px] text-[#1A1916]">{sub.label}</span>
+                                      <span className="font-bold text-[13px] text-[#101828]">{sub.label}</span>
                                     </button>
                                   );
                                 })}
@@ -2492,7 +2492,7 @@ function CounterIntakeScreen({
                                       {/* Qualities Grid */}
                                       {qualities.length > 0 && (
                                         <div>
-                                          <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8A8A8A] mb-2.5">
+                                          <label className="block text-[11px] font-bold uppercase tracking-wider text-[#98A2B3] mb-2.5">
                                             Étape 2 : Qualité de la pièce
                                           </label>
                                           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
@@ -2509,16 +2509,16 @@ function CounterIntakeScreen({
                                                     "flex flex-col rounded-[14px] border p-4 text-left transition active:scale-[0.97] bg-white shadow-sm",
                                                     isQualSelected
                                                       ? "border-[#2A9D8F] ring-1 ring-[#2A9D8F]"
-                                                      : "border-[#E8E8E5] hover:border-[#D0D0CD]",
+                                                      : "border-[#E4E7EC] hover:border-[#D0D0CD]",
                                                   )}
                                                 >
-                                                  <span className="font-black text-[#1A1916] text-[14px]">
+                                                  <span className="font-black text-[#101828] text-[14px]">
                                                     {q.qualite || "Standard"}
                                                   </span>
                                                   <span className="mt-1 text-[#1E7A6E] font-black text-[15px] tabular-nums">
                                                     {cardPrice > 0 ? formatDossier(cardPrice) : "Prix à saisir"}
                                                   </span>
-                                                  <div className="mt-3 flex flex-col gap-0.5 text-[11px] text-[#6B6B6B] border-t border-[#FAFAF8] pt-2">
+                                                  <div className="mt-3 flex flex-col gap-0.5 text-[11px] text-[#667085] border-t border-[#F9FAFB] pt-2">
                                                     <span className="font-bold">
                                                       {stockCount > 0 ? `En stock : ${stockCount}` : "Stock à vérifier"}
                                                     </span>
@@ -2535,7 +2535,7 @@ function CounterIntakeScreen({
 
                                       {/* Price Input Field */}
                                       <div className="pt-2">
-                                        <label className="block text-[11px] font-bold uppercase tracking-wider text-[#8A8A8A] mb-2">
+                                        <label className="block text-[11px] font-bold uppercase tracking-wider text-[#98A2B3] mb-2">
                                           Étape 3 : Prix client pour {subType.label}
                                         </label>
                                         <div className="relative max-w-xs">
@@ -2551,17 +2551,17 @@ function CounterIntakeScreen({
                                                 [subType.id]: val,
                                               }));
                                             }}
-                                            className="w-full h-12 rounded-[14px] border border-[#E8E8E5] bg-white pl-4 pr-10 text-[15px] font-bold text-[#1A1916] placeholder-[#B2B2AE] focus:border-[#2A9D8F] focus:outline-none transition shadow-sm"
+                                            className="w-full h-12 rounded-[14px] border border-[#E4E7EC] bg-white pl-4 pr-10 text-[15px] font-bold text-[#101828] placeholder-[#B2B2AE] focus:border-[#2A9D8F] focus:outline-none transition shadow-sm"
                                           />
-                                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[14px] font-bold text-[#8A8A8A]">
+                                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[14px] font-bold text-[#98A2B3]">
                                             €
                                           </span>
                                         </div>
                                       </div>
                                     </>
                                   ) : (
-                                    <div className="rounded-[14px] border border-dashed border-[#E8E8E5] p-5 text-center bg-[#FAFAF8] mt-3">
-                                      <p className="text-[13px] font-bold text-[#6B6B6B]">
+                                    <div className="rounded-[14px] border border-dashed border-[#E4E7EC] p-5 text-center bg-[#F9FAFB] mt-3">
+                                      <p className="text-[13px] font-bold text-[#667085]">
                                         Cliquez sur « {subType.label} » ci-dessus pour activer cette prestation.
                                       </p>
                                     </div>
@@ -2573,8 +2573,8 @@ function CounterIntakeScreen({
 
                         {/* Step 4: Summary of selected items */}
                         {activePrestations.length > 0 && (
-                          <div className="mt-6 border-t border-[#E8E8E5] pt-5">
-                            <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#8A8A8A] mb-3">
+                          <div className="mt-6 border-t border-[#E4E7EC] pt-5">
+                            <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#98A2B3] mb-3">
                               Prestations sélectionnées
                             </h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -2583,10 +2583,10 @@ function CounterIntakeScreen({
                                 return (
                                   <div
                                     key={ap.subTypeId}
-                                    className="flex items-center justify-between gap-3 rounded-[14px] bg-[#FAFAF8] border border-[#E8E8E5] p-3 shadow-sm"
+                                    className="flex items-center justify-between gap-3 rounded-[14px] bg-[#F9FAFB] border border-[#E4E7EC] p-3 shadow-sm"
                                   >
                                     <div className="min-w-0">
-                                      <span className="block font-black text-[13px] text-[#1A1916] truncate">
+                                      <span className="block font-black text-[13px] text-[#101828] truncate">
                                         {ap.label}
                                       </span>
                                       {ap.quality && (
@@ -2623,7 +2623,7 @@ function CounterIntakeScreen({
                     );
                   })()
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-12 text-center text-[#6B6B6B]">
+                  <div className="flex flex-col items-center justify-center py-12 text-center text-[#667085]">
                     <Smartphone className="size-10 mb-3 text-[#B2B2AE] stroke-1" />
                     <span className="font-bold text-[14px]">Aucune catégorie sélectionnée</span>
                     <span className="text-[12px] mt-1">Choisissez une catégorie à gauche pour commencer.</span>
@@ -2668,7 +2668,7 @@ function CounterIntakeScreen({
             <button
               type="button"
               onClick={onClose}
-              className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-semibold"
+              className="h-[52px] rounded-[14px] border border-[#E4E7EC] bg-white font-semibold"
             >
               Retour
             </button>
@@ -2686,7 +2686,7 @@ function CounterIntakeScreen({
 
       {step === 1 && (
         <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <section className="space-y-5 rounded-[20px] border border-[#E8E8E5] bg-white p-5">
+          <section className="space-y-5 rounded-[20px] border border-[#E4E7EC] bg-white p-5">
             <h2 className="font-bold">Accessoires confiés</h2>
             <div className="mt-4 grid grid-cols-3 gap-3 md:grid-cols-4">
               {intakeAccessories.map((entry) => (
@@ -2703,7 +2703,7 @@ function CounterIntakeScreen({
                 </SelectTile>
               ))}
             </div>
-            <section className="rounded-[16px] border border-[#E8E8E5] bg-white p-4">
+            <section className="rounded-[16px] border border-[#E4E7EC] bg-white p-4">
               <h2 className="font-bold">Déverrouillage / accès appareil</h2>
               <div className="mt-4 grid grid-cols-3 gap-3 lg:grid-cols-6">
                 {(
@@ -2743,7 +2743,7 @@ function CounterIntakeScreen({
                     <button
                       type="button"
                       onClick={() => setPatternPoints([])}
-                      className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3 font-semibold text-[#C7493B]"
+                      className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white px-3 font-semibold text-[#C7493B]"
                     >
                       <RotateCcw className="size-4" /> Refaire
                     </button>
@@ -2756,10 +2756,10 @@ function CounterIntakeScreen({
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="font-bold text-[#1D1D1F]">Vente additionnelle à proposer</h3>
-                  <p className="mt-1 text-[#6E6E73] text-sm">
+                  <p className="mt-1 text-[#667085] text-sm">
                     Si le client parle d'accessoires, propose en priorité la protection adaptée.
                   </p>
-                  <p className="mt-1 text-[#6E6E73] text-[12px] font-medium">
+                  <p className="mt-1 text-[#667085] text-[12px] font-medium">
                     Options proposées — non incluses tant qu'elles ne sont pas sélectionnées.
                   </p>
                 </div>
@@ -2786,7 +2786,7 @@ function CounterIntakeScreen({
                       "relative min-h-[112px] w-[180px] shrink-0 rounded-[14px] border bg-white p-4 text-left transition active:scale-[0.97]",
                       selectedAddons.includes(addon.id)
                         ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
-                        : "border-[#E8E8E5] text-[#1D1D1F]",
+                        : "border-[#E4E7EC] text-[#1D1D1F]",
                     )}
                   >
                     {selectedAddons.includes(addon.id) && (
@@ -2798,11 +2798,11 @@ function CounterIntakeScreen({
                     <span className="mt-2 block text-[#1E7A6E] text-[15px] font-black tabular-nums">
                       {formatDossier(addon.prixClient)}
                     </span>
-                    <span className="mt-2 block text-[#6E6E73] text-[11px] font-medium">{addon.reason}</span>
+                    <span className="mt-2 block text-[#667085] text-[11px] font-medium">{addon.reason}</span>
                   </button>
                 ))}
               </div>
-              <p className="mt-1 text-[#6E6E73] text-[11px]">Glissez horizontalement pour proposer plus d'options.</p>
+              <p className="mt-1 text-[#667085] text-[11px]">Glissez horizontalement pour proposer plus d'options.</p>
             </div>
             {showAllAccessories && (
               <AccessoryDrawer
@@ -2853,7 +2853,7 @@ function CounterIntakeScreen({
             <button
               type="button"
               onClick={() => setStep(0)}
-              className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-semibold"
+              className="h-[52px] rounded-[14px] border border-[#E4E7EC] bg-white font-semibold"
             >
               Retour
             </button>
@@ -2870,7 +2870,7 @@ function CounterIntakeScreen({
 
       {step === 2 && (
         <div className="space-y-4">
-          <div className="grid grid-cols-4 gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-4 text-[13px]">
+          <div className="grid grid-cols-4 gap-3 rounded-[14px] border border-[#E4E7EC] bg-white p-4 text-[13px]">
             <b>
               Client
               <br />
@@ -2892,7 +2892,7 @@ function CounterIntakeScreen({
               {formatDossier(amount)}
             </b>
           </div>
-          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5">
+          <section className="rounded-[20px] border border-[#E4E7EC] bg-white p-5">
             <h2 className="font-bold">État de l'appareil</h2>
             <div className="mt-4 grid gap-x-7 gap-y-3 lg:grid-cols-2">
               {conditionRows.map((row) => (
@@ -2905,7 +2905,7 @@ function CounterIntakeScreen({
               ))}
             </div>
             <div className="mt-5 grid grid-cols-[220px_1fr] items-center gap-4">
-              <span className="text-[#6E6E73] text-sm">Autre précision (optionnel)</span>
+              <span className="text-[#667085] text-sm">Autre précision (optionnel)</span>
               <CounterInput value={autrePrecision} onChange={(e) => setAutrePrecision(e.target.value)} />
             </div>
           </section>
@@ -2913,7 +2913,7 @@ function CounterIntakeScreen({
             <button
               type="button"
               onClick={() => setStep(1)}
-              className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-semibold"
+              className="h-[52px] rounded-[14px] border border-[#E4E7EC] bg-white font-semibold"
             >
               Retour
             </button>
@@ -2956,9 +2956,9 @@ function CounterIntakeScreen({
                 ))}
               </div>
               {!hasIntakePhoto && (
-                <section className="rounded-[16px] border border-[#E8E8E5] bg-white p-5">
+                <section className="rounded-[16px] border border-[#E4E7EC] bg-white p-5">
                   <p className="font-bold text-[#1D1D1F]">Photo anti-litige requise</p>
-                  <p className="mt-1 text-[#6B6B6B] text-sm">
+                  <p className="mt-1 text-[#667085] text-sm">
                     Au moins une photo protège l'atelier et le client en cas de litige. Sur mobile ou tablette,
                     privilégiez la prise de photo.
                   </p>
@@ -2970,14 +2970,14 @@ function CounterIntakeScreen({
                     <button
                       type="button"
                       onClick={() => setNoPhotoConfirmed(true)}
-                      className="mt-3 h-[44px] rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-semibold text-[#6B6B6B] active:scale-[0.98]"
+                      className="mt-3 h-[44px] rounded-[12px] border border-[#E4E7EC] bg-white px-4 font-semibold text-[#667085] active:scale-[0.98]"
                     >
                       Continuer sans photo
                     </button>
                   )}
                 </section>
               )}
-              <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5">
+              <section className="rounded-[20px] border border-[#E4E7EC] bg-white p-5">
                 <h2 className="font-bold">Signature du client</h2>
                 <SignaturePad value={signature} onChange={setSignature} />
               </section>
@@ -2985,7 +2985,7 @@ function CounterIntakeScreen({
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-semibold"
+                  className="h-[52px] rounded-[14px] border border-[#E4E7EC] bg-white font-semibold"
                 >
                   Retour
                 </button>
@@ -3006,22 +3006,22 @@ function CounterIntakeScreen({
         })()}
 
       {step === 4 && (
-        <section className="ml-auto max-w-[720px] rounded-[20px] border border-[#E8E8E5] bg-white p-7 shadow-[0_10px_30px_rgba(29,29,31,0.04)]">
+        <section className="ml-auto max-w-[720px] rounded-[20px] border border-[#E4E7EC] bg-white p-7 shadow-[0_10px_30px_rgba(29,29,31,0.04)]">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-[#6E6E73] text-sm">Dossier</p>
+              <p className="text-[#667085] text-sm">Dossier</p>
               <h2 className="mt-1 font-black text-[26px]">R-{new Date().getFullYear()}-XXXX</h2>
               <StatusPillCounter tone="green">Prête à valider</StatusPillCounter>
             </div>
             <button
               type="button"
               onClick={() => setStep(0)}
-              className="h-11 rounded-[14px] border border-[#E8E8E5] px-4 font-semibold"
+              className="h-11 rounded-[14px] border border-[#E4E7EC] px-4 font-semibold"
             >
               Modifier
             </button>
           </div>
-          <dl className="mt-6 divide-y divide-[#E8E8E5]">
+          <dl className="mt-6 divide-y divide-[#E4E7EC]">
             {[
               ["Client", `${customerLabel}${phone ? `\n${phone}` : ""}`],
               ["Appareil", model],
@@ -3049,7 +3049,7 @@ function CounterIntakeScreen({
             ].map(([label, value]) => (
               <div key={label} className="grid grid-cols-[150px_1fr] gap-4 py-4">
                 <dt className="font-bold">{label}</dt>
-                <dd className={label === "État" ? "text-[#6B6B6B]" : label === "Signature" ? "text-[#1E7A6E]" : ""}>
+                <dd className={label === "État" ? "text-[#667085]" : label === "Signature" ? "text-[#1E7A6E]" : ""}>
                   {value}
                 </dd>
               </div>
@@ -3065,7 +3065,7 @@ function CounterIntakeScreen({
             <button
               type="button"
               onClick={() => setStep(3)}
-              className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold active:scale-[0.99]"
+              className="h-[56px] rounded-[14px] border border-[#E4E7EC] bg-white font-bold active:scale-[0.99]"
             >
               Retour
             </button>
@@ -3097,21 +3097,21 @@ function ConditionRow({
 }: Readonly<{ label: string; value: CounterConditionValue; onChange: (value: CounterConditionValue) => void }>) {
   const options: Array<{ value: CounterConditionValue; label: string; className: string; icon: React.ReactNode }> = [
     { value: "ok", label: "OK", className: "text-[#1E7A6E]", icon: <Check className="size-3.5" /> },
-    { value: "abime", label: "Abîmé", className: "text-[#6B6B6B]", icon: <TriangleAlert className="size-3.5" /> },
+    { value: "abime", label: "Abîmé", className: "text-[#667085]", icon: <TriangleAlert className="size-3.5" /> },
     { value: "hs", label: "HS", className: "text-[#C7493B]", icon: <X className="size-3.5" /> },
     { value: "a_tester", label: "À tester", className: "text-[#4B5563]", icon: <HelpCircle className="size-3.5" /> },
   ];
   return (
     <div className="grid grid-cols-[150px_1fr] items-center gap-3">
       <span className="font-semibold text-sm">{label}</span>
-      <div className="grid grid-cols-4 rounded-[10px] border border-[#E8E8E5]">
+      <div className="grid grid-cols-4 rounded-[10px] border border-[#E4E7EC]">
         {options.map((option) => (
           <button
             key={option.value}
             type="button"
             onClick={() => onChange(option.value)}
             className={cn(
-              "flex h-10 items-center justify-center gap-1 border-[#E8E8E5] border-r text-[12px] font-semibold last:border-r-0",
+              "flex h-10 items-center justify-center gap-1 border-[#E4E7EC] border-r text-[12px] font-semibold last:border-r-0",
               option.className,
               value === option.value && "bg-[#FFFFFF] ring-1 ring-[#2A9D8F]",
             )}
@@ -3140,7 +3140,7 @@ function PatternGrid({ value, onChange }: Readonly<{ value: number[]; onChange: 
             "grid size-[64px] place-items-center rounded-full border-2 font-black transition active:scale-[0.94]",
             value.includes(point)
               ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
-              : "border-[#D9D6CF] bg-white text-[#6E6E73]",
+              : "border-[#D9D6CF] bg-white text-[#667085]",
           )}
         >
           {value.indexOf(point) >= 0 ? value.indexOf(point) + 1 : ""}
@@ -3154,7 +3154,7 @@ function PinPad({ value, onChange }: Readonly<{ value: string; onChange: (value:
   const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "Effacer", "0", "⌫"];
   return (
     <div className="grid gap-3 lg:grid-cols-[1fr_220px]">
-      <div className="flex min-h-[64px] items-center justify-center rounded-[14px] border border-[#E8E8E5] bg-white px-4 font-black text-[26px] tracking-[0.3em] tabular-nums">
+      <div className="flex min-h-[64px] items-center justify-center rounded-[14px] border border-[#E4E7EC] bg-white px-4 font-black text-[26px] tracking-[0.3em] tabular-nums">
         {value ? (
           "•".repeat(value.length)
         ) : (
@@ -3175,7 +3175,7 @@ function PinPad({ value, onChange }: Readonly<{ value: string; onChange: (value:
               "grid min-h-[52px] place-items-center rounded-[14px] border font-black text-[18px] transition active:scale-[0.95]",
               key === "Effacer"
                 ? "border-[#F2C8C3] bg-white px-2 text-[#C7493B] text-[12px]"
-                : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
+                : "border-[#E4E7EC] bg-white text-[#1D1D1F]",
             )}
           >
             {key}
@@ -3200,17 +3200,17 @@ function AccessoryDrawer({
   formatValue?: (value: number) => string;
 }>) {
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-[#1A1916]/18 p-4">
-      <section className="max-h-[78vh] w-full max-w-[980px] overflow-hidden rounded-[20px] border border-[#E8E8E5] bg-white shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
-        <div className="flex items-center justify-between border-[#E8E8E5] border-b px-5 py-4">
+    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-[#101828]/18 p-4">
+      <section className="max-h-[78vh] w-full max-w-[980px] overflow-hidden rounded-[20px] border border-[#E4E7EC] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.035)]">
+        <div className="flex items-center justify-between border-[#E4E7EC] border-b px-5 py-4">
           <div>
             <h3 className="font-black text-[20px]">Tous les accessoires</h3>
-            <p className="text-[#6E6E73] text-sm">Sélection tactile pour ajouter une vente complémentaire.</p>
+            <p className="text-[#667085] text-sm">Sélection tactile pour ajouter une vente complémentaire.</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="grid size-[52px] place-items-center rounded-[14px] border border-[#E8E8E5] bg-white"
+            className="grid size-[52px] place-items-center rounded-[14px] border border-[#E4E7EC] bg-white"
           >
             <X className="size-5" />
           </button>
@@ -3225,7 +3225,7 @@ function AccessoryDrawer({
                 "relative min-h-[116px] rounded-[14px] border p-4 text-left transition active:scale-[0.97]",
                 selected.includes(option.id)
                   ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
-                  : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
+                  : "border-[#E4E7EC] bg-white text-[#1D1D1F]",
               )}
             >
               {selected.includes(option.id) && (
@@ -3237,11 +3237,11 @@ function AccessoryDrawer({
               <span className="mt-2 block font-black text-[#1E7A6E] text-[16px] tabular-nums">
                 {formatValue(option.prixClient)}
               </span>
-              <span className="mt-2 block text-[#6E6E73] text-[11px]">{option.reason}</span>
+              <span className="mt-2 block text-[#667085] text-[11px]">{option.reason}</span>
             </button>
           ))}
         </div>
-        <div className="border-[#E8E8E5] border-t p-4">
+        <div className="border-[#E4E7EC] border-t p-4">
           <button
             type="button"
             onClick={onClose}
@@ -3270,7 +3270,7 @@ function PhotoCaptureCard({
     reader.readAsDataURL(file);
   };
   return (
-    <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 text-center">
+    <section className="rounded-[20px] border border-[#E4E7EC] bg-white p-5 text-center">
       <h3 className="font-bold">{title}</h3>
       <input
         ref={inputRef}
@@ -3296,7 +3296,7 @@ function PhotoCaptureCard({
               <Camera className="size-7" />
             </span>
             <span className="mt-4 font-bold">Prendre ou ajouter une photo</span>
-            <span className="mt-2 text-[#6E6E73] text-sm">Caméra ou photothèque</span>
+            <span className="mt-2 text-[#667085] text-sm">Caméra ou photothèque</span>
           </>
         )}
       </button>
@@ -3304,7 +3304,7 @@ function PhotoCaptureCard({
         <button
           type="button"
           onClick={() => onChange("")}
-          className="mt-3 h-10 rounded-[12px] border border-[#E8E8E5] px-4 font-semibold text-[#B42318] text-sm"
+          className="mt-3 h-10 rounded-[12px] border border-[#E4E7EC] px-4 font-semibold text-[#B42318] text-sm"
         >
           Retirer
         </button>
@@ -3315,7 +3315,7 @@ function PhotoCaptureCard({
 
 function DetailLine({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
-    <div className="grid grid-cols-[110px_1fr] gap-3 border-[#E8E8E5] border-b pb-3">
+    <div className="grid grid-cols-[110px_1fr] gap-3 border-[#E4E7EC] border-b pb-3">
       <dt className="font-bold">{label}</dt>
       <dd>{value || "—"}</dd>
     </div>
@@ -3327,10 +3327,10 @@ function StatusPillCounter({ tone, children }: Readonly<{ tone: "green" | "orang
     <span
       className={cn(
         "mt-2 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[12px] font-bold",
-        tone === "green" ? "bg-[#FFFFFF] text-[#1E7A6E]" : "bg-[#FFFFFF] text-[#6B6B6B]",
+        tone === "green" ? "bg-[#FFFFFF] text-[#1E7A6E]" : "bg-[#FFFFFF] text-[#667085]",
       )}
     >
-      <span className={cn("size-2 rounded-full", tone === "green" ? "bg-[#1E7A6E]" : "bg-[#6B6B6B]")} />
+      <span className={cn("size-2 rounded-full", tone === "green" ? "bg-[#1E7A6E]" : "bg-[#667085]")} />
       {children}
     </span>
   );
@@ -3387,7 +3387,7 @@ function CounterFollowScreen({
           <StatusPillCounter tone={repair.status === "Prêt" ? "green" : "orange"}>{currentStatus}</StatusPillCounter>
         </p>
         <h1 className="font-black text-[34px]">{repair.deviceModel || repair.device}</h1>
-        <p className="text-[#6E6E73]">
+        <p className="text-[#667085]">
           {customer?.name ?? "Comptoir"} · entré il y a{" "}
           {Math.max(
             1,
@@ -3396,7 +3396,7 @@ function CounterFollowScreen({
           h
         </p>
       </div>
-      <div className="mb-6 grid grid-cols-4 rounded-[14px] border border-[#E8E8E5] bg-white p-1">
+      <div className="mb-6 grid grid-cols-4 rounded-[14px] border border-[#E4E7EC] bg-white p-1">
         {(["À faire", "En cours", "En attente pièce", "Prêt à rendre"] as const).map((status) => (
           <button
             type="button"
@@ -3413,7 +3413,7 @@ function CounterFollowScreen({
       </div>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-5">
-          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5">
+          <section className="rounded-[20px] border border-[#E4E7EC] bg-white p-5">
             <div className="flex justify-between">
               <h2 className="font-bold text-xl">Tâches atelier</h2>
               <b>
@@ -3426,7 +3426,7 @@ function CounterFollowScreen({
                 style={{ width: `${tasks.length ? (done / tasks.length) * 100 : 0}%` }}
               />
             </div>
-            <ul className="mt-4 divide-y divide-[#E8E8E5]">
+            <ul className="mt-4 divide-y divide-[#E4E7EC]">
               {tasks.map((task) => (
                 <li key={task.id} className="flex min-h-[52px] items-center gap-3">
                   <button
@@ -3445,19 +3445,19 @@ function CounterFollowScreen({
                   >
                     {task.fait && <Check className="size-4" />}
                   </button>
-                  <span className={cn("flex-1", task.fait && "text-[#6E6E73] line-through")}>{task.label}</span>
+                  <span className={cn("flex-1", task.fait && "text-[#667085] line-through")}>{task.label}</span>
                   <GripVertical className="size-4 text-[#9A9AA0]" />
                 </li>
               ))}
             </ul>
           </section>
-          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5">
+          <section className="rounded-[20px] border border-[#E4E7EC] bg-white p-5">
             <h2 className="font-bold text-xl">Pièces utilisées</h2>
             <ul className="mt-4 space-y-2">
               {pieces.map((piece) => (
                 <li
                   key={piece.id}
-                  className="flex h-[52px] items-center justify-between rounded-[12px] border border-[#E8E8E5] px-4"
+                  className="flex h-[52px] items-center justify-between rounded-[12px] border border-[#E4E7EC] px-4"
                 >
                   <span>{piece.nom}</span>
                   <b>{formatEuro(piece.prix)}</b>
@@ -3492,9 +3492,9 @@ function CounterFollowScreen({
           </section>
         </div>
         <aside className="space-y-4">
-          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5">
+          <section className="rounded-[20px] border border-[#E4E7EC] bg-white p-5">
             <h2 className="font-bold text-xl">Récap dossier</h2>
-            <dl className="mt-4 divide-y divide-[#E8E8E5]">
+            <dl className="mt-4 divide-y divide-[#E4E7EC]">
               <DetailRowLite label="Intervention" value={repair.issue} />
               <DetailRowLite label="Prix client" value={formatEuro(repairAmount(repair))} />
               <DetailRowLite label="Coût pièces" value={formatEuro(pieceCost)} />
@@ -3531,7 +3531,7 @@ function CounterFollowScreen({
 function DetailRowLite({ label, value, green }: Readonly<{ label: string; value: string; green?: boolean }>) {
   return (
     <div className="flex justify-between py-3">
-      <span className="text-[#6E6E73]">{label}</span>
+      <span className="text-[#667085]">{label}</span>
       <b className={green ? "text-[#1E7A6E]" : ""}>{value}</b>
     </div>
   );
@@ -3588,14 +3588,14 @@ function CounterMockPill({
       className={cn(
         "inline-flex min-h-8 items-center gap-1.5 rounded-[9px] px-3 font-bold text-[12px]",
         tone === "green" && "bg-[#FFFFFF] text-[#1E7A6E]",
-        tone === "orange" && "bg-[#FFFFFF] text-[#6B6B6B]",
-        tone === "gray" && "bg-[#FFFFFF] text-[#6B6B6B]",
+        tone === "orange" && "bg-[#FFFFFF] text-[#667085]",
+        tone === "gray" && "bg-[#FFFFFF] text-[#667085]",
       )}
     >
       <span
         className={cn(
           "size-2 rounded-full",
-          tone === "orange" ? "bg-[#6B6B6B]" : tone === "gray" ? "bg-[#9A9AA0]" : "bg-[#2A9D8F]",
+          tone === "orange" ? "bg-[#667085]" : tone === "gray" ? "bg-[#9A9AA0]" : "bg-[#2A9D8F]",
         )}
       />
       {children}
@@ -3635,7 +3635,7 @@ function CounterRepairQr({ repair, className = "" }: Readonly<{ repair: Repair; 
 
   if (!qr) {
     return (
-      <div className={cn("flex items-center justify-center bg-white text-xs text-[#6B6B6B]", className)}>
+      <div className={cn("flex items-center justify-center bg-white text-xs text-[#667085]", className)}>
         Génération du QR...
       </div>
     );
@@ -3660,7 +3660,7 @@ function CounterScreenTitle({
       </button>
       <div>
         <h1 className="font-black text-[34px] leading-tight tracking-[-0.03em]">{title}</h1>
-        {subtitle && <p className="mt-1 text-[#6B6B6B] text-[15px]">{subtitle}</p>}
+        {subtitle && <p className="mt-1 text-[#667085] text-[15px]">{subtitle}</p>}
       </div>
     </div>
   );
@@ -3833,7 +3833,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
 
       {/* Modes : vente simple, à un client, ou à un dossier (brief §7) */}
       <div className="mb-4 space-y-3">
-        <div className="inline-flex rounded-[14px] border border-[#E8E8E5] bg-white p-1">
+        <div className="inline-flex rounded-[14px] border border-[#E4E7EC] bg-white p-1">
           {(["simple", "client", "repair"] as const).map((m) => (
             <button
               key={m}
@@ -3841,7 +3841,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
               onClick={() => setMode(m)}
               className={cn(
                 "h-10 rounded-[10px] px-4 font-bold text-sm transition",
-                mode === m ? "bg-[#2A9D8F] text-white" : "text-[#6B6B6B] hover:text-[#1A1916]",
+                mode === m ? "bg-[#2A9D8F] text-white" : "text-[#667085] hover:text-[#101828]",
               )}
             >
               {m === "simple" ? "Vente simple" : m === "client" ? "À un client" : "À un dossier"}
@@ -3850,7 +3850,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
         </div>
 
         <div className="rounded-[14px] border border-[#DDEFEA] bg-[#FFFFFF] p-3">
-          <p className="text-xs font-semibold text-[#1A1916]">Pays de facturation de la vente</p>
+          <p className="text-xs font-semibold text-[#101828]">Pays de facturation de la vente</p>
           <div className="mt-2 grid grid-cols-2 gap-2">
             {(["FR", "CH"] as const).map((country) => (
               <button
@@ -3862,7 +3862,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
                   "h-10 rounded-[10px] border text-xs font-bold disabled:cursor-not-allowed disabled:opacity-70",
                   saleCountry === country
                     ? "border-[#2A9D8F] bg-white text-[#167B70]"
-                    : "border-[#E8E8E5] bg-white text-[#6B6B6B]",
+                    : "border-[#E4E7EC] bg-white text-[#667085]",
                 )}
               >
                 {country === "CH" ? "Suisse · CHF" : "France · EUR"}
@@ -3875,7 +3875,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
           <select
             value={linkedRepairId}
             onChange={(e) => setLinkedRepairId(e.target.value)}
-            className="h-12 w-full rounded-[14px] border border-[#E8E8E5] bg-white px-4 font-semibold text-[#1A1916] outline-none focus:border-[#2A9D8F]"
+            className="h-12 w-full rounded-[14px] border border-[#E4E7EC] bg-white px-4 font-semibold text-[#101828] outline-none focus:border-[#2A9D8F]"
           >
             <option value="">Choisir un dossier…</option>
             {openRepairs.map((r) => {
@@ -3890,13 +3890,13 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
         )}
 
         {mode === "client" && (
-          <div className="rounded-[16px] border border-[#E8E8E5] bg-white p-4">
+          <div className="rounded-[16px] border border-[#E4E7EC] bg-white p-4">
             {selectedCustomer ? (
               <div className="flex items-center justify-between gap-3">
                 <span className="min-w-0">
-                  <b className="text-[#1A1916]">{selectedCustomer.name}</b>
+                  <b className="text-[#101828]">{selectedCustomer.name}</b>
                   {selectedCustomer.phone ? (
-                    <span className="ml-2 text-[#6B6B6B] text-sm">{selectedCustomer.phone}</span>
+                    <span className="ml-2 text-[#667085] text-sm">{selectedCustomer.phone}</span>
                   ) : null}
                 </span>
                 <button
@@ -3932,7 +3932,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
                   <button
                     type="button"
                     onClick={() => setNewClientOpen(false)}
-                    className="h-[48px] rounded-[14px] border border-[#E8E8E5] px-4 font-bold text-[#6B6B6B]"
+                    className="h-[48px] rounded-[14px] border border-[#E4E7EC] px-4 font-bold text-[#667085]"
                   >
                     Annuler
                   </button>
@@ -3967,7 +3967,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
                 key={item.id}
                 type="button"
                 onClick={() => addProduct(item)}
-                className="group flex min-h-[220px] flex-col items-center justify-center rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-center shadow-[0_10px_26px_rgba(26,25,22,0.04)] transition hover:-translate-y-0.5 hover:border-[#2A9D8F]/40 hover:shadow-[0_14px_32px_rgba(26,25,22,0.08)] active:scale-[0.98]"
+                className="group flex min-h-[220px] flex-col items-center justify-center rounded-[18px] border border-[#E4E7EC] bg-white p-4 text-center shadow-[0_10px_26px_rgba(16,24,40,0.04)] transition hover:-translate-y-0.5 hover:border-[#2A9D8F]/40 hover:shadow-[0_14px_32px_rgba(16,24,40,0.08)] active:scale-[0.98]"
               >
                 <RealProductVisual
                   name={item.name}
@@ -3975,7 +3975,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
                   className="size-[112px] rounded-[12px] p-2"
                 />
                 <b className="mt-3 line-clamp-2">{item.name}</b>
-                <span className="mt-1 text-[#6B6B6B] text-xs">
+                <span className="mt-1 text-[#667085] text-xs">
                   {item.stockItemId ? `${item.stock} en stock` : "Disponible"}
                 </span>
                 <span className="mt-2 font-black text-[#1E7A6E] tabular-nums">{formatSale(item.salePrice)}</span>
@@ -3986,22 +3986,22 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
                 <Plus className="size-7" />
               </span>
               <b className="mt-4">Article libre</b>
-              <span className="mt-1 text-[#6B6B6B] text-sm">Voir le formulaire à droite →</span>
+              <span className="mt-1 text-[#667085] text-sm">Voir le formulaire à droite →</span>
             </div>
           </div>
           {accessories.length === 0 && (
-            <p className="mt-4 rounded-[14px] border border-dashed border-[#E8E8E5] bg-white px-4 py-6 text-center text-[#6B6B6B] text-sm">
+            <p className="mt-4 rounded-[14px] border border-dashed border-[#E4E7EC] bg-white px-4 py-6 text-center text-[#667085] text-sm">
               Aucun article ne correspond à « {query} ». Utilisez l'article libre à droite.
             </p>
           )}
         </section>
         <aside className="space-y-4">
-          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 shadow-[0_10px_30px_rgba(26,25,22,0.04)]">
+          <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-4 shadow-[0_10px_30px_rgba(16,24,40,0.04)]">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="font-black text-xl">Panier</h2>
               <CounterMockPill>{cart.reduce((sum, item) => sum + item.quantity, 0)} articles</CounterMockPill>
             </div>
-            <ul className="divide-y divide-[#E8E8E5]">
+            <ul className="divide-y divide-[#E4E7EC]">
               {cart.map((item) => (
                 <li
                   key={item.id}
@@ -4010,10 +4010,10 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
                   <RealProductVisual name={item.name} className="size-[52px] rounded-[10px] p-1.5" />
                   <div>
                     <b>{item.name}</b>
-                    {item.detail && <p className="text-[#6B6B6B] text-sm">{item.detail}</p>}
+                    {item.detail && <p className="text-[#667085] text-sm">{item.detail}</p>}
                     <p className="font-bold tabular-nums">{formatSale(item.price)}</p>
                   </div>
-                  <div className="inline-flex h-9 items-center rounded-[10px] border border-[#E8E8E5]">
+                  <div className="inline-flex h-9 items-center rounded-[10px] border border-[#E4E7EC]">
                     <button
                       type="button"
                       onClick={() => updateQty(item.id, -1)}
@@ -4033,14 +4033,14 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
                   <button
                     type="button"
                     onClick={() => setCart((items) => items.filter((entry) => entry.id !== item.id))}
-                    className="grid size-10 place-items-center text-[#6B6B6B]"
+                    className="grid size-10 place-items-center text-[#667085]"
                   >
                     <Trash2 className="size-4" />
                   </button>
                 </li>
               ))}
             </ul>
-            <dl className="mt-4 space-y-2 border-[#E8E8E5] border-t pt-4 text-sm">
+            <dl className="mt-4 space-y-2 border-[#E4E7EC] border-t pt-4 text-sm">
               <div className="flex justify-between">
                 <dt>Sous-total</dt>
                 <dd>{formatSale(subtotal)}</dd>
@@ -4055,7 +4055,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
               </div>
             </dl>
           </section>
-          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4">
+          <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-4">
             <h2 className="font-black text-lg">Article libre</h2>
             <div className="mt-3 grid grid-cols-[1fr_90px_90px] gap-2">
               <CounterInput
@@ -4068,7 +4068,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
                 onChange={(e) => setFreePrice(e.target.value)}
                 placeholder={`0,00 ${saleConfig.currency}`}
               />
-              <div className="inline-flex h-[52px] items-center rounded-[14px] border border-[#E8E8E5]">
+              <div className="inline-flex h-[52px] items-center rounded-[14px] border border-[#E4E7EC]">
                 <button
                   type="button"
                   onClick={() => setFreeQty((qty) => Math.max(1, qty - 1))}
@@ -4101,19 +4101,19 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
                 setFreeQty(1);
                 setConfirmingClear(false);
               }}
-              className="mt-3 h-[52px] w-full rounded-[14px] border border-[#E8E8E5] font-bold"
+              className="mt-3 h-[52px] w-full rounded-[14px] border border-[#E4E7EC] font-bold"
             >
               <Plus className="mr-2 inline size-4" /> Ajouter au panier
             </button>
           </section>
-          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4">
+          <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-4">
             <h2 className="font-black text-lg">Finaliser la vente</h2>
-            <p className="mt-1 text-[#6B6B6B] text-xs leading-relaxed">
+            <p className="mt-1 text-[#667085] text-xs leading-relaxed">
               Enregistrez d’abord la vente, puis créez une facture finalisée pour transmettre une demande à votre
               prestataire externe.
             </p>
           </section>
-          <p className="rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] px-4 py-3 text-[#6B6B6B] text-xs leading-relaxed">
+          <p className="rounded-[14px] border border-[#E4E7EC] bg-[#FFFFFF] px-4 py-3 text-[#667085] text-xs leading-relaxed">
             Le règlement est géré hors Behar Tech Pro via votre prestataire externe.
           </p>
           <button
@@ -4260,9 +4260,9 @@ function CounterAppointmentsScreen({
           <div className="flex items-start justify-between gap-4">
             <div>
               <h1 className="font-black text-[28px] tracking-tight">Rendez-vous</h1>
-              <p className="mt-1 text-[#6B6B6B] text-[15px]">{selectedDateLabel}</p>
+              <p className="mt-1 text-[#667085] text-[15px]">{selectedDateLabel}</p>
             </div>
-            <span className="rounded-[12px] border border-[#E8E8E5] bg-white px-3 py-2 font-bold text-[#6B6B6B] text-sm">
+            <span className="rounded-[12px] border border-[#E4E7EC] bg-white px-3 py-2 font-bold text-[#667085] text-sm">
               {dayAppointments.length} RDV
             </span>
           </div>
@@ -4270,7 +4270,7 @@ function CounterAppointmentsScreen({
             <button
               type="button"
               onClick={() => setSelectedDay((d) => isoAddDays(d, -1))}
-              className="grid h-11 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white active:scale-95"
+              className="grid h-11 place-items-center rounded-[12px] border border-[#E4E7EC] bg-white active:scale-95"
               aria-label="Jour précédent"
             >
               <ChevronLeft className="size-5" />
@@ -4280,7 +4280,7 @@ function CounterAppointmentsScreen({
               onClick={() => setSelectedDay(today)}
               className={cn(
                 "h-11 rounded-[12px] border font-bold",
-                selectedDay === today ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white",
+                selectedDay === today ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E4E7EC] bg-white",
               )}
             >
               Aujourd'hui
@@ -4288,13 +4288,13 @@ function CounterAppointmentsScreen({
             <button
               type="button"
               onClick={() => setSelectedDay((d) => isoAddDays(d, 1))}
-              className="grid h-11 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white active:scale-95"
+              className="grid h-11 place-items-center rounded-[12px] border border-[#E4E7EC] bg-white active:scale-95"
               aria-label="Jour suivant"
             >
               <ChevronRight className="size-5" />
             </button>
             <div className="relative">
-              <Search className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3 size-4 text-[#6B6B6B]" />
+              <Search className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3 size-4 text-[#667085]" />
               <CounterInput
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
@@ -4310,7 +4310,7 @@ function CounterAppointmentsScreen({
               setSelectedId("");
             }}
             appointments={appointments}
-            className="mt-3 shadow-[0_10px_26px_rgba(26,25,22,0.04)]"
+            className="mt-3 shadow-[0_10px_26px_rgba(16,24,40,0.04)]"
           />
         </div>
 
@@ -4318,9 +4318,9 @@ function CounterAppointmentsScreen({
           {dayAppointments.length === 0 ? (
             <div className="grid min-h-[250px] place-items-center rounded-[18px] border border-dashed border-[#D9D6CF] bg-white text-center">
               <div>
-                <CalendarPlus className="mx-auto size-8 text-[#6B6B6B]" />
+                <CalendarPlus className="mx-auto size-8 text-[#667085]" />
                 <p className="mt-3 font-bold">Aucun rendez-vous ce jour.</p>
-                <p className="mt-1 text-[#6B6B6B] text-sm">
+                <p className="mt-1 text-[#667085] text-sm">
                   {search.trim().length >= 2
                     ? "Aucun résultat pour cette recherche."
                     : "Les rendez-vous liés aux dossiers apparaîtront ici."}
@@ -4339,23 +4339,23 @@ function CounterAppointmentsScreen({
                       type="button"
                       onClick={() => setSelectedId(apt.id)}
                       className={cn(
-                        "grid w-full grid-cols-[72px_1fr_auto] items-center gap-3 rounded-[16px] border bg-white p-4 text-left shadow-[0_10px_24px_rgba(26,25,22,0.04)] transition active:scale-[0.99]",
-                        active ? "border-[#2A9D8F] shadow-[0_14px_32px_rgba(42,157,143,0.16)]" : "border-[#E8E8E5]",
+                        "grid w-full grid-cols-[72px_1fr_auto] items-center gap-3 rounded-[16px] border bg-white p-4 text-left shadow-[0_10px_24px_rgba(16,24,40,0.04)] transition active:scale-[0.99]",
+                        active ? "border-[#2A9D8F] shadow-[0_14px_32px_rgba(42,157,143,0.16)]" : "border-[#E4E7EC]",
                       )}
                     >
-                      <span className="border-[#E8E8E5] border-r pr-3 font-black text-[20px] tabular-nums">{time}</span>
+                      <span className="border-[#E4E7EC] border-r pr-3 font-black text-[20px] tabular-nums">{time}</span>
                       <span className="min-w-0">
                         <b className="block truncate text-[15px]">{customerName(apt)}</b>
-                        <span className="block truncate text-[#6B6B6B] text-[12.5px]">{customerPhone(apt)}</span>
-                        <span className="block truncate text-[#6B6B6B] text-[13px]">{appointmentDeviceLabel(apt)}</span>
-                        <span className="block truncate text-[#6B6B6B] text-[13px]">
+                        <span className="block truncate text-[#667085] text-[12.5px]">{customerPhone(apt)}</span>
+                        <span className="block truncate text-[#667085] text-[13px]">{appointmentDeviceLabel(apt)}</span>
+                        <span className="block truncate text-[#667085] text-[13px]">
                           {apt.interventionLabel || apt.issueDescription || apt.issue}
                         </span>
                         <span
                           className={cn(
                             "mt-1 inline-flex rounded-full px-2 py-0.5 font-bold text-[11.5px]",
                             appointmentPriceLabel(apt) === "Prix à confirmer"
-                              ? "bg-[#FFFFFF] text-[#6B6B6B]"
+                              ? "bg-[#FFFFFF] text-[#667085]"
                               : "bg-[#FFFFFF] text-[#1E7A6E]",
                           )}
                         >
@@ -4372,7 +4372,7 @@ function CounterAppointmentsScreen({
                               Widget
                             </span>
                             {apt.availabilityLabel && (
-                              <span className="rounded-full bg-[#F1F0EC] px-2 py-0.5 font-medium text-[#6B6B6B] text-[11px]">
+                              <span className="rounded-full bg-[#F1F0EC] px-2 py-0.5 font-medium text-[#667085] text-[11px]">
                                 {apt.availabilityLabel}
                               </span>
                             )}
@@ -4389,7 +4389,7 @@ function CounterAppointmentsScreen({
                       </span>
                       <span className="flex items-center gap-2">
                         <CounterApptStatusPill apt={apt} converted={Boolean(linked)} />
-                        <ChevronRight className="size-4 text-[#6B6B6B]" />
+                        <ChevronRight className="size-4 text-[#667085]" />
                       </span>
                     </button>
                   </li>
@@ -4400,14 +4400,14 @@ function CounterAppointmentsScreen({
         </div>
 
         {selected && (
-          <div className="mt-4 shrink-0 rounded-[18px] border border-[#E8E8E5] bg-white p-4 shadow-[0_12px_28px_rgba(26,25,22,0.05)]">
+          <div className="mt-4 shrink-0 rounded-[18px] border border-[#E4E7EC] bg-white p-4 shadow-[0_12px_28px_rgba(16,24,40,0.05)]">
             <div className="grid grid-cols-[1fr_auto] gap-3">
               <div className="min-w-0">
                 <p className="font-bold">{customerName(selected)}</p>
-                <p className="truncate text-[#6B6B6B] text-sm">
+                <p className="truncate text-[#667085] text-sm">
                   {customerPhone(selected)} · {appointmentDeviceLabel(selected)}
                 </p>
-                <p className="truncate text-[#6B6B6B] text-sm">
+                <p className="truncate text-[#667085] text-sm">
                   {selected.interventionLabel || selected.issueDescription || selected.issue} ·{" "}
                   {appointmentPriceLabel(selected)}
                 </p>
@@ -4416,7 +4416,7 @@ function CounterAppointmentsScreen({
                 <button
                   type="button"
                   onClick={() => onOpenRepairDetail(selectedRepair.id)}
-                  className="h-12 rounded-[14px] bg-[#1A1916] px-4 font-black text-white active:scale-[0.98]"
+                  className="h-12 rounded-[14px] bg-[#101828] px-4 font-black text-white active:scale-[0.98]"
                 >
                   Continuer
                 </button>
@@ -4437,23 +4437,23 @@ function CounterAppointmentsScreen({
         )}
       </section>
 
-      <aside className="min-h-0 overflow-y-auto rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_14px_36px_rgba(26,25,22,0.05)]">
+      <aside className="min-h-0 overflow-y-auto rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_14px_36px_rgba(16,24,40,0.05)]">
         {!selected ? (
           <div className="grid h-full place-items-center text-center">
             <div>
-              <CalendarPlus className="mx-auto size-9 text-[#6B6B6B]" />
+              <CalendarPlus className="mx-auto size-9 text-[#667085]" />
               <p className="mt-3 font-bold">Sélectionnez un rendez-vous</p>
-              <p className="mt-1 text-[#6B6B6B] text-sm">Le détail et l'action principale s'affichent ici.</p>
+              <p className="mt-1 text-[#667085] text-sm">Le détail et l'action principale s'affichent ici.</p>
             </div>
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
-              <p className="font-bold text-[#6B6B6B] text-[12px] uppercase tracking-[0.06em]">
+            <div className="rounded-[16px] border border-[#E4E7EC] bg-[#FFFFFF] p-4">
+              <p className="font-bold text-[#667085] text-[12px] uppercase tracking-[0.06em]">
                 {frLongDate(appointmentDay(selected))} · {selected.appointmentTime || selected.time}
               </p>
               <h2 className="mt-2 font-black text-[22px] tracking-tight">{customerName(selected)}</h2>
-              <p className="mt-1 text-[#6B6B6B] text-sm">{customerPhone(selected)}</p>
+              <p className="mt-1 text-[#667085] text-sm">{customerPhone(selected)}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <CounterApptStatusPill apt={selected} converted={Boolean(selectedRepair)} />
                 {selectedRepair && <CounterMockPill tone="green">{selectedRepair.number}</CounterMockPill>}
@@ -4486,7 +4486,7 @@ function CounterAppointmentsScreen({
               <button
                 type="button"
                 onClick={() => onOpenRepairDetail(selectedRepair.id)}
-                className="inline-flex h-[54px] w-full items-center justify-center gap-2 rounded-[14px] bg-[#1A1916] font-black text-white active:scale-[0.98]"
+                className="inline-flex h-[54px] w-full items-center justify-center gap-2 rounded-[14px] bg-[#101828] font-black text-white active:scale-[0.98]"
               >
                 <Wrench className="size-5" /> Continuer la prise en charge
               </button>
@@ -4531,12 +4531,12 @@ function CounterApptStatusPill({ apt, converted }: Readonly<{ apt: Appointment; 
 function CounterApptInfoRow({ icon, label, value }: Readonly<{ icon: React.ReactNode; label: string; value: string }>) {
   return (
     <div className="flex items-start gap-3">
-      <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#6B6B6B]">
+      <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#667085]">
         {icon}
       </span>
       <div className="min-w-0">
-        <p className="text-[#6B6B6B] text-[12px]">{label}</p>
-        <p className="font-semibold text-[#1A1916] text-[14px] leading-snug">{value}</p>
+        <p className="text-[#667085] text-[12px]">{label}</p>
+        <p className="font-semibold text-[#101828] text-[14px] leading-snug">{value}</p>
       </div>
     </div>
   );
@@ -4563,12 +4563,12 @@ function CounterWeekStrip({
   const hasEvents = (iso: string) =>
     appointments.some((a) => (a.date || "").slice(0, 10) === iso && normalizeAppointmentStatus(a.status) !== "Annulé");
   return (
-    <div className={cn("rounded-[18px] border border-[#E8E8E5] bg-white p-3 shadow-sm", className)}>
+    <div className={cn("rounded-[18px] border border-[#E4E7EC] bg-white p-3 shadow-sm", className)}>
       <div className="mb-2 flex items-center justify-between px-1">
         <button
           type="button"
           onClick={() => onSelect(isoAddDays(selectedDay, -7))}
-          className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#1A1916] transition active:scale-90"
+          className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#101828] transition active:scale-90"
           aria-label="Semaine précédente"
         >
           <ChevronLeft className="size-4" />
@@ -4577,7 +4577,7 @@ function CounterWeekStrip({
         <button
           type="button"
           onClick={() => onSelect(isoAddDays(selectedDay, 7))}
-          className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#1A1916] transition active:scale-90"
+          className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#101828] transition active:scale-90"
           aria-label="Semaine suivante"
         >
           <ChevronRight className="size-4" />
@@ -4599,7 +4599,7 @@ function CounterWeekStrip({
                 disabled ? "cursor-not-allowed opacity-40" : "hover:bg-[#FFFFFF]",
               )}
             >
-              <span className="font-bold text-[#6B6B6B] text-[11px] uppercase tracking-wide">{FR_DAY_SHORT[idx]}</span>
+              <span className="font-bold text-[#667085] text-[11px] uppercase tracking-wide">{FR_DAY_SHORT[idx]}</span>
               <span
                 className={cn(
                   "grid size-10 place-items-center rounded-full font-black text-[15px] tabular-nums transition",
@@ -4607,7 +4607,7 @@ function CounterWeekStrip({
                     ? "bg-[#2A9D8F] text-white shadow-[0_4px_12px_rgba(42,157,143,0.3)]"
                     : isToday
                       ? "bg-[#FFFFFF] text-[#1E7A6E]"
-                      : "text-[#1A1916]",
+                      : "text-[#101828]",
                 )}
               >
                 {isoToDate(iso).getDate()}
@@ -4823,14 +4823,14 @@ function CounterAppointmentForm({
   const prefilledFromIntake = Boolean(prefill && !editing);
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-stretch overflow-y-auto bg-[#1A1916]/25 p-0 md:place-items-center md:p-5">
-      <div className="flex min-h-svh w-full max-w-none flex-col bg-white md:max-h-[calc(100svh-2.5rem)] md:min-h-0 md:w-[600px] md:max-w-[600px] md:rounded-[22px] md:bg-white md:shadow-[0_30px_80px_rgba(26,25,22,0.22)]">
-        <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-[#E8E8E5] border-b bg-white px-5 py-4 md:rounded-t-[22px]">
+    <div className="fixed inset-0 z-50 grid place-items-stretch overflow-y-auto bg-[#101828]/25 p-0 md:place-items-center md:p-5">
+      <div className="flex min-h-svh w-full max-w-none flex-col bg-white md:max-h-[calc(100svh-2.5rem)] md:min-h-0 md:w-[600px] md:max-w-[600px] md:rounded-[22px] md:bg-white md:shadow-[0_30px_80px_rgba(16,24,40,0.22)]">
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-[#E4E7EC] border-b bg-white px-5 py-4 md:rounded-t-[22px]">
           <div>
             <h2 className="font-black text-[22px] tracking-tight">
               {editing ? "Modifier le rendez-vous" : "Nouveau rendez-vous"}
             </h2>
-            <p className="mt-0.5 text-[#6B6B6B] text-[13px]">
+            <p className="mt-0.5 text-[#667085] text-[13px]">
               {prefilledFromIntake
                 ? "Choisissez uniquement la date et le créneau."
                 : "Client, appareil, motif et créneau en une fois."}
@@ -4839,7 +4839,7 @@ function CounterAppointmentForm({
           <button
             type="button"
             onClick={onClose}
-            className="grid size-10 shrink-0 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white text-[#1A1916] transition active:scale-90"
+            className="grid size-10 shrink-0 place-items-center rounded-[12px] border border-[#E4E7EC] bg-white text-[#101828] transition active:scale-90"
             aria-label="Fermer"
           >
             <X className="size-5" />
@@ -4849,10 +4849,10 @@ function CounterAppointmentForm({
         <div className="flex-1 space-y-5 overflow-y-auto p-5">
           {!prefilledFromIntake && (
             <>
-              <section className="rounded-[16px] border border-[#E8E8E5] bg-white p-4">
+              <section className="rounded-[16px] border border-[#E4E7EC] bg-white p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <h3 className="font-black text-[15px]">Client</h3>
-                  <div className="grid grid-cols-3 rounded-[10px] border border-[#E8E8E5] bg-[#FFFFFF] p-0.5">
+                  <div className="grid grid-cols-3 rounded-[10px] border border-[#E4E7EC] bg-[#FFFFFF] p-0.5">
                     {(["counter", "existing", "new"] as const).map((value) => (
                       <button
                         key={value}
@@ -4860,7 +4860,7 @@ function CounterAppointmentForm({
                         onClick={() => setMode(value)}
                         className={cn(
                           "h-8 rounded-[8px] px-3 font-bold text-[12.5px] transition",
-                          mode === value ? "bg-white text-[#1A1916] shadow-sm" : "text-[#6B6B6B]",
+                          mode === value ? "bg-white text-[#101828] shadow-sm" : "text-[#667085]",
                         )}
                       >
                         {value === "counter" ? "Comptoir" : value === "existing" ? "Existant" : "Nouveau"}
@@ -4871,7 +4871,7 @@ function CounterAppointmentForm({
                 {mode === "counter" ? (
                   <div className="rounded-[14px] border border-[#DDEFEA] bg-[#FFFFFF] px-4 py-3 text-sm font-semibold text-[#1E7A6E]">
                     {prefill?.clientName || "Client comptoir"}
-                    {prefill?.clientPhone ? <span className="ml-2 text-[#6B6B6B]">{prefill.clientPhone}</span> : null}
+                    {prefill?.clientPhone ? <span className="ml-2 text-[#667085]">{prefill.clientPhone}</span> : null}
                   </div>
                 ) : mode === "existing" ? (
                   <ExistingCustomerSearch value={customerId} onChange={setCustomerId} />
@@ -4898,9 +4898,9 @@ function CounterAppointmentForm({
                     </div>
                     {duplicateCustomer ? (
                       <div className="flex flex-col gap-3 rounded-[14px] border border-[#D7EFEA] bg-[#FFFFFF] p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-                        <span className="text-[#1A1916]">
+                        <span className="text-[#101828]">
                           <b>Client déjà connu</b>
-                          <span className="block text-[#6B6B6B]">
+                          <span className="block text-[#667085]">
                             {duplicateCustomer.name}
                             {duplicateCustomer.phone ? ` · ${duplicateCustomer.phone}` : ""}
                           </span>
@@ -4920,14 +4920,14 @@ function CounterAppointmentForm({
                   </div>
                 )}
                 {mode === "existing" && selectedCustomer && (
-                  <p className="mt-2 text-[#6B6B6B] text-[13px]">
+                  <p className="mt-2 text-[#667085] text-[13px]">
                     {selectedCustomer.phone || "Non renseigné"}
                     {selectedCustomer.email ? ` · ${selectedCustomer.email}` : ""}
                   </p>
                 )}
               </section>
 
-              <section className="rounded-[16px] border border-[#E8E8E5] bg-white p-4">
+              <section className="rounded-[16px] border border-[#E4E7EC] bg-white p-4">
                 <h3 className="mb-3 font-black text-[15px]">Appareil</h3>
                 <DeviceSelector
                   deviceType={deviceState.deviceType}
@@ -4943,13 +4943,13 @@ function CounterAppointmentForm({
                   }
                 />
                 {editing && device && (
-                  <p className="mt-2 text-[#6B6B6B] text-[12.5px]">
-                    Appareil actuel : <b className="text-[#1A1916]">{device}</b>
+                  <p className="mt-2 text-[#667085] text-[12.5px]">
+                    Appareil actuel : <b className="text-[#101828]">{device}</b>
                   </p>
                 )}
               </section>
 
-              <section className="rounded-[16px] border border-[#E8E8E5] bg-white p-4">
+              <section className="rounded-[16px] border border-[#E4E7EC] bg-white p-4">
                 <h3 className="mb-3 font-black text-[15px]">Motif</h3>
                 <div className="mb-3 flex flex-wrap gap-2">
                   {APPOINTMENT_QUICK_MOTIFS.map((motif) => (
@@ -4961,7 +4961,7 @@ function CounterAppointmentForm({
                         "h-10 rounded-[12px] border px-3.5 font-semibold text-[13.5px] transition active:scale-[0.97]",
                         issue === motif
                           ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
-                          : "border-[#E8E8E5] bg-white text-[#1A1916]",
+                          : "border-[#E4E7EC] bg-white text-[#101828]",
                       )}
                     >
                       {motif}
@@ -4979,7 +4979,7 @@ function CounterAppointmentForm({
           )}
 
           {/* Étape 4 — Date / créneau */}
-          <section className="rounded-[16px] border border-[#E8E8E5] bg-white p-4">
+          <section className="rounded-[16px] border border-[#E4E7EC] bg-white p-4">
             <h3 className="mb-3 font-black text-[15px]">Date & créneau</h3>
             <CounterWeekStrip
               selectedDay={dateValue}
@@ -4992,7 +4992,7 @@ function CounterAppointmentForm({
             />
             <span className="mb-2 block font-bold text-[14px]">Créneau — {frLongDate(dateValue)}</span>
             {slots.length === 0 ? (
-              <p className="rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] px-4 py-5 text-center text-[#6B6B6B] text-sm">
+              <p className="rounded-[14px] border border-[#E4E7EC] bg-[#FFFFFF] px-4 py-5 text-center text-[#667085] text-sm">
                 Aucun créneau disponible pour cette date.
               </p>
             ) : (
@@ -5006,7 +5006,7 @@ function CounterAppointmentForm({
                       "h-11 rounded-[12px] border font-semibold tabular-nums transition active:scale-[0.97]",
                       time === slot
                         ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
-                        : "border-[#E8E8E5] bg-white text-[#1A1916] hover:bg-[#FFFFFF]",
+                        : "border-[#E4E7EC] bg-white text-[#101828] hover:bg-[#FFFFFF]",
                     )}
                   >
                     {slot}
@@ -5017,7 +5017,7 @@ function CounterAppointmentForm({
           </section>
 
           {!prefilledFromIntake && (
-            <section className="rounded-[16px] border border-[#E8E8E5] bg-white p-4">
+            <section className="rounded-[16px] border border-[#E4E7EC] bg-white p-4">
               <h3 className="mb-3 font-black text-[15px]">Notes (optionnel)</h3>
               <CounterTextarea
                 value={notes}
@@ -5028,11 +5028,11 @@ function CounterAppointmentForm({
           )}
         </div>
 
-        <div className="sticky bottom-0 z-10 grid grid-cols-[1fr_1.4fr] gap-3 border-[#E8E8E5] border-t bg-white px-5 py-4 md:rounded-b-[22px]">
+        <div className="sticky bottom-0 z-10 grid grid-cols-[1fr_1.4fr] gap-3 border-[#E4E7EC] border-t bg-white px-5 py-4 md:rounded-b-[22px]">
           <button
             type="button"
             onClick={onClose}
-            className="h-[54px] rounded-[14px] border border-[#E8E8E5] font-bold active:scale-[0.98]"
+            className="h-[54px] rounded-[14px] border border-[#E4E7EC] font-bold active:scale-[0.98]"
           >
             Annuler
           </button>
@@ -5137,9 +5137,9 @@ function CounterClientsScreen({
     return (
       <div className="mx-auto max-w-[680px]">
         <CounterScreenTitle title="Clients" subtitle="Rechercher et gérer vos clients" onClose={onClose} />
-        <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-10 text-center shadow-[0_10px_30px_rgba(26,25,22,0.04)]">
+        <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-10 text-center shadow-[0_10px_30px_rgba(16,24,40,0.04)]">
           <p className="font-black text-lg">Aucun client pour le moment</p>
-          <p className="mt-2 text-[#6B6B6B]">Créez une prise en charge pour enregistrer votre premier client.</p>
+          <p className="mt-2 text-[#667085]">Créez une prise en charge pour enregistrer votre premier client.</p>
           <button
             type="button"
             onClick={() => onCreateRepair({})}
@@ -5154,7 +5154,7 @@ function CounterClientsScreen({
 
   return (
     <div className="mx-auto grid max-w-[1180px] gap-7 lg:grid-cols-[380px_1fr]">
-      <aside className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_10px_30px_rgba(26,25,22,0.04)]">
+      <aside className="rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_10px_30px_rgba(16,24,40,0.04)]">
         <CounterScreenTitle title="Clients" subtitle="Rechercher et gérer vos clients" onClose={onClose} />
         <div className="grid grid-cols-[1fr_52px] gap-3">
           <CounterInput
@@ -5162,11 +5162,11 @@ function CounterClientsScreen({
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Nom, téléphone ou email"
           />
-          <button type="button" className="rounded-[14px] border border-[#E8E8E5]">
+          <button type="button" className="rounded-[14px] border border-[#E4E7EC]">
             <Search className="mx-auto size-5" />
           </button>
         </div>
-        <p className="mt-4 text-[#6B6B6B] text-sm">{filtered.length} clients trouvés</p>
+        <p className="mt-4 text-[#667085] text-sm">{filtered.length} clients trouvés</p>
         <ul className="mt-3 space-y-2">
           {filtered.map((client) => (
             <li key={client.id}>
@@ -5175,7 +5175,7 @@ function CounterClientsScreen({
                 onClick={() => setSelectedId(client.id)}
                 className={cn(
                   "grid min-h-[62px] w-full grid-cols-[42px_1fr_auto] items-center gap-3 rounded-[13px] border px-3 text-left transition active:scale-[0.99]",
-                  client.id === selected?.id ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white",
+                  client.id === selected?.id ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E4E7EC] bg-white",
                 )}
               >
                 <span className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] font-bold text-[#1E7A6E]">
@@ -5183,9 +5183,9 @@ function CounterClientsScreen({
                 </span>
                 <span>
                   <b>{client.name}</b>
-                  <span className="block text-[#6B6B6B] text-sm">{client.phone || "Non renseigné"}</span>
+                  <span className="block text-[#667085] text-sm">{client.phone || "Non renseigné"}</span>
                 </span>
-                <ChevronRight className="size-4 text-[#6B6B6B]" />
+                <ChevronRight className="size-4 text-[#667085]" />
               </button>
             </li>
           ))}
@@ -5193,7 +5193,7 @@ function CounterClientsScreen({
         <button
           type="button"
           onClick={() => onCreateRepair({})}
-          className="mt-3 h-[52px] w-full rounded-[14px] border border-[#E8E8E5] font-bold"
+          className="mt-3 h-[52px] w-full rounded-[14px] border border-[#E4E7EC] font-bold"
         >
           <Plus className="mr-2 inline size-4" /> Ajouter un client
         </button>
@@ -5209,7 +5209,7 @@ function CounterClientsScreen({
                 <h1 className="font-black text-[26px]">{selected?.name}</h1>
                 <CounterMockPill>Client actif</CounterMockPill>
               </div>
-              <p className="mt-1 text-[#6B6B6B]">
+              <p className="mt-1 text-[#667085]">
                 <span className="mr-4">{selected?.phone || "Non renseigné"}</span>
                 {selected?.email || ""}
               </p>
@@ -5244,7 +5244,7 @@ function CounterClientsScreen({
           <h2 className="font-black text-xl">Derniers dossiers</h2>
         </div>
         {customerRepairs.length === 0 && customerQuotes.length === 0 ? (
-          <p className="mt-4 rounded-[14px] border border-[#E8E8E5] bg-white px-4 py-8 text-center text-[#6B6B6B]">
+          <p className="mt-4 rounded-[14px] border border-[#E4E7EC] bg-white px-4 py-8 text-center text-[#667085]">
             Aucun dossier pour ce client.
           </p>
         ) : (
@@ -5254,14 +5254,14 @@ function CounterClientsScreen({
                 <button
                   type="button"
                   onClick={() => onOpenRepairDetail(r.id)}
-                  className="grid min-h-[74px] w-full grid-cols-[52px_1fr_110px_90px] items-center rounded-[14px] border border-[#E8E8E5] bg-white px-4 text-left shadow-sm"
+                  className="grid min-h-[74px] w-full grid-cols-[52px_1fr_110px_90px] items-center rounded-[14px] border border-[#E4E7EC] bg-white px-4 text-left shadow-sm"
                 >
                   <span className="grid size-10 place-items-center rounded-full bg-[#FFFFFF] text-[#1E7A6E]">
                     <Wrench className="size-5" />
                   </span>
                   <span>
                     <b>Réparation — {r.deviceModel || r.device}</b>
-                    <span className="block text-[#6B6B6B] text-sm">{r.issue || "Non renseigné"}</span>
+                    <span className="block text-[#667085] text-sm">{r.issue || "Non renseigné"}</span>
                   </span>
                   <CounterMockPill tone={counterDossierTone(r.status)}>{r.status}</CounterMockPill>
                   <b className="text-right">{formatEuro(repairAmount(r))}</b>
@@ -5273,14 +5273,14 @@ function CounterClientsScreen({
                 <button
                   type="button"
                   onClick={onCreateQuote}
-                  className="grid min-h-[74px] w-full grid-cols-[52px_1fr_110px_90px] items-center rounded-[14px] border border-[#E8E8E5] bg-white px-4 text-left shadow-sm"
+                  className="grid min-h-[74px] w-full grid-cols-[52px_1fr_110px_90px] items-center rounded-[14px] border border-[#E4E7EC] bg-white px-4 text-left shadow-sm"
                 >
                   <span className="grid size-10 place-items-center rounded-full bg-[#FFFFFF] text-[#1E7A6E]">
                     <FileText className="size-5" />
                   </span>
                   <span>
                     <b>Devis — {q.deviceModel || q.device || "Appareil"}</b>
-                    <span className="block text-[#6B6B6B] text-sm">{q.issue || q.number}</span>
+                    <span className="block text-[#667085] text-sm">{q.issue || q.number}</span>
                   </span>
                   <CounterMockPill tone={q.status === "Accepté" || q.status === "Facturé" ? "green" : "orange"}>
                     {q.status}
@@ -5306,7 +5306,7 @@ function ClientQuickAction({
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-[142px] flex-col items-center justify-center rounded-[16px] border border-[#E8E8E5] bg-white p-4 text-center font-black shadow-[0_10px_26px_rgba(26,25,22,0.04)] active:scale-[0.98]"
+      className="flex min-h-[142px] flex-col items-center justify-center rounded-[16px] border border-[#E4E7EC] bg-white p-4 text-center font-black shadow-[0_10px_26px_rgba(16,24,40,0.04)] active:scale-[0.98]"
     >
       <span
         className={cn(
@@ -5465,7 +5465,7 @@ function CounterDossiersScreen({
           onClick={() => onScanModeChange?.(false)}
           className={cn(
             "h-[52px] rounded-[14px] border font-black active:scale-[0.98]",
-            !scanMode ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
+            !scanMode ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E4E7EC] bg-white text-[#1D1D1F]",
           )}
         >
           <Search className="mr-2 inline size-5" /> Recherche
@@ -5475,7 +5475,7 @@ function CounterDossiersScreen({
           onClick={() => onScanModeChange?.(true)}
           className={cn(
             "h-[52px] rounded-[14px] border font-black active:scale-[0.98]",
-            scanMode ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
+            scanMode ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E4E7EC] bg-white text-[#1D1D1F]",
           )}
         >
           <ScanLine className="mr-2 inline size-5" /> Scan QR
@@ -5483,7 +5483,7 @@ function CounterDossiersScreen({
       </div>
 
       {scanMode ? (
-        <section className="mb-4 rounded-[18px] border border-[#E8E8E5] bg-white p-4 shadow-[0_10px_26px_rgba(26,25,22,0.04)]">
+        <section className="mb-4 rounded-[18px] border border-[#E4E7EC] bg-white p-4 shadow-[0_10px_26px_rgba(16,24,40,0.04)]">
           <CounterLiveScanner onDetected={handleScanResult} />
         </section>
       ) : null}
@@ -5506,14 +5506,14 @@ function CounterDossiersScreen({
               "inline-flex h-[44px] items-center gap-2 rounded-full border px-4 font-semibold active:scale-[0.98]",
               filter === entry
                 ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
-                : "border-[#E8E8E5] bg-white text-[#1A1916]",
+                : "border-[#E4E7EC] bg-white text-[#101828]",
             )}
           >
             {entry === "all" ? "Tous" : entry}
             <span
               className={cn(
                 "rounded-full px-2 py-0.5 text-[12px]",
-                filter === entry ? "bg-white" : "bg-[#FFFFFF] text-[#6B6B6B]",
+                filter === entry ? "bg-white" : "bg-[#FFFFFF] text-[#667085]",
               )}
             >
               {counts.get(entry) ?? 0}
@@ -5523,7 +5523,7 @@ function CounterDossiersScreen({
       </div>
 
       {rows.length === 0 ? (
-        <div className="rounded-[20px] border border-dashed border-[#E8E8E5] bg-white px-6 py-16 text-center text-[#6B6B6B]">
+        <div className="rounded-[20px] border border-dashed border-[#E4E7EC] bg-white px-6 py-16 text-center text-[#667085]">
           Aucun dossier ne correspond à votre recherche.
         </div>
       ) : (
@@ -5536,46 +5536,46 @@ function CounterDossiersScreen({
                 key={repair.id}
                 type="button"
                 onClick={() => onOpenRepairDetail(repair.id)}
-                className="flex w-full items-center gap-4 rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition hover:border-[#2A9D8F]/40 hover:shadow-[0_10px_28px_rgba(26,25,22,0.06)] active:scale-[0.995]"
+                className="flex w-full items-center gap-4 rounded-[18px] border border-[#E4E7EC] bg-white p-4 text-left shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition hover:border-[#2A9D8F]/40 hover:shadow-[0_10px_28px_rgba(16,24,40,0.06)] active:scale-[0.995]"
               >
                 <RealDeviceVisual
                   brand={repair.brandName}
                   model={repairDeviceLabel(repair, repair.device)}
                   type={repair.deviceType}
-                  className="size-[66px] rounded-[12px] border border-[#E8E8E5] p-1.5"
+                  className="size-[66px] rounded-[12px] border border-[#E4E7EC] p-1.5"
                 />
                 <span className="grid size-12 shrink-0 place-items-center rounded-[14px] bg-[#FFFFFF] font-black text-[#1E7A6E]">
                   {counterInitials(name)}
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-[8px] bg-[#FFFFFF] px-2 py-0.5 font-black text-[#1A1916] text-[13px]">
+                    <span className="rounded-[8px] bg-[#FFFFFF] px-2 py-0.5 font-black text-[#101828] text-[13px]">
                       #{repair.number}
                     </span>
                     <CounterMockPill tone={tone}>{repair.status}</CounterMockPill>
                   </div>
-                  <p className="mt-1.5 truncate font-bold text-[#1A1916]">{name}</p>
-                  <p className="truncate text-[#6B6B6B] text-sm">
+                  <p className="mt-1.5 truncate font-bold text-[#101828]">{name}</p>
+                  <p className="truncate text-[#667085] text-sm">
                     {device}
                     {phone ? ` · ${phone}` : ""}
                   </p>
-                  <p className="mt-0.5 truncate text-[#6B6B6B] text-sm">{repair.issue || "Intervention à préciser"}</p>
+                  <p className="mt-0.5 truncate text-[#667085] text-sm">{repair.issue || "Intervention à préciser"}</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {quote ? (
-                      <span className="inline-flex items-center gap-1 rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#6B6B6B] text-[11px]">
+                      <span className="inline-flex items-center gap-1 rounded-[7px] border border-[#E4E7EC] bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#667085] text-[11px]">
                         <FileText className="size-3" /> {quote.number}
                       </span>
                     ) : null}
                     {invoice ? (
-                      <span className="inline-flex items-center gap-1 rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#6B6B6B] text-[11px]">
+                      <span className="inline-flex items-center gap-1 rounded-[7px] border border-[#E4E7EC] bg-[#FFFFFF] px-2 py-0.5 font-semibold text-[#667085] text-[11px]">
                         <Receipt className="size-3" /> {invoice.number}
                       </span>
                     ) : null}
                   </div>
                 </div>
                 <div className="hidden shrink-0 text-right sm:block">
-                  <p className="font-black text-[#1A1916] text-lg tabular-nums">{formatEuro(amount)}</p>
-                  <p className="mt-0.5 text-[#6B6B6B] text-xs">
+                  <p className="font-black text-[#101828] text-lg tabular-nums">{formatEuro(amount)}</p>
+                  <p className="mt-0.5 text-[#667085] text-xs">
                     {formatCounterDateTime(repair.droppedAt || repair.createdAt)}
                   </p>
                 </div>
@@ -5734,7 +5734,7 @@ function CounterRepairDetailScreen({
               brand={repair.brandName}
               model={repairDeviceLabel(repair, repair.device)}
               type={repair.deviceType}
-              className="size-12 rounded-[10px] border border-[#E8E8E5] p-1"
+              className="size-12 rounded-[10px] border border-[#E4E7EC] p-1"
             />
           }
         />
@@ -5754,8 +5754,8 @@ function CounterRepairDetailScreen({
       {repair.status === "Reçu" && (
         <section className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[#D7EFEA] bg-[#FFFFFF] p-5">
           <div>
-            <p className="font-black text-[#1A1916]">Valider la prise en charge</p>
-            <p className="text-[#6B6B6B] text-sm">
+            <p className="font-black text-[#101828]">Valider la prise en charge</p>
+            <p className="text-[#667085] text-sm">
               {displayIntakeBonCode(repair, store.repairs)} ·{" "}
               {intakeDoc
                 ? "Bon déjà généré — vous pouvez le régénérer si besoin."
@@ -5772,10 +5772,10 @@ function CounterRepairDetailScreen({
         </section>
       )}
       <div className="mt-5 grid gap-4 lg:grid-cols-[310px_1fr_240px]">
-        <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4">
+        <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-4">
           <h2 className="font-black">Photos</h2>
           {photos.length === 0 ? (
-            <p className="mt-4 rounded-[12px] bg-[#FFFFFF] px-3 py-6 text-center text-[#6B6B6B] text-sm">
+            <p className="mt-4 rounded-[12px] bg-[#FFFFFF] px-3 py-6 text-center text-[#667085] text-sm">
               Aucune photo ajoutée
             </p>
           ) : (
@@ -5791,7 +5791,7 @@ function CounterRepairDetailScreen({
             </div>
           )}
         </section>
-        <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5">
+        <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-5">
           <DetailBlock title="Problème signalé">{repair.issue || "Non renseigné"}</DetailBlock>
           <DetailBlock title="Intervention prévue">
             {prestations.length
@@ -5817,35 +5817,35 @@ function CounterRepairDetailScreen({
           <DetailBlock title="Garantie">Selon conditions de l'atelier</DetailBlock>
         </section>
         <aside className="space-y-4">
-          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4">
+          <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-4">
             <p>Montant devis</p>
             <p className="font-black text-2xl">
-              {formatEuro(amount)} <span className="text-[#6B6B6B] text-sm">TTC</span>
+              {formatEuro(amount)} <span className="text-[#667085] text-sm">TTC</span>
             </p>
-            <div className="mt-4 border-[#E8E8E5] border-t pt-4">
+            <div className="mt-4 border-[#E4E7EC] border-t pt-4">
               <p>Facture</p>
               <b className="text-[#1E7A6E]">{invoice ? "Finalisée" : "À finaliser"}</b>
-              <p className="mt-3 text-[#6B6B6B] text-sm">
+              <p className="mt-3 text-[#667085] text-sm">
                 Référence
                 <br />
-                <b className="text-[#1A1916]">{invoice ? `#${invoice.number}` : "Non renseigné"}</b>
+                <b className="text-[#101828]">{invoice ? `#${invoice.number}` : "Non renseigné"}</b>
               </p>
-              <p className="mt-4 rounded-[12px] bg-[#FFFFFF] px-3 py-2.5 text-[#6B6B6B] text-xs leading-relaxed">
+              <p className="mt-4 rounded-[12px] bg-[#FFFFFF] px-3 py-2.5 text-[#667085] text-xs leading-relaxed">
                 Le règlement est géré hors Behar Tech Pro via votre TPE ou prestataire externe.
               </p>
             </div>
           </section>
-          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-center">
+          <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-4 text-center">
             <h2 className="font-black text-left">QR Code dossier</h2>
             <div className="cursor-pointer" onClick={() => setSelectedQrRepairId(repair.id)}>
               <CounterRepairQr repair={repair} className="mx-auto mt-3 w-28" />
             </div>
-            <p className="mt-2 text-[#6B6B6B] text-xs">Scannez pour suivre l'avancement</p>
+            <p className="mt-2 text-[#667085] text-xs">Scannez pour suivre l'avancement</p>
             <div className="mt-3 flex flex-col gap-2">
               <button
                 type="button"
                 onClick={() => setSelectedQrRepairId(repair.id)}
-                className="inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-xs active:scale-[0.98]"
+                className="inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-bold text-[#101828] text-xs active:scale-[0.98]"
               >
                 Afficher QR Code
               </button>
@@ -5855,7 +5855,7 @@ function CounterRepairDetailScreen({
                   const url = getCustomerTrackingUrl(repair, store.workshopSettings ?? store.workshopInfo);
                   if (url) void shareCounterLink(url, "Lien de suivi copié pour le client.");
                 }}
-                className="inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-xs active:scale-[0.98]"
+                className="inline-flex h-[44px] w-full items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-bold text-[#101828] text-xs active:scale-[0.98]"
               >
                 Copier le lien client
               </button>
@@ -5868,7 +5868,7 @@ function CounterRepairDetailScreen({
               </button>
             </div>
           </section>
-          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 text-sm">
+          <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-4 text-sm">
             <h2 className="font-black">Notes internes</h2>
             <p className="mt-2 whitespace-pre-line">{repair.notes || "Aucune note interne."}</p>
           </section>
@@ -5884,7 +5884,7 @@ function CounterRepairDetailScreen({
           {nextStep.label} <ChevronRight className="size-5" />
         </button>
       ) : null}
-      <section className="mt-5 rounded-[18px] border border-[#E8E8E5] bg-white p-4">
+      <section className="mt-5 rounded-[18px] border border-[#E4E7EC] bg-white p-4">
         <h2 className="font-black">Ajouter une note interne</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_190px]">
           <CounterInput
@@ -5896,7 +5896,7 @@ function CounterRepairDetailScreen({
             type="button"
             onClick={addInternalNote}
             disabled={!noteDraft.trim()}
-            className="h-[52px] rounded-[14px] bg-[#1A1916] px-4 font-bold text-white disabled:cursor-not-allowed disabled:bg-[#FFFFFF]"
+            className="h-[52px] rounded-[14px] bg-[#101828] px-4 font-bold text-white disabled:cursor-not-allowed disabled:bg-[#FFFFFF]"
           >
             Ajouter la note
           </button>
@@ -5921,14 +5921,14 @@ function CounterRepairDetailScreen({
         <button
           type="button"
           onClick={() => (onOpenDocuments ? onOpenDocuments() : print("intake", repair.id))}
-          className="h-[60px] rounded-[16px] border border-[#E8E8E5] bg-white font-black active:scale-[0.98]"
+          className="h-[60px] rounded-[16px] border border-[#E4E7EC] bg-white font-black active:scale-[0.98]"
         >
           <FolderOpen className="mr-2 inline size-5" /> Voir documents
         </button>
         <button
           type="button"
           onClick={() => setAppointmentModalOpen(true)}
-          className="h-[60px] rounded-[16px] border border-[#E8E8E5] bg-white font-black active:scale-[0.98]"
+          className="h-[60px] rounded-[16px] border border-[#E4E7EC] bg-white font-black active:scale-[0.98]"
         >
           <Calendar className="mr-2 inline size-5" /> Nouveau rendez-vous
         </button>
@@ -5936,13 +5936,13 @@ function CounterRepairDetailScreen({
           <button
             type="button"
             onClick={() => setActionsMenuOpen((open) => !open)}
-            className="grid h-[60px] w-full place-items-center rounded-[16px] border border-[#E8E8E5] bg-white active:scale-[0.98]"
+            className="grid h-[60px] w-full place-items-center rounded-[16px] border border-[#E4E7EC] bg-white active:scale-[0.98]"
             aria-label="Actions secondaires"
           >
             <MoreHorizontal className="size-6" />
           </button>
           {actionsMenuOpen ? (
-            <div className="absolute right-0 top-[68px] z-20 w-[260px] overflow-hidden rounded-[16px] border border-[#E8E8E5] bg-white p-2 text-left shadow-[0_18px_48px_rgba(26,25,22,0.16)]">
+            <div className="absolute right-0 top-[68px] z-20 w-[260px] overflow-hidden rounded-[16px] border border-[#E4E7EC] bg-white p-2 text-left shadow-[0_18px_48px_rgba(16,24,40,0.16)]">
               <button
                 type="button"
                 onClick={() => {
@@ -5978,7 +5978,7 @@ function CounterRepairDetailScreen({
           ) : null}
         </div>
       </div>
-      <p className="mt-3 text-center text-[#6B6B6B] text-xs">
+      <p className="mt-3 text-center text-[#667085] text-xs">
         La clôture du dossier est indépendante du règlement, géré hors Behar Tech Pro.
       </p>
       {appointmentModalOpen && (
@@ -6100,12 +6100,12 @@ function RepairAppointmentModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-[#1A1916]/30 p-5">
-      <div className="flex max-h-[calc(100svh-2.5rem)] w-full max-w-[520px] flex-col rounded-[22px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-[#101828]/30 p-5">
+      <div className="flex max-h-[calc(100svh-2.5rem)] w-full max-w-[520px] flex-col rounded-[22px] border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.035)]">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 className="font-black text-[22px] tracking-tight">Nouveau rendez-vous</h2>
-            <p className="mt-1 text-[#6B6B6B] text-sm">
+            <p className="mt-1 text-[#667085] text-sm">
               {displayRepairCode(repair)} · {repairDeviceLabel(repair)}
             </p>
           </div>
@@ -6141,7 +6141,7 @@ function RepairAppointmentModal({
                   onClick={() => setTime(slot)}
                   className={cn(
                     "h-11 rounded-[12px] border font-semibold tabular-nums active:scale-[0.98]",
-                    time === slot ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E8E8E5] bg-white",
+                    time === slot ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]" : "border-[#E4E7EC] bg-white",
                   )}
                 >
                   {slot}
@@ -6168,8 +6168,8 @@ function RepairAppointmentModal({
             />
           </section>
         </div>
-        <div className="mt-5 grid shrink-0 grid-cols-[1fr_1.4fr] gap-3 border-[#E8E8E5] border-t pt-4">
-          <button type="button" onClick={onClose} className="h-[52px] rounded-[14px] border border-[#E8E8E5] font-bold">
+        <div className="mt-5 grid shrink-0 grid-cols-[1fr_1.4fr] gap-3 border-[#E4E7EC] border-t pt-4">
+          <button type="button" onClick={onClose} className="h-[52px] rounded-[14px] border border-[#E4E7EC] font-bold">
             Annuler
           </button>
           <button type="button" onClick={submit} className="h-[52px] rounded-[14px] bg-[#2A9D8F] font-black text-white">
@@ -6183,10 +6183,10 @@ function RepairAppointmentModal({
 
 function CloseDossierConfirmModal({ onCancel, onConfirm }: Readonly<{ onCancel: () => void; onConfirm: () => void }>) {
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-[#1A1916]/35 p-5">
-      <section className="w-full max-w-[460px] rounded-[22px] border border-[#E8E8E5] bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-[#101828]/35 p-5">
+      <section className="w-full max-w-[460px] rounded-[22px] border border-[#E4E7EC] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.035)]">
         <h2 className="font-black text-[#1D1D1F] text-[22px] tracking-tight">Marquer ce dossier comme rendu ?</h2>
-        <p className="mt-3 text-[#6B6B6B] leading-relaxed">
+        <p className="mt-3 text-[#667085] leading-relaxed">
           Cette action finalise le dossier. Vous pourrez toujours le consulter, mais il ne sera plus considéré comme
           actif.
         </p>
@@ -6194,7 +6194,7 @@ function CloseDossierConfirmModal({ onCancel, onConfirm }: Readonly<{ onCancel: 
           <button
             type="button"
             onClick={onCancel}
-            className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold"
+            className="h-[52px] rounded-[14px] border border-[#E4E7EC] bg-white font-bold"
           >
             Annuler
           </button>
@@ -6221,12 +6221,12 @@ function TopInfoCard({
   const cleanDetail = String(detail ?? "").trim();
   if (!cleanTitle && !cleanDetail) return null;
   return (
-    <section className="grid min-h-[92px] grid-cols-[54px_1fr] items-center gap-4 rounded-[16px] border border-[#E8E8E5] bg-white p-4 shadow-sm">
+    <section className="grid min-h-[92px] grid-cols-[54px_1fr] items-center gap-4 rounded-[16px] border border-[#E4E7EC] bg-white p-4 shadow-sm">
       {icon}
       <div>
-        <p className="text-[#6B6B6B] text-sm">{label}</p>
+        <p className="text-[#667085] text-sm">{label}</p>
         <b>{cleanTitle || "Non renseigné"}</b>
-        {cleanDetail ? <p className="text-[#6B6B6B] text-sm">{cleanDetail}</p> : null}
+        {cleanDetail ? <p className="text-[#667085] text-sm">{cleanDetail}</p> : null}
       </div>
     </section>
   );
@@ -6239,7 +6239,7 @@ function CounterTimeline({
   className = "",
 }: Readonly<{ labels: string[]; details: string[]; activeIndex: number; className?: string }>) {
   return (
-    <section className={cn("rounded-[18px] border border-[#E8E8E5] bg-white p-5", className)}>
+    <section className={cn("rounded-[18px] border border-[#E4E7EC] bg-white p-5", className)}>
       <div className="grid grid-cols-5">
         {labels.map((label, index) => (
           <div key={label} className="relative text-center">
@@ -6264,7 +6264,7 @@ function CounterTimeline({
               {index < activeIndex ? <Check className="size-4" /> : ""}
             </span>
             <b className="mt-3 block">{label}</b>
-            <span className="text-[#6B6B6B] text-xs">{details[index]}</span>
+            <span className="text-[#667085] text-xs">{details[index]}</span>
           </div>
         ))}
       </div>
@@ -6274,8 +6274,8 @@ function CounterTimeline({
 
 function DetailBlock({ title, children }: Readonly<{ title: string; children: React.ReactNode }>) {
   return (
-    <div className="border-[#E8E8E5] border-b py-4 first:pt-0 last:border-0">
-      <h3 className="font-bold text-[#6B6B6B] text-sm">{title}</h3>
+    <div className="border-[#E4E7EC] border-b py-4 first:pt-0 last:border-0">
+      <h3 className="font-bold text-[#667085] text-sm">{title}</h3>
       <p className="mt-2 leading-relaxed">{children}</p>
     </div>
   );
@@ -6370,18 +6370,18 @@ function CounterTrackingScreen({
       <CounterScreenTitle title="Suivi du dossier" subtitle="État d'avancement de la réparation." onClose={onClose} />
       <div className="grid gap-6 lg:grid-cols-[430px_1fr]">
         <aside className="space-y-4">
-          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5">
+          <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-5">
             <CounterInput
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Rechercher par nom, téléphone, numéro de dossier ou appareil"
             />
-            <p className="mt-3 text-[#6B6B6B] text-sm">La liste est filtrée automatiquement pendant la saisie.</p>
+            <p className="mt-3 text-[#667085] text-sm">La liste est filtrée automatiquement pendant la saisie.</p>
           </section>
-          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4">
+          <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-4">
             <h2 className="font-black">Dossiers récents</h2>
             {filtered.length === 0 ? (
-              <p className="mt-3 rounded-[12px] bg-[#FFFFFF] px-3 py-6 text-center text-[#6B6B6B] text-sm">
+              <p className="mt-3 rounded-[12px] bg-[#FFFFFF] px-3 py-6 text-center text-[#667085] text-sm">
                 Aucun dossier trouvé.
               </p>
             ) : (
@@ -6395,7 +6395,7 @@ function CounterTrackingScreen({
                         onClick={() => setSelectedId(r.id)}
                         className={cn(
                           "w-full rounded-[14px] border p-4 text-left",
-                          selected.id === r.id ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white",
+                          selected.id === r.id ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E4E7EC] bg-white",
                         )}
                       >
                         <div className="flex justify-between">
@@ -6403,7 +6403,7 @@ function CounterTrackingScreen({
                           <CounterMockPill tone={counterDossierTone(r.status)}>{r.status}</CounterMockPill>
                         </div>
                         <p className="mt-1 font-bold">{c?.name ?? "Non renseigné"}</p>
-                        <p className="text-[#6B6B6B] text-sm">
+                        <p className="text-[#667085] text-sm">
                           {repairDeviceLabel(r)} — {r.issue || "Non renseigné"}
                         </p>
                       </button>
@@ -6414,7 +6414,7 @@ function CounterTrackingScreen({
             )}
           </section>
         </aside>
-        <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-6 shadow-[0_10px_30px_rgba(26,25,22,0.04)]">
+        <section className="rounded-[20px] border border-[#E4E7EC] bg-white p-6 shadow-[0_10px_30px_rgba(16,24,40,0.04)]">
           <div className="flex items-start justify-between">
             <div>
               <h2 className="font-black text-2xl">Dossier #{selected.number}</h2>
@@ -6423,7 +6423,7 @@ function CounterTrackingScreen({
             <button
               type="button"
               onClick={() => onOpenRepairDetail(selected.id)}
-              className="h-[44px] rounded-[12px] border border-[#E8E8E5] px-4 font-bold"
+              className="h-[44px] rounded-[12px] border border-[#E4E7EC] px-4 font-bold"
             >
               Ouvrir dossier
             </button>
@@ -6443,11 +6443,11 @@ function CounterTrackingScreen({
             details={["", "", "", "", ""]}
           />
           <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_250px]">
-            <section className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-5">
+            <section className="rounded-[16px] border border-[#E4E7EC] bg-[#FFFFFF] p-5">
               <h3 className="font-black">Message client</h3>
-              <p className="mt-2 text-[#6B6B6B]">{counterStatusMessage(selected.status)}</p>
+              <p className="mt-2 text-[#667085]">{counterStatusMessage(selected.status)}</p>
             </section>
-            <section className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-5">
+            <section className="rounded-[16px] border border-[#E4E7EC] bg-[#FFFFFF] p-5">
               <h3 className="font-black">Estimation</h3>
               <p className="mt-2 text-sm">
                 Temps estimé : {formatCounterDateTime(selected.estimatedDoneAt)}
@@ -6456,13 +6456,13 @@ function CounterTrackingScreen({
               </p>
             </section>
           </div>
-          <section className="mt-5 grid grid-cols-[120px_1fr] gap-4 rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
+          <section className="mt-5 grid grid-cols-[120px_1fr] gap-4 rounded-[16px] border border-[#E4E7EC] bg-[#FFFFFF] p-4">
             <div className="cursor-pointer shrink-0" onClick={() => setSelectedQrRepairId(selected.id)}>
               <CounterRepairQr repair={selected} className="size-[112px]" />
             </div>
             <div>
               <h3 className="font-black">Lien de suivi client</h3>
-              <p className="mt-1 text-[#6B6B6B]">
+              <p className="mt-1 text-[#667085]">
                 Le client peut suivre son dossier depuis son téléphone en scannant ce QR code.
               </p>
               {selected.publicAccess ? (
@@ -6472,14 +6472,14 @@ function CounterTrackingScreen({
                 <button
                   type="button"
                   onClick={() => setSelectedQrRepairId(selected.id)}
-                  className="inline-flex h-[44px] items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold text-[#1A1916] text-xs active:scale-[0.98]"
+                  className="inline-flex h-[44px] items-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white px-4 font-bold text-[#101828] text-xs active:scale-[0.98]"
                 >
                   Afficher QR Code
                 </button>
                 <button
                   type="button"
                   onClick={copyClientTracking}
-                  className="inline-flex h-[44px] items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold text-[#1A1916] text-xs active:scale-[0.98]"
+                  className="inline-flex h-[44px] items-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white px-4 font-bold text-[#101828] text-xs active:scale-[0.98]"
                 >
                   Copier le lien
                 </button>
@@ -6497,14 +6497,14 @@ function CounterTrackingScreen({
             <button
               type="button"
               onClick={() => download("intake", selected.id)}
-              className="h-[52px] rounded-[14px] border border-[#E8E8E5] font-bold active:scale-[0.98]"
+              className="h-[52px] rounded-[14px] border border-[#E4E7EC] font-bold active:scale-[0.98]"
             >
               <Download className="mr-2 inline size-4" /> Télécharger le bon
             </button>
             <button
               type="button"
               onClick={() => print("intake", selected.id)}
-              className="h-[52px] rounded-[14px] border border-[#E8E8E5] font-bold active:scale-[0.98]"
+              className="h-[52px] rounded-[14px] border border-[#E4E7EC] font-bold active:scale-[0.98]"
             >
               <Printer className="mr-2 inline size-4" /> Imprimer le bon
             </button>
@@ -6518,7 +6518,7 @@ function CounterTrackingScreen({
                   toast.error("Erreur d'impression.", { id: "print-qr" });
                 }
               }}
-              className="h-[52px] rounded-[14px] bg-[#1A1916] font-bold text-white active:scale-[0.98]"
+              className="h-[52px] rounded-[14px] bg-[#101828] font-bold text-white active:scale-[0.98]"
             >
               <QrCode className="mr-2 inline size-4" /> Imprimer QR Code
             </button>
@@ -6526,7 +6526,7 @@ function CounterTrackingScreen({
               <button
                 type="button"
                 onClick={copyClientTracking}
-                className="h-[52px] rounded-[14px] border border-[#E8E8E5] font-bold active:scale-[0.98]"
+                className="h-[52px] rounded-[14px] border border-[#E4E7EC] font-bold active:scale-[0.98]"
               >
                 <Copy className="mr-2 inline size-4" /> Copier lien suivi
               </button>
@@ -6605,12 +6605,12 @@ function CounterLiveScanner({ onDetected }: Readonly<{ onDetected: (value: strin
     return stop;
   }, [onDetected]);
   return (
-    <div className="relative grid min-h-[360px] place-items-center overflow-hidden rounded-[18px] bg-[#1A1916] text-white shadow-[0_18px_44px_rgba(26,25,22,0.18)]">
+    <div className="relative grid min-h-[360px] place-items-center overflow-hidden rounded-[18px] bg-[#101828] text-white shadow-[0_18px_44px_rgba(16,24,40,0.18)]">
       <video ref={videoRef} className="absolute inset-0 size-full object-cover" muted playsInline />
       <div className="pointer-events-none absolute inset-0 grid place-items-center">
         <div className="size-40 rounded-[20px] border-2 border-white/80 shadow-[0_0_0_999px_rgba(15,23,42,0.32)]" />
       </div>
-      <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2 rounded-[14px] bg-white px-3 py-2 text-[#1A1916] text-[12px]">
+      <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2 rounded-[14px] bg-white px-3 py-2 text-[#101828] text-[12px]">
         <Camera className="size-4 shrink-0 text-[#2A9D8F]" />
         <div className="min-w-0">
           <p className="font-semibold">{status}</p>
@@ -6670,9 +6670,9 @@ function CounterScannerScreen({
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_390px]">
         <section>
           <CounterLiveScanner onDetected={handleQrResult} />
-          <section className="mt-5 rounded-[18px] border border-[#E8E8E5] bg-white p-5">
+          <section className="mt-5 rounded-[18px] border border-[#E4E7EC] bg-white p-5">
             <h2 className="font-black">Recherche manuelle</h2>
-            <p className="mt-1 text-[#6B6B6B] text-sm">
+            <p className="mt-1 text-[#667085] text-sm">
               Saisissez un numéro de dossier, un IMEI ou un téléphone client si la caméra n'est pas disponible.
             </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_180px]">
@@ -6703,7 +6703,7 @@ function CounterScannerScreen({
             </span>
             Créer un nouveau dossier
           </button>
-          <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-5">
+          <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-5">
             <div className="flex justify-between">
               <h2 className="font-black">Dossiers récents</h2>
               <button type="button" onClick={() => onOpenTracking()} className="font-bold text-[#1E7A6E] text-sm">
@@ -6711,11 +6711,11 @@ function CounterScannerScreen({
               </button>
             </div>
             {recents.length === 0 ? (
-              <p className="mt-3 rounded-[12px] bg-[#FFFFFF] px-3 py-6 text-center text-[#6B6B6B] text-sm">
+              <p className="mt-3 rounded-[12px] bg-[#FFFFFF] px-3 py-6 text-center text-[#667085] text-sm">
                 Aucun dossier.
               </p>
             ) : (
-              <ul className="mt-3 divide-y divide-[#E8E8E5]">
+              <ul className="mt-3 divide-y divide-[#E4E7EC]">
                 {recents.map((r) => (
                   <li key={r.id}>
                     <button
@@ -6727,11 +6727,11 @@ function CounterScannerScreen({
                         brand={r.brandName}
                         model={r.deviceModel || r.device}
                         type={r.deviceType}
-                        className="size-11 rounded-[9px] border border-[#E8E8E5] p-1"
+                        className="size-11 rounded-[9px] border border-[#E4E7EC] p-1"
                       />
                       <span>
                         <b>#{r.number}</b>
-                        <span className="block text-[#6B6B6B] text-sm">{r.deviceModel || r.device}</span>
+                        <span className="block text-[#667085] text-sm">{r.deviceModel || r.device}</span>
                       </span>
                       <CounterMockPill tone={counterDossierTone(r.status)}>{r.status}</CounterMockPill>
                     </button>
@@ -6806,10 +6806,10 @@ function CounterCheckoutScreen({
       </button>
       <h1 className="mb-5 text-center font-black text-[32px]">Demander le paiement</h1>
       <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
-        <aside className="rounded-[20px] border border-[#E8E8E5] bg-white p-4">
+        <aside className="rounded-[20px] border border-[#E4E7EC] bg-white p-4">
           <h2 className="mb-4 font-bold">
             Factures finalisées{" "}
-            <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FAFAF8] px-2">{eligible.length}</span>
+            <span className="rounded-[7px] border border-[#E4E7EC] bg-[#F9FAFB] px-2">{eligible.length}</span>
           </h2>
           <ul className="space-y-3">
             {eligible.map((entry) => {
@@ -6821,7 +6821,7 @@ function CounterCheckoutScreen({
                   <button
                     className={cn(
                       "w-full rounded-[14px] border p-4 text-left",
-                      entry.id === repair.id ? "border-[#2A9D8F] bg-[#F4FBF9]" : "border-[#E8E8E5] bg-white",
+                      entry.id === repair.id ? "border-[#2A9D8F] bg-[#F4FBF9]" : "border-[#E4E7EC] bg-white",
                     )}
                     onClick={() => setSelectedId(entry.id)}
                     type="button"
@@ -6835,8 +6835,8 @@ function CounterCheckoutScreen({
                     <b className="mt-2 block text-[#167B70]">
                       {formatCurrency(getInvoiceTotal(linkedInvoice), linkedInvoice.currency)}
                     </b>
-                    <p className="mt-1 text-[#6B6B6B] text-sm">{repairDeviceLabel(entry)}</p>
-                    <p className="text-[#6B6B6B] text-xs">Facture {linkedInvoice.number}</p>
+                    <p className="mt-1 text-[#667085] text-sm">{repairDeviceLabel(entry)}</p>
+                    <p className="text-[#667085] text-xs">Facture {linkedInvoice.number}</p>
                   </button>
                 </li>
               );
@@ -6845,11 +6845,11 @@ function CounterCheckoutScreen({
         </aside>
 
         <section className="space-y-5">
-          <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-5">
+          <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-5">
             <div className="grid gap-5 lg:grid-cols-[1fr_350px]">
               <div>
                 <h2 className="font-black text-[20px]">{customer?.name ?? "Client comptoir"}</h2>
-                <p className="text-[#6E6E73]">
+                <p className="text-[#667085]">
                   {customer?.phone}
                   <br />
                   {customer?.email}
@@ -6874,7 +6874,7 @@ function CounterCheckoutScreen({
                 </dl>
               </div>
               <div>
-                <p className="text-[#6B6B6B] text-sm">Total TTC de la facture</p>
+                <p className="text-[#667085] text-sm">Total TTC de la facture</p>
                 <p className="font-black text-[#1E7A6E] text-[42px] tabular-nums">
                   {formatCurrency(total, invoice.currency)}
                 </p>
@@ -6896,14 +6896,14 @@ function CounterCheckoutScreen({
               Demander le paiement
             </button>
             <button
-              className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold"
+              className="h-[56px] rounded-[14px] border border-[#E4E7EC] bg-white font-bold"
               onClick={printInvoice}
               type="button"
             >
               <Receipt className="mr-2 inline size-4" /> Imprimer la facture
             </button>
             <button
-              className="h-[56px] rounded-[14px] border border-[#E8E8E5] bg-white font-bold"
+              className="h-[56px] rounded-[14px] border border-[#E4E7EC] bg-white font-bold"
               onClick={closeRepair}
               type="button"
             >
@@ -6932,7 +6932,7 @@ function MiniInvoice({
 }: Readonly<{ repair: Repair; lines: QuoteLine[]; vat: ReturnType<typeof getVatSummary> }>) {
   const ws = useBeharStore((s) => s.workshopInfo);
   return (
-    <div className="mt-5 rounded-[14px] border border-[#E8E8E5] bg-white p-4 text-[12px]">
+    <div className="mt-5 rounded-[14px] border border-[#E4E7EC] bg-white p-4 text-[12px]">
       <div className="flex justify-between">
         <b>{ws.commercialName || ws.name}</b>
         <span>
@@ -6941,19 +6941,19 @@ function MiniInvoice({
           {new Date().toLocaleDateString("fr-FR")}
         </span>
       </div>
-      <p className="mt-1 text-[#6E6E73]">
+      <p className="mt-1 text-[#667085]">
         {ws.address}
         <br />
         {ws.phone}
       </p>
-      <div className="my-3 border-t border-[#E8E8E5]" />
+      <div className="my-3 border-t border-[#E4E7EC]" />
       {lines.map((line) => (
         <div key={line.id} className="flex justify-between py-1">
           <span>{line.description}</span>
           <span>{formatEuro(line.total)}</span>
         </div>
       ))}
-      <div className="mt-2 border-t border-[#E8E8E5] pt-2">
+      <div className="mt-2 border-t border-[#E4E7EC] pt-2">
         {ws.vatApplicable ? (
           <>
             <div className="flex justify-between">
@@ -6971,7 +6971,7 @@ function MiniInvoice({
           </>
         ) : (
           <>
-            <p className="text-[#6E6E73]">{ws.tvaMention || "TVA non applicable, art. 293 B du CGI"}</p>
+            <p className="text-[#667085]">{ws.tvaMention || "TVA non applicable, art. 293 B du CGI"}</p>
             <div className="flex justify-between font-bold">
               <span>Total</span>
               <span className="text-[#1E7A6E]">{formatEuro(vat.ttc)}</span>
@@ -7110,26 +7110,26 @@ function CounterQuotesScreen({
           <StatusPillCounter tone={statusLabel === "Accepté" ? "green" : "orange"}>{statusLabel}</StatusPillCounter>
         </div>
         <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_380px]">
-          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-6">
+          <section className="rounded-[20px] border border-[#E4E7EC] bg-white p-6">
             <div className="mb-5 flex min-h-[52px] items-center gap-3 text-[17px]">
               <User className="size-6" />
               <b>{quoteClientNameCounter(selected, store.customers)}</b>
               {quoteClientPhoneCounter(selected, store.customers) && (
-                <span className="text-[#6E6E73]">· {quoteClientPhoneCounter(selected, store.customers)}</span>
+                <span className="text-[#667085]">· {quoteClientPhoneCounter(selected, store.customers)}</span>
               )}
             </div>
             <div className="space-y-3">
               {devices.map((device, index) => (
-                <article key={device.id} className="rounded-[16px] border border-[#E8E8E5] bg-white p-4">
+                <article key={device.id} className="rounded-[16px] border border-[#E4E7EC] bg-white p-4">
                   <div className="grid grid-cols-[76px_minmax(0,1fr)_auto] items-center gap-4">
                     <RealDeviceVisual
                       brand={device.brand}
                       model={device.model}
                       type={device.type}
-                      className="size-[76px] rounded-[12px] border border-[#E8E8E5] p-1"
+                      className="size-[76px] rounded-[12px] border border-[#E4E7EC] p-1"
                     />
                     <div>
-                      <p className="text-[#6E6E73] text-sm">Appareil {index + 1}</p>
+                      <p className="text-[#667085] text-sm">Appareil {index + 1}</p>
                       <h2 className="mt-1 font-black text-[18px]">
                         {formatBrandModel(device.brand, device.model, `Appareil ${index + 1}`)}
                       </h2>
@@ -7147,7 +7147,7 @@ function CounterQuotesScreen({
                 </article>
               ))}
             </div>
-            <section className="mt-5 rounded-[16px] border border-[#E8E8E5] bg-white p-4">
+            <section className="mt-5 rounded-[16px] border border-[#E4E7EC] bg-white p-4">
               <h2 className="font-bold">Récapitulatif du devis</h2>
               <div className="mt-4 space-y-3">
                 {store.workshopInfo.vatApplicable && (
@@ -7161,7 +7161,7 @@ function CounterQuotesScreen({
             </section>
           </section>
           <aside className="space-y-5">
-            <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-6">
+            <section className="rounded-[20px] border border-[#E4E7EC] bg-white p-6">
               <h2 className="font-bold text-[18px]">Actions</h2>
               <button
                 type="button"
@@ -7178,7 +7178,7 @@ function CounterQuotesScreen({
                     toast.error("Devis introuvable.");
                   }
                 }}
-                className="mt-3 h-[56px] w-full rounded-[14px] border border-[#E8E8E5] bg-white font-bold active:scale-[0.98]"
+                className="mt-3 h-[56px] w-full rounded-[14px] border border-[#E4E7EC] bg-white font-bold active:scale-[0.98]"
               >
                 <Printer className="mr-2 inline size-5" /> Imprimer
               </button>
@@ -7186,7 +7186,7 @@ function CounterQuotesScreen({
                 <button
                   type="button"
                   onClick={() => download("quote", selected.id)}
-                  className="mt-3 h-[56px] w-full rounded-[14px] border border-[#E8E8E5] bg-white font-bold active:scale-[0.98]"
+                  className="mt-3 h-[56px] w-full rounded-[14px] border border-[#E4E7EC] bg-white font-bold active:scale-[0.98]"
                 >
                   <Download className="mr-2 inline size-5" /> Télécharger PDF
                 </button>
@@ -7198,7 +7198,7 @@ function CounterQuotesScreen({
                   const url = getShareableDocumentUrl(doc ?? { id: `doc_${selected.id}`, type: "quote" });
                   await shareCounterLink(url, "Lien du devis copié pour le client.");
                 }}
-                className="mt-3 h-[56px] w-full rounded-[14px] border border-[#E8E8E5] bg-white font-bold active:scale-[0.98]"
+                className="mt-3 h-[56px] w-full rounded-[14px] border border-[#E4E7EC] bg-white font-bold active:scale-[0.98]"
               >
                 <Send className="mr-2 inline size-5" /> Partager le lien client
               </button>
@@ -7229,7 +7229,7 @@ function CounterQuotesScreen({
                     : "Marquer refusé"}
               </button>
             </section>
-            <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5 text-[#6E6E73]">
+            <section className="rounded-[20px] border border-[#E4E7EC] bg-white p-5 text-[#667085]">
               Devis valable 30 jours · émis le{" "}
               {new Date(selected.date || selected.createdAt || Date.now()).toLocaleDateString("fr-FR")}
             </section>
@@ -7252,7 +7252,7 @@ function CounterQuotesScreen({
           </button>
           <div>
             <h1 className="font-black text-[32px] tracking-tight">Devis</h1>
-            <p className="text-[#6E6E73]">Retrouvez et gérez vos devis</p>
+            <p className="text-[#667085]">Retrouvez et gérez vos devis</p>
           </div>
         </div>
         <button
@@ -7280,7 +7280,7 @@ function CounterQuotesScreen({
               "h-[40px] rounded-full border px-4 font-semibold text-sm",
               statusFilter === entry
                 ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
-                : "border-[#E8E8E5] bg-white text-[#6B6B6B]",
+                : "border-[#E4E7EC] bg-white text-[#667085]",
             )}
           >
             {entry === "all" ? "Tous" : entry}
@@ -7289,7 +7289,7 @@ function CounterQuotesScreen({
       </div>
       <section className="space-y-3">
         {quotes.length === 0 ? (
-          <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-8 text-center text-[#6E6E73]">
+          <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-8 text-center text-[#667085]">
             Aucun devis pour le moment.
           </div>
         ) : (
@@ -7303,30 +7303,30 @@ function CounterQuotesScreen({
                   setSelectedId(quote.id);
                   setConfirmingRefusal(false);
                 }}
-                className="grid min-h-[92px] w-full grid-cols-[1fr_auto] items-center gap-x-4 gap-y-3 rounded-[18px] border border-[#E8E8E5] bg-white px-5 py-4 text-left shadow-[0_8px_26px_rgba(29,29,31,0.035)] transition active:scale-[0.99] xl:grid-cols-[140px_minmax(0,1fr)_180px_110px_130px_160px] xl:px-6 xl:py-0"
+                className="grid min-h-[92px] w-full grid-cols-[1fr_auto] items-center gap-x-4 gap-y-3 rounded-[18px] border border-[#E4E7EC] bg-white px-5 py-4 text-left shadow-[0_8px_26px_rgba(29,29,31,0.035)] transition active:scale-[0.99] xl:grid-cols-[140px_minmax(0,1fr)_180px_110px_130px_160px] xl:px-6 xl:py-0"
               >
                 <b className="order-1 font-black text-[#1E7A6E] text-[20px] xl:order-none">
                   {quoteNumberCounter(quote)}
                 </b>
                 <span className="order-3 col-span-2 min-w-0 xl:order-none xl:col-span-1">
                   <b className="block">{quoteClientNameCounter(quote, store.customers)}</b>
-                  <span className="text-[#6E6E73] text-sm">{quoteClientPhoneCounter(quote, store.customers)}</span>
+                  <span className="text-[#667085] text-sm">{quoteClientPhoneCounter(quote, store.customers)}</span>
                 </span>
                 <span className="order-4 col-span-2 flex min-w-0 items-center gap-3 xl:order-none xl:col-span-1">
                   <RealDeviceVisual
                     brand={getQuoteDevices(quote)[0]?.brand}
                     model={getQuoteDevices(quote)[0]?.model}
                     type={getQuoteDevices(quote)[0]?.type}
-                    className="size-12 rounded-[9px] border border-[#E8E8E5] p-1"
+                    className="size-12 rounded-[9px] border border-[#E4E7EC] p-1"
                   />
                   <span className="min-w-0">
                     <b className="block truncate">{quoteDeviceSummaryCounter(quote)}</b>
-                    <span className="text-[#6E6E73] text-sm">
+                    <span className="text-[#667085] text-sm">
                       {getQuoteDevices(quote).length} appareil{getQuoteDevices(quote).length > 1 ? "s" : ""}
                     </span>
                   </span>
                 </span>
-                <span className="order-5 text-[#6E6E73] xl:order-none">
+                <span className="order-5 text-[#667085] xl:order-none">
                   {quoteRelativeDateCounter(quote.date || quote.createdAt)}
                 </span>
                 <b className="order-2 text-right text-[#1E7A6E] text-[20px] tabular-nums xl:order-none xl:text-left">
@@ -7683,10 +7683,10 @@ function CounterQuoteScreen({
   return (
     <div className="mx-auto max-w-[1180px]">
       <h1 className="font-black text-[32px] tracking-tight">Nouveau devis</h1>
-      <p className="text-[#6E6E73]">Créer un devis rapidement</p>
+      <p className="text-[#667085]">Créer un devis rapidement</p>
       <CounterStepper steps={["Client & appareil", "Prestations", "Aperçu"]} current={created ? 2 : 0} />
       <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <section className="space-y-4 rounded-[20px] border border-[#E8E8E5] bg-white p-5">
+        <section className="space-y-4 rounded-[20px] border border-[#E4E7EC] bg-white p-5">
           <h2 className="font-bold">1. Client</h2>
           <div className="grid grid-cols-3 gap-3">
             <SelectTile active={clientMode === "counter"} onClick={() => setClientMode("counter")}>
@@ -7735,11 +7735,11 @@ function CounterQuoteScreen({
                     "min-h-[52px] shrink-0 rounded-[14px] border px-4 text-left transition active:scale-[0.97]",
                     page.id === activeDevice.id
                       ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
-                      : "border-[#E8E8E5] bg-white",
+                      : "border-[#E4E7EC] bg-white",
                   )}
                 >
                   <b>{page.label}</b>
-                  <span className="ml-2 text-[#6E6E73] text-[12px]">{page.model || "À choisir"}</span>
+                  <span className="ml-2 text-[#667085] text-[12px]">{page.model || "À choisir"}</span>
                 </button>
               ))}
               <button
@@ -7881,7 +7881,7 @@ function CounterQuoteScreen({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h3 className="font-bold">Vente additionnelle</h3>
-                <p className="text-[#6E6E73] text-sm">Coque, chargeur, câble, verre trempé adaptés au modèle.</p>
+                <p className="text-[#667085] text-sm">Coque, chargeur, câble, verre trempé adaptés au modèle.</p>
               </div>
               <button
                 type="button"
@@ -7903,7 +7903,7 @@ function CounterQuoteScreen({
                       "min-h-[52px] shrink-0 rounded-[14px] border px-4 font-semibold transition active:scale-[0.97]",
                       selected
                         ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
-                        : "border-[#E8E8E5] bg-white text-[#1D1D1F]",
+                        : "border-[#E4E7EC] bg-white text-[#1D1D1F]",
                     )}
                   >
                     {selected && <Check className="mr-2 inline size-4" />}
@@ -7917,7 +7917,7 @@ function CounterQuoteScreen({
                 {activeDevice.accessories.map((accessory) => (
                   <div
                     key={accessory.id}
-                    className="grid grid-cols-[1fr_130px_42px] items-center gap-2 rounded-[14px] border border-[#E8E8E5] bg-white p-2"
+                    className="grid grid-cols-[1fr_130px_42px] items-center gap-2 rounded-[14px] border border-[#E4E7EC] bg-white p-2"
                   >
                     <span className="truncate pl-2 font-semibold text-[13px]">{accessory.label}</span>
                     <CounterInput
@@ -7949,11 +7949,11 @@ function CounterQuoteScreen({
               </div>
             )}
           </section>
-          <section className="rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
+          <section className="rounded-[16px] border border-[#E4E7EC] bg-[#FFFFFF] p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h3 className="font-bold">Ajouter une ligne</h3>
-                <p className="text-[#6E6E73] text-sm">Champ libre, accessoire ou autre téléphone.</p>
+                <p className="text-[#667085] text-sm">Champ libre, accessoire ou autre téléphone.</p>
               </div>
               <button
                 type="button"
@@ -8023,11 +8023,11 @@ function CounterQuoteScreen({
                 {extraLines.map((line) => (
                   <li
                     key={line.id}
-                    className="flex min-h-[52px] items-center justify-between gap-3 rounded-[14px] border border-[#E8E8E5] bg-white px-4"
+                    className="flex min-h-[52px] items-center justify-between gap-3 rounded-[14px] border border-[#E4E7EC] bg-white px-4"
                   >
                     <span>
                       <b>{line.description}</b>
-                      <span className="ml-2 text-[#6E6E73] text-[12px]">{line.kind}</span>
+                      <span className="ml-2 text-[#667085] text-[12px]">{line.kind}</span>
                     </span>
                     <span className="flex items-center gap-3">
                       <b>{formatEuro(line.prixClient)}</b>
@@ -8057,11 +8057,11 @@ function CounterQuoteScreen({
               { label: "Total", value: `${formatEuro(amount)} ${store.workshopInfo.vatApplicable ? "TTC" : ""}` },
             ]}
           />
-          <section className="rounded-[20px] border border-[#E8E8E5] bg-white p-5">
+          <section className="rounded-[20px] border border-[#E4E7EC] bg-white p-5">
             <h2 className="font-bold">Aperçu du devis</h2>
             <p className="mt-3 font-bold">{created?.number.replace(/^DEV-/, "DV-") ?? "DV-AAAA-XXXX"}</p>
-            <p className="text-[#6E6E73] text-sm">{new Date().toLocaleDateString("fr-FR")}</p>
-            <div className="mt-3 max-h-[190px] space-y-3 overflow-y-auto border-y border-[#E8E8E5] py-3 text-sm">
+            <p className="text-[#667085] text-sm">{new Date().toLocaleDateString("fr-FR")}</p>
+            <div className="mt-3 max-h-[190px] space-y-3 overflow-y-auto border-y border-[#E4E7EC] py-3 text-sm">
               {devicePages.map((page, index) => (
                 <div key={page.id}>
                   <div className="flex justify-between gap-3 font-bold">
@@ -8070,7 +8070,7 @@ function CounterQuoteScreen({
                     </span>
                     <span>{formatEuro(pageTotal(page))}</span>
                   </div>
-                  <ul className="mt-1 list-disc pl-4 text-[#6E6E73]">
+                  <ul className="mt-1 list-disc pl-4 text-[#667085]">
                     {page.prestations
                       .filter((item) => item !== "Autre")
                       .map((item) => (
@@ -8101,7 +8101,7 @@ function CounterQuoteScreen({
                 </>
               ) : (
                 <>
-                  <p className="text-[#6E6E73]">
+                  <p className="text-[#667085]">
                     {store.workshopInfo.tvaMention || "TVA non applicable, art. 293 B du CGI"}
                   </p>
                   <DetailRowLite label="Total" value={formatEuro(amount)} green />
@@ -8111,7 +8111,7 @@ function CounterQuoteScreen({
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
                 onClick={handlePrintQuote}
-                className="h-11 rounded-[12px] border border-[#E8E8E5] font-semibold"
+                className="h-11 rounded-[12px] border border-[#E4E7EC] font-semibold"
                 type="button"
               >
                 <Printer className="mr-2 inline size-4" />
@@ -8119,7 +8119,7 @@ function CounterQuoteScreen({
               </button>
               <button
                 onClick={() => setSendOpen(true)}
-                className="h-11 rounded-[12px] border border-[#E8E8E5] font-semibold"
+                className="h-11 rounded-[12px] border border-[#E4E7EC] font-semibold"
                 type="button"
               >
                 <Send className="mr-2 inline size-4" />
@@ -8144,14 +8144,14 @@ function CounterQuoteScreen({
             >
               Transformer en prise en charge
             </button>
-            <div className="mt-3 rounded-[12px] bg-[#FFFFFF] py-3 text-center font-bold text-[#6B6B6B]">En attente</div>
+            <div className="mt-3 rounded-[12px] bg-[#FFFFFF] py-3 text-center font-bold text-[#667085]">En attente</div>
           </section>
         </aside>
         <div className="lg:col-span-2 grid grid-cols-[180px_1fr] gap-4">
           <button
             type="button"
             onClick={onClose}
-            className="h-[52px] rounded-[14px] border border-[#E8E8E5] bg-white font-semibold"
+            className="h-[52px] rounded-[14px] border border-[#E4E7EC] bg-white font-semibold"
           >
             Annuler
           </button>
@@ -8166,16 +8166,16 @@ function CounterQuoteScreen({
       </div>
       {sendOpen && (
         <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/35 p-4">
-          <section className="w-full max-w-[520px] rounded-[20px] border border-[#E8E8E5] bg-white p-5 shadow-[0_24px_70px_rgba(29,29,31,0.22)]">
+          <section className="w-full max-w-[520px] rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_24px_70px_rgba(29,29,31,0.22)]">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="font-black text-[20px]">Enregistrer l'envoi du devis</h2>
-                <p className="text-[#6E6E73] text-sm">Conserve le canal et le destinataire dans l'historique client.</p>
+                <p className="text-[#667085] text-sm">Conserve le canal et le destinataire dans l'historique client.</p>
               </div>
               <button
                 type="button"
                 onClick={() => setSendOpen(false)}
-                className="grid size-11 place-items-center rounded-[12px] border border-[#E8E8E5]"
+                className="grid size-11 place-items-center rounded-[12px] border border-[#E4E7EC]"
               >
                 <X className="size-5" />
               </button>
@@ -8258,7 +8258,7 @@ function CounterInvoicesScreen({ onClose }: Readonly<{ onClose: () => void }>) {
         />
       </div>
       {invoices.length === 0 ? (
-        <p className="rounded-[16px] border border-dashed border-[#D9D6CF] bg-white px-4 py-12 text-center text-[#6B6B6B]">
+        <p className="rounded-[16px] border border-dashed border-[#D9D6CF] bg-white px-4 py-12 text-center text-[#667085]">
           Aucune facture pour le moment.
         </p>
       ) : (
@@ -8269,14 +8269,14 @@ function CounterInvoicesScreen({ onClose }: Readonly<{ onClose: () => void }>) {
             return (
               <li
                 key={invoice.id}
-                className="grid grid-cols-1 gap-3 rounded-[16px] border border-[#E8E8E5] bg-white p-4 md:grid-cols-[1fr_auto] md:items-center"
+                className="grid grid-cols-1 gap-3 rounded-[16px] border border-[#E4E7EC] bg-white p-4 md:grid-cols-[1fr_auto] md:items-center"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-3">
                     <b className="text-[16px]">{invoice.number}</b>
                     <StatusPillCounter tone="green">Finalisée</StatusPillCounter>
                   </div>
-                  <p className="mt-1 truncate text-[#6B6B6B] text-sm">
+                  <p className="mt-1 truncate text-[#667085] text-sm">
                     {customer?.name ?? "Client"} · {repair?.deviceModel || repair?.device || "—"}
                   </p>
                 </div>
@@ -8287,7 +8287,7 @@ function CounterInvoicesScreen({ onClose }: Readonly<{ onClose: () => void }>) {
                   <button
                     type="button"
                     onClick={() => openInvoice(invoice)}
-                    className="h-[48px] rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold"
+                    className="h-[48px] rounded-[12px] border border-[#E4E7EC] bg-white px-4 font-bold"
                   >
                     <FileText className="mr-2 inline size-4" /> Ouvrir
                   </button>
@@ -8387,7 +8387,7 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
               "h-[40px] rounded-full border px-4 font-semibold text-sm",
               filter === entry.key
                 ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
-                : "border-[#E8E8E5] bg-white text-[#6B6B6B]",
+                : "border-[#E4E7EC] bg-white text-[#667085]",
             )}
           >
             {entry.label}
@@ -8395,7 +8395,7 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
         ))}
       </div>
       {documents.length === 0 ? (
-        <p className="rounded-[16px] border border-dashed border-[#D9D6CF] bg-white px-4 py-12 text-center text-[#6B6B6B]">
+        <p className="rounded-[16px] border border-dashed border-[#D9D6CF] bg-white px-4 py-12 text-center text-[#667085]">
           Aucun document à afficher.
         </p>
       ) : (
@@ -8408,22 +8408,22 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
             return (
               <li
                 key={doc.id}
-                className="grid grid-cols-1 gap-3 rounded-[16px] border border-[#E8E8E5] bg-white p-4 md:grid-cols-[1fr_auto] md:items-center"
+                className="grid grid-cols-1 gap-3 rounded-[16px] border border-[#E4E7EC] bg-white p-4 md:grid-cols-[1fr_auto] md:items-center"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-3">
-                    <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2.5 py-0.5 text-[#6B6B6B] text-[11px] font-semibold uppercase tracking-wide">
+                    <span className="rounded-[7px] border border-[#E4E7EC] bg-[#FFFFFF] px-2.5 py-0.5 text-[#667085] text-[11px] font-semibold uppercase tracking-wide">
                       {COUNTER_DOC_LABEL[doc.type] ?? "Document"}
                     </span>
                     <b className="font-mono text-[13px]">{docNumberLabel(doc)}</b>
                   </div>
-                  <p className="mt-1 truncate text-[#6B6B6B] text-sm">
+                  <p className="mt-1 truncate text-[#667085] text-sm">
                     {customer?.name ?? "Client"} · {formatCounterDateTime(doc.createdAt)}
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   {documentUnavailable ? (
-                    <span className="inline-flex h-[44px] items-center rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] px-4 font-bold text-[#8A8A8A] text-sm">
+                    <span className="inline-flex h-[44px] items-center rounded-[12px] border border-[#E4E7EC] bg-[#FFFFFF] px-4 font-bold text-[#98A2B3] text-sm">
                       Document non disponible
                     </span>
                   ) : (
@@ -8431,7 +8431,7 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
                       <button
                         type="button"
                         onClick={() => preview(target.type, target.id)}
-                        className="inline-flex h-[44px] items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold text-[#1A1916] text-sm active:scale-[0.98]"
+                        className="inline-flex h-[44px] items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white px-4 font-bold text-[#101828] text-sm active:scale-[0.98]"
                       >
                         <Eye className="size-4" /> Aperçu
                       </button>
@@ -8439,7 +8439,7 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
                         <button
                           type="button"
                           onClick={() => download(target.type, target.id)}
-                          className="inline-flex h-[44px] items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold text-[#1A1916] text-sm active:scale-[0.98]"
+                          className="inline-flex h-[44px] items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white px-4 font-bold text-[#101828] text-sm active:scale-[0.98]"
                         >
                           <Download className="size-4" /> Télécharger PDF
                         </button>
@@ -8449,7 +8449,7 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
                         onClick={() => {
                           if (!printDocument(doc)) toast.error("Document introuvable.");
                         }}
-                        className="inline-flex h-[44px] items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold text-[#1A1916] text-sm active:scale-[0.98]"
+                        className="inline-flex h-[44px] items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white px-4 font-bold text-[#101828] text-sm active:scale-[0.98]"
                       >
                         <Printer className="size-4" /> Imprimer document
                       </button>
@@ -8463,7 +8463,7 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
                         toast.error("QR Code non disponible.");
                       }
                     }}
-                    className="inline-flex h-[44px] items-center justify-center gap-2 rounded-[12px] bg-[#1A1916] px-4 font-bold text-sm text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-[#D7D7D2] disabled:text-[#777]"
+                    className="inline-flex h-[44px] items-center justify-center gap-2 rounded-[12px] bg-[#101828] px-4 font-bold text-sm text-white active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-[#D7D7D2] disabled:text-[#777]"
                   >
                     <QrCode className="size-4" /> Imprimer QR suivi
                   </button>
@@ -8477,7 +8477,7 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
                       if (access)
                         void shareCounterLink(publicAbsoluteUrl(access.url), "Lien de suivi copié pour le client.");
                     }}
-                    className="inline-flex h-[44px] items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-bold text-[#1A1916] text-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-[#F7F7F4] disabled:text-[#777]"
+                    className="inline-flex h-[44px] items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white px-4 font-bold text-[#101828] text-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-[#F5F7FA] disabled:text-[#777]"
                   >
                     <Copy className="size-4" /> Copier lien suivi
                   </button>
@@ -8493,9 +8493,9 @@ function CounterDocumentsScreen({ onClose, repairId }: Readonly<{ onClose: () =>
 
 function EmptyCounter({ title, message, onClose }: Readonly<{ title: string; message: string; onClose: () => void }>) {
   return (
-    <div className="mx-auto max-w-xl rounded-[20px] border border-[#E8E8E5] bg-white p-8 text-center">
+    <div className="mx-auto max-w-xl rounded-[20px] border border-[#E4E7EC] bg-white p-8 text-center">
       <h1 className="font-black text-[30px]">{title}</h1>
-      <p className="mt-2 text-[#6E6E73]">{message}</p>
+      <p className="mt-2 text-[#667085]">{message}</p>
       <button
         type="button"
         onClick={onClose}
@@ -8523,14 +8523,14 @@ function TodayStat({
   detail?: string;
 }>) {
   return (
-    <div className="flex min-h-[92px] items-center gap-4 rounded-[16px] border border-[#E8E8E5] bg-white px-5 py-4 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
+    <div className="flex min-h-[92px] items-center gap-4 rounded-[16px] border border-[#E4E7EC] bg-white px-5 py-4 shadow-[0_1px_2px_rgba(16,24,40,0.035)]">
       <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#FFFFFF] text-[#1E7A6E]">{icon}</span>
       <div className="min-w-0">
-        <p className="truncate font-bold text-[#1A1916] text-[20px] leading-none tabular-nums tracking-tight">
+        <p className="truncate font-bold text-[#101828] text-[20px] leading-none tabular-nums tracking-tight">
           {value}
         </p>
-        <p className="mt-1.5 truncate text-[#6B6B6B] text-[12px]">{label}</p>
-        {detail && <p className="mt-0.5 truncate text-[#6B6B6B] text-[11.5px]">{detail}</p>}
+        <p className="mt-1.5 truncate text-[#667085] text-[12px]">{label}</p>
+        {detail && <p className="mt-0.5 truncate text-[#667085] text-[11.5px]">{detail}</p>}
       </div>
     </div>
   );

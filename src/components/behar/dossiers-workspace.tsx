@@ -108,13 +108,13 @@ export function DossiersWorkspace() {
 
   return (
     <div className="space-y-5">
-      <section className="rounded-[16px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
+      <section className="rounded-[16px] border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.035)]">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_220px] lg:min-w-[560px]">
             <label className="relative block">
-              <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6B6B6B]" />
+              <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#667085]" />
               <input
-                className="h-11 w-full rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] pr-3 pl-10 text-sm outline-none transition placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+                className="h-11 w-full rounded-[14px] border border-[#E4E7EC] bg-[#FFFFFF] pr-3 pl-10 text-sm outline-none transition placeholder:text-[#667085] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Rechercher dossier, client, appareil, téléphone..."
                 type="search"
@@ -122,7 +122,7 @@ export function DossiersWorkspace() {
               />
             </label>
             <select
-              className="h-11 rounded-[14px] border border-[#E8E8E5] bg-white px-3 text-sm outline-none transition focus:border-[#2A9D8F]"
+              className="h-11 rounded-[14px] border border-[#E4E7EC] bg-white px-3 text-sm outline-none transition focus:border-[#2A9D8F]"
               onChange={(event) => setStatus(event.target.value as RepairStatus | "all")}
               value={status}
             >
@@ -147,7 +147,7 @@ export function DossiersWorkspace() {
               "inline-flex h-9 shrink-0 items-center gap-2 rounded-[10px] border px-3.5 text-xs font-semibold",
               status === "all"
                 ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
-                : "border-[#E8E8E5] bg-white text-[#1A1916]",
+                : "border-[#E4E7EC] bg-white text-[#101828]",
             )}
             onClick={() => setStatus("all")}
             type="button"
@@ -161,7 +161,7 @@ export function DossiersWorkspace() {
                 "inline-flex h-9 shrink-0 items-center gap-2 rounded-[10px] border px-3.5 text-xs font-semibold",
                 status === entry
                   ? "border-[#2A9D8F] bg-[#2A9D8F] text-white"
-                  : "border-[#E8E8E5] bg-white text-[#1A1916]",
+                  : "border-[#E4E7EC] bg-white text-[#101828]",
               )}
               key={entry}
               onClick={() => setStatus(entry)}
@@ -171,7 +171,7 @@ export function DossiersWorkspace() {
               <span
                 className={cn(
                   "rounded-[6px] px-1.5 py-px text-[10px]",
-                  status === entry ? "bg-white" : "bg-[#FFFFFF] text-[#6B6B6B]",
+                  status === entry ? "bg-white" : "bg-[#FFFFFF] text-[#667085]",
                 )}
               >
                 {counts.get(entry) ?? 0}
@@ -202,9 +202,9 @@ export function DossiersWorkspace() {
         />
       </section>
 
-      <section className="overflow-hidden rounded-[18px] border border-[#E8E8E5] bg-white shadow-[0_8px_24px_rgba(26,25,22,0.035)]">
+      <section className="overflow-hidden rounded-[18px] border border-[#E4E7EC] bg-white shadow-[0_8px_24px_rgba(16,24,40,0.035)]">
         {rows.length === 0 ? (
-          <div className="px-4 py-12 text-center text-[#6B6B6B] text-sm">
+          <div className="px-4 py-12 text-center text-[#667085] text-sm">
             Aucun dossier ne correspond à la recherche.
           </div>
         ) : (
@@ -216,7 +216,7 @@ export function DossiersWorkspace() {
         )}
       </section>
 
-      <p className="flex items-center justify-center gap-1.5 text-center text-[#6B6B6B] text-xs">
+      <p className="flex items-center justify-center gap-1.5 text-center text-[#667085] text-xs">
         <FolderOpen className="size-3.5" />
         Chaque ligne correspond à un dossier.
       </p>
@@ -246,23 +246,23 @@ function DossierRow({
         <span className="w-[88px] shrink-0 font-mono font-semibold text-[#167B70] text-xs">#{repair.number}</span>
         <RealDeviceVisual
           brand={repair.brandName}
-          className="size-12 rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] p-1 shadow-[0_6px_14px_rgba(26,25,22,0.04)]"
+          className="size-12 rounded-[12px] border border-[#E4E7EC] bg-[#FFFFFF] p-1 shadow-[0_6px_14px_rgba(16,24,40,0.04)]"
           model={repair.deviceModel || repair.model || repair.device}
           type={repair.deviceType}
         />
         <span className="min-w-0 flex-1">
-          <span className="block truncate font-semibold text-[#1A1916] text-sm">
+          <span className="block truncate font-semibold text-[#101828] text-sm">
             {displayCustomerName(customer) || "Client"}
           </span>
-          <span className="block truncate text-[#6B6B6B] text-xs">
+          <span className="block truncate text-[#667085] text-xs">
             {formatDeviceLabel(repair, repair.device)} · {repair.issue || "Intervention à préciser"}
           </span>
         </span>
-        <span className="hidden w-[140px] shrink-0 text-[#6B6B6B] text-xs sm:block">
+        <span className="hidden w-[140px] shrink-0 text-[#667085] text-xs sm:block">
           {quote ? `Devis ${quote.number}` : "Aucun devis"}
           {invoice ? ` · Fac. ${invoice.number}` : ""}
         </span>
-        <span className="w-[88px] shrink-0 text-right font-semibold text-[#1A1916] text-sm">
+        <span className="w-[88px] shrink-0 text-right font-semibold text-[#101828] text-sm">
           {formatCurrency(amount, repair.currency)}
         </span>
         <span className="w-[120px] shrink-0 text-right">
@@ -279,12 +279,12 @@ function SummaryTile({
   value,
 }: Readonly<{ icon: typeof FolderOpen; label: string; value: string }>) {
   return (
-    <div className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 shadow-[0_8px_24px_rgba(26,25,22,0.035)]">
+    <div className="rounded-[18px] border border-[#E4E7EC] bg-white p-4 shadow-[0_8px_24px_rgba(16,24,40,0.035)]">
       <span className="grid size-10 place-items-center text-[#2A9D8F]">
         <Icon className="size-5" />
       </span>
-      <p className="mt-3 text-[#6B6B6B] text-xs">{label}</p>
-      <p className="mt-1 font-semibold text-[#1A1916] text-2xl">{value}</p>
+      <p className="mt-3 text-[#667085] text-xs">{label}</p>
+      <p className="mt-1 font-semibold text-[#101828] text-2xl">{value}</p>
     </div>
   );
 }

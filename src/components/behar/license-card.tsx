@@ -61,7 +61,7 @@ export function LicenseCard() {
         </div>
         <div className="flex-1">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-[#1A1916] text-lg">Licence</h2>
+            <h2 className="font-semibold text-[#101828] text-lg">Licence</h2>
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FFFFFF] text-[#167B70] text-[11px] font-bold uppercase tracking-wider">
               <CheckCircle2 className="size-3" />
               Active
@@ -79,7 +79,7 @@ export function LicenseCard() {
           <div className="mt-6 pt-5 border-t border-[#FFFFFF] space-y-4">
             <div className="flex flex-wrap gap-2.5">
               <SecondaryButton
-                className="h-10 px-4 text-xs font-semibold gap-2 border-[#E8E8E5] hover:border-[#2A9D8F] hover:text-[#2A9D8F] active:scale-[0.98] transition-all duration-200"
+                className="h-10 px-4 text-xs font-semibold gap-2 border-[#E4E7EC] hover:border-[#2A9D8F] hover:text-[#2A9D8F] active:scale-[0.98] transition-all duration-200"
                 onClick={handleChangeKey}
               >
                 <RefreshCw className="size-3.5" />
@@ -94,9 +94,9 @@ export function LicenseCard() {
               </SecondaryButton>
             </div>
 
-            <p className="text-[11px] text-[#6B6B6B] leading-relaxed">
-              <strong>Changer de clé :</strong> Déconnecte complètement cet appareil pour pouvoir
-              connecter un autre atelier sans risque de mélange.
+            <p className="text-[11px] text-[#667085] leading-relaxed">
+              <strong>Changer de clé :</strong> Déconnecte complètement cet appareil pour pouvoir connecter un autre
+              atelier sans risque de mélange.
               <br />
               <strong>Désactiver la licence :</strong> Déconnecte temporairement l'appareil. L'atelier reste associé à
               la licence pour une réactivation ultérieure.
@@ -111,8 +111,8 @@ export function LicenseCard() {
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between text-sm py-0.5">
-      <span className="text-[#6B6B6B]">{label}</span>
-      <span className="font-medium text-[#1A1916]">{value}</span>
+      <span className="text-[#667085]">{label}</span>
+      <span className="font-medium text-[#101828]">{value}</span>
     </div>
   );
 }

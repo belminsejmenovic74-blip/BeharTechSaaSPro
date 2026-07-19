@@ -257,7 +257,7 @@ export async function printDocumentPdfAsync(document?: PdfDocumentLike | null): 
   if (printWindow) {
     printWindow.document.title = "Préparation impression";
     printWindow.document.body.innerHTML =
-      "<main style='display:grid;min-height:100vh;place-items:center;background:#fff;color:#1A1916;font-family:system-ui,sans-serif'>Préparation du document...</main>";
+      "<main style='display:grid;min-height:100vh;place-items:center;background:#fff;color:#101828;font-family:system-ui,sans-serif'>Préparation du document...</main>";
   }
 
   try {

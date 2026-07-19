@@ -58,11 +58,11 @@ export default function PortalConfigurationPage() {
             <Link
               href={href}
               key={title}
-              className="group rounded-[18px] border border-[#E8E8E5] bg-white p-5 transition hover:border-[#2A9D8F]/50 hover:shadow-[0_10px_28px_rgba(16,24,40,.07)]"
+              className="group rounded-[18px] border border-[#E4E7EC] bg-white p-5 transition hover:border-[#2A9D8F]/50 hover:shadow-[0_10px_28px_rgba(16,24,40,.07)]"
             >
               <Icon className="size-5 text-[#2A9D8F]" />
               <h2 className="mt-4 font-semibold">{title}</h2>
-              <p className="mt-1 text-[#6B6B6B] text-sm leading-6">{description}</p>
+              <p className="mt-1 text-[#667085] text-sm leading-6">{description}</p>
             </Link>
           ))}
         </div>
@@ -86,8 +86,8 @@ export default function PortalConfigurationPage() {
             <Row label="SMS / mois" value={limits.smsPerMonth == null ? "Illimites" : String(limits.smsPerMonth)} />
           </dl>
           {store.licenseKey ? (
-            <div className="mt-4 rounded-xl border border-[#E8E8E5] bg-[#F6F7F9] p-3">
-              <p className="text-[#6B6B6B] text-xs">Cle de licence</p>
+            <div className="mt-4 rounded-xl border border-[#E4E7EC] bg-[#F6F7F9] p-3">
+              <p className="text-[#667085] text-xs">Cle de licence</p>
               <p className="mt-1 break-all font-mono text-sm">{store.licenseKey}</p>
             </div>
           ) : (
@@ -97,7 +97,7 @@ export default function PortalConfigurationPage() {
           )}
           <Link
             href="/dashboard/parametres"
-            className="mt-4 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#1A1916] font-semibold text-sm text-white"
+            className="mt-4 flex h-11 items-center justify-center gap-2 rounded-xl bg-[#101828] font-semibold text-sm text-white"
           >
             <Wrench className="size-4" />
             Gerer les parametres
@@ -111,7 +111,7 @@ export default function PortalConfigurationPage() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <dt className="text-[#6B6B6B]">{label}</dt>
+      <dt className="text-[#667085]">{label}</dt>
       <dd className="font-medium text-right">{value}</dd>
     </div>
   );

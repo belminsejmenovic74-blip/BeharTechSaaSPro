@@ -44,7 +44,7 @@ export function ProblemSelector({ deviceType, value, onChange, className, label 
 
   return (
     <div className={cn("grid gap-1.5 w-full", className)}>
-      {label ? <label className="text-sm font-medium text-[#1A1916]">{label}</label> : null}
+      {label ? <label className="text-sm font-medium text-[#101828]">{label}</label> : null}
       <NativeSelect className="w-full" value={selectValue} onChange={handleSelect}>
         <NativeSelectOption value="">— Choisir un problème —</NativeSelectOption>
         {options.map((option) => (
@@ -57,7 +57,7 @@ export function ProblemSelector({ deviceType, value, onChange, className, label 
 
       {showCustom && (
         <Input
-          className="h-10 rounded-xl border-[#E8E8E5] focus:border-[#2A9D8F]/60 focus:ring-[#2A9D8F]/10"
+          className="h-10 rounded-xl border-[#E4E7EC] focus:border-[#2A9D8F]/60 focus:ring-[#2A9D8F]/10"
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder="Décrire le problème…"

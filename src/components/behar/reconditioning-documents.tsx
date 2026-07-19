@@ -9,12 +9,12 @@ import type { ReconditioningFile } from "@/lib/reconditioning-store";
 import { BeharLogo } from "./behar-logo";
 
 const C = {
-  ink: "#1A1916",
-  muted: "#6B6B6B",
-  faint: "#8A8A85",
+  ink: "#101828",
+  muted: "#667085",
+  faint: "#98A2B3",
   accent: "#2A9D8F",
   accentDark: "#167B70",
-  line: "#E8E8E5",
+  line: "#E4E7EC",
   hair: "#FFFFFF",
   soft: "#FFFFFF",
   accentSoft: "#FFFFFF",
@@ -495,7 +495,7 @@ export function EtiquetteStockPrintable({
         padding: mini ? "3.5mm" : "5mm",
         fontFamily: "Inter, system-ui, sans-serif",
         boxSizing: "border-box",
-        boxShadow: "0 10px 30px rgba(26,25,22,0.08)",
+        boxShadow: "0 10px 30px rgba(16,24,40,0.08)",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

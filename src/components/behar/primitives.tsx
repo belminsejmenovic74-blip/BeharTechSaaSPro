@@ -148,7 +148,7 @@ export function MetricCard({
 
 const statusStyles: Record<string, string> = {
   Reçu: "border-[#CDE9E3] bg-[#EEF8F5] text-[#1E7D72]",
-  Diagnostic: "border-[#E1E1DC] bg-[#F7F7F4] text-[#5F5F5A]",
+  Diagnostic: "border-[#E1E1DC] bg-[#F5F7FA] text-[#5F5F5A]",
   "En attente": "border-[#F1D7A9] bg-[#FFF8EA] text-[#8A5A00]",
   "En attente pièce": "border-[#F1D7A9] bg-[#FFF8EA] text-[#8A5A00]",
   "Pièce en attente": "border-[#F1D7A9] bg-[#FFF8EA] text-[#8A5A00]",
@@ -165,24 +165,24 @@ const statusStyles: Record<string, string> = {
   "Prêt — paiement à encaisser": "border-[#F1D7A9] bg-[#FFF8EA] text-[#8A5A00]",
   "Prêt à remettre au client": "border-[#CDE9E3] bg-[#EEF8F5] text-[#167B70]",
   "Test final validé": "border-[#CDE9E3] bg-[#EEF8F5] text-[#167B70]",
-  "Test non applicable": "border-[#E1E1DC] bg-[#F7F7F4] text-[#5F5F5A]",
+  "Test non applicable": "border-[#E1E1DC] bg-[#F5F7FA] text-[#5F5F5A]",
   "Test impossible": "border-[#F0D5A4] bg-[#FFF6E5] text-[#A65A00]",
   "Test refusé par le client": "border-[#F0D5A4] bg-[#FFF6E5] text-[#A65A00]",
-  Rendu: "border-[#E1E1DC] bg-[#F7F7F4] text-[#5F5F5A]",
+  Rendu: "border-[#E1E1DC] bg-[#F5F7FA] text-[#5F5F5A]",
   Irréparable: "border-[#EFCBC7] bg-[#FFF1F0] text-[#B42318]",
   SAV: "border-[#F1D7A9] bg-[#FFF8EA] text-[#8A5A00]",
-  Clôturé: "border-[#E1E1DC] bg-[#F7F7F4] text-[#5F5F5A]",
+  Clôturé: "border-[#E1E1DC] bg-[#F5F7FA] text-[#5F5F5A]",
   Actif: "border-[#CDE9E3] bg-[#EEF8F5] text-[#167B70]",
   "Client fidèle": "border-[#CDE9E3] bg-[#EEF8F5] text-[#147065]",
   Payée: "border-[#CDE9E3] bg-[#EEF8F5] text-[#167B70]",
-  Envoyée: "border-[#E1E1DC] bg-[#F7F7F4] text-[#5F5F5A]",
+  Envoyée: "border-[#E1E1DC] bg-[#F5F7FA] text-[#5F5F5A]",
   Payé: "border-[#CDE9E3] bg-[#EEF8F5] text-[#167B70]",
   Annulé: "border-[#EFCBC7] bg-[#FFF1F0] text-[#B42318]",
   Réussi: "border-[#CDE9E3] bg-[#EEF8F5] text-[#167B70]",
   "En retard": "border-[#EFCBC7] bg-[#FFF1F0] text-[#B42318]",
-  Remboursé: "border-[#E1E1DC] bg-[#F7F7F4] text-[#5F5F5A]",
-  Brouillon: "border-[#E1E1DC] bg-[#F7F7F4] text-[#5F5F5A]",
-  Envoyé: "border-[#E1E1DC] bg-[#F7F7F4] text-[#5F5F5A]",
+  Remboursé: "border-[#E1E1DC] bg-[#F5F7FA] text-[#5F5F5A]",
+  Brouillon: "border-[#E1E1DC] bg-[#F5F7FA] text-[#5F5F5A]",
+  Envoyé: "border-[#E1E1DC] bg-[#F5F7FA] text-[#5F5F5A]",
   Accepté: "border-[#CDE9E3] bg-[#EEF8F5] text-[#167B70]",
   Refusé: "border-[#EFCBC7] bg-[#FFF1F0] text-[#B42318]",
   "En stock": "border-[#CDE9E3] bg-[#EEF8F5] text-[#167B70]",
@@ -194,7 +194,7 @@ export function StatusBadge({ status, className }: Readonly<{ status: string; cl
     <span
       className={cn(
         "inline-flex min-h-6 items-center rounded-[7px] border px-2 py-0.5 font-semibold text-[11px] leading-none",
-        statusStyles[status] ?? "border-[#E1E1DC] bg-[#F7F7F4] text-[#5F5F5A]",
+        statusStyles[status] ?? "border-[#E1E1DC] bg-[#F5F7FA] text-[#5F5F5A]",
         className,
       )}
     >
@@ -221,8 +221,8 @@ export function DetailRow({
         className,
       )}
     >
-      <dt className="text-[#6B6B6B]">{label}</dt>
-      <dd className={cn("text-right text-[#1A1916]", emphasize && "font-semibold")}>{value}</dd>
+      <dt className="text-[#667085]">{label}</dt>
+      <dd className={cn("text-right text-[#101828]", emphasize && "font-semibold")}>{value}</dd>
     </div>
   );
 }
@@ -237,8 +237,8 @@ export function TableShell({ children, className }: Readonly<{ children: ReactNo
 
 export const tableClassName = "w-full min-w-[720px] border-collapse text-sm";
 export const tableHeadClassName =
-  "border-b border-[#E8E8E5] bg-[#FAFAF8] text-left text-xs font-semibold text-[#6B6B6B]";
-export const tableCellClassName = "border-b border-[#E8E8E5] px-4 py-3 text-[#1A1916]";
+  "border-b border-[#E4E7EC] bg-[#F9FAFB] text-left text-xs font-semibold text-[#667085]";
+export const tableCellClassName = "border-b border-[#E4E7EC] px-4 py-3 text-[#101828]";
 
 export type TimelineItem = {
   text: string;
@@ -266,17 +266,17 @@ export function Timeline({ items }: Readonly<{ items: readonly (string | Timelin
               <span
                 className={cn(
                   "z-10 grid size-5 shrink-0 place-items-center rounded-full border bg-white",
-                  index === 0 ? "border-[#2A9D8F] text-[#2A9D8F]" : "border-[#DADADA] text-[#6B6B6B]",
+                  index === 0 ? "border-[#2A9D8F] text-[#2A9D8F]" : "border-[#D0D5DD] text-[#667085]",
                 )}
               >
                 {Icon ? <Icon className="size-3" /> : <span className="size-1.5 rounded-full bg-current" />}
               </span>
-              {index < items.length - 1 && <div className="absolute top-5 h-full w-px bg-[#E8E8E5]" />}
+              {index < items.length - 1 && <div className="absolute top-5 h-full w-px bg-[#E4E7EC]" />}
             </div>
             <div className="flex-1 pb-2">
-              <p className="font-semibold text-[#1A1916]">{text}</p>
-              {detail && <p className="mt-0.5 text-[#6B6B6B] text-xs">{detail}</p>}
-              {date && <p className="mt-1 text-[#8A8A8A] text-[10px] font-bold uppercase">{date}</p>}
+              <p className="font-semibold text-[#101828]">{text}</p>
+              {detail && <p className="mt-0.5 text-[#667085] text-xs">{detail}</p>}
+              {date && <p className="mt-1 text-[#98A2B3] text-[10px] font-bold uppercase">{date}</p>}
             </div>
           </li>
         );
@@ -300,11 +300,11 @@ export function DeviceThumb({ className }: Readonly<{ className?: string }>) {
   return (
     <div
       className={cn(
-        "relative h-16 w-12 overflow-hidden rounded-[13px] border border-[#DADADA] bg-[#FFFFFF] shadow-[0_1px_2px_rgba(26,25,22,0.06)]",
+        "relative h-16 w-12 overflow-hidden rounded-[13px] border border-[#D0D5DD] bg-[#FFFFFF] shadow-[0_1px_2px_rgba(16,24,40,0.06)]",
         className,
       )}
     >
-      <div className="absolute inset-1 rounded-[9px] border border-[#E8E8E5] bg-white" />
+      <div className="absolute inset-1 rounded-[9px] border border-[#E4E7EC] bg-white" />
       <div className="absolute top-1.5 left-1/2 h-1 w-4 -translate-x-1/2 rounded-full bg-[#FFFFFF]" />
     </div>
   );
@@ -313,9 +313,9 @@ export function DeviceThumb({ className }: Readonly<{ className?: string }>) {
 export function PartPlaceholder({ className }: Readonly<{ className?: string }>) {
   return (
     <div className={cn("grid h-56 place-items-center rounded-[18px] bg-[#FFFFFF]", className)}>
-      <div className="relative h-40 w-24 rounded-[14px] border border-[#DADADA] bg-white shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+      <div className="relative h-40 w-24 rounded-[14px] border border-[#D0D5DD] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
         <div className="absolute inset-x-4 top-3 h-1.5 rounded-full bg-[#FFFFFF]" />
-        <div className="absolute inset-x-3 top-9 h-24 rounded-lg border border-[#E8E8E5] bg-[#FFFFFF]" />
+        <div className="absolute inset-x-3 top-9 h-24 rounded-lg border border-[#E4E7EC] bg-[#FFFFFF]" />
         <div className="absolute bottom-3 left-1/2 h-2 w-9 -translate-x-1/2 rounded-full bg-[#FFFFFF]" />
       </div>
     </div>
@@ -351,11 +351,11 @@ export function FormField({
     <div className={cn("space-y-2", className)}>
       {label &&
         (htmlFor ? (
-          <label className="font-medium text-[#1A1916] text-sm" htmlFor={htmlFor}>
+          <label className="font-medium text-[#101828] text-sm" htmlFor={htmlFor}>
             {label}
           </label>
         ) : (
-          <span className="block font-medium text-[#1A1916] text-sm">{label}</span>
+          <span className="block font-medium text-[#101828] text-sm">{label}</span>
         ))}
       {children}
       {error && <p className="text-[#DC3545] text-xs mt-1">{error}</p>}
@@ -382,7 +382,7 @@ export function ChoiceCard({
     <button
       className={cn(
         "flex flex-col items-center gap-3 rounded-[12px] border p-4 text-center transition-colors duration-150",
-        selected ? "border-[#2A9D8F] bg-[#EAF6F3]" : "border-[#E8E8E5] bg-white hover:bg-[#FAFAF8]",
+        selected ? "border-[#2A9D8F] bg-[#EAF6F3]" : "border-[#E4E7EC] bg-white hover:bg-[#F9FAFB]",
         disabled && "cursor-not-allowed opacity-50",
       )}
       disabled={disabled}
@@ -392,14 +392,14 @@ export function ChoiceCard({
       <div
         className={cn(
           "grid size-10 place-items-center rounded-[10px]",
-          selected ? "bg-[#2A9D8F] text-white" : "bg-[#F1F1ED] text-[#6B6B6B]",
+          selected ? "bg-[#2A9D8F] text-white" : "bg-[#F2F4F7] text-[#667085]",
         )}
       >
         <Icon className="size-5" />
       </div>
       <div>
-        <p className={cn("font-semibold", selected ? "text-[#167B70]" : "text-[#1A1916]")}>{title}</p>
-        <p className="text-[#6B6B6B] text-xs">{subtitle}</p>
+        <p className={cn("font-semibold", selected ? "text-[#167B70]" : "text-[#101828]")}>{title}</p>
+        <p className="text-[#667085] text-xs">{subtitle}</p>
       </div>
     </button>
   );
@@ -409,7 +409,7 @@ export function Input({ className, ...props }: Readonly<React.InputHTMLAttribute
   return (
     <input
       className={cn(
-        "h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-sm outline-none transition-colors duration-150 placeholder:text-[#8A8A8A] focus:border-[#2A9D8F] focus:ring-2 focus:ring-[#2A9D8F]/10 disabled:cursor-not-allowed disabled:bg-[#F5F5F2] disabled:opacity-55",
+        "h-10 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[#101828] text-sm outline-none transition-colors duration-150 placeholder:text-[#98A2B3] focus:border-[#2A9D8F] focus:ring-2 focus:ring-[#2A9D8F]/10 disabled:cursor-not-allowed disabled:bg-[#F5F5F2] disabled:opacity-55",
         className,
       )}
       {...props}
@@ -422,14 +422,14 @@ export function Select({ children, className, ...props }: Readonly<React.SelectH
     <div className="relative">
       <select
         className={cn(
-          "h-10 w-full appearance-none rounded-[10px] border border-[#E8E8E5] bg-white px-3 pr-10 text-[#1A1916] text-sm outline-none transition-colors focus:border-[#2A9D8F]/55 focus:ring-2 focus:ring-[#2A9D8F]/10 disabled:cursor-not-allowed disabled:bg-[#F5F5F2] disabled:opacity-55",
+          "h-10 w-full appearance-none rounded-[10px] border border-[#E4E7EC] bg-white px-3 pr-10 text-[#101828] text-sm outline-none transition-colors focus:border-[#2A9D8F]/55 focus:ring-2 focus:ring-[#2A9D8F]/10 disabled:cursor-not-allowed disabled:bg-[#F5F5F2] disabled:opacity-55",
           className,
         )}
         {...props}
       >
         {children}
       </select>
-      <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#6B6B6B]" />
+      <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#667085]" />
     </div>
   );
 }
@@ -438,7 +438,7 @@ export function Textarea({ className, ...props }: Readonly<React.TextareaHTMLAtt
   return (
     <textarea
       className={cn(
-        "w-full rounded-[10px] border border-[#E8E8E5] bg-white p-3 text-[#1A1916] text-sm outline-none transition-colors placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/55 focus:ring-2 focus:ring-[#2A9D8F]/10 disabled:cursor-not-allowed disabled:bg-[#F5F5F2] disabled:opacity-55",
+        "w-full rounded-[10px] border border-[#E4E7EC] bg-white p-3 text-[#101828] text-sm outline-none transition-colors placeholder:text-[#667085] focus:border-[#2A9D8F]/55 focus:ring-2 focus:ring-[#2A9D8F]/10 disabled:cursor-not-allowed disabled:bg-[#F5F5F2] disabled:opacity-55",
         className,
       )}
       {...props}
@@ -465,20 +465,20 @@ export function Modal({
     <div className="fixed inset-0 z-50 flex items-stretch justify-stretch p-0 md:items-center md:justify-center md:p-4">
       <button
         aria-label="Fermer la fenêtre"
-        className="fixed inset-0 bg-[#1A1916]/28 transition-opacity"
+        className="fixed inset-0 bg-[#101828]/28 transition-opacity"
         onClick={onClose}
         type="button"
       />
       <Panel
         className={cn(
-          "relative z-10 flex min-h-svh w-full flex-col rounded-none md:max-h-[90vh] md:min-h-0 md:rounded-[14px] md:shadow-[0_16px_48px_rgba(26,25,22,0.10)]",
+          "relative z-10 flex min-h-svh w-full flex-col rounded-none md:max-h-[90vh] md:min-h-0 md:rounded-[14px] md:shadow-[0_16px_48px_rgba(16,24,40,0.10)]",
           maxWidth,
         )}
       >
-        <div className="flex items-center justify-between border-b border-[#E8E8E5] px-5 py-4 md:px-6">
-          <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">{title}</h2>
+        <div className="flex items-center justify-between border-b border-[#E4E7EC] px-5 py-4 md:px-6">
+          <h2 className="font-semibold text-[#101828] text-[17px] tracking-tight">{title}</h2>
           <button
-            className="grid size-9 place-items-center rounded-[9px] bg-[#F1F1ED] text-[#6B6B6B] transition-colors hover:bg-[#E8E8E5] hover:text-[#1A1916] md:size-8"
+            className="grid size-9 place-items-center rounded-[9px] bg-[#F2F4F7] text-[#667085] transition-colors hover:bg-[#E4E7EC] hover:text-[#101828] md:size-8"
             onClick={onClose}
             type="button"
             aria-label="Fermer"

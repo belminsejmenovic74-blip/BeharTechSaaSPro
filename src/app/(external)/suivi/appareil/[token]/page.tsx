@@ -8,7 +8,7 @@ export function generateStaticParams() {
 
 export default function PublicReconditionedDevicePage() {
   return (
-    <Suspense fallback={<div className="min-h-svh bg-[#FAFAF8]" />}>
+    <Suspense fallback={<div className="min-h-svh bg-[#F9FAFB]" />}>
       <PublicCertificateScreen />
     </Suspense>
   );

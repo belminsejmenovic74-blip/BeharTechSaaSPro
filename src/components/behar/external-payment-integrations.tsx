@@ -251,10 +251,10 @@ export function ExternalPaymentIntegrations() {
     <section className="min-w-0 space-y-6">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
-          <h1 className="font-semibold text-[#1A1916] text-[32px] tracking-[-0.035em] sm:text-[42px]">
+          <h1 className="font-semibold text-[#101828] text-[32px] tracking-[-0.035em] sm:text-[42px]">
             Paiements externes
           </h1>
-          <p className="mt-3 max-w-3xl text-[#6B6B6B] text-[15px] leading-relaxed sm:text-[16px]">
+          <p className="mt-3 max-w-3xl text-[#667085] text-[15px] leading-relaxed sm:text-[16px]">
             Connectez vos propres services de paiement. Les règlements sont traités et conservés directement par votre
             prestataire.
           </p>
@@ -367,14 +367,14 @@ export function ExternalPaymentIntegrations() {
         </ComingSoonIntegration>
       </div>
 
-      <Panel className="border border-[#E8E8E5] bg-white p-5 shadow-[0_8px_24px_rgba(26,25,22,0.035)]">
+      <Panel className="border border-[#E4E7EC] bg-white p-5 shadow-[0_8px_24px_rgba(16,24,40,0.035)]">
         <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-[#FAFAF8] text-[#6B6B6B]">
+          <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-[#F9FAFB] text-[#667085]">
             <Unplug className="size-[18px]" />
           </span>
           <div>
-            <h3 className="font-semibold text-[#1A1916] text-[15px]">Autre système de paiement</h3>
-            <p className="mt-1 text-[#6B6B6B] text-[13px] leading-relaxed">
+            <h3 className="font-semibold text-[#101828] text-[15px]">Autre système de paiement</h3>
+            <p className="mt-1 text-[#667085] text-[13px] leading-relaxed">
               Vous pouvez continuer à utiliser votre banque, votre caisse ou votre terminal habituel. Behar Tech Pro
               n’enregistre pas le règlement.
             </p>
@@ -406,15 +406,15 @@ export function ExternalPaymentIntegrations() {
         maxWidth="max-w-lg"
       >
         <div className="space-y-4">
-          <p className="text-[#6B6B6B] text-sm leading-relaxed">
+          <p className="text-[#667085] text-sm leading-relaxed">
             Saisissez la Secret API Key générée dans votre Merchant Account Revolut Business. Aucun OAuth partenaire
             public n’est actuellement proposé par Revolut pour cette intégration.
           </p>
           <label className="grid gap-1.5 text-sm">
-            <span className="font-semibold text-[#1A1916]">Nom du Merchant Account</span>
+            <span className="font-semibold text-[#101828]">Nom du Merchant Account</span>
             <input
               autoComplete="organization"
-              className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
+              className="h-11 rounded-[12px] border border-[#E4E7EC] bg-white px-3 outline-none focus:border-[#2A9D8F]"
               maxLength={100}
               onChange={(event) => setRevolutMerchantLabel(event.target.value)}
               placeholder="Atelier principal"
@@ -422,17 +422,17 @@ export function ExternalPaymentIntegrations() {
             />
           </label>
           <label className="grid gap-1.5 text-sm">
-            <span className="font-semibold text-[#1A1916]">Secret API Key · {revolutEnvironment}</span>
+            <span className="font-semibold text-[#101828]">Secret API Key · {revolutEnvironment}</span>
             <input
               autoComplete="off"
-              className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 font-mono outline-none focus:border-[#2A9D8F]"
+              className="h-11 rounded-[12px] border border-[#E4E7EC] bg-white px-3 font-mono outline-none focus:border-[#2A9D8F]"
               onChange={(event) => setRevolutApiKey(event.target.value)}
               placeholder="sk_…"
               type="password"
               value={revolutApiKey}
             />
           </label>
-          <p className="rounded-[12px] bg-[#FAFAF8] p-3 text-[#6B6B6B] text-xs leading-relaxed">
+          <p className="rounded-[12px] bg-[#F9FAFB] p-3 text-[#667085] text-xs leading-relaxed">
             La clé est testée côté serveur puis chiffrée. Elle ne sera jamais renvoyée dans le navigateur. Désactivez
             Pay by Bank et tout moyen non autorisé dans Revolut Business avant d’envoyer un lien.
           </p>
@@ -461,13 +461,13 @@ export function ExternalPaymentIntegrations() {
         maxWidth="max-w-lg"
       >
         <div className="space-y-4">
-          <p className="text-[#6B6B6B] text-sm leading-relaxed">
+          <p className="text-[#667085] text-sm leading-relaxed">
             Enregistrez votre lien PayPal.Me ou votre lien PayPal Business. Pour PayPal.Me, le total TTC et la devise
             seront ajoutés au lien de chaque facture.
           </p>
-          <div className="rounded-[12px] border border-[#E8E8E5] bg-[#FAFAF8] p-3">
-            <p className="font-semibold text-[#1A1916] text-sm">PayPal Commerce Platform</p>
-            <p className="mt-1 text-[#6B6B6B] text-xs leading-relaxed">
+          <div className="rounded-[12px] border border-[#E4E7EC] bg-[#F9FAFB] p-3">
+            <p className="font-semibold text-[#101828] text-sm">PayPal Commerce Platform</p>
+            <p className="mt-1 text-[#667085] text-xs leading-relaxed">
               La connexion automatique d’un compte Business existant nécessite l’activation partenaire PayPal.
             </p>
             <SecondaryButton
@@ -479,17 +479,17 @@ export function ExternalPaymentIntegrations() {
             </SecondaryButton>
           </div>
           <label className="grid gap-1.5 text-sm">
-            <span className="font-semibold text-[#1A1916]">Lien PayPal officiel</span>
+            <span className="font-semibold text-[#101828]">Lien PayPal officiel</span>
             <input
               autoComplete="off"
-              className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 outline-none focus:border-[#2A9D8F]"
+              className="h-11 rounded-[12px] border border-[#E4E7EC] bg-white px-3 outline-none focus:border-[#2A9D8F]"
               onChange={(event) => setPaypalUrl(event.target.value)}
               placeholder="https://paypal.me/votre-atelier"
               type="url"
               value={paypalUrl}
             />
           </label>
-          <p className="rounded-[12px] bg-[#FAFAF8] p-3 text-[#6B6B6B] text-xs leading-relaxed">
+          <p className="rounded-[12px] bg-[#F9FAFB] p-3 text-[#667085] text-xs leading-relaxed">
             Le lien est chiffré côté serveur. Behar Tech Pro ne consulte jamais le résultat du paiement.
           </p>
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -522,17 +522,17 @@ function PayPalCard({
   onSetDefault: () => void;
 }>) {
   return (
-    <Panel className="flex min-h-[270px] flex-col border border-[#E8E8E5] bg-white p-5 shadow-[0_12px_36px_rgba(26,25,22,0.04)] sm:p-6">
+    <Panel className="flex min-h-[270px] flex-col border border-[#E4E7EC] bg-white p-5 shadow-[0_12px_36px_rgba(16,24,40,0.04)] sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <ExternalPaymentBrand provider="paypal" />
         <ConnectionBadge connection={connection} />
       </div>
-      <h3 className="mt-5 font-semibold text-[#1A1916] text-lg">PayPal</h3>
-      <p className="mt-1.5 text-[#6B6B6B] text-[13px] leading-relaxed">
+      <h3 className="mt-5 font-semibold text-[#101828] text-lg">PayPal</h3>
+      <p className="mt-1.5 text-[#667085] text-[13px] leading-relaxed">
         Utilisez votre lien PayPal Business ou connectez votre compte marchand lorsque l’accès partenaire est activé.
       </p>
       {connection ? (
-        <p className="mt-3 text-[#6B6B6B] text-xs">
+        <p className="mt-3 text-[#667085] text-xs">
           {connection.connectionMode === "commerce" ? "PayPal Commerce Platform" : "Lien PayPal manuel"} · configuré le{" "}
           {new Date(connection.connected_at).toLocaleDateString("fr-FR")}
         </p>
@@ -555,7 +555,7 @@ function PayPalCard({
               </PrimaryButton>
             ) : null}
             <a
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-semibold text-[#1A1916] text-[13px]"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white px-4 font-semibold text-[#101828] text-[13px]"
               href={connection.dashboardUrl}
               rel="noreferrer"
               target="_blank"
@@ -614,14 +614,14 @@ function ProviderCard({
   manageLabel?: string;
 }>) {
   return (
-    <Panel className="flex min-h-[245px] flex-col border border-[#E8E8E5] bg-white p-5 shadow-[0_12px_36px_rgba(26,25,22,0.035)] sm:p-6">
+    <Panel className="flex min-h-[245px] flex-col border border-[#E4E7EC] bg-white p-5 shadow-[0_12px_36px_rgba(16,24,40,0.035)] sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <ExternalPaymentBrand provider={provider} />
         <ConnectionBadge connection={connection} />
       </div>
-      <p className="mt-5 text-[#6B6B6B] text-[13px] leading-relaxed">{description}</p>
+      <p className="mt-5 text-[#667085] text-[13px] leading-relaxed">{description}</p>
       {connection ? (
-        <p className="mt-3 text-[#6B6B6B] text-xs">
+        <p className="mt-3 text-[#667085] text-xs">
           {connection.merchant_display_name ?? connection.external_account_id} · connecté le{" "}
           {new Date(connection.connected_at).toLocaleDateString("fr-FR")}
         </p>
@@ -630,7 +630,7 @@ function ProviderCard({
         {connection ? (
           <>
             <a
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-[12px] bg-[#1A1916] px-4 font-semibold text-white text-[13px]"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-[12px] bg-[#101828] px-4 font-semibold text-white text-[13px]"
               href={connection.dashboardUrl}
               rel="noreferrer"
               target="_blank"
@@ -678,7 +678,7 @@ function ProviderCard({
 function ConnectionBadge({ connection }: Readonly<{ connection?: Connection }>) {
   if (!connection) {
     return (
-      <span className="rounded-full bg-[#F1F1EF] px-3 py-1.5 font-medium text-[#6B6B6B] text-[11px]">
+      <span className="rounded-full bg-[#F2F4F7] px-3 py-1.5 font-medium text-[#667085] text-[11px]">
         Non configuré
       </span>
     );

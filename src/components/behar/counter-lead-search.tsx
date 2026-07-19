@@ -178,7 +178,7 @@ export function CounterLeadSearch({
 
   if (!(workshopId && licenseKey)) {
     return (
-      <Panel className="p-8 text-center text-[#6B6B6B]">
+      <Panel className="p-8 text-center text-[#667085]">
         Activez la synchronisation atelier pour rechercher les demandes du site.
       </Panel>
     );
@@ -190,26 +190,26 @@ export function CounterLeadSearch({
         <button
           type="button"
           onClick={onClose}
-          className="grid size-10 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white"
+          className="grid size-10 place-items-center rounded-[12px] border border-[#E4E7EC] bg-white"
           aria-label="Retour"
         >
           <ArrowLeft className="size-5" />
         </button>
         <div>
           <h1 className="font-black text-[24px] tracking-tight">Rechercher une demande</h1>
-          <p className="text-[#6B6B6B] text-sm">Téléphone, nom, e-mail ou numéro de demande.</p>
+          <p className="text-[#667085] text-sm">Téléphone, nom, e-mail ou numéro de demande.</p>
         </div>
       </div>
 
       <Panel className="p-4">
         <label className="relative block">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-[#8A8A8A]" />
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-[#98A2B3]" />
           <input
             autoFocus
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Ex : 0612345678, Sarah, sarah@mail.fr…"
-            className="h-12 w-full rounded-xl border border-[#E8E8E5] pr-3 pl-11 text-[15px] outline-none focus:border-[#2A9D8F]"
+            className="h-12 w-full rounded-xl border border-[#E4E7EC] pr-3 pl-11 text-[15px] outline-none focus:border-[#2A9D8F]"
           />
         </label>
       </Panel>
@@ -217,13 +217,13 @@ export function CounterLeadSearch({
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_440px]">
         <Panel className="overflow-hidden">
           {loading ? (
-            <div className="p-10 text-center text-sm text-[#6B6B6B]">Chargement…</div>
+            <div className="p-10 text-center text-sm text-[#667085]">Chargement…</div>
           ) : results.length === 0 ? (
-            <div className="p-10 text-center text-sm text-[#6B6B6B]">
+            <div className="p-10 text-center text-sm text-[#667085]">
               {query ? "Aucune demande trouvée." : "Aucune demande pour le moment."}
             </div>
           ) : (
-            <div className="divide-y divide-[#E8E8E5]">
+            <div className="divide-y divide-[#E4E7EC]">
               {results.map((lead) => (
                 <button
                   key={lead.id}
@@ -231,15 +231,15 @@ export function CounterLeadSearch({
                   onClick={() => setSelectedId(lead.id)}
                   className={cn(
                     "grid w-full grid-cols-[1fr_auto] items-center gap-3 p-4 text-left transition",
-                    selected?.id === lead.id ? "bg-[#F1FAF8]" : "hover:bg-[#FAFAF8]",
+                    selected?.id === lead.id ? "bg-[#F1FAF8]" : "hover:bg-[#F9FAFB]",
                   )}
                 >
                   <div className="min-w-0">
                     <p className="font-semibold text-sm">{leadCustomerName(lead)}</p>
-                    <p className="text-xs text-[#6B6B6B]">
+                    <p className="text-xs text-[#667085]">
                       {lead.phone || lead.email || "—"} · {leadDeviceLabel(lead)}
                     </p>
-                    <p className="truncate text-xs text-[#6B6B6B]">{lead.issue}</p>
+                    <p className="truncate text-xs text-[#667085]">{lead.issue}</p>
                   </div>
                   <span className="rounded-full bg-[#EAF7F4] px-2.5 py-1 font-semibold text-[#167B70] text-[11px]">
                     {LEAD_STATUS_LABELS[lead.status]}
@@ -255,7 +255,7 @@ export function CounterLeadSearch({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="font-semibold text-xl">{leadCustomerName(selected)}</h2>
-                <p className="mt-1 text-sm text-[#6B6B6B]">
+                <p className="mt-1 text-sm text-[#667085]">
                   {leadDeviceLabel(selected)} · {selected.issue}
                 </p>
               </div>
@@ -284,7 +284,7 @@ export function CounterLeadSearch({
             </div>
 
             {(selected.issue_description || selected.comment) && (
-              <div className="mt-4 rounded-xl bg-[#FAFAF8] p-3 text-sm leading-relaxed">
+              <div className="mt-4 rounded-xl bg-[#F9FAFB] p-3 text-sm leading-relaxed">
                 {[selected.issue_description, selected.comment].filter(Boolean).join(" — ")}
               </div>
             )}
@@ -293,14 +293,14 @@ export function CounterLeadSearch({
               <a
                 href={leadPhoneHref(selected)}
                 onClick={() => void recordActivity(selected, "called", "Appel lancé depuis le comptoir").then(load)}
-                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[#E8E8E5] bg-white px-3 font-semibold text-sm"
+                className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[#E4E7EC] bg-white px-3 font-semibold text-sm"
               >
                 <Phone className="size-4" /> Appeler
               </a>
               {selected.email ? (
                 <a
                   href={`mailto:${selected.email}`}
-                  className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[#E8E8E5] bg-white px-3 font-semibold text-sm"
+                  className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[#E4E7EC] bg-white px-3 font-semibold text-sm"
                 >
                   <Mail className="size-4" /> E-mail
                 </a>
@@ -319,13 +319,13 @@ export function CounterLeadSearch({
                   setRdvTime("09:00");
                   setRdvOpen(true);
                 }}
-                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#E8E8E5] bg-white font-semibold text-sm disabled:opacity-50"
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#E4E7EC] bg-white font-semibold text-sm disabled:opacity-50"
               >
                 <CalendarPlus className="size-4" /> Créer un rendez-vous
               </button>
             </div>
 
-            <div className="mt-5 border-t border-[#E8E8E5] pt-4">
+            <div className="mt-5 border-t border-[#E4E7EC] pt-4">
               <h3 className="flex items-center gap-2 font-semibold text-sm">
                 <Clock3 className="size-4" /> Timeline
               </h3>
@@ -334,13 +334,13 @@ export function CounterLeadSearch({
                   history.map((entry) => (
                     <div key={entry.id} className="border-l-2 border-[#D7EFEA] pl-3">
                       <p className="text-sm font-medium">{leadHistoryLabel(entry.action, entry.to_status)}</p>
-                      <p className="text-xs text-[#6B6B6B]">
+                      <p className="text-xs text-[#667085]">
                         {entry.note || entry.actor_name} · {isoDate(entry.created_at)}
                       </p>
                     </div>
                   ))
                 ) : (
-                  <p className="text-xs text-[#6B6B6B]">Aucun événement.</p>
+                  <p className="text-xs text-[#667085]">Aucun événement.</p>
                 )}
               </div>
             </div>
@@ -352,7 +352,7 @@ export function CounterLeadSearch({
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/35 p-4">
           <Panel className="w-full max-w-md p-5">
             <h2 className="font-semibold text-xl">Créer un rendez-vous</h2>
-            <p className="mt-1 text-sm text-[#6B6B6B]">
+            <p className="mt-1 text-sm text-[#667085]">
               {leadCustomerName(selected)} · {leadDeviceLabel(selected)}
             </p>
             <div className="mt-5 grid grid-cols-2 gap-3">
@@ -363,7 +363,7 @@ export function CounterLeadSearch({
                   value={rdvDate}
                   min={new Date().toISOString().slice(0, 10)}
                   onChange={(event) => setRdvDate(event.target.value)}
-                  className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] px-3"
+                  className="mt-1 h-11 w-full rounded-xl border border-[#E4E7EC] px-3"
                 />
               </label>
               <label className="text-sm font-medium">
@@ -372,7 +372,7 @@ export function CounterLeadSearch({
                   type="time"
                   value={rdvTime}
                   onChange={(event) => setRdvTime(event.target.value)}
-                  className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] px-3"
+                  className="mt-1 h-11 w-full rounded-xl border border-[#E4E7EC] px-3"
                 />
               </label>
             </div>
@@ -381,7 +381,7 @@ export function CounterLeadSearch({
               <select
                 value={rdvTechnician}
                 onChange={(event) => setRdvTechnician(event.target.value)}
-                className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3"
+                className="mt-1 h-11 w-full rounded-xl border border-[#E4E7EC] bg-white px-3"
               >
                 <option value="">À assigner</option>
                 {data.assignees.map((member) => (
@@ -394,7 +394,7 @@ export function CounterLeadSearch({
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
-                className="h-11 rounded-xl border border-[#E8E8E5] px-4 font-semibold text-sm"
+                className="h-11 rounded-xl border border-[#E4E7EC] px-4 font-semibold text-sm"
                 onClick={() => setRdvOpen(false)}
               >
                 Annuler
@@ -413,7 +413,7 @@ export function CounterLeadSearch({
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <p className="font-bold text-[10px] text-[#8A8A8A] uppercase tracking-wide">{label}</p>
+      <p className="font-bold text-[10px] text-[#98A2B3] uppercase tracking-wide">{label}</p>
       <p className="mt-1 truncate font-medium text-sm" title={value}>
         {value}
       </p>

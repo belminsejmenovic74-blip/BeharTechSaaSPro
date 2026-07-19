@@ -124,7 +124,7 @@ export function DashboardSidebar() {
   return (
     <aside
       className={cn(
-        "fixed inset-y-0 left-0 z-30 hidden border-[#E8E8E5] border-r bg-white py-5 transition-[width,padding] duration-200 md:flex md:flex-col",
+        "fixed inset-y-0 left-0 z-30 hidden border-[#E4E7EC] border-r bg-white py-5 transition-[width,padding] duration-200 md:flex md:flex-col",
         collapsed ? "w-[72px] px-2" : "w-[232px] px-3",
       )}
     >
@@ -137,7 +137,7 @@ export function DashboardSidebar() {
         <button
           type="button"
           onClick={toggleCollapsed}
-          className="grid size-8 shrink-0 place-items-center rounded-[9px] border border-[#E8E8E5] bg-white text-[#6B6B6B] transition-colors hover:bg-[#F7F7F4] hover:text-[#1A1916]"
+          className="grid size-8 shrink-0 place-items-center rounded-[9px] border border-[#E4E7EC] bg-white text-[#667085] transition-colors hover:bg-[#F5F7FA] hover:text-[#101828]"
           aria-label={collapsed ? "Afficher le menu" : "Masquer le menu"}
           title={collapsed ? "Afficher le menu" : "Masquer le menu"}
         >
@@ -149,11 +149,11 @@ export function DashboardSidebar() {
         {visibleGroups.map((group) => (
           <section key={group.label}>
             {!collapsed && (
-              <p className="mb-1 px-2 font-semibold text-[#9A9A95] text-[9px] uppercase leading-4 tracking-[0.12em]">
+              <p className="mb-1 px-2 font-semibold text-[#98A2B3] text-[9px] uppercase leading-4 tracking-[0.12em]">
                 {group.label}
               </p>
             )}
-            <div className={cn("space-y-0.5", !collapsed && "ml-2 border-[#ECECE9] border-l pl-2")}>
+            <div className={cn("space-y-0.5", !collapsed && "ml-2 border-[#EAECF0] border-l pl-2")}>
               {group.items.map((item) => {
                 const Icon = item.icon;
                 const active = item.href === "/dashboard" ? pathname === item.href : pathname.startsWith(item.href);
@@ -161,9 +161,9 @@ export function DashboardSidebar() {
                 return (
                   <Link
                     className={cn(
-                      "flex h-9 items-center rounded-[9px] border border-transparent font-medium text-[#6B6B6B] text-[12.5px] transition-colors",
+                      "flex h-9 items-center rounded-[9px] border border-transparent font-medium text-[#667085] text-[12.5px] transition-colors",
                       collapsed ? "justify-center px-0" : "gap-2.5 px-2.5",
-                      "hover:bg-[#F4FBF9] hover:text-[#1A1916]",
+                      "hover:bg-[#F4FBF9] hover:text-[#101828]",
                       active && "border-[#D8EEEA] bg-[#F4FBF9] font-semibold text-[#167B70]",
                     )}
                     href={item.href}
@@ -181,7 +181,7 @@ export function DashboardSidebar() {
         ))}
       </nav>
 
-      <div className="border-[#ECECE9] border-t pt-3">
+      <div className="border-[#EAECF0] border-t pt-3">
         <div
           className={cn(
             "group flex min-h-9 items-center rounded-[9px] bg-white py-1 transition-colors hover:bg-[#F4FBF9]",
@@ -194,13 +194,13 @@ export function DashboardSidebar() {
           {!collapsed && (
             <>
               <div className="min-w-0 flex-1 leading-tight">
-                <div className="truncate font-medium text-[#1A1916] text-[12px]">{userFirstName}</div>
-                <div className="text-[#8A8A85] text-[9.5px]">{userRoleLabel}</div>
+                <div className="truncate font-medium text-[#101828] text-[12px]">{userFirstName}</div>
+                <div className="text-[#98A2B3] text-[9.5px]">{userRoleLabel}</div>
               </div>
               <button
                 type="button"
                 onClick={() => logout()}
-                className="grid size-7 place-items-center rounded-[8px] text-[#A3A3A0] opacity-60 transition hover:bg-white hover:text-[#B42318] hover:opacity-100"
+                className="grid size-7 place-items-center rounded-[8px] text-[#98A2B3] opacity-60 transition hover:bg-white hover:text-[#B42318] hover:opacity-100"
                 title="Changer d'utilisateur"
                 aria-label="Déconnexion"
               >

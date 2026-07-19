@@ -55,10 +55,10 @@ const hours = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "1
 const demoWeekStart = getMonday(new Date());
 
 const eventStyles: Record<string, string> = {
-  mint: "border-[#E8E8E5] bg-white",
-  blue: "border-[#E8E8E5] bg-white",
-  purple: "border-[#E8E8E5] bg-white",
-  sand: "border-[#E8E8E5] bg-white",
+  mint: "border-[#E4E7EC] bg-white",
+  blue: "border-[#E4E7EC] bg-white",
+  purple: "border-[#E4E7EC] bg-white",
+  sand: "border-[#E4E7EC] bg-white",
   selected: "border-[#2A9D8F] bg-white shadow-[0_12px_26px_rgba(42,157,143,0.16)]",
 };
 
@@ -197,12 +197,12 @@ export function AppointmentsWorkspace() {
       {/* Mobile : mini calendrier + KPI jour + agenda + CTA */}
       <section className="md:hidden space-y-4">
         {/* Mini calendrier — mois + nav semaine + 7 jours cliquables */}
-        <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+        <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
           <div className="mb-3 flex items-center justify-between">
             <button
               type="button"
               onClick={() => setMobileWeekOffset((o) => o - 1)}
-              className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#1A1916] transition active:scale-90"
+              className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#101828] transition active:scale-90"
               aria-label="Semaine précédente"
             >
               <ChevronLeft className="size-4" strokeWidth={2.2} />
@@ -210,14 +210,14 @@ export function AppointmentsWorkspace() {
             <button
               type="button"
               onClick={goToToday}
-              className="font-semibold text-[#1A1916] text-[15px] tracking-tight"
+              className="font-semibold text-[#101828] text-[15px] tracking-tight"
             >
               {monthLabel}
             </button>
             <button
               type="button"
               onClick={() => setMobileWeekOffset((o) => o + 1)}
-              className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#1A1916] transition active:scale-90"
+              className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#101828] transition active:scale-90"
               aria-label="Semaine suivante"
             >
               <ChevronRight className="size-4" strokeWidth={2.2} />
@@ -236,7 +236,7 @@ export function AppointmentsWorkspace() {
                   onClick={() => setMobileSelectedDay(iso)}
                   className="flex flex-col items-center gap-1 py-1.5"
                 >
-                  <span className="text-[#6B6B6B] text-[10.5px] font-semibold uppercase tracking-wide">
+                  <span className="text-[#667085] text-[10.5px] font-semibold uppercase tracking-wide">
                     {dayLabels[idx]?.replace(".", "")}
                   </span>
                   <span
@@ -246,7 +246,7 @@ export function AppointmentsWorkspace() {
                         ? "bg-[#2A9D8F] text-white shadow-[0_4px_12px_rgba(42,157,143,0.3)]"
                         : isToday
                           ? "bg-[#FFFFFF] text-[#2A9D8F]"
-                          : "text-[#1A1916] hover:bg-[#FFFFFF]",
+                          : "text-[#101828] hover:bg-[#FFFFFF]",
                     )}
                   >
                     {date.getDate()}
@@ -272,11 +272,11 @@ export function AppointmentsWorkspace() {
         </div>
 
         {/* Agenda du jour */}
-        <div className="rounded-[20px] border border-[#E8E8E5] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+        <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
           <div className="mb-3 flex items-baseline justify-between">
             <div>
-              <h3 className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Agenda du jour</h3>
-              <p className="mt-0.5 text-[#6B6B6B] text-[11.5px]">{capitalize(formatLongDate(mobileSelectedDay))}</p>
+              <h3 className="font-semibold text-[#101828] text-[15px] tracking-tight">Agenda du jour</h3>
+              <p className="mt-0.5 text-[#667085] text-[11.5px]">{capitalize(formatLongDate(mobileSelectedDay))}</p>
             </div>
             {mobileSelectedDay !== todayIso && (
               <button type="button" onClick={goToToday} className="text-[#2A9D8F] text-[12px] font-semibold">
@@ -287,12 +287,12 @@ export function AppointmentsWorkspace() {
 
           {appointmentsForSelectedDay.length === 0 ? (
             <div className="flex items-center gap-3 rounded-[14px] bg-[#FFFFFF] px-4 py-3.5">
-              <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white text-[#6B6B6B]">
+              <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white text-[#667085]">
                 <CalendarDays className="size-[16px]" strokeWidth={1.8} />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-[#1A1916] text-[13px]">Aucun rendez-vous</p>
-                <p className="mt-0.5 text-[#6B6B6B] text-[11.5px]">Touchez "+" pour en ajouter un.</p>
+                <p className="font-medium text-[#101828] text-[13px]">Aucun rendez-vous</p>
+                <p className="mt-0.5 text-[#667085] text-[11.5px]">Touchez "+" pour en ajouter un.</p>
               </div>
               <button
                 type="button"
@@ -333,27 +333,27 @@ export function AppointmentsWorkspace() {
                         <span
                           className={cn(
                             "size-2 rounded-full",
-                            tone === "teal" ? "bg-[#2A9D8F]" : tone === "amber" ? "bg-[#6B6B6B]" : "bg-[#10B981]",
+                            tone === "teal" ? "bg-[#2A9D8F]" : tone === "amber" ? "bg-[#667085]" : "bg-[#10B981]",
                           )}
                           aria-hidden
                         />
-                        <span className="mt-1.5 font-semibold text-[#1A1916] text-[13px] tabular-nums">
+                        <span className="mt-1.5 font-semibold text-[#101828] text-[13px] tabular-nums">
                           {appt.time}
                         </span>
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-semibold text-[#1A1916] text-[13.5px]">
+                        <p className="truncate font-semibold text-[#101828] text-[13.5px]">
                           {cleanDeviceLabel(appt.device)}
                           {appt.issue ? ` · ${appt.issue}` : ""}
                         </p>
-                        <p className="mt-0.5 truncate text-[#6B6B6B] text-[12px]">
+                        <p className="mt-0.5 truncate text-[#667085] text-[12px]">
                           {apptCustomer?.name || "Client comptoir"}
                           {linked ? " · Réparation liée" : ""}
                         </p>
                       </div>
                       <span className="flex shrink-0 items-center gap-1.5">
                         <AppointmentStatusPill status={appt.status} confirmed={appt.confirmed} />
-                        <ChevronRight className="size-4 text-[#A3A3A3]" strokeWidth={2} />
+                        <ChevronRight className="size-4 text-[#98A2B3]" strokeWidth={2} />
                       </span>
                     </button>
                   </li>
@@ -384,7 +384,7 @@ export function AppointmentsWorkspace() {
 
       <section className="grid gap-5 md:grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
         <Panel className="hidden md:block min-w-0 overflow-hidden p-0">
-          <div className="flex h-[72px] items-center justify-between gap-3 overflow-hidden border-[#E8E8E5] border-b px-5">
+          <div className="flex h-[72px] items-center justify-between gap-3 overflow-hidden border-[#E4E7EC] border-b px-5">
             <div className="flex min-w-0 shrink-0 items-center gap-2">
               {viewMode === "week" ? (
                 <>
@@ -394,25 +394,25 @@ export function AppointmentsWorkspace() {
                   <SecondaryButton className="h-10 px-3" onClick={() => setWeekOffset((value) => value + 1)}>
                     <ArrowRight className="size-4" />
                   </SecondaryButton>
-                  <span className="inline-flex h-10 items-center gap-2 whitespace-nowrap px-2 font-semibold text-[#1A1916] text-sm">
+                  <span className="inline-flex h-10 items-center gap-2 whitespace-nowrap px-2 font-semibold text-[#101828] text-sm">
                     {formatWeekRange(weekDays)}
-                    <ArrowRight className="size-4 text-[#6B6B6B]" />
+                    <ArrowRight className="size-4 text-[#667085]" />
                   </span>
                 </>
               ) : (
-                <span className="inline-flex h-10 items-center whitespace-nowrap px-2 font-semibold text-[#1A1916] text-sm">
+                <span className="inline-flex h-10 items-center whitespace-nowrap px-2 font-semibold text-[#101828] text-sm">
                   Agenda — passés &amp; à venir
                 </span>
               )}
             </div>
             <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
-              <div className="flex shrink-0 items-center rounded-[10px] border border-[#E8E8E5] bg-[#FFFFFF] p-0.5">
+              <div className="flex shrink-0 items-center rounded-[10px] border border-[#E4E7EC] bg-[#FFFFFF] p-0.5">
                 <button
                   type="button"
                   onClick={() => setViewMode("week")}
                   className={cn(
                     "h-9 rounded-[8px] px-3 font-semibold text-[13px] transition",
-                    viewMode === "week" ? "bg-white text-[#1A1916] shadow-sm" : "text-[#6B6B6B]",
+                    viewMode === "week" ? "bg-white text-[#101828] shadow-sm" : "text-[#667085]",
                   )}
                 >
                   Semaine
@@ -422,7 +422,7 @@ export function AppointmentsWorkspace() {
                   onClick={() => setViewMode("agenda")}
                   className={cn(
                     "h-9 rounded-[8px] px-3 font-semibold text-[13px] transition",
-                    viewMode === "agenda" ? "bg-white text-[#1A1916] shadow-sm" : "text-[#6B6B6B]",
+                    viewMode === "agenda" ? "bg-white text-[#101828] shadow-sm" : "text-[#667085]",
                   )}
                 >
                   Agenda
@@ -472,9 +472,9 @@ export function AppointmentsWorkspace() {
           <Panel
             className={cn(
               mobileDetailOpen
-                ? "fixed inset-x-0 bottom-0 z-40 max-h-[94svh] overflow-y-auto rounded-t-[28px] border border-[#E8E8E5] bg-white p-5 shadow-[0_-24px_70px_rgba(26,25,22,0.18)] flex flex-col"
+                ? "fixed inset-x-0 bottom-0 z-40 max-h-[94svh] overflow-y-auto rounded-t-[28px] border border-[#E4E7EC] bg-white p-5 shadow-[0_-24px_70px_rgba(16,24,40,0.18)] flex flex-col"
                 : "hidden",
-              "md:relative md:inset-auto md:z-auto md:block md:rounded-[22px] md:border-[#E8E8E5] md:bg-white md:p-5 md:shadow-[0_18px_45px_rgba(26,25,22,0.07)] md:overflow-visible",
+              "md:relative md:inset-auto md:z-auto md:block md:rounded-[22px] md:border-[#E4E7EC] md:bg-white md:p-5 md:shadow-[0_18px_45px_rgba(16,24,40,0.07)] md:overflow-visible",
             )}
           >
             <div className="md:hidden -mx-5 -mt-5 mb-3 sticky top-0 z-10 flex items-center gap-3 border-b border-[#FFFFFF] bg-white px-4 py-3">
@@ -485,21 +485,21 @@ export function AppointmentsWorkspace() {
               <button
                 type="button"
                 onClick={() => setMobileDetailOpen(false)}
-                className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#1A1916] transition active:scale-90"
+                className="grid size-9 place-items-center rounded-full bg-[#FFFFFF] text-[#101828] transition active:scale-90"
                 aria-label="Retour"
               >
                 <ArrowLeft className="size-4" />
               </button>
-              <span className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Détail rendez-vous</span>
+              <span className="font-semibold text-[#101828] text-[15px] tracking-tight">Détail rendez-vous</span>
             </div>
-            <div className="mb-5 rounded-[20px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
+            <div className="mb-5 rounded-[20px] border border-[#E4E7EC] bg-[#FFFFFF] p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-[#6B6B6B]">
+                  <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-[#667085]">
                     {selected.date} · {selected.time}
                   </p>
-                  <h2 className="mt-2 font-semibold text-2xl text-[#1A1916] tracking-tight">{customer.name}</h2>
-                  <p className="mt-1 text-sm font-medium text-[#6B6B6B]">
+                  <h2 className="mt-2 font-semibold text-2xl text-[#101828] tracking-tight">{customer.name}</h2>
+                  <p className="mt-1 text-sm font-medium text-[#667085]">
                     {cleanDeviceLabel(selected.device)} · {selected.issue}
                   </p>
                 </div>
@@ -514,8 +514,8 @@ export function AppointmentsWorkspace() {
 
             <div className="mb-6 flex items-start justify-between gap-4">
               <div>
-                <h3 className="font-semibold text-[15px] text-[#1A1916]">Infos client</h3>
-                <div className="mt-3 space-y-3 text-[#6B6B6B] text-sm">
+                <h3 className="font-semibold text-[15px] text-[#101828]">Infos client</h3>
+                <div className="mt-3 space-y-3 text-[#667085] text-sm">
                   <p className="flex items-center gap-3">
                     <Phone className="size-4" />
                     {customer.phone}
@@ -528,7 +528,7 @@ export function AppointmentsWorkspace() {
               </div>
               <button
                 aria-label="Options"
-                className="cursor-not-allowed text-[#8A8A8A]"
+                className="cursor-not-allowed text-[#98A2B3]"
                 disabled
                 title="Options avancées bientôt disponibles"
                 type="button"
@@ -536,7 +536,7 @@ export function AppointmentsWorkspace() {
                 <MoreHorizontal className="size-5" />
               </button>
             </div>
-            <dl className="border-[#E8E8E5] border-t pt-5">
+            <dl className="border-[#E4E7EC] border-t pt-5">
               <DetailRow label="Appareil" value={cleanDeviceLabel(selected.device)} />
               <DetailRow label="Intervention" value={selected.issue} />
               <DetailRow label="Date" value={selected.date} />
@@ -566,7 +566,7 @@ export function AppointmentsWorkspace() {
               )}
             </dl>
 
-            <div className="mt-7 grid gap-3 border-[#E8E8E5] border-t pt-5">
+            <div className="mt-7 grid gap-3 border-[#E4E7EC] border-t pt-5">
               <PrimaryButton
                 className="h-12 w-full text-base"
                 onClick={() => {
@@ -579,7 +579,7 @@ export function AppointmentsWorkspace() {
               </PrimaryButton>
               {!selectedRepair && normalizeAppointmentStatus(selected.status) !== "Arrivé" && (
                 <PrimaryButton
-                  className="h-12 w-full bg-[#1A1916] text-base hover:bg-[#2A2925]"
+                  className="h-12 w-full bg-[#101828] text-base hover:bg-[#2A2925]"
                   onClick={() => {
                     store.updateAppointment(selected.id, { confirmed: true, status: "Arrivé" });
                     toast.success("Client marqué comme arrivé");
@@ -762,16 +762,16 @@ export function AppointmentsWorkspace() {
       )}
 
       {previewOpen && selected && customer && (
-        <div className="fixed inset-0 z-50 grid place-items-stretch bg-[#1A1916]/20 p-0 md:place-items-center md:p-6">
+        <div className="fixed inset-0 z-50 grid place-items-stretch bg-[#101828]/20 p-0 md:place-items-center md:p-6">
           <Panel className="w-full max-w-none min-h-svh rounded-none p-5 md:max-w-[480px] md:min-h-0 md:rounded-[20px] md:p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="font-semibold text-2xl text-[#1A1916]">Aperçu réparation</h2>
-                <p className="mt-1 text-[#6B6B6B] text-sm">Vue rapide liée au rendez-vous sélectionné.</p>
+                <h2 className="font-semibold text-2xl text-[#101828]">Aperçu réparation</h2>
+                <p className="mt-1 text-[#667085] text-sm">Vue rapide liée au rendez-vous sélectionné.</p>
               </div>
               {selectedRepair && <StatusBadge status={selectedRepair.status} />}
             </div>
-            <dl className="mt-6 border-[#E8E8E5] border-t pt-4">
+            <dl className="mt-6 border-[#E4E7EC] border-t pt-4">
               <DetailRow label="Client" value={customer.name} />
               <DetailRow label="Appareil" value={cleanDeviceLabel(selectedRepair?.device ?? selected.device)} />
               <DetailRow label="Problème" value={selectedRepair?.issue ?? selected.issue} />
@@ -874,12 +874,12 @@ function AppointmentModal({
   }, [deviceState.deviceLabel]);
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-stretch overflow-y-auto bg-[#1A1916]/20 p-0 md:place-items-center md:p-4">
+    <div className="fixed inset-0 z-50 grid place-items-stretch overflow-y-auto bg-[#101828]/20 p-0 md:place-items-center md:p-4">
       <Panel className="w-full max-w-none min-h-svh overflow-y-auto rounded-none p-5 md:max-h-[calc(100svh-2rem)] md:max-w-[520px] md:min-h-0 md:rounded-[20px] md:p-6">
-        <h2 className="font-semibold text-2xl text-[#1A1916]">{title}</h2>
-        <p className="mt-2 text-[#6B6B6B] text-sm">Le client reçoit une confirmation après validation.</p>
+        <h2 className="font-semibold text-2xl text-[#101828]">{title}</h2>
+        <p className="mt-2 text-[#667085] text-sm">Le client reçoit une confirmation après validation.</p>
         <div className="mt-6 grid gap-4">
-          <div className="grid gap-3 text-[#1A1916] text-sm">
+          <div className="grid gap-3 text-[#101828] text-sm">
             <span>Client</span>
             <div className="flex flex-wrap gap-3">
               {[
@@ -901,7 +901,7 @@ function AppointmentModal({
             </div>
             {form.customerType === "existing" ? (
               <select
-                className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+                className="h-11 rounded-[13px] border border-[#E4E7EC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
                 onChange={(event) => {
                   const customer = store.customers.find((entry) => entry.id === event.target.value);
                   onChange({
@@ -923,20 +923,20 @@ function AppointmentModal({
             {form.customerType === "new" ? (
               <div className="grid gap-2 sm:grid-cols-3">
                 <input
-                  className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+                  className="h-11 rounded-[13px] border border-[#E4E7EC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
                   onChange={(event) => onChange({ ...form, newCustomerName: event.target.value })}
                   placeholder="Nom du client"
                   value={form.newCustomerName}
                 />
                 <input
-                  className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+                  className="h-11 rounded-[13px] border border-[#E4E7EC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
                   inputMode="tel"
                   onChange={(event) => onChange({ ...form, newCustomerPhone: event.target.value })}
                   placeholder="Téléphone"
                   value={form.newCustomerPhone}
                 />
                 <input
-                  className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+                  className="h-11 rounded-[13px] border border-[#E4E7EC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
                   onChange={(event) => onChange({ ...form, newCustomerEmail: event.target.value })}
                   placeholder="Email"
                   type="email"
@@ -945,13 +945,13 @@ function AppointmentModal({
               </div>
             ) : null}
             {form.customerType === "counter" ? (
-              <p className="rounded-[13px] border border-[#E8E8E5] bg-[#FFFFFF] px-4 py-3 text-[#6B6B6B]">
+              <p className="rounded-[13px] border border-[#E4E7EC] bg-[#FFFFFF] px-4 py-3 text-[#667085]">
                 Un client comptoir séparé sera créé pour ce rendez-vous.
               </p>
             ) : null}
           </div>
-          <div className="rounded-2xl bg-[#FFFFFF] p-4 border border-[#E8E8E5]/50 shadow-sm">
-            <div className="mb-4 text-[#1A1916] font-semibold text-sm">Appareil &amp; problème</div>
+          <div className="rounded-2xl bg-[#FFFFFF] p-4 border border-[#E4E7EC]/50 shadow-sm">
+            <div className="mb-4 text-[#101828] font-semibold text-sm">Appareil &amp; problème</div>
             <div className="grid gap-4">
               <DeviceSelector
                 deviceType={deviceState.deviceType}
@@ -967,13 +967,13 @@ function AppointmentModal({
               />
             </div>
           </div>
-          <div className="rounded-2xl bg-[#FFFFFF] p-4 border border-[#E8E8E5]/50 shadow-sm">
-            <div className="mb-4 text-[#1A1916] font-semibold text-sm">Détails du créneau</div>
+          <div className="rounded-2xl bg-[#FFFFFF] p-4 border border-[#E4E7EC]/50 shadow-sm">
+            <div className="mb-4 text-[#101828] font-semibold text-sm">Détails du créneau</div>
             <div className="grid gap-4">
-              <label className="grid gap-2 text-[#1A1916] text-sm">
-                <span className="text-[#6B6B6B] mb-1">Délai rapide</span>
+              <label className="grid gap-2 text-[#101828] text-sm">
+                <span className="text-[#667085] mb-1">Délai rapide</span>
                 <select
-                  className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+                  className="h-11 rounded-[13px] border border-[#E4E7EC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
                   onChange={(event) => {
                     const durationValue = event.target.value;
                     if (durationValue === "custom") return;
@@ -1003,19 +1003,19 @@ function AppointmentModal({
                 </select>
               </label>
               <div className="grid gap-4 sm:grid-cols-2">
-                <label className="grid gap-2 text-[#1A1916] text-sm">
-                  <span className="text-[#6B6B6B] mb-1">Date</span>
+                <label className="grid gap-2 text-[#101828] text-sm">
+                  <span className="text-[#667085] mb-1">Date</span>
                   <input
-                    className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F] font-bold text-[#1A1916]"
+                    className="h-11 rounded-[13px] border border-[#E4E7EC] bg-white px-4 outline-none focus:border-[#2A9D8F] font-bold text-[#101828]"
                     onChange={(event) => onChange({ ...form, date: event.target.value })}
                     type="date"
                     value={form.date}
                   />
                 </label>
-                <label className="grid gap-2 text-[#1A1916] text-sm">
-                  <span className="text-[#6B6B6B] mb-1">Heure</span>
+                <label className="grid gap-2 text-[#101828] text-sm">
+                  <span className="text-[#667085] mb-1">Heure</span>
                   <input
-                    className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F] font-bold text-[#1A1916]"
+                    className="h-11 rounded-[13px] border border-[#E4E7EC] bg-white px-4 outline-none focus:border-[#2A9D8F] font-bold text-[#101828]"
                     onChange={(event) => onChange({ ...form, time: event.target.value })}
                     type="time"
                     value={form.time}
@@ -1024,10 +1024,10 @@ function AppointmentModal({
               </div>
             </div>
           </div>
-          <label className="grid gap-2 text-[#1A1916] text-sm">
+          <label className="grid gap-2 text-[#101828] text-sm">
             Durée
             <select
-              className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+              className="h-11 rounded-[13px] border border-[#E4E7EC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
               onChange={(event) => onChange({ ...form, duration: event.target.value })}
               value={form.duration}
             >
@@ -1038,10 +1038,10 @@ function AppointmentModal({
             </select>
           </label>
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="grid gap-2 text-[#1A1916] text-sm">
+            <label className="grid gap-2 text-[#101828] text-sm">
               Source
               <select
-                className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+                className="h-11 rounded-[13px] border border-[#E4E7EC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
                 onChange={(event) => onChange({ ...form, source: event.target.value })}
                 value={form.source}
               >
@@ -1051,10 +1051,10 @@ function AppointmentModal({
                 <option>Instagram</option>
               </select>
             </label>
-            <label className="grid gap-2 text-[#1A1916] text-sm">
+            <label className="grid gap-2 text-[#101828] text-sm">
               Statut
               <select
-                className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+                className="h-11 rounded-[13px] border border-[#E4E7EC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
                 onChange={(event) => onChange({ ...form, status: event.target.value as AppointmentStatus })}
                 value={form.status}
               >
@@ -1065,10 +1065,10 @@ function AppointmentModal({
             </label>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="grid gap-2 text-[#1A1916] text-sm">
+            <label className="grid gap-2 text-[#101828] text-sm">
               Technicien
               <select
-                className="h-11 rounded-[13px] border border-[#E8E8E5] bg-white px-4 outline-none focus:border-[#2A9D8F]"
+                className="h-11 rounded-[13px] border border-[#E4E7EC] bg-white px-4 outline-none focus:border-[#2A9D8F]"
                 onChange={(event) => onChange({ ...form, technician: event.target.value })}
                 value={form.technician}
               >
@@ -1079,10 +1079,10 @@ function AppointmentModal({
               </select>
             </label>
           </div>
-          <label className="grid gap-2 text-[#1A1916] text-sm">
+          <label className="grid gap-2 text-[#101828] text-sm">
             Notes
             <textarea
-              className="min-h-20 rounded-[13px] border border-[#E8E8E5] bg-white px-4 py-3 outline-none focus:border-[#2A9D8F]"
+              className="min-h-20 rounded-[13px] border border-[#E4E7EC] bg-white px-4 py-3 outline-none focus:border-[#2A9D8F]"
               onChange={(event) => onChange({ ...form, notes: event.target.value })}
               value={form.notes}
             />
@@ -1118,43 +1118,43 @@ function CalendarGrid({
             <span className="block h-px bg-[#FFFFFF]" />
           </div>
         )}
-        <div className="border-[#E8E8E5] border-r border-b bg-white" />
+        <div className="border-[#E4E7EC] border-r border-b bg-white" />
         {weekDays.map((day) => (
           <div
-            className="flex h-[86px] flex-col items-center justify-center border-[#E8E8E5] border-r border-b last:border-r-0"
+            className="flex h-[86px] flex-col items-center justify-center border-[#E4E7EC] border-r border-b last:border-r-0"
             key={day.input}
           >
-            <span className="text-[#6B6B6B] text-xs">{day.label}</span>
+            <span className="text-[#667085] text-xs">{day.label}</span>
             <span
               className={cn(
-                "mt-1 grid size-10 place-items-center rounded-full font-semibold text-[#1A1916] text-lg",
+                "mt-1 grid size-10 place-items-center rounded-full font-semibold text-[#101828] text-lg",
                 day.active && "bg-[#2A9D8F] text-white",
               )}
             >
               {day.day}
             </span>
-            <span className="text-[#6B6B6B] text-xs">{day.month}</span>
+            <span className="text-[#667085] text-xs">{day.month}</span>
           </div>
         ))}
 
-        <div className="h-[58px] border-[#E8E8E5] border-r border-b px-3 pt-4 text-[#6B6B6B] text-xs">
+        <div className="h-[58px] border-[#E4E7EC] border-r border-b px-3 pt-4 text-[#667085] text-xs">
           Toute la journée
         </div>
         {weekDays.map((day) => (
           <div
-            className="relative h-[58px] border-[#E8E8E5] border-r border-b last:border-r-0"
+            className="relative h-[58px] border-[#E4E7EC] border-r border-b last:border-r-0"
             key={`all-${day.input}`}
           />
         ))}
 
         {hours.map((hour, hourIndex) => (
           <div className="contents" key={hour}>
-            <div className="relative h-[60px] border-[#E8E8E5] border-r border-b px-3 pt-3 text-[#6B6B6B] text-xs">
+            <div className="relative h-[60px] border-[#E4E7EC] border-r border-b px-3 pt-3 text-[#667085] text-xs">
               {hour}
             </div>
             {weekDays.map((day, dayIndex) => (
               <div
-                className="relative h-[60px] border-[#E8E8E5] border-r border-b last:border-r-0"
+                className="relative h-[60px] border-[#E4E7EC] border-r border-b last:border-r-0"
                 key={`${hour}-${day.input}`}
               >
                 {appointments
@@ -1169,7 +1169,7 @@ function CalendarGrid({
                     return (
                       <button
                         className={cn(
-                          "absolute inset-x-2 top-2 z-10 rounded-[14px] border border-[#E8E8E5] bg-white p-2.5 text-left text-[#1A1916] text-xs shadow-[0_10px_24px_rgba(26,25,22,0.07)] transition hover:-translate-y-0.5 hover:border-[#2A9D8F]/45",
+                          "absolute inset-x-2 top-2 z-10 rounded-[14px] border border-[#E4E7EC] bg-white p-2.5 text-left text-[#101828] text-xs shadow-[0_10px_24px_rgba(16,24,40,0.07)] transition hover:-translate-y-0.5 hover:border-[#2A9D8F]/45",
                           eventStyles[appointment.id === selectedId ? "selected" : appointment.color],
                         )}
                         key={appointment.id}
@@ -1180,10 +1180,10 @@ function CalendarGrid({
                         <p className="mt-1 truncate font-semibold leading-tight">
                           {customer?.name ?? "Client à renseigner"}
                         </p>
-                        <p className="truncate text-[#1A1916]/80 leading-tight">
+                        <p className="truncate text-[#101828]/80 leading-tight">
                           {cleanDeviceLabel(appointment.device)}
                         </p>
-                        <p className="truncate text-[#6B6B6B] leading-tight">{appointment.issue}</p>
+                        <p className="truncate text-[#667085] leading-tight">{appointment.issue}</p>
                         {linkedRepair ? (
                           <p className="mt-1 text-[10px] font-semibold text-[#167B70]">Réparation liée</p>
                         ) : null}
@@ -1209,9 +1209,9 @@ function AppointmentStat({
     <Panel className="h-[100px] p-5">
       <div className="flex h-full items-center justify-between gap-5">
         <div>
-          <p className="text-[#6B6B6B] text-sm">{label}</p>
-          <p className="mt-1 font-semibold text-3xl text-[#1A1916] leading-none tracking-normal">{value}</p>
-          <p className="mt-2 text-[#6B6B6B] text-xs">{helper}</p>
+          <p className="text-[#667085] text-sm">{label}</p>
+          <p className="mt-1 font-semibold text-3xl text-[#101828] leading-none tracking-normal">{value}</p>
+          <p className="mt-2 text-[#667085] text-xs">{helper}</p>
         </div>
         <div className="grid size-12 place-items-center text-[#2A9D8F]">
           <Icon className="size-5" />
@@ -1325,10 +1325,14 @@ function AgendaList({
 
   const upcoming = withIso
     .filter((row) => row.iso >= todayIso)
-    .sort((a, b) => (a.iso === b.iso ? timeToMinutes(a.appt.time) - timeToMinutes(b.appt.time) : a.iso < b.iso ? -1 : 1));
+    .sort((a, b) =>
+      a.iso === b.iso ? timeToMinutes(a.appt.time) - timeToMinutes(b.appt.time) : a.iso < b.iso ? -1 : 1,
+    );
   const past = withIso
     .filter((row) => row.iso < todayIso)
-    .sort((a, b) => (a.iso === b.iso ? timeToMinutes(b.appt.time) - timeToMinutes(a.appt.time) : a.iso > b.iso ? -1 : 1));
+    .sort((a, b) =>
+      a.iso === b.iso ? timeToMinutes(b.appt.time) - timeToMinutes(a.appt.time) : a.iso > b.iso ? -1 : 1,
+    );
 
   const renderRow = ({ appt, iso }: { appt: Appointment; iso: string }, dimmed: boolean) => {
     const customer = customers.find((c) => c.id === appt.customerId);
@@ -1349,12 +1353,12 @@ function AgendaList({
         )}
       >
         <div className="w-[150px] shrink-0">
-          <p className="font-semibold text-[#1A1916] text-[13px]">{capitalize(formatLongDate(iso))}</p>
-          <p className="text-[#6B6B6B] text-[12px]">{appt.time}</p>
+          <p className="font-semibold text-[#101828] text-[13px]">{capitalize(formatLongDate(iso))}</p>
+          <p className="text-[#667085] text-[12px]">{appt.time}</p>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold text-[#1A1916] text-[14px]">{customer?.name ?? "Client"}</p>
-          <p className="truncate text-[#6B6B6B] text-[12.5px]">
+          <p className="truncate font-semibold text-[#101828] text-[14px]">{customer?.name ?? "Client"}</p>
+          <p className="truncate text-[#667085] text-[12.5px]">
             {cleanDeviceLabel(appt.device)} · {appt.issue}
           </p>
         </div>
@@ -1365,7 +1369,7 @@ function AgendaList({
             event.stopPropagation();
             onReschedule(appt);
           }}
-          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[10px] border border-[#E8E8E5] bg-white px-3 font-semibold text-[#1A1916] text-[12.5px] transition hover:border-[#2A9D8F]/50"
+          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[10px] border border-[#E4E7EC] bg-white px-3 font-semibold text-[#101828] text-[12.5px] transition hover:border-[#2A9D8F]/50"
         >
           <RotateCw className="size-3.5" /> Reporter
         </button>
@@ -1375,19 +1379,19 @@ function AgendaList({
 
   return (
     <div className="max-h-[640px] overflow-y-auto">
-      <div className="sticky top-0 z-10 border-[#E8E8E5] border-b bg-white px-5 py-2.5 font-semibold text-[#167B70] text-[12px] uppercase tracking-wide">
+      <div className="sticky top-0 z-10 border-[#E4E7EC] border-b bg-white px-5 py-2.5 font-semibold text-[#167B70] text-[12px] uppercase tracking-wide">
         À venir ({upcoming.length})
       </div>
       {upcoming.length === 0 ? (
-        <p className="px-5 py-6 text-center text-[#6B6B6B] text-[13px]">Aucun rendez-vous à venir.</p>
+        <p className="px-5 py-6 text-center text-[#667085] text-[13px]">Aucun rendez-vous à venir.</p>
       ) : (
         upcoming.map((row) => renderRow(row, false))
       )}
-      <div className="sticky top-0 z-10 border-[#E8E8E5] border-y bg-white px-5 py-2.5 font-semibold text-[#6B6B6B] text-[12px] uppercase tracking-wide">
+      <div className="sticky top-0 z-10 border-[#E4E7EC] border-y bg-white px-5 py-2.5 font-semibold text-[#667085] text-[12px] uppercase tracking-wide">
         Passés ({past.length})
       </div>
       {past.length === 0 ? (
-        <p className="px-5 py-6 text-center text-[#6B6B6B] text-[13px]">Aucun rendez-vous passé.</p>
+        <p className="px-5 py-6 text-center text-[#667085] text-[13px]">Aucun rendez-vous passé.</p>
       ) : (
         past.map((row) => renderRow(row, true))
       )}
@@ -1546,15 +1550,15 @@ function MobileKpiTile({
 }>) {
   const palette = {
     teal: { bg: "bg-[#FFFFFF]", text: "text-[#2A9D8F]" },
-    amber: { bg: "bg-[#FFFFFF]", text: "text-[#6B6B6B]" },
+    amber: { bg: "bg-[#FFFFFF]", text: "text-[#667085]" },
     success: { bg: "bg-[#FFFFFF]", text: "text-[#0B7A56]" },
   }[tone];
   return (
-    <div className="rounded-[16px] border border-[#E8E8E5] bg-white p-3 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+    <div className="rounded-[16px] border border-[#E4E7EC] bg-white p-3 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
       <span className={cn("grid size-8 place-items-center rounded-[10px]", palette.bg, palette.text)}>
         <Icon className="size-[15px]" strokeWidth={2.2} />
       </span>
-      <p className="mt-2.5 text-[#6B6B6B] text-[10.5px] font-medium leading-tight tracking-tight">{label}</p>
+      <p className="mt-2.5 text-[#667085] text-[10.5px] font-medium leading-tight tracking-tight">{label}</p>
       <p className={cn("mt-1 font-bold text-[20px] leading-none tabular-nums", palette.text)}>{value}</p>
     </div>
   );
@@ -1566,7 +1570,7 @@ function AppointmentStatusPill({ status, confirmed }: Readonly<{ status: string;
     if (label === "Arrivé" || label === "Réparation créée") return "bg-[#FFFFFF] text-[#0B7A56]";
     if (label === "Annulé" || label === "Non venu") return "bg-[#FFFFFF] text-[#B42318]";
     if (label === "Confirmé") return "bg-[#FFFFFF] text-[#167B70]";
-    return "bg-[#FFFFFF] text-[#6B6B6B]";
+    return "bg-[#FFFFFF] text-[#667085]";
   })();
   return (
     <span

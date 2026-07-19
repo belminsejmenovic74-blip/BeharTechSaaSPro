@@ -900,7 +900,7 @@ export function RepairModal({
 
   return (
     <div
-      className="fixed inset-0 z-[100] grid place-items-stretch overflow-y-auto bg-[#1A1916]/20 p-0 md:place-items-center md:p-4"
+      className="fixed inset-0 z-[100] grid place-items-stretch overflow-y-auto bg-[#101828]/20 p-0 md:place-items-center md:p-4"
       data-testid="new-repair-modal"
     >
       {!initial && view === "form" ? (
@@ -909,12 +909,12 @@ export function RepairModal({
         </div>
       ) : null}
       <div
-        className={`relative ${!initial && view === "form" ? "hidden md:flex" : "flex"} w-full ${view === "intake" ? "max-w-6xl" : view === "accessories" || view === "done" ? "max-w-2xl" : "max-w-5xl"} flex-col overflow-hidden border border-[#E8E8E5] bg-white shadow-2xl min-h-svh md:min-h-0 rounded-none md:rounded-[20px] md:max-h-[92vh] ${view === "form" ? "md:flex-row" : ""}`}
+        className={`relative ${!initial && view === "form" ? "hidden md:flex" : "flex"} w-full ${view === "intake" ? "max-w-6xl" : view === "accessories" || view === "done" ? "max-w-2xl" : "max-w-5xl"} flex-col overflow-hidden border border-[#E4E7EC] bg-white shadow-2xl min-h-svh md:min-h-0 rounded-none md:rounded-[20px] md:max-h-[92vh] ${view === "form" ? "md:flex-row" : ""}`}
       >
         {/* Croix X de fermeture globale — toujours visible, ferme le modal peu importe la vue */}
         <button
           aria-label="Fermer"
-          className="absolute top-3 right-3 z-10 grid size-9 place-items-center rounded-full bg-white text-[#6B6B6B] shadow-sm transition hover:bg-white hover:text-[#1A1916]"
+          className="absolute top-3 right-3 z-10 grid size-9 place-items-center rounded-full bg-white text-[#667085] shadow-sm transition hover:bg-white hover:text-[#101828]"
           onClick={onClose}
           type="button"
         >
@@ -926,9 +926,9 @@ export function RepairModal({
               <div className="grid size-14 place-items-center text-[#167B70]">
                 <CheckCircle2 className="size-9" />
               </div>
-              <h2 className="mt-4 font-semibold text-[#1A1916] text-[22px] tracking-tight">Prise en charge créée</h2>
-              <p className="mt-1.5 font-medium text-[#1A1916] text-sm">{created.deviceLabel}</p>
-              <p className="text-[#6B6B6B] text-[13px]">
+              <h2 className="mt-4 font-semibold text-[#101828] text-[22px] tracking-tight">Prise en charge créée</h2>
+              <p className="mt-1.5 font-medium text-[#101828] text-sm">{created.deviceLabel}</p>
+              <p className="text-[#667085] text-[13px]">
                 Dossier {created.repairNumber} · {created.clientLabel}
               </p>
               {created.quoteId ? (
@@ -939,7 +939,7 @@ export function RepairModal({
               ) : null}
             </div>
 
-            <p className="mt-7 mb-2.5 font-medium text-[#6B6B6B] text-[13px]">Suite logique</p>
+            <p className="mt-7 mb-2.5 font-medium text-[#667085] text-[13px]">Suite logique</p>
             <div className="grid gap-2.5 sm:grid-cols-2">
               <DoneAction
                 icon={<FolderOpen className="size-[18px]" />}
@@ -1071,8 +1071,8 @@ export function RepairModal({
           <div className="flex min-h-[500px] flex-1 flex-col p-5 md:p-8">
             <div className="mb-2 flex items-start justify-between gap-3">
               <div>
-                <h2 className="font-semibold text-[#1A1916] text-[20px] tracking-tight">Accessoires confiés</h2>
-                <p className="mt-1 text-[#6B6B6B] text-[13px]">
+                <h2 className="font-semibold text-[#101828] text-[20px] tracking-tight">Accessoires confiés</h2>
+                <p className="mt-1 text-[#667085] text-[13px]">
                   Cochez ce que le client laisse avec l'appareil ({modelFull || "appareil"}).
                 </p>
               </div>
@@ -1088,7 +1088,7 @@ export function RepairModal({
                     className={`flex items-center justify-between rounded-xl border px-3 py-3 text-left text-sm transition ${
                       active
                         ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]"
-                        : "border-[#E8E8E5] bg-white text-[#1A1916] hover:border-[#2A9D8F]/40"
+                        : "border-[#E4E7EC] bg-white text-[#101828] hover:border-[#2A9D8F]/40"
                     }`}
                   >
                     <span>{label}</span>
@@ -1097,16 +1097,16 @@ export function RepairModal({
                 );
               })}
             </div>
-            <label className="mt-5 grid gap-2 text-sm text-[#1A1916]">
+            <label className="mt-5 grid gap-2 text-sm text-[#101828]">
               Autre accessoire / précision
               <input
-                className="h-11 rounded-xl border border-[#E8E8E5] px-3 text-sm outline-none focus:border-[#2A9D8F]"
+                className="h-11 rounded-xl border border-[#E4E7EC] px-3 text-sm outline-none focus:border-[#2A9D8F]"
                 onChange={(e) => setIntakeDraft((prev) => ({ ...(prev ?? {}), accessoriesOther: e.target.value }))}
                 placeholder="Ex. carte SIM Free, coque transparente…"
                 value={intakeDraft?.accessoriesOther ?? ""}
               />
             </label>
-            <p className="mt-3 text-[#6B6B6B] text-[12px]">
+            <p className="mt-3 text-[#667085] text-[12px]">
               Aucun accessoire ? Continuez, vous pourrez l'indiquer sur la fiche anti-litige.
             </p>
             <div className="mt-auto flex flex-col gap-2 border-t border-[#FFFFFF] pt-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1135,15 +1135,15 @@ export function RepairModal({
             <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-5 pb-[140px] md:max-h-[92vh] md:p-8 md:pb-8">
               <div className="mb-6 flex items-start justify-between gap-3 md:mb-7">
                 <div>
-                  <h2 className="font-semibold text-[#1A1916] text-[20px] tracking-tight">
+                  <h2 className="font-semibold text-[#101828] text-[20px] tracking-tight">
                     {initial ? "Modifier le dossier" : "Nouvelle prise en charge"}
                   </h2>
-                  <p className="mt-1 text-[#6B6B6B] text-[13px] md:text-[14px]">
+                  <p className="mt-1 text-[#667085] text-[13px] md:text-[14px]">
                     Client → Appareil → Intervention → Tarif client
                   </p>
                 </div>
                 <button
-                  className="grid size-9 place-items-center rounded-full text-[#6B6B6B] transition hover:bg-[#FFFFFF] hover:text-[#6B6B6B]"
+                  className="grid size-9 place-items-center rounded-full text-[#667085] transition hover:bg-[#FFFFFF] hover:text-[#667085]"
                   onClick={onClose}
                   type="button"
                   aria-label="Fermer"
@@ -1157,8 +1157,8 @@ export function RepairModal({
                   <section className="rounded-[16px] border border-[#D7EFEA] bg-[#FFFFFF] p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <h3 className="text-[14px] font-semibold text-[#1A1916]">Pays de facturation / marché</h3>
-                        <p className="mt-0.5 text-[12px] text-[#6B6B6B]">
+                        <h3 className="text-[14px] font-semibold text-[#101828]">Pays de facturation / marché</h3>
+                        <p className="mt-0.5 text-[12px] text-[#667085]">
                           Ce choix est enregistré sur le dossier et fixe sa devise définitivement.
                         </p>
                       </div>
@@ -1173,7 +1173,7 @@ export function RepairModal({
                               className={`min-w-[118px] rounded-[12px] border px-4 py-2.5 text-left transition ${
                                 active
                                   ? "border-[#2A9D8F] bg-white text-[#167B70] shadow-[0_0_0_1px_#2A9D8F]"
-                                  : "border-[#E8E8E5] bg-white text-[#6B6B6B]"
+                                  : "border-[#E4E7EC] bg-white text-[#667085]"
                               }`}
                             >
                               <span className="block text-[13px] font-semibold">
@@ -1190,7 +1190,7 @@ export function RepairModal({
 
                 {/* 1 Client */}
                 <section className="space-y-4">
-                  <h3 className="text-[14px] text-[#1A1916] font-medium">
+                  <h3 className="text-[14px] text-[#101828] font-medium">
                     <span className="text-[#2A9D8F]">1.</span> Client
                   </h3>
                   <div className="flex flex-wrap gap-4 text-sm">
@@ -1209,14 +1209,14 @@ export function RepairModal({
                   </div>
 
                   {clientType === "anonyme" && (
-                    <p className="rounded-lg border border-[#E8E8E5] bg-[#FFFFFF] px-3 py-2 text-[#6B6B6B] text-sm">
+                    <p className="rounded-lg border border-[#E4E7EC] bg-[#FFFFFF] px-3 py-2 text-[#667085] text-sm">
                       Client comptoir — informations à compléter plus tard.
                     </p>
                   )}
 
                   {clientType === "existant" && (
                     <div className="space-y-2">
-                      <label className="text-[#6B6B6B] text-xs">Sélectionner un client</label>
+                      <label className="text-[#667085] text-xs">Sélectionner un client</label>
                       <Combobox
                         ariaLabel="Sélectionner un client"
                         inputTestId="repair-customer-select"
@@ -1236,7 +1236,7 @@ export function RepairModal({
                   {clientType === "nouveau" && (
                     <div className="grid gap-3 sm:grid-cols-3">
                       <input
-                        className="h-11 rounded-xl border border-[#E8E8E5] px-3 text-sm"
+                        className="h-11 rounded-xl border border-[#E4E7EC] px-3 text-sm"
                         onChange={(e) => setNewName(e.target.value)}
                         placeholder="Nom *"
                         value={newName}
@@ -1244,7 +1244,7 @@ export function RepairModal({
                       <div className="grid grid-cols-[80px_1fr] sm:grid-cols-[90px_1fr] gap-2">
                         <select
                           aria-label="Indicatif client"
-                          className="min-w-0 h-11 w-full rounded-xl border border-[#E8E8E5] pl-3 pr-6 text-sm appearance-none bg-white bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236B6B6B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:14px_14px] bg-[position:right_8px_center] bg-no-repeat overflow-hidden text-ellipsis"
+                          className="min-w-0 h-11 w-full rounded-xl border border-[#E4E7EC] pl-3 pr-6 text-sm appearance-none bg-white bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236B6B6B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:14px_14px] bg-[position:right_8px_center] bg-no-repeat overflow-hidden text-ellipsis"
                           onChange={(e) => setNewInternationalPhone(e.target.value, newPhoneParts.local)}
                           value={
                             (CALLING_CODES as readonly string[]).includes(newPhoneParts.prefix)
@@ -1260,7 +1260,7 @@ export function RepairModal({
                         </select>
                         <input
                           aria-label="Téléphone client"
-                          className="min-w-0 h-11 w-full rounded-xl border border-[#E8E8E5] px-3 text-sm"
+                          className="min-w-0 h-11 w-full rounded-xl border border-[#E4E7EC] px-3 text-sm"
                           inputMode="tel"
                           onChange={(e) => setNewInternationalPhone(newPhoneParts.prefix, e.target.value)}
                           placeholder={newPhoneParts.prefix === "+33" ? "6 12 34 56 78" : "Numéro"}
@@ -1268,9 +1268,9 @@ export function RepairModal({
                         />
                       </div>
                       <div className="relative min-w-0">
-                        <Mail className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#6B6B6B]" />
+                        <Mail className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#667085]" />
                         <input
-                          className="min-w-0 h-11 w-full rounded-xl border border-[#E8E8E5] py-2 pr-3 pl-10 text-sm"
+                          className="min-w-0 h-11 w-full rounded-xl border border-[#E4E7EC] py-2 pr-3 pl-10 text-sm"
                           onChange={(e) => setNewEmail(e.target.value)}
                           placeholder="Email (optionnel)"
                           type="email"
@@ -1278,7 +1278,7 @@ export function RepairModal({
                         />
                       </div>
                       <select
-                        className="h-11 rounded-xl border border-[#E8E8E5] px-3 pr-8 text-sm appearance-none bg-white bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236B6B6B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat"
+                        className="h-11 rounded-xl border border-[#E4E7EC] px-3 pr-8 text-sm appearance-none bg-white bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236B6B6B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[position:right_12px_center] bg-no-repeat"
                         onChange={(e) => {
                           setNewCountry(e.target.value as (typeof countryOptions)[number]);
                           if (e.target.value === "Suisse" && newPhoneParts.prefix === "+33") {
@@ -1294,7 +1294,7 @@ export function RepairModal({
                         ))}
                       </select>
                       <input
-                        className="h-11 rounded-xl border border-[#E8E8E5] px-3 text-sm"
+                        className="h-11 rounded-xl border border-[#E4E7EC] px-3 text-sm"
                         inputMode="numeric"
                         onChange={(e) => setNewPostal(e.target.value)}
                         placeholder="Code postal"
@@ -1302,7 +1302,7 @@ export function RepairModal({
                       />
                       <div className="relative">
                         <input
-                          className="h-11 w-full rounded-xl border border-[#E8E8E5] px-3 text-sm"
+                          className="h-11 w-full rounded-xl border border-[#E4E7EC] px-3 text-sm"
                           onChange={(e) => setNewCity(e.target.value)}
                           onBlur={() => {
                             if (newCity && !newPostalCode && newCountry === "France") {
@@ -1324,7 +1324,7 @@ export function RepairModal({
                         )}
                       </div>
                       <input
-                        className="h-11 rounded-xl border border-[#E8E8E5] px-3 text-sm sm:col-span-3"
+                        className="h-11 rounded-xl border border-[#E4E7EC] px-3 text-sm sm:col-span-3"
                         list="repair-address-suggestions"
                         onChange={(e) => {
                           const val = e.target.value;
@@ -1352,7 +1352,7 @@ export function RepairModal({
 
                 {/* 2 Appareil */}
                 <section className="space-y-4 border-[#FFFFFF] border-t pt-5">
-                  <h3 className="text-[14px] text-[#1A1916] font-medium">
+                  <h3 className="text-[14px] text-[#101828] font-medium">
                     <span className="text-[#2A9D8F]">2.</span> Appareil
                   </h3>
                   <div className="flex flex-wrap gap-2">
@@ -1360,8 +1360,8 @@ export function RepairModal({
                       <button
                         className={`rounded-full border px-3 py-1.5 text-xs transition ${
                           deviceType === t
-                            ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1A1916]"
-                            : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:border-[#2A9D8F]/50"
+                            ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#101828]"
+                            : "border-[#E4E7EC] bg-white text-[#667085] hover:border-[#2A9D8F]/50"
                         }`}
                         key={t}
                         data-testid={
@@ -1391,7 +1391,7 @@ export function RepairModal({
                   {deviceType && (
                     <div className="grid gap-3 sm:grid-cols-3">
                       <div>
-                        <label className="mb-1 block text-[#6B6B6B] text-xs">Marque</label>
+                        <label className="mb-1 block text-[#667085] text-xs">Marque</label>
                         <Combobox
                           ariaLabel="Marque"
                           allowCreate
@@ -1416,7 +1416,7 @@ export function RepairModal({
                       {marque && (
                         <>
                           <div>
-                            <label className="mb-1 block text-[#6B6B6B] text-xs">Gamme / Série</label>
+                            <label className="mb-1 block text-[#667085] text-xs">Gamme / Série</label>
                             <Combobox
                               ariaLabel="Gamme / Série"
                               disabled={!marque.trim()}
@@ -1437,7 +1437,7 @@ export function RepairModal({
                             />
                           </div>
                           <div>
-                            <label className="mb-1 block text-[#6B6B6B] text-xs">
+                            <label className="mb-1 block text-[#667085] text-xs">
                               Modèle{!selectedSeries ? " (recherche libre)" : ""}
                             </label>
                             <Combobox
@@ -1476,20 +1476,20 @@ export function RepairModal({
 
                 {/* 3 Intervention */}
                 <section className="space-y-4 border-[#FFFFFF] border-t pt-5">
-                  <h3 className="text-[14px] text-[#1A1916] font-medium">
+                  <h3 className="text-[14px] text-[#101828] font-medium">
                     <span className="text-[#2A9D8F]">3.</span> Intervention
                   </h3>
 
                   {!modele ? (
-                    <div className="rounded-xl border border-dashed border-[#E8E8E5] bg-[#FFFFFF] py-8 text-center">
-                      <p className="text-[#6B6B6B] text-sm">
+                    <div className="rounded-xl border border-dashed border-[#E4E7EC] bg-[#FFFFFF] py-8 text-center">
+                      <p className="text-[#667085] text-sm">
                         Sélectionnez un modèle pour voir les interventions disponibles.
                       </p>
                     </div>
                   ) : (
                     <>
                       <input
-                        className="h-11 w-full rounded-xl border border-[#E8E8E5] px-3 text-sm focus:border-[#2A9D8F] focus:outline-none"
+                        className="h-11 w-full rounded-xl border border-[#E4E7EC] px-3 text-sm focus:border-[#2A9D8F] focus:outline-none"
                         onChange={(e) => setInterventionSearch(e.target.value)}
                         placeholder="Filtrer: vitre, batterie, connecteur, sim..."
                         value={interventionSearch}
@@ -1503,7 +1503,7 @@ export function RepairModal({
                               className={`group relative flex min-w-[120px] flex-col rounded-xl border p-3 text-left transition ${
                                 isSelected
                                   ? "border-[#2A9D8F] bg-[#FFFFFF]"
-                                  : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/50"
+                                  : "border-[#E4E7EC] bg-white hover:border-[#2A9D8F]/50"
                               }`}
                               key={entry.label}
                               onClick={() => {
@@ -1517,7 +1517,7 @@ export function RepairModal({
                             >
                               <div className="flex items-center justify-between gap-2">
                                 <span
-                                  className={`font-semibold text-xs ${isSelected ? "text-[#167B70]" : "text-[#1A1916]"}`}
+                                  className={`font-semibold text-xs ${isSelected ? "text-[#167B70]" : "text-[#101828]"}`}
                                 >
                                   {entry.label}
                                 </span>
@@ -1527,7 +1527,7 @@ export function RepairModal({
                                 {entry.price > 0 ? (
                                   <span className="font-bold text-[#2A9D8F] text-sm">{formatDossier(entry.price)}</span>
                                 ) : (
-                                  <span className="text-[#6B6B6B] text-xs italic">Prix à définir</span>
+                                  <span className="text-[#667085] text-xs italic">Prix à définir</span>
                                 )}
                                 {entry.itemId && (
                                   <span
@@ -1546,7 +1546,7 @@ export function RepairModal({
                         })}
 
                         <button
-                          className="flex min-w-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-[#E8E8E5] bg-[#FFFFFF] p-3 text-[#6B6B6B] transition hover:border-[#2A9D8F]/50 hover:bg-white"
+                          className="flex min-w-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-[#E4E7EC] bg-[#FFFFFF] p-3 text-[#667085] transition hover:border-[#2A9D8F]/50 hover:bg-white"
                           onClick={() => setCustomInterventionOpen((prev) => !prev)}
                           type="button"
                         >
@@ -1556,36 +1556,36 @@ export function RepairModal({
                       </div>
 
                       {interventionCards.length === 0 && interventionSearch.trim() && (
-                        <p className="py-2 text-[#6B6B6B] text-xs">
+                        <p className="py-2 text-[#667085] text-xs">
                           Aucune intervention trouvée. Utilisez le bouton "+ Ajouter" pour en créer une personnalisée.
                         </p>
                       )}
                     </>
                   )}
                   {customInterventionOpen && (
-                    <div className="grid gap-2 rounded-xl border border-[#E8E8E5] bg-[#FFFFFF] p-3 sm:grid-cols-2">
+                    <div className="grid gap-2 rounded-xl border border-[#E4E7EC] bg-[#FFFFFF] p-3 sm:grid-cols-2">
                       <input
-                        className="h-10 rounded-lg border border-[#E8E8E5] bg-white px-3 text-sm sm:col-span-2"
+                        className="h-10 rounded-lg border border-[#E4E7EC] bg-white px-3 text-sm sm:col-span-2"
                         onChange={(e) => setCustomInterventionName(e.target.value)}
                         placeholder="Nom intervention (ex: Lecteur carte SIM)"
                         value={customInterventionName}
                       />
                       <input
-                        className="h-10 rounded-lg border border-[#E8E8E5] bg-white px-3 text-sm"
+                        className="h-10 rounded-lg border border-[#E4E7EC] bg-white px-3 text-sm"
                         inputMode="decimal"
                         onChange={(e) => setCustomInterventionPurchase(e.target.value)}
                         placeholder="Prix achat conseillé (optionnel)"
                         value={customInterventionPurchase}
                       />
                       <input
-                        className="h-10 rounded-lg border border-[#E8E8E5] bg-white px-3 text-sm"
+                        className="h-10 rounded-lg border border-[#E4E7EC] bg-white px-3 text-sm"
                         inputMode="decimal"
                         onChange={(e) => setCustomInterventionSale(e.target.value)}
                         placeholder="Prix vente conseillé"
                         value={customInterventionSale}
                       />
                       <input
-                        className="h-10 rounded-lg border border-[#E8E8E5] bg-white px-3 text-sm"
+                        className="h-10 rounded-lg border border-[#E4E7EC] bg-white px-3 text-sm"
                         inputMode="decimal"
                         onChange={(e) => setCustomInterventionLabor(e.target.value)}
                         placeholder="Main-d'œuvre conseillée"
@@ -1668,9 +1668,9 @@ export function RepairModal({
 
                     {selectedInterventionKey && qualityOptionsForIntervention.length > 0 ? (
                       <div className="space-y-2">
-                        <p className="text-[#6B6B6B] text-xs">
+                        <p className="text-[#667085] text-xs">
                           Qualité pièce disponible pour{" "}
-                          <span className="font-medium text-[#1A1916]">{intervention}</span>
+                          <span className="font-medium text-[#101828]">{intervention}</span>
                         </p>
                         <div className="grid gap-2 sm:grid-cols-2">
                           {qualityOptionsForIntervention.map((opt) => {
@@ -1680,7 +1680,7 @@ export function RepairModal({
                                 className={`rounded-lg border p-3 text-left text-sm transition ${
                                   active
                                     ? "border-[#167B70] bg-white shadow-sm"
-                                    : "border-[#E8E8E5] bg-white hover:border-[#167B70]/40"
+                                    : "border-[#E4E7EC] bg-white hover:border-[#167B70]/40"
                                 }`}
                                 key={opt.itemId}
                                 onClick={() => {
@@ -1693,7 +1693,7 @@ export function RepairModal({
                                 type="button"
                               >
                                 <div className="flex items-center justify-between gap-3">
-                                  <span className="font-medium text-[#1A1916]">{opt.label}</span>
+                                  <span className="font-medium text-[#101828]">{opt.label}</span>
                                   <div className="text-right">
                                     <span className="block font-semibold text-[#167B70]">
                                       {opt.price > 0 ? formatDossier(opt.price) : "Tarif à définir"}
@@ -1705,7 +1705,7 @@ export function RepairModal({
                                     </span>
                                   </div>
                                 </div>
-                                <div className="mt-1 text-[#6B6B6B] text-xs">{opt.item.piece}</div>
+                                <div className="mt-1 text-[#667085] text-xs">{opt.item.piece}</div>
                               </button>
                             );
                           })}
@@ -1733,7 +1733,7 @@ export function RepairModal({
                               className={`w-full rounded-lg border p-3 text-left text-sm transition ${
                                 active
                                   ? "border-[#167B70] bg-white shadow-sm"
-                                  : "border-[#E8E8E5] bg-white hover:border-[#167B70]/40"
+                                  : "border-[#E4E7EC] bg-white hover:border-[#167B70]/40"
                               }`}
                               key={quality}
                               onClick={() => {
@@ -1744,8 +1744,8 @@ export function RepairModal({
                               }}
                               type="button"
                             >
-                              <span className="font-medium text-[#1A1916]">{best.reparation}</span>
-                              <span className="text-[#6B6B6B]"> · {extractPartQuality(best)}</span>
+                              <span className="font-medium text-[#101828]">{best.reparation}</span>
+                              <span className="text-[#667085]"> · {extractPartQuality(best)}</span>
                               <div className="mt-1 flex justify-between items-end text-[#167B70]">
                                 <div>
                                   <span className="block text-[#167B70] text-xs">Prix client proposé</span>
@@ -1772,14 +1772,14 @@ export function RepairModal({
                 {/* 4 Tarif */}
                 {intervention && (
                   <section className="space-y-4 border-[#FFFFFF] border-t pt-5">
-                    <h3 className="text-[14px] text-[#1A1916] font-medium">
+                    <h3 className="text-[14px] text-[#101828] font-medium">
                       <span className="text-[#2A9D8F]">4.</span> Tarif client
                     </h3>
                     <div className="grid gap-3 sm:grid-cols-3">
                       <label className="text-xs">
-                        <span className="text-[#6B6B6B]">Prix pièce / prestation ({currency})</span>
+                        <span className="text-[#667085]">Prix pièce / prestation ({currency})</span>
                         <input
-                          className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] px-3 text-sm focus:border-[#2A9D8F] focus:outline-none"
+                          className="mt-1 h-11 w-full rounded-xl border border-[#E4E7EC] px-3 text-sm focus:border-[#2A9D8F] focus:outline-none"
                           inputMode="decimal"
                           onChange={(e) => {
                             setSelectedCatalogId(null);
@@ -1791,9 +1791,9 @@ export function RepairModal({
                         />
                       </label>
                       <label className="text-xs">
-                        <span className="text-[#6B6B6B]">Main-d&apos;œuvre ({currency})</span>
+                        <span className="text-[#667085]">Main-d&apos;œuvre ({currency})</span>
                         <input
-                          className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] px-3 text-sm focus:border-[#2A9D8F] focus:outline-none"
+                          className="mt-1 h-11 w-full rounded-xl border border-[#E4E7EC] px-3 text-sm focus:border-[#2A9D8F] focus:outline-none"
                           inputMode="decimal"
                           onChange={(e) => {
                             setSelectedCatalogId(null);
@@ -1805,25 +1805,25 @@ export function RepairModal({
                         />
                       </label>
                       <div className="flex flex-col justify-end">
-                        <span className="text-[#6B6B6B] text-xs">Total client</span>
+                        <span className="text-[#667085] text-xs">Total client</span>
                         {totalClient > 0 ? (
                           <span className="font-bold text-[#167B70] text-xl">{formatDossier(totalClient)}</span>
                         ) : (
-                          <span className="font-bold text-[#6B6B6B] text-xl">—</span>
+                          <span className="font-bold text-[#667085] text-xl">—</span>
                         )}
                       </div>
                     </div>
                     {totalClient <= 0 && (
-                      <p className="text-[#6B6B6B] text-[11px] italic">
+                      <p className="text-[#667085] text-[11px] italic">
                         Aucun tarif défini. Vous pourrez le compléter plus tard sur le dossier.
                       </p>
                     )}
                   </section>
                 )}
 
-                <div className="rounded-xl border border-[#E8E8E5] bg-[#FFFFFF] p-3">
+                <div className="rounded-xl border border-[#E4E7EC] bg-[#FFFFFF] p-3">
                   <button
-                    className="flex w-full cursor-pointer items-center justify-between font-medium text-[#1A1916] text-sm"
+                    className="flex w-full cursor-pointer items-center justify-between font-medium text-[#101828] text-sm"
                     onClick={() => setAdvancedOpen((o) => !o)}
                     type="button"
                   >
@@ -1831,51 +1831,51 @@ export function RepairModal({
                     <ChevronDown className={`size-4 transition ${advancedOpen ? "rotate-180" : ""}`} />
                   </button>
                   {advancedOpen && (
-                    <div className="mt-4 grid gap-3 border-[#E8E8E5] border-t pt-4 sm:grid-cols-2">
+                    <div className="mt-4 grid gap-3 border-[#E4E7EC] border-t pt-4 sm:grid-cols-2">
                       <label className="text-xs">
-                        <span className="text-[#6B6B6B]">Prix achat interne ({currency})</span>
+                        <span className="text-[#667085]">Prix achat interne ({currency})</span>
                         <input
-                          className="mt-1 h-10 w-full rounded-lg border border-[#E8E8E5] px-2 text-sm"
+                          className="mt-1 h-10 w-full rounded-lg border border-[#E4E7EC] px-2 text-sm"
                           onChange={(e) => setPrixAchat(e.target.value)}
                           value={prixAchat}
                         />
                       </label>
                       <label className="text-xs">
-                        <span className="text-[#6B6B6B]">Fournisseur</span>
+                        <span className="text-[#667085]">Fournisseur</span>
                         <input
-                          className="mt-1 h-10 w-full rounded-lg border border-[#E8E8E5] px-2 text-sm"
+                          className="mt-1 h-10 w-full rounded-lg border border-[#E4E7EC] px-2 text-sm"
                           onChange={(e) => setFournisseur(e.target.value)}
                           value={fournisseur}
                         />
                       </label>
                       <label className="text-xs">
-                        <span className="text-[#6B6B6B]">SKU</span>
+                        <span className="text-[#667085]">SKU</span>
                         <input
-                          className="mt-1 h-10 w-full rounded-lg border border-[#E8E8E5] px-2 text-sm"
+                          className="mt-1 h-10 w-full rounded-lg border border-[#E4E7EC] px-2 text-sm"
                           onChange={(e) => setSkuAdv(e.target.value)}
                           value={skuAdv}
                         />
                       </label>
                       <label className="text-xs">
-                        <span className="text-[#6B6B6B]">Stock (interne)</span>
+                        <span className="text-[#667085]">Stock (interne)</span>
                         <input
-                          className="mt-1 h-10 w-full rounded-lg border border-[#E8E8E5] px-2 text-sm"
+                          className="mt-1 h-10 w-full rounded-lg border border-[#E4E7EC] px-2 text-sm"
                           onChange={(e) => setStockAdv(e.target.value)}
                           value={stockAdv}
                         />
                       </label>
                       <label className="text-xs sm:col-span-2">
-                        <span className="text-[#6B6B6B]">Garantie</span>
+                        <span className="text-[#667085]">Garantie</span>
                         <input
-                          className="mt-1 h-10 w-full rounded-lg border border-[#E8E8E5] px-2 text-sm"
+                          className="mt-1 h-10 w-full rounded-lg border border-[#E4E7EC] px-2 text-sm"
                           onChange={(e) => setGarantieAdv(e.target.value)}
                           value={garantieAdv}
                         />
                       </label>
                       <label className="text-xs sm:col-span-2">
-                        <span className="text-[#6B6B6B]">Notes internes</span>
+                        <span className="text-[#667085]">Notes internes</span>
                         <textarea
-                          className="mt-1 min-h-[64px] w-full rounded-lg border border-[#E8E8E5] px-2 py-1 text-sm"
+                          className="mt-1 min-h-[64px] w-full rounded-lg border border-[#E4E7EC] px-2 py-1 text-sm"
                           onChange={(e) => setNotesInternes(e.target.value)}
                           value={notesInternes}
                         />
@@ -1894,8 +1894,8 @@ export function RepairModal({
                 </div>
 
                 {/* RDV */}
-                <section className="space-y-2 border-[#E8E8E5] border-t pt-4">
-                  <p className="font-medium text-[#1A1916] text-sm">Ajouter un rendez-vous ?</p>
+                <section className="space-y-2 border-[#E4E7EC] border-t pt-4">
+                  <p className="font-medium text-[#101828] text-sm">Ajouter un rendez-vous ?</p>
                   <div className="flex gap-6 text-sm">
                     <label className="flex cursor-pointer items-center gap-2">
                       <input
@@ -1928,7 +1928,7 @@ export function RepairModal({
                       <label className="text-xs">
                         Date *
                         <input
-                          className="mt-1 h-10 w-full rounded-lg border border-[#E8E8E5] px-2"
+                          className="mt-1 h-10 w-full rounded-lg border border-[#E4E7EC] px-2"
                           onChange={(e) => setRdvDate(e.target.value)}
                           required={rdvOui}
                           type="date"
@@ -1938,7 +1938,7 @@ export function RepairModal({
                       <label className="text-xs">
                         Heure *
                         <input
-                          className="mt-1 h-10 w-full rounded-lg border border-[#E8E8E5] px-2"
+                          className="mt-1 h-10 w-full rounded-lg border border-[#E4E7EC] px-2"
                           onChange={(e) => setRdvTime(e.target.value)}
                           required={rdvOui}
                           type="time"
@@ -1948,7 +1948,7 @@ export function RepairModal({
                       <label className="text-xs">
                         Durée
                         <input
-                          className="mt-1 h-10 w-full rounded-lg border border-[#E8E8E5] px-2"
+                          className="mt-1 h-10 w-full rounded-lg border border-[#E4E7EC] px-2"
                           onChange={(e) => setRdvDuration(e.target.value)}
                           value={rdvDuration}
                         />
@@ -1956,7 +1956,7 @@ export function RepairModal({
                       <label className="text-xs sm:col-span-2">
                         Motif *
                         <input
-                          className="mt-1 h-10 w-full rounded-lg border border-[#E8E8E5] px-2"
+                          className="mt-1 h-10 w-full rounded-lg border border-[#E4E7EC] px-2"
                           onChange={(e) => setRdvMotif(e.target.value)}
                           placeholder={`${intervention || "Intervention"} — ${modelFull}`}
                           value={rdvMotif}
@@ -1968,21 +1968,21 @@ export function RepairModal({
 
                 {/* §5 — l'étape 1 reste "infos simples". L'état d'entrée / anti-litige
                     (écran, tactile, oxydation, signature…) se remplit à l'étape 2, jamais ici. */}
-                <section className="flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
+                <section className="flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-[#E4E7EC] bg-[#FFFFFF] p-4">
                   <div className="flex items-start gap-3">
                     <span className="grid size-9 shrink-0 place-items-center text-[#2A9D8F]">
                       <ClipboardCheck className="size-[18px]" />
                     </span>
                     <div>
-                      <p className="font-medium text-[#1A1916] text-sm">État d'entrée / anti-litige</p>
-                      <p className="mt-1 text-[#6B6B6B] text-xs">
+                      <p className="font-medium text-[#101828] text-sm">État d'entrée / anti-litige</p>
+                      <p className="mt-1 text-[#667085] text-xs">
                         {intakeDraft
                           ? "Fiche commencée — à finaliser à l'étape suivante."
                           : "Écran, tactile, oxydation, accessoires, signature client : à l'étape suivante."}
                       </p>
                     </div>
                   </div>
-                  <span className="inline-flex items-center rounded-full border border-[#E8E8E5] bg-white px-3 py-1 font-medium text-[#6B6B6B] text-[11px]">
+                  <span className="inline-flex items-center rounded-full border border-[#E4E7EC] bg-white px-3 py-1 font-medium text-[#667085] text-[11px]">
                     Étape suivante
                   </span>
                 </section>
@@ -1992,11 +1992,11 @@ export function RepairModal({
             {/* Mobile : barre d'action sticky en bas */}
             <div
               className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 border-t border-[#FFFFFF] bg-white px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden"
-              style={{ boxShadow: "0 -10px 24px rgba(26,25,22,0.06)" }}
+              style={{ boxShadow: "0 -10px 24px rgba(16,24,40,0.06)" }}
             >
               <div className="min-w-0">
-                <p className="text-[#6B6B6B] text-[11px] font-medium tracking-tight">Total</p>
-                <p className="font-bold text-[#1A1916] text-[18px] leading-none tracking-tight tabular-nums">
+                <p className="text-[#667085] text-[11px] font-medium tracking-tight">Total</p>
+                <p className="font-bold text-[#101828] text-[18px] leading-none tracking-tight tabular-nums">
                   {totalClient > 0 ? formatDossier(totalClient) : "À définir"}
                 </p>
               </div>
@@ -2028,11 +2028,11 @@ export function RepairModal({
             {/* Résumé desktop */}
             <aside className="hidden md:flex w-full flex-col border-[#FFFFFF] border-t bg-[#FFFFFF] p-6 md:w-[320px] md:border-t-0 md:border-l">
               <div className="mb-5">
-                <h3 className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Résumé</h3>
+                <h3 className="font-semibold text-[#101828] text-[15px] tracking-tight">Résumé</h3>
               </div>
               <dl className="space-y-2 text-sm">
                 <div>
-                  <dt className="text-[#6B6B6B] text-xs">Client</dt>
+                  <dt className="text-[#667085] text-xs">Client</dt>
                   <dd className="font-medium">
                     {clientType === "anonyme"
                       ? "Client comptoir"
@@ -2042,37 +2042,37 @@ export function RepairModal({
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-[#6B6B6B] text-xs">Appareil</dt>
+                  <dt className="text-[#667085] text-xs">Appareil</dt>
                   <dd className="font-medium">{modelFull || "—"}</dd>
                 </div>
                 <div>
-                  <dt className="text-[#6B6B6B] text-xs">Intervention</dt>
+                  <dt className="text-[#667085] text-xs">Intervention</dt>
                   <dd className="font-medium">{intervention || "—"}</dd>
                 </div>
                 <div>
-                  <dt className="text-[#6B6B6B] text-xs">Qualité</dt>
+                  <dt className="text-[#667085] text-xs">Qualité</dt>
                   <dd>{summaryQuality || "—"}</dd>
                 </div>
                 <div>
-                  <dt className="text-[#6B6B6B] text-xs">Tarif client</dt>
+                  <dt className="text-[#667085] text-xs">Tarif client</dt>
                   <dd>
                     Pièce {formatDossier(prixPieceNum)} · M.O. {formatDossier(mainNum)}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-[#6B6B6B] text-xs">Total</dt>
-                  <dd className="font-semibold text-[#1A1916] text-[24px] tracking-tight">
+                  <dt className="text-[#667085] text-xs">Total</dt>
+                  <dd className="font-semibold text-[#101828] text-[24px] tracking-tight">
                     {totalClient > 0 ? formatDossier(totalClient) : "À définir"}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-[#6B6B6B] text-xs">Source</dt>
+                  <dt className="text-[#667085] text-xs">Source</dt>
                   <dd>{summarySource}</dd>
                 </div>
               </dl>
 
               {!canSubmitQuote && (
-                <p className="mt-4 rounded-lg border border-[#E8E8E5] bg-[#FFFFFF] px-3 py-2 text-[#6B6B6B] text-xs">
+                <p className="mt-4 rounded-lg border border-[#E4E7EC] bg-[#FFFFFF] px-3 py-2 text-[#667085] text-xs">
                   Ajoutez un tarif pour créer un devis.
                 </p>
               )}
@@ -2099,7 +2099,7 @@ export function RepairModal({
                   <ChevronDown className="size-4 -rotate-90" />
                 </PrimaryButton>
                 {!canSubmitRepair && missingSummary.length > 0 && (
-                  <p className="text-[#8A8A8A] text-[11px] text-center">Manquant : {missingSummary.join(", ")}.</p>
+                  <p className="text-[#98A2B3] text-[11px] text-center">Manquant : {missingSummary.join(", ")}.</p>
                 )}
               </div>
             </aside>
@@ -2129,7 +2129,7 @@ function DoneAction({
       className={`group flex items-center gap-3 rounded-2xl border p-3.5 text-left transition ${
         primary
           ? "border-[#2A9D8F] bg-[#FFFFFF] hover:bg-[#FFFFFF]"
-          : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/40 hover:bg-[#FFFFFF]"
+          : "border-[#E4E7EC] bg-white hover:border-[#2A9D8F]/40 hover:bg-[#FFFFFF]"
       }`}
       onClick={onClick}
       type="button"
@@ -2142,10 +2142,10 @@ function DoneAction({
         {icon}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate font-medium text-[#1A1916] text-[14px]">{title}</span>
-        <span className="block truncate text-[#6B6B6B] text-[12px]">{desc}</span>
+        <span className="block truncate font-medium text-[#101828] text-[14px]">{title}</span>
+        <span className="block truncate text-[#667085] text-[12px]">{desc}</span>
       </span>
-      <ArrowRight className="size-4 shrink-0 text-[#C4C2BB] transition group-hover:text-[#6B6B6B]" />
+      <ArrowRight className="size-4 shrink-0 text-[#C4C2BB] transition group-hover:text-[#667085]" />
     </button>
   );
 }

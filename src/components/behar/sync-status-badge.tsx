@@ -41,19 +41,19 @@ export function SyncStatusBadge({ className }: Readonly<{ className?: string }>)
   const config = (() => {
     switch (state.status) {
       case "loading":
-        return { icon: Loader2, label: "Chargement cloud…", color: "text-[#6B6B6B]", spin: true };
+        return { icon: Loader2, label: "Chargement cloud…", color: "text-[#667085]", spin: true };
       case "saving":
-        return { icon: Loader2, label: "Sauvegarde…", color: "text-[#6B6B6B]", spin: true };
+        return { icon: Loader2, label: "Sauvegarde…", color: "text-[#667085]", spin: true };
       case "synced": {
         const rel = state.lastSyncedAt ? relativeTime(now - new Date(state.lastSyncedAt).getTime()) : "à l'instant";
         return { icon: Check, label: `Sauvegardé ${rel}`, color: "text-[#2A9D8F]" };
       }
       case "offline":
-        return { icon: CloudOff, label: "Hors ligne — sera sauvegardé au retour du réseau", color: "text-[#6B6B6B]" };
+        return { icon: CloudOff, label: "Hors ligne — sera sauvegardé au retour du réseau", color: "text-[#667085]" };
       case "error":
         return { icon: AlertCircle, label: safeSyncError(state.lastError), color: "text-[#B42318]" };
       default:
-        return { icon: Check, label: "", color: "text-[#6B6B6B]" };
+        return { icon: Check, label: "", color: "text-[#667085]" };
     }
   })();
 

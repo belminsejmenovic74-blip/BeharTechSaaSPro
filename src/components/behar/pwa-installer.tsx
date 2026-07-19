@@ -66,8 +66,8 @@ export function PwaInstaller() {
           {isInstalled ? <CheckCircle2 className="size-5" /> : <Monitor className="size-5" />}
         </div>
         <div className="flex-1">
-          <h2 className="font-semibold text-[#1A1916] text-lg">Installer l’application</h2>
-          <p className="mt-1 text-[#6B6B6B] text-sm leading-relaxed">
+          <h2 className="font-semibold text-[#101828] text-lg">Installer l’application</h2>
+          <p className="mt-1 text-[#667085] text-sm leading-relaxed">
             {isInstalled
               ? "Behar Tech est déjà installé sur ce PC."
               : "Installez Behar Tech sur ce PC pour l’ouvrir comme un logiciel."}
@@ -80,15 +80,15 @@ export function PwaInstaller() {
                   Installer sur ce PC
                 </PrimaryButton>
               ) : (
-                <div className="p-4 rounded-xl bg-[#FFFFFF] border border-[#E8E8E5]">
-                  <p className="text-[#1A1916] text-sm font-medium">Si le bouton n’apparaît pas :</p>
-                  <p className="mt-1 text-[#6B6B6B] text-xs leading-relaxed">
+                <div className="p-4 rounded-xl bg-[#FFFFFF] border border-[#E4E7EC]">
+                  <p className="text-[#101828] text-sm font-medium">Si le bouton n’apparaît pas :</p>
+                  <p className="mt-1 text-[#667085] text-xs leading-relaxed">
                     Ouvrez Chrome ou Edge puis cliquez sur l’icône <strong>Installer</strong> dans la barre d’adresse.
                   </p>
                 </div>
               )}
 
-              <p className="text-[#8A8A8A] text-[11px] flex items-center gap-1.5">
+              <p className="text-[#98A2B3] text-[11px] flex items-center gap-1.5">
                 <Smartphone className="size-3" />
                 Fonctionne avec Chrome ou Edge. Vos données restent sur cet ordinateur.
               </p>

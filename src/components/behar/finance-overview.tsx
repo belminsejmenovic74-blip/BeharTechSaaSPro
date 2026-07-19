@@ -51,7 +51,7 @@ function Sparkline({ values }: Readonly<{ values: number[] }>) {
 }
 
 function DeltaBadge({ value, compare }: Readonly<{ value: number | null; compare: string }>) {
-  if (value === null) return <span className="text-[#8A8A8A] text-[13px]">— {compare}</span>;
+  if (value === null) return <span className="text-[#98A2B3] text-[13px]">— {compare}</span>;
   const up = value >= 0;
   const Icon = up ? TrendingUp : TrendingDown;
   return (
@@ -113,7 +113,7 @@ export function FinanceOverview() {
     <section className="space-y-4" data-testid="dashboard-finance-overview">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[#6B6B6B] text-[13px]">
+          <p className="text-[#667085] text-[13px]">
             CA facturé ·{" "}
             {config.label === "Jour"
               ? "aujourd'hui"
@@ -122,18 +122,18 @@ export function FinanceOverview() {
                 : "30 derniers jours"}
           </p>
           <div className="mt-0.5 flex items-baseline gap-3">
-            <span className="font-semibold text-[#1A1916] text-[32px] leading-none tracking-tight tabular-nums">
+            <span className="font-semibold text-[#101828] text-[32px] leading-none tracking-tight tabular-nums">
               {formatEuro(stats.billed)}
             </span>
             <DeltaBadge compare={config.compare} value={delta(stats.billed, stats.previousBilled)} />
           </div>
         </div>
-        <div className="flex gap-1 rounded-[10px] border border-[#E8E8E5] bg-white p-1">
+        <div className="flex gap-1 rounded-[10px] border border-[#E4E7EC] bg-white p-1">
           {PERIODS.map((entry) => (
             <button
               className={cn(
                 "h-8 rounded-[7px] px-3 font-medium text-[13px] transition",
-                period === entry.key ? "bg-[#1A1916] text-white" : "text-[#6B6B6B] hover:text-[#1A1916]",
+                period === entry.key ? "bg-[#101828] text-white" : "text-[#667085] hover:text-[#101828]",
               )}
               key={entry.key}
               onClick={() => setPeriod(entry.key)}
@@ -173,8 +173,8 @@ export function FinanceOverview() {
       </div>
 
       {stats.daily.some((value) => value !== 0) ? (
-        <div className="rounded-[14px] border border-[#E8E8E5] bg-white p-4">
-          <p className="mb-2 font-semibold text-[#1A1916] text-[13px]">Facturation de la période</p>
+        <div className="rounded-[14px] border border-[#E4E7EC] bg-white p-4">
+          <p className="mb-2 font-semibold text-[#101828] text-[13px]">Facturation de la période</p>
           <Sparkline values={stats.daily} />
         </div>
       ) : null}
@@ -190,12 +190,12 @@ function FinanceCard({
 }: Readonly<{ label: string; value: string; helper: string; href: string }>) {
   return (
     <Link
-      className="block rounded-[14px] border border-[#E8E8E5] bg-white p-4 transition hover:border-[#2A9D8F]/40"
+      className="block rounded-[14px] border border-[#E4E7EC] bg-white p-4 transition hover:border-[#2A9D8F]/40"
       href={href}
     >
-      <p className="text-[#6B6B6B] text-[12px]">{label}</p>
-      <p className="mt-1 font-semibold text-[#1A1916] text-[22px] leading-none tracking-tight tabular-nums">{value}</p>
-      <p className="mt-9 text-[#6B6B6B] text-[11.5px]">{helper}</p>
+      <p className="text-[#667085] text-[12px]">{label}</p>
+      <p className="mt-1 font-semibold text-[#101828] text-[22px] leading-none tracking-tight tabular-nums">{value}</p>
+      <p className="mt-9 text-[#667085] text-[11.5px]">{helper}</p>
     </Link>
   );
 }

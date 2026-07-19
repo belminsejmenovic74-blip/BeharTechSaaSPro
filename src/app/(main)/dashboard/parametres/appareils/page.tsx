@@ -154,7 +154,7 @@ export default function CatalogueAppareilsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link
             href="/dashboard/parametres"
-            className="inline-flex items-center gap-2 text-[#6B6B6B] text-sm hover:text-[#1A1916]"
+            className="inline-flex items-center gap-2 text-[#667085] text-sm hover:text-[#101828]"
           >
             <ArrowLeft className="size-4" /> Retour aux paramètres
           </Link>
@@ -169,12 +169,12 @@ export default function CatalogueAppareilsPage() {
 
         <Panel className="p-5">
           <label className="relative block">
-            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6B6B6B]" />
+            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#667085]" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Rechercher (marque, modèle…)"
-              className="h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white pr-3 pl-10 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+              className="h-10 w-full rounded-[12px] border border-[#E4E7EC] bg-white pr-3 pl-10 text-sm outline-none focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
             />
           </label>
         </Panel>
@@ -189,7 +189,7 @@ export default function CatalogueAppareilsPage() {
               0,
             );
             return (
-              <div className="rounded-[14px] border border-[#E8E8E5] bg-white" key={typeKey}>
+              <div className="rounded-[14px] border border-[#E4E7EC] bg-white" key={typeKey}>
                 <button
                   className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
                   onClick={() => setOpenTypes((p) => ({ ...p, [typeKey]: !typeOpen }))}
@@ -199,22 +199,22 @@ export default function CatalogueAppareilsPage() {
                     {typeOpen ? (
                       <ChevronDown className="size-4 text-[#167B70]" />
                     ) : (
-                      <ChevronRight className="size-4 text-[#6B6B6B]" />
+                      <ChevronRight className="size-4 text-[#667085]" />
                     )}
-                    <span className="font-semibold text-[#1A1916] text-sm">{type}</span>
+                    <span className="font-semibold text-[#101828] text-sm">{type}</span>
                   </span>
-                  <span className="text-[#6B6B6B] text-xs">
+                  <span className="text-[#667085] text-xs">
                     {modelCount} modèle{modelCount > 1 ? "s" : ""}
                   </span>
                 </button>
 
                 {typeOpen && (
-                  <div className="border-[#E8E8E5] border-t px-3 py-3">
+                  <div className="border-[#E4E7EC] border-t px-3 py-3">
                     <div className="mb-3 flex flex-wrap items-center gap-2">
                       <SecondaryButton onClick={() => createBrandForType(type)}>
                         <Plus className="mr-2 size-4" /> Ajouter une marque
                       </SecondaryButton>
-                      <span className="text-[#6B6B6B] text-xs">
+                      <span className="text-[#667085] text-xs">
                         Marques disponibles: {brandOptionsByType(type).slice(0, 6).join(", ")}
                         {brandOptionsByType(type).length > 6 ? "…" : ""}
                       </span>
@@ -234,7 +234,7 @@ export default function CatalogueAppareilsPage() {
                         return (
                           <div
                             key={brandId}
-                            className="rounded-xl border border-[#E8E8E5] bg-white overflow-hidden shadow-sm mb-2"
+                            className="rounded-xl border border-[#E4E7EC] bg-white overflow-hidden shadow-sm mb-2"
                           >
                             <div
                               className="flex w-full items-center justify-between px-4 py-3 hover:bg-[#FFFFFF] transition cursor-pointer"
@@ -244,12 +244,12 @@ export default function CatalogueAppareilsPage() {
                                 {isOpen ? (
                                   <ChevronDown className="size-4 text-[#167B70]" />
                                 ) : (
-                                  <ChevronRight className="size-4 text-[#6B6B6B]" />
+                                  <ChevronRight className="size-4 text-[#667085]" />
                                 )}
-                                <span className="font-bold text-[#1A1916] text-sm">{brand.name}</span>
+                                <span className="font-bold text-[#101828] text-sm">{brand.name}</span>
                               </div>
                               <div className="flex items-center gap-3">
-                                <span className="text-[#6B6B6B] text-[11px] font-medium uppercase tracking-wider">
+                                <span className="text-[#667085] text-[11px] font-medium uppercase tracking-wider">
                                   {count} modèles
                                 </span>
                                 <button
@@ -266,24 +266,24 @@ export default function CatalogueAppareilsPage() {
                             </div>
 
                             {isOpen && (
-                              <div className="border-t border-[#E8E8E5] bg-[#FFFFFF] p-3 space-y-3">
+                              <div className="border-t border-[#E4E7EC] bg-[#FFFFFF] p-3 space-y-3">
                                 {[...bySeries.entries()]
                                   .sort((a, b) => a[0].localeCompare(b[0], "fr"))
                                   .map(([series, list]) => (
                                     <div key={series} className="space-y-1">
-                                      <div className="px-2 py-1 text-[10px] font-bold text-[#6B6B6B] uppercase tracking-widest bg-[#FFFFFF] rounded-md inline-block mb-1">
+                                      <div className="px-2 py-1 text-[10px] font-bold text-[#667085] uppercase tracking-widest bg-[#FFFFFF] rounded-md inline-block mb-1">
                                         {series}
                                       </div>
                                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                                         {list.map((m) => (
                                           <div
                                             key={m.id}
-                                            className={`flex items-center justify-between p-3 rounded-xl border bg-white transition hover:shadow-md group ${m.isActive ? "border-[#E8E8E5]" : "opacity-50 border-dashed"}`}
+                                            className={`flex items-center justify-between p-3 rounded-xl border bg-white transition hover:shadow-md group ${m.isActive ? "border-[#E4E7EC]" : "opacity-50 border-dashed"}`}
                                           >
                                             <div className="flex flex-col">
-                                              <span className="font-semibold text-sm text-[#1A1916]">{m.name}</span>
+                                              <span className="font-semibold text-sm text-[#101828]">{m.name}</span>
                                               <div className="flex items-center gap-2 mt-0.5">
-                                                <span className="text-[10px] text-[#6B6B6B]">
+                                                <span className="text-[10px] text-[#667085]">
                                                   {countPricesFor(type, brand.name, m.name)} tarifs
                                                 </span>
                                               </div>
@@ -299,10 +299,10 @@ export default function CatalogueAppareilsPage() {
                                                   }
                                                 }}
                                               >
-                                                <Pencil className="size-3.5 text-[#6B6B6B]" />
+                                                <Pencil className="size-3.5 text-[#667085]" />
                                               </button>
                                               <button
-                                                className={`p-1.5 rounded-lg transition ${m.isActive ? "hover:bg-red-50 text-[#6B6B6B] hover:text-red-500" : "hover:bg-green-50 text-red-400 hover:text-green-500"}`}
+                                                className={`p-1.5 rounded-lg transition ${m.isActive ? "hover:bg-red-50 text-[#667085] hover:text-red-500" : "hover:bg-green-50 text-red-400 hover:text-green-500"}`}
                                                 onClick={() => {
                                                   toggleDeviceModel(m.id, !m.isActive);
                                                   toast.success(m.isActive ? "Modèle désactivé" : "Modèle réactivé");

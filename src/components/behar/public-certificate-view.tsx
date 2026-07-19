@@ -21,8 +21,8 @@ import { cn } from "@/lib/utils";
 const STATUS_UI: Record<ControlStatus, { cls: string; icon: typeof CheckCircle2; label: string }> = {
   validé: { cls: "bg-[#ECF8F4] text-[#167B70]", icon: CheckCircle2, label: "Validé" },
   "à signaler": { cls: "bg-[#FFF7E8] text-[#9A6B1B]", icon: AlertTriangle, label: "À signaler" },
-  "non testé": { cls: "bg-[#F7F7F5] text-[#8A8A85]", icon: Minus, label: "Non testé" },
-  "non applicable": { cls: "bg-[#F7F7F5] text-[#6B6B6B]", icon: Minus, label: "Non applicable" },
+  "non testé": { cls: "bg-[#F5F7FA] text-[#98A2B3]", icon: Minus, label: "Non testé" },
+  "non applicable": { cls: "bg-[#F5F7FA] text-[#667085]", icon: Minus, label: "Non applicable" },
 };
 
 const dateFr = (iso: string) => {
@@ -98,18 +98,18 @@ export function PublicCertificateView({
   }
 
   if (publicToken && !encoded && !remoteLoaded && !data) {
-    return <div className="min-h-svh bg-[#FAFAF8]" />;
+    return <div className="min-h-svh bg-[#F9FAFB]" />;
   }
 
   if (!data) {
     return (
-      <div className="grid min-h-svh place-items-center bg-[#FAFAF8] px-6 text-center">
+      <div className="grid min-h-svh place-items-center bg-[#F9FAFB] px-6 text-center">
         <div className="max-w-sm">
-          <div className="mx-auto grid size-12 place-items-center rounded-[14px] bg-white text-[#6B6B6B] shadow-[0_1px_3px_rgba(26,25,22,0.06)]">
+          <div className="mx-auto grid size-12 place-items-center rounded-[14px] bg-white text-[#667085] shadow-[0_1px_3px_rgba(16,24,40,0.06)]">
             <AlertTriangle className="size-6" />
           </div>
-          <p className="mt-4 font-semibold text-[#1A1916] text-lg">Ce certificat n'est pas encore disponible.</p>
-          <p className="mt-1 text-[#6B6B6B] text-sm">La boutique doit encore publier ou mettre à jour cette fiche.</p>
+          <p className="mt-4 font-semibold text-[#101828] text-lg">Ce certificat n'est pas encore disponible.</p>
+          <p className="mt-1 text-[#667085] text-sm">La boutique doit encore publier ou mettre à jour cette fiche.</p>
         </div>
       </div>
     );
@@ -154,7 +154,7 @@ export function PublicCertificateView({
     : [];
 
   return (
-    <div className="min-h-svh bg-[#FAFAF8] px-4 py-8 text-[#1A1916] sm:py-12">
+    <div className="min-h-svh bg-[#F9FAFB] px-4 py-8 text-[#101828] sm:py-12">
       <div className="mx-auto w-full max-w-[760px] space-y-5">
         {/* En-tête */}
         {(settings.showShopName || settings.showShopLogo) && (
@@ -164,7 +164,7 @@ export function PublicCertificateView({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   alt=""
-                  className="size-9 rounded-[10px] border border-[#E8E5DF] bg-white object-contain p-1"
+                  className="size-9 rounded-[10px] border border-[#E4E7EC] bg-white object-contain p-1"
                   src={data.shopLogoUrl}
                 />
               ) : settings.showShopLogo ? (
@@ -173,7 +173,7 @@ export function PublicCertificateView({
                 </span>
               ) : null}
               {settings.showShopName && (
-                <p className="min-w-0 truncate font-semibold text-[#1A1916] text-sm">
+                <p className="min-w-0 truncate font-semibold text-[#101828] text-sm">
                   {data.workshopName || "Boutique"}
                 </p>
               )}
@@ -186,9 +186,9 @@ export function PublicCertificateView({
         )}
 
         {/* Hero */}
-        <section className="rounded-[22px] border border-[#E8E5DF] bg-white p-5 shadow-[0_16px_45px_rgba(26,25,22,0.06)] sm:p-7">
+        <section className="rounded-[22px] border border-[#E4E7EC] bg-white p-5 shadow-[0_16px_45px_rgba(16,24,40,0.06)] sm:p-7">
           <div className="grid gap-5 sm:grid-cols-[128px_1fr] sm:items-center">
-            <div className="grid aspect-square place-items-center overflow-hidden rounded-[18px] border border-[#E8E5DF] bg-[#FAFAF8]">
+            <div className="grid aspect-square place-items-center overflow-hidden rounded-[18px] border border-[#E4E7EC] bg-[#F9FAFB]">
               {heroImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img alt="" className="h-full w-full object-contain p-2" src={heroImage} />
@@ -197,13 +197,13 @@ export function PublicCertificateView({
               )}
             </div>
             <div>
-              <p className="text-[#6B6B6B] text-[11px] font-semibold uppercase tracking-[0.08em]">
+              <p className="text-[#667085] text-[11px] font-semibold uppercase tracking-[0.08em]">
                 Certificat de reconditionnement
               </p>
-              <h1 className="mt-1.5 font-semibold text-[#1A1916] text-[26px] leading-tight tracking-tight sm:text-[30px]">
+              <h1 className="mt-1.5 font-semibold text-[#101828] text-[26px] leading-tight tracking-tight sm:text-[30px]">
                 {settings.showModel ? device : "Téléphone reconditionné"}
               </h1>
-              {detail && <p className="mt-1 text-[#6B6B6B] text-sm">{detail}</p>}
+              {detail && <p className="mt-1 text-[#667085] text-sm">{detail}</p>}
 
               {showQualityPills && (
                 <div className="mt-5 flex flex-wrap items-center gap-2.5">
@@ -214,12 +214,12 @@ export function PublicCertificateView({
                     </span>
                   )}
                   {settings.showControlPoints && (
-                    <span className="rounded-[9px] bg-[#F7F7F5] px-3 py-1.5 font-medium text-[#1A1916] text-sm">
+                    <span className="rounded-[9px] bg-[#F5F7FA] px-3 py-1.5 font-medium text-[#101828] text-sm">
                       {data.validatedPoints} / {data.protocolPoints} points contrôlés
                     </span>
                   )}
                   {settings.showBattery && data.batteryHealth != null && (
-                    <span className="rounded-[9px] bg-[#F7F7F5] px-3 py-1.5 font-medium text-[#1A1916] text-sm">
+                    <span className="rounded-[9px] bg-[#F5F7FA] px-3 py-1.5 font-medium text-[#101828] text-sm">
                       Batterie {data.batteryHealth} %
                     </span>
                   )}
@@ -231,7 +231,7 @@ export function PublicCertificateView({
 
         {/* Caractéristiques */}
         {rows.length > 0 && (
-          <section className="rounded-[20px] border border-[#E8E5DF] bg-white p-6 shadow-[0_1px_3px_rgba(26,25,22,0.05)]">
+          <section className="rounded-[20px] border border-[#E4E7EC] bg-white p-6 shadow-[0_1px_3px_rgba(16,24,40,0.05)]">
             <div className="grid gap-x-8 gap-y-0 sm:grid-cols-2">
               {rows.map((row) => (
                 <Row key={row.label} label={row.label} value={row.value} mono={row.mono} />
@@ -242,9 +242,9 @@ export function PublicCertificateView({
 
         {/* Diagnostic public */}
         {diagnosticRows.length > 0 && (
-          <section className="rounded-[20px] border border-[#E8E5DF] bg-white p-6 shadow-[0_1px_3px_rgba(26,25,22,0.05)]">
+          <section className="rounded-[20px] border border-[#E4E7EC] bg-white p-6 shadow-[0_1px_3px_rgba(16,24,40,0.05)]">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <h2 className="font-semibold text-[#1A1916]">Diagnostic</h2>
+              <h2 className="font-semibold text-[#101828]">Diagnostic</h2>
               <span className="rounded-full bg-[#ECF8F4] px-2.5 py-1 font-semibold text-[#147065] text-xs">
                 Diagnostic final
               </span>
@@ -259,10 +259,10 @@ export function PublicCertificateView({
 
         {/* Détail des tests */}
         {settings.showControlPoints && data.controls.length > 0 && (
-          <section className="rounded-[20px] border border-[#E8E5DF] bg-white p-6 shadow-[0_1px_3px_rgba(26,25,22,0.05)]">
+          <section className="rounded-[20px] border border-[#E4E7EC] bg-white p-6 shadow-[0_1px_3px_rgba(16,24,40,0.05)]">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="font-semibold text-[#1A1916]">Détail des tests</h2>
-              <span className="text-[#6B6B6B] text-xs">{data.controls.length} points de contrôle</span>
+              <h2 className="font-semibold text-[#101828]">Détail des tests</h2>
+              <span className="text-[#667085] text-xs">{data.controls.length} points de contrôle</span>
             </div>
             <div className="mt-4 grid gap-x-8 sm:grid-cols-2">
               {data.controls.map((c) => {
@@ -270,10 +270,10 @@ export function PublicCertificateView({
                 const Icon = ui.icon;
                 return (
                   <div
-                    className="flex items-center justify-between gap-3 border-[#F1F1EF] border-b py-2.5"
+                    className="flex items-center justify-between gap-3 border-[#F2F4F7] border-b py-2.5"
                     key={c.label}
                   >
-                    <span className="text-[#1A1916] text-sm">{c.label}</span>
+                    <span className="text-[#101828] text-sm">{c.label}</span>
                     <span
                       className={cn(
                         "inline-flex items-center gap-1.5 rounded-[7px] px-2.5 py-1 font-semibold text-[11px]",
@@ -291,12 +291,12 @@ export function PublicCertificateView({
         )}
 
         {gallery.length > 1 && (
-          <section className="rounded-[20px] border border-[#E8E5DF] bg-white p-6 shadow-[0_1px_3px_rgba(26,25,22,0.05)]">
-            <h2 className="font-semibold text-[#1A1916]">Photos publiques</h2>
+          <section className="rounded-[20px] border border-[#E4E7EC] bg-white p-6 shadow-[0_1px_3px_rgba(16,24,40,0.05)]">
+            <h2 className="font-semibold text-[#101828]">Photos publiques</h2>
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
               {gallery.map((src, index) => (
                 <div
-                  className="aspect-square overflow-hidden rounded-[14px] border border-[#E8E5DF] bg-[#FAFAF8]"
+                  className="aspect-square overflow-hidden rounded-[14px] border border-[#E4E7EC] bg-[#F9FAFB]"
                   key={`${src}-${index}`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -310,15 +310,15 @@ export function PublicCertificateView({
         {/* Défauts restants */}
         {settings.showPublicComment && (data.publicComment || data.defects.length > 0) && (
           <section className="rounded-[20px] border border-[#F0E0BC] bg-[#FFFFFF] p-6">
-            <h2 className="flex items-center gap-2 font-semibold text-[#1A1916]">
+            <h2 className="flex items-center gap-2 font-semibold text-[#101828]">
               <AlertTriangle className="size-4 text-[#9A6B1B]" />
               Commentaire public
             </h2>
-            {data.publicComment && <p className="mt-2 text-[#1A1916] text-sm leading-relaxed">{data.publicComment}</p>}
+            {data.publicComment && <p className="mt-2 text-[#101828] text-sm leading-relaxed">{data.publicComment}</p>}
             {data.defects.length > 0 && (
               <ul className="mt-3 space-y-2">
                 {data.defects.slice(0, 4).map((d) => (
-                  <li className="flex items-start gap-2.5 text-[#1A1916] text-sm" key={d}>
+                  <li className="flex items-start gap-2.5 text-[#101828] text-sm" key={d}>
                     <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-[#9A6B1B]" />
                     {d}
                   </li>
@@ -331,13 +331,13 @@ export function PublicCertificateView({
         {/* Pied */}
         <footer className="pt-2 pb-6 text-center">
           {settings.showReference && (
-            <p className="text-[#6B6B6B] text-xs">
-              Certificat n° <span className="font-mono text-[#1A1916]">{data.ref}</span> · Contrôle réalisé par{" "}
+            <p className="text-[#667085] text-xs">
+              Certificat n° <span className="font-mono text-[#101828]">{data.ref}</span> · Contrôle réalisé par{" "}
               {data.technician}
             </p>
           )}
           {settings.showPoweredBy && (
-            <p className="mt-1 text-[#9A9A95] text-xs">Certificat généré avec Behar Tech Pro</p>
+            <p className="mt-1 text-[#98A2B3] text-xs">Certificat généré avec Behar Tech Pro</p>
           )}
         </footer>
       </div>
@@ -347,9 +347,9 @@ export function PublicCertificateView({
 
 function Row({ label, value, mono }: Readonly<{ label: string; value: string; mono?: boolean }>) {
   return (
-    <div className="flex items-center justify-between gap-3 border-[#F1F1EF] border-b py-3 last:border-0">
-      <span className="text-[#6B6B6B] text-sm">{label}</span>
-      <span className={cn("text-right font-semibold text-[#1A1916] text-sm", mono && "font-mono text-[13px]")}>
+    <div className="flex items-center justify-between gap-3 border-[#F2F4F7] border-b py-3 last:border-0">
+      <span className="text-[#667085] text-sm">{label}</span>
+      <span className={cn("text-right font-semibold text-[#101828] text-sm", mono && "font-mono text-[13px]")}>
         {value}
       </span>
     </div>

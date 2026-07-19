@@ -439,7 +439,7 @@ export function WidgetApp({
                 )}
               >
                 {features.summarySidebar ? (
-                  <aside className="border-r border-[#ECECE8] bg-[#FCFCFB] px-4 py-4 lg:sticky lg:top-0 lg:self-start lg:px-6 lg:py-7">
+                  <aside className="border-r border-[#ECECE8] bg-[#FCFCFD] px-4 py-4 lg:sticky lg:top-0 lg:self-start lg:px-6 lg:py-7">
                     <RepairSummary ctx={ctx} onModify={deviceLocked ? undefined : () => setStep(0)} />
                   </aside>
                 ) : null}

@@ -137,8 +137,8 @@ export function InstallationGate({
       return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-white">
           <div className="flex flex-col items-center gap-4">
-            <div className="size-10 rounded-full border-2 border-[#E8E8E5] border-t-[#2A9D8F] animate-spin" />
-            <p className="text-[#6B6B6B] text-sm">Chargement…</p>
+            <div className="size-10 rounded-full border-2 border-[#E4E7EC] border-t-[#2A9D8F] animate-spin" />
+            <p className="text-[#667085] text-sm">Chargement…</p>
           </div>
         </div>
       );
@@ -148,8 +148,8 @@ export function InstallationGate({
       return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-white">
           <div className="flex flex-col items-center gap-4">
-            <div className="size-10 rounded-full border-2 border-[#E8E8E5] border-t-[#2A9D8F] animate-spin" />
-            <p className="text-[#6B6B6B] text-sm">Chargement de l’atelier cloud…</p>
+            <div className="size-10 rounded-full border-2 border-[#E4E7EC] border-t-[#2A9D8F] animate-spin" />
+            <p className="text-[#667085] text-sm">Chargement de l’atelier cloud…</p>
           </div>
         </div>
       );

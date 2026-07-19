@@ -16,8 +16,8 @@ import type {
 } from "@/lib/widget/public-types";
 
 const DEFAULT_PRIMARY = "#2A9D8F";
-const DEFAULT_TEXT = "#1A1916";
-const DEFAULT_BACKGROUND = "#FAFAF8";
+const DEFAULT_TEXT = "#101828";
+const DEFAULT_BACKGROUND = "#F9FAFB";
 const DEFAULT_RADIUS = 12;
 
 export const FEATURE_DEFAULTS: Required<WidgetFeatures> = {
@@ -118,7 +118,7 @@ function readableOn(color: string): string {
     return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
   });
   const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return luminance > 0.5 ? "#1A1916" : "#FFFFFF";
+  return luminance > 0.5 ? "#101828" : "#FFFFFF";
 }
 
 function tintOf(color: string): string {
@@ -146,10 +146,10 @@ export function buildTheme(visual: WidgetVisual | undefined): WidgetTheme {
     primary,
     onPrimary,
     text,
-    muted: "#6B6B6B",
+    muted: "#667085",
     background,
     surface: "#FFFFFF",
-    border: "#E8E8E5",
+    border: "#E4E7EC",
     tint: tintOf(primary),
     radius,
   };

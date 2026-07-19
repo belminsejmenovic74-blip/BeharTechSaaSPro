@@ -14,7 +14,7 @@ import { WidgetAppointmentsProvider } from "@/components/behar/widget-appointmen
 
 export default function Layout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <div className="behar-app min-h-svh bg-white text-[#1A1916]">
+    <div className="behar-app min-h-svh bg-white text-[#101828]">
       <PrintProvider>
         <InstallationGate>
           <PinLoginGate>

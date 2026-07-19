@@ -67,13 +67,13 @@ export function PhotoSlot({
       />
 
       {value ? (
-        <div className="group relative size-full overflow-hidden rounded-[14px] border border-[#E8E8E5]">
+        <div className="group relative size-full overflow-hidden rounded-[14px] border border-[#E4E7EC]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img alt={label} className="size-full object-cover" src={value} />
-          <div className="absolute inset-x-2 bottom-2 flex items-center justify-between gap-1 rounded-[10px] border border-[#E8E8E5] bg-white px-2 py-1.5">
-            <span className="truncate font-medium text-[#1A1916] text-[11px]">{label}</span>
+          <div className="absolute inset-x-2 bottom-2 flex items-center justify-between gap-1 rounded-[10px] border border-[#E4E7EC] bg-white px-2 py-1.5">
+            <span className="truncate font-medium text-[#101828] text-[11px]">{label}</span>
             <button
-              className="inline-flex items-center gap-1 rounded-[6px] bg-[#FFFFFF] px-1.5 py-0.5 font-semibold text-[#1A1916] text-[10px] transition hover:bg-[#FFFFFF]"
+              className="inline-flex items-center gap-1 rounded-[6px] bg-[#FFFFFF] px-1.5 py-0.5 font-semibold text-[#101828] text-[10px] transition hover:bg-[#FFFFFF]"
               onClick={pick}
               type="button"
             >
@@ -92,7 +92,7 @@ export function PhotoSlot({
         </div>
       ) : (
         <button
-          className="flex size-full flex-col items-center justify-center gap-2 rounded-[14px] border border-[#E8E8E5] border-dashed bg-[#FFFFFF] text-center transition hover:border-[#2A9D8F]/45 disabled:opacity-70"
+          className="flex size-full flex-col items-center justify-center gap-2 rounded-[14px] border border-[#E4E7EC] border-dashed bg-[#FFFFFF] text-center transition hover:border-[#2A9D8F]/45 disabled:opacity-70"
           disabled={busy}
           onClick={pick}
           type="button"
@@ -100,10 +100,10 @@ export function PhotoSlot({
           {busy ? (
             <Loader2 className="size-5 animate-spin text-[#2A9D8F]" />
           ) : (
-            <Camera className="size-5 text-[#6B6B6B]" />
+            <Camera className="size-5 text-[#667085]" />
           )}
-          <span className="font-medium text-[#1A1916] text-xs">{label}</span>
-          <span className="text-[#6B6B6B] text-[11px]">{busy ? "Traitement…" : "Ajouter une photo"}</span>
+          <span className="font-medium text-[#101828] text-xs">{label}</span>
+          <span className="text-[#667085] text-[11px]">{busy ? "Traitement…" : "Ajouter une photo"}</span>
         </button>
       )}
     </div>

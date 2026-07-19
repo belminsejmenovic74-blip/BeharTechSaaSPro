@@ -13,10 +13,10 @@ import { formatMoney, getDocumentFilename } from "@/lib/workshop-country";
 const COLORS = {
   bg: "#FFFFFF",
   soft: "#FFFFFF",
-  text: "#1A1916",
-  sub: "#6B6B6B",
+  text: "#101828",
+  sub: "#667085",
   accent: "#2A9D8F",
-  border: "#E8E8E5",
+  border: "#E4E7EC",
 };
 
 function label(type: PublicPrintableDocumentDto["documentType"]) {
@@ -65,7 +65,7 @@ export function PublicPrintableDocumentPage({ token }: { token: string }) {
     return (
       <div className="grid min-h-screen place-items-center px-6" style={{ background: COLORS.bg, color: COLORS.text }}>
         <div
-          className="w-full max-w-md rounded-[18px] border bg-white p-8 text-center shadow-[0_1px_3px_rgba(26,25,22,0.04)]"
+          className="w-full max-w-md rounded-[18px] border bg-white p-8 text-center shadow-[0_1px_3px_rgba(16,24,40,0.04)]"
           style={{ borderColor: COLORS.border }}
         >
           <p className="font-bold text-lg">Document introuvable</p>
@@ -109,7 +109,7 @@ export function PublicPrintableDocumentPage({ token }: { token: string }) {
   return (
     <div className="min-h-screen px-4 py-6" style={{ background: COLORS.bg, color: COLORS.text }}>
       <div
-        className="no-print mx-auto mb-4 flex w-full max-w-[860px] flex-wrap items-center justify-between gap-3 rounded-[16px] border bg-white p-3 shadow-[0_1px_3px_rgba(26,25,22,0.04)]"
+        className="no-print mx-auto mb-4 flex w-full max-w-[860px] flex-wrap items-center justify-between gap-3 rounded-[16px] border bg-white p-3 shadow-[0_1px_3px_rgba(16,24,40,0.04)]"
         style={{ borderColor: COLORS.border }}
       >
         <div className="flex min-w-0 items-center gap-2">
@@ -158,7 +158,7 @@ export function PublicPrintableDocumentPage({ token }: { token: string }) {
 
       <article
         ref={documentRef}
-        className="print-document print-page mx-auto flex min-h-[1123px] w-full max-w-[860px] flex-col rounded-[16px] border bg-white p-8 shadow-[0_1px_3px_rgba(26,25,22,0.04)] print:min-h-screen print:rounded-none print:border-0 print:p-6 print:shadow-none"
+        className="print-document print-page mx-auto flex min-h-[1123px] w-full max-w-[860px] flex-col rounded-[16px] border bg-white p-8 shadow-[0_1px_3px_rgba(16,24,40,0.04)] print:min-h-screen print:rounded-none print:border-0 print:p-6 print:shadow-none"
         style={{ borderColor: COLORS.border }}
       >
         <header className="border-b pb-6" style={{ borderColor: COLORS.border }}>
@@ -311,7 +311,7 @@ export function PublicPrintableDocumentPage({ token }: { token: string }) {
 
         <footer
           className="mt-auto border-t pt-5 text-[10px] leading-relaxed"
-          style={{ borderColor: COLORS.border, color: "#6B6B6B" }}
+          style={{ borderColor: COLORS.border, color: "#667085" }}
         >
           <p>{data.workshop.name} · Document client imprimable</p>
           <p>Document transmis par {data.workshop.name}</p>

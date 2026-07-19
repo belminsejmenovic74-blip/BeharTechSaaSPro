@@ -36,16 +36,16 @@ function routeRequirement(pathname: string) {
 function AccessDenied({ label }: Readonly<{ label: string }>) {
   return (
     <div className="grid min-h-[70vh] place-items-center px-5">
-      <section className="w-full max-w-[460px] rounded-[18px] border border-[#E8E8E5] bg-white p-6 text-center shadow-sm">
-        <span className="mx-auto grid size-12 place-items-center rounded-full bg-[#F4F4F2] text-[#6B6B6B]">
+      <section className="w-full max-w-[460px] rounded-[18px] border border-[#E4E7EC] bg-white p-6 text-center shadow-sm">
+        <span className="mx-auto grid size-12 place-items-center rounded-full bg-[#F4F4F2] text-[#667085]">
           <ShieldAlert className="size-6" />
         </span>
-        <h1 className="mt-4 font-bold text-[#1A1916] text-xl">Accès non autorisé</h1>
-        <p className="mt-2 text-[#6B6B6B] text-sm">
+        <h1 className="mt-4 font-bold text-[#101828] text-xl">Accès non autorisé</h1>
+        <p className="mt-2 text-[#667085] text-sm">
           Votre rôle ne permet pas d'ouvrir la section {label}. Demandez à un admin d'ajuster vos permissions.
         </p>
         <Link
-          className="mt-5 inline-flex h-11 items-center justify-center rounded-[12px] bg-[#1A1916] px-4 font-semibold text-sm text-white"
+          className="mt-5 inline-flex h-11 items-center justify-center rounded-[12px] bg-[#101828] px-4 font-semibold text-sm text-white"
           href="/dashboard"
         >
           Retour au dashboard

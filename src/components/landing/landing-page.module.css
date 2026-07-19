@@ -1,7 +1,7 @@
 .page {
-  --bg: #fafaf8;
-  --ink: #1a1916;
-  --muted: #6b6b6b;
+  --bg: #f9fafb;
+  --ink: #101828;
+  --muted: #667085;
   --teal: #2a9d8f;
   --teal-dark: #0f8277;
   --teal-soft: #eaf7f4;
@@ -239,7 +239,7 @@
   border: 1px solid rgba(232, 228, 220, 0.95);
   border-radius: 20px 20px 0 0;
   background: #fff;
-  box-shadow: 0 34px 95px rgba(26, 25, 22, 0.12);
+  box-shadow: 0 34px 95px rgba(16, 24, 40, 0.12);
 }
 
 .heroMockup {
@@ -375,7 +375,7 @@
   border-radius: 10px;
   color: #49556a;
   background: #fff;
-  box-shadow: 0 12px 35px rgba(26, 25, 22, 0.05);
+  box-shadow: 0 12px 35px rgba(16, 24, 40, 0.05);
   font-size: 18px;
 }
 
@@ -438,7 +438,7 @@
   min-height: 560px;
   overflow: hidden;
   border-radius: 18px;
-  filter: drop-shadow(0 28px 70px rgba(26, 25, 22, 0.09));
+  filter: drop-shadow(0 28px 70px rgba(16, 24, 40, 0.09));
 }
 
 .showcaseStage img,
@@ -467,7 +467,7 @@
   border-radius: 10px;
   color: #46526a;
   background: #fff;
-  box-shadow: 0 10px 30px rgba(26, 25, 22, 0.05);
+  box-shadow: 0 10px 30px rgba(16, 24, 40, 0.05);
   cursor: pointer;
   font-size: 17px;
   text-align: left;
@@ -514,7 +514,7 @@
   border-radius: 50%;
   color: var(--teal-dark);
   background: #fff;
-  box-shadow: 0 14px 32px rgba(26, 25, 22, 0.08);
+  box-shadow: 0 14px 32px rgba(16, 24, 40, 0.08);
   cursor: pointer;
 }
 
@@ -602,7 +602,7 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   background: #fff;
-  box-shadow: 0 15px 38px rgba(26, 25, 22, 0.07);
+  box-shadow: 0 15px 38px rgba(16, 24, 40, 0.07);
 }
 
 .clientCardsLeft svg,
@@ -727,7 +727,7 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   background: #fff;
-  box-shadow: 0 18px 48px rgba(26, 25, 22, 0.06);
+  box-shadow: 0 18px 48px rgba(16, 24, 40, 0.06);
 }
 
 .questionCard {
@@ -905,7 +905,7 @@
   border: 1px solid #d8d6cf;
   border-radius: 999px;
   background: #fff;
-  box-shadow: inset 0 2px 8px rgba(26, 25, 22, 0.12);
+  box-shadow: inset 0 2px 8px rgba(16, 24, 40, 0.12);
   cursor: pointer;
 }
 
@@ -915,7 +915,7 @@
   height: 24px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 3px 8px rgba(26, 25, 22, 0.18);
+  box-shadow: 0 3px 8px rgba(16, 24, 40, 0.18);
   transition: transform 180ms ease;
 }
 
@@ -954,7 +954,7 @@
 .planRecommended {
   border-color: var(--teal);
   box-shadow:
-    0 18px 48px rgba(26, 25, 22, 0.06),
+    0 18px 48px rgba(16, 24, 40, 0.06),
     0 0 0 1px var(--teal);
 }
 
@@ -1045,7 +1045,7 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   background: #fff;
-  box-shadow: 0 12px 32px rgba(26, 25, 22, 0.06);
+  box-shadow: 0 12px 32px rgba(16, 24, 40, 0.06);
 }
 
 .contactTabs button {
@@ -1293,7 +1293,7 @@
   border: 1px solid var(--border);
   border-radius: 9px;
   background: #fff;
-  box-shadow: 0 12px 32px rgba(26, 25, 22, 0.05);
+  box-shadow: 0 12px 32px rgba(16, 24, 40, 0.05);
 }
 
 .contactCards svg {
@@ -1389,7 +1389,7 @@
   padding: 24px;
   border-radius: 10px;
   background: #fff;
-  box-shadow: 0 12px 32px rgba(26, 25, 22, 0.05);
+  box-shadow: 0 12px 32px rgba(16, 24, 40, 0.05);
 }
 
 .newsletter label {
@@ -1574,7 +1574,7 @@
     border: 1px solid var(--border);
     border-radius: 12px;
     background: #fff;
-    box-shadow: 0 20px 60px rgba(26, 25, 22, 0.14);
+    box-shadow: 0 20px 60px rgba(16, 24, 40, 0.14);
   }
 
   .mobileNav a {
@@ -1918,7 +1918,7 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   background: #fff;
-  box-shadow: 0 15px 38px rgba(26, 25, 22, 0.07);
+  box-shadow: 0 15px 38px rgba(16, 24, 40, 0.07);
 }
 
 .floatingCards article:first-child {
@@ -2008,7 +2008,7 @@
 
 .ghostCta:hover {
   border-color: var(--teal);
-  box-shadow: 0 16px 34px rgba(26, 25, 22, 0.08);
+  box-shadow: 0 16px 34px rgba(16, 24, 40, 0.08);
   transform: translateY(-2px);
 }
 
@@ -2025,7 +2025,7 @@
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.97);
   backdrop-filter: blur(10px);
-  box-shadow: 0 20px 50px rgba(26, 25, 22, 0.16);
+  box-shadow: 0 20px 50px rgba(16, 24, 40, 0.16);
   color: #33404f;
   font-size: 12px;
 }

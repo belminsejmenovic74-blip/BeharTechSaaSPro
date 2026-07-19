@@ -173,9 +173,9 @@ export function InvoicesWorkspace() {
       <div className="flex min-w-0 flex-col">
         <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <label className="hidden md:block relative w-full max-w-[360px]">
-            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#8A8A8A]" />
+            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#98A2B3]" />
             <input
-              className="h-11 w-full rounded-[14px] border border-[#E8E8E5] bg-white pr-4 pl-10 text-sm outline-none transition placeholder:text-[#8A8A8A] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+              className="h-11 w-full rounded-[14px] border border-[#E4E7EC] bg-white pr-4 pl-10 text-sm outline-none transition placeholder:text-[#98A2B3] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
               placeholder="Rechercher une facture..."
               type="search"
               value={invoiceSearch}
@@ -184,7 +184,7 @@ export function InvoicesWorkspace() {
           </label>
           <div className="flex items-center gap-2 w-full md:w-auto">
             <select
-              className="hidden md:block h-11 cursor-pointer rounded-[14px] border border-[#E8E8E5] bg-white px-3 text-sm outline-none transition focus:border-[#2A9D8F]"
+              className="hidden md:block h-11 cursor-pointer rounded-[14px] border border-[#E4E7EC] bg-white px-3 text-sm outline-none transition focus:border-[#2A9D8F]"
               onChange={(e) => setInvoiceFilterTab(e.target.value as typeof invoiceFilterTab)}
               value={invoiceFilterTab}
             >
@@ -218,37 +218,37 @@ export function InvoicesWorkspace() {
             const count = allInvoices.length;
             return (
               <section className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1 scrollbar-none">
-                <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+                <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
                   <span className="grid size-9 place-items-center text-[#2A9D8F]">
                     <Receipt className="size-[18px]" />
                   </span>
-                  <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium">Total factures</p>
-                  <p className="mt-1.5 font-bold text-[#1A1916] text-[20px] leading-none tabular-nums">{count}</p>
+                  <p className="mt-3 text-[#667085] text-[11px] font-medium">Total factures</p>
+                  <p className="mt-1.5 font-bold text-[#101828] text-[20px] leading-none tabular-nums">{count}</p>
                 </div>
-                <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+                <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
                   <span className="grid size-9 place-items-center text-[#2A9D8F]">
                     <Receipt className="size-[18px]" />
                   </span>
-                  <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium">CA facturé</p>
+                  <p className="mt-3 text-[#667085] text-[11px] font-medium">CA facturé</p>
                   <p className="mt-1.5 font-bold text-[#2A9D8F] text-[20px] leading-none tabular-nums">
                     {formatEuro(billed)}
                   </p>
                 </div>
-                <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
-                  <span className="grid size-9 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#6B6B6B]">
+                <div className="w-[44%] shrink-0 rounded-[18px] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+                  <span className="grid size-9 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#667085]">
                     <Receipt className="size-[18px]" />
                   </span>
-                  <p className="mt-3 text-[#6B6B6B] text-[11px] font-medium">Factures émises</p>
-                  <p className="mt-1.5 font-bold text-[#6B6B6B] text-[20px] leading-none tabular-nums">{issued}</p>
+                  <p className="mt-3 text-[#667085] text-[11px] font-medium">Factures émises</p>
+                  <p className="mt-1.5 font-bold text-[#667085] text-[20px] leading-none tabular-nums">{issued}</p>
                 </div>
               </section>
             );
           })()}
 
           <div className="relative">
-            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6B6B6B]" />
+            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#667085]" />
             <input
-              className="h-12 w-full rounded-[14px] border border-[#E8E8E5] bg-white pr-4 pl-10 text-sm outline-none focus:border-[#2A9D8F] placeholder:text-[#6B6B6B]"
+              className="h-12 w-full rounded-[14px] border border-[#E4E7EC] bg-white pr-4 pl-10 text-sm outline-none focus:border-[#2A9D8F] placeholder:text-[#667085]"
               placeholder="Rechercher une facture…"
               type="search"
               value={invoiceSearch}
@@ -270,7 +270,7 @@ export function InvoicesWorkspace() {
                   type="button"
                   onClick={() => setInvoiceFilterTab(tab)}
                   className={`inline-flex h-9 shrink-0 items-center rounded-full border px-3.5 text-[12.5px] font-semibold transition active:scale-95 ${
-                    active ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : "border-[#E8E8E5] bg-white text-[#1A1916]"
+                    active ? "border-[#2A9D8F] bg-[#2A9D8F] text-white" : "border-[#E4E7EC] bg-white text-[#101828]"
                   }`}
                 >
                   {labels[tab]}
@@ -281,7 +281,7 @@ export function InvoicesWorkspace() {
 
           <ul className="space-y-2.5">
             {visibleInvoices.length === 0 ? (
-              <li className="rounded-[18px] bg-white p-10 text-center text-[#6B6B6B] text-sm shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+              <li className="rounded-[18px] bg-white p-10 text-center text-[#667085] text-sm shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
                 Aucune facture.
               </li>
             ) : (
@@ -296,29 +296,29 @@ export function InvoicesWorkspace() {
                         store.setSelected("invoice", invoice.id);
                         setMobileDetailOpen(true);
                       }}
-                      className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.04)] transition active:scale-[0.99]"
+                      className="flex w-full items-start gap-3 rounded-[18px] bg-white p-4 text-left shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition active:scale-[0.99]"
                     >
-                      <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FFFFFF] text-[#1A1916]">
+                      <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-[#FFFFFF] text-[#101828]">
                         <Receipt className="size-[18px]" strokeWidth={1.8} />
                       </span>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-baseline justify-between gap-2">
-                          <p className="truncate font-semibold text-[#1A1916] text-[14px] tracking-tight">
+                          <p className="truncate font-semibold text-[#101828] text-[14px] tracking-tight">
                             {displayCustomerName(entryCustomer)}
                           </p>
-                          <p className="shrink-0 font-bold text-[#1A1916] text-[15px] tabular-nums">
+                          <p className="shrink-0 font-bold text-[#101828] text-[15px] tabular-nums">
                             {formatCurrency(getInvoiceTotal(invoice), invoice.currency ?? store.workshopInfo.currency)}
                           </p>
                         </div>
                         <p className="mt-0.5 font-mono text-[#2A9D8F] text-[11px]">{invoice.number}</p>
-                        <p className="mt-0.5 truncate text-[#6B6B6B] text-[11.5px]">
+                        <p className="mt-0.5 truncate text-[#667085] text-[11.5px]">
                           {formatIsoToDisplay(invoice.date)}
                           {meta?.deviceLabel ? ` · ${meta.deviceLabel}` : ""}
                         </p>
                         {meta && meta.refs.length > 0 ? (
                           <p className="mt-0.5 truncate text-[#167B70] text-[11px]">{meta.refs.join(" · ")}</p>
                         ) : (
-                          <p className="mt-0.5 truncate text-[#6B6B6B] text-[11px]">Vente directe</p>
+                          <p className="mt-0.5 truncate text-[#667085] text-[11px]">Vente directe</p>
                         )}
                         <div className="mt-2">
                           <StatusBadge status={displayedInvoiceStatus(invoice.status)} />
@@ -358,14 +358,14 @@ export function InvoicesWorkspace() {
                     key={invoice.id}
                     onClick={() => store.setSelected("invoice", invoice.id)}
                   >
-                    <td className="border-[#E8E8E5] border-b px-5 py-4 font-bold">{invoice.number}</td>
-                    <td className="border-[#E8E8E5] border-b px-5 py-4">
+                    <td className="border-[#E4E7EC] border-b px-5 py-4 font-bold">{invoice.number}</td>
+                    <td className="border-[#E4E7EC] border-b px-5 py-4">
                       <div className="flex flex-col">
-                        <span className="font-bold text-[#1A1916]">{displayCustomerName(entryCustomer)}</span>
-                        <span className="text-[11px] text-[#6B6B6B]">{meta?.deviceLabel || "Vente directe"}</span>
+                        <span className="font-bold text-[#101828]">{displayCustomerName(entryCustomer)}</span>
+                        <span className="text-[11px] text-[#667085]">{meta?.deviceLabel || "Vente directe"}</span>
                       </div>
                     </td>
-                    <td className="border-[#E8E8E5] border-b px-5 py-4">
+                    <td className="border-[#E4E7EC] border-b px-5 py-4">
                       {meta && meta.refs.length > 0 ? (
                         <div className="flex flex-col gap-0.5">
                           {meta.refs.map((ref) => (
@@ -375,18 +375,18 @@ export function InvoicesWorkspace() {
                           ))}
                         </div>
                       ) : (
-                        <span className="text-[11px] text-[#8A8A8A]">—</span>
+                        <span className="text-[11px] text-[#98A2B3]">—</span>
                       )}
                     </td>
-                    <td className="border-[#E8E8E5] border-b px-5 py-4">{formatIsoToDisplay(invoice.date)}</td>
-                    <td className="border-[#E8E8E5] border-b px-5 py-4">
+                    <td className="border-[#E4E7EC] border-b px-5 py-4">{formatIsoToDisplay(invoice.date)}</td>
+                    <td className="border-[#E4E7EC] border-b px-5 py-4">
                       <StatusBadge status={displayedInvoiceStatus(invoice.status)} />
                     </td>
-                    <td className="border-[#E8E8E5] border-b px-5 py-4 font-black tabular-nums">
+                    <td className="border-[#E4E7EC] border-b px-5 py-4 font-black tabular-nums">
                       {formatCurrency(getInvoiceTotal(invoice), invoice.currency ?? store.workshopInfo.currency)}
                     </td>
-                    <td className="border-[#E8E8E5] border-b px-5 py-4 text-right">
-                      <ChevronRight className="ml-auto size-4 text-[#8A8A8A]" />
+                    <td className="border-[#E4E7EC] border-b px-5 py-4 text-right">
+                      <ChevronRight className="ml-auto size-4 text-[#98A2B3]" />
                     </td>
                   </tr>
                 );
@@ -400,7 +400,7 @@ export function InvoicesWorkspace() {
         <Panel
           className={cn(
             mobileDetailOpen ? "fixed inset-0 z-40 overflow-y-auto bg-white p-5 flex flex-col" : "hidden",
-            "md:relative md:inset-auto md:z-auto md:flex md:h-full md:min-h-0 md:flex-col md:overflow-hidden md:rounded-[20px] md:border md:border-[#E8E8E5] md:bg-white md:p-5 md:shadow-[0_12px_40px_rgba(26,25,22,0.045)]",
+            "md:relative md:inset-auto md:z-auto md:flex md:h-full md:min-h-0 md:flex-col md:overflow-hidden md:rounded-[20px] md:border md:border-[#E4E7EC] md:bg-white md:p-5 md:shadow-[0_12px_40px_rgba(16,24,40,0.045)]",
           )}
         >
           {/* Mobile back button */}
@@ -408,17 +408,17 @@ export function InvoicesWorkspace() {
             <button
               type="button"
               onClick={() => setMobileDetailOpen(false)}
-              className="grid size-9 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white text-[#1A1916] transition active:scale-90"
+              className="grid size-9 place-items-center rounded-[12px] border border-[#E4E7EC] bg-white text-[#101828] transition active:scale-90"
               aria-label="Retour"
             >
               <ArrowLeft className="size-4" />
             </button>
-            <span className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Détail facture</span>
+            <span className="font-semibold text-[#101828] text-[15px] tracking-tight">Détail facture</span>
           </div>
           <div className="mb-6 shrink-0 flex items-start justify-between gap-4">
             <div>
-              <h2 className="font-bold text-[#1A1916] text-xl tracking-tight">Facture {selected.number}</h2>
-              <p className="mt-1 text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider">
+              <h2 className="font-bold text-[#101828] text-xl tracking-tight">Facture {selected.number}</h2>
+              <p className="mt-1 text-[10px] font-bold text-[#98A2B3] uppercase tracking-wider">
                 {formatIsoToDisplay(selected.date)}
               </p>
             </div>
@@ -430,9 +430,9 @@ export function InvoicesWorkspace() {
 
           <div className="min-h-0 flex-1 overflow-y-auto pr-1 custom-scrollbar space-y-6">
             <div className="rounded-xl border border-[#FFFFFF] p-4">
-              <p className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider mb-2">Destinataire</p>
-              <p className="font-bold text-[#1A1916]">{displayCustomerName(customer)}</p>
-              <div className="mt-2 space-y-1 text-xs text-[#6B6B6B]">
+              <p className="text-[10px] font-bold text-[#98A2B3] uppercase tracking-wider mb-2">Destinataire</p>
+              <p className="font-bold text-[#101828]">{displayCustomerName(customer)}</p>
+              <div className="mt-2 space-y-1 text-xs text-[#667085]">
                 <p>{customer?.phone}</p>
                 <p>{customer?.email || "Pas d'email"}</p>
               </div>
@@ -440,7 +440,7 @@ export function InvoicesWorkspace() {
 
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b border-[#FFFFFF] pb-2">
-                <p className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider">Détails de facturation</p>
+                <p className="text-[10px] font-bold text-[#98A2B3] uppercase tracking-wider">Détails de facturation</p>
                 {!documentLocked && (
                   <button
                     onClick={() => setLinesEditing(!linesEditing)}
@@ -460,15 +460,15 @@ export function InvoicesWorkspace() {
                     <div className="flex justify-between gap-3">
                       {linesEditing ? (
                         <textarea
-                          className="flex-1 resize-none bg-transparent font-medium text-[#1A1916] text-sm outline-none border-b border-dashed border-[#2A9D8F]/20 focus:border-[#2A9D8F]"
+                          className="flex-1 resize-none bg-transparent font-medium text-[#101828] text-sm outline-none border-b border-dashed border-[#2A9D8F]/20 focus:border-[#2A9D8F]"
                           rows={1}
                           value={line.description}
                           onChange={(e) => updateInvoiceLine(line.id, { description: e.target.value })}
                         />
                       ) : (
-                        <p className="flex-1 font-medium text-[#1A1916] text-sm">{line.description}</p>
+                        <p className="flex-1 font-medium text-[#101828] text-sm">{line.description}</p>
                       )}
-                      <p className="font-bold text-[#1A1916] text-sm">
+                      <p className="font-bold text-[#101828] text-sm">
                         {formatCurrency(line.quantity * line.unitPrice, selectedCurrency)}
                       </p>
                     </div>
@@ -478,20 +478,20 @@ export function InvoicesWorkspace() {
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
-                            className="w-10 h-7 rounded-lg border border-[#E8E8E5] text-center text-xs outline-none focus:border-[#2A9D8F]"
+                            className="w-10 h-7 rounded-lg border border-[#E4E7EC] text-center text-xs outline-none focus:border-[#2A9D8F]"
                             value={line.quantity}
                             onChange={(e) => updateInvoiceLine(line.id, { quantity: Number(e.target.value) })}
                           />
-                          <span className="text-[10px] text-[#8A8A8A]">x</span>
+                          <span className="text-[10px] text-[#98A2B3]">x</span>
                           <input
                             type="number"
-                            className="w-20 h-7 rounded-lg border border-[#E8E8E5] text-center text-xs outline-none focus:border-[#2A9D8F]"
+                            className="w-20 h-7 rounded-lg border border-[#E4E7EC] text-center text-xs outline-none focus:border-[#2A9D8F]"
                             value={line.unitPrice}
                             onChange={(e) => updateInvoiceLine(line.id, { unitPrice: Number(e.target.value) })}
                           />
                         </div>
                       ) : (
-                        <p className="text-[10px] text-[#6B6B6B]">
+                        <p className="text-[10px] text-[#667085]">
                           {line.quantity} x {formatCurrency(line.unitPrice, selectedCurrency)}
                         </p>
                       )}
@@ -520,7 +520,7 @@ export function InvoicesWorkspace() {
                         ],
                       })
                     }
-                    className="w-full py-2.5 rounded-xl border border-dashed border-[#E8E8E5] text-[#8A8A8A] text-[11px] font-bold hover:border-[#1A1916] hover:text-[#1A1916] transition-all"
+                    className="w-full py-2.5 rounded-xl border border-dashed border-[#E4E7EC] text-[#98A2B3] text-[11px] font-bold hover:border-[#101828] hover:text-[#101828] transition-all"
                   >
                     + Ajouter une ligne
                   </button>
@@ -533,13 +533,13 @@ export function InvoicesWorkspace() {
               <div className="space-y-1.5">
                 {store.workshopInfo.vatApplicable ? (
                   <>
-                    <div className="flex justify-between text-xs text-[#6B6B6B]">
+                    <div className="flex justify-between text-xs text-[#667085]">
                       <span>Sous-total HT</span>
                       <span className="font-medium">
                         {formatCurrency(getVatSummary(selected.lines, store.workshopInfo).ht, selectedCurrency)}
                       </span>
                     </div>
-                    <div className="flex justify-between text-xs text-[#6B6B6B]">
+                    <div className="flex justify-between text-xs text-[#667085]">
                       <span>
                         TVA ({Math.round(getVatSummary(selected.lines, store.workshopInfo).rate * 1000) / 10}%)
                       </span>
@@ -549,7 +549,7 @@ export function InvoicesWorkspace() {
                     </div>
                   </>
                 ) : (
-                  <div className="flex justify-between text-xs text-[#6B6B6B]">
+                  <div className="flex justify-between text-xs text-[#667085]">
                     <span>Sous-total HT</span>
                     <span className="font-medium">{formatCurrency(invoiceGrandTotal, selectedCurrency)}</span>
                   </div>
@@ -557,10 +557,10 @@ export function InvoicesWorkspace() {
               </div>
 
               <div className="flex items-center justify-between pt-2 border-t border-[#FFFFFF]">
-                <span className="font-bold text-[#1A1916] text-sm uppercase">
+                <span className="font-bold text-[#101828] text-sm uppercase">
                   {store.workshopInfo.vatApplicable ? "Total TTC" : "Total Net"}
                 </span>
-                <span className="font-bold text-[#1A1916] text-2xl tracking-tight">
+                <span className="font-bold text-[#101828] text-2xl tracking-tight">
                   {formatCurrency(
                     store.workshopInfo.vatApplicable
                       ? getVatSummary(selected.lines, store.workshopInfo).ttc
@@ -570,7 +570,7 @@ export function InvoicesWorkspace() {
                 </span>
               </div>
 
-              <p className="text-center text-[9px] text-[#8A8A8A] uppercase tracking-widest pt-4">
+              <p className="text-center text-[9px] text-[#98A2B3] uppercase tracking-widest pt-4">
                 {store.workshopInfo.vatApplicable ? "TVA incluse au taux légal" : store.workshopInfo.tvaMention}
               </p>
             </div>
@@ -588,7 +588,7 @@ export function InvoicesWorkspace() {
                     setRequestProvider("stripe");
                     setPaymentOpen(true);
                   }}
-                  className="h-11 rounded-xl bg-[#1A1916] text-white font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2"
+                  className="h-11 rounded-xl bg-[#101828] text-white font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2"
                 >
                   <CreditCard className="size-4" />
                   Créer un lien de paiement externe · Stripe
@@ -618,7 +618,7 @@ export function InvoicesWorkspace() {
                     setRequestProvider("square");
                     setPaymentOpen(true);
                   }}
-                  className="h-11 rounded-xl border border-[#1A1916]/20 bg-white text-[#1A1916] font-bold text-sm hover:border-[#1A1916] transition-all flex items-center justify-center gap-2"
+                  className="h-11 rounded-xl border border-[#101828]/20 bg-white text-[#101828] font-bold text-sm hover:border-[#101828] transition-all flex items-center justify-center gap-2"
                 >
                   <CreditCard className="size-4" />
                   Créer un lien Square
@@ -628,7 +628,7 @@ export function InvoicesWorkspace() {
                     setRequestProvider("revolut");
                     setPaymentOpen(true);
                   }}
-                  className="h-11 rounded-xl border border-[#1A1916]/20 bg-[#FAFAF8] text-[#1A1916] font-bold text-sm hover:border-[#1A1916] transition-all flex items-center justify-center gap-2"
+                  className="h-11 rounded-xl border border-[#101828]/20 bg-[#F9FAFB] text-[#101828] font-bold text-sm hover:border-[#101828] transition-all flex items-center justify-center gap-2"
                 >
                   <CreditCard className="size-4" />
                   Créer un lien Revolut
@@ -646,7 +646,7 @@ export function InvoicesWorkspace() {
                 </button>
               </div>
             ) : (
-              <div className="w-full py-2.5 rounded-xl border border-[#FFFFFF] text-[#6B6B6B] text-xs font-bold text-center">
+              <div className="w-full py-2.5 rounded-xl border border-[#FFFFFF] text-[#667085] text-xs font-bold text-center">
                 Finalisez la facture pour créer une demande
               </div>
             )}
@@ -654,14 +654,14 @@ export function InvoicesWorkspace() {
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => download("invoice", selected.id)}
-                className="h-10 rounded-xl border border-[#E8E8E5] bg-white text-[#1A1916] font-bold text-xs hover:bg-[#FFFFFF] transition-all flex items-center justify-center gap-2"
+                className="h-10 rounded-xl border border-[#E4E7EC] bg-white text-[#101828] font-bold text-xs hover:bg-[#FFFFFF] transition-all flex items-center justify-center gap-2"
               >
                 <Download className="size-3.5" />
                 PDF
               </button>
               <button
                 onClick={() => print("invoice", selected.id)}
-                className="h-10 rounded-xl border border-[#E8E8E5] bg-white text-[#1A1916] font-bold text-xs hover:bg-[#FFFFFF] transition-all flex items-center justify-center gap-2"
+                className="h-10 rounded-xl border border-[#E4E7EC] bg-white text-[#101828] font-bold text-xs hover:bg-[#FFFFFF] transition-all flex items-center justify-center gap-2"
               >
                 <Printer className="size-3.5" />
                 Imprimer
@@ -675,7 +675,7 @@ export function InvoicesWorkspace() {
                   toast.success("SMS envoyé");
                 }
               }}
-              className="w-full h-10 rounded-xl border border-[#FFFFFF] text-[#8A8A8A] font-bold text-xs hover:text-[#6B6B6B] transition-all flex items-center justify-center gap-2"
+              className="w-full h-10 rounded-xl border border-[#FFFFFF] text-[#98A2B3] font-bold text-xs hover:text-[#667085] transition-all flex items-center justify-center gap-2"
             >
               <Mail className="size-3.5" />
               Notifier par SMS
@@ -899,16 +899,16 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-stretch justify-stretch bg-black/40 p-0 md:items-center md:justify-center md:p-4">
-      <div className="relative flex min-h-svh w-full max-w-none flex-col overflow-hidden rounded-none border border-[#E8E8E5] bg-white shadow-2xl animate-in fade-in zoom-in duration-200 md:h-[90vh] md:min-h-0 md:max-w-[1200px] md:rounded-[16px]">
+      <div className="relative flex min-h-svh w-full max-w-none flex-col overflow-hidden rounded-none border border-[#E4E7EC] bg-white shadow-2xl animate-in fade-in zoom-in duration-200 md:h-[90vh] md:min-h-0 md:max-w-[1200px] md:rounded-[16px]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#FFFFFF] bg-white md:px-8 md:py-6">
           <div>
-            <h2 className="text-[18px] font-bold text-[#1A1916] md:text-[22px]">Nouvelle facture</h2>
-            <p className="mt-0.5 text-[12.5px] text-[#6B6B6B] md:mt-1 md:text-sm">Facturation rapide</p>
+            <h2 className="text-[18px] font-bold text-[#101828] md:text-[22px]">Nouvelle facture</h2>
+            <p className="mt-0.5 text-[12.5px] text-[#667085] md:mt-1 md:text-sm">Facturation rapide</p>
           </div>
           <button
             onClick={onClose}
-            className="grid size-9 place-items-center rounded-[12px] border border-[#E8E8E5] bg-white text-[#1A1916] transition hover:bg-[#FFFFFF] md:size-auto md:bg-transparent md:p-0"
+            className="grid size-9 place-items-center rounded-[12px] border border-[#E4E7EC] bg-white text-[#101828] transition hover:bg-[#FFFFFF] md:size-auto md:bg-transparent md:p-0"
             aria-label="Fermer"
           >
             <X className="size-5 md:size-6" />
@@ -920,7 +920,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
           <div className="flex-1 overflow-y-auto px-5 py-5 custom-scrollbar pb-32 md:px-8 md:py-8">
             {/* 1. Origine */}
             <div className="space-y-3 md:space-y-4">
-              <label className="text-[13px] font-bold text-[#1A1916] md:text-sm">Origine de la facture</label>
+              <label className="text-[13px] font-bold text-[#101828] md:text-sm">Origine de la facture</label>
               <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-4">
                 {[
                   { id: "quote", label: "Depuis un devis accepté", icon: <FileText /> },
@@ -937,14 +937,14 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                     className={`relative flex flex-col items-center justify-center gap-3 rounded-[12px] border h-[110px] transition-all ${
                       sourceType === opt.id
                         ? "border-[#2A9D8F] bg-[#FFFFFF] shadow-sm"
-                        : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/30"
+                        : "border-[#E4E7EC] bg-white hover:border-[#2A9D8F]/30"
                     }`}
                   >
-                    <div className={`${sourceType === opt.id ? "text-[#2A9D8F]" : "text-[#6B6B6B]"}`}>
+                    <div className={`${sourceType === opt.id ? "text-[#2A9D8F]" : "text-[#667085]"}`}>
                       {cloneElement(opt.icon as React.ReactElement<{ className?: string }>, { className: "size-6" })}
                     </div>
                     <p
-                      className={`text-xs font-semibold text-center px-2 ${sourceType === opt.id ? "text-[#167B70]" : "text-[#1A1916]"}`}
+                      className={`text-xs font-semibold text-center px-2 ${sourceType === opt.id ? "text-[#167B70]" : "text-[#101828]"}`}
                     >
                       {opt.label}
                     </p>
@@ -959,7 +959,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
             </div>
 
             <div className="mt-5 rounded-[14px] border border-[#DDEFEA] bg-[#FFFFFF] p-4">
-              <p className="text-xs font-semibold text-[#1A1916]">Pays de facturation du dossier</p>
+              <p className="text-xs font-semibold text-[#101828]">Pays de facturation du dossier</p>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 {(["FR", "CH"] as const).map((country) => (
                   <button
@@ -973,7 +973,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                     className={`h-10 rounded-[10px] border text-xs font-semibold ${
                       billingCountry === country
                         ? "border-[#2A9D8F] bg-white text-[#167B70]"
-                        : "border-[#E8E8E5] bg-white text-[#6B6B6B]"
+                        : "border-[#E4E7EC] bg-white text-[#667085]"
                     } disabled:cursor-not-allowed disabled:opacity-70`}
                   >
                     {country === "CH" ? "Suisse · CHF" : "France · EUR"}
@@ -983,7 +983,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
             </div>
 
             <div className="mt-4">
-              <p className="text-xs font-semibold text-[#1A1916]">Devise du document</p>
+              <p className="text-xs font-semibold text-[#101828]">Devise du document</p>
               <div className="mt-2 flex gap-2">
                 {(["EUR", "CHF"] as const).map((curr) => (
                   <button
@@ -993,7 +993,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                     className={`h-9 px-4 rounded-[10px] border text-xs font-semibold transition ${
                       docCurrency === curr
                         ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
-                        : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:border-[#DADADA]"
+                        : "border-[#E4E7EC] bg-white text-[#667085] hover:border-[#D0D5DD]"
                     }`}
                   >
                     {curr === "EUR" ? "EUR (€)" : "CHF (CHF)"}
@@ -1004,13 +1004,13 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
 
             {/* 2. Informations */}
             <div className="mt-10 space-y-4">
-              <label className="text-sm font-bold text-[#1A1916]">Informations principales</label>
+              <label className="text-sm font-bold text-[#101828]">Informations principales</label>
               <div className="grid grid-cols-2 gap-x-6 gap-y-5">
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-[#6B6B6B]">Client</p>
+                  <p className="text-xs font-semibold text-[#667085]">Client</p>
                   {sourceType === "manual" ? (
                     <input
-                      className="h-11 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
+                      className="h-11 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
                       placeholder="Nom du client..."
                       value={customerInfo.name}
                       onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
@@ -1018,7 +1018,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                   ) : (
                     <div className="relative">
                       <select
-                        className="h-11 w-full appearance-none rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
+                        className="h-11 w-full appearance-none rounded-[10px] border border-[#E4E7EC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
                         value={selectedId}
                         onChange={(e) => setSelectedId(e.target.value)}
                       >
@@ -1042,23 +1042,23 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                             </option>
                           ))}
                       </select>
-                      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[#8A8A8A]" />
+                      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[#98A2B3]" />
                     </div>
                   )}
                 </div>
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-[#6B6B6B]">Email client</p>
+                  <p className="text-xs font-semibold text-[#667085]">Email client</p>
                   <input
-                    className="h-11 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
+                    className="h-11 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
                     placeholder="Email (optionnel)..."
                     value={customerInfo.email}
                     onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-[#6B6B6B]">Téléphone</p>
+                  <p className="text-xs font-semibold text-[#667085]">Téléphone</p>
                   <input
-                    className="h-11 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
+                    className="h-11 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
                     placeholder="Numéro de téléphone..."
                     value={customerInfo.phone}
                     onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
@@ -1066,24 +1066,24 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-[#6B6B6B]">Date de facture</p>
+                  <p className="text-xs font-semibold text-[#667085]">Date de facture</p>
                   <div className="relative">
-                    <Calendar className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#8A8A8A]" />
+                    <Calendar className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#98A2B3]" />
                     <input
                       type="date"
-                      className="h-11 w-full rounded-[10px] border border-[#E8E8E5] bg-white pl-10 pr-4 text-sm outline-none focus:border-[#2A9D8F]"
+                      className="h-11 w-full rounded-[10px] border border-[#E4E7EC] bg-white pl-10 pr-4 text-sm outline-none focus:border-[#2A9D8F]"
                       value={dates.invoice}
                       onChange={(e) => setDates({ ...dates, invoice: e.target.value })}
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-[#6B6B6B]">Date d'échéance</p>
+                  <p className="text-xs font-semibold text-[#667085]">Date d'échéance</p>
                   <div className="relative">
-                    <Calendar className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#8A8A8A]" />
+                    <Calendar className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#98A2B3]" />
                     <input
                       type="date"
-                      className="h-11 w-full rounded-[10px] border border-[#E8E8E5] bg-white pl-10 pr-4 text-sm outline-none focus:border-[#2A9D8F]"
+                      className="h-11 w-full rounded-[10px] border border-[#E4E7EC] bg-white pl-10 pr-4 text-sm outline-none focus:border-[#2A9D8F]"
                       value={dates.due}
                       onChange={(e) => setDates({ ...dates, due: e.target.value })}
                     />
@@ -1091,18 +1091,18 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-[#6B6B6B]">Appareil</p>
+                  <p className="text-xs font-semibold text-[#667085]">Appareil</p>
                   <input
-                    className="h-11 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
+                    className="h-11 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
                     placeholder="Ex. iPhone 14 Pro Max"
                     value={customerInfo.device}
                     onChange={(e) => setCustomerInfo({ ...customerInfo, device: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-[#6B6B6B]">Panne / description</p>
+                  <p className="text-xs font-semibold text-[#667085]">Panne / description</p>
                   <input
-                    className="h-11 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
+                    className="h-11 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-4 text-sm outline-none focus:border-[#2A9D8F] transition-all"
                     placeholder="Écran, Batterie..."
                     value={customerInfo.issue}
                     onChange={(e) => setCustomerInfo({ ...customerInfo, issue: e.target.value })}
@@ -1114,7 +1114,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
             {/* 3. Lignes */}
             <div className="mt-10 space-y-4">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-bold text-[#1A1916]">Lignes de facture</label>
+                <label className="text-sm font-bold text-[#101828]">Lignes de facture</label>
                 <button
                   onClick={() =>
                     setLines([
@@ -1128,9 +1128,9 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                   Ajouter une ligne
                 </button>
               </div>
-              <div className="rounded-[12px] border border-[#E8E8E5] overflow-hidden bg-white">
+              <div className="rounded-[12px] border border-[#E4E7EC] overflow-hidden bg-white">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-[#FFFFFF] text-[#6B6B6B] border-b border-[#E8E8E5] font-bold uppercase tracking-wider">
+                  <thead className="bg-[#FFFFFF] text-[#667085] border-b border-[#E4E7EC] font-bold uppercase tracking-wider">
                     <tr>
                       <th className="px-4 py-3">Description</th>
                       <th className="px-4 py-3 w-16 text-center">Qté</th>
@@ -1140,12 +1140,12 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                       <th className="px-4 py-3 w-10" />
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#E8E8E5]">
+                  <tbody className="divide-y divide-[#E4E7EC]">
                     {lines.map((line, idx) => (
                       <tr key={line.id} className="hover:bg-[#FFFFFF] transition-colors">
                         <td className="p-2">
                           <input
-                            className="w-full h-9 px-2 rounded-lg border border-transparent focus:border-[#E8E8E5] bg-transparent outline-none text-[#1A1916]"
+                            className="w-full h-9 px-2 rounded-lg border border-transparent focus:border-[#E4E7EC] bg-transparent outline-none text-[#101828]"
                             value={line.description}
                             onChange={(e) => {
                               const newLines = [...lines];
@@ -1158,7 +1158,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                         <td className="p-2">
                           <input
                             type="number"
-                            className="w-full h-9 text-center rounded-lg border border-transparent focus:border-[#E8E8E5] bg-transparent outline-none text-[#1A1916]"
+                            className="w-full h-9 text-center rounded-lg border border-transparent focus:border-[#E4E7EC] bg-transparent outline-none text-[#101828]"
                             value={line.quantity}
                             onChange={(e) => {
                               const newLines = [...lines];
@@ -1170,7 +1170,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                         <td className="p-2">
                           <input
                             type="number"
-                            className="w-full h-9 text-right pr-2 rounded-lg border border-transparent focus:border-[#E8E8E5] bg-transparent outline-none text-[#1A1916]"
+                            className="w-full h-9 text-right pr-2 rounded-lg border border-transparent focus:border-[#E4E7EC] bg-transparent outline-none text-[#101828]"
                             value={line.unitPrice}
                             onChange={(e) => {
                               const newLines = [...lines];
@@ -1179,16 +1179,16 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                             }}
                           />
                         </td>
-                        <td className="p-2 text-center text-[#6B6B6B]">
+                        <td className="p-2 text-center text-[#667085]">
                           {isMicro ? "N/A" : `${billingWorkshop.vatRate ?? 0} %`}
                         </td>
-                        <td className="p-2 text-right font-semibold text-[#1A1916]">
+                        <td className="p-2 text-right font-semibold text-[#101828]">
                           {formatCurrency(line.quantity * line.unitPrice, invoiceCurrency)}
                         </td>
                         <td className="p-2">
                           <button
                             onClick={() => setLines(lines.filter((l) => l.id !== line.id))}
-                            className="text-[#8A8A8A] hover:text-[#B42318] transition-colors p-2"
+                            className="text-[#98A2B3] hover:text-[#B42318] transition-colors p-2"
                             disabled={lines.length <= 1}
                           >
                             <Trash2 className="size-4" />
@@ -1203,9 +1203,9 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
 
             {/* 4. Commentaires */}
             <div className="mt-10 space-y-4 pb-10">
-              <label className="text-sm font-bold text-[#1A1916]">Commentaires internes</label>
+              <label className="text-sm font-bold text-[#101828]">Commentaires internes</label>
               <textarea
-                className="w-full min-h-[120px] p-4 rounded-[12px] border border-[#E8E8E5] bg-white text-sm outline-none focus:border-[#2A9D8F] transition-all resize-none"
+                className="w-full min-h-[120px] p-4 rounded-[12px] border border-[#E4E7EC] bg-white text-sm outline-none focus:border-[#2A9D8F] transition-all resize-none"
                 placeholder="Notes visibles uniquement par l'équipe (correction documentaire, historique...)"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
@@ -1216,22 +1216,22 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
           {/* Right Column (Aperçu) — hidden on mobile */}
           <div className="hidden lg:flex w-[440px] border-l border-[#FFFFFF] bg-white p-0 flex-col overflow-hidden">
             <div className="flex items-center justify-between p-6 border-b border-[#FFFFFF]">
-              <h3 className="text-sm font-bold text-[#1A1916]">Aperçu en direct</h3>
-              <div className="flex items-center gap-2 rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-3 py-1 text-[10px] font-bold text-[#6B6B6B]">
-                <div className="size-1.5 rounded-full bg-[#6B6B6B]" />
+              <h3 className="text-sm font-bold text-[#101828]">Aperçu en direct</h3>
+              <div className="flex items-center gap-2 rounded-[7px] border border-[#E4E7EC] bg-[#FFFFFF] px-3 py-1 text-[10px] font-bold text-[#667085]">
+                <div className="size-1.5 rounded-full bg-[#667085]" />
                 BROUILLON
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-8 bg-[#FFFFFF]">
               {/* Document Simulé */}
-              <div className="bg-white shadow-sm border border-[#E8E8E5] rounded-xl p-8 min-h-[500px] flex flex-col">
+              <div className="bg-white shadow-sm border border-[#E4E7EC] rounded-xl p-8 min-h-[500px] flex flex-col">
                 {/* Header Atelier */}
                 <div className="flex items-center gap-4 border-b border-[#FFFFFF] pb-8 mb-8">
                   <div />
                   <div>
-                    <h4 className="font-bold text-[#1A1916] text-sm">{store.workshopInfo?.name || "Atelier"}</h4>
-                    <p className="text-[10px] text-[#6B6B6B]">Facture professionnelle</p>
+                    <h4 className="font-bold text-[#101828] text-sm">{store.workshopInfo?.name || "Atelier"}</h4>
+                    <p className="text-[10px] text-[#667085]">Facture professionnelle</p>
                   </div>
                 </div>
 
@@ -1240,22 +1240,22 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                     <div className="grid grid-cols-2 gap-8 text-[11px]">
                       <div className="space-y-4">
                         <div>
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A8A8A] mb-1">
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#98A2B3] mb-1">
                             FACTURER À
                           </p>
-                          <p className="font-bold text-[#1A1916]">{customerInfo.name}</p>
-                          <p className="text-[#6B6B6B]">{customerInfo.phone}</p>
+                          <p className="font-bold text-[#101828]">{customerInfo.name}</p>
+                          <p className="text-[#667085]">{customerInfo.phone}</p>
                         </div>
                         <div>
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A8A8A] mb-1">APPAREIL</p>
-                          <p className="font-bold text-[#1A1916]">{customerInfo.device || "—"}</p>
-                          <p className="text-[#6B6B6B] italic">{customerInfo.issue || "Intervention atelier"}</p>
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#98A2B3] mb-1">APPAREIL</p>
+                          <p className="font-bold text-[#101828]">{customerInfo.device || "—"}</p>
+                          <p className="text-[#667085] italic">{customerInfo.issue || "Intervention atelier"}</p>
                         </div>
                       </div>
                       <div className="space-y-4 text-right">
                         <div>
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A8A8A] mb-1">DATE</p>
-                          <p className="font-bold text-[#1A1916]">
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#98A2B3] mb-1">DATE</p>
+                          <p className="font-bold text-[#101828]">
                             {new Date(dates.invoice).toLocaleDateString("fr-FR", {
                               day: "numeric",
                               month: "long",
@@ -1264,7 +1264,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                           </p>
                         </div>
                         <div>
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#8A8A8A] mb-1">ÉCHÉANCE</p>
+                          <p className="text-[9px] font-bold uppercase tracking-wider text-[#98A2B3] mb-1">ÉCHÉANCE</p>
                           <p className="font-bold text-[#2A9D8F]">
                             {new Date(dates.due).toLocaleDateString("fr-FR", {
                               day: "numeric",
@@ -1277,7 +1277,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between border-b border-[#FFFFFF] pb-2 text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider">
+                      <div className="flex items-center justify-between border-b border-[#FFFFFF] pb-2 text-[10px] font-bold text-[#98A2B3] uppercase tracking-wider">
                         <span>Description</span>
                         <span>Total</span>
                       </div>
@@ -1286,12 +1286,12 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                         .map((l) => (
                           <div key={l.id} className="flex justify-between items-start text-[11px] gap-4">
                             <div className="flex-1">
-                              <p className="font-semibold text-[#1A1916]">{l.description}</p>
-                              <p className="text-[10px] text-[#6B6B6B]">
+                              <p className="font-semibold text-[#101828]">{l.description}</p>
+                              <p className="text-[10px] text-[#667085]">
                                 Qté : {l.quantity} x {formatCurrency(l.unitPrice, invoiceCurrency)}
                               </p>
                             </div>
-                            <p className="font-bold text-[#1A1916]">
+                            <p className="font-bold text-[#101828]">
                               {formatCurrency(l.quantity * l.unitPrice, invoiceCurrency)}
                             </p>
                           </div>
@@ -1299,24 +1299,24 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                     </div>
 
                     <div className="mt-auto pt-8 border-t border-[#FFFFFF] space-y-2">
-                      <div className="flex justify-between text-[11px] text-[#6B6B6B]">
+                      <div className="flex justify-between text-[11px] text-[#667085]">
                         <span>Total HT</span>
-                        <span className="font-bold text-[#1A1916]">{formatCurrency(subtotal, invoiceCurrency)}</span>
+                        <span className="font-bold text-[#101828]">{formatCurrency(subtotal, invoiceCurrency)}</span>
                       </div>
                       {!isMicro && (
-                        <div className="flex justify-between text-[11px] text-[#6B6B6B]">
+                        <div className="flex justify-between text-[11px] text-[#667085]">
                           <span>TVA (20 %)</span>
-                          <span className="font-bold text-[#1A1916]">{formatCurrency(tva, invoiceCurrency)}</span>
+                          <span className="font-bold text-[#101828]">{formatCurrency(tva, invoiceCurrency)}</span>
                         </div>
                       )}
                       <div className="flex justify-between items-end pt-2">
-                        <span className="text-xs font-bold text-[#1A1916]">TOTAL TTC</span>
+                        <span className="text-xs font-bold text-[#101828]">TOTAL TTC</span>
                         <span className="text-xl font-bold text-[#2A9D8F]">
                           {formatCurrency(total, invoiceCurrency)}
                         </span>
                       </div>
                       {isMicro && (
-                        <p className="text-[9px] text-center text-[#8A8A8A] pt-4 italic">
+                        <p className="text-[9px] text-center text-[#98A2B3] pt-4 italic">
                           {billingWorkshop.tvaMention || "TVA non applicable"}
                         </p>
                       )}
@@ -1324,11 +1324,11 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
                   </div>
                 ) : (
                   <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
-                    <div className="size-12 rounded-[12px] border border-[#E8E8E5] bg-[#FFFFFF] flex items-center justify-center mb-4">
-                      <FileText className="size-6 text-[#8A8A8A]" />
+                    <div className="size-12 rounded-[12px] border border-[#E4E7EC] bg-[#FFFFFF] flex items-center justify-center mb-4">
+                      <FileText className="size-6 text-[#98A2B3]" />
                     </div>
-                    <p className="text-sm font-bold text-[#1A1916] mb-1">Facture en cours de saisie</p>
-                    <p className="text-xs text-[#6B6B6B]">Les informations de la facture s'afficheront ici.</p>
+                    <p className="text-sm font-bold text-[#101828] mb-1">Facture en cours de saisie</p>
+                    <p className="text-xs text-[#667085]">Les informations de la facture s'afficheront ici.</p>
                   </div>
                 )}
               </div>
@@ -1340,13 +1340,13 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
             <div className="flex items-center gap-6">
               <button
                 onClick={onClose}
-                className="text-sm font-bold text-[#6B6B6B] hover:text-[#1A1916] transition-colors"
+                className="text-sm font-bold text-[#667085] hover:text-[#101828] transition-colors"
               >
                 Annuler
               </button>
               <button
                 onClick={() => handleCreate("Brouillon")}
-                className="flex items-center gap-2 text-sm font-bold text-[#6B6B6B] hover:text-[#1A1916] transition-colors"
+                className="flex items-center gap-2 text-sm font-bold text-[#667085] hover:text-[#101828] transition-colors"
               >
                 <Save className="size-4" />
                 Enregistrer en brouillon
@@ -1385,18 +1385,18 @@ function ChoiceCard({
 }: Readonly<{ title: string; subtitle?: string; description: string; icon: React.ReactNode; onClick: () => void }>) {
   return (
     <button
-      className="group flex flex-col items-start gap-4 rounded-xl border border-[#E8E8E5] bg-white p-6 text-left transition-all hover:bg-[#FFFFFF] hover:border-[#2A9D8F]/40"
+      className="group flex flex-col items-start gap-4 rounded-xl border border-[#E4E7EC] bg-white p-6 text-left transition-all hover:bg-[#FFFFFF] hover:border-[#2A9D8F]/40"
       onClick={onClick}
     >
       <div className="rounded-xl bg-[#FFFFFF] p-4 shadow-sm transition-colors group-hover:bg-[#FFFFFF]">{icon}</div>
       <div>
-        <h3 className="font-bold text-[#1A1916] tracking-tight">{title}</h3>
+        <h3 className="font-bold text-[#101828] tracking-tight">{title}</h3>
         {subtitle && (
           <div className="mt-1 inline-flex items-center rounded-full bg-[#FFFFFF] px-2 py-0.5 text-[#167B70] text-[10px] font-bold uppercase">
             {subtitle}
           </div>
         )}
-        <p className="mt-3 text-[#6B6B6B] text-xs leading-relaxed opacity-80">{description}</p>
+        <p className="mt-3 text-[#667085] text-xs leading-relaxed opacity-80">{description}</p>
       </div>
     </button>
   );
@@ -1405,8 +1405,8 @@ function ChoiceCard({
 function EmptyState({ message }: Readonly<{ message: string }>) {
   return (
     <div className="flex flex-col items-center justify-center py-10 text-center">
-      <AlertCircle className="mb-3 size-10 text-[#8A8A8A]" />
-      <p className="text-[#6B6B6B] text-sm">{message}</p>
+      <AlertCircle className="mb-3 size-10 text-[#98A2B3]" />
+      <p className="text-[#667085] text-sm">{message}</p>
     </div>
   );
 }
@@ -1414,8 +1414,8 @@ function EmptyState({ message }: Readonly<{ message: string }>) {
 function PreviewTotal({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <div className="flex items-center justify-between gap-4 text-sm">
-      <span className="text-[#6B6B6B]">{label}</span>
-      <span className="font-medium text-[#1A1916]">{value}</span>
+      <span className="text-[#667085]">{label}</span>
+      <span className="font-medium text-[#101828]">{value}</span>
     </div>
   );
 }

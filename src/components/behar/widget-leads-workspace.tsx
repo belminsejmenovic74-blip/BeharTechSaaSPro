@@ -315,7 +315,7 @@ export function WidgetLeadsWorkspace() {
 
   if (!(workshopId && licenseKey)) {
     return (
-      <Panel className="p-8 text-center text-[#6B6B6B]">
+      <Panel className="p-8 text-center text-[#667085]">
         Activez la synchronisation atelier pour relever les demandes du site.
       </Panel>
     );
@@ -333,9 +333,9 @@ export function WidgetLeadsWorkspace() {
       <Panel className="p-4">
         <div className="grid gap-3 lg:grid-cols-[minmax(200px,1fr)_160px_150px_160px_150px_auto]">
           <label className="relative">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#8A8A8A]" />
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#98A2B3]" />
             <input
-              className="h-11 w-full rounded-xl border border-[#E8E8E5] pl-10 pr-3 text-sm outline-none focus:border-[#2A9D8F]"
+              className="h-11 w-full rounded-xl border border-[#E4E7EC] pl-10 pr-3 text-sm outline-none focus:border-[#2A9D8F]"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Client, téléphone, appareil…"
@@ -374,7 +374,7 @@ export function WidgetLeadsWorkspace() {
           <button
             type="button"
             onClick={() => void load()}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E8E8E5] px-4 text-sm font-semibold"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[#E4E7EC] px-4 text-sm font-semibold"
           >
             <RefreshCw className={cn("size-4", loading && "animate-spin")} />
             Actualiser
@@ -385,12 +385,12 @@ export function WidgetLeadsWorkspace() {
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_430px]">
         <Panel className="overflow-hidden">
           {loading ? (
-            <div className="p-12 text-center text-sm text-[#6B6B6B]">Chargement…</div>
+            <div className="p-12 text-center text-sm text-[#667085]">Chargement…</div>
           ) : sorted.length === 0 ? (
-            <div className="p-12 text-center text-sm text-[#6B6B6B]">Aucune demande.</div>
+            <div className="p-12 text-center text-sm text-[#667085]">Aucune demande.</div>
           ) : (
             <>
-              <div className="divide-y divide-[#E8E8E5]">
+              <div className="divide-y divide-[#E4E7EC]">
                 {paged.map((lead) => (
                   <button
                     key={lead.id}
@@ -398,16 +398,16 @@ export function WidgetLeadsWorkspace() {
                     onClick={() => setSelectedId(lead.id)}
                     className={cn(
                       "grid w-full gap-3 p-4 text-left transition md:grid-cols-[1.1fr_1fr_1.2fr_150px] md:items-center",
-                      selected?.id === lead.id ? "bg-[#F1FAF8]" : "hover:bg-[#FAFAF8]",
+                      selected?.id === lead.id ? "bg-[#F1FAF8]" : "hover:bg-[#F9FAFB]",
                     )}
                   >
                     <div>
-                      <p className="font-semibold text-sm text-[#1A1916]">{leadCustomerName(lead)}</p>
-                      <p className="mt-1 text-xs text-[#6B6B6B]">{lead.phone}</p>
+                      <p className="font-semibold text-sm text-[#101828]">{leadCustomerName(lead)}</p>
+                      <p className="mt-1 text-xs text-[#667085]">{lead.phone}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium">{leadDeviceLabel(lead)}</p>
-                      <p className="mt-1 text-xs text-[#6B6B6B]">{lead.issue}</p>
+                      <p className="mt-1 text-xs text-[#667085]">{lead.issue}</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Badge>{LEAD_TYPE_LABELS[lead.lead_type]}</Badge>
@@ -424,15 +424,15 @@ export function WidgetLeadsWorkspace() {
                       ) : null}
                     </div>
                     <div className="md:text-right">
-                      <p className="text-xs text-[#6B6B6B]">{isoDate(lead.created_at)}</p>
-                      <p className="mt-1 truncate text-[11px] text-[#8A8A8A]">{assigneeName(lead.assigned_to)}</p>
+                      <p className="text-xs text-[#667085]">{isoDate(lead.created_at)}</p>
+                      <p className="mt-1 truncate text-[11px] text-[#98A2B3]">{assigneeName(lead.assigned_to)}</p>
                     </div>
                   </button>
                 ))}
               </div>
               {totalPages > 1 ? (
-                <div className="flex items-center justify-between gap-3 border-t border-[#E8E8E5] px-4 py-3 text-sm">
-                  <span className="text-[#6B6B6B] text-xs">
+                <div className="flex items-center justify-between gap-3 border-t border-[#E4E7EC] px-4 py-3 text-sm">
+                  <span className="text-[#667085] text-xs">
                     {sorted.length} demande{sorted.length > 1 ? "s" : ""} · page {currentPage}/{totalPages}
                   </span>
                   <div className="flex gap-2">
@@ -440,7 +440,7 @@ export function WidgetLeadsWorkspace() {
                       type="button"
                       disabled={currentPage <= 1}
                       onClick={() => setPage((value) => Math.max(1, value - 1))}
-                      className="rounded-lg border border-[#E8E8E5] px-3 py-1.5 font-medium text-xs disabled:opacity-40"
+                      className="rounded-lg border border-[#E4E7EC] px-3 py-1.5 font-medium text-xs disabled:opacity-40"
                     >
                       Précédent
                     </button>
@@ -448,7 +448,7 @@ export function WidgetLeadsWorkspace() {
                       type="button"
                       disabled={currentPage >= totalPages}
                       onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
-                      className="rounded-lg border border-[#E8E8E5] px-3 py-1.5 font-medium text-xs disabled:opacity-40"
+                      className="rounded-lg border border-[#E4E7EC] px-3 py-1.5 font-medium text-xs disabled:opacity-40"
                     >
                       Suivant
                     </button>
@@ -464,7 +464,7 @@ export function WidgetLeadsWorkspace() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="font-semibold text-xl">{leadCustomerName(selected)}</h2>
-                <p className="mt-1 text-sm text-[#6B6B6B]">
+                <p className="mt-1 text-sm text-[#667085]">
                   {leadDeviceLabel(selected)} · {selected.issue}
                 </p>
               </div>
@@ -503,9 +503,9 @@ export function WidgetLeadsWorkspace() {
             </div>
 
             {(selected.issue_description || selected.comment) && (
-              <div className="mt-4 rounded-xl bg-[#FAFAF8] p-3 text-sm leading-relaxed">
+              <div className="mt-4 rounded-xl bg-[#F9FAFB] p-3 text-sm leading-relaxed">
                 <p className="font-semibold">Précisions</p>
-                <p className="mt-1 text-[#6B6B6B]">
+                <p className="mt-1 text-[#667085]">
                   {[selected.issue_description, selected.comment].filter(Boolean).join(" — ")}
                 </p>
               </div>
@@ -606,7 +606,7 @@ export function WidgetLeadsWorkspace() {
             </div>
 
             <div className="mt-5 grid grid-cols-2 gap-3">
-              <div className="text-xs font-semibold text-[#6B6B6B]">
+              <div className="text-xs font-semibold text-[#667085]">
                 <span>Statut</span>
                 <FilterSelect
                   value={selected.status}
@@ -619,7 +619,7 @@ export function WidgetLeadsWorkspace() {
                   ))}
                 </FilterSelect>
               </div>
-              <div className="text-xs font-semibold text-[#6B6B6B]">
+              <div className="text-xs font-semibold text-[#667085]">
                 <span>Responsable</span>
                 <FilterSelect
                   value={selected.assigned_to || ""}
@@ -636,25 +636,25 @@ export function WidgetLeadsWorkspace() {
             </div>
 
             <div className="mt-5">
-              <span className="text-xs font-semibold text-[#6B6B6B]">Note interne</span>
+              <span className="text-xs font-semibold text-[#667085]">Note interne</span>
               <textarea
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
                 rows={2}
                 placeholder="Ajouter une note visible par l'équipe…"
-                className="mt-1 w-full rounded-xl border border-[#E8E8E5] p-3 text-sm outline-none focus:border-[#2A9D8F]"
+                className="mt-1 w-full rounded-xl border border-[#E4E7EC] p-3 text-sm outline-none focus:border-[#2A9D8F]"
               />
               <button
                 type="button"
                 disabled={!note.trim()}
                 onClick={() => void addInternalNote(selected)}
-                className="mt-2 rounded-xl border border-[#E8E8E5] px-3 py-2 text-xs font-semibold disabled:opacity-40"
+                className="mt-2 rounded-xl border border-[#E4E7EC] px-3 py-2 text-xs font-semibold disabled:opacity-40"
               >
                 Ajouter la note
               </button>
             </div>
 
-            <div className="mt-6 border-t border-[#E8E8E5] pt-5">
+            <div className="mt-6 border-t border-[#E4E7EC] pt-5">
               <h3 className="flex items-center gap-2 font-semibold text-sm">
                 <Clock3 className="size-4" />
                 Historique
@@ -664,13 +664,13 @@ export function WidgetLeadsWorkspace() {
                   selectedHistory.map((entry) => (
                     <div key={entry.id} className="border-l-2 border-[#D7EFEA] pl-3">
                       <p className="text-sm font-medium">{leadHistoryLabel(entry.action, entry.to_status)}</p>
-                      <p className="text-xs text-[#6B6B6B]">
+                      <p className="text-xs text-[#667085]">
                         {entry.note || entry.actor_name} · {isoDate(entry.created_at)}
                       </p>
                     </div>
                   ))
                 ) : (
-                  <p className="text-xs text-[#6B6B6B]">Aucun événement.</p>
+                  <p className="text-xs text-[#667085]">Aucun événement.</p>
                 )}
               </div>
             </div>
@@ -682,7 +682,7 @@ export function WidgetLeadsWorkspace() {
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/35 p-4">
           <Panel className="w-full max-w-md p-5">
             <h2 className="font-semibold text-xl">Proposer un rendez-vous</h2>
-            <p className="mt-1 text-sm text-[#6B6B6B]">
+            <p className="mt-1 text-sm text-[#667085]">
               {leadCustomerName(appointmentLead)} · {leadDeviceLabel(appointmentLead)}
             </p>
             <div className="mt-5 grid grid-cols-2 gap-3">
@@ -693,7 +693,7 @@ export function WidgetLeadsWorkspace() {
                   value={appointmentDate}
                   min={new Date().toISOString().slice(0, 10)}
                   onChange={(event) => setAppointmentDate(event.target.value)}
-                  className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] px-3"
+                  className="mt-1 h-11 w-full rounded-xl border border-[#E4E7EC] px-3"
                 />
               </label>
               <label className="text-sm font-medium">
@@ -702,14 +702,14 @@ export function WidgetLeadsWorkspace() {
                   type="time"
                   value={appointmentTime}
                   onChange={(event) => setAppointmentTime(event.target.value)}
-                  className="mt-1 h-11 w-full rounded-xl border border-[#E8E8E5] px-3"
+                  className="mt-1 h-11 w-full rounded-xl border border-[#E4E7EC] px-3"
                 />
               </label>
             </div>
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
-                className="h-11 rounded-xl border border-[#E8E8E5] px-4 font-semibold text-sm"
+                className="h-11 rounded-xl border border-[#E4E7EC] px-4 font-semibold text-sm"
                 onClick={() => setAppointmentLead(null)}
               >
                 Annuler
@@ -726,7 +726,7 @@ export function WidgetLeadsWorkspace() {
       <style
         jsx
         global
-      >{`.action-button{display:inline-flex;min-height:42px;align-items:center;justify-content:center;gap:.5rem;border:1px solid #e8e8e5;border-radius:.75rem;background:#fff;padding:.6rem .75rem;font-size:.78rem;font-weight:650;transition:.15s}.action-button:hover{border-color:rgba(42,157,143,.45);background:#f7fcfb}`}</style>
+      >{`.action-button{display:inline-flex;min-height:42px;align-items:center;justify-content:center;gap:.5rem;border:1px solid #e4e7ec;border-radius:.75rem;background:#fff;padding:.6rem .75rem;font-size:.78rem;font-weight:650;transition:.15s}.action-button:hover{border-color:rgba(42,157,143,.45);background:#f7fcfb}`}</style>
     </div>
   );
 }
@@ -734,7 +734,7 @@ export function WidgetLeadsWorkspace() {
 function Stat({ label, value }: { label: string; value: number }) {
   return (
     <Panel className="p-4">
-      <p className="text-xs font-medium text-[#6B6B6B]">{label}</p>
+      <p className="text-xs font-medium text-[#667085]">{label}</p>
       <p className="mt-2 text-2xl font-bold tabular-nums">{value}</p>
     </Panel>
   );
@@ -764,7 +764,7 @@ function StatusBadge({ status }: { status: WidgetLeadStatus }) {
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-[#8A8A8A]">{label}</p>
+      <p className="text-[10px] font-bold uppercase tracking-wide text-[#98A2B3]">{label}</p>
       <p className="mt-1 truncate text-sm font-medium" title={value}>
         {value}
       </p>
@@ -782,7 +782,7 @@ function FilterSelect({
 }) {
   return (
     <select
-      className="h-11 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]"
+      className="h-11 w-full rounded-xl border border-[#E4E7EC] bg-white px-3 text-sm outline-none focus:border-[#2A9D8F]"
       value={value}
       onChange={(event) => onChange(event.target.value)}
     >

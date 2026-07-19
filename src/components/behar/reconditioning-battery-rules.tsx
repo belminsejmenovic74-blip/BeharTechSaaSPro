@@ -24,16 +24,16 @@ export function ReconditioningBatteryRules() {
       subtitle="Appliqué quand un modèle n'a pas de règle spécifique. Les barèmes par modèle se règlent dans Catalogue de reprise → Configurer."
       title="Barème batterie par défaut"
     >
-      <div className="max-w-[540px] rounded-[16px] border border-[#E8E5DF] p-3.5">
+      <div className="max-w-[540px] rounded-[16px] border border-[#E4E7EC] p-3.5">
         <div className="flex items-center gap-2.5">
           <Battery className="size-4.5 shrink-0 text-[#2A9D8F]" />
-          <span className="font-semibold text-[#1A1916] text-[14px]">Décote par tranche de santé</span>
+          <span className="font-semibold text-[#101828] text-[14px]">Décote par tranche de santé</span>
         </div>
 
         <div className="mt-3 space-y-1.5">
           {BATTERY_TIER_LABELS.map((tier) => (
             <div className="flex items-center justify-between gap-3" key={tier.key}>
-              <span className="text-[#1A1916] text-[12.5px]">{tier.label}</span>
+              <span className="text-[#101828] text-[12.5px]">{tier.label}</span>
               <div className="flex items-center gap-1.5">
                 <span className="text-[#B4342A] text-[12px]">−</span>
                 <input
@@ -43,15 +43,15 @@ export function ReconditioningBatteryRules() {
                   type="number"
                   value={config.tiers[tier.key]}
                 />
-                <span className="text-[#6B6B6B] text-[12px]">€</span>
+                <span className="text-[#667085] text-[12px]">€</span>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="mt-3 space-y-2 border-[#F1F1EF] border-t pt-3">
+        <div className="mt-3 space-y-2 border-[#F2F4F7] border-t pt-3">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-[#1A1916] text-[12.5px]">Remplacement batterie conseillé</span>
+            <span className="text-[#101828] text-[12.5px]">Remplacement batterie conseillé</span>
             <Toggle
               on={config.replacementAdvisedBelow > 0}
               onToggle={() =>
@@ -62,7 +62,7 @@ export function ReconditioningBatteryRules() {
           {config.replacementAdvisedBelow > 0 && (
             <>
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[#6B6B6B] text-[12.5px]">Conseillé sous</span>
+                <span className="text-[#667085] text-[12.5px]">Conseillé sous</span>
                 <div className="flex items-center gap-1.5">
                   <input
                     className={cn(inputCls, "h-8 w-[76px] text-right text-[12px]")}
@@ -76,11 +76,11 @@ export function ReconditioningBatteryRules() {
                     type="number"
                     value={config.replacementAdvisedBelow}
                   />
-                  <span className="text-[#6B6B6B] text-[12px]">%</span>
+                  <span className="text-[#667085] text-[12px]">%</span>
                 </div>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[#6B6B6B] text-[12.5px]">Décote supplémentaire remplacement</span>
+                <span className="text-[#667085] text-[12.5px]">Décote supplémentaire remplacement</span>
                 <div className="flex items-center gap-1.5">
                   <span className="text-[#B4342A] text-[12px]">−</span>
                   <input
@@ -92,14 +92,14 @@ export function ReconditioningBatteryRules() {
                     type="number"
                     value={config.replacementExtraDeduction}
                   />
-                  <span className="text-[#6B6B6B] text-[12px]">€</span>
+                  <span className="text-[#667085] text-[12px]">€</span>
                 </div>
               </div>
             </>
           )}
         </div>
 
-        <p className="mt-3 text-[#9B9B96] text-[11.5px]">
+        <p className="mt-3 text-[#98A2B3] text-[11.5px]">
           {modelCount > 0
             ? `${modelCount} modèle${modelCount > 1 ? "s ont" : " a"} un barème batterie spécifique.`
             : "Aucun modèle n'a encore de barème batterie spécifique."}

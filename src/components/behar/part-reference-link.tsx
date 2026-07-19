@@ -40,10 +40,10 @@ function TraceSection({
   children,
 }: Readonly<{ title: string; icon: LucideIcon; children: React.ReactNode }>) {
   return (
-    <section className="rounded-[8px] border border-[#E8E8E5] bg-white p-4">
+    <section className="rounded-[8px] border border-[#E4E7EC] bg-white p-4">
       <div className="mb-3 flex items-center gap-2">
         <Icon className="size-4 text-[#2A9D8F]" />
-        <h3 className="font-semibold text-[#1A1916] text-sm">{title}</h3>
+        <h3 className="font-semibold text-[#101828] text-sm">{title}</h3>
       </div>
       {children}
     </section>
@@ -53,14 +53,14 @@ function TraceSection({
 function TraceRow({ label, value }: Readonly<{ label: string; value?: React.ReactNode }>) {
   return (
     <div className="grid grid-cols-[130px_minmax(0,1fr)] gap-3 border-[#F0F0ED] border-t py-2 first:border-t-0">
-      <dt className="text-[#6B6B6B] text-xs">{label}</dt>
-      <dd className="min-w-0 text-[#1A1916] text-xs font-medium">{value ?? "—"}</dd>
+      <dt className="text-[#667085] text-xs">{label}</dt>
+      <dd className="min-w-0 text-[#101828] text-xs font-medium">{value ?? "—"}</dd>
     </div>
   );
 }
 
 function EmptyTrace({ label }: Readonly<{ label: string }>) {
-  return <p className="rounded-[8px] bg-[#FAFAF8] px-3 py-2 text-[#6B6B6B] text-xs">{label}</p>;
+  return <p className="rounded-[8px] bg-[#F9FAFB] px-3 py-2 text-[#667085] text-xs">{label}</p>;
 }
 
 function PartTraceabilityModal({
@@ -206,18 +206,18 @@ function PartTraceabilityModal({
           {trace.repairUsages.length ? (
             <div className="space-y-2">
               {trace.repairUsages.map(({ repair, customer, part, usedAt, technician }) => (
-                <div key={`${repair.id}-${part.stockItemId}`} className="rounded-[8px] border border-[#E8E8E5] p-3">
+                <div key={`${repair.id}-${part.stockItemId}`} className="rounded-[8px] border border-[#E4E7EC] p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-[#1A1916] text-sm">{repair.number}</p>
-                      <p className="text-[#6B6B6B] text-xs">
+                      <p className="font-semibold text-[#101828] text-sm">{repair.number}</p>
+                      <p className="text-[#667085] text-xs">
                         {customer?.name || "Client"} · {repair.device}
                       </p>
-                      {repair.imei && <p className="font-mono text-[#6B6B6B] text-[11px]">IMEI {repair.imei}</p>}
+                      {repair.imei && <p className="font-mono text-[#667085] text-[11px]">IMEI {repair.imei}</p>}
                     </div>
                     <StatusBadge status={repair.status} />
                   </div>
-                  <div className="mt-2 grid gap-1 text-[#6B6B6B] text-xs sm:grid-cols-3">
+                  <div className="mt-2 grid gap-1 text-[#667085] text-xs sm:grid-cols-3">
                     <span>Date : {shortDate(usedAt)}</span>
                     <span>Qté : {part.quantity}</span>
                     <span>Tech : {technician || "—"}</span>
@@ -244,14 +244,14 @@ function PartTraceabilityModal({
               {trace.movements.map((movement) => (
                 <div
                   key={movement.id}
-                  className="flex items-start justify-between gap-3 rounded-[8px] border border-[#E8E8E5] p-3"
+                  className="flex items-start justify-between gap-3 rounded-[8px] border border-[#E4E7EC] p-3"
                 >
                   <div>
-                    <p className="font-semibold text-[#1A1916] text-xs">{MOVEMENT_LABEL[movement.movementType]}</p>
-                    <p className="mt-0.5 text-[#6B6B6B] text-[11px]">
+                    <p className="font-semibold text-[#101828] text-xs">{MOVEMENT_LABEL[movement.movementType]}</p>
+                    <p className="mt-0.5 text-[#667085] text-[11px]">
                       {movement.reason || movement.note || "Mouvement stock"}
                     </p>
-                    <p className="mt-1 font-mono text-[#8A8A85] text-[10.5px]">{shortDate(movement.createdAt)}</p>
+                    <p className="mt-1 font-mono text-[#98A2B3] text-[10.5px]">{shortDate(movement.createdAt)}</p>
                   </div>
                   <div className="text-right">
                     <p
@@ -263,7 +263,7 @@ function PartTraceabilityModal({
                       {movement.quantityDelta > 0 ? "+" : ""}
                       {movement.quantityDelta}
                     </p>
-                    <p className="text-[#6B6B6B] text-[11px]">
+                    <p className="text-[#667085] text-[11px]">
                       {movement.quantityBefore} → {movement.quantityAfter}
                     </p>
                   </div>

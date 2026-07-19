@@ -63,7 +63,7 @@ export function LicenseActivation() {
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-white p-4 md:p-8">
-      <div className="flex w-full max-w-[1060px] overflow-hidden rounded-[28px] bg-white shadow-[0_1px_3px_rgba(26,25,22,0.04),0_20px_60px_rgba(26,25,22,0.08)] animate-in fade-in zoom-in-95 duration-700">
+      <div className="flex w-full max-w-[1060px] overflow-hidden rounded-[28px] bg-white shadow-[0_1px_3px_rgba(16,24,40,0.04),0_20px_60px_rgba(16,24,40,0.08)] animate-in fade-in zoom-in-95 duration-700">
         {/* Left Panel — Marketing / Welcome */}
         <div className="hidden md:flex md:w-[480px] flex-col justify-between bg-[#FFFFFF] p-10 lg:p-12 border-r border-[#FFFFFF]">
           <div>
@@ -72,11 +72,11 @@ export function LicenseActivation() {
               <BeharLogo size="md" />
             </div>
 
-            <h1 className="text-[32px] font-semibold text-[#1A1916] leading-[1.15] tracking-tight">
+            <h1 className="text-[32px] font-semibold text-[#101828] leading-[1.15] tracking-tight">
               Bienvenue sur <br />
               Behar Tech <span className="text-[#2A9D8F]">Pro</span>
             </h1>
-            <p className="mt-4 text-[#6B6B6B] text-[15px] leading-relaxed max-w-[340px]">
+            <p className="mt-4 text-[#667085] text-[15px] leading-relaxed max-w-[340px]">
               Le logiciel tout-en-un pour réparateurs. Réparations, devis, factures, stock, rendez-vous et bien plus
               encore.
             </p>
@@ -84,32 +84,32 @@ export function LicenseActivation() {
 
           {/* Dashboard preview placeholder */}
           <div className="my-8 relative">
-            <div className="rounded-[20px] bg-white border border-[#E8E8E5] shadow-[0_8px_32px_rgba(26,25,22,0.06)] p-5 space-y-4">
+            <div className="rounded-[20px] bg-white border border-[#E4E7EC] shadow-[0_8px_32px_rgba(16,24,40,0.06)] p-5 space-y-4">
               {/* Mini dashboard mockup */}
               <div className="flex items-center gap-2 mb-3">
-                <div className="size-6 rounded-[8px] bg-[#1A1916] flex items-center justify-center">
+                <div className="size-6 rounded-[8px] bg-[#101828] flex items-center justify-center">
                   <span className="text-white text-[7px] font-bold">BT</span>
                 </div>
-                <span className="text-[11px] font-semibold text-[#1A1916]">Tableau de bord</span>
+                <span className="text-[11px] font-semibold text-[#101828]">Tableau de bord</span>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div className="rounded-[12px] bg-[#FFFFFF] border border-[#FFFFFF] p-3">
-                  <p className="text-[9px] text-[#6B6B6B]">Réparations</p>
-                  <p className="text-[18px] font-semibold text-[#1A1916] mt-0.5">12</p>
+                  <p className="text-[9px] text-[#667085]">Réparations</p>
+                  <p className="text-[18px] font-semibold text-[#101828] mt-0.5">12</p>
                 </div>
                 <div className="rounded-[12px] bg-[#FFFFFF] border border-[#FFFFFF] p-3">
-                  <p className="text-[9px] text-[#6B6B6B]">Devis en attente</p>
-                  <p className="text-[18px] font-semibold text-[#1A1916] mt-0.5">7</p>
+                  <p className="text-[9px] text-[#667085]">Devis en attente</p>
+                  <p className="text-[18px] font-semibold text-[#101828] mt-0.5">7</p>
                 </div>
                 <div className="rounded-[12px] bg-[#FFFFFF] border border-[#FFFFFF] p-3">
-                  <p className="text-[9px] text-[#6B6B6B]">Factures</p>
-                  <p className="text-[18px] font-semibold text-[#1A1916] mt-0.5">3</p>
+                  <p className="text-[9px] text-[#667085]">Factures</p>
+                  <p className="text-[18px] font-semibold text-[#101828] mt-0.5">3</p>
                 </div>
               </div>
               <div className="flex items-center justify-between pt-1">
                 <div>
-                  <p className="text-[9px] text-[#6B6B6B]">Chiffre d'affaires</p>
-                  <p className="text-[15px] font-semibold text-[#1A1916]">12 540,00 EUR</p>
+                  <p className="text-[9px] text-[#667085]">Chiffre d'affaires</p>
+                  <p className="text-[15px] font-semibold text-[#101828]">12 540,00 EUR</p>
                 </div>
                 <span className="text-[11px] font-medium text-[#2A9D8F]">+15%</span>
               </div>
@@ -123,8 +123,8 @@ export function LicenseActivation() {
                 <Shield className="size-3.5 text-[#2A9D8F]" />
               </div>
               <div>
-                <p className="text-[12px] font-semibold text-[#1A1916]">Sécurisé</p>
-                <p className="text-[10px] text-[#8A8A8A] leading-tight">Données cloud</p>
+                <p className="text-[12px] font-semibold text-[#101828]">Sécurisé</p>
+                <p className="text-[10px] text-[#98A2B3] leading-tight">Données cloud</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -132,8 +132,8 @@ export function LicenseActivation() {
                 <Zap className="size-3.5 text-[#2A9D8F]" />
               </div>
               <div>
-                <p className="text-[12px] font-semibold text-[#1A1916]">Rapide</p>
-                <p className="text-[10px] text-[#8A8A8A] leading-tight">Conçu pour vous</p>
+                <p className="text-[12px] font-semibold text-[#101828]">Rapide</p>
+                <p className="text-[10px] text-[#98A2B3] leading-tight">Conçu pour vous</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -141,8 +141,8 @@ export function LicenseActivation() {
                 <Layers className="size-3.5 text-[#2A9D8F]" />
               </div>
               <div>
-                <p className="text-[12px] font-semibold text-[#1A1916]">Complet</p>
-                <p className="text-[10px] text-[#8A8A8A] leading-tight">Tout-en-un</p>
+                <p className="text-[12px] font-semibold text-[#101828]">Complet</p>
+                <p className="text-[10px] text-[#98A2B3] leading-tight">Tout-en-un</p>
               </div>
             </div>
           </div>
@@ -155,30 +155,30 @@ export function LicenseActivation() {
             <Lock className="size-7 text-[#2A9D8F]" />
           </div>
 
-          <h2 className="text-[24px] font-semibold text-[#1A1916] tracking-tight text-center">
+          <h2 className="text-[24px] font-semibold text-[#101828] tracking-tight text-center">
             Activer Behar Tech <span className="text-[#2A9D8F]">Pro</span>
           </h2>
-          <p className="mt-2.5 text-[#6B6B6B] text-[14px] text-center leading-relaxed max-w-[320px]">
+          <p className="mt-2.5 text-[#667085] text-[14px] text-center leading-relaxed max-w-[320px]">
             Entrez la clé de licence fournie avec votre accès pilote pour activer votre application.
           </p>
 
           <div className="mt-10 w-full max-w-[380px] space-y-5">
             {/* License key field */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-[#1A1916] px-0.5">Clé de licence</label>
+              <label className="text-sm font-medium text-[#101828] px-0.5">Clé de licence</label>
               <div className="relative">
                 <input
                   type="text"
                   placeholder="Ex : BT-PILOT-001"
                   className={cn(
-                    "h-[50px] w-full rounded-[14px] border bg-white px-4 pr-12 text-[#1A1916] text-[15px] outline-none transition-all duration-200",
-                    "placeholder:text-[#A3A3A3]",
+                    "h-[50px] w-full rounded-[14px] border bg-white px-4 pr-12 text-[#101828] text-[15px] outline-none transition-all duration-200",
+                    "placeholder:text-[#98A2B3]",
                     "focus:ring-4 focus:ring-[#2A9D8F]/8",
                     error
                       ? "border-[#DC3545]/40 focus:border-[#DC3545]"
                       : success
                         ? "border-[#2A9D8F]/40 bg-[#FFFFFF]"
-                        : "border-[#E8E8E5] hover:border-[#DADADA] focus:border-[#2A9D8F]",
+                        : "border-[#E4E7EC] hover:border-[#D0D5DD] focus:border-[#2A9D8F]",
                   )}
                   value={key}
                   onChange={(e) => {
@@ -188,7 +188,7 @@ export function LicenseActivation() {
                   onKeyDown={(e) => e.key === "Enter" && handleActivate()}
                   disabled={isLoading || success}
                 />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A3A3A3]">
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[#98A2B3]">
                   <Lock className="size-4" />
                 </div>
               </div>
@@ -240,7 +240,7 @@ export function LicenseActivation() {
             {/* Separator */}
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px bg-[#FFFFFF]" />
-              <span className="text-[#A3A3A3] text-[12px]">ou</span>
+              <span className="text-[#98A2B3] text-[12px]">ou</span>
               <div className="flex-1 h-px bg-[#FFFFFF]" />
             </div>
 
@@ -250,8 +250,8 @@ export function LicenseActivation() {
                 <AlertCircle className="size-3.5 text-[#2A9D8F]" />
               </div>
               <div>
-                <p className="text-[13px] font-semibold text-[#1A1916]">Vous n'avez pas encore de clé ?</p>
-                <p className="mt-0.5 text-[12px] text-[#6B6B6B] leading-relaxed">
+                <p className="text-[13px] font-semibold text-[#101828]">Vous n'avez pas encore de clé ?</p>
+                <p className="mt-0.5 text-[12px] text-[#667085] leading-relaxed">
                   Contactez Behar Tech pour obtenir votre accès pilote.
                 </p>
               </div>
@@ -260,8 +260,8 @@ export function LicenseActivation() {
 
           {/* Footer */}
           <div className="mt-10 text-center">
-            <p className="text-[#A3A3A3] text-[11px]">Behar Tech Pro – Tous droits réservés.</p>
-            <p className="text-[#A3A3A3] text-[11px]">Version pilote</p>
+            <p className="text-[#98A2B3] text-[11px]">Behar Tech Pro – Tous droits réservés.</p>
+            <p className="text-[#98A2B3] text-[11px]">Version pilote</p>
           </div>
         </div>
       </div>

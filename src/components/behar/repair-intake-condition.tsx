@@ -162,20 +162,20 @@ export function RepairIntakeSummaryCard({
   const accessories = intake?.accessories?.filter(Boolean) ?? [];
 
   return (
-    <section className="rounded-[16px] border border-[#E8E8E5] bg-white px-[18px] py-4 shadow-[0_10px_30px_rgba(26,25,22,0.035)]">
+    <section className="rounded-[16px] border border-[#E4E7EC] bg-white px-[18px] py-4 shadow-[0_10px_30px_rgba(16,24,40,0.035)]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="font-semibold text-[#1A1916] text-sm">État d'entrée / anti-litige</h3>
+          <h3 className="font-semibold text-[#101828] text-sm">État d'entrée / anti-litige</h3>
           {!hasIntake ? (
-            <p className="mt-1 text-[#6B6B6B] text-sm">Aucun état d'entrée renseigné.</p>
+            <p className="mt-1 text-[#667085] text-sm">Aucun état d'entrée renseigné.</p>
           ) : (
-            <p className="mt-1 text-[#6B6B6B] text-sm">
+            <p className="mt-1 text-[#667085] text-sm">
               {clean(intake?.generalCondition)} · {clean(intake?.screenState)}
             </p>
           )}
         </div>
         <span
-          className={`rounded-full px-3 py-1 font-semibold text-[11px] ${validated ? "bg-[#FFFFFF] text-[#477A23]" : "bg-[#FFFFFF] text-[#6B6B6B]"}`}
+          className={`rounded-full px-3 py-1 font-semibold text-[11px] ${validated ? "bg-[#FFFFFF] text-[#477A23]" : "bg-[#FFFFFF] text-[#667085]"}`}
         >
           {validated ? "État d'entrée validé" : "État d'entrée incomplet"}
         </span>
@@ -349,22 +349,22 @@ export function RepairIntakeScreen({
             <ArrowLeft className="size-4" />
             Retour
           </button>
-          <h2 className="font-semibold text-[#1A1916] text-[20px] tracking-tight md:text-[24px]">
+          <h2 className="font-semibold text-[#101828] text-[20px] tracking-tight md:text-[24px]">
             État d'entrée appareil
           </h2>
-          <p className="mt-1 text-[#6B6B6B] text-[12.5px] md:text-sm">
+          <p className="mt-1 text-[#667085] text-[12.5px] md:text-sm">
             Notez l'état visible de l'appareil au moment du dépôt.
           </p>
 
           {/* Champs principaux : 2 colonnes même sur mobile */}
           <section className="mt-4 md:mt-7">
-            <h3 className="font-semibold text-[#1A1916] text-[13px] md:text-sm">État général</h3>
+            <h3 className="font-semibold text-[#101828] text-[13px] md:text-sm">État général</h3>
             <div className="mt-2.5 grid grid-cols-2 gap-2 md:gap-3">
               {primaryFields.map((field) => (
-                <label className="block text-[#1A1916] text-[11px] font-medium md:text-[12px]" key={field.key}>
+                <label className="block text-[#101828] text-[11px] font-medium md:text-[12px]" key={field.key}>
                   {field.label}
                   <select
-                    className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-2.5 text-[12.5px] text-[#1A1916] outline-none transition focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/10 md:h-11 md:rounded-[12px] md:px-3 md:text-sm"
+                    className="mt-1 h-10 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-2.5 text-[12.5px] text-[#101828] outline-none transition focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/10 md:h-11 md:rounded-[12px] md:px-3 md:text-sm"
                     onChange={(event) => setField(field.key as IntakeFieldKey, event.target.value as never)}
                     value={clean(draft[field.key], missing)}
                   >
@@ -388,10 +388,10 @@ export function RepairIntakeScreen({
           <Accordion title="Tests détaillés" count={advancedFields.length}>
             <div className="grid grid-cols-2 gap-2 md:gap-3">
               {advancedFields.map((field) => (
-                <label className="block text-[#1A1916] text-[11px] font-medium md:text-[12px]" key={field.key}>
+                <label className="block text-[#101828] text-[11px] font-medium md:text-[12px]" key={field.key}>
                   {field.label}
                   <select
-                    className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-2.5 text-[12.5px] text-[#1A1916] outline-none transition focus:border-[#2A9D8F] md:h-11 md:rounded-[12px] md:px-3 md:text-sm"
+                    className="mt-1 h-10 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-2.5 text-[12.5px] text-[#101828] outline-none transition focus:border-[#2A9D8F] md:h-11 md:rounded-[12px] md:px-3 md:text-sm"
                     onChange={(event) => setField(field.key as IntakeFieldKey, event.target.value as never)}
                     value={clean(draft[field.key], missing)}
                   >
@@ -408,13 +408,13 @@ export function RepairIntakeScreen({
 
           {/* Accessoires (visible) */}
           <section className="mt-5 md:mt-7">
-            <h3 className="mb-2 font-semibold text-[#1A1916] text-[13px] md:text-sm">Accessoires fournis</h3>
+            <h3 className="mb-2 font-semibold text-[#101828] text-[13px] md:text-sm">Accessoires fournis</h3>
             <div className="flex flex-wrap gap-1.5 md:gap-2">
               {accessoryOptions.map((name) => {
                 const checked = (draft.accessories ?? []).includes(name);
                 return (
                   <label
-                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[12px] font-medium transition md:gap-2 md:px-3 md:py-2 md:text-sm ${checked ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]" : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:border-[#2A9D8F]/40"}`}
+                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[12px] font-medium transition md:gap-2 md:px-3 md:py-2 md:text-sm ${checked ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]" : "border-[#E4E7EC] bg-white text-[#667085] hover:border-[#2A9D8F]/40"}`}
                     key={name}
                   >
                     <input
@@ -430,7 +430,7 @@ export function RepairIntakeScreen({
             </div>
             {(draft.accessories ?? []).includes("Autre") ? (
               <input
-                className="mt-2 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[12.5px] outline-none focus:border-[#2A9D8F] md:mt-3 md:h-11 md:rounded-[12px] md:text-sm"
+                className="mt-2 h-10 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[12.5px] outline-none focus:border-[#2A9D8F] md:mt-3 md:h-11 md:rounded-[12px] md:text-sm"
                 onChange={(event) => setField("accessoriesOther", event.target.value)}
                 placeholder="Préciser l'accessoire"
                 value={draft.accessoriesOther ?? ""}
@@ -440,7 +440,7 @@ export function RepairIntakeScreen({
 
           {/* Validation client (visible — critique pour anti-litige) */}
           <section className="mt-5 md:mt-7">
-            <h3 className="mb-2 font-semibold text-[#1A1916] text-[13px] md:text-sm">Validation client</h3>
+            <h3 className="mb-2 font-semibold text-[#101828] text-[13px] md:text-sm">Validation client</h3>
             <div className="grid gap-1.5 md:gap-2">
               <CheckLine
                 checked={Boolean(draft.customerConfirmed)}
@@ -461,10 +461,10 @@ export function RepairIntakeScreen({
                 Certains défauts peuvent être non testables avant ouverture.
               </CheckLine>
             </div>
-            <label className="mt-3 block text-[#1A1916] text-[11px] font-medium md:text-[12px]">
+            <label className="mt-3 block text-[#101828] text-[11px] font-medium md:text-[12px]">
               Nom du client signataire
               <input
-                className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[12.5px] outline-none focus:border-[#2A9D8F] md:h-11 md:rounded-[12px] md:text-sm"
+                className="mt-1 h-10 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[12.5px] outline-none focus:border-[#2A9D8F] md:h-11 md:rounded-[12px] md:text-sm"
                 onChange={(event) => setField("signerName", event.target.value)}
                 value={draft.signerName ?? ""}
               />
@@ -514,7 +514,7 @@ export function RepairIntakeScreen({
           {/* Photos (collapsible) */}
           <Accordion title="Photos de l'appareil" count={(draft.photos ?? []).length}>
             <div className="grid gap-2.5 grid-cols-2 md:gap-3 lg:grid-cols-3">
-              <label className="grid min-h-[96px] cursor-pointer place-items-center rounded-[12px] border border-dashed border-[#DADADA] bg-white text-center text-[#6B6B6B] transition hover:border-[#2A9D8F] hover:text-[#167B70] md:min-h-[112px] md:rounded-[14px]">
+              <label className="grid min-h-[96px] cursor-pointer place-items-center rounded-[12px] border border-dashed border-[#D0D5DD] bg-white text-center text-[#667085] transition hover:border-[#2A9D8F] hover:text-[#167B70] md:min-h-[112px] md:rounded-[14px]">
                 <input accept="image/*" className="hidden" multiple onChange={addPhotos} type="file" />
                 <span>
                   <ImagePlus className="mx-auto mb-1 size-5" />
@@ -523,7 +523,7 @@ export function RepairIntakeScreen({
               </label>
               {(draft.photos ?? []).map((photo) => (
                 <div
-                  className="relative overflow-hidden rounded-[12px] border border-[#E8E8E5] bg-white md:rounded-[14px]"
+                  className="relative overflow-hidden rounded-[12px] border border-[#E4E7EC] bg-white md:rounded-[14px]"
                   key={photo.id}
                 >
                   {photo.dataUrl ? (
@@ -531,7 +531,7 @@ export function RepairIntakeScreen({
                   ) : null}
                   <button
                     aria-label="Supprimer photo"
-                    className="absolute right-1.5 top-1.5 grid size-7 place-items-center rounded-full bg-white text-[#6B6B6B] shadow-sm hover:text-[#B42318] md:size-8"
+                    className="absolute right-1.5 top-1.5 grid size-7 place-items-center rounded-full bg-white text-[#667085] shadow-sm hover:text-[#B42318] md:size-8"
                     onClick={() =>
                       setField(
                         "photos",
@@ -548,14 +548,14 @@ export function RepairIntakeScreen({
           </Accordion>
         </div>
 
-        <aside className="hidden xl:flex flex-col border-[#E8E8E5] border-t bg-white p-5 xl:border-l xl:border-t-0">
-          <h3 className="font-semibold text-[#1A1916] text-lg">Résumé</h3>
+        <aside className="hidden xl:flex flex-col border-[#E4E7EC] border-t bg-white p-5 xl:border-l xl:border-t-0">
+          <h3 className="font-semibold text-[#101828] text-lg">Résumé</h3>
           <dl className="mt-5 space-y-3 text-sm">
             {summaryRows.map(([label, value]) => (
               <SummaryLine key={label} label={label} value={value} />
             ))}
           </dl>
-          <div className="mt-6 rounded-[16px] border border-[#E8E8E5] bg-white p-4">
+          <div className="mt-6 rounded-[16px] border border-[#E4E7EC] bg-white p-4">
             <SummaryLine label="Écran" value={clean(draft.screenState)} />
             <SummaryLine label="Châssis / dos" value={clean(draft.frameState)} />
             <SummaryLine label="Batterie / charge" value={clean(draft.chargingState)} />
@@ -576,8 +576,8 @@ export function RepairIntakeScreen({
 
       {/* Mobile : sticky bottom action bar */}
       <div
-        className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 border-t border-[#E8E8E5] bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden"
-        style={{ boxShadow: "0 -10px 24px rgba(26,25,22,0.06)" }}
+        className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-between gap-3 border-t border-[#E4E7EC] bg-white px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden"
+        style={{ boxShadow: "0 -10px 24px rgba(16,24,40,0.06)" }}
       >
         <StatusBadge status={validated ? "État d'entrée validé" : "État d'entrée incomplet"} />
         <PrimaryButton className="h-11 px-4 text-[13px]" onClick={() => save(false)}>
@@ -586,7 +586,7 @@ export function RepairIntakeScreen({
       </div>
 
       {/* Desktop footer */}
-      <div className="hidden md:flex shrink-0 flex-wrap items-center justify-between gap-3 border-[#E8E8E5] border-t bg-white px-5 py-4">
+      <div className="hidden md:flex shrink-0 flex-wrap items-center justify-between gap-3 border-[#E4E7EC] border-t bg-white px-5 py-4">
         <StatusBadge status={validated ? "État d'entrée validé" : "État d'entrée incomplet"} />
         <div className="flex gap-2">
           <SecondaryButton className="h-10 min-w-[130px]" onClick={onBack}>
@@ -629,14 +629,14 @@ export function RepairIntakeQuickPanel({
   };
 
   return (
-    <section className="space-y-4 rounded-[16px] border border-[#E8E8E5] bg-[#FFFFFF] p-4">
+    <section className="space-y-4 rounded-[16px] border border-[#E4E7EC] bg-[#FFFFFF] p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="flex items-center gap-2 font-medium text-[#1A1916] text-sm">
+          <p className="flex items-center gap-2 font-medium text-[#101828] text-sm">
             <FileCheck2 className="size-4 text-[#2A9D8F]" />
             <span>5. État d'entrée / anti-litige</span>
           </p>
-          <p className="mt-1 text-[#6B6B6B] text-xs">Optionnel mais recommandé, enregistré avec la réparation.</p>
+          <p className="mt-1 text-[#667085] text-xs">Optionnel mais recommandé, enregistré avec la réparation.</p>
         </div>
         {onOpenFull ? (
           <SecondaryButton className="h-9 px-3 text-[12px]" onClick={onOpenFull} type="button">
@@ -660,10 +660,10 @@ export function RepairIntakeQuickPanel({
             ].includes(field.key),
           )
           .map((field) => (
-            <label className="text-[#1A1916] text-[11px] font-medium" key={field.key}>
+            <label className="text-[#101828] text-[11px] font-medium" key={field.key}>
               {field.label}
               <select
-                className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-2.5 text-[12.5px] outline-none focus:border-[#2A9D8F]"
+                className="mt-1 h-10 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-2.5 text-[12.5px] outline-none focus:border-[#2A9D8F]"
                 onChange={(event) => setField(field.key as IntakeFieldKey, event.target.value as never)}
                 value={clean(draft[field.key], missing)}
               >
@@ -678,13 +678,13 @@ export function RepairIntakeQuickPanel({
       </div>
 
       <div>
-        <p className="mb-2 font-medium text-[#1A1916] text-[12px]">Accessoires confiés</p>
+        <p className="mb-2 font-medium text-[#101828] text-[12px]">Accessoires confiés</p>
         <div className="flex flex-wrap gap-1.5">
           {accessoryOptions.map((name) => {
             const checked = (draft.accessories ?? []).includes(name);
             return (
               <label
-                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[12px] font-medium transition ${checked ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]" : "border-[#E8E8E5] bg-white text-[#6B6B6B]"}`}
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-[12px] font-medium transition ${checked ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]" : "border-[#E4E7EC] bg-white text-[#667085]"}`}
                 key={name}
               >
                 <input
@@ -700,7 +700,7 @@ export function RepairIntakeQuickPanel({
         </div>
         {(draft.accessories ?? []).includes("Autre") ? (
           <input
-            className="mt-2 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[12.5px] outline-none focus:border-[#2A9D8F]"
+            className="mt-2 h-10 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[12.5px] outline-none focus:border-[#2A9D8F]"
             onChange={(event) => setField("accessoriesOther", event.target.value)}
             placeholder="Préciser l'accessoire"
             value={draft.accessoriesOther ?? ""}
@@ -727,7 +727,7 @@ export function RepairIntakeQuickPanel({
 
       <div className="grid gap-3 md:grid-cols-[1fr_1.2fr]">
         <div className="space-y-2">
-          <p className="font-medium text-[#1A1916] text-[12px]">Validation client</p>
+          <p className="font-medium text-[#101828] text-[12px]">Validation client</p>
           <CheckLine
             checked={Boolean(draft.customerConfirmed)}
             onChange={(checked) => setField("customerConfirmed", checked)}
@@ -747,7 +747,7 @@ export function RepairIntakeQuickPanel({
             Défauts non testables acceptés.
           </CheckLine>
           <input
-            className="h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[12.5px] outline-none focus:border-[#2A9D8F]"
+            className="h-10 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[12.5px] outline-none focus:border-[#2A9D8F]"
             onChange={(event) => setField("signerName", event.target.value)}
             placeholder="Nom du signataire"
             value={draft.signerName ?? ""}
@@ -789,21 +789,21 @@ function AccessDevicePanel({
     <section
       className={
         compact
-          ? "rounded-[14px] border border-[#E8E8E5] bg-white p-3"
-          : "mt-5 rounded-[14px] border border-[#E8E8E5] bg-white p-4 md:mt-7"
+          ? "rounded-[14px] border border-[#E4E7EC] bg-white p-3"
+          : "mt-5 rounded-[14px] border border-[#E4E7EC] bg-white p-4 md:mt-7"
       }
     >
       <div className="flex items-center justify-between gap-3">
-        <h3 className="font-semibold text-[#1A1916] text-[13px] md:text-sm">6. Accès appareil</h3>
+        <h3 className="font-semibold text-[#101828] text-[13px] md:text-sm">6. Accès appareil</h3>
         <span className="rounded-full bg-[#FFFFFF] px-2.5 py-1 font-semibold text-[#167B70] text-[10.5px]">
           Sécurisé
         </span>
       </div>
       <div className="mt-3 grid gap-3 md:grid-cols-3">
-        <label className="block text-[#1A1916] text-[11px] font-medium md:text-[12px]">
+        <label className="block text-[#101828] text-[11px] font-medium md:text-[12px]">
           Type d'accès
           <select
-            className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-2.5 text-[12.5px] outline-none focus:border-[#2A9D8F] md:h-11 md:rounded-[12px] md:text-sm"
+            className="mt-1 h-10 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-2.5 text-[12.5px] outline-none focus:border-[#2A9D8F] md:h-11 md:rounded-[12px] md:text-sm"
             onChange={(event) => {
               const next = event.target.value as RepairIntakeCondition["accessMethod"];
               onChange({
@@ -824,10 +824,10 @@ function AccessDevicePanel({
           </select>
         </label>
         {showCode ? (
-          <label className="block text-[#1A1916] text-[11px] font-medium md:text-[12px]">
+          <label className="block text-[#101828] text-[11px] font-medium md:text-[12px]">
             Valeur du code
             <input
-              className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[12.5px] outline-none focus:border-[#2A9D8F] md:h-11 md:rounded-[12px] md:text-sm"
+              className="mt-1 h-10 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[12.5px] outline-none focus:border-[#2A9D8F] md:h-11 md:rounded-[12px] md:text-sm"
               onChange={(event) => onChange({ accessCode: event.target.value })}
               placeholder={method === "Code PIN" ? "Ex. 123456" : "Mot de passe confié"}
               value={intake.accessCode ?? ""}
@@ -835,11 +835,11 @@ function AccessDevicePanel({
           </label>
         ) : null}
         <label
-          className={`block text-[#1A1916] text-[11px] font-medium md:text-[12px] ${showPattern ? "md:col-span-1" : showCode ? "" : "md:col-span-2"}`}
+          className={`block text-[#101828] text-[11px] font-medium md:text-[12px] ${showPattern ? "md:col-span-1" : showCode ? "" : "md:col-span-2"}`}
         >
           Note accès
           <input
-            className="mt-1 h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[12.5px] outline-none focus:border-[#2A9D8F] md:h-11 md:rounded-[12px] md:text-sm"
+            className="mt-1 h-10 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[12.5px] outline-none focus:border-[#2A9D8F] md:h-11 md:rounded-[12px] md:text-sm"
             onChange={(event) => onChange({ accessNote: event.target.value })}
             placeholder="Ex. code non communiqué, test en présence du client..."
             value={intake.accessNote ?? ""}
@@ -876,7 +876,7 @@ function PatternPicker({ value, onChange }: Readonly<{ value: number[]; onChange
               className={`grid size-9 place-items-center rounded-full border text-[12px] font-semibold transition ${
                 order
                   ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]"
-                  : "border-[#DADADA] bg-white text-[#6B6B6B] hover:border-[#2A9D8F]"
+                  : "border-[#D0D5DD] bg-white text-[#667085] hover:border-[#2A9D8F]"
               }`}
               key={point}
               onClick={() => addPoint(point)}
@@ -888,11 +888,11 @@ function PatternPicker({ value, onChange }: Readonly<{ value: number[]; onChange
         })}
       </div>
       <div className="min-w-[180px] flex-1">
-        <p className="text-[#6B6B6B] text-[12px] leading-relaxed">
+        <p className="text-[#667085] text-[12px] leading-relaxed">
           Touchez les points dans l'ordre du schéma. La séquence visuelle est enregistrée avec la réparation.
         </p>
         <div className="mt-2 flex gap-2">
-          <span className="rounded-full bg-[#FFFFFF] px-3 py-1 text-[#1A1916] text-[12px]">
+          <span className="rounded-full bg-[#FFFFFF] px-3 py-1 text-[#101828] text-[12px]">
             {value.length ? value.join(" → ") : "Aucun schéma"}
           </span>
           {value.length ? (
@@ -929,7 +929,7 @@ export function SignaturePad({
     context.lineCap = "round";
     context.lineJoin = "round";
     context.lineWidth = 2.4;
-    context.strokeStyle = "#1A1916";
+    context.strokeStyle = "#101828";
     if (!value) return;
     const image = new Image();
     image.onload = () => context.drawImage(image, 0, 0, canvas.width, canvas.height);
@@ -993,22 +993,22 @@ export function SignaturePad({
   };
 
   return (
-    <div className="rounded-[14px] border border-[#E8E8E5] bg-white p-3">
+    <div className="rounded-[14px] border border-[#E4E7EC] bg-white p-3">
       <div className="mb-2 flex items-center justify-between gap-3">
-        <p className="flex items-center gap-2 font-medium text-[#1A1916] text-[12px]">
+        <p className="flex items-center gap-2 font-medium text-[#101828] text-[12px]">
           <PenLine className="size-4 text-[#2A9D8F]" />
           7. Signature client
         </p>
         {signedAt ? (
           <span className="text-[#167B70] text-[11px]">{dateTime(signedAt)}</span>
         ) : (
-          <span className="text-[#6B6B6B] text-[11px]">À signer</span>
+          <span className="text-[#667085] text-[11px]">À signer</span>
         )}
       </div>
       <canvas
         ref={canvasRef}
         aria-label="Signature client"
-        className="h-[118px] w-full rounded-[10px] border border-dashed border-[#DADADA] bg-[#FFFFFF]"
+        className="h-[118px] w-full rounded-[10px] border border-dashed border-[#D0D5DD] bg-[#FFFFFF]"
         height={180}
         onPointerCancel={finish}
         onPointerDown={start}
@@ -1022,11 +1022,11 @@ export function SignaturePad({
         width={520}
       />
       <div className="mt-2 flex items-center justify-between gap-3">
-        <span className="truncate text-[#6B6B6B] text-[11px]">
+        <span className="truncate text-[#667085] text-[11px]">
           {clean(signerName, "Nom du signataire à renseigner")}
         </span>
         <button
-          className="inline-flex items-center gap-1.5 rounded-full border border-[#E8E8E5] bg-white px-2.5 py-1 text-[#6B6B6B] text-[11px] font-medium hover:border-[#2A9D8F] hover:text-[#167B70]"
+          className="inline-flex items-center gap-1.5 rounded-full border border-[#E4E7EC] bg-white px-2.5 py-1 text-[#667085] text-[11px] font-medium hover:border-[#2A9D8F] hover:text-[#167B70]"
           onClick={() => onChange(undefined)}
           type="button"
         >
@@ -1046,10 +1046,10 @@ function Accordion({
 }: Readonly<{ title: string; count?: number; children: ReactNode; defaultOpen?: boolean }>) {
   return (
     <details
-      className="mt-4 group rounded-[14px] border border-[#E8E8E5] bg-white open:bg-white md:mt-7 md:border-t md:border-x-0 md:border-b-0 md:rounded-none md:bg-transparent"
+      className="mt-4 group rounded-[14px] border border-[#E4E7EC] bg-white open:bg-white md:mt-7 md:border-t md:border-x-0 md:border-b-0 md:rounded-none md:bg-transparent"
       open={defaultOpen}
     >
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-[14px] px-3.5 py-3 font-semibold text-[#1A1916] text-[13px] md:px-0 md:pt-5 md:text-sm">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-[14px] px-3.5 py-3 font-semibold text-[#101828] text-[13px] md:px-0 md:pt-5 md:text-sm">
         <span className="flex items-center gap-2">
           {title}
           {typeof count === "number" && count > 0 && (
@@ -1058,7 +1058,7 @@ function Accordion({
             </span>
           )}
         </span>
-        <span className="grid size-6 place-items-center rounded-full bg-[#FFFFFF] text-[#6B6B6B] transition group-open:rotate-45 md:hidden">
+        <span className="grid size-6 place-items-center rounded-full bg-[#FFFFFF] text-[#667085] transition group-open:rotate-45 md:hidden">
           +
         </span>
       </summary>
@@ -1075,9 +1075,9 @@ function CompactTextArea({
 }: Readonly<{ label: string; placeholder: string; value: string; onChange: (value: string) => void }>) {
   return (
     <label className="block mt-3 first:mt-0">
-      <span className="text-[#1A1916] text-[12px] font-medium">{label}</span>
+      <span className="text-[#101828] text-[12px] font-medium">{label}</span>
       <textarea
-        className="mt-1 min-h-[68px] w-full resize-y rounded-[12px] border border-[#E8E8E5] bg-white px-3 py-2.5 text-[12.5px] text-[#1A1916] outline-none placeholder:text-[#A4A29C] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/10 md:min-h-[86px] md:rounded-[14px] md:py-3 md:text-sm"
+        className="mt-1 min-h-[68px] w-full resize-y rounded-[12px] border border-[#E4E7EC] bg-white px-3 py-2.5 text-[12.5px] text-[#101828] outline-none placeholder:text-[#A4A29C] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/10 md:min-h-[86px] md:rounded-[14px] md:py-3 md:text-sm"
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         value={value}
@@ -1089,16 +1089,16 @@ function CompactTextArea({
 function SummaryLine({ label, value }: Readonly<{ label: string; value: ReactNode }>) {
   return (
     <div className="flex justify-between gap-4 text-sm">
-      <dt className="text-[#6B6B6B]">{label}</dt>
-      <dd className="text-right font-medium text-[#1A1916]">{value}</dd>
+      <dt className="text-[#667085]">{label}</dt>
+      <dd className="text-right font-medium text-[#101828]">{value}</dd>
     </div>
   );
 }
 
 function FormSection({ title, children }: Readonly<{ title: string; children: ReactNode }>) {
   return (
-    <section className="mt-7 border-[#E8E8E5] border-t pt-5">
-      <h3 className="mb-3 font-semibold text-[#1A1916] text-sm">{title}</h3>
+    <section className="mt-7 border-[#E4E7EC] border-t pt-5">
+      <h3 className="mb-3 font-semibold text-[#101828] text-sm">{title}</h3>
       {children}
     </section>
   );
@@ -1113,7 +1113,7 @@ function TextAreaBlock({
   return (
     <FormSection title={label}>
       <textarea
-        className="min-h-[86px] w-full resize-y rounded-[14px] border border-[#E8E8E5] bg-white px-3 py-3 text-sm text-[#1A1916] outline-none placeholder:text-[#A4A29C] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/10"
+        className="min-h-[86px] w-full resize-y rounded-[14px] border border-[#E4E7EC] bg-white px-3 py-3 text-sm text-[#101828] outline-none placeholder:text-[#A4A29C] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/10"
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         value={value}
@@ -1128,7 +1128,7 @@ function CheckLine({
   children,
 }: Readonly<{ checked: boolean; onChange: (checked: boolean) => void; children: ReactNode }>) {
   return (
-    <label className="flex items-start gap-3 rounded-[12px] border border-[#E8E8E5] bg-white px-3 py-2.5 text-sm text-[#1A1916]">
+    <label className="flex items-start gap-3 rounded-[12px] border border-[#E4E7EC] bg-white px-3 py-2.5 text-sm text-[#101828]">
       <input
         checked={checked}
         className="mt-0.5 size-4 accent-[#2A9D8F]"

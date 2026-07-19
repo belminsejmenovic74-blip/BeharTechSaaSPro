@@ -290,7 +290,7 @@ function findStockMatch(stockItems: StockItem[], line: InvoiceLineForm): StockIt
 
 function FieldLabel({ label, children }: Readonly<{ label: string; children: ReactNode }>) {
   return (
-    <div className="flex flex-col gap-1.5 text-[#6B6B6B] text-xs font-medium">
+    <div className="flex flex-col gap-1.5 text-[#667085] text-xs font-medium">
       <span>{label}</span>
       {children}
     </div>
@@ -302,7 +302,7 @@ function TextInput(props: InputHTMLAttributes<HTMLInputElement>) {
     <input
       {...props}
       className={cn(
-        "h-10 rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-sm outline-none transition placeholder:text-[#B4B4AE] focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10",
+        "h-10 rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[#101828] text-sm outline-none transition placeholder:text-[#B4B4AE] focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10",
         props.className,
       )}
     />
@@ -354,7 +354,7 @@ async function openPreparedStockLabelSheet(
             errorCorrectionLevel: "M",
             margin: 2,
             width: 300,
-            color: { dark: "#1A1916", light: "#FFFFFF" },
+            color: { dark: "#101828", light: "#FFFFFF" },
           }),
         })),
       ),
@@ -397,9 +397,9 @@ async function openPreparedStockLabelSheet(
   <title>Planche étiquettes stock</title>
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; background: #FFFFFF; color: #1A1916; font-family: Arial, sans-serif; }
+    body { margin: 0; background: #FFFFFF; color: #101828; font-family: Arial, sans-serif; }
     .sheet { width: 210mm; min-height: 297mm; padding: 8mm; display: grid; grid-template-columns: repeat(3, 60mm); grid-auto-rows: 30mm; gap: 5mm 4mm; background: #fff; }
-    .label { width: 60mm; height: 30mm; padding: 2.8mm; overflow: hidden; border: 1px solid #1A1916; background: #fff; break-inside: avoid; page-break-inside: avoid; }
+    .label { width: 60mm; height: 30mm; padding: 2.8mm; overflow: hidden; border: 1px solid #101828; background: #fff; break-inside: avoid; page-break-inside: avoid; }
     .brand { display: flex; align-items: center; gap: 1.4mm; font-weight: 800; font-size: 5.5px; line-height: 1; }
     .brand span { width: 1.8mm; height: 1.8mm; border-radius: 50%; background: #2A9D8F; display: inline-block; }
     .brand b { border: 1px solid #2A9D8F; border-radius: 1.5mm; padding: .4mm 1mm; color: #167B70; }
@@ -407,7 +407,7 @@ async function openPreparedStockLabelSheet(
     .text { min-width: 0; flex: 1; }
     strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; font-size: 17px; line-height: 1; }
     p { margin: 1.2mm 0 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-weight: 700; font-size: 8px; line-height: 1.15; }
-    small { display: block; margin-top: 1mm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #6B6B6B; font-family: monospace; font-size: 7px; }
+    small { display: block; margin-top: 1mm; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #667085; font-family: monospace; font-size: 7px; }
     img { width: 17mm; height: 17mm; padding: .7mm; object-fit: contain; image-rendering: auto; }
     @page { size: A4; margin: 0; }
     @media print { body { background: #fff; } }
@@ -752,21 +752,21 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
 
   const modal = (
     <div
-      className="fixed inset-0 isolate z-[130] overflow-y-auto bg-[#1A1916]/24 p-0 md:p-4"
+      className="fixed inset-0 isolate z-[130] overflow-y-auto bg-[#101828]/24 p-0 md:p-4"
       role="dialog"
       aria-modal="true"
     >
-      <Panel className="mx-auto my-0 min-h-svh max-w-none rounded-none bg-[#FAFAF8] p-5 md:my-6 md:max-w-[calc(100vw-3rem)] md:min-h-0 md:rounded-[18px] md:p-6 xl:max-w-7xl">
+      <Panel className="mx-auto my-0 min-h-svh max-w-none rounded-none bg-[#F9FAFB] p-5 md:my-6 md:max-w-[calc(100vw-3rem)] md:min-h-0 md:rounded-[18px] md:p-6 xl:max-w-7xl">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h2 className="font-semibold text-[#1A1916] text-2xl tracking-tight">Import facture fournisseur</h2>
-            <p className="mt-1.5 text-[#6B6B6B] text-sm">
+            <h2 className="font-semibold text-[#101828] text-2xl tracking-tight">Import facture fournisseur</h2>
+            <p className="mt-1.5 text-[#667085] text-sm">
               Transformez une facture fournisseur en achat, lignes de stock et mouvements traçables.
             </p>
           </div>
           <button
             aria-label="Fermer"
-            className="rounded-full p-2 text-[#6B6B6B] hover:bg-white"
+            className="rounded-full p-2 text-[#667085] hover:bg-white"
             onClick={close}
             type="button"
           >
@@ -790,8 +790,8 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
                 className={cn(
                   "flex items-center gap-2 rounded-[10px] border px-3 py-2 text-xs font-semibold",
                   active || done
-                    ? "border-[#2A9D8F]/30 bg-white text-[#1A1916]"
-                    : "border-[#E8E8E5] bg-white/55 text-[#8A8A85]",
+                    ? "border-[#2A9D8F]/30 bg-white text-[#101828]"
+                    : "border-[#E4E7EC] bg-white/55 text-[#98A2B3]",
                 )}
               >
                 <span
@@ -818,8 +818,8 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
               type="button"
             >
               <UploadCloud className="mb-5 size-12 text-[#2A9D8F]" />
-              <span className="font-semibold text-[#1A1916] text-lg">Glisser-déposer une facture ici</span>
-              <span className="mt-2 max-w-md text-[#6B6B6B] text-sm">
+              <span className="font-semibold text-[#101828] text-lg">Glisser-déposer une facture ici</span>
+              <span className="mt-2 max-w-md text-[#667085] text-sm">
                 Formats acceptés : PDF, JPG, PNG. Taille maximale : 10 Mo.
               </span>
               <span className="mt-6 inline-flex h-11 items-center rounded-[12px] bg-[#2A9D8F] px-5 font-semibold text-white">
@@ -838,7 +838,7 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
             />
 
             <Panel className="p-5">
-              <h3 className="font-semibold text-[#1A1916] text-sm">Comment ça fonctionne ?</h3>
+              <h3 className="font-semibold text-[#101828] text-sm">Comment ça fonctionne ?</h3>
               <ol className="mt-4 space-y-3">
                 {[
                   "Importez votre facture fournisseur",
@@ -850,11 +850,11 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
                     <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#EAF6F4] font-semibold text-[#167B70] text-xs">
                       {index + 1}
                     </span>
-                    <span className="pt-1 text-[#1A1916]">{item}</span>
+                    <span className="pt-1 text-[#101828]">{item}</span>
                   </li>
                 ))}
               </ol>
-              <div className="mt-6 rounded-[12px] border border-[#E8E8E5] bg-[#FAFAF8] p-4 text-[#6B6B6B] text-xs leading-5">
+              <div className="mt-6 rounded-[12px] border border-[#E4E7EC] bg-[#F9FAFB] p-4 text-[#667085] text-xs leading-5">
                 Votre facture reste attachée à l'achat. Les pièces restent traçables depuis leur facture jusqu'à la
                 réparation.
               </div>
@@ -863,20 +863,20 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
         )}
 
         {step === "analyzing" && (
-          <div className="grid min-h-[430px] place-items-center rounded-[18px] border border-[#E8E8E5] bg-white p-8 text-center">
+          <div className="grid min-h-[430px] place-items-center rounded-[18px] border border-[#E4E7EC] bg-white p-8 text-center">
             <div className="w-full max-w-md">
               <Loader2 className="mx-auto size-10 animate-spin text-[#2A9D8F]" />
-              <h3 className="mt-5 font-semibold text-[#1A1916] text-xl">Analyse du document en cours…</h3>
-              <p className="mt-2 text-[#6B6B6B] text-sm">
+              <h3 className="mt-5 font-semibold text-[#101828] text-xl">Analyse du document en cours…</h3>
+              <p className="mt-2 text-[#667085] text-sm">
                 L'analyse intelligente extrait les données de votre facture.
               </p>
-              <div className="mt-7 h-2 overflow-hidden rounded-full bg-[#E8E8E5]">
+              <div className="mt-7 h-2 overflow-hidden rounded-full bg-[#E4E7EC]">
                 <div
                   className="h-full rounded-full bg-[#2A9D8F] transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <p className="mt-3 font-medium text-[#6B6B6B] text-xs">{progress}%</p>
+              <p className="mt-3 font-medium text-[#667085] text-xs">{progress}%</p>
             </div>
           </div>
         )}
@@ -884,10 +884,10 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
         {(step === "invoice" || step === "lines" || step === "summary") && (
           <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
             <Panel className="min-h-[560px] overflow-hidden">
-              <div className="flex items-center justify-between border-[#E8E8E5] border-b p-4">
+              <div className="flex items-center justify-between border-[#E4E7EC] border-b p-4">
                 <div>
-                  <p className="font-semibold text-[#1A1916] text-sm">Aperçu facture</p>
-                  <p className="mt-0.5 text-[#6B6B6B] text-xs">
+                  <p className="font-semibold text-[#101828] text-sm">Aperçu facture</p>
+                  <p className="mt-0.5 text-[#667085] text-xs">
                     {file ? `${file.name} · ${formatSize(file.size)}` : "Aucun fichier"}
                   </p>
                 </div>
@@ -904,15 +904,15 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
                 )}
                 {previewUrl && file?.type === "application/pdf" && (
                   <object
-                    className="h-full w-full rounded-[12px] border border-[#E8E8E5]"
+                    className="h-full w-full rounded-[12px] border border-[#E4E7EC]"
                     data={previewUrl}
                     type="application/pdf"
                   >
-                    <p className="p-5 text-[#6B6B6B] text-sm">Aperçu PDF non disponible dans ce navigateur.</p>
+                    <p className="p-5 text-[#667085] text-sm">Aperçu PDF non disponible dans ce navigateur.</p>
                   </object>
                 )}
                 {!previewUrl && (
-                  <div className="grid h-full place-items-center rounded-[12px] border border-[#E8E8E5] bg-[#FAFAF8] text-[#6B6B6B] text-sm">
+                  <div className="grid h-full place-items-center rounded-[12px] border border-[#E4E7EC] bg-[#F9FAFB] text-[#667085] text-sm">
                     Vous pouvez compléter ou corriger les informations à tout moment.
                   </div>
                 )}
@@ -928,7 +928,7 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
 
               {step === "invoice" && (
                 <div>
-                  <h3 className="font-semibold text-[#1A1916] text-lg">Vérification infos facture</h3>
+                  <h3 className="font-semibold text-[#101828] text-lg">Vérification infos facture</h3>
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
                     <FieldLabel label="Fournisseur">
                       <TextInput
@@ -997,13 +997,13 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
               {step === "lines" && (
                 <div>
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h3 className="font-semibold text-[#1A1916] text-lg">Correction lignes</h3>
+                    <h3 className="font-semibold text-[#101828] text-lg">Correction lignes</h3>
                     <SecondaryButton className="h-9" onClick={() => setLines((current) => [...current, newLine()])}>
                       <Plus className="size-4" />
                       Ajouter une ligne
                     </SecondaryButton>
                   </div>
-                  <div className="mt-4 overflow-x-auto rounded-[14px] border border-[#E8E8E5]">
+                  <div className="mt-4 overflow-x-auto rounded-[14px] border border-[#E4E7EC]">
                     <table className={`${tableClassName} min-w-[1160px]`}>
                       <thead className={tableHeadClassName}>
                         <tr>
@@ -1037,7 +1037,7 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
                             ).map(([field, placeholder]) => (
                               <td key={field} className={cn(tableCellClassName, "px-2 py-2")}>
                                 <input
-                                  className="h-9 w-full min-w-[90px] rounded-[9px] border border-[#E8E8E5] bg-white px-2 text-[#1A1916] text-xs outline-none placeholder:text-[#B4B4AE] focus:border-[#2A9D8F]/60"
+                                  className="h-9 w-full min-w-[90px] rounded-[9px] border border-[#E4E7EC] bg-white px-2 text-[#101828] text-xs outline-none placeholder:text-[#B4B4AE] focus:border-[#2A9D8F]/60"
                                   placeholder={placeholder}
                                   value={line[field]}
                                   onChange={(event) => updateLine(line.id, { [field]: event.target.value })}
@@ -1062,8 +1062,8 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
                   <div className="mt-4">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <div>
-                        <p className="font-semibold text-[#1A1916] text-sm">Préparation stock avant validation</p>
-                        <p className="mt-0.5 text-[#6B6B6B] text-xs">
+                        <p className="font-semibold text-[#101828] text-sm">Préparation stock avant validation</p>
+                        <p className="mt-0.5 text-[#667085] text-xs">
                           Aucune écriture stock n'est faite tant que l'achat n'est pas confirmé. Les frais de livraison
                           sont gardés hors stock.
                         </p>
@@ -1074,13 +1074,13 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
                       </div>
                     </div>
                     {nonStockLines.length > 0 && (
-                      <div className="mb-3 rounded-[14px] border border-[#E8E8E5] bg-white p-4">
-                        <p className="font-semibold text-[#1A1916] text-sm">Lignes hors stock</p>
+                      <div className="mb-3 rounded-[14px] border border-[#E4E7EC] bg-white p-4">
+                        <p className="font-semibold text-[#101828] text-sm">Lignes hors stock</p>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {nonStockLines.map((line) => (
                             <span
                               key={line.id}
-                              className="rounded-full border border-[#E8E8E5] bg-[#FAFAF8] px-3 py-1.5 text-[#6B6B6B] text-xs"
+                              className="rounded-full border border-[#E4E7EC] bg-[#F9FAFB] px-3 py-1.5 text-[#667085] text-xs"
                             >
                               {line.itemName || "Livraison"} ·{" "}
                               {formatEuro(toMoney(line.lineTotalExclTax) || toMoney(line.unitPurchasePriceExclTax))}
@@ -1091,7 +1091,7 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
                     )}
                     <div className="grid gap-3">
                       {stockPreparations.map((preparation) => (
-                        <div key={preparation.lineId} className="rounded-[14px] border border-[#E8E8E5] bg-white p-4">
+                        <div key={preparation.lineId} className="rounded-[14px] border border-[#E4E7EC] bg-white p-4">
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div>
                               <div className="flex flex-wrap items-center gap-2">
@@ -1105,22 +1105,22 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
                                 >
                                   {preparation.existing ? "Référence existante" : "Nouvelle pièce"}
                                 </span>
-                                <span className="font-mono text-[#6B6B6B] text-xs">
+                                <span className="font-mono text-[#667085] text-xs">
                                   {preparation.reference || "Référence à compléter"}
                                 </span>
                               </div>
-                              <p className="mt-2 font-semibold text-[#1A1916] text-sm">
+                              <p className="mt-2 font-semibold text-[#101828] text-sm">
                                 {preparation.itemName || "Nom de pièce à compléter"}
                               </p>
-                              <p className="mt-1 text-[#6B6B6B] text-xs">
+                              <p className="mt-1 text-[#667085] text-xs">
                                 {preparation.compatibleModel || "Modèle à compléter"} ·{" "}
                                 {preparation.category || "Catégorie à compléter"} ·{" "}
                                 {preparation.quality || "Qualité à compléter"}
                               </p>
                             </div>
                             <div className="text-right">
-                              <p className="font-mono text-[#1A1916] text-xs">{preparation.internalCode}</p>
-                              <p className="mt-1 text-[#6B6B6B] text-[11px]">
+                              <p className="font-mono text-[#101828] text-xs">{preparation.internalCode}</p>
+                              <p className="mt-1 text-[#667085] text-[11px]">
                                 {preparation.labelReady ? "Étiquette prête" : "Étiquette à compléter"}
                               </p>
                             </div>
@@ -1133,13 +1133,13 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
                               ["Prix moyen pondéré", formatEuro(preparation.averagePurchasePrice)],
                               ["Valeur ajoutée", formatEuro(preparation.totalStockAdded)],
                             ].map(([label, value]) => (
-                              <div key={label} className="rounded-[10px] bg-[#FAFAF8] px-3 py-2">
-                                <p className="text-[#6B6B6B] text-[11px]">{label}</p>
-                                <p className="mt-0.5 font-semibold text-[#1A1916] text-xs">{value}</p>
+                              <div key={label} className="rounded-[10px] bg-[#F9FAFB] px-3 py-2">
+                                <p className="text-[#667085] text-[11px]">{label}</p>
+                                <p className="mt-0.5 font-semibold text-[#101828] text-xs">{value}</p>
                               </div>
                             ))}
                           </div>
-                          <p className="mt-3 text-[#6B6B6B] text-[11px]">
+                          <p className="mt-3 text-[#667085] text-[11px]">
                             Historique prévu : entrée achat fournisseur liée à la facture, visible dans les mouvements
                             et la fiche pièce après validation.
                           </p>
@@ -1152,7 +1152,7 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
 
               {step === "summary" && (
                 <div>
-                  <h3 className="font-semibold text-[#1A1916] text-lg">Résumé</h3>
+                  <h3 className="font-semibold text-[#101828] text-lg">Résumé</h3>
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
                     {[
                       ["Fournisseur", invoice.supplier || "À compléter"],
@@ -1162,15 +1162,15 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
                       ["Lignes", String(lines.filter((line) => line.itemName.trim()).length)],
                       ["Fichier", file?.name || "À compléter"],
                     ].map(([label, value]) => (
-                      <div key={label} className="rounded-[12px] border border-[#E8E8E5] bg-white p-3">
-                        <p className="text-[#6B6B6B] text-xs">{label}</p>
-                        <p className="mt-1 font-semibold text-[#1A1916] text-sm">{value}</p>
+                      <div key={label} className="rounded-[12px] border border-[#E4E7EC] bg-white p-3">
+                        <p className="text-[#667085] text-xs">{label}</p>
+                        <p className="mt-1 font-semibold text-[#101828] text-sm">{value}</p>
                       </div>
                     ))}
                   </div>
-                  <div className="mt-5 rounded-[14px] border border-[#E8E8E5] bg-white p-4">
+                  <div className="mt-5 rounded-[14px] border border-[#E4E7EC] bg-white p-4">
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                      <p className="font-semibold text-[#1A1916] text-sm">Impact stock préparé</p>
+                      <p className="font-semibold text-[#101828] text-sm">Impact stock préparé</p>
                       <SecondaryButton
                         className="h-9"
                         disabled={!stockPreparations.some((preparation) => preparation.labelReady)}
@@ -1188,13 +1188,13 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
                         ["Quantité ajoutée", String(stockSummary.stockAdded)],
                         ["Valeur stock ajoutée", formatEuro(stockSummary.stockValueAdded)],
                       ].map(([label, value]) => (
-                        <div key={label} className="rounded-[10px] bg-[#FAFAF8] px-3 py-2">
-                          <p className="text-[#6B6B6B] text-[11px]">{label}</p>
-                          <p className="mt-0.5 font-semibold text-[#1A1916] text-xs">{value}</p>
+                        <div key={label} className="rounded-[10px] bg-[#F9FAFB] px-3 py-2">
+                          <p className="text-[#667085] text-[11px]">{label}</p>
+                          <p className="mt-0.5 font-semibold text-[#101828] text-xs">{value}</p>
                         </div>
                       ))}
                     </div>
-                    <div className="mt-3 max-h-44 overflow-auto rounded-[10px] border border-[#E8E8E5]">
+                    <div className="mt-3 max-h-44 overflow-auto rounded-[10px] border border-[#E4E7EC]">
                       <table className={`${tableClassName} min-w-[760px]`}>
                         <thead className={tableHeadClassName}>
                           <tr>
@@ -1230,24 +1230,24 @@ export function SupplierInvoiceImportModal({ buttonLabel = "Import facture" }: R
                     </div>
                   </div>
 
-                  <div className="mt-5 rounded-[14px] border border-[#E8E8E5] bg-white p-4">
+                  <div className="mt-5 rounded-[14px] border border-[#E4E7EC] bg-white p-4">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-[#6B6B6B]">Total HT lignes</span>
-                      <span className="font-semibold text-[#1A1916]">{formatEuro(totals.ht)}</span>
+                      <span className="text-[#667085]">Total HT lignes</span>
+                      <span className="font-semibold text-[#101828]">{formatEuro(totals.ht)}</span>
                     </div>
                     <div className="mt-2 flex items-center justify-between text-sm">
-                      <span className="text-[#6B6B6B]">TVA facture</span>
-                      <span className="font-semibold text-[#1A1916]">{formatEuro(totals.tva)}</span>
+                      <span className="text-[#667085]">TVA facture</span>
+                      <span className="font-semibold text-[#101828]">{formatEuro(totals.tva)}</span>
                     </div>
-                    <div className="mt-3 border-[#E8E8E5] border-t pt-3 flex items-center justify-between text-sm">
-                      <span className="font-semibold text-[#1A1916]">Total TTC</span>
-                      <span className="font-bold text-[#1A1916]">{formatEuro(totals.ttc)}</span>
+                    <div className="mt-3 border-[#E4E7EC] border-t pt-3 flex items-center justify-between text-sm">
+                      <span className="font-semibold text-[#101828]">Total TTC</span>
+                      <span className="font-bold text-[#101828]">{formatEuro(totals.ttc)}</span>
                     </div>
                   </div>
                 </div>
               )}
 
-              <div className="mt-6 flex flex-wrap justify-between gap-2 border-[#E8E8E5] border-t pt-4">
+              <div className="mt-6 flex flex-wrap justify-between gap-2 border-[#E4E7EC] border-t pt-4">
                 <SecondaryButton
                   onClick={() => {
                     if (step === "invoice") setStep("upload");

@@ -53,81 +53,81 @@ These serve as the fallback; there is no separate default.css file. */
   --radius: 0.75rem;
   --behar-bg: #ffffff;
   --behar-surface: #ffffff;
-  --behar-subtle: #ffffff;
-  --behar-subtle-strong: #ffffff;
-  --behar-text: #1a1916;
-  --behar-muted: #6b6b6b;
-  --behar-border: #e8e8e5;
+  --behar-subtle: #f9fafb;
+  --behar-subtle-strong: #f2f4f7;
+  --behar-text: #101828;
+  --behar-muted: #667085;
+  --behar-border: #e4e7ec;
   --behar-accent: #2a9d8f;
   --card: #ffffff;
-  --card-foreground: #1a1916;
+  --card-foreground: #101828;
   --popover: #ffffff;
-  --popover-foreground: #1a1916;
+  --popover-foreground: #101828;
   --primary: #2a9d8f;
   --primary-foreground: #ffffff;
-  --secondary: #ffffff;
-  --secondary-foreground: #1a1916;
-  --muted: #ffffff;
-  --muted-foreground: #6b6b6b;
+  --secondary: #f5f7fa;
+  --secondary-foreground: #101828;
+  --muted: #f5f7fa;
+  --muted-foreground: #667085;
   --accent: #e8f7f3;
   --accent-foreground: #167b70;
   --destructive: #c84848;
-  --border: #e8e8e5;
-  --input: #e8e8e5;
+  --border: #e4e7ec;
+  --input: #e4e7ec;
   --ring: rgba(42, 157, 143, 0.38);
   --chart-1: #2a9d8f;
-  --chart-2: #6b6b6b;
-  --chart-3: #a3a3a3;
-  --chart-4: #d8d8d2;
-  --chart-5: #1a1916;
+  --chart-2: #667085;
+  --chart-3: #98a2b3;
+  --chart-4: #d0d5dd;
+  --chart-5: #101828;
   --sidebar: #ffffff;
-  --sidebar-foreground: #1a1916;
+  --sidebar-foreground: #101828;
   --sidebar-primary: #2a9d8f;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #e8f7f3;
   --sidebar-accent-foreground: #167b70;
-  --sidebar-border: #e8e8e5;
+  --sidebar-border: #e4e7ec;
   --sidebar-ring: rgba(42, 157, 143, 0.38);
 
   /* fonts */
   --font-sans: var(--font-geist);
   --font-mono: var(--font-geist-mono);
   --background: #ffffff;
-  --foreground: #1a1916;
+  --foreground: #101828;
 }
 
 .dark {
   color-scheme: light;
   --background: #ffffff;
-  --foreground: #1a1916;
+  --foreground: #101828;
   --card: #ffffff;
-  --card-foreground: #1a1916;
+  --card-foreground: #101828;
   --popover: #ffffff;
-  --popover-foreground: #1a1916;
+  --popover-foreground: #101828;
   --primary: #2a9d8f;
   --primary-foreground: #ffffff;
-  --secondary: #ffffff;
-  --secondary-foreground: #1a1916;
-  --muted: #ffffff;
-  --muted-foreground: #6b6b6b;
+  --secondary: #f5f7fa;
+  --secondary-foreground: #101828;
+  --muted: #f5f7fa;
+  --muted-foreground: #667085;
   --accent: #e8f7f3;
   --accent-foreground: #167b70;
   --destructive: #c84848;
-  --border: #e8e8e5;
-  --input: #e8e8e5;
+  --border: #e4e7ec;
+  --input: #e4e7ec;
   --ring: rgba(42, 157, 143, 0.38);
   --chart-1: #2a9d8f;
-  --chart-2: #6b6b6b;
-  --chart-3: #a3a3a3;
-  --chart-4: #d8d8d2;
-  --chart-5: #1a1916;
+  --chart-2: #667085;
+  --chart-3: #98a2b3;
+  --chart-4: #d0d5dd;
+  --chart-5: #101828;
   --sidebar: #ffffff;
-  --sidebar-foreground: #1a1916;
+  --sidebar-foreground: #101828;
   --sidebar-primary: #2a9d8f;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #e8f7f3;
   --sidebar-accent-foreground: #167b70;
-  --sidebar-border: #e8e8e5;
+  --sidebar-border: #e4e7ec;
   --sidebar-ring: rgba(42, 157, 143, 0.38);
 }
 
@@ -169,7 +169,7 @@ These serve as the fallback; there is no separate default.css file. */
   /* Global Select Styling for Behar Tech SaaS */
   select:not([multiple]) {
     appearance: none;
-    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236B6B6B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E");
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23667085%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E");
     background-repeat: no-repeat;
     background-position: right 12px center;
     background-size: 16px 16px;
@@ -239,10 +239,8 @@ html {
   background-color: var(--behar-bg);
 }
 
-/* Le canvas reste blanc pur. Les anciennes teintes grises ne servent plus de fond. */
-:where([class*="bg-[#FAFAF8]"], [class*="bg-[#F7F7F4]"], [class*="bg-[#F5F5F2]"], [class*="bg-[#F1F1ED]"]) {
-  background-color: #ffffff !important;
-}
+/* Le canvas principal reste blanc pur ; les gris froids très légers restent
+   réservés aux surfaces secondaires (en-têtes de table, pieds de carte, survols). */
 
 .behar-app :where(.print-document),
 .behar-app :where(.print-document *),
@@ -264,18 +262,48 @@ html {
   backdrop-filter: none !important;
 }
 
+/* Élévation maîtrisée : surfaces discrètes, surcouches nettement détachées. */
 .behar-app [class*="shadow-"] {
-  box-shadow: 0 1px 2px rgba(26, 25, 22, 0.045) !important;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05) !important;
 }
 
 .behar-app button[class*="shadow-"],
 .behar-app a[class*="shadow-"],
 .behar-app [role="button"][class*="shadow-"] {
-  box-shadow: 0 1px 2px rgba(26, 25, 22, 0.04) !important;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05) !important;
+}
+
+.behar-app :where([data-slot="card"]) {
+  box-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.04),
+    0 2px 6px rgba(16, 24, 40, 0.03) !important;
+}
+
+.behar-app
+  :where(
+    [data-slot="popover-content"],
+    [data-slot="dropdown-menu-content"],
+    [data-slot="dropdown-menu-sub-content"],
+    [data-slot="select-content"],
+    [data-slot="context-menu-content"],
+    [data-slot="hover-card-content"],
+    [role="menu"],
+    [role="listbox"]
+  ) {
+  box-shadow:
+    0 4px 8px -2px rgba(16, 24, 40, 0.08),
+    0 12px 24px -6px rgba(16, 24, 40, 0.12) !important;
+}
+
+.behar-app
+  :where([data-slot="dialog-content"], [data-slot="sheet-content"], [data-slot="drawer-content"], [role="alertdialog"]) {
+  box-shadow:
+    0 8px 16px -6px rgba(16, 24, 40, 0.1),
+    0 24px 48px -12px rgba(16, 24, 40, 0.18) !important;
 }
 
 .behar-app [class*="bg-black/"] {
-  background-color: rgba(26, 25, 22, 0.18) !important;
+  background-color: rgba(16, 24, 40, 0.32) !important;
 }
 
 .behar-app [class*="blur-2xl"],
@@ -295,7 +323,40 @@ html {
 
 .behar-app ::selection {
   background: rgba(42, 157, 143, 0.18);
-  color: #1a1916;
+  color: #101828;
+}
+
+/* Titres resserrés et chiffres alignés : lecture dense mais soignée. */
+.behar-app :where(h1, h2, h3) {
+  letter-spacing: -0.015em;
+}
+
+.behar-app :where(table, [data-slot="table"]) {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Barres de défilement fines et neutres sur toute l'application. */
+.behar-app * {
+  scrollbar-width: thin;
+  scrollbar-color: #d0d5dd transparent;
+}
+
+.behar-app *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.behar-app *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.behar-app *::-webkit-scrollbar-thumb {
+  background: #d0d5dd;
+  border-radius: 9999px;
+}
+
+.behar-app *::-webkit-scrollbar-thumb:hover {
+  background: #98a2b3;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -312,7 +373,7 @@ html {
 /* Scroll du kanban (horizontal board + vertical colonnes) : barre fine discrète */
 .kanban-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #e8e8e5 transparent;
+  scrollbar-color: #e4e7ec transparent;
 }
 .kanban-scroll::-webkit-scrollbar {
   height: 8px;
@@ -322,11 +383,11 @@ html {
   background: transparent;
 }
 .kanban-scroll::-webkit-scrollbar-thumb {
-  background: #e8e8e5;
+  background: #e4e7ec;
   border-radius: 9999px;
 }
 .kanban-scroll::-webkit-scrollbar-thumb:hover {
-  background: #d8d8d2;
+  background: #d0d5dd;
 }
 
 @media print {

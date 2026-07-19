@@ -30,7 +30,7 @@ export function ReconditioningBlockingRules() {
             <div
               className={cn(
                 "flex items-center justify-between gap-3 rounded-[16px] border p-4",
-                blocker.active ? "border-[#E8E5DF] bg-white" : "border-[#E8E5DF] bg-[#F7F7F5] opacity-70",
+                blocker.active ? "border-[#E4E7EC] bg-white" : "border-[#E4E7EC] bg-[#F5F7FA] opacity-70",
               )}
               key={key}
             >
@@ -39,8 +39,8 @@ export function ReconditioningBlockingRules() {
                   className={cn("size-4.5 shrink-0", blocker.action === "block" ? "text-[#B4342A]" : "text-[#9A6B1B]")}
                 />
                 <div className="min-w-0">
-                  <p className="truncate font-semibold text-[#1A1916] text-[13px]">{BLOCKER_LABELS[key]}</p>
-                  <p className="text-[#9B9B96] text-[11.5px]">
+                  <p className="truncate font-semibold text-[#101828] text-[13px]">{BLOCKER_LABELS[key]}</p>
+                  <p className="text-[#98A2B3] text-[11.5px]">
                     {blocker.action === "block" ? "Reprise impossible" : "Validation manuelle requise"}
                   </p>
                 </div>

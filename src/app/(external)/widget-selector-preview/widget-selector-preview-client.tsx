@@ -78,7 +78,7 @@ export function WidgetSelectorPreview() {
 
 function SelectorField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="grid min-w-0 gap-1.5 border-b border-[#E8E8E5] bg-white px-6 py-5 text-[13px] font-semibold text-[#858D98] lg:border-r lg:border-b-0">
+    <label className="grid min-w-0 gap-1.5 border-b border-[#E4E7EC] bg-white px-6 py-5 text-[13px] font-semibold text-[#858D98] lg:border-r lg:border-b-0">
       {label}
       <span className="min-w-0 [&_select]:min-h-9 [&_select]:w-full [&_select]:cursor-pointer [&_select]:rounded-[10px] [&_select]:border [&_select]:border-transparent [&_select]:bg-white [&_select]:text-base [&_select]:font-bold [&_select]:text-[#152231] [&_select]:outline-none [&_select]:disabled:cursor-not-allowed [&_select]:disabled:text-[#B1B7BE] [&_select]:focus:border-[#2A9D8F] [&_select]:focus:ring-2 [&_select]:focus:ring-[#2A9D8F]/15">
         {children}

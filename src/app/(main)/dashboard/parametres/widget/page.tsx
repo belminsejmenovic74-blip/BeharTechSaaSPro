@@ -64,7 +64,7 @@ type WidgetEditorResponse = {
 };
 
 const inputClass =
-  "h-11 w-full rounded-xl border border-[#DEDFDA] bg-white px-3.5 text-sm text-[#1A1916] shadow-[0_1px_2px_rgba(26,25,22,.03)] outline-none transition placeholder:text-[#A2A29D] hover:border-[#C8CAC4] focus:border-[#2A9D8F] focus:ring-3 focus:ring-[#2A9D8F]/10";
+  "h-11 w-full rounded-xl border border-[#DEDFDA] bg-white px-3.5 text-sm text-[#101828] shadow-[0_1px_2px_rgba(16,24,40,.03)] outline-none transition placeholder:text-[#A2A29D] hover:border-[#C8CAC4] focus:border-[#2A9D8F] focus:ring-3 focus:ring-[#2A9D8F]/10";
 const labelClass = "mb-1.5 block text-xs font-semibold text-[#52524F]";
 
 const BLOCK_LABELS: Record<WidgetBlockKey, string> = {
@@ -339,7 +339,7 @@ export default function WidgetSettingsPage() {
       <PageShell title="Widget client" subtitle="Éditeur visuel contrôlé.">
         <Panel className="max-w-2xl p-6">
           <h2 className="font-semibold">Widget momentanément indisponible</h2>
-          <p className="mt-2 text-sm text-[#6B6B6B]">{loadError}</p>
+          <p className="mt-2 text-sm text-[#667085]">{loadError}</p>
           <SecondaryButton className="mt-4" onClick={() => window.location.reload()}>
             Réessayer
           </SecondaryButton>
@@ -353,7 +353,7 @@ export default function WidgetSettingsPage() {
       <PageShell title="Widget client" subtitle="Éditeur visuel contrôlé.">
         <Panel className="max-w-2xl p-6">
           <h2 className="font-semibold">Synchronisation cloud requise</h2>
-          <p className="mt-2 text-sm text-[#6B6B6B]">
+          <p className="mt-2 text-sm text-[#667085]">
             Activez la licence et la synchronisation de l’atelier avant de configurer le widget.
           </p>
           <Link
@@ -369,7 +369,7 @@ export default function WidgetSettingsPage() {
 
   return (
     <PageShell title="Widget client" subtitle="Créez, prévisualisez et publiez votre parcours client.">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#E3E4DF] bg-white px-4 py-3.5 shadow-[0_8px_28px_rgba(26,25,22,.05)] sm:px-5">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#E3E4DF] bg-white px-4 py-3.5 shadow-[0_8px_28px_rgba(16,24,40,.05)] sm:px-5">
         <Link
           href="/dashboard/parametres"
           className="inline-flex items-center gap-2 rounded-lg text-sm font-semibold text-[#54544F] transition hover:text-[#147065]"
@@ -417,7 +417,7 @@ export default function WidgetSettingsPage() {
       </div>
 
       <div className="grid min-h-[800px] gap-5 xl:grid-cols-[400px_minmax(0,1fr)]">
-        <Panel className="min-h-0 overflow-hidden border-[#E3E4DF] bg-[#F8F9F6] p-0 shadow-[0_10px_35px_rgba(26,25,22,.05)]">
+        <Panel className="min-h-0 overflow-hidden border-[#E3E4DF] bg-[#F8F9F6] p-0 shadow-[0_10px_35px_rgba(16,24,40,.05)]">
           <div className="overflow-x-auto border-b border-[#E3E4DF] bg-white p-2">
             <div className="grid min-w-[372px] grid-cols-6 gap-1">
               {(
@@ -438,7 +438,7 @@ export default function WidgetSettingsPage() {
                     "flex flex-col items-center gap-1.5 rounded-xl px-1 py-2.5 text-[10px] font-bold transition",
                     tab === key
                       ? "bg-[#EAF7F5] text-[#147065] shadow-[inset_0_0_0_1px_#CFE9E4]"
-                      : "text-[#777772] hover:bg-[#F5F6F3] hover:text-[#1A1916]",
+                      : "text-[#777772] hover:bg-[#F5F6F3] hover:text-[#101828]",
                   )}
                 >
                   <Icon className="size-4" /> {label}
@@ -497,10 +497,10 @@ export default function WidgetSettingsPage() {
           </div>
         </Panel>
 
-        <Panel className="min-w-0 overflow-hidden border-[#E3E4DF] bg-white p-0 shadow-[0_10px_35px_rgba(26,25,22,.05)]">
+        <Panel className="min-w-0 overflow-hidden border-[#E3E4DF] bg-white p-0 shadow-[0_10px_35px_rgba(16,24,40,.05)]">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E3E4DF] bg-white px-5 py-3.5">
             <div>
-              <p className="flex items-center gap-2 text-sm font-bold text-[#1A1916]">
+              <p className="flex items-center gap-2 text-sm font-bold text-[#101828]">
                 Aperçu en direct
                 <span className="rounded-full bg-[#EAF7F5] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-[#147065]">
                   Live
@@ -524,8 +524,8 @@ export default function WidgetSettingsPage() {
                   className={cn(
                     "grid size-9 place-items-center rounded-lg transition",
                     device === key
-                      ? "bg-white text-[#147065] shadow-[0_2px_8px_rgba(26,25,22,.09)]"
-                      : "text-[#777772] hover:text-[#1A1916]",
+                      ? "bg-white text-[#147065] shadow-[0_2px_8px_rgba(16,24,40,.09)]"
+                      : "text-[#777772] hover:text-[#101828]",
                   )}
                 >
                   <Icon className="size-4" />
@@ -625,7 +625,7 @@ function ContentPanel({
         })}
       </EditorSection>
       <EditorSection title="Demandes hors catalogue">
-        <p className="mb-2 text-xs text-[#6B6B6B]">
+        <p className="mb-2 text-xs text-[#667085]">
           Le catalogue global affiche toutes les marques, modèles et pannes. Ces options laissent le client envoyer sa
           demande même quand un élément n’est pas encore configuré — recommandé pour capter plus de demandes.
         </p>
@@ -809,7 +809,7 @@ function OffersPanel({
                     })),
                   )
                 }
-                className="rounded-lg border border-[#E8E8E5] p-2 disabled:opacity-30"
+                className="rounded-lg border border-[#E4E7EC] p-2 disabled:opacity-30"
               >
                 <ArrowUp className="size-3.5" />
               </button>
@@ -826,7 +826,7 @@ function OffersPanel({
                     })),
                   )
                 }
-                className="rounded-lg border border-[#E8E8E5] p-2 disabled:opacity-30"
+                className="rounded-lg border border-[#E4E7EC] p-2 disabled:opacity-30"
               >
                 <ArrowDown className="size-3.5" />
               </button>
@@ -1196,7 +1196,7 @@ function StructurePanel({
                   "flex h-10 items-center justify-center gap-1 rounded-xl border text-xs font-semibold",
                   config.layout.alignment === value
                     ? "border-[#2A9D8F] bg-[#EAF7F5] text-[#17766B]"
-                    : "border-[#E8E8E5]",
+                    : "border-[#E4E7EC]",
                 )}
               >
                 <Icon className="size-4" />
@@ -1253,7 +1253,7 @@ function DisplayPanel({
               onClick={() => change((current) => ({ ...current, displayMode: value }))}
               className={cn(
                 "rounded-xl border p-3 text-left transition",
-                config.displayMode === value ? "border-[#2A9D8F] bg-[#EAF7F5]" : "border-[#E8E8E5]",
+                config.displayMode === value ? "border-[#2A9D8F] bg-[#EAF7F5]" : "border-[#E4E7EC]",
               )}
             >
               <span className="block text-sm font-semibold">{label}</span>
@@ -1329,7 +1329,7 @@ function DisplayPanel({
               onClick={() => change((current) => ({ ...current, layout: { ...current.layout, template: value } }))}
               className={cn(
                 "rounded-xl border px-2 py-3 text-xs font-semibold",
-                config.layout.template === value ? "border-[#2A9D8F] bg-[#EAF7F5]" : "border-[#E8E8E5]",
+                config.layout.template === value ? "border-[#2A9D8F] bg-[#EAF7F5]" : "border-[#E4E7EC]",
               )}
             >
               {label}
@@ -1357,7 +1357,7 @@ function DisplayPanel({
           versions.slice(0, 5).map((version) => (
             <div
               key={version.version}
-              className="flex items-center justify-between rounded-xl bg-[#F7F7F4] px-3 py-2 text-xs"
+              className="flex items-center justify-between rounded-xl bg-[#F5F7FA] px-3 py-2 text-xs"
             >
               <span>Version {version.version}</span>
               <div className="flex items-center gap-2">
@@ -1367,7 +1367,7 @@ function DisplayPanel({
                     type="button"
                     onClick={() => onRestore(version.version)}
                     disabled={busy}
-                    className="rounded-lg border border-[#E8E8E5] bg-white px-2 py-1 font-medium text-[#2A9D8F] disabled:opacity-40"
+                    className="rounded-lg border border-[#E4E7EC] bg-white px-2 py-1 font-medium text-[#2A9D8F] disabled:opacity-40"
                   >
                     Restaurer
                   </button>
@@ -1484,7 +1484,7 @@ function WidgetPreview({
             transform: `scale(${previewScale})`,
             transformOrigin: "top left",
           }}
-          className="block rounded-[24px] border border-black/10 bg-white shadow-[0_24px_70px_rgba(26,25,22,.18)] transition-transform duration-300"
+          className="block rounded-[24px] border border-black/10 bg-white shadow-[0_24px_70px_rgba(16,24,40,.18)] transition-transform duration-300"
         />
       </div>
     </div>
@@ -1665,9 +1665,9 @@ function EditorSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-3.5 rounded-2xl border border-[#E3E4DF] bg-white p-4 shadow-[0_3px_14px_rgba(26,25,22,.035)]">
+    <section className="space-y-3.5 rounded-2xl border border-[#E3E4DF] bg-white p-4 shadow-[0_3px_14px_rgba(16,24,40,.035)]">
       <div className="border-b border-[#EEEFEA] pb-3">
-        <h3 className="text-sm font-extrabold tracking-[-0.01em] text-[#1A1916]">{title}</h3>
+        <h3 className="text-sm font-extrabold tracking-[-0.01em] text-[#101828]">{title}</h3>
         {description ? <p className="mt-1 text-xs leading-relaxed text-[#777772]">{description}</p> : null}
       </div>
       {children}
@@ -1694,7 +1694,7 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
           className="size-9 cursor-pointer rounded-lg border-0 bg-transparent"
         />
         <input
-          className="h-9 w-24 rounded-lg border border-[#E8E8E5] px-2 font-mono text-xs"
+          className="h-9 w-24 rounded-lg border border-[#E4E7EC] px-2 font-mono text-xs"
           value={value}
           onChange={(e) => onChange(e.target.value)}
         />
@@ -1753,7 +1753,7 @@ function Segment({
             onClick={() => onChange(key)}
             className={cn(
               "rounded-lg px-2 py-2 text-[11px] font-semibold",
-              value === key ? "bg-white text-[#1A1916] shadow-sm" : "text-[#73736F]",
+              value === key ? "bg-white text-[#101828] shadow-sm" : "text-[#73736F]",
             )}
           >
             {text}
@@ -1785,11 +1785,11 @@ function OrderRow(props: {
       onDragEnd={props.onDragEnd}
       onDragOver={props.onDragOver}
       onDrop={props.onDrop}
-      className="flex items-center gap-1 rounded-xl border border-[#E8E8E5] bg-white p-2"
+      className="flex items-center gap-1 rounded-xl border border-[#E4E7EC] bg-white p-2"
     >
-      <GripVertical className="size-4 cursor-grab text-[#A3A3A0]" />
+      <GripVertical className="size-4 cursor-grab text-[#98A2B3]" />
       <span
-        className={cn("min-w-0 flex-1 truncate text-xs font-semibold", props.hidden && "text-[#A3A3A0] line-through")}
+        className={cn("min-w-0 flex-1 truncate text-xs font-semibold", props.hidden && "text-[#98A2B3] line-through")}
       >
         {props.label}
       </span>

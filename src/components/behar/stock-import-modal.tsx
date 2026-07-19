@@ -66,16 +66,16 @@ export function StockImportModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1A1916]/24 p-0 md:p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#101828]/24 p-0 md:p-4">
       <Panel className="mx-auto my-0 min-h-svh max-w-none rounded-none p-5 md:my-8 md:max-w-6xl md:min-h-0 md:rounded-[20px] md:p-6">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h2 className="font-semibold text-2xl text-[#1A1916]">Importer un stock Excel / CSV</h2>
-            <p className="mt-2 text-[#6B6B6B] text-sm">
+            <h2 className="font-semibold text-2xl text-[#101828]">Importer un stock Excel / CSV</h2>
+            <p className="mt-2 text-[#667085] text-sm">
               Chargez votre fichier fournisseur, contrôlez l'aperçu, puis ajoutez les pièces au stock.
             </p>
           </div>
-          <button aria-label="Fermer" className="text-[#6B6B6B]" onClick={() => setOpen(false)} type="button">
+          <button aria-label="Fermer" className="text-[#667085]" onClick={() => setOpen(false)} type="button">
             <X className="size-5" />
           </button>
         </div>
@@ -84,8 +84,8 @@ export function StockImportModal() {
           <div className="space-y-4">
             <label className="flex min-h-64 cursor-pointer flex-col items-center justify-center rounded-[24px] border border-[#2A9D8F]/35 border-dashed bg-[#FFFFFF] p-8 text-center">
               <FileSpreadsheet className="mb-4 size-12 text-[#2A9D8F]" />
-              <span className="font-semibold text-[#1A1916]">Glisser-déposer un fichier ici</span>
-              <span className="mt-2 text-[#6B6B6B] text-sm">
+              <span className="font-semibold text-[#101828]">Glisser-déposer un fichier ici</span>
+              <span className="mt-2 text-[#667085] text-sm">
                 Colonnes attendues : Référence, Pièce, Catégorie, Prix d’achat, Prix de vente, Stock, Seuil,
                 Fournisseur.
               </span>
@@ -106,22 +106,22 @@ export function StockImportModal() {
 
           <div className="min-w-0">
             <div className="mb-4 grid gap-3 md:grid-cols-3">
-              <div className="rounded-2xl border border-[#E8E8E5] bg-white p-4">
-                <p className="font-semibold text-2xl text-[#1A1916]">{rows.length}</p>
-                <p className="text-[#6B6B6B] text-sm">pièces prêtes</p>
+              <div className="rounded-2xl border border-[#E4E7EC] bg-white p-4">
+                <p className="font-semibold text-2xl text-[#101828]">{rows.length}</p>
+                <p className="text-[#667085] text-sm">pièces prêtes</p>
               </div>
-              <div className="rounded-2xl border border-[#E8E8E5] bg-white p-4">
-                <p className="font-semibold text-2xl text-[#1A1916]">{rows.filter((row) => row.stock > 0).length}</p>
-                <p className="text-[#6B6B6B] text-sm">en stock</p>
+              <div className="rounded-2xl border border-[#E4E7EC] bg-white p-4">
+                <p className="font-semibold text-2xl text-[#101828]">{rows.filter((row) => row.stock > 0).length}</p>
+                <p className="text-[#667085] text-sm">en stock</p>
               </div>
-              <div className="rounded-2xl border border-[#E8E8E5] bg-white p-4">
-                <p className="font-semibold text-2xl text-[#1A1916]">{ignoredRows}</p>
-                <p className="text-[#6B6B6B] text-sm">ligne ignorée</p>
+              <div className="rounded-2xl border border-[#E4E7EC] bg-white p-4">
+                <p className="font-semibold text-2xl text-[#101828]">{ignoredRows}</p>
+                <p className="text-[#667085] text-sm">ligne ignorée</p>
               </div>
             </div>
 
             <div className="mb-4 rounded-2xl border border-black/[0.07] bg-white p-4">
-              <h3 className="mb-3 font-semibold text-[#1A1916]">Mapping colonnes Behar Tech</h3>
+              <h3 className="mb-3 font-semibold text-[#101828]">Mapping colonnes Behar Tech</h3>
               <div className="grid gap-2 text-sm md:grid-cols-2">
                 {[
                   "Référence → reference",
@@ -168,9 +168,7 @@ export function StockImportModal() {
                   ))}
                 </tbody>
               </table>
-              {!rows.length && (
-                <p className="p-5 text-[#6B6B6B] text-sm">Chargez un fichier pour afficher l'aperçu.</p>
-              )}
+              {!rows.length && <p className="p-5 text-[#667085] text-sm">Chargez un fichier pour afficher l'aperçu.</p>}
             </div>
 
             <div className="mt-5 flex justify-end gap-2">

@@ -104,8 +104,8 @@ export default function AccueilHome() {
         <AppointmentsCalendar />
 
         <PortalCard>
-          <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Accès rapide</h2>
-          <p className="mt-1 text-[#6B6B6B] text-[13.5px]">Gérez votre espace en dehors de la production.</p>
+          <h2 className="font-semibold text-[#101828] text-[17px] tracking-tight">Accès rapide</h2>
+          <p className="mt-1 text-[#667085] text-[13.5px]">Gérez votre espace en dehors de la production.</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <QuickLink
               icon={LayoutTemplate}
@@ -138,10 +138,10 @@ export default function AccueilHome() {
       <section className="mt-8" aria-labelledby="integrations-a-venir">
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 id="integrations-a-venir" className="font-semibold text-[#1A1916] text-[19px] tracking-tight">
+            <h2 id="integrations-a-venir" className="font-semibold text-[#101828] text-[19px] tracking-tight">
               Intégrations à venir
             </h2>
-            <p className="mt-1 text-[#6B6B6B] text-[13.5px]">
+            <p className="mt-1 text-[#667085] text-[13.5px]">
               Vos futurs moyens de paiement restent visibles sans lancer de connexion externe.
             </p>
           </div>
@@ -176,8 +176,8 @@ function AccueilIntegrationCard({
     <ComingSoonIntegration name={name}>
       <PortalCard className="min-h-[178px]">
         <ExternalPaymentBrand provider={provider} />
-        <h3 className="mt-5 font-semibold text-[#1A1916] text-[16px]">{name}</h3>
-        <p className="mt-1.5 text-[#6B6B6B] text-[13px] leading-relaxed">
+        <h3 className="mt-5 font-semibold text-[#101828] text-[16px]">{name}</h3>
+        <p className="mt-1.5 text-[#667085] text-[13px] leading-relaxed">
           Connectez votre propre compte marchand depuis Behar Tech Pro.
         </p>
       </PortalCard>
@@ -207,7 +207,7 @@ function ModeCard({
           Espace de travail
         </p>
         <h3 className="font-semibold text-[#171714] text-[16px] tracking-tight md:text-[17px]">{title}</h3>
-        <p className="mt-1 text-[#6B6B6B] text-[12px] leading-[1.55] md:mt-1.5 md:flex-1 md:text-[13.5px]">
+        <p className="mt-1 text-[#667085] text-[12px] leading-[1.55] md:mt-1.5 md:flex-1 md:text-[13.5px]">
           {description}
         </p>
         {hint && (
@@ -233,13 +233,13 @@ function QuickLink({
     <Link
       href={href}
       prefetch={false}
-      className="group rounded-[14px] border border-[#E8E8E5] bg-white p-3.5 transition hover:border-[#2A9D8F]/45 hover:shadow-[0_4px_14px_rgba(16,24,40,0.06)]"
+      className="group rounded-[14px] border border-[#E4E7EC] bg-white p-3.5 transition hover:border-[#2A9D8F]/45 hover:shadow-[0_4px_14px_rgba(16,24,40,0.06)]"
     >
-      <span className="grid size-9 place-items-center rounded-[10px] border border-[#E8E8E5] bg-white text-[#2A9D8F]">
+      <span className="grid size-9 place-items-center rounded-[10px] border border-[#E4E7EC] bg-white text-[#2A9D8F]">
         <Icon className="size-[17px]" />
       </span>
-      <p className="mt-2.5 font-semibold text-[#1A1916] text-[13.5px]">{title}</p>
-      <p className="mt-0.5 text-[#6B6B6B] text-[11.5px]">{caption}</p>
+      <p className="mt-2.5 font-semibold text-[#101828] text-[13.5px]">{title}</p>
+      <p className="mt-0.5 text-[#667085] text-[11.5px]">{caption}</p>
     </Link>
   );
 }
@@ -247,8 +247,8 @@ function QuickLink({
 function MiniStat({ value, label }: Readonly<{ value: number; label: string }>) {
   return (
     <div className="text-center">
-      <p className="font-bold text-[#1A1916] text-[22px] leading-none tabular-nums">{value}</p>
-      <p className="mt-1 text-[#6B6B6B] text-[11.5px]">{label}</p>
+      <p className="font-bold text-[#101828] text-[22px] leading-none tabular-nums">{value}</p>
+      <p className="mt-1 text-[#667085] text-[11.5px]">{label}</p>
     </div>
   );
 }
@@ -295,13 +295,13 @@ function AppointmentsCalendar() {
   return (
     <PortalCard>
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-[#1A1916] text-[17px] capitalize tracking-tight">{monthLabel || "…"}</h2>
+        <h2 className="font-semibold text-[#101828] text-[17px] capitalize tracking-tight">{monthLabel || "…"}</h2>
         <div className="flex items-center gap-1">
           <button
             type="button"
             aria-label="Mois précédent"
             onClick={() => viewDate && setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))}
-            className="grid size-8 place-items-center rounded-[9px] border border-[#E8E8E5] bg-white text-[#6B6B6B] transition hover:border-[#2A9D8F]/40 hover:text-[#1A1916]"
+            className="grid size-8 place-items-center rounded-[9px] border border-[#E4E7EC] bg-white text-[#667085] transition hover:border-[#2A9D8F]/40 hover:text-[#101828]"
           >
             <ChevronLeft className="size-4" />
           </button>
@@ -309,7 +309,7 @@ function AppointmentsCalendar() {
             type="button"
             aria-label="Mois suivant"
             onClick={() => viewDate && setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1))}
-            className="grid size-8 place-items-center rounded-[9px] border border-[#E8E8E5] bg-white text-[#6B6B6B] transition hover:border-[#2A9D8F]/40 hover:text-[#1A1916]"
+            className="grid size-8 place-items-center rounded-[9px] border border-[#E4E7EC] bg-white text-[#667085] transition hover:border-[#2A9D8F]/40 hover:text-[#101828]"
           >
             <ChevronRight className="size-4" />
           </button>
@@ -318,7 +318,7 @@ function AppointmentsCalendar() {
 
       <div className="mt-4 grid grid-cols-7 gap-1 text-center">
         {WEEKDAYS_FR.map((day) => (
-          <span key={day} className="pb-1 font-medium text-[#8A8A8A] text-[11px]">
+          <span key={day} className="pb-1 font-medium text-[#98A2B3] text-[11px]">
             {day}
           </span>
         ))}
@@ -329,7 +329,7 @@ function AppointmentsCalendar() {
             <div key={date.toISOString()} className="relative flex h-9 items-center justify-center">
               <span
                 className={`grid size-8 place-items-center rounded-full text-[13px] ${
-                  isToday ? "bg-[#2A9D8F] font-semibold text-white" : inMonth ? "text-[#1A1916]" : "text-[#C4C4C0]"
+                  isToday ? "bg-[#2A9D8F] font-semibold text-white" : inMonth ? "text-[#101828]" : "text-[#C4C4C0]"
                 }`}
               >
                 {date.getDate()}
@@ -345,13 +345,13 @@ function AppointmentsCalendar() {
       <Link
         href="/dashboard/rendez-vous"
         prefetch={false}
-        className="mt-4 flex items-center justify-between rounded-[12px] border border-[#E8E8E5] bg-white px-3.5 py-3 transition hover:border-[#2A9D8F]/45"
+        className="mt-4 flex items-center justify-between rounded-[12px] border border-[#E4E7EC] bg-white px-3.5 py-3 transition hover:border-[#2A9D8F]/45"
       >
-        <span className="flex items-center gap-2 text-[#1A1916] text-[13.5px]">
+        <span className="flex items-center gap-2 text-[#101828] text-[13.5px]">
           <CalendarDays className="size-4 text-[#2A9D8F]" />
           {todayCount > 0 ? `${todayCount} rendez-vous aujourd'hui` : "Aucun rendez-vous aujourd'hui"}
         </span>
-        <ChevronRight className="size-4 text-[#A3A3A3]" />
+        <ChevronRight className="size-4 text-[#98A2B3]" />
       </Link>
     </PortalCard>
   );

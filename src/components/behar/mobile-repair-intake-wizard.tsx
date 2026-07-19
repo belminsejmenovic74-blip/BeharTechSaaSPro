@@ -102,9 +102,9 @@ const photoSlots = [
 ] as const;
 
 const inputClass =
-  "h-12 w-full rounded-[14px] border border-[#E8E8E5] bg-white px-4 text-[15px] text-[#1A1916] outline-none transition placeholder:text-[#9A9A95] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/10";
+  "h-12 w-full rounded-[14px] border border-[#E4E7EC] bg-white px-4 text-[15px] text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/10";
 const textareaClass =
-  "min-h-[92px] w-full rounded-[14px] border border-[#E8E8E5] bg-white px-4 py-3 text-[15px] text-[#1A1916] outline-none transition placeholder:text-[#9A9A95] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/10";
+  "min-h-[92px] w-full rounded-[14px] border border-[#E4E7EC] bg-white px-4 py-3 text-[15px] text-[#101828] outline-none transition placeholder:text-[#98A2B3] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/10";
 
 function conditionValue(key: ConditionKey, choice?: ConditionChoice): string {
   if (!choice) return "Non renseigné";
@@ -130,9 +130,9 @@ function conditionValue(key: ConditionKey, choice?: ConditionChoice): string {
 
 function FieldLabel({ children, optional }: Readonly<{ children: React.ReactNode; optional?: boolean }>) {
   return (
-    <span className="mb-1.5 block font-semibold text-[#1A1916] text-[13px]">
+    <span className="mb-1.5 block font-semibold text-[#101828] text-[13px]">
       {children}
-      {optional ? <span className="ml-1 font-normal text-[#8A8A85]">· optionnel</span> : null}
+      {optional ? <span className="ml-1 font-normal text-[#98A2B3]">· optionnel</span> : null}
     </span>
   );
 }
@@ -156,7 +156,7 @@ function ChoiceButton({
         "flex min-h-12 items-center justify-center gap-2 rounded-[14px] border px-3 text-center font-semibold text-[13px] transition active:scale-[0.98]",
         active
           ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70] shadow-[0_0_0_1px_rgba(42,157,143,0.12)]"
-          : "border-[#E8E8E5] bg-white text-[#1A1916]",
+          : "border-[#E4E7EC] bg-white text-[#101828]",
       )}
     >
       {Icon ? <Icon className="size-[18px]" strokeWidth={1.9} /> : null}
@@ -168,8 +168,8 @@ function ChoiceButton({
 
 function SummaryCard({ title, children }: Readonly<{ title: string; children: React.ReactNode }>) {
   return (
-    <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4 shadow-[0_6px_20px_rgba(26,25,22,0.035)]">
-      <h3 className="font-bold text-[#6B6B6B] text-[13px] uppercase tracking-[0.08em]">{title}</h3>
+    <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-4 shadow-[0_6px_20px_rgba(16,24,40,0.035)]">
+      <h3 className="font-bold text-[#667085] text-[13px] uppercase tracking-[0.08em]">{title}</h3>
       <div className="mt-3 space-y-2">{children}</div>
     </section>
   );
@@ -178,8 +178,8 @@ function SummaryCard({ title, children }: Readonly<{ title: string; children: Re
 function SummaryLine({ label, value }: Readonly<{ label: string; value?: React.ReactNode }>) {
   return (
     <div className="flex items-start justify-between gap-4 text-[13px]">
-      <span className="text-[#6B6B6B]">{label}</span>
-      <span className="max-w-[62%] text-right font-semibold text-[#1A1916]">{value ?? "—"}</span>
+      <span className="text-[#667085]">{label}</span>
+      <span className="max-w-[62%] text-right font-semibold text-[#101828]">{value ?? "—"}</span>
     </div>
   );
 }
@@ -239,10 +239,7 @@ function mobileBrandOptions({
   return [...all.filter((entry) => entry !== "Autre"), "Autre"];
 }
 
-function brandNameForModel(
-  brandId: string,
-  storeBrands: ReturnType<typeof useBeharStore.getState>["deviceBrands"],
-) {
+function brandNameForModel(brandId: string, storeBrands: ReturnType<typeof useBeharStore.getState>["deviceBrands"]) {
   return storeBrands.find((entry) => entry.id === brandId)?.name ?? "";
 }
 
@@ -269,7 +266,9 @@ function mobileModelOptions({
     )?.models ?? [];
   const configuredModels = storeModels
     .filter((entry) => entry.deviceType === deviceType)
-    .filter((entry) => !normalizedBrand || compactText(brandNameForModel(entry.brandId, storeBrands)) === normalizedBrand)
+    .filter(
+      (entry) => !normalizedBrand || compactText(brandNameForModel(entry.brandId, storeBrands)) === normalizedBrand,
+    )
     .map((entry) => entry.name);
   const catalogModels = priceBookItems
     .filter((entry) => entry.isActive !== false && entry.typeAppareil === priceBookType)
@@ -281,7 +280,9 @@ function mobileModelOptions({
 function modelMatches(selectedModel: string, catalogModel: string) {
   const selected = compactText(selectedModel);
   const catalog = compactText(catalogModel);
-  return Boolean(selected && catalog && (selected === catalog || selected.includes(catalog) || catalog.includes(selected)));
+  return Boolean(
+    selected && catalog && (selected === catalog || selected.includes(catalog) || catalog.includes(selected)),
+  );
 }
 
 function MobileModelTouchSelector({
@@ -316,7 +317,7 @@ function MobileModelTouchSelector({
 
   if (!brand) {
     return (
-      <p className="rounded-[14px] border border-[#E8E8E5] bg-white px-4 py-3 text-[#6B6B6B] text-[12px]">
+      <p className="rounded-[14px] border border-[#E4E7EC] bg-white px-4 py-3 text-[#667085] text-[12px]">
         Choisissez d'abord une marque pour afficher les modèles comme au comptoir.
       </p>
     );
@@ -346,7 +347,7 @@ function MobileModelTouchSelector({
               }}
               className={cn(
                 "min-h-[50px] rounded-[14px] border px-3 text-center font-bold text-[12.5px] leading-tight transition active:scale-[0.97]",
-                active ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]" : "border-[#E8E8E5] bg-white text-[#1A1916]",
+                active ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]" : "border-[#E4E7EC] bg-white text-[#101828]",
               )}
             >
               {active ? <Check className="mr-1 inline size-3.5" /> : null}
@@ -368,7 +369,7 @@ function MobileModelTouchSelector({
         <button
           type="button"
           onClick={() => setExpanded((current) => !current)}
-          className="h-11 w-full rounded-[14px] border border-[#E8E8E5] bg-white font-bold text-[#167B70] text-[13px] active:scale-[0.98]"
+          className="h-11 w-full rounded-[14px] border border-[#E4E7EC] bg-white font-bold text-[#167B70] text-[13px] active:scale-[0.98]"
         >
           {expanded ? "Voir moins de modèles" : "Voir plus de modèles"}
         </button>
@@ -395,9 +396,7 @@ export function MobileRepairIntakeWizard({
   const allowedMarkets = store.workshopSettings.allowedMarkets || [store.workshopInfo.country];
   const defaultMarket = store.workshopSettings.defaultMarket || store.workshopInfo.country;
 
-  const [billingCountry, setBillingCountry] = useState<WorkshopCountry>(
-    prefill?.billingCountry ?? defaultMarket,
-  );
+  const [billingCountry, setBillingCountry] = useState<WorkshopCountry>(prefill?.billingCountry ?? defaultMarket);
   const billingConfig = getWorkshopCountryConfig(billingCountry);
 
   useEffect(() => {
@@ -507,9 +506,7 @@ export function MobileRepairIntakeWizard({
     "Carte externe",
     "Virement",
     "Autre",
-    ...(billingCountry === "CH" && store.workshopInfo.twintEnabled !== false
-      ? (["TWINT"] as PaymentMethod[])
-      : []),
+    ...(billingCountry === "CH" && store.workshopInfo.twintEnabled !== false ? (["TWINT"] as PaymentMethod[]) : []),
   ];
 
   const conditionCounts: Record<ConditionChoice, number> = { OK: 0, Abîmé: 0, HS: 0, "À tester": 0 };
@@ -519,9 +516,7 @@ export function MobileRepairIntakeWizard({
   const photoCount = Object.values(photos).filter(Boolean).length;
 
   useEffect(() => {
-    setPlannedPaymentMethod(
-      billingCountry === "CH" && store.workshopInfo.twintEnabled !== false ? "TWINT" : "Espèces",
-    );
+    setPlannedPaymentMethod(billingCountry === "CH" && store.workshopInfo.twintEnabled !== false ? "TWINT" : "Espèces");
   }, [billingCountry, store.workshopInfo.twintEnabled]);
 
   useEffect(() => {
@@ -746,10 +741,10 @@ export function MobileRepairIntakeWizard({
   return (
     <div
       ref={wizardRef}
-      className="flex min-h-svh w-full flex-col overflow-x-hidden bg-[#FFFFFF] text-[#1A1916]"
+      className="flex min-h-svh w-full flex-col overflow-x-hidden bg-[#FFFFFF] text-[#101828]"
       data-mobile-repair-wizard
     >
-      <header className="sticky top-0 z-20 border-[#E8E8E5] border-b bg-[#FFFFFF] px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
+      <header className="sticky top-0 z-20 border-[#E4E7EC] border-b bg-[#FFFFFF] px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="font-bold text-[#2A9D8F] text-[11px] uppercase tracking-[0.12em]">Étape {step} sur 6</p>
@@ -759,7 +754,7 @@ export function MobileRepairIntakeWizard({
             type="button"
             aria-label="Fermer"
             onClick={onClose}
-            className="grid size-10 shrink-0 place-items-center rounded-full border border-[#E8E8E5] bg-white text-[#6B6B6B]"
+            className="grid size-10 shrink-0 place-items-center rounded-full border border-[#E4E7EC] bg-white text-[#667085]"
           >
             <X className="size-5" />
           </button>
@@ -787,9 +782,7 @@ export function MobileRepairIntakeWizard({
             {allowedMarkets.length > 1 && (
               <section className="rounded-[18px] border border-[#D7EFEA] bg-[#FFFFFF] p-4">
                 <p className="font-semibold text-[14px]">Pays de facturation / marché</p>
-                <p className="mt-1 text-[#6B6B6B] text-[12px]">
-                  France en euros, Suisse en francs suisses.
-                </p>
+                <p className="mt-1 text-[#667085] text-[12px]">France en euros, Suisse en francs suisses.</p>
                 <div className="mt-3 grid grid-cols-2 gap-2">
                   {allowedMarkets.map((country) => (
                     <button
@@ -798,7 +791,7 @@ export function MobileRepairIntakeWizard({
                       onClick={() => setBillingCountry(country)}
                       className={cn(
                         "rounded-[13px] border bg-white px-3 py-3 text-left",
-                        billingCountry === country ? "border-[#2A9D8F] text-[#167B70]" : "border-[#E8E8E5]",
+                        billingCountry === country ? "border-[#2A9D8F] text-[#167B70]" : "border-[#E4E7EC]",
                       )}
                     >
                       <span className="block font-bold text-[13px]">
@@ -814,7 +807,7 @@ export function MobileRepairIntakeWizard({
             )}
             <div>
               <h3 className="font-bold text-[24px] tracking-tight">Pour qui est l’appareil ?</h3>
-              <p className="mt-1 text-[#6B6B6B] text-[14px] leading-relaxed">
+              <p className="mt-1 text-[#667085] text-[14px] leading-relaxed">
                 Choisissez le parcours le plus rapide pour le client.
               </p>
             </div>
@@ -843,20 +836,20 @@ export function MobileRepairIntakeWizard({
                     onClick={() => setClientMode(option.key)}
                     className={cn(
                       "flex min-h-[76px] items-center gap-3 rounded-[18px] border bg-white p-4 text-left transition active:scale-[0.99]",
-                      active ? "border-[#2A9D8F] shadow-[0_0_0_1px_rgba(42,157,143,0.12)]" : "border-[#E8E8E5]",
+                      active ? "border-[#2A9D8F] shadow-[0_0_0_1px_rgba(42,157,143,0.12)]" : "border-[#E4E7EC]",
                     )}
                   >
                     <span
                       className={cn(
                         "grid size-11 shrink-0 place-items-center rounded-[13px]",
-                        active ? "bg-[#FFFFFF] text-[#167B70]" : "bg-[#FFFFFF] text-[#6B6B6B]",
+                        active ? "bg-[#FFFFFF] text-[#167B70]" : "bg-[#FFFFFF] text-[#667085]",
                       )}
                     >
                       <Icon className="size-5" />
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block font-bold text-[15px]">{option.label}</span>
-                      <span className="mt-0.5 block text-[#6B6B6B] text-[12px]">{option.detail}</span>
+                      <span className="mt-0.5 block text-[#667085] text-[12px]">{option.detail}</span>
                     </span>
                     {active ? (
                       <CheckCircle2 className="size-5 text-[#2A9D8F]" />
@@ -869,7 +862,7 @@ export function MobileRepairIntakeWizard({
             </div>
 
             {clientMode === "new" ? (
-              <section className="space-y-3 rounded-[18px] border border-[#E8E8E5] bg-white p-4">
+              <section className="space-y-3 rounded-[18px] border border-[#E4E7EC] bg-white p-4">
                 <label>
                   <FieldLabel>Nom</FieldLabel>
                   <input className={inputClass} value={newName} onChange={(event) => setNewName(event.target.value)} />
@@ -899,7 +892,7 @@ export function MobileRepairIntakeWizard({
             {clientMode === "existing" ? (
               <section className="space-y-3">
                 <label className="relative block">
-                  <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[#6B6B6B]" />
+                  <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-[#667085]" />
                   <input
                     className={`${inputClass} pl-11`}
                     value={customerSearch}
@@ -917,15 +910,15 @@ export function MobileRepairIntakeWizard({
                         onClick={() => setSelectedCustomerId(customer.id)}
                         className={cn(
                           "flex w-full items-center justify-between gap-3 rounded-[16px] border bg-white p-4 text-left",
-                          active ? "border-[#2A9D8F]" : "border-[#E8E8E5]",
+                          active ? "border-[#2A9D8F]" : "border-[#E4E7EC]",
                         )}
                       >
                         <span className="min-w-0">
                           <span className="block truncate font-bold text-[14px]">{customer.name}</span>
-                          <span className="mt-0.5 block truncate text-[#6B6B6B] text-[12px]">
+                          <span className="mt-0.5 block truncate text-[#667085] text-[12px]">
                             {customer.phone || "Téléphone non renseigné"}
                           </span>
-                          <span className="mt-1 block text-[#8A8A85] text-[11px]">
+                          <span className="mt-1 block text-[#98A2B3] text-[11px]">
                             {customer.interventions || 0} intervention{customer.interventions === 1 ? "" : "s"}
                           </span>
                         </span>
@@ -943,7 +936,7 @@ export function MobileRepairIntakeWizard({
           <div className="space-y-6">
             <div>
               <h3 className="font-bold text-[24px] tracking-tight">Quel appareil ?</h3>
-              <p className="mt-1 text-[#6B6B6B] text-[14px]">
+              <p className="mt-1 text-[#667085] text-[14px]">
                 Sélectionnez le type, puis la marque et le modèle exact.
               </p>
             </div>
@@ -997,7 +990,7 @@ export function MobileRepairIntakeWizard({
                 />
               ) : null}
             </section>
-            <section className="space-y-3 rounded-[18px] border border-[#E8E8E5] bg-white p-4">
+            <section className="space-y-3 rounded-[18px] border border-[#E4E7EC] bg-white p-4">
               <MobileModelTouchSelector
                 brand={effectiveBrand}
                 options={modelOptions}
@@ -1039,7 +1032,7 @@ export function MobileRepairIntakeWizard({
           <div className="space-y-6">
             <div>
               <h3 className="font-bold text-[24px] tracking-tight">Quel est le problème ?</h3>
-              <p className="mt-1 text-[#6B6B6B] text-[14px]">
+              <p className="mt-1 text-[#667085] text-[14px]">
                 Choisissez la prestation principale et indiquez le prix prévu.
               </p>
             </div>
@@ -1060,7 +1053,7 @@ export function MobileRepairIntakeWizard({
                         "min-h-[64px] rounded-[14px] border px-3 py-2 text-left transition active:scale-[0.98]",
                         active
                           ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70] shadow-[0_0_0_1px_rgba(42,157,143,0.12)]"
-                          : "border-[#E8E8E5] bg-white text-[#1A1916]",
+                          : "border-[#E4E7EC] bg-white text-[#101828]",
                       )}
                     >
                       <span className="block font-bold text-[13px] leading-tight">{option.label}</span>
@@ -1081,7 +1074,7 @@ export function MobileRepairIntakeWizard({
                 placeholder={problem === "Autre" ? "Décrivez le problème…" : "Précision utile pour le technicien…"}
               />
             </label>
-            <section className="grid grid-cols-[1fr_112px] gap-3 rounded-[18px] border border-[#E8E8E5] bg-white p-4">
+            <section className="grid grid-cols-[1fr_112px] gap-3 rounded-[18px] border border-[#E4E7EC] bg-white p-4">
               <label>
                 <FieldLabel>Prix client</FieldLabel>
                 <input
@@ -1093,7 +1086,7 @@ export function MobileRepairIntakeWizard({
                 />
               </label>
               <div className="flex flex-col justify-end pb-3 text-right">
-                <span className="text-[#6B6B6B] text-[11px]">Total prévu</span>
+                <span className="text-[#667085] text-[11px]">Total prévu</span>
                 <span className="font-bold text-[#167B70] text-[17px]">
                   {formatCurrency(amount, billingConfig.currency)}
                 </span>
@@ -1113,25 +1106,25 @@ export function MobileRepairIntakeWizard({
                 ))}
               </div>
             </section>
-            <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4">
+            <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="font-bold text-[14px]">Ajouter un rendez-vous ?</p>
-                  <p className="mt-0.5 text-[#6B6B6B] text-[12px]">Pour une intervention ou un déplacement planifié.</p>
+                  <p className="mt-0.5 text-[#667085] text-[12px]">Pour une intervention ou un déplacement planifié.</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setAddMeeting((current) => !current)}
                   className={cn(
                     "h-10 min-w-[74px] rounded-full px-4 font-bold text-[13px]",
-                    addMeeting ? "bg-[#2A9D8F] text-white" : "bg-[#FFFFFF] text-[#6B6B6B]",
+                    addMeeting ? "bg-[#2A9D8F] text-white" : "bg-[#FFFFFF] text-[#667085]",
                   )}
                 >
                   {addMeeting ? "Oui" : "Non"}
                 </button>
               </div>
               {addMeeting ? (
-                <div className="mt-4 space-y-3 border-[#E8E8E5] border-t pt-4">
+                <div className="mt-4 space-y-3 border-[#E4E7EC] border-t pt-4">
                   <div className="grid grid-cols-2 gap-3">
                     <label>
                       <FieldLabel>Date</FieldLabel>
@@ -1170,16 +1163,16 @@ export function MobileRepairIntakeWizard({
           <div className="space-y-5">
             <div>
               <h3 className="font-bold text-[24px] tracking-tight">État d’entrée</h3>
-              <p className="mt-1 text-[#6B6B6B] text-[14px] leading-relaxed">
+              <p className="mt-1 text-[#667085] text-[14px] leading-relaxed">
                 Touchez un état par ligne. Vous pouvez laisser les éléments non vérifiés sans sélection.
               </p>
             </div>
             <div className="space-y-2.5">
               {conditionRows.map((row) => (
-                <section key={row.key} className="rounded-[16px] border border-[#E8E8E5] bg-white p-3">
+                <section key={row.key} className="rounded-[16px] border border-[#E4E7EC] bg-white p-3">
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <p className="font-bold text-[13px]">{row.label}</p>
-                    <span className="text-[#8A8A85] text-[10px]">{conditions[row.key] ?? "Non renseigné"}</span>
+                    <span className="text-[#98A2B3] text-[10px]">{conditions[row.key] ?? "Non renseigné"}</span>
                   </div>
                   <div className="grid grid-cols-4 gap-1.5">
                     {conditionChoices.map((choice) => (
@@ -1198,7 +1191,7 @@ export function MobileRepairIntakeWizard({
                             ? choice === "OK"
                               ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#167B70]"
                               : "border-[#C9A45D] bg-[#FFFFFF] text-[#805C17]"
-                            : "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
+                            : "border-[#E4E7EC] bg-[#FFFFFF] text-[#667085]",
                         )}
                       >
                         {choice}
@@ -1208,7 +1201,7 @@ export function MobileRepairIntakeWizard({
                 </section>
               ))}
             </div>
-            <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4">
+            <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-4">
               <FieldLabel>Accès appareil</FieldLabel>
               <div className="grid grid-cols-2 gap-2">
                 {accessMethods.map((option) => (
@@ -1242,7 +1235,7 @@ export function MobileRepairIntakeWizard({
           <div className="space-y-6">
             <div>
               <h3 className="font-bold text-[24px] tracking-tight">Photos & signature</h3>
-              <p className="mt-1 text-[#6B6B6B] text-[14px] leading-relaxed">
+              <p className="mt-1 text-[#667085] text-[14px] leading-relaxed">
                 Les photos et la signature seront enregistrées dans le dossier.
               </p>
             </div>
@@ -1262,7 +1255,7 @@ export function MobileRepairIntakeWizard({
                 ))}
               </div>
             </section>
-            <section className="rounded-[18px] border border-[#E8E8E5] bg-white p-4">
+            <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-4">
               <label>
                 <FieldLabel optional>Nom du signataire</FieldLabel>
                 <input
@@ -1275,7 +1268,7 @@ export function MobileRepairIntakeWizard({
               <div className="mt-4">
                 <SignaturePad signerName={signerName} value={signature} onChange={setSignature} />
               </div>
-              <p className="mt-3 rounded-[12px] bg-[#FFFFFF] px-3 py-2.5 text-[#6B6B6B] text-[12px] leading-relaxed">
+              <p className="mt-3 rounded-[12px] bg-[#FFFFFF] px-3 py-2.5 text-[#667085] text-[12px] leading-relaxed">
                 La signature reste optionnelle lorsque le client n’est pas présent.
               </p>
             </section>
@@ -1286,7 +1279,7 @@ export function MobileRepairIntakeWizard({
           <div className="space-y-4">
             <div>
               <h3 className="font-bold text-[24px] tracking-tight">Vérifiez avant création</h3>
-              <p className="mt-1 text-[#6B6B6B] text-[14px]">Tout pourra encore être modifié depuis le dossier.</p>
+              <p className="mt-1 text-[#667085] text-[14px]">Tout pourra encore être modifié depuis le dossier.</p>
             </div>
             <SummaryCard title="Client">
               <SummaryLine
@@ -1342,10 +1335,10 @@ export function MobileRepairIntakeWizard({
       </main>
 
       <footer
-        className="fixed inset-x-0 bottom-0 z-30 border-[#E8E8E5] border-t bg-white px-4 pt-3"
+        className="fixed inset-x-0 bottom-0 z-30 border-[#E4E7EC] border-t bg-white px-4 pt-3"
         style={{
           paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
-          boxShadow: "0 -12px 30px rgba(26,25,22,0.07)",
+          boxShadow: "0 -12px 30px rgba(16,24,40,0.07)",
         }}
       >
         {step < 6 ? (
@@ -1353,7 +1346,7 @@ export function MobileRepairIntakeWizard({
             <button
               type="button"
               onClick={step === 1 ? onClose : back}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-[14px] border border-[#E8E8E5] bg-white font-bold text-[#1A1916] text-[14px]"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-[14px] border border-[#E4E7EC] bg-white font-bold text-[#101828] text-[14px]"
             >
               <ArrowLeft className="size-4" />
               {step === 1 ? "Annuler" : "Retour"}
@@ -1382,7 +1375,7 @@ export function MobileRepairIntakeWizard({
               <button
                 type="button"
                 onClick={back}
-                className="inline-flex h-11 items-center justify-center gap-1.5 rounded-[13px] border border-[#E8E8E5] bg-white font-bold text-[13px]"
+                className="inline-flex h-11 items-center justify-center gap-1.5 rounded-[13px] border border-[#E4E7EC] bg-white font-bold text-[13px]"
               >
                 <ArrowLeft className="size-4" />
                 Retour

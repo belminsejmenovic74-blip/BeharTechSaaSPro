@@ -22,7 +22,7 @@ import {
 } from "@/lib/repair-status";
 import { formatMoney, getDocumentFilename } from "@/lib/workshop-country";
 
-const COLORS = { bg: "#FFFFFF", text: "#1A1916", sub: "#6B6B6B", accent: "#2A9D8F", border: "#E8E8E5" };
+const COLORS = { bg: "#FFFFFF", text: "#101828", sub: "#667085", accent: "#2A9D8F", border: "#E4E7EC" };
 
 function resolveShopName(candidates: Array<string | undefined>): string {
   for (const candidate of candidates) {
@@ -170,7 +170,7 @@ function notFound(shopName?: string) {
   return (
     <div className="grid min-h-screen place-items-center px-6" style={{ background: COLORS.bg, color: COLORS.text }}>
       <div
-        className="w-full max-w-[420px] rounded-[22px] border bg-white p-8 text-center shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
+        className="w-full max-w-[420px] rounded-[22px] border bg-white p-8 text-center shadow-[0_1px_2px_rgba(16,24,40,0.035)]"
         style={{ borderColor: COLORS.border }}
       >
         <span
@@ -451,7 +451,7 @@ export function PublicTrackingView({
 
             {/* Carte dossier */}
             <section
-              className="mt-5 rounded-[20px] border bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
+              className="mt-5 rounded-[20px] border bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.035)]"
               style={{ borderColor: COLORS.border }}
             >
               <div className="flex items-center justify-between gap-3">
@@ -467,7 +467,7 @@ export function PublicTrackingView({
               <div className="mt-4 grid gap-4 sm:grid-cols-[104px_1fr] sm:items-center">
                 <RealDeviceVisual
                   brand={data.repair.deviceBrand}
-                  className="size-[104px] rounded-[18px] border border-[#E8E8E5] bg-[#FFFFFF] p-2 shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
+                  className="size-[104px] rounded-[18px] border border-[#E4E7EC] bg-[#FFFFFF] p-2 shadow-[0_1px_2px_rgba(16,24,40,0.035)]"
                   model={data.repair.deviceModel}
                   type={data.repair.deviceType}
                 />
@@ -500,7 +500,7 @@ export function PublicTrackingView({
 
             {/* Timeline étapes — avec date/heure quand disponible */}
             <section
-              className="mt-4 rounded-[20px] border bg-white px-3 py-4 shadow-[0_1px_2px_rgba(26,25,22,0.035)] sm:p-5"
+              className="mt-4 rounded-[20px] border bg-white px-3 py-4 shadow-[0_1px_2px_rgba(16,24,40,0.035)] sm:p-5"
               style={{ borderColor: COLORS.border }}
             >
               <div className="grid grid-cols-5">
@@ -536,7 +536,7 @@ export function PublicTrackingView({
                             ? { borderColor: COLORS.accent, background: COLORS.accent, color: "#fff" }
                             : current
                               ? { borderColor: COLORS.accent, color: COLORS.accent }
-                              : { borderColor: "#D7D5CF", color: "#8A8A8A" }
+                              : { borderColor: "#D7D5CF", color: "#98A2B3" }
                         }
                       >
                         {done ? <Check className="size-4" /> : index + 1}
@@ -547,7 +547,7 @@ export function PublicTrackingView({
                       >
                         {label}
                       </p>
-                      <p className="mt-0.5 text-[10px] leading-tight" style={{ color: "#8A8A8A" }}>
+                      <p className="mt-0.5 text-[10px] leading-tight" style={{ color: "#98A2B3" }}>
                         {day}
                         {time ? (
                           <>
@@ -585,7 +585,7 @@ export function PublicTrackingView({
 
             {/* Documents */}
             <section
-              className="mt-4 rounded-[20px] border bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
+              className="mt-4 rounded-[20px] border bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.035)]"
               style={{ borderColor: COLORS.border }}
             >
               <h2 className="font-bold text-[15px]">Documents</h2>
@@ -656,7 +656,7 @@ export function PublicTrackingView({
                     ) : (
                       <span
                         className="shrink-0 rounded-full px-3 py-1 font-semibold text-[12.5px]"
-                        style={{ background: "#FFFFFF", color: "#8A8A8A" }}
+                        style={{ background: "#FFFFFF", color: "#98A2B3" }}
                       >
                         À venir
                       </span>
@@ -669,7 +669,7 @@ export function PublicTrackingView({
             {/* Messages */}
             <section
               id="messages"
-              className="mt-4 rounded-[20px] border bg-white p-5 shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
+              className="mt-4 rounded-[20px] border bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.035)]"
               style={{ borderColor: COLORS.border }}
             >
               <h2 className="font-bold text-[15px]">Messages</h2>
@@ -697,7 +697,7 @@ export function PublicTrackingView({
                       <div className="min-w-0 flex-1">
                         <div className="flex items-baseline justify-between gap-2">
                           <p className="font-semibold text-[13px]">{isClient ? "Vous" : shopName}</p>
-                          <p className="shrink-0 text-[11px]" style={{ color: "#8A8A8A" }}>
+                          <p className="shrink-0 text-[11px]" style={{ color: "#98A2B3" }}>
                             {formatMessageMoment(message.createdAt)}
                           </p>
                         </div>
@@ -749,7 +749,7 @@ export function PublicTrackingView({
           {/* Colonne droite (desktop) / bas (mobile) — accès rapide + coordonnées */}
           <aside className="space-y-4 lg:sticky lg:top-12">
             <section
-              className="rounded-[22px] border bg-white p-6 text-center shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
+              className="rounded-[22px] border bg-white p-6 text-center shadow-[0_1px_2px_rgba(16,24,40,0.035)]"
               style={{ borderColor: COLORS.border }}
             >
               <span
@@ -797,7 +797,7 @@ export function PublicTrackingView({
 
             {[data.workshop.address, data.workshop.city, data.workshop.phone, data.workshop.email].some(Boolean) ? (
               <section
-                className="rounded-[22px] border bg-white p-5 text-[13px] shadow-[0_1px_2px_rgba(26,25,22,0.035)]"
+                className="rounded-[22px] border bg-white p-5 text-[13px] shadow-[0_1px_2px_rgba(16,24,40,0.035)]"
                 style={{ borderColor: COLORS.border }}
               >
                 <p className="font-bold text-[14px]">{shopName}</p>

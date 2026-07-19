@@ -32,7 +32,10 @@ export function TrackingQrModal({ isOpen, onClose, repairId }: TrackingQrModalPr
 
     const access = store.ensureRepairPublicAccess(repairId);
     const current = store.repairs.find((r) => r.id === repairId);
-    const url = current && access ? getCustomerTrackingUrl({ ...current, publicAccess: access }, store.workshopSettings ?? store.workshopInfo) : "";
+    const url =
+      current && access
+        ? getCustomerTrackingUrl({ ...current, publicAccess: access }, store.workshopSettings ?? store.workshopInfo)
+        : "";
     if (!url) return;
     generateQrDataUrl(url)
       .then(setQr)
@@ -71,12 +74,12 @@ export function TrackingQrModal({ isOpen, onClose, repairId }: TrackingQrModalPr
       <div className="flex flex-col items-center text-center">
         <div className="mb-5 flex w-full items-start justify-between gap-4 text-left">
           <div>
-            <p className="font-semibold text-[#1A1916] text-[18px]">QR Code de suivi</p>
-            <p className="mt-1 text-[#6B6B6B] text-sm">Scannez pour suivre votre réparation.</p>
+            <p className="font-semibold text-[#101828] text-[18px]">QR Code de suivi</p>
+            <p className="mt-1 text-[#667085] text-sm">Scannez pour suivre votre réparation.</p>
           </div>
           <button
             aria-label="Fermer"
-            className="grid size-9 shrink-0 place-items-center rounded-[10px] border border-[#E8E8E5] bg-white text-[#6B6B6B]"
+            className="grid size-9 shrink-0 place-items-center rounded-[10px] border border-[#E4E7EC] bg-white text-[#667085]"
             onClick={onClose}
             type="button"
           >
@@ -88,34 +91,36 @@ export function TrackingQrModal({ isOpen, onClose, repairId }: TrackingQrModalPr
           <img
             src={qr}
             alt="QR Code Suivi Client"
-            className="size-64 rounded-[18px] border border-[#E8E8E5] bg-white p-4 shadow-[0_16px_48px_rgba(26,25,22,0.08)]"
+            className="size-64 rounded-[18px] border border-[#E4E7EC] bg-white p-4 shadow-[0_16px_48px_rgba(16,24,40,0.08)]"
           />
         ) : (
-          <div className="flex size-64 items-center justify-center rounded-[18px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]">
+          <div className="flex size-64 items-center justify-center rounded-[18px] border border-dashed border-[#E4E7EC] bg-[#FFFFFF] text-[#667085]">
             Génération du QR...
           </div>
         )}
 
-        <div className="mt-6 w-full space-y-3 rounded-[16px] border border-[#E8E8E5] bg-[#FAFAF8] p-4 text-left">
+        <div className="mt-6 w-full space-y-3 rounded-[16px] border border-[#E4E7EC] bg-[#F9FAFB] p-4 text-left">
           <div className="flex justify-between gap-4">
-            <span className="font-medium text-[#6B6B6B] text-xs">Boutique</span>
-            <span className="text-right font-bold text-[#1A1916] text-sm">{shopName}</span>
+            <span className="font-medium text-[#667085] text-xs">Boutique</span>
+            <span className="text-right font-bold text-[#101828] text-sm">{shopName}</span>
           </div>
           <div className="flex justify-between gap-4">
-            <span className="font-medium text-[#6B6B6B] text-xs">Code de suivi</span>
-            <span className="font-mono font-bold text-[#1A1916] text-sm">{trackingCode}</span>
+            <span className="font-medium text-[#667085] text-xs">Code de suivi</span>
+            <span className="font-mono font-bold text-[#101828] text-sm">{trackingCode}</span>
           </div>
           <div className="flex justify-between gap-4">
-            <span className="font-medium text-[#6B6B6B] text-xs">Dossier</span>
-            <span className="text-right font-semibold text-[#1A1916] text-sm">{repair.number}</span>
+            <span className="font-medium text-[#667085] text-xs">Dossier</span>
+            <span className="text-right font-semibold text-[#101828] text-sm">{repair.number}</span>
           </div>
           <div className="flex justify-between gap-4">
-            <span className="font-medium text-[#6B6B6B] text-xs">Client</span>
-            <span className="text-right font-semibold text-[#1A1916] text-sm">{customer?.name ?? "Client de passage"}</span>
+            <span className="font-medium text-[#667085] text-xs">Client</span>
+            <span className="text-right font-semibold text-[#101828] text-sm">
+              {customer?.name ?? "Client de passage"}
+            </span>
           </div>
           <div className="flex justify-between gap-4">
-            <span className="font-medium text-[#6B6B6B] text-xs">Appareil</span>
-            <span className="text-right font-semibold text-[#1A1916] text-sm">
+            <span className="font-medium text-[#667085] text-xs">Appareil</span>
+            <span className="text-right font-semibold text-[#101828] text-sm">
               {[repair.brandName, repair.deviceModel || repair.model || repair.device].filter(Boolean).join(" ")}
             </span>
           </div>
@@ -123,7 +128,7 @@ export function TrackingQrModal({ isOpen, onClose, repairId }: TrackingQrModalPr
 
         {trackingUrl ? (
           <a
-            className="mt-4 w-full break-all rounded-[12px] border border-[#E8E8E5] bg-white px-3 py-2.5 text-left font-mono text-[#1E7A6E] text-xs hover:underline"
+            className="mt-4 w-full break-all rounded-[12px] border border-[#E4E7EC] bg-white px-3 py-2.5 text-left font-mono text-[#1E7A6E] text-xs hover:underline"
             href={trackingUrl}
             rel="noopener noreferrer"
             target="_blank"
@@ -136,7 +141,7 @@ export function TrackingQrModal({ isOpen, onClose, repairId }: TrackingQrModalPr
           <button
             type="button"
             onClick={copyLink}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-semibold text-[#1A1916] text-sm transition hover:bg-[#FFFFFF]"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-semibold text-[#101828] text-sm transition hover:bg-[#FFFFFF]"
           >
             {copied ? <Check className="size-4 text-[#2A9D8F]" /> : <Copy className="size-4" />}
             <span>{copied ? "Copié !" : "Copier le lien"}</span>
@@ -153,7 +158,7 @@ export function TrackingQrModal({ isOpen, onClose, repairId }: TrackingQrModalPr
         </div>
         <div className="mt-3 grid w-full grid-cols-[1fr_auto] gap-2">
           <select
-            className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-sm font-semibold outline-none focus:border-[#2A9D8F]"
+            className="h-11 rounded-[12px] border border-[#E4E7EC] bg-white px-3 text-sm font-semibold outline-none focus:border-[#2A9D8F]"
             onChange={(event) => setFormat(event.target.value as "A4" | "80mm" | "58mm")}
             value={format}
           >
@@ -164,7 +169,7 @@ export function TrackingQrModal({ isOpen, onClose, repairId }: TrackingQrModalPr
           <button
             type="button"
             onClick={printQr}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-semibold text-[#1A1916] text-sm transition hover:bg-[#FFFFFF] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white px-4 font-semibold text-[#101828] text-sm transition hover:bg-[#FFFFFF] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Printer className="size-4" />
             <span>Imprimer QR</span>

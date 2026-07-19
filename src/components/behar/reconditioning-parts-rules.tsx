@@ -31,10 +31,10 @@ export function ReconditioningPartsRules() {
       subtitle="Appliqués quand un modèle n'a pas de règle spécifique. Les coûts par modèle, reliés au stock, se règlent dans Catalogue de reprise → Configurer."
       title="Coûts de pièces par défaut"
     >
-      <div className="max-w-[620px] rounded-[16px] border border-[#E8E5DF] p-3.5">
+      <div className="max-w-[620px] rounded-[16px] border border-[#E4E7EC] p-3.5">
         <div className="flex items-center gap-2.5">
           <Wrench className="size-4.5 shrink-0 text-[#2A9D8F]" />
-          <span className="font-semibold text-[#1A1916] text-[14px]">Coût pièce + main-d'œuvre</span>
+          <span className="font-semibold text-[#101828] text-[14px]">Coût pièce + main-d'œuvre</span>
         </div>
 
         <div className="mt-3 space-y-1">
@@ -49,8 +49,8 @@ export function ReconditioningPartsRules() {
                 )}
                 key={key}
               >
-                <span className="min-w-[120px] flex-1 text-[#1A1916] text-[12.5px]">{PART_LABELS[key]}</span>
-                <label className="flex items-center gap-1 text-[#6B6B6B] text-[11.5px]">
+                <span className="min-w-[120px] flex-1 text-[#101828] text-[12.5px]">{PART_LABELS[key]}</span>
+                <label className="flex items-center gap-1 text-[#667085] text-[11.5px]">
                   Pièce
                   <input
                     className={cn(
@@ -64,7 +64,7 @@ export function ReconditioningPartsRules() {
                     value={entry.piece ?? ""}
                   />
                 </label>
-                <label className="flex items-center gap-1 text-[#6B6B6B] text-[11.5px]">
+                <label className="flex items-center gap-1 text-[#667085] text-[11.5px]">
                   MO
                   <input
                     className={cn(inputCls, "h-8 w-[68px] text-right text-[12px]")}
@@ -81,7 +81,7 @@ export function ReconditioningPartsRules() {
                 <span
                   className={cn(
                     "w-[86px] text-right font-semibold text-[12.5px]",
-                    total != null ? "text-[#1A1916]" : "text-[#B4342A]",
+                    total != null ? "text-[#101828]" : "text-[#B4342A]",
                   )}
                 >
                   {total != null ? formatMoney(total) : "À renseigner"}
@@ -92,7 +92,7 @@ export function ReconditioningPartsRules() {
           })}
         </div>
 
-        <p className="mt-3 text-[#9B9B96] text-[11.5px]">
+        <p className="mt-3 text-[#98A2B3] text-[11.5px]">
           {modelCount > 0
             ? `${modelCount} modèle${modelCount > 1 ? "s ont" : " a"} des coûts pièces spécifiques (reliés au stock).`
             : "Aucun modèle n'a encore de coûts pièces spécifiques."}

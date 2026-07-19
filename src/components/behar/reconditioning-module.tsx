@@ -72,14 +72,14 @@ export function ReconditioningModule({
       title="Reconditionnement"
     >
       {/* Navigation des 4 espaces */}
-      <div className="mb-4 flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-[13px] border border-[#E8E5DF] bg-white p-1 shadow-[0_1px_2px_rgba(26,25,22,0.04)]">
+      <div className="mb-4 flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-[13px] border border-[#E4E7EC] bg-white p-1 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
         {TABS.map((t) => (
           <button
             className={cn(
               "h-8 whitespace-nowrap rounded-[9px] px-3 font-semibold text-[12.5px] transition",
               tab === t.key
                 ? "border border-[#D7EFEA] bg-[#ECF8F4] text-[#147065]"
-                : "border border-transparent text-[#6B6B6B] hover:bg-[#F7F7F5] hover:text-[#1A1916]",
+                : "border border-transparent text-[#667085] hover:bg-[#F5F7FA] hover:text-[#101828]",
             )}
             key={t.key}
             onClick={() => {
@@ -94,7 +94,7 @@ export function ReconditioningModule({
       </div>
 
       {!mounted ? (
-        <div className="h-[480px] animate-pulse rounded-[20px] border border-[#E8E5DF] bg-white" />
+        <div className="h-[480px] animate-pulse rounded-[20px] border border-[#E4E7EC] bg-white" />
       ) : (
         <>
           {tab === "overview" && (

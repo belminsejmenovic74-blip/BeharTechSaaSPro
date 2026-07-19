@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function AtelierPage() {
   return (
-    <div className="behar-app min-h-svh bg-white text-[#1A1916]">
+    <div className="behar-app min-h-svh bg-white text-[#101828]">
       <PinLoginGate>
         <PrintProvider>
           <ModeAccessGuard permission="canAccessWorkshopMode" label="mode Atelier">

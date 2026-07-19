@@ -39,7 +39,7 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 isolate z-50 bg-[#1A1916]/28 duration-150 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        "fixed inset-0 isolate z-50 bg-[#101828]/28 duration-150 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
         className
       )}
       {...props}
@@ -61,7 +61,7 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-1.5rem)] -translate-x-1/2 -translate-y-1/2 gap-5 rounded-[14px] border border-border bg-popover p-5 text-sm text-popover-foreground shadow-[0_16px_48px_rgba(26,25,22,0.10)] duration-150 outline-none sm:max-w-md sm:p-6 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-1.5rem)] -translate-x-1/2 -translate-y-1/2 gap-5 rounded-[14px] border border-border bg-popover p-5 text-sm text-popover-foreground shadow-[0_16px_48px_rgba(16,24,40,0.10)] duration-150 outline-none sm:max-w-md sm:p-6 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className
         )}
         {...props}
@@ -107,7 +107,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        "-mx-5 -mb-5 flex flex-col-reverse gap-2 border-t bg-[#FAFAF8] p-4 sm:-mx-6 sm:-mb-6 sm:flex-row sm:justify-end sm:px-6",
+        "-mx-5 -mb-5 flex flex-col-reverse gap-2 border-t bg-[#F9FAFB] p-4 sm:-mx-6 sm:-mb-6 sm:flex-row sm:justify-end sm:px-6",
         className
       )}
       {...props}

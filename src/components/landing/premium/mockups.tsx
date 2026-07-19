@@ -19,16 +19,16 @@ import {
 /* ------------------------------------------------------------------ */
 export const DA = {
   bg: "#FFFFFF",
-  text: "#1A1916",
-  muted: "#6B6B6B",
+  text: "#101828",
+  muted: "#667085",
   accent: "#2A9D8F",
   accentSoft: "#E9F5F2",
   card: "#FFFFFF",
-  line: "rgba(26,25,22,0.08)",
-  lineSoft: "rgba(26,25,22,0.05)",
+  line: "rgba(16,24,40,0.08)",
+  lineSoft: "rgba(16,24,40,0.05)",
 };
 const BORDER = `1px solid ${DA.line}`;
-const SOFT_SHADOW = "0 20px 60px rgba(26,25,22,0.08)";
+const SOFT_SHADOW = "0 20px 60px rgba(16,24,40,0.08)";
 
 /* ------------------------------------------------------------------ */
 /* Cadres premium réutilisables                                        */
@@ -76,7 +76,7 @@ export function PhoneFrame({ children }: { children: ReactNode }) {
         borderRadius: 46,
         padding: 10,
         background: "linear-gradient(160deg,#2b2b2e,#1c1c1f)",
-        boxShadow: "0 30px 70px rgba(26,25,22,0.16), 0 10px 24px rgba(26,25,22,0.08)",
+        boxShadow: "0 30px 70px rgba(16,24,40,0.16), 0 10px 24px rgba(16,24,40,0.08)",
       }}
     >
       <div
@@ -130,7 +130,7 @@ export function PhoneFrame({ children }: { children: ReactNode }) {
             width: 110,
             height: 5,
             borderRadius: 99,
-            background: "rgba(26,25,22,0.22)",
+            background: "rgba(16,24,40,0.22)",
           }}
         />
       </div>
@@ -233,7 +233,7 @@ export function DashboardMockup() {
               }}
             >
               <span
-                style={{ width: 6, height: 6, borderRadius: 2, background: active ? DA.accent : "rgba(26,25,22,0.18)" }}
+                style={{ width: 6, height: 6, borderRadius: 2, background: active ? DA.accent : "rgba(16,24,40,0.18)" }}
               />
               {label}
             </div>

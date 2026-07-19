@@ -37,7 +37,7 @@ export function RepairDemoActions() {
 
       <div className="rounded-2xl border border-black/[0.06] bg-white p-4">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <h3 className="font-semibold text-[#1A1916]">Pièce sélectionnée depuis le stock</h3>
+          <h3 className="font-semibold text-[#101828]">Pièce sélectionnée depuis le stock</h3>
           <StatusBadge status={partSelected ? "En stock" : "En attente"} />
         </div>
         <select
@@ -83,8 +83,8 @@ export function RepairDemoActions() {
 
       {paid && (
         <div className="rounded-2xl border border-[#2A9D8F]/20 bg-[#FFFFFF] p-4">
-          <p className="font-semibold text-[#1A1916]">Règlement indiqué</p>
-          <p className="mt-1 text-[#6B6B6B] text-sm">
+          <p className="font-semibold text-[#101828]">Règlement indiqué</p>
+          <p className="mt-1 text-[#667085] text-sm">
             Le réparateur peut s’arrêter ici, imprimer le reçu, ou l’envoyer plus tard.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -102,14 +102,14 @@ export function RepairDemoActions() {
 
       {logs.length > 0 && (
         <div className="rounded-2xl border border-black/[0.06] bg-white p-4">
-          <h3 className="mb-3 font-semibold text-[#1A1916]">message_logs</h3>
+          <h3 className="mb-3 font-semibold text-[#101828]">message_logs</h3>
           <div className="space-y-3">
             {logs.map((log) => (
               <div className="text-sm" key={log.id}>
                 <p className="font-medium">
                   {log.channel} · {log.sentAt}
                 </p>
-                <p className="text-[#6B6B6B]">{log.content}</p>
+                <p className="text-[#667085]">{log.content}</p>
               </div>
             ))}
           </div>

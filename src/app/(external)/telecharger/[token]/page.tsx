@@ -14,8 +14,8 @@ export default async function DownloadPage({ params }: { params: { token: string
   const supabase = getSupabaseAdmin();
   if (!supabase) {
     return (
-      <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
-        <p className="text-[#6B6B6B]">Téléchargement indisponible pour le moment.</p>
+      <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center">
+        <p className="text-[#667085]">Téléchargement indisponible pour le moment.</p>
       </div>
     );
   }
@@ -30,13 +30,13 @@ export default async function DownloadPage({ params }: { params: { token: string
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center p-6">
-        <div className="bg-white rounded-[24px] border border-[#E8E8E5] p-8 max-w-md w-full text-center shadow-sm">
+      <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center p-6">
+        <div className="bg-white rounded-[24px] border border-[#E4E7EC] p-8 max-w-md w-full text-center shadow-sm">
           <div className="size-16 rounded-full bg-red-50 text-red-500 mx-auto flex items-center justify-center mb-6">
             <span className="text-2xl">✕</span>
           </div>
-          <h1 className="text-2xl font-bold text-[#1A1916] mb-2">Lien invalide ou expiré.</h1>
-          <p className="text-[#6B6B6B]">Ce lien de téléchargement n'existe pas ou n'est plus valide.</p>
+          <h1 className="text-2xl font-bold text-[#101828] mb-2">Lien invalide ou expiré.</h1>
+          <p className="text-[#667085]">Ce lien de téléchargement n'existe pas ou n'est plus valide.</p>
         </div>
       </div>
     );
@@ -44,13 +44,13 @@ export default async function DownloadPage({ params }: { params: { token: string
 
   if (data.status !== "active") {
     return (
-      <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center p-6">
-        <div className="bg-white rounded-[24px] border border-[#E8E8E5] p-8 max-w-md w-full text-center shadow-sm">
+      <div className="min-h-screen bg-[#F9FAFB] flex items-center justify-center p-6">
+        <div className="bg-white rounded-[24px] border border-[#E4E7EC] p-8 max-w-md w-full text-center shadow-sm">
           <div className="size-16 rounded-full bg-orange-50 text-orange-500 mx-auto flex items-center justify-center mb-6">
             <span className="text-2xl">!</span>
           </div>
-          <h1 className="text-2xl font-bold text-[#1A1916] mb-2">Licence inactive</h1>
-          <p className="text-[#6B6B6B]">Cette licence n'est plus active. Veuillez contacter le support.</p>
+          <h1 className="text-2xl font-bold text-[#101828] mb-2">Licence inactive</h1>
+          <p className="text-[#667085]">Cette licence n'est plus active. Veuillez contacter le support.</p>
         </div>
       </div>
     );
@@ -69,26 +69,26 @@ export default async function DownloadPage({ params }: { params: { token: string
   const RELEASES_BASE_URL = "https://github.com/belminsejmenovic74-blip/BeharTechSaaSPro/releases/latest/download";
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] flex flex-col font-sans">
-      <header className="h-20 bg-white border-b border-[#E8E8E5] flex items-center px-6 sticky top-0 z-10">
+    <div className="min-h-screen bg-[#F9FAFB] flex flex-col font-sans">
+      <header className="h-20 bg-white border-b border-[#E4E7EC] flex items-center px-6 sticky top-0 z-10">
         <div className="max-w-[1000px] mx-auto w-full flex items-center gap-2">
           <BeharLogo size="md" />
-          <span className="font-bold text-[#1A1916] tracking-tight">BEHAR • TECH PRO</span>
+          <span className="font-bold text-[#101828] tracking-tight">BEHAR • TECH PRO</span>
         </div>
       </header>
 
       <main className="flex-1 flex items-center justify-center p-6">
         <div className="max-w-[800px] w-full">
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-[#1A1916] mb-4">Télécharger Behar Tech Pro</h1>
-            <p className="text-xl text-[#6B6B6B]">Choisissez votre version pour commencer.</p>
+            <h1 className="text-4xl font-bold text-[#101828] mb-4">Télécharger Behar Tech Pro</h1>
+            <p className="text-xl text-[#667085]">Choisissez votre version pour commencer.</p>
           </div>
 
-          <div className="bg-white rounded-[32px] border border-[#E8E8E5] p-8 md:p-12 shadow-[0_32px_64px_rgba(26,25,22,0.06)]">
+          <div className="bg-white rounded-[32px] border border-[#E4E7EC] p-8 md:p-12 shadow-[0_32px_64px_rgba(16,24,40,0.06)]">
             <div className="flex items-center gap-3 p-4 bg-[#E5F5F3] rounded-2xl mb-12">
               <CheckCircle2 className="size-6 text-[#2A9D8F]" />
               <div>
-                <div className="font-bold text-[#1A1916]">Votre accès est prêt.</div>
+                <div className="font-bold text-[#101828]">Votre accès est prêt.</div>
                 <div className="text-sm text-[#2A9D8F]">Licence active • Plan {data.plan.toUpperCase()} • Valide</div>
               </div>
             </div>
@@ -96,48 +96,48 @@ export default async function DownloadPage({ params }: { params: { token: string
             <div className="grid md:grid-cols-3 gap-6">
               <a
                 href={`${RELEASES_BASE_URL}/Behar-Tech-Pro-Windows.exe`}
-                className="group border border-[#E8E8E5] rounded-2xl p-6 flex flex-col items-center text-center hover:border-[#2A9D8F] hover:shadow-lg transition-all"
+                className="group border border-[#E4E7EC] rounded-2xl p-6 flex flex-col items-center text-center hover:border-[#2A9D8F] hover:shadow-lg transition-all"
               >
-                <div className="size-16 rounded-full bg-[#FAFAF8] flex items-center justify-center mb-6 group-hover:bg-[#E5F5F3] group-hover:text-[#2A9D8F] transition-colors">
-                  <Monitor className="size-8 text-[#1A1916] group-hover:text-[#2A9D8F] transition-colors" />
+                <div className="size-16 rounded-full bg-[#F9FAFB] flex items-center justify-center mb-6 group-hover:bg-[#E5F5F3] group-hover:text-[#2A9D8F] transition-colors">
+                  <Monitor className="size-8 text-[#101828] group-hover:text-[#2A9D8F] transition-colors" />
                 </div>
-                <h3 className="font-bold text-[#1A1916] mb-2">Windows</h3>
-                <p className="text-sm text-[#6B6B6B] mb-6">Windows 10 ou 11 (64-bit)</p>
-                <span className="mt-auto inline-flex items-center justify-center h-10 px-6 rounded-full bg-[#FAFAF8] border border-[#E8E8E5] text-sm font-semibold text-[#1A1916] group-hover:bg-[#2A9D8F] group-hover:text-white group-hover:border-[#2A9D8F] transition-colors">
+                <h3 className="font-bold text-[#101828] mb-2">Windows</h3>
+                <p className="text-sm text-[#667085] mb-6">Windows 10 ou 11 (64-bit)</p>
+                <span className="mt-auto inline-flex items-center justify-center h-10 px-6 rounded-full bg-[#F9FAFB] border border-[#E4E7EC] text-sm font-semibold text-[#101828] group-hover:bg-[#2A9D8F] group-hover:text-white group-hover:border-[#2A9D8F] transition-colors">
                   Télécharger
                 </span>
               </a>
 
               <a
                 href={`${RELEASES_BASE_URL}/Behar-Tech-Pro-macOS.dmg`}
-                className="group border border-[#E8E8E5] rounded-2xl p-6 flex flex-col items-center text-center hover:border-[#2A9D8F] hover:shadow-lg transition-all"
+                className="group border border-[#E4E7EC] rounded-2xl p-6 flex flex-col items-center text-center hover:border-[#2A9D8F] hover:shadow-lg transition-all"
               >
-                <div className="size-16 rounded-full bg-[#FAFAF8] flex items-center justify-center mb-6 group-hover:bg-[#E5F5F3] group-hover:text-[#2A9D8F] transition-colors">
-                  <Apple className="size-8 text-[#1A1916] group-hover:text-[#2A9D8F] transition-colors" />
+                <div className="size-16 rounded-full bg-[#F9FAFB] flex items-center justify-center mb-6 group-hover:bg-[#E5F5F3] group-hover:text-[#2A9D8F] transition-colors">
+                  <Apple className="size-8 text-[#101828] group-hover:text-[#2A9D8F] transition-colors" />
                 </div>
-                <h3 className="font-bold text-[#1A1916] mb-2">macOS</h3>
-                <p className="text-sm text-[#6B6B6B] mb-6">Mac Intel ou Apple Silicon</p>
-                <span className="mt-auto inline-flex items-center justify-center h-10 px-6 rounded-full bg-[#FAFAF8] border border-[#E8E8E5] text-sm font-semibold text-[#1A1916] group-hover:bg-[#2A9D8F] group-hover:text-white group-hover:border-[#2A9D8F] transition-colors">
+                <h3 className="font-bold text-[#101828] mb-2">macOS</h3>
+                <p className="text-sm text-[#667085] mb-6">Mac Intel ou Apple Silicon</p>
+                <span className="mt-auto inline-flex items-center justify-center h-10 px-6 rounded-full bg-[#F9FAFB] border border-[#E4E7EC] text-sm font-semibold text-[#101828] group-hover:bg-[#2A9D8F] group-hover:text-white group-hover:border-[#2A9D8F] transition-colors">
                   Télécharger
                 </span>
               </a>
 
               <a
                 href={`${RELEASES_BASE_URL}/Behar-Tech-Pro-Android.apk`}
-                className="group border border-[#E8E8E5] rounded-2xl p-6 flex flex-col items-center text-center hover:border-[#2A9D8F] hover:shadow-lg transition-all"
+                className="group border border-[#E4E7EC] rounded-2xl p-6 flex flex-col items-center text-center hover:border-[#2A9D8F] hover:shadow-lg transition-all"
               >
-                <div className="size-16 rounded-full bg-[#FAFAF8] flex items-center justify-center mb-6 group-hover:bg-[#E5F5F3] group-hover:text-[#2A9D8F] transition-colors">
-                  <Smartphone className="size-8 text-[#1A1916] group-hover:text-[#2A9D8F] transition-colors" />
+                <div className="size-16 rounded-full bg-[#F9FAFB] flex items-center justify-center mb-6 group-hover:bg-[#E5F5F3] group-hover:text-[#2A9D8F] transition-colors">
+                  <Smartphone className="size-8 text-[#101828] group-hover:text-[#2A9D8F] transition-colors" />
                 </div>
-                <h3 className="font-bold text-[#1A1916] mb-2">Android</h3>
-                <p className="text-sm text-[#6B6B6B] mb-6">Version 8.0 ou ultérieure</p>
-                <span className="mt-auto inline-flex items-center justify-center h-10 px-6 rounded-full bg-[#FAFAF8] border border-[#E8E8E5] text-sm font-semibold text-[#1A1916] group-hover:bg-[#2A9D8F] group-hover:text-white group-hover:border-[#2A9D8F] transition-colors">
+                <h3 className="font-bold text-[#101828] mb-2">Android</h3>
+                <p className="text-sm text-[#667085] mb-6">Version 8.0 ou ultérieure</p>
+                <span className="mt-auto inline-flex items-center justify-center h-10 px-6 rounded-full bg-[#F9FAFB] border border-[#E4E7EC] text-sm font-semibold text-[#101828] group-hover:bg-[#2A9D8F] group-hover:text-white group-hover:border-[#2A9D8F] transition-colors">
                   Télécharger (APK)
                 </span>
               </a>
             </div>
 
-            <div className="mt-8 text-center text-xs text-[#A3A3A3]">
+            <div className="mt-8 text-center text-xs text-[#98A2B3]">
               En téléchargeant Behar Tech Pro, vous acceptez nos conditions générales d'utilisation.
             </div>
           </div>

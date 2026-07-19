@@ -96,8 +96,8 @@ export function DemoWorkflow() {
           <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="font-medium text-[#2A9D8F] text-sm">Parcours guidé · Données atelier</p>
-              <h2 className="mt-1 font-semibold text-2xl text-[#1A1916]">Parcours complet Belmin / iPhone 13</h2>
-              <p className="mt-2 text-[#6B6B6B] text-sm">
+              <h2 className="mt-1 font-semibold text-2xl text-[#101828]">Parcours complet Belmin / iPhone 13</h2>
+              <p className="mt-2 text-[#667085] text-sm">
                 Clique les étapes dans l’ordre pour parcourir client, dossier, devis, facture, règlement et documents.
               </p>
             </div>
@@ -117,7 +117,7 @@ export function DemoWorkflow() {
 
           <div className="mb-6 rounded-2xl border border-black/[0.07] bg-[#FFFFFF] p-4">
             <div className="mb-2 flex justify-between text-sm">
-              <span className="font-medium text-[#1A1916]">Progression</span>
+              <span className="font-medium text-[#101828]">Progression</span>
               <span className="font-semibold text-[#2A9D8F]">{progress}%</span>
             </div>
             <div className="h-3 overflow-hidden rounded-full bg-black/[0.06]">
@@ -149,8 +149,8 @@ export function DemoWorkflow() {
                       {done ? <CheckCircle2 className="size-5" /> : <Icon className="size-5" />}
                     </span>
                     <span>
-                      <span className="block font-semibold text-[#1A1916]">{step.title}</span>
-                      <span className="mt-1 block text-[#6B6B6B] text-sm">{step.description}</span>
+                      <span className="block font-semibold text-[#101828]">{step.title}</span>
+                      <span className="mt-1 block text-[#667085] text-sm">{step.description}</span>
                     </span>
                   </div>
                 </button>
@@ -162,8 +162,8 @@ export function DemoWorkflow() {
         <Panel className="p-6">
           <div className="mb-5 flex items-start justify-between">
             <div>
-              <h2 className="font-semibold text-[#1A1916] text-xl">Résumé live</h2>
-              <p className="mt-1 text-[#6B6B6B] text-sm">État du parcours guidé</p>
+              <h2 className="font-semibold text-[#101828] text-xl">Résumé live</h2>
+              <p className="mt-1 text-[#667085] text-sm">État du parcours guidé</p>
             </div>
             <StatusBadge status={state.invoicePaid ? "Payée" : "Brouillon"} />
           </div>
@@ -197,12 +197,12 @@ export function DemoWorkflow() {
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         <Panel className="p-6">
-          <h2 className="mb-4 font-semibold text-[#1A1916] text-xl">Timeline complète</h2>
+          <h2 className="mb-4 font-semibold text-[#101828] text-xl">Timeline complète</h2>
           <DemoTimeline items={demoTimeline} />
         </Panel>
 
         <Panel className="p-6">
-          <h2 className="mb-4 font-semibold text-[#1A1916] text-xl">Documents disponibles</h2>
+          <h2 className="mb-4 font-semibold text-[#101828] text-xl">Documents disponibles</h2>
           <div className="space-y-3">
             {demoDocuments.map((doc) => (
               <Link
@@ -211,8 +211,8 @@ export function DemoWorkflow() {
                 key={doc.id}
                 prefetch={false}
               >
-                <span className="font-semibold text-[#1A1916]">{doc.title}</span>
-                <span className="mt-1 block text-[#6B6B6B] text-sm">{doc.description}</span>
+                <span className="font-semibold text-[#101828]">{doc.title}</span>
+                <span className="mt-1 block text-[#667085] text-sm">{doc.description}</span>
               </Link>
             ))}
           </div>
@@ -220,22 +220,22 @@ export function DemoWorkflow() {
       </section>
 
       <Panel className="p-6">
-        <h2 className="mb-4 flex items-center gap-2 font-semibold text-[#1A1916] text-xl">
+        <h2 className="mb-4 flex items-center gap-2 font-semibold text-[#101828] text-xl">
           <Sparkles className="size-5 text-[#2A9D8F]" />
           Historique message_logs
         </h2>
         {state.messages.length === 0 ? (
-          <p className="text-[#6B6B6B] text-sm">Aucun message pour l’instant.</p>
+          <p className="text-[#667085] text-sm">Aucun message pour l’instant.</p>
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
             {state.messages.map((message) => (
               <div className="rounded-2xl border border-black/[0.07] bg-white p-4 text-sm" key={message.id}>
-                <p className="font-semibold text-[#1A1916]">
+                <p className="font-semibold text-[#101828]">
                   {message.channel} · {message.status}
                 </p>
-                <p className="mt-1 text-[#6B6B6B]">{message.sentAt}</p>
+                <p className="mt-1 text-[#667085]">{message.sentAt}</p>
                 {"subject" in message && message.subject && <p className="mt-2 font-medium">{message.subject}</p>}
-                <p className="mt-2 text-[#1A1916]">{message.content}</p>
+                <p className="mt-2 text-[#101828]">{message.content}</p>
               </div>
             ))}
           </div>

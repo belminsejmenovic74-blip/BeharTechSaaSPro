@@ -8,11 +8,11 @@ export type PillTone = "ok" | "warn" | "info" | "muted" | "danger" | "violet";
 
 const TONE_STYLES: Record<PillTone, string> = {
   ok: "border-[#D7EFEA] bg-[#FFFFFF] text-[#1d6f65]",
-  warn: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
-  info: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
-  muted: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
+  warn: "border-[#E4E7EC] bg-[#FFFFFF] text-[#667085]",
+  info: "border-[#E4E7EC] bg-[#FFFFFF] text-[#667085]",
+  muted: "border-[#E4E7EC] bg-[#FFFFFF] text-[#667085]",
   danger: "border-[#F2D4D1] bg-[#FFFFFF] text-[#A23A40]",
-  violet: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
+  violet: "border-[#E4E7EC] bg-[#FFFFFF] text-[#667085]",
 };
 
 export function StatusPill({
@@ -81,7 +81,7 @@ export function TabBar<T extends string>({
   counts?: Partial<Record<T, number>>;
 }>) {
   return (
-    <div className="flex h-10 max-w-full items-center gap-1 overflow-x-auto rounded-[12px] border border-[#E8E8E5] bg-white p-1 scrollbar-none">
+    <div className="flex h-10 max-w-full items-center gap-1 overflow-x-auto rounded-[12px] border border-[#E4E7EC] bg-white p-1 scrollbar-none">
       {tabs.map((tab) => {
         const active = tab.value === value;
         const count = counts?.[tab.value];
@@ -92,7 +92,7 @@ export function TabBar<T extends string>({
             onClick={() => onChange(tab.value)}
             className={cn(
               "h-8 shrink-0 rounded-[9px] px-3 font-medium text-[13px] transition",
-              active ? "bg-[#FFFFFF] text-[#1d6f65]" : "text-[#6B6B6B] hover:bg-[#FFFFFF] hover:text-[#1A1916]",
+              active ? "bg-[#FFFFFF] text-[#1d6f65]" : "text-[#667085] hover:bg-[#FFFFFF] hover:text-[#101828]",
             )}
           >
             {tab.label}

@@ -13,7 +13,7 @@ export default function EditCmsContentPage({ params }: { params: Promise<{ id: s
     return (
       <div className="flex-1 flex flex-col items-center justify-center min-h-[500px]">
         <BeharLogo size="lg" className="animate-pulse mb-8" />
-        <div className="text-[#6B6B6B]">Chargement de l'éditeur...</div>
+        <div className="text-[#667085]">Chargement de l'éditeur...</div>
       </div>
     );
   }

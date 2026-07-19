@@ -35,7 +35,7 @@ const ACTION_LABEL: Record<QuickActionKey, string> = {
 };
 
 const SEVERITY_DOT: Record<string, string> = {
-  info: "bg-[#6B6B6B]",
+  info: "bg-[#667085]",
   success: "bg-[#2A9D8F]",
   warning: "bg-[#C89B3C]",
   danger: "bg-[#B4232A]",
@@ -69,9 +69,9 @@ export function WidgetNotificationCenter({ onNavigate }: { onNavigate?: () => vo
   };
 
   return (
-    <div className="border-[#E8E8E5] border-b bg-[#FCFCFB]">
+    <div className="border-[#E4E7EC] border-b bg-[#FCFCFD]">
       <div className="flex items-center justify-between gap-2 px-4 py-2.5">
-        <span className="font-semibold text-[#1A1916] text-xs uppercase tracking-wide">
+        <span className="font-semibold text-[#101828] text-xs uppercase tracking-wide">
           Widget · {unread} non lue{unread > 1 ? "s" : ""}
         </span>
         {unread > 0 ? (
@@ -96,12 +96,12 @@ export function WidgetNotificationCenter({ onNavigate }: { onNavigate?: () => vo
 
       <div className="max-h-[280px] overflow-y-auto">
         {visible.length === 0 ? (
-          <p className="px-4 py-6 text-center text-[#6B6B6B] text-xs">Aucune notification pour cette boutique.</p>
+          <p className="px-4 py-6 text-center text-[#667085] text-xs">Aucune notification pour cette boutique.</p>
         ) : (
           visible.map((notification) => (
             <div
               key={notification.id}
-              className={cn("border-[#E8E8E5] border-b px-4 py-2.5", !notification.read && "bg-white")}
+              className={cn("border-[#E4E7EC] border-b px-4 py-2.5", !notification.read && "bg-white")}
             >
               <div className="flex items-center gap-2">
                 <span
@@ -110,12 +110,12 @@ export function WidgetNotificationCenter({ onNavigate }: { onNavigate?: () => vo
                     SEVERITY_DOT[categorySeverity(notification.category!)],
                   )}
                 />
-                <span className="rounded-full bg-[#F1F0EC] px-2 py-0.5 font-medium text-[#6B6B6B] text-[11px]">
+                <span className="rounded-full bg-[#F1F0EC] px-2 py-0.5 font-medium text-[#667085] text-[11px]">
                   {categoryLabel(notification.category!)}
                 </span>
               </div>
-              <p className="mt-1 font-medium text-[#1A1916] text-sm">{notification.title}</p>
-              <p className="truncate text-[#6B6B6B] text-xs">{notification.message}</p>
+              <p className="mt-1 font-medium text-[#101828] text-sm">{notification.title}</p>
+              <p className="truncate text-[#667085] text-xs">{notification.message}</p>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {categoryQuickActions(notification.category!).map((action) => (
                   <button
@@ -125,7 +125,7 @@ export function WidgetNotificationCenter({ onNavigate }: { onNavigate?: () => vo
                     className={
                       action === "confirm"
                         ? "rounded-[8px] bg-[#2A9D8F] px-2.5 py-1 font-semibold text-white text-[11px] hover:brightness-95"
-                        : "rounded-[8px] border border-[#E8E8E5] bg-white px-2.5 py-1 font-medium text-[#1A1916] text-[11px] hover:border-[#2A9D8F]"
+                        : "rounded-[8px] border border-[#E4E7EC] bg-white px-2.5 py-1 font-medium text-[#101828] text-[11px] hover:border-[#2A9D8F]"
                     }
                   >
                     {ACTION_LABEL[action]}
@@ -155,7 +155,7 @@ function FilterChip({
       onClick={onClick}
       className={cn(
         "max-w-[140px] truncate rounded-full border px-2.5 py-0.5 font-medium text-[11px] transition",
-        active ? "border-[#2A9D8F] bg-[#ECF8F4] text-[#167B70]" : "border-[#E8E8E5] bg-white text-[#6B6B6B]",
+        active ? "border-[#2A9D8F] bg-[#ECF8F4] text-[#167B70]" : "border-[#E4E7EC] bg-white text-[#667085]",
       )}
     >
       {children}

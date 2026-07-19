@@ -80,9 +80,9 @@ import { cn } from "@/lib/utils";
 
 export const RECOND_STATUS_TONE: Record<ReconditioningStatus, string> = {
   "À compléter": "border-[#FFD7B5] bg-[#FFF2E8] text-[#C05621]",
-  Brouillon: "border-[#E8E8E5] bg-white text-[#6B6B6B]",
+  Brouillon: "border-[#E4E7EC] bg-white text-[#667085]",
   Acheté: "border-[#D7EFEA] bg-[#ECF8F4] text-[#167B70]",
-  Refusé: "border-[#E8E8E5] bg-[#F7F7F5] text-[#8A8A85]",
+  Refusé: "border-[#E4E7EC] bg-[#F5F7FA] text-[#98A2B3]",
   Évaluation: "border-[#D9E7FF] bg-[#F3F7FF] text-[#2563EB]",
   Reconditionnement: "border-[#D7EFEA] bg-[#ECF8F4] text-[#167B70]",
   "En attente pièce": "border-[#F0E0BC] bg-[#FFF7E8] text-[#9A6B1B]",
@@ -91,7 +91,7 @@ export const RECOND_STATUS_TONE: Record<ReconditioningStatus, string> = {
   "En stock": "border-[#1F2937]/12 bg-white text-[#1F2937]",
   Vendu: "border-[#CDEBE4] bg-[#F4FAF7] text-[#147065]",
   Bloqué: "border-[#F0D9D6] bg-[#FCF4F3] text-[#B4342A]",
-  Abandonné: "border-[#E8E8E5] bg-[#F7F7F5] text-[#8A8A85]",
+  Abandonné: "border-[#E4E7EC] bg-[#F5F7FA] text-[#98A2B3]",
 };
 
 export function RecondStatusPill({
@@ -136,7 +136,7 @@ const fmtDateTime = (iso?: string): string => {
 };
 
 const inputCls =
-  "h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-sm outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
+  "h-10 w-full rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[#101828] text-sm outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10";
 const selectCls = `${inputCls} cursor-pointer appearance-none pr-8`;
 
 const WORKING_STATUSES: ReconditioningStatus[] = [
@@ -180,7 +180,7 @@ export function ReconditioningAtelierFile({ fileId, onBack }: Readonly<{ fileId:
   if (!file) {
     return (
       <Panel className="p-8 text-center">
-        <p className="text-[#6B6B6B] text-sm">Appareil introuvable.</p>
+        <p className="text-[#667085] text-sm">Appareil introuvable.</p>
         <SecondaryButton className="mt-4" onClick={onBack}>
           <ArrowLeft className="size-4" />
           Retour à la file reconditionnement
@@ -315,7 +315,7 @@ function FileInner({ file, onBack }: Readonly<{ file: ReconditioningFile; onBack
     <div className="space-y-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <button
-          className="inline-flex items-center gap-2 font-medium text-[#6B6B6B] text-sm transition hover:text-[#1A1916]"
+          className="inline-flex items-center gap-2 font-medium text-[#667085] text-sm transition hover:text-[#101828]"
           onClick={onBack}
           type="button"
         >
@@ -339,9 +339,9 @@ function FileInner({ file, onBack }: Readonly<{ file: ReconditioningFile; onBack
       </div>
 
       <Panel className="overflow-hidden">
-        <div className="grid gap-5 border-[#E8E8E5] border-b p-5 lg:grid-cols-[1.15fr_1fr_0.85fr]">
+        <div className="grid gap-5 border-[#E4E7EC] border-b p-5 lg:grid-cols-[1.15fr_1fr_0.85fr]">
           <div className="flex min-w-0 gap-4">
-            <span className="grid size-[74px] shrink-0 place-items-center overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] text-[#6B6B6B]">
+            <span className="grid size-[74px] shrink-0 place-items-center overflow-hidden rounded-[14px] border border-[#E4E7EC] bg-[#F9FAFB] text-[#667085]">
               {image ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img alt={deviceTitleFull} className="size-full object-contain p-1.5" src={image} />
@@ -350,11 +350,11 @@ function FileInner({ file, onBack }: Readonly<{ file: ReconditioningFile; onBack
               )}
             </span>
             <div className="min-w-0">
-              <p className="font-semibold text-[#1A1916] text-[18px] leading-tight">{file.number}</p>
-              <h2 className="mt-1 truncate font-semibold text-[#1A1916] text-[24px] leading-tight tracking-tight">
+              <p className="font-semibold text-[#101828] text-[18px] leading-tight">{file.number}</p>
+              <h2 className="mt-1 truncate font-semibold text-[#101828] text-[24px] leading-tight tracking-tight">
                 {deviceTitleFull}
               </h2>
-              <p className="mt-1 truncate text-[#6B6B6B] text-sm">
+              <p className="mt-1 truncate text-[#667085] text-sm">
                 {deviceSubtitle || "Stockage / couleur à compléter"}
               </p>
             </div>
@@ -382,7 +382,7 @@ function FileInner({ file, onBack }: Readonly<{ file: ReconditioningFile; onBack
               <button
                 className={cn(
                   "inline-flex h-9 shrink-0 items-center gap-2 rounded-[10px] px-3 font-semibold text-[12px] transition",
-                  active ? "bg-[#ECF8F4] text-[#167B70]" : "text-[#6B6B6B] hover:bg-[#F7F7F5] hover:text-[#1A1916]",
+                  active ? "bg-[#ECF8F4] text-[#167B70]" : "text-[#667085] hover:bg-[#F5F7FA] hover:text-[#101828]",
                 )}
                 key={entry.id}
                 onClick={() => setTab(entry.id)}
@@ -438,7 +438,7 @@ function FileInner({ file, onBack }: Readonly<{ file: ReconditioningFile; onBack
 
       {working && (
         <Panel className="flex flex-wrap items-center gap-1.5 p-4">
-          <span className="mr-1 text-[#6B6B6B] text-[12px]">Étape atelier :</span>
+          <span className="mr-1 text-[#667085] text-[12px]">Étape atelier :</span>
           {WORK_STATUSES.map(({ status, label }) => (
             <button
               className={cn(
@@ -446,7 +446,7 @@ function FileInner({ file, onBack }: Readonly<{ file: ReconditioningFile; onBack
                 file.status === status ||
                   (status === "Évaluation" && (file.status === "Brouillon" || file.status === "Acheté"))
                   ? "border-[#2A9D8F] bg-[#ECF8F4] text-[#147065]"
-                  : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:text-[#1A1916]",
+                  : "border-[#E4E7EC] bg-white text-[#667085] hover:text-[#101828]",
               )}
               key={status}
               onClick={() => {
@@ -509,7 +509,7 @@ function FicheTab({
       <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr_0.8fr]">
         <Panel className="p-5">
           <SectionTitle title="Résumé dossier" />
-          <p className="mt-3 text-[#1A1916] text-sm leading-6">
+          <p className="mt-3 text-[#101828] text-sm leading-6">
             Téléphone repris avec {initialProblemLabel(file).toLowerCase()}. Le dossier suit le cycle de
             reconditionnement central et reste visible au comptoir, à l'atelier et au dashboard.
           </p>
@@ -561,9 +561,9 @@ function FicheTab({
 
         <Panel className="p-5">
           <SectionTitle title="Prochaine action" />
-          <div className="mt-4 rounded-[16px] bg-[#FAFAF8] p-4">
-            <p className="font-semibold text-[#1A1916] text-sm">{next.title}</p>
-            <p className="mt-1 text-[#6B6B6B] text-xs leading-5">{next.description}</p>
+          <div className="mt-4 rounded-[16px] bg-[#F9FAFB] p-4">
+            <p className="font-semibold text-[#101828] text-sm">{next.title}</p>
+            <p className="mt-1 text-[#667085] text-xs leading-5">{next.description}</p>
             <PrimaryButton className="mt-4 w-full" onClick={() => onOpenTab(next.tab)}>
               Ouvrir
               <ChevronRight className="ml-2 size-4" />
@@ -588,7 +588,7 @@ function IdentityPanel({ file }: Readonly<{ file: ReconditioningFile }>) {
   return (
     <Panel className="p-5">
       <SectionTitle title="Identité appareil" />
-      <p className="mt-1 text-[#6B6B6B] text-xs">
+      <p className="mt-1 text-[#667085] text-xs">
         Modèle, stockage, couleur et prix d'achat sont requis pour débloquer le flux.
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -720,7 +720,7 @@ function InitialDiagnosticTab({ file }: Readonly<{ file: ReconditioningFile }>) 
       <Panel className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <SectionTitle title="État du téléphone à l'achat" />
-          <span className="rounded-full bg-[#F7F7F5] px-2.5 py-1 font-semibold text-[#6B6B6B] text-[11px]">
+          <span className="rounded-full bg-[#F5F7FA] px-2.5 py-1 font-semibold text-[#667085] text-[11px]">
             Interne uniquement — jamais visible côté client
           </span>
         </div>
@@ -758,20 +758,20 @@ function InitialDiagnosticTab({ file }: Readonly<{ file: ReconditioningFile }>) 
 
       <Panel className="p-5">
         <SectionTitle title="Photos à l'achat" />
-        <p className="mt-1 text-[#6B6B6B] text-xs">Prises à la reprise — internes, jamais publiées.</p>
+        <p className="mt-1 text-[#667085] text-xs">Prises à la reprise — internes, jamais publiées.</p>
         <div className="mt-4 grid grid-cols-3 gap-3">
           {(["face", "dos", "defaut"] as const).map((slot) =>
             file.photos[slot] ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 alt={slot}
-                className="aspect-square w-full rounded-[12px] border border-[#E8E8E5] object-cover"
+                className="aspect-square w-full rounded-[12px] border border-[#E4E7EC] object-cover"
                 key={slot}
                 src={file.photos[slot]}
               />
             ) : (
               <div
-                className="grid aspect-square w-full place-items-center rounded-[12px] border border-[#E8E8E5] border-dashed text-[#9A9A95] text-[11px]"
+                className="grid aspect-square w-full place-items-center rounded-[12px] border border-[#E4E7EC] border-dashed text-[#98A2B3] text-[11px]"
                 key={slot}
               >
                 {slot === "face" ? "Face" : slot === "dos" ? "Dos" : "Défaut"}
@@ -780,7 +780,7 @@ function InitialDiagnosticTab({ file }: Readonly<{ file: ReconditioningFile }>) 
           )}
         </div>
         {file.originalEstimation && (
-          <div className="mt-4 space-y-3 border-[#F1F1EF] border-t pt-4">
+          <div className="mt-4 space-y-3 border-[#F2F4F7] border-t pt-4">
             <InfoLine label="Cote de base" value={formatMoney(file.originalEstimation.coteDeBase)} />
             <InfoLine label="Prix conseillé (reprise)" value={formatMoney(file.originalEstimation.prixConseille)} />
             <InfoLine label="Prix payé" value={formatMoney(file.originalEstimation.prixFinalPaye)} />
@@ -832,10 +832,10 @@ function PartsTab({ file, margin }: Readonly<{ file: ReconditioningFile; margin:
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
       <Panel className="overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-[#E8E8E5] border-b p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-[#E4E7EC] border-b p-5">
           <div>
             <SectionTitle title="Pièces utilisées" />
-            <p className="mt-0.5 text-[#6B6B6B] text-xs">
+            <p className="mt-0.5 text-[#667085] text-xs">
               Le stock est décrémenté à la validation réelle de la pièce — jamais pendant l'estimation.
             </p>
           </div>
@@ -846,10 +846,10 @@ function PartsTab({ file, margin }: Readonly<{ file: ReconditioningFile; margin:
         </div>
 
         {pickerOpen && (
-          <div className="border-[#E8E8E5] border-b bg-[#FAFAF8] p-4">
+          <div className="border-[#E4E7EC] border-b bg-[#F9FAFB] p-4">
             <div className="flex flex-wrap items-center gap-3">
               <div className="relative min-w-[220px] flex-1">
-                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#9A9A95]" />
+                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[#98A2B3]" />
                 <input
                   className={cn(inputCls, "pl-9")}
                   onChange={(e) => setQuery(e.target.value)}
@@ -858,44 +858,44 @@ function PartsTab({ file, margin }: Readonly<{ file: ReconditioningFile; margin:
                 />
               </div>
               {compatible.length > 0 && others.length > 0 && (
-                <label className="flex cursor-pointer items-center gap-2 text-[#6B6B6B] text-[12.5px]">
+                <label className="flex cursor-pointer items-center gap-2 text-[#667085] text-[12.5px]">
                   <input checked={showAll} onChange={(e) => setShowAll(e.target.checked)} type="checkbox" />
                   Tout le stock
                 </label>
               )}
               <button
-                className="grid size-9 place-items-center rounded-[10px] border border-[#E8E8E5] bg-white text-[#6B6B6B]"
+                className="grid size-9 place-items-center rounded-[10px] border border-[#E4E7EC] bg-white text-[#667085]"
                 onClick={() => setPickerOpen(false)}
                 type="button"
               >
                 <X className="size-4" />
               </button>
             </div>
-            <p className="mt-2 text-[#6B6B6B] text-[12px]">
+            <p className="mt-2 text-[#667085] text-[12px]">
               {compatible.length > 0
                 ? `${compatible.length} pièce${compatible.length > 1 ? "s" : ""} compatible${compatible.length > 1 ? "s" : ""} avec ${[file.brand, file.model].filter(Boolean).join(" ") || "ce modèle"} — seules les pièces compatibles sont proposées.`
                 : "Aucune pièce compatible trouvée — tout le stock disponible est proposé."}
             </p>
             <div className="mt-3 max-h-[300px] space-y-2 overflow-y-auto pr-1">
               {filtered.length === 0 ? (
-                <p className="rounded-[12px] bg-white px-3 py-4 text-center text-[#6B6B6B] text-xs">
+                <p className="rounded-[12px] bg-white px-3 py-4 text-center text-[#667085] text-xs">
                   Aucune pièce en stock ne correspond.
                 </p>
               ) : (
                 filtered.map((item) => (
                   <div
-                    className="flex flex-wrap items-center gap-3 rounded-[12px] border border-[#E8E8E5] bg-white px-3.5 py-2.5"
+                    className="flex flex-wrap items-center gap-3 rounded-[12px] border border-[#E4E7EC] bg-white px-3.5 py-2.5"
                     key={item.id}
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-[#1A1916] text-[13px]">{item.name}</p>
-                      <p className="truncate text-[#9A9A95] text-[11.5px]">
+                      <p className="truncate font-semibold text-[#101828] text-[13px]">{item.name}</p>
+                      <p className="truncate text-[#98A2B3] text-[11.5px]">
                         {item.sku || item.reference || "Réf. non renseignée"} ·{" "}
                         {item.supplier || "Fournisseur non renseigné"}
                       </p>
                     </div>
-                    <span className="text-[#6B6B6B] text-[12px]">{item.stock ?? 0} en stock</span>
-                    <span className="font-semibold text-[#1A1916] text-[12.5px]">
+                    <span className="text-[#667085] text-[12px]">{item.stock ?? 0} en stock</span>
+                    <span className="font-semibold text-[#101828] text-[12.5px]">
                       {item.purchasePrice > 0 ? formatEuro(item.purchasePrice) : "Prix à renseigner"}
                     </span>
                     <SecondaryButton
@@ -927,11 +927,11 @@ function PartsTab({ file, margin }: Readonly<{ file: ReconditioningFile; margin:
         )}
 
         {file.parts.length === 0 ? (
-          <p className="p-8 text-center text-[#9A9A95] text-[13px]">Aucune pièce utilisée pour le moment.</p>
+          <p className="p-8 text-center text-[#98A2B3] text-[13px]">Aucune pièce utilisée pour le moment.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[820px] text-sm">
-              <thead className="border-[#E8E8E5] border-b text-left text-[#6B6B6B] text-xs">
+              <thead className="border-[#E4E7EC] border-b text-left text-[#667085] text-xs">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Pièce</th>
                   <th className="px-4 py-3 font-semibold">Référence</th>
@@ -948,7 +948,7 @@ function PartsTab({ file, margin }: Readonly<{ file: ReconditioningFile; margin:
                 {file.parts.map((part) => {
                   const manual = !part.stockItemId;
                   return (
-                    <tr className="border-[#F1F1EF] border-b last:border-0" key={part.id}>
+                    <tr className="border-[#F2F4F7] border-b last:border-0" key={part.id}>
                       <td className="px-4 py-3">
                         {manual ? (
                           <input
@@ -958,12 +958,12 @@ function PartsTab({ file, margin }: Readonly<{ file: ReconditioningFile; margin:
                             value={part.label}
                           />
                         ) : (
-                          <span className="font-medium text-[#1A1916]">{part.label || "Pièce atelier"}</span>
+                          <span className="font-medium text-[#101828]">{part.label || "Pièce atelier"}</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-[#6B6B6B]">{part.reference || part.sku || "—"}</td>
-                      <td className="px-4 py-3 text-[#6B6B6B]">{part.supplier || file.supplierName || "Interne"}</td>
-                      <td className="px-4 py-3 text-[#6B6B6B]">
+                      <td className="px-4 py-3 text-[#667085]">{part.reference || part.sku || "—"}</td>
+                      <td className="px-4 py-3 text-[#667085]">{part.supplier || file.supplierName || "Interne"}</td>
+                      <td className="px-4 py-3 text-[#667085]">
                         {part.supplierInvoice || file.supplierInvoice || "—"}
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -991,7 +991,7 @@ function PartsTab({ file, margin }: Readonly<{ file: ReconditioningFile; margin:
                             value={part.cost}
                           />
                         ) : (
-                          <span className="font-semibold text-[#1A1916] tabular-nums">{formatEuro(part.cost)}</span>
+                          <span className="font-semibold text-[#101828] tabular-nums">{formatEuro(part.cost)}</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -1002,15 +1002,15 @@ function PartsTab({ file, margin }: Readonly<{ file: ReconditioningFile; margin:
                         ) : part.stockDecremented ? (
                           <span className="text-[#167B70]">Décrémenté</span>
                         ) : (
-                          <span className="text-[#9A9A95]">Manuel</span>
+                          <span className="text-[#98A2B3]">Manuel</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-[#6B6B6B]">
+                      <td className="px-4 py-3 text-[#667085]">
                         {part.usedAt ? new Date(part.usedAt).toLocaleDateString("fr-FR") : "—"}
                       </td>
                       <td className="px-2 py-3">
                         <button
-                          className="grid size-8 place-items-center rounded-[8px] text-[#9B9B96] transition hover:bg-[#FCF4F3] hover:text-[#B4342A]"
+                          className="grid size-8 place-items-center rounded-[8px] text-[#98A2B3] transition hover:bg-[#FCF4F3] hover:text-[#B4342A]"
                           onClick={() => removePart(file.id, part.id)}
                           title="Retirer la pièce (restaure le stock)"
                           type="button"
@@ -1034,7 +1034,7 @@ function PartsTab({ file, margin }: Readonly<{ file: ReconditioningFile; margin:
             <FinRow label="Achat" value={file.prixAchat > 0 ? formatEuro(file.prixAchat) : "À compléter"} />
             <FinRow label="Coût pièces" value={formatEuro(partsTotal)} />
             <FinRow label="Main-d'œuvre" value={formatEuro(safeNumber(file.laborCost))} />
-            <div className="border-[#F1F1EF] border-t pt-1.5">
+            <div className="border-[#F2F4F7] border-t pt-1.5">
               <FinRow bold label="Coût réel" value={formatEuro(margin.coutTotal)} />
             </div>
             <FinRow
@@ -1057,7 +1057,7 @@ function PartsTab({ file, margin }: Readonly<{ file: ReconditioningFile; margin:
           <SectionTitle title="Chronologie pièces & stock" />
           <div className="mt-4 space-y-2.5">
             {stockEvents.length === 0 ? (
-              <p className="text-[#9A9A95] text-[12.5px]">Aucun mouvement pour le moment.</p>
+              <p className="text-[#98A2B3] text-[12.5px]">Aucun mouvement pour le moment.</p>
             ) : (
               [...stockEvents]
                 .reverse()
@@ -1068,8 +1068,8 @@ function PartsTab({ file, margin }: Readonly<{ file: ReconditioningFile; margin:
                       <Check className="size-3" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-[#1A1916] text-[12.5px]">{event.title}</p>
-                      <p className="text-[#9A9A95] text-[11px]">
+                      <p className="font-medium text-[#101828] text-[12.5px]">{event.title}</p>
+                      <p className="text-[#98A2B3] text-[11px]">
                         {fmtDateTime(event.at)}
                         {event.by ? ` · ${event.by}` : ""}
                       </p>
@@ -1095,32 +1095,32 @@ function InterventionTab({ file, onOpenFinal }: Readonly<{ file: ReconditioningF
       <Panel className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <SectionTitle title="Travaux effectués" />
-          <span className="rounded-full bg-[#F7F7F5] px-2.5 py-1 font-semibold text-[#6B6B6B] text-[11px]">
+          <span className="rounded-full bg-[#F5F7FA] px-2.5 py-1 font-semibold text-[#667085] text-[11px]">
             Interne — jamais visible sur le QR client
           </span>
         </div>
         {file.parts.length === 0 ? (
-          <p className="mt-4 rounded-[12px] bg-[#F7F7F5] px-3 py-4 text-center text-[#6B6B6B] text-xs">
+          <p className="mt-4 rounded-[12px] bg-[#F5F7FA] px-3 py-4 text-center text-[#667085] text-xs">
             Aucune pièce posée — les pièces ajoutées dans « Pièces & stock » apparaissent ici comme travaux.
           </p>
         ) : (
           <div className="mt-4 space-y-2">
             {file.parts.map((part) => (
               <div
-                className="flex items-center gap-3 rounded-[12px] border border-[#E8E8E5] px-3.5 py-2.5"
+                className="flex items-center gap-3 rounded-[12px] border border-[#E4E7EC] px-3.5 py-2.5"
                 key={part.id}
               >
                 <Wrench className="size-4 shrink-0 text-[#147065]" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-[#1A1916] text-[13px]">
+                  <p className="truncate font-medium text-[#101828] text-[13px]">
                     {part.label || "Pièce atelier"} — remplacement
                   </p>
-                  <p className="text-[#9A9A95] text-[11.5px]">
+                  <p className="text-[#98A2B3] text-[11.5px]">
                     {part.usedAt ? fmtDateTime(part.usedAt) : "Date non renseignée"} ·{" "}
                     {part.technician || file.technician || "Atelier principal"}
                   </p>
                 </div>
-                <span className="font-semibold text-[#1A1916] text-[12.5px]">
+                <span className="font-semibold text-[#101828] text-[12.5px]">
                   {formatEuro(safeNumber(part.cost) * Math.max(1, safeNumber(part.quantity)))}
                 </span>
               </div>
@@ -1192,9 +1192,9 @@ function InterventionTab({ file, onOpenFinal }: Readonly<{ file: ReconditioningF
             />
           </FieldLabel>
         </div>
-        <div className="mt-4 rounded-[12px] bg-[#FAFAF8] p-3.5">
-          <p className="font-semibold text-[#1A1916] text-[12.5px]">Contrôle effectué</p>
-          <p className="mt-0.5 text-[#6B6B6B] text-[12px]">
+        <div className="mt-4 rounded-[12px] bg-[#F9FAFB] p-3.5">
+          <p className="font-semibold text-[#101828] text-[12.5px]">Contrôle effectué</p>
+          <p className="mt-0.5 text-[#667085] text-[12px]">
             {tested.testedPoints} / {tested.totalPoints} points contrôlés au diagnostic final.
           </p>
           <SecondaryButton className="mt-3 w-full" onClick={onOpenFinal}>
@@ -1278,11 +1278,11 @@ function PhotosTab({ file }: Readonly<{ file: ReconditioningFile }>) {
       <Panel className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <SectionTitle title="Photos historiques" />
-          <span className="rounded-full bg-[#F7F7F5] px-2.5 py-1 font-semibold text-[#6B6B6B] text-[11px]">
+          <span className="rounded-full bg-[#F5F7FA] px-2.5 py-1 font-semibold text-[#667085] text-[11px]">
             Compatibilité anciennes fiches
           </span>
         </div>
-        <p className="mt-1 text-[#6B6B6B] text-xs">
+        <p className="mt-1 text-[#667085] text-xs">
           Ces emplacements restent disponibles, mais seules les photos publiques client sont publiées.
         </p>
         <div className="mt-4 grid max-w-[560px] grid-cols-4 gap-3">
@@ -1326,56 +1326,56 @@ function MediaPanel({
         <span
           className={cn(
             "rounded-full px-2.5 py-1 font-semibold text-[11px]",
-            publicPanel ? "border border-[#D7EFEA] bg-[#ECF8F4] text-[#147065]" : "bg-[#F7F7F5] text-[#6B6B6B]",
+            publicPanel ? "border border-[#D7EFEA] bg-[#ECF8F4] text-[#147065]" : "bg-[#F5F7FA] text-[#667085]",
           )}
         >
           {badge}
         </span>
       </div>
-      <p className="mt-1 min-h-8 text-[#6B6B6B] text-xs">{description}</p>
+      <p className="mt-1 min-h-8 text-[#667085] text-xs">{description}</p>
       <MediaUploadButton className="mt-4" onAdd={onAdd} />
       <div className="mt-4 space-y-2">
         {items.length === 0 ? (
-          <p className="rounded-[12px] border border-[#E8E8E5] border-dashed px-3 py-4 text-center text-[#9A9A95] text-[12px]">
+          <p className="rounded-[12px] border border-[#E4E7EC] border-dashed px-3 py-4 text-center text-[#98A2B3] text-[12px]">
             Aucune photo.
           </p>
         ) : (
           items.map((item, index) => (
-            <div className="flex gap-2 rounded-[12px] border border-[#E8E8E5] bg-white p-2" key={item.id}>
+            <div className="flex gap-2 rounded-[12px] border border-[#E4E7EC] bg-white p-2" key={item.id}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img alt="" className="size-14 rounded-[8px] object-cover" src={item.dataUrl} />
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-[#1A1916] text-[12px]">
+                <p className="truncate font-medium text-[#101828] text-[12px]">
                   {item.fileName || `Photo ${index + 1}`}
                 </p>
-                <p className="text-[#6B6B6B] text-[11px]">
+                <p className="text-[#667085] text-[11px]">
                   {item.isPrimary ? "Principale" : item.isPublic ? "Visible client" : "Non publiée"}
                 </p>
                 {publicPanel && (
                   <div className="mt-1 flex flex-wrap gap-1">
                     <button
-                      className="rounded-[7px] bg-[#F7F7F5] px-2 py-1 font-semibold text-[#6B6B6B] text-[10px]"
+                      className="rounded-[7px] bg-[#F5F7FA] px-2 py-1 font-semibold text-[#667085] text-[10px]"
                       onClick={() => onPrimary?.(item.id)}
                       type="button"
                     >
                       Principale
                     </button>
                     <button
-                      className="rounded-[7px] bg-[#F7F7F5] px-2 py-1 font-semibold text-[#6B6B6B] text-[10px]"
+                      className="rounded-[7px] bg-[#F5F7FA] px-2 py-1 font-semibold text-[#667085] text-[10px]"
                       onClick={() => onTogglePublic?.(item.id, !item.isPublic)}
                       type="button"
                     >
                       {item.isPublic ? "Retirer du public" : "Rendre publique"}
                     </button>
                     <button
-                      className="rounded-[7px] bg-[#F7F7F5] px-2 py-1 font-semibold text-[#6B6B6B] text-[10px]"
+                      className="rounded-[7px] bg-[#F5F7FA] px-2 py-1 font-semibold text-[#667085] text-[10px]"
                       onClick={() => onMove?.(item.id, "up")}
                       type="button"
                     >
                       Monter
                     </button>
                     <button
-                      className="rounded-[7px] bg-[#F7F7F5] px-2 py-1 font-semibold text-[#6B6B6B] text-[10px]"
+                      className="rounded-[7px] bg-[#F5F7FA] px-2 py-1 font-semibold text-[#667085] text-[10px]"
                       onClick={() => onMove?.(item.id, "down")}
                       type="button"
                     >
@@ -1438,7 +1438,7 @@ function MediaUploadButton({
   return (
     <label
       className={cn(
-        "inline-flex h-10 cursor-pointer items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-3 font-semibold text-[#1A1916] text-[12px] transition hover:border-[#2A9D8F]/45",
+        "inline-flex h-10 cursor-pointer items-center gap-2 rounded-[10px] border border-[#E4E7EC] bg-white px-3 font-semibold text-[#101828] text-[12px] transition hover:border-[#2A9D8F]/45",
         className,
       )}
     >
@@ -1572,7 +1572,7 @@ function FinalDiagnosticTab({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <SectionTitle title="Diagnostic final avant vente" />
-            <p className="mt-0.5 text-[#6B6B6B] text-xs">
+            <p className="mt-0.5 text-[#667085] text-xs">
               Source unique des données publiques (QR client, étiquette, certificat).
             </p>
           </div>
@@ -1585,17 +1585,17 @@ function FinalDiagnosticTab({
             const score = atelierGroupScore(file, group.items);
             return (
               <details
-                className="rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8]"
+                className="rounded-[14px] border border-[#E4E7EC] bg-[#F9FAFB]"
                 key={group.title}
                 open={index === 0}
               >
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-3">
-                  <span className="font-semibold text-[#1A1916] text-sm">{group.title}</span>
-                  <span className="rounded-full border border-[#E8E8E5] bg-white px-2.5 py-1 font-semibold text-[#6B6B6B] text-[11px]">
+                  <span className="font-semibold text-[#101828] text-sm">{group.title}</span>
+                  <span className="rounded-full border border-[#E4E7EC] bg-white px-2.5 py-1 font-semibold text-[#667085] text-[11px]">
                     {score.done} / {score.total} validés
                   </span>
                 </summary>
-                <div className="space-y-2 border-[#E8E8E5] border-t bg-white p-3">
+                <div className="space-y-2 border-[#E4E7EC] border-t bg-white p-3">
                   {group.items.map((item) => (
                     <SegmentedRow
                       key={`${item.kind}-${item.key}`}
@@ -1693,7 +1693,7 @@ function FinalDiagnosticTab({
           <ShieldCheck className="size-4" />
           Valider le diagnostic final
         </PrimaryButton>
-        <p className="mt-2 text-[#9A9A95] text-[11.5px]">
+        <p className="mt-2 text-[#98A2B3] text-[11.5px]">
           La validation publie le QR client avec uniquement l'état final — jamais les défauts d'achat réparés, ni les
           coûts, ni les pièces.
         </p>
@@ -1794,20 +1794,20 @@ function PublicationClientTab({
       <div className="space-y-4">
         <Panel className="p-5">
           <SectionTitle title="Publication client" />
-          <p className="mt-1 text-[#6B6B6B] text-xs">
+          <p className="mt-1 text-[#667085] text-xs">
             Choisissez ce qui apparaît sur l'étiquette, le QR public et la page certificat client.
           </p>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             {PUBLICATION_GROUPS.map((group) => (
-              <div className="rounded-[14px] border border-[#E8E8E5] bg-[#FAFAF8] p-3.5" key={group.title}>
-                <p className="font-semibold text-[#1A1916] text-[13px]">{group.title}</p>
+              <div className="rounded-[14px] border border-[#E4E7EC] bg-[#F9FAFB] p-3.5" key={group.title}>
+                <p className="font-semibold text-[#101828] text-[13px]">{group.title}</p>
                 <div className="mt-3 space-y-2">
                   {group.items.map((item) => (
                     <label
                       className="flex cursor-pointer items-center justify-between gap-3 rounded-[10px] bg-white px-3 py-2 text-[12.5px]"
                       key={item.key}
                     >
-                      <span className="text-[#1A1916]">{item.label}</span>
+                      <span className="text-[#101828]">{item.label}</span>
                       <input
                         checked={Boolean(settings[item.key])}
                         onChange={(e) => updateSetting(item.key, e.target.checked)}
@@ -1834,7 +1834,7 @@ function PublicationClientTab({
 
         <Panel className="p-5">
           <SectionTitle title="Visibilité du diagnostic final" />
-          <p className="mt-1 text-[#6B6B6B] text-xs">
+          <p className="mt-1 text-[#667085] text-xs">
             Chaque point peut être affiché ou masqué côté client. Les défauts fonctionnels masqués peuvent créer un
             litige.
           </p>
@@ -1846,14 +1846,14 @@ function PublicationClientTab({
                 <div
                   className={cn(
                     "rounded-[12px] border p-3",
-                    risky ? "border-[#FFD7B5] bg-[#FFF2E8]" : "border-[#E8E8E5] bg-white",
+                    risky ? "border-[#FFD7B5] bg-[#FFF2E8]" : "border-[#E4E7EC] bg-white",
                   )}
                   key={control.label}
                 >
                   <label className="flex cursor-pointer items-center justify-between gap-3">
                     <span>
-                      <span className="block font-semibold text-[#1A1916] text-[12.5px]">{control.label}</span>
-                      <span className="text-[#6B6B6B] text-[11px]">{control.status}</span>
+                      <span className="block font-semibold text-[#101828] text-[12.5px]">{control.label}</span>
+                      <span className="text-[#667085] text-[11px]">{control.status}</span>
                     </span>
                     <input
                       checked={visible}
@@ -1876,17 +1876,17 @@ function PublicationClientTab({
       <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
         <Panel className="p-5">
           <SectionTitle title="Aperçu page client" />
-          <div className="mt-4 rounded-[16px] border border-[#E8E8E5] bg-white p-4">
+          <div className="mt-4 rounded-[16px] border border-[#E4E7EC] bg-white p-4">
             {settings.showShopName && (
-              <p className="font-semibold text-[#1A1916] text-sm">{certificateData.workshopName}</p>
+              <p className="font-semibold text-[#101828] text-sm">{certificateData.workshopName}</p>
             )}
-            <p className="mt-2 font-semibold text-[#1A1916] text-lg">
+            <p className="mt-2 font-semibold text-[#101828] text-lg">
               {settings.showModel
                 ? [file.brand, file.model].filter(Boolean).join(" ") || "Appareil"
                 : "Téléphone reconditionné"}
             </p>
             {(settings.showStorage || settings.showColor) && (
-              <p className="text-[#6B6B6B] text-sm">
+              <p className="text-[#667085] text-sm">
                 {[settings.showStorage ? file.storage : "", settings.showColor ? file.color : ""]
                   .filter(Boolean)
                   .join(" · ")}
@@ -1923,7 +1923,7 @@ function PublicationClientTab({
               {settings.showReference && <InfoLine label="Réf." value={file.number} />}
             </div>
             {settings.showPublicComment && file.testComment && (
-              <p className="mt-3 rounded-[12px] bg-[#FAFAF8] p-3 text-[#1A1916] text-sm">{file.testComment}</p>
+              <p className="mt-3 rounded-[12px] bg-[#F9FAFB] p-3 text-[#101828] text-sm">{file.testComment}</p>
             )}
           </div>
           {validation.length > 0 && (
@@ -1965,12 +1965,12 @@ function HistoryTab({ file }: Readonly<{ file: ReconditioningFile }>) {
 
 function EventsTable({ events }: Readonly<{ events: ReconditioningFile["history"] }>) {
   if (!events.length) {
-    return <p className="mt-4 text-[#9A9A95] text-[13px]">Aucun événement pour le moment.</p>;
+    return <p className="mt-4 text-[#98A2B3] text-[13px]">Aucun événement pour le moment.</p>;
   }
   return (
     <div className="mt-3 overflow-x-auto">
       <table className="w-full min-w-[520px] text-sm">
-        <thead className="border-[#E8E8E5] border-b text-left text-[#6B6B6B] text-xs">
+        <thead className="border-[#E4E7EC] border-b text-left text-[#667085] text-xs">
           <tr>
             <th className="px-2 py-2.5 font-semibold">Événement</th>
             <th className="px-2 py-2.5 font-semibold">Date</th>
@@ -1979,10 +1979,10 @@ function EventsTable({ events }: Readonly<{ events: ReconditioningFile["history"
         </thead>
         <tbody>
           {events.map((event) => (
-            <tr className="border-[#F1F1EF] border-b last:border-0" key={event.id}>
-              <td className="px-2 py-2.5 text-[#1A1916]">{event.title}</td>
-              <td className="whitespace-nowrap px-2 py-2.5 text-[#6B6B6B]">{fmtDateTime(event.at)}</td>
-              <td className="whitespace-nowrap px-2 py-2.5 text-[#6B6B6B]">{event.by || "Atelier"}</td>
+            <tr className="border-[#F2F4F7] border-b last:border-0" key={event.id}>
+              <td className="px-2 py-2.5 text-[#101828]">{event.title}</td>
+              <td className="whitespace-nowrap px-2 py-2.5 text-[#667085]">{fmtDateTime(event.at)}</td>
+              <td className="whitespace-nowrap px-2 py-2.5 text-[#667085]">{event.by || "Atelier"}</td>
             </tr>
           ))}
         </tbody>
@@ -2013,7 +2013,7 @@ function DocumentsTab({
     <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
       <Panel className="p-5">
         <SectionTitle title="Documents du dossier" />
-        <p className="mt-1 text-[#6B6B6B] text-xs">
+        <p className="mt-1 text-[#667085] text-xs">
           Reçu de reprise, registre, étiquettes et certificat — imprimables à tout moment.
         </p>
         <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
@@ -2058,14 +2058,14 @@ function DocumentsTab({
       <div className="space-y-4">
         <Panel className="p-5">
           <SectionTitle title="QR interne" />
-          <p className="mt-1 text-[#6B6B6B] text-xs">
+          <p className="mt-1 text-[#667085] text-xs">
             Sur l'étiquette atelier — ouvre la fiche interne, jamais la page client.
           </p>
           <QrBlock label="Fiche interne" url={internalUrl} />
         </Panel>
         <Panel className="p-5">
           <SectionTitle title="QR public client" />
-          <p className="mt-1 text-[#6B6B6B] text-xs">
+          <p className="mt-1 text-[#667085] text-xs">
             {file.publicEnabled
               ? "Sur l'étiquette de vente — uniquement le diagnostic final et les infos publiques."
               : "Sera actif après validation du diagnostic final."}
@@ -2073,7 +2073,7 @@ function DocumentsTab({
           {file.publicEnabled ? (
             <QrBlock label="Page publique" url={publicUrl} />
           ) : (
-            <div className="mt-3 grid h-24 place-items-center rounded-[12px] border border-[#E8E8E5] border-dashed text-[#9A9A95] text-[12px]">
+            <div className="mt-3 grid h-24 place-items-center rounded-[12px] border border-[#E4E7EC] border-dashed text-[#98A2B3] text-[12px]">
               QR non publié
             </div>
           )}
@@ -2090,7 +2090,7 @@ function DocCard({
 }: Readonly<{ label: string; description: string; onClick: () => void }>) {
   return (
     <button
-      className="flex items-start gap-3 rounded-[14px] border border-[#E8E8E5] bg-white p-3.5 text-left transition hover:border-[#2A9D8F]/45"
+      className="flex items-start gap-3 rounded-[14px] border border-[#E4E7EC] bg-white p-3.5 text-left transition hover:border-[#2A9D8F]/45"
       onClick={onClick}
       type="button"
     >
@@ -2098,8 +2098,8 @@ function DocCard({
         <Printer className="size-4" />
       </span>
       <span className="min-w-0">
-        <span className="block font-semibold text-[#1A1916] text-[13px]">{label}</span>
-        <span className="mt-0.5 block text-[#6B6B6B] text-[11.5px]">{description}</span>
+        <span className="block font-semibold text-[#101828] text-[13px]">{label}</span>
+        <span className="mt-0.5 block text-[#667085] text-[11.5px]">{description}</span>
       </span>
     </button>
   );
@@ -2118,18 +2118,18 @@ function QrBlock({ url, label }: Readonly<{ url: string; label: string }>) {
     };
   }, [url]);
   return (
-    <div className="mt-3 flex items-center gap-3 rounded-[12px] bg-[#FAFAF8] p-3">
+    <div className="mt-3 flex items-center gap-3 rounded-[12px] bg-[#F9FAFB] p-3">
       {qr ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img alt={`QR ${label}`} className="size-16 shrink-0 rounded-[8px] border border-[#E8E8E5] bg-white" src={qr} />
+        <img alt={`QR ${label}`} className="size-16 shrink-0 rounded-[8px] border border-[#E4E7EC] bg-white" src={qr} />
       ) : (
-        <div className="size-16 shrink-0 animate-pulse rounded-[8px] border border-[#E8E8E5] bg-white" />
+        <div className="size-16 shrink-0 animate-pulse rounded-[8px] border border-[#E4E7EC] bg-white" />
       )}
       <div className="min-w-0">
-        <p className="font-semibold text-[#1A1916] text-[12px]">{label}</p>
+        <p className="font-semibold text-[#101828] text-[12px]">{label}</p>
         <div className="mt-1.5 flex gap-2">
           <button
-            className="inline-flex h-7 items-center gap-1 rounded-[7px] border border-[#E8E8E5] bg-white px-2 font-semibold text-[#1A1916] text-[11px]"
+            className="inline-flex h-7 items-center gap-1 rounded-[7px] border border-[#E4E7EC] bg-white px-2 font-semibold text-[#101828] text-[11px]"
             onClick={async () => {
               try {
                 await navigator.clipboard.writeText(url);
@@ -2145,7 +2145,7 @@ function QrBlock({ url, label }: Readonly<{ url: string; label: string }>) {
             {copied ? "Copié" : "Copier le lien"}
           </button>
           <a
-            className="inline-flex h-7 items-center gap-1 rounded-[7px] border border-[#E8E8E5] bg-white px-2 font-semibold text-[#1A1916] text-[11px]"
+            className="inline-flex h-7 items-center gap-1 rounded-[7px] border border-[#E4E7EC] bg-white px-2 font-semibold text-[#101828] text-[11px]"
             href={url}
             rel="noopener noreferrer"
             target="_blank"
@@ -2200,7 +2200,7 @@ function VenteTab({
       <Panel className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <SectionTitle title="Mise en vente" />
-          <span className="inline-flex h-7 items-center rounded-[8px] border border-[#E8E8E5] bg-white px-2.5 font-semibold text-[#1A1916] text-[12px]">
+          <span className="inline-flex h-7 items-center rounded-[8px] border border-[#E4E7EC] bg-white px-2.5 font-semibold text-[#101828] text-[12px]">
             {saleStatus}
           </span>
         </div>
@@ -2243,7 +2243,7 @@ function VenteTab({
             />
           </FieldLabel>
         </div>
-        <div className="mt-4 grid gap-x-6 gap-y-1 border-[#F1F1EF] border-t pt-4 text-[13px] sm:grid-cols-2">
+        <div className="mt-4 grid gap-x-6 gap-y-1 border-[#F2F4F7] border-t pt-4 text-[13px] sm:grid-cols-2">
           <InfoLine
             label="Grade affiché"
             value={
@@ -2290,7 +2290,7 @@ function VenteTab({
                 ) : (
                   <AlertTriangle className="size-4 shrink-0 text-[#C05621]" />
                 )}
-                <span className={item.done ? "text-[#1A1916]" : "font-semibold text-[#C05621]"}>{item.label}</span>
+                <span className={item.done ? "text-[#101828]" : "font-semibold text-[#C05621]"}>{item.label}</span>
               </div>
             ))}
           </div>
@@ -2368,19 +2368,19 @@ function ModalShell({
 }: Readonly<{ title: string; onClose: () => void; children: React.ReactNode }>) {
   return (
     <div
-      className="fixed inset-0 z-[70] grid place-items-center bg-[#1A1916]/40 p-4"
+      className="fixed inset-0 z-[70] grid place-items-center bg-[#101828]/40 p-4"
       onClick={onClose}
       role="presentation"
     >
       <div
-        className="w-full max-w-[460px] rounded-[20px] border border-[#E8E8E5] bg-white p-6 shadow-[0_24px_60px_rgba(26,25,22,0.25)]"
+        className="w-full max-w-[460px] rounded-[20px] border border-[#E4E7EC] bg-white p-6 shadow-[0_24px_60px_rgba(16,24,40,0.25)]"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
       >
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h3 className="font-semibold text-[#1A1916] text-lg">{title}</h3>
+          <h3 className="font-semibold text-[#101828] text-lg">{title}</h3>
           <button
-            className="grid size-9 place-items-center rounded-[10px] border border-[#E8E8E5] text-[#6B6B6B] transition hover:text-[#1A1916]"
+            className="grid size-9 place-items-center rounded-[10px] border border-[#E4E7EC] text-[#667085] transition hover:text-[#101828]"
             onClick={onClose}
             type="button"
           >
@@ -2450,22 +2450,22 @@ function BlockModal({ onConfirm, onClose }: Readonly<{ onConfirm: (reason: strin
 
 function SummaryCell({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
-    <div className="rounded-[12px] bg-[#FAFAF8] px-3 py-2.5">
-      <p className="text-[#6B6B6B] text-[11px]">{label}</p>
-      <p className="mt-0.5 truncate font-semibold text-[#1A1916] text-[13px]">{value}</p>
+    <div className="rounded-[12px] bg-[#F9FAFB] px-3 py-2.5">
+      <p className="text-[#667085] text-[11px]">{label}</p>
+      <p className="mt-0.5 truncate font-semibold text-[#101828] text-[13px]">{value}</p>
     </div>
   );
 }
 
 function SectionTitle({ title }: Readonly<{ title: string }>) {
-  return <h3 className="font-semibold text-[#1A1916] text-[15px]">{title}</h3>;
+  return <h3 className="font-semibold text-[#101828] text-[15px]">{title}</h3>;
 }
 
 function InfoLine({ label, value }: Readonly<{ label: string; value: React.ReactNode }>) {
   return (
-    <div className="flex items-center justify-between gap-3 border-[#F7F7F5] border-b py-1 text-[13px] last:border-0">
-      <span className="text-[#6B6B6B]">{label}</span>
-      <span className="min-w-0 truncate text-right font-medium text-[#1A1916]">{value}</span>
+    <div className="flex items-center justify-between gap-3 border-[#F5F7FA] border-b py-1 text-[13px] last:border-0">
+      <span className="text-[#667085]">{label}</span>
+      <span className="min-w-0 truncate text-right font-medium text-[#101828]">{value}</span>
     </div>
   );
 }
@@ -2478,11 +2478,11 @@ function FinRow({
 }: Readonly<{ label: string; value: string; tone?: "good" | "bad"; bold?: boolean }>) {
   return (
     <div className="flex items-center justify-between gap-3 py-1">
-      <span className={cn("text-[#6B6B6B]", bold && "font-semibold text-[#1A1916]")}>{label}</span>
+      <span className={cn("text-[#667085]", bold && "font-semibold text-[#101828]")}>{label}</span>
       <span
         className={cn(
           "font-semibold",
-          tone === "good" ? "text-[#147065]" : tone === "bad" ? "text-[#B4342A]" : "text-[#1A1916]",
+          tone === "good" ? "text-[#147065]" : tone === "bad" ? "text-[#B4342A]" : "text-[#101828]",
         )}
       >
         {value}
@@ -2498,22 +2498,22 @@ function ActionButton({ label, onClick, danger }: Readonly<{ label: string; onCl
         "flex w-full items-center justify-between rounded-[12px] border px-4 py-2.5 text-left font-semibold text-sm transition",
         danger
           ? "border-[#F2D4D1] text-[#B42318] hover:bg-[#FCF4F3]"
-          : "border-[#E8E8E5] text-[#1A1916] hover:border-[#2A9D8F]/45",
+          : "border-[#E4E7EC] text-[#101828] hover:border-[#2A9D8F]/45",
       )}
       onClick={onClick}
       type="button"
     >
       {label}
-      <ChevronRight className="size-4 text-[#9A9A95]" />
+      <ChevronRight className="size-4 text-[#98A2B3]" />
     </button>
   );
 }
 
 function InternalInfo({ label, value }: Readonly<{ label: string; value?: string }>) {
   return (
-    <div className="rounded-[10px] bg-[#F7F7F5] px-3 py-2">
-      <p className="text-[#8A8A85] text-[11px]">{label}</p>
-      <p className="mt-0.5 truncate font-semibold text-[#1A1916]">{value || "Non renseigné"}</p>
+    <div className="rounded-[10px] bg-[#F5F7FA] px-3 py-2">
+      <p className="text-[#98A2B3] text-[11px]">{label}</p>
+      <p className="mt-0.5 truncate font-semibold text-[#101828]">{value || "Non renseigné"}</p>
     </div>
   );
 }
@@ -2521,7 +2521,7 @@ function InternalInfo({ label, value }: Readonly<{ label: string; value?: string
 function FieldLabel({ label, children }: Readonly<{ label: string; children: React.ReactNode }>) {
   return (
     <label className="block space-y-1.5">
-      <span className="font-medium text-[#1A1916] text-[13px]">{label}</span>
+      <span className="font-medium text-[#101828] text-[13px]">{label}</span>
       {children}
     </label>
   );
@@ -2535,13 +2535,13 @@ function SegmentedRow({
 }: Readonly<{ label: string; options: readonly string[]; value?: string; onChange: (value: string) => void }>) {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-      <span className="truncate text-[#6B6B6B] text-[12.5px]">{label}</span>
-      <div className="inline-flex rounded-[9px] border border-[#E8E8E5] bg-white p-0.5">
+      <span className="truncate text-[#667085] text-[12.5px]">{label}</span>
+      <div className="inline-flex rounded-[9px] border border-[#E4E7EC] bg-white p-0.5">
         {options.map((option) => (
           <button
             className={cn(
               "h-7 whitespace-nowrap rounded-[7px] px-2 font-semibold text-[11px] transition",
-              value === option ? "bg-[#2A9D8F] text-white" : "text-[#6B6B6B] hover:bg-[#F7F7F5] hover:text-[#1A1916]",
+              value === option ? "bg-[#2A9D8F] text-white" : "text-[#667085] hover:bg-[#F5F7FA] hover:text-[#101828]",
             )}
             key={option}
             onClick={() => onChange(option)}

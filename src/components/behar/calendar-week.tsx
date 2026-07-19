@@ -24,22 +24,22 @@ export function CalendarWeek() {
             className="flex h-[88px] flex-col items-center justify-center border-black/[0.06] border-r border-b last:border-r-0"
             key={`${day.label}-${day.day}`}
           >
-            <span className="text-[#6B6B6B] text-xs">{day.label}</span>
+            <span className="text-[#667085] text-xs">{day.label}</span>
             <span
               className={cn(
-                "mt-1 grid size-10 place-items-center rounded-full font-semibold text-[#1A1916] text-lg",
+                "mt-1 grid size-10 place-items-center rounded-full font-semibold text-[#101828] text-lg",
                 day.active && "bg-[#2A9D8F] text-white",
               )}
             >
               {day.day}
             </span>
-            <span className="text-[#6B6B6B] text-xs">{day.month}</span>
+            <span className="text-[#667085] text-xs">{day.month}</span>
           </div>
         ))}
 
         {hours.map((hour, hourIndex) => (
           <div className="contents" key={hour}>
-            <div className="relative h-20 border-black/[0.06] border-r border-b px-3 pt-3 text-[#6B6B6B] text-xs">
+            <div className="relative h-20 border-black/[0.06] border-r border-b px-3 pt-3 text-[#667085] text-xs">
               {hour}
               {hour === "14:00" && <span className="absolute top-10 left-0 h-px w-[980px] bg-[#FFFFFF]" />}
             </div>
@@ -53,15 +53,15 @@ export function CalendarWeek() {
                   .map((appointment) => (
                     <div
                       className={cn(
-                        "absolute inset-x-2 top-2 rounded-xl border p-2 text-[#1A1916] text-xs",
+                        "absolute inset-x-2 top-2 rounded-xl border p-2 text-[#101828] text-xs",
                         eventStyles[appointment.color],
                       )}
                       key={appointment.id}
                     >
                       <p className="font-semibold">{appointment.time}</p>
                       <p className="mt-1 font-medium">{appointment.customer}</p>
-                      <p className="mt-0.5 text-[#6B6B6B]">{appointment.device}</p>
-                      <p className="text-[#6B6B6B]">{appointment.issue}</p>
+                      <p className="mt-0.5 text-[#667085]">{appointment.device}</p>
+                      <p className="text-[#667085]">{appointment.issue}</p>
                     </div>
                   ))}
               </div>

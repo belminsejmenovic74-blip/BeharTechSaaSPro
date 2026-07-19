@@ -509,7 +509,7 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
     <div className="flex h-full min-h-0 flex-col">
       {step === "cashier" ? (
         <div className="flex min-h-0 flex-1 flex-col gap-4">
-          <div className="inline-flex shrink-0 self-start rounded-[10px] border border-[#E8E8E5] bg-[#FFFFFF] p-1">
+          <div className="inline-flex shrink-0 self-start rounded-[10px] border border-[#E4E7EC] bg-[#FFFFFF] p-1">
             {(
               [
                 ["products", "Vente produits"],
@@ -521,7 +521,7 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
                 type="button"
                 onClick={() => setMode(value)}
                 className={`rounded-[8px] px-4 py-2 text-[13px] font-semibold transition ${
-                  mode === value ? "bg-white text-[#11998E] shadow-sm" : "text-[#6B6B6B] hover:text-[#1A1916]"
+                  mode === value ? "bg-white text-[#11998E] shadow-sm" : "text-[#667085] hover:text-[#101828]"
                 }`}
               >
                 {label}
@@ -681,22 +681,22 @@ function RepairCashStep({
       {/* Liste des dossiers à régler */}
       <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
         <div className="relative shrink-0">
-          <Search className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-[#8A8A8A]" />
+          <Search className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-[#98A2B3]" />
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Rechercher un dossier (n°, client, appareil)…"
-            className="h-12 w-full rounded-[10px] border border-[#E8E8E5] bg-white pl-12 pr-4 text-sm outline-none focus:border-[#11998E]"
+            className="h-12 w-full rounded-[10px] border border-[#E4E7EC] bg-white pl-12 pr-4 text-sm outline-none focus:border-[#11998E]"
           />
         </div>
 
         <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
           {filtered.length === 0 ? (
-            <div className="grid place-items-center rounded-[12px] border border-dashed border-[#E8E8E5] bg-[#FFFFFF] p-10 text-center">
+            <div className="grid place-items-center rounded-[12px] border border-dashed border-[#E4E7EC] bg-[#FFFFFF] p-10 text-center">
               <Wrench className="mb-3 size-8 text-[#C9C7C0]" />
-              <p className="text-sm font-medium text-[#1A1916]">Aucun dossier à régler</p>
-              <p className="mt-1 text-xs text-[#6B6B6B]">
+              <p className="text-sm font-medium text-[#101828]">Aucun dossier à régler</p>
+              <p className="mt-1 text-xs text-[#667085]">
                 Les dossiers déjà facturés ou réglés n'apparaissent pas ici.
               </p>
             </div>
@@ -710,18 +710,18 @@ function RepairCashStep({
                   type="button"
                   onClick={() => setSelectedRepairId(r.id)}
                   className={`flex w-full items-center justify-between gap-3 rounded-[12px] border px-4 py-3 text-left transition ${
-                    active ? "border-[#11998E] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white hover:border-[#11998E]/40"
+                    active ? "border-[#11998E] bg-[#FFFFFF]" : "border-[#E4E7EC] bg-white hover:border-[#11998E]/40"
                   }`}
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-[#1A1916]">
+                    <p className="truncate text-sm font-semibold text-[#101828]">
                       {customerName(r.customerId)} · {r.device || r.deviceModel || "Appareil"}
                     </p>
-                    <p className="truncate text-xs text-[#6B6B6B]">
+                    <p className="truncate text-xs text-[#667085]">
                       {r.number} — {r.issue || "Intervention"}
                     </p>
                   </div>
-                  <span className="shrink-0 text-sm font-bold tabular-nums text-[#1A1916]">
+                  <span className="shrink-0 text-sm font-bold tabular-nums text-[#101828]">
                     {total > 0 ? formatEuro(total) : "À définir"}
                   </span>
                 </button>
@@ -732,24 +732,24 @@ function RepairCashStep({
       </section>
 
       {/* Panneau de règlement */}
-      <aside className="flex min-h-0 shrink-0 flex-col gap-4 rounded-[14px] border border-[#E8E8E5] bg-white p-5">
-        <h3 className="font-semibold text-[#1A1916] text-[18px] tracking-tight">Règlement dossier</h3>
+      <aside className="flex min-h-0 shrink-0 flex-col gap-4 rounded-[14px] border border-[#E4E7EC] bg-white p-5">
+        <h3 className="font-semibold text-[#101828] text-[18px] tracking-tight">Règlement dossier</h3>
 
         {selected ? (
           <>
             <div className="rounded-[10px] bg-[#FFFFFF] p-4">
-              <p className="text-xs text-[#6B6B6B]">Client</p>
-              <p className="text-sm font-semibold text-[#1A1916]">{customerName(selected.customerId)}</p>
-              <p className="mt-2 text-xs text-[#6B6B6B]">Appareil</p>
-              <p className="text-sm font-medium text-[#1A1916]">
+              <p className="text-xs text-[#667085]">Client</p>
+              <p className="text-sm font-semibold text-[#101828]">{customerName(selected.customerId)}</p>
+              <p className="mt-2 text-xs text-[#667085]">Appareil</p>
+              <p className="text-sm font-medium text-[#101828]">
                 {selected.device || selected.deviceModel || "Appareil"}
               </p>
-              <p className="mt-2 text-xs text-[#6B6B6B]">Intervention</p>
-              <p className="text-sm font-medium text-[#1A1916]">{selected.issue || "—"}</p>
+              <p className="mt-2 text-xs text-[#667085]">Intervention</p>
+              <p className="text-sm font-medium text-[#101828]">{selected.issue || "—"}</p>
             </div>
 
             <div>
-              <p className="mb-2 text-xs font-semibold text-[#6B6B6B]">Mode de paiement</p>
+              <p className="mb-2 text-xs font-semibold text-[#667085]">Mode de paiement</p>
               <div className="grid grid-cols-3 gap-2">
                 {REPAIR_PAYMENT_METHODS.map(({ value, label, icon: Icon }) => (
                   <button
@@ -759,7 +759,7 @@ function RepairCashStep({
                     className={`flex flex-col items-center gap-1 rounded-[10px] border px-2 py-3 text-xs font-semibold transition ${
                       paymentMethod === value
                         ? "border-[#11998E] bg-[#FFFFFF] text-[#11998E]"
-                        : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:border-[#11998E]/40"
+                        : "border-[#E4E7EC] bg-white text-[#667085] hover:border-[#11998E]/40"
                     }`}
                   >
                     <Icon className="size-4" />
@@ -771,8 +771,8 @@ function RepairCashStep({
 
             <div className="mt-auto space-y-3">
               <div className="flex items-center justify-between border-t border-[#FFFFFF] pt-3">
-                <span className="text-sm text-[#6B6B6B]">Total à régler</span>
-                <span className="text-[22px] font-bold tabular-nums text-[#1A1916]">
+                <span className="text-sm text-[#667085]">Total à régler</span>
+                <span className="text-[22px] font-bold tabular-nums text-[#101828]">
                   {amount > 0 ? formatEuro(amount) : "À définir"}
                 </span>
               </div>
@@ -789,7 +789,7 @@ function RepairCashStep({
           </>
         ) : (
           <div className="grid flex-1 place-items-center text-center">
-            <p className="text-sm text-[#6B6B6B]">Sélectionnez un dossier à gauche pour indiquer son règlement.</p>
+            <p className="text-sm text-[#667085]">Sélectionnez un dossier à gauche pour indiquer son règlement.</p>
           </div>
         )}
       </aside>
@@ -884,8 +884,8 @@ function CashierStep(props: CashierStepProps) {
           <div className="shrink-0 space-y-3">
             <div className="flex flex-col gap-2 xl:flex-row">
               <div className="relative flex-1">
-                <Search className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-[#8A8A8A]" />
-                <ScanLine className="pointer-events-none absolute top-1/2 right-4 size-[18px] -translate-y-1/2 text-[#8A8A8A]" />
+                <Search className="pointer-events-none absolute top-1/2 left-4 size-[18px] -translate-y-1/2 text-[#98A2B3]" />
+                <ScanLine className="pointer-events-none absolute top-1/2 right-4 size-[18px] -translate-y-1/2 text-[#98A2B3]" />
                 <input
                   ref={searchRef}
                   type="search"
@@ -897,14 +897,14 @@ function CashierStep(props: CashierStepProps) {
                     }
                   }}
                   placeholder="Rechercher un produit, SKU ou scanner…"
-                  className="h-[60px] w-full rounded-[8px] border border-[#E8E8E5] bg-white pl-12 pr-12 text-[15px] text-[#1A1916] shadow-[0_1px_2px_rgba(26,25,22,0.03)] outline-none transition focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10 placeholder:text-[#8F8B84]"
+                  className="h-[60px] w-full rounded-[8px] border border-[#E4E7EC] bg-white pl-12 pr-12 text-[15px] text-[#101828] shadow-[0_1px_2px_rgba(16,24,40,0.03)] outline-none transition focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10 placeholder:text-[#8F8B84]"
                   aria-label="Rechercher un produit"
                 />
               </div>
               <button
                 type="button"
                 onClick={() => setQuickAddOpen(true)}
-                className="inline-flex h-[60px] w-full shrink-0 items-center justify-center gap-2 rounded-[8px] border border-[#E8E8E5] bg-white px-5 text-[14px] font-semibold text-[#1A1916] shadow-[0_1px_2px_rgba(26,25,22,0.03)] transition hover:border-[#2A9D8F]/40 hover:text-[#2A9D8F] xl:w-auto"
+                className="inline-flex h-[60px] w-full shrink-0 items-center justify-center gap-2 rounded-[8px] border border-[#E4E7EC] bg-white px-5 text-[14px] font-semibold text-[#101828] shadow-[0_1px_2px_rgba(16,24,40,0.03)] transition hover:border-[#2A9D8F]/40 hover:text-[#2A9D8F] xl:w-auto"
                 aria-label="Ajouter une pièce"
               >
                 <PackagePlus className="size-4" strokeWidth={1.8} />
@@ -921,7 +921,7 @@ function CashierStep(props: CashierStepProps) {
                   className={`shrink-0 rounded-full px-5 py-3 text-[13px] font-semibold transition ${
                     category === cat.key
                       ? "bg-[#11998E] text-white shadow-[0_8px_18px_rgba(17,153,142,0.22)]"
-                      : "border border-[#E8E8E5] bg-white text-[#6B6B6B] hover:border-[#2A9D8F]/40 hover:text-[#1A1916]"
+                      : "border border-[#E4E7EC] bg-white text-[#667085] hover:border-[#2A9D8F]/40 hover:text-[#101828]"
                   }`}
                 >
                   {cat.label}
@@ -932,11 +932,11 @@ function CashierStep(props: CashierStepProps) {
 
           {/* Scrollable: grid only */}
           <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto pb-3 pr-1">
-            <h2 className="text-[20px] font-semibold tracking-tight text-[#1A1916]">Catalogue</h2>
+            <h2 className="text-[20px] font-semibold tracking-tight text-[#101828]">Catalogue</h2>
             {filtered.length === 0 ? (
-              <div className="rounded-[8px] border border-dashed border-[#E8E8E5] bg-white py-14 text-center">
-                <Package className="mx-auto mb-3 size-7 text-[#8A8A8A]" strokeWidth={1.6} />
-                <p className="text-[#6B6B6B] text-sm">Aucun produit ne correspond à votre recherche.</p>
+              <div className="rounded-[8px] border border-dashed border-[#E4E7EC] bg-white py-14 text-center">
+                <Package className="mx-auto mb-3 size-7 text-[#98A2B3]" strokeWidth={1.6} />
+                <p className="text-[#667085] text-sm">Aucun produit ne correspond à votre recherche.</p>
                 <button
                   type="button"
                   onClick={() => setQuickAddOpen(true)}
@@ -956,7 +956,7 @@ function CashierStep(props: CashierStepProps) {
 
             {frequent.length > 0 ? <FrequentProducts items={frequent} onAdd={addToCart} /> : null}
 
-            <div className="flex items-center justify-between gap-3 rounded-[8px] border border-[#CFEFEB] bg-[#FFFFFF] px-4 py-3 text-[12.5px] text-[#6B6B6B]">
+            <div className="flex items-center justify-between gap-3 rounded-[8px] border border-[#CFEFEB] bg-[#FFFFFF] px-4 py-3 text-[12.5px] text-[#667085]">
               <span className="inline-flex items-center gap-2">
                 <Info className="size-4 shrink-0 text-[#2A9D8F]" />
                 Les champs IMEI, État et Garantie apparaissent uniquement lors de la vente d'un téléphone reconditionné.
@@ -978,11 +978,11 @@ function CashierStep(props: CashierStepProps) {
 
         {/* Cart column */}
         <aside className="flex min-h-0 shrink-0 flex-col gap-3 xl:overflow-hidden">
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[8px] border border-[#E8E8E5] bg-white shadow-[0_10px_30px_rgba(26,25,22,0.06)]">
-            <div className="flex shrink-0 items-center justify-between border-b border-[#E8E8E5] px-5 py-5">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[8px] border border-[#E4E7EC] bg-white shadow-[0_10px_30px_rgba(16,24,40,0.06)]">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#E4E7EC] px-5 py-5">
               <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-[#1A1916] text-[20px] tracking-tight">Panier</h3>
-                <span className="rounded-[7px] border border-[#E8E8E5] bg-[#FFFFFF] px-2 py-0.5 text-[#6B6B6B] text-[11px] font-medium">
+                <h3 className="font-semibold text-[#101828] text-[20px] tracking-tight">Panier</h3>
+                <span className="rounded-[7px] border border-[#E4E7EC] bg-[#FFFFFF] px-2 py-0.5 text-[#667085] text-[11px] font-medium">
                   {cart.length} {cart.length > 1 ? "articles" : "article"}
                 </span>
               </div>
@@ -990,7 +990,7 @@ function CashierStep(props: CashierStepProps) {
                 <button
                   type="button"
                   onClick={clearCart}
-                  className="grid size-8 place-items-center rounded-full text-[#8A8A8A] transition hover:bg-[#FFFFFF] hover:text-[#B42318]"
+                  className="grid size-8 place-items-center rounded-full text-[#98A2B3] transition hover:bg-[#FFFFFF] hover:text-[#B42318]"
                   aria-label="Vider le panier"
                 >
                   <Trash2 className="size-4" />
@@ -1001,8 +1001,8 @@ function CashierStep(props: CashierStepProps) {
             <div className="flex-1 overflow-y-auto px-5 py-4">
               {cart.length === 0 ? (
                 <div className="px-3 py-14 text-center">
-                  <Package className="mx-auto mb-3 size-7 text-[#8A8A8A]" strokeWidth={1.6} />
-                  <p className="text-[#6B6B6B] text-sm">Ajoutez un produit pour commencer la vente.</p>
+                  <Package className="mx-auto mb-3 size-7 text-[#98A2B3]" strokeWidth={1.6} />
+                  <p className="text-[#667085] text-sm">Ajoutez un produit pour commencer la vente.</p>
                 </div>
               ) : (
                 <ul className="space-y-2">
@@ -1019,20 +1019,20 @@ function CashierStep(props: CashierStepProps) {
               )}
             </div>
 
-            <div className="shrink-0 border-t border-[#E8E8E5] bg-white px-5 py-5">
+            <div className="shrink-0 border-t border-[#E4E7EC] bg-white px-5 py-5">
               <div className="space-y-2 text-[15px]">
                 <Row label="Sous-total" value={formatEuro(preTax)} />
                 <Row label="TVA (20 %)" value={formatEuro(extractedTax)} />
               </div>
               <div className="mt-6 flex items-baseline justify-between">
-                <span className="font-semibold text-[#1A1916] text-[18px]">Total</span>
+                <span className="font-semibold text-[#101828] text-[18px]">Total</span>
                 <span className="font-bold text-[#11998E] text-[32px] tabular-nums tracking-tight">
                   {formatEuro(subtotal)}
                 </span>
               </div>
 
               <div className="mt-6">
-                <p className="mb-2 text-[#6B6B6B] text-[12px] font-medium">Paiement</p>
+                <p className="mb-2 text-[#667085] text-[12px] font-medium">Paiement</p>
                 <div className="grid grid-cols-2 gap-2">
                   {paymentOptions.map((opt) => (
                     <PaymentButton
@@ -1052,7 +1052,7 @@ function CashierStep(props: CashierStepProps) {
                 className={`mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[8px] border text-[13px] font-medium transition ${
                   attachRepair
                     ? "border-[#2A9D8F]/40 bg-[#FFFFFF] text-[#147065]"
-                    : "border-[#E8E8E5] bg-white text-[#6B6B6B] hover:border-[#2A9D8F]/40 hover:text-[#1A1916]"
+                    : "border-[#E4E7EC] bg-white text-[#667085] hover:border-[#2A9D8F]/40 hover:text-[#101828]"
                 }`}
               >
                 <Link2 className="size-4" />
@@ -1070,7 +1070,7 @@ function CashierStep(props: CashierStepProps) {
               </button>
 
               {refurbishedLines.length > 0 ? (
-                <p className="mt-2 text-[#8A8A8A] text-[11px]">
+                <p className="mt-2 text-[#98A2B3] text-[11px]">
                   {refurbishedLines.length} téléphone(s) reconditionné(s) — vous renseignerez IMEI / état à l'étape
                   suivante.
                 </p>
@@ -1100,9 +1100,9 @@ function ProductCard({ item, onClick }: Readonly<{ item: StockItem; onClick: () 
         }
       }}
       aria-label={hasPrice ? `Ajouter ${item.name} au panier` : `${item.name} - Prix à définir`}
-      className={`group flex min-h-[236px] flex-col overflow-hidden rounded-[8px] border bg-white p-4 text-left shadow-[0_1px_2px_rgba(26,25,22,0.03)] transition hover:-translate-y-0.5 active:scale-[0.99] ${
+      className={`group flex min-h-[236px] flex-col overflow-hidden rounded-[8px] border bg-white p-4 text-left shadow-[0_1px_2px_rgba(16,24,40,0.03)] transition hover:-translate-y-0.5 active:scale-[0.99] ${
         hasPrice
-          ? "border-[#E8E8E5] hover:border-[#2A9D8F]/50 hover:shadow-[0_10px_24px_rgba(26,25,22,0.08)]"
+          ? "border-[#E4E7EC] hover:border-[#2A9D8F]/50 hover:shadow-[0_10px_24px_rgba(16,24,40,0.08)]"
           : "border-[#F3D2C7] hover:border-[#B42318]/40"
       }`}
     >
@@ -1110,7 +1110,7 @@ function ProductCard({ item, onClick }: Readonly<{ item: StockItem; onClick: () 
         <ProductThumb item={item} size={104} />
       </div>
       <div className="flex min-h-0 flex-1 flex-col">
-        <p className="line-clamp-2 font-semibold text-[#1A1916] text-[14px] leading-tight tracking-tight">
+        <p className="line-clamp-2 font-semibold text-[#101828] text-[14px] leading-tight tracking-tight">
           {item.name}
         </p>
         <div className="mt-2 flex items-baseline justify-between gap-2">
@@ -1119,8 +1119,8 @@ function ProductCard({ item, onClick }: Readonly<{ item: StockItem; onClick: () 
           </span>
         </div>
         <div className="mt-auto flex items-center gap-1.5 pt-3 text-[12px]">
-          <Layers className="size-3 text-[#8A8A8A]" strokeWidth={1.8} />
-          <span className={lowStock ? "text-[#B42318]" : "text-[#6B6B6B]"}>Stock {item.stock}</span>
+          <Layers className="size-3 text-[#98A2B3]" strokeWidth={1.8} />
+          <span className={lowStock ? "text-[#B42318]" : "text-[#667085]"}>Stock {item.stock}</span>
           {item.sku ? (
             <span className="ml-auto truncate text-[10.5px]">
               <PartReferenceLink reference={item.sku} />
@@ -1160,14 +1160,14 @@ function FrequentProducts({ items, onAdd }: Readonly<{ items: StockItem[]; onAdd
   const [showAll, setShowAll] = useState(false);
   const visibleItems = showAll ? items : items.slice(0, 3);
   return (
-    <section className="rounded-[8px] border border-[#E8E8E5] bg-white p-4">
+    <section className="rounded-[8px] border border-[#E4E7EC] bg-white p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h3 className="text-[15px] font-semibold text-[#1A1916]">Produits fréquemment vendus</h3>
+        <h3 className="text-[15px] font-semibold text-[#101828]">Produits fréquemment vendus</h3>
         {items.length > 3 && (
           <button
             type="button"
             onClick={() => setShowAll((v) => !v)}
-            className="inline-flex h-8 items-center justify-center rounded-[8px] border border-[#E8E8E5] px-4 text-[12px] font-medium text-[#6B6B6B] transition hover:border-[#2A9D8F]/50 hover:text-[#1A1916]"
+            className="inline-flex h-8 items-center justify-center rounded-[8px] border border-[#E4E7EC] px-4 text-[12px] font-medium text-[#667085] transition hover:border-[#2A9D8F]/50 hover:text-[#101828]"
           >
             {showAll ? "Réduire" : "Voir tout"}
           </button>
@@ -1179,16 +1179,16 @@ function FrequentProducts({ items, onAdd }: Readonly<{ items: StockItem[]; onAdd
             key={item.id}
             type="button"
             onClick={() => onAdd(item)}
-            className="flex min-w-0 items-center gap-3 rounded-[8px] border border-[#E8E8E5] bg-white p-2.5 text-left transition hover:border-[#2A9D8F]/50 hover:bg-[#FFFFFF]"
+            className="flex min-w-0 items-center gap-3 rounded-[8px] border border-[#E4E7EC] bg-white p-2.5 text-left transition hover:border-[#2A9D8F]/50 hover:bg-[#FFFFFF]"
           >
-            <span className="grid size-14 shrink-0 place-items-center rounded-[8px] border border-[#E8E8E5] bg-[#FFFFFF]">
+            <span className="grid size-14 shrink-0 place-items-center rounded-[8px] border border-[#E4E7EC] bg-[#FFFFFF]">
               <ProductThumb item={item} size={46} />
             </span>
             <span className="min-w-0">
-              <span className="block truncate text-[12.5px] font-medium text-[#1A1916]">{item.name}</span>
+              <span className="block truncate text-[12.5px] font-medium text-[#101828]">{item.name}</span>
               <span
                 className={`mt-1 block text-[12px] font-semibold tabular-nums ${
-                  item.salePrice > 0 ? "text-[#1A1916]" : "text-[#B42318]"
+                  item.salePrice > 0 ? "text-[#101828]" : "text-[#B42318]"
                 }`}
               >
                 {item.salePrice > 0 ? formatEuro(item.salePrice) : "Prix à définir"}
@@ -1215,49 +1215,49 @@ function CartLineRow({
   onRemove: () => void;
 }>) {
   return (
-    <li className="border-[#E8E8E5] border-b py-4 last:border-b-0">
+    <li className="border-[#E4E7EC] border-b py-4 last:border-b-0">
       <div className="flex items-start gap-3">
-        <div className="grid size-[72px] shrink-0 place-items-center rounded-[8px] border border-[#E8E8E5] bg-[#FFFFFF] text-[#2A9D8F]">
+        <div className="grid size-[72px] shrink-0 place-items-center rounded-[8px] border border-[#E4E7EC] bg-[#FFFFFF] text-[#2A9D8F]">
           <LineThumb name={line.name} />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="line-clamp-2 font-semibold text-[#1A1916] text-[13.5px] leading-tight">{line.name}</p>
+              <p className="line-clamp-2 font-semibold text-[#101828] text-[13.5px] leading-tight">{line.name}</p>
               <p className="mt-1 text-[#11998E] text-[12px] font-semibold tabular-nums">{formatEuro(line.unitPrice)}</p>
             </div>
             <button
               type="button"
               onClick={onRemove}
-              className="-mt-0.5 grid size-7 shrink-0 place-items-center rounded-full text-[#8A8A8A] transition hover:bg-[#FFFFFF] hover:text-[#B42318]"
+              className="-mt-0.5 grid size-7 shrink-0 place-items-center rounded-full text-[#98A2B3] transition hover:bg-[#FFFFFF] hover:text-[#B42318]"
               aria-label="Supprimer"
             >
               <X className="size-4" />
             </button>
           </div>
           <div className="mt-3 flex items-center justify-between">
-            <div className="inline-flex h-9 items-center gap-1 rounded-[8px] border border-[#E8E8E5] bg-white px-1">
+            <div className="inline-flex h-9 items-center gap-1 rounded-[8px] border border-[#E4E7EC] bg-white px-1">
               <button
                 type="button"
                 onClick={onDecrement}
-                className="grid size-7 place-items-center rounded-[6px] text-[#1A1916] transition hover:bg-[#FFFFFF]"
+                className="grid size-7 place-items-center rounded-[6px] text-[#101828] transition hover:bg-[#FFFFFF]"
                 aria-label="Diminuer"
               >
                 <Minus className="size-3.5" />
               </button>
-              <span className="min-w-[24px] text-center font-medium text-[#1A1916] text-[13px] tabular-nums">
+              <span className="min-w-[24px] text-center font-medium text-[#101828] text-[13px] tabular-nums">
                 {line.quantity}
               </span>
               <button
                 type="button"
                 onClick={onIncrement}
-                className="grid size-7 place-items-center rounded-[6px] text-[#1A1916] transition hover:bg-[#FFFFFF]"
+                className="grid size-7 place-items-center rounded-[6px] text-[#101828] transition hover:bg-[#FFFFFF]"
                 aria-label="Augmenter"
               >
                 <Plus className="size-3.5" />
               </button>
             </div>
-            <span className="font-semibold text-[#1A1916] text-[14px] tabular-nums">{formatEuro(line.total)}</span>
+            <span className="font-semibold text-[#101828] text-[14px] tabular-nums">{formatEuro(line.total)}</span>
           </div>
         </div>
       </div>
@@ -1291,7 +1291,7 @@ function PaymentButton({
         className={`relative flex min-h-[58px] flex-row items-center justify-center gap-3 rounded-[8px] border px-2 text-[14px] font-semibold outline-none transition focus-visible:ring-3 focus-visible:ring-[#2A9D8F]/25 ${
           active
             ? "border-[#11998E] bg-[#FFFFFF] text-[#147065]"
-            : "border-[#E8E8E5] bg-white text-[#1A1916] hover:border-[#2A9D8F]/40 hover:text-[#1A1916]"
+            : "border-[#E4E7EC] bg-white text-[#101828] hover:border-[#2A9D8F]/40 hover:text-[#101828]"
         } ${integrationName ? "saturate-50" : ""}`}
       >
         <Icon className="size-4" strokeWidth={1.8} />
@@ -1312,8 +1312,8 @@ function PaymentButton({
 function Row({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-[#6B6B6B]">{label}</span>
-      <span className="font-medium text-[#1A1916] tabular-nums">{value}</span>
+      <span className="text-[#667085]">{label}</span>
+      <span className="font-medium text-[#101828] tabular-nums">{value}</span>
     </div>
   );
 }
@@ -1409,7 +1409,7 @@ function CheckoutStep(props: CheckoutStepProps) {
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-[12.5px] font-medium transition hover:border-[#2A9D8F]/40"
+          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-[#E4E7EC] bg-white px-3 text-[#101828] text-[12.5px] font-medium transition hover:border-[#2A9D8F]/40"
         >
           <ArrowLeft className="size-3.5" />
           Retour à la vente
@@ -1418,10 +1418,10 @@ function CheckoutStep(props: CheckoutStepProps) {
 
       <div className="flex min-h-0 flex-1 flex-col gap-5 md:flex-row md:gap-6">
         <section className="flex min-h-0 min-w-0 flex-1 flex-col gap-5 md:overflow-y-auto md:pr-2">
-          <div className="rounded-[18px] border border-[#E8E8E5] bg-white p-5">
+          <div className="rounded-[18px] border border-[#E4E7EC] bg-white p-5">
             <div className="mb-3 flex items-center justify-between gap-2">
-              <h3 className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Rattachement (optionnel)</h3>
-              <label className="inline-flex cursor-pointer items-center gap-2 text-[#6B6B6B] text-[13px]">
+              <h3 className="font-semibold text-[#101828] text-[15px] tracking-tight">Rattachement (optionnel)</h3>
+              <label className="inline-flex cursor-pointer items-center gap-2 text-[#667085] text-[13px]">
                 <input
                   type="checkbox"
                   checked={attachRepair}
@@ -1429,21 +1429,21 @@ function CheckoutStep(props: CheckoutStepProps) {
                     setAttachRepair(event.target.checked);
                     if (!event.target.checked) setSelectedRepairId("");
                   }}
-                  className="size-4 rounded border-[#E8E8E5] text-[#2A9D8F] focus:ring-[#2A9D8F]/30"
+                  className="size-4 rounded border-[#E4E7EC] text-[#2A9D8F] focus:ring-[#2A9D8F]/30"
                 />
                 Rattacher à une réparation
               </label>
             </div>
             {attachRepair ? (
               eligibleRepairs.length === 0 ? (
-                <p className="rounded-[12px] bg-[#FFFFFF] px-3 py-2 text-[#6B6B6B] text-sm">
+                <p className="rounded-[12px] bg-[#FFFFFF] px-3 py-2 text-[#667085] text-sm">
                   Aucune réparation non facturée disponible.
                 </p>
               ) : (
                 <select
                   value={selectedRepairId}
                   onChange={(event) => setSelectedRepairId(event.target.value)}
-                  className="h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[14px] text-[#1A1916] outline-none focus:border-[#2A9D8F]"
+                  className="h-11 w-full rounded-[12px] border border-[#E4E7EC] bg-white px-3 text-[14px] text-[#101828] outline-none focus:border-[#2A9D8F]"
                 >
                   <option value="">Sélectionner une réparation…</option>
                   {eligibleRepairs.map((repair) => {
@@ -1457,14 +1457,14 @@ function CheckoutStep(props: CheckoutStepProps) {
                 </select>
               )
             ) : (
-              <p className="text-[#8A8A8A] text-[12px]">
+              <p className="text-[#98A2B3] text-[12px]">
                 Pour une vente comptoir simple, laissez cette option désactivée.
               </p>
             )}
           </div>
 
           <div className="rounded-[18px] border border-[#DDEFEA] bg-[#FFFFFF] p-5">
-            <h3 className="font-semibold text-[#1A1916] text-[15px] tracking-tight">Pays de facturation</h3>
+            <h3 className="font-semibold text-[#101828] text-[15px] tracking-tight">Pays de facturation</h3>
             <div className="mt-3 grid grid-cols-2 gap-2">
               {(["FR", "CH"] as const).map((country) => (
                 <button
@@ -1475,7 +1475,7 @@ function CheckoutStep(props: CheckoutStepProps) {
                   className={`h-11 rounded-[12px] border text-sm font-semibold ${
                     activeCountry === country
                       ? "border-[#2A9D8F] bg-white text-[#167B70]"
-                      : "border-[#E8E8E5] bg-white text-[#6B6B6B]"
+                      : "border-[#E4E7EC] bg-white text-[#667085]"
                   } disabled:cursor-not-allowed disabled:opacity-70`}
                 >
                   {country === "CH" ? "Suisse · CHF" : "France · EUR"}
@@ -1485,8 +1485,8 @@ function CheckoutStep(props: CheckoutStepProps) {
           </div>
 
           {!attachRepair ? (
-            <div className="rounded-[18px] border border-[#E8E8E5] bg-white p-5">
-              <h3 className="mb-3 font-semibold text-[#1A1916] text-[15px] tracking-tight">Client</h3>
+            <div className="rounded-[18px] border border-[#E4E7EC] bg-white p-5">
+              <h3 className="mb-3 font-semibold text-[#101828] text-[15px] tracking-tight">Client</h3>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <ClientChip
                   label="Vente comptoir"
@@ -1514,11 +1514,11 @@ function CheckoutStep(props: CheckoutStepProps) {
                     value={customerSearch}
                     onChange={(event) => setCustomerSearch(event.target.value)}
                     placeholder="Rechercher par nom, téléphone, email…"
-                    className="h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[14px] text-[#1A1916] outline-none focus:border-[#2A9D8F]"
+                    className="h-11 w-full rounded-[12px] border border-[#E4E7EC] bg-white px-3 text-[14px] text-[#101828] outline-none focus:border-[#2A9D8F]"
                   />
                   <div className="grid gap-2">
                     {customerMatches.length === 0 ? (
-                      <p className="rounded-[12px] bg-[#FFFFFF] px-3 py-2 text-[#6B6B6B] text-sm">
+                      <p className="rounded-[12px] bg-[#FFFFFF] px-3 py-2 text-[#667085] text-sm">
                         Aucun client correspondant.
                       </p>
                     ) : (
@@ -1530,12 +1530,12 @@ function CheckoutStep(props: CheckoutStepProps) {
                           className={`flex items-center justify-between gap-3 rounded-[12px] border px-3 py-2.5 text-left transition ${
                             selectedCustomerId === customer.id
                               ? "border-[#2A9D8F] bg-[#FFFFFF]"
-                              : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/40"
+                              : "border-[#E4E7EC] bg-white hover:border-[#2A9D8F]/40"
                           }`}
                         >
                           <div className="min-w-0">
-                            <p className="truncate font-medium text-[#1A1916] text-[13.5px]">{customer.name}</p>
-                            <p className="truncate text-[#8A8A8A] text-[11.5px]">
+                            <p className="truncate font-medium text-[#101828] text-[13.5px]">{customer.name}</p>
+                            <p className="truncate text-[#98A2B3] text-[11.5px]">
                               {customer.phone || customer.email || "Sans contact"}
                             </p>
                           </div>
@@ -1555,20 +1555,20 @@ function CheckoutStep(props: CheckoutStepProps) {
                     value={newClient.name}
                     onChange={(event) => setNewClient({ ...newClient, name: event.target.value })}
                     placeholder="Nom *"
-                    className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[14px] text-[#1A1916] outline-none focus:border-[#2A9D8F]"
+                    className="h-11 rounded-[12px] border border-[#E4E7EC] bg-white px-3 text-[14px] text-[#101828] outline-none focus:border-[#2A9D8F]"
                   />
                   <input
                     value={newClient.phone}
                     onChange={(event) => setNewClient({ ...newClient, phone: event.target.value })}
                     placeholder="Téléphone (optionnel)"
-                    className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[14px] text-[#1A1916] outline-none focus:border-[#2A9D8F]"
+                    className="h-11 rounded-[12px] border border-[#E4E7EC] bg-white px-3 text-[14px] text-[#101828] outline-none focus:border-[#2A9D8F]"
                   />
                   <input
                     value={newClient.email}
                     onChange={(event) => setNewClient({ ...newClient, email: event.target.value })}
                     type="email"
                     placeholder="Email (optionnel)"
-                    className="h-11 rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[14px] text-[#1A1916] outline-none focus:border-[#2A9D8F] sm:col-span-2"
+                    className="h-11 rounded-[12px] border border-[#E4E7EC] bg-white px-3 text-[14px] text-[#101828] outline-none focus:border-[#2A9D8F] sm:col-span-2"
                   />
                 </div>
               ) : null}
@@ -1576,17 +1576,17 @@ function CheckoutStep(props: CheckoutStepProps) {
           ) : null}
 
           {refurbishedLines.length > 0 ? (
-            <div className="rounded-[18px] border border-[#E8E8E5] bg-white p-5">
-              <h3 className="mb-1 font-semibold text-[#1A1916] text-[15px] tracking-tight">
+            <div className="rounded-[18px] border border-[#E4E7EC] bg-white p-5">
+              <h3 className="mb-1 font-semibold text-[#101828] text-[15px] tracking-tight">
                 Téléphones reconditionnés
               </h3>
-              <p className="mb-3 text-[#6B6B6B] text-[12.5px]">
+              <p className="mb-3 text-[#667085] text-[12.5px]">
                 IMEI, état et garantie ne sont demandés que pour ces lignes.
               </p>
               <div className="space-y-3">
                 {refurbishedLines.map((line) => (
-                  <div key={line.stockItemId} className="rounded-[14px] border border-[#E8E8E5] bg-[#FFFFFF] p-3">
-                    <p className="mb-2 font-medium text-[#1A1916] text-[13.5px]">{line.name}</p>
+                  <div key={line.stockItemId} className="rounded-[14px] border border-[#E4E7EC] bg-[#FFFFFF] p-3">
+                    <p className="mb-2 font-medium text-[#101828] text-[13.5px]">{line.name}</p>
                     <div className="grid gap-2 sm:grid-cols-3">
                       <input
                         value={serialDraft[line.stockItemId] ?? ""}
@@ -1594,14 +1594,14 @@ function CheckoutStep(props: CheckoutStepProps) {
                           setSerialDraft((current) => ({ ...current, [line.stockItemId]: event.target.value }))
                         }
                         placeholder="IMEI / n° série"
-                        className="h-10 rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[13px] outline-none focus:border-[#2A9D8F]"
+                        className="h-10 rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[13px] outline-none focus:border-[#2A9D8F]"
                       />
                       <select
                         value={conditionDraft[line.stockItemId] ?? ""}
                         onChange={(event) =>
                           setConditionDraft((current) => ({ ...current, [line.stockItemId]: event.target.value }))
                         }
-                        className="h-10 rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[13px] outline-none focus:border-[#2A9D8F]"
+                        className="h-10 rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[13px] outline-none focus:border-[#2A9D8F]"
                       >
                         <option value="">État…</option>
                         <option value="Excellent">Excellent</option>
@@ -1618,7 +1618,7 @@ function CheckoutStep(props: CheckoutStepProps) {
                             [line.stockItemId]: Number(event.target.value) || 0,
                           }))
                         }
-                        className="h-10 rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[13px] outline-none focus:border-[#2A9D8F]"
+                        className="h-10 rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[13px] outline-none focus:border-[#2A9D8F]"
                       >
                         <option value={0}>Sans garantie</option>
                         <option value={3}>Garantie 3 mois</option>
@@ -1635,39 +1635,39 @@ function CheckoutStep(props: CheckoutStepProps) {
         </section>
 
         <aside className="flex shrink-0 flex-col gap-3 md:w-[340px] md:overflow-hidden 2xl:w-[380px]">
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[20px] border border-[#E8E8E5] bg-white shadow-[0_1px_3px_rgba(26,25,22,0.05)]">
-            <div className="shrink-0 border-b border-[#E8E8E5] px-5 py-4">
-              <h3 className="font-semibold text-[#1A1916] text-[16px] tracking-tight">Récapitulatif</h3>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[20px] border border-[#E4E7EC] bg-white shadow-[0_1px_3px_rgba(16,24,40,0.05)]">
+            <div className="shrink-0 border-b border-[#E4E7EC] px-5 py-4">
+              <h3 className="font-semibold text-[#101828] text-[16px] tracking-tight">Récapitulatif</h3>
             </div>
             <div className="flex-1 overflow-y-auto px-5 py-3">
               <ul className="space-y-2">
                 {cart.map((line) => (
                   <li key={line.stockItemId} className="flex items-start justify-between gap-2 text-[13px]">
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-[#1A1916]">{line.name}</p>
-                      <p className="text-[#8A8A8A] text-[11.5px]">
+                      <p className="truncate font-medium text-[#101828]">{line.name}</p>
+                      <p className="text-[#98A2B3] text-[11.5px]">
                         {line.quantity} × {formatSale(line.unitPrice)}
                       </p>
                     </div>
-                    <span className="font-medium text-[#1A1916] tabular-nums">{formatSale(line.total)}</span>
+                    <span className="font-medium text-[#101828] tabular-nums">{formatSale(line.total)}</span>
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="shrink-0 border-t border-[#E8E8E5] bg-[#FFFFFF] px-5 py-4">
+            <div className="shrink-0 border-t border-[#E4E7EC] bg-[#FFFFFF] px-5 py-4">
               <div className="space-y-1.5 text-[13px]">
                 <Row label="Sous-total" value={formatSale(preTax)} />
                 <Row label="TVA" value={formatSale(extractedTax)} />
               </div>
               <div className="mt-3 flex items-baseline justify-between">
-                <span className="font-medium text-[#1A1916] text-[15px]">Total TTC</span>
+                <span className="font-medium text-[#101828] text-[15px]">Total TTC</span>
                 <span className="font-bold text-[#2A9D8F] text-[26px] tabular-nums tracking-tight">
                   {formatSale(subtotal)}
                 </span>
               </div>
 
               <div className="mt-4">
-                <p className="mb-2 text-[#6B6B6B] text-[12px] font-medium">Paiement</p>
+                <p className="mb-2 text-[#667085] text-[12px] font-medium">Paiement</p>
                 <div className="grid grid-cols-2 gap-2">
                   {paymentOptions.map((opt) => (
                     <PaymentButton
@@ -1690,7 +1690,7 @@ function CheckoutStep(props: CheckoutStepProps) {
                 <CheckCircle2 className="size-4" />
                 Valider le règlement
               </button>
-              <p className="mt-2 text-[#8A8A8A] text-[11px]">
+              <p className="mt-2 text-[#98A2B3] text-[11px]">
                 Le stock est décrémenté uniquement après cette validation.
               </p>
             </div>
@@ -1712,11 +1712,11 @@ function ClientChip({
       type="button"
       onClick={onClick}
       className={`flex flex-col gap-1 rounded-[14px] border p-3 text-left transition ${
-        active ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/40"
+        active ? "border-[#2A9D8F] bg-[#FFFFFF]" : "border-[#E4E7EC] bg-white hover:border-[#2A9D8F]/40"
       }`}
     >
-      <span className="font-medium text-[#1A1916] text-[13px]">{label}</span>
-      <span className={`text-[11px] leading-tight ${active ? "text-[#147065]" : "text-[#8A8A8A]"}`}>{description}</span>
+      <span className="font-medium text-[#101828] text-[13px]">{label}</span>
+      <span className={`text-[11px] leading-tight ${active ? "text-[#147065]" : "text-[#98A2B3]"}`}>{description}</span>
     </button>
   );
 }
@@ -1804,17 +1804,17 @@ function QuickAddStockModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1A1916]/30 p-4">
-      <div className="w-full max-w-md rounded-[20px] border border-[#E8E8E5] bg-white shadow-[0_18px_45px_rgba(26,25,22,0.18)]">
-        <div className="flex items-center justify-between border-b border-[#E8E8E5] px-5 py-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#101828]/30 p-4">
+      <div className="w-full max-w-md rounded-[20px] border border-[#E4E7EC] bg-white shadow-[0_18px_45px_rgba(16,24,40,0.18)]">
+        <div className="flex items-center justify-between border-b border-[#E4E7EC] px-5 py-4">
           <div className="flex items-center gap-2">
             <PackagePlus className="size-4 text-[#2A9D8F]" strokeWidth={1.8} />
-            <h3 className="font-semibold text-[#1A1916] text-[16px] tracking-tight">Ajouter une pièce</h3>
+            <h3 className="font-semibold text-[#101828] text-[16px] tracking-tight">Ajouter une pièce</h3>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="grid size-8 place-items-center rounded-full text-[#6B6B6B] transition hover:bg-[#FFFFFF] hover:text-[#1A1916]"
+            className="grid size-8 place-items-center rounded-full text-[#667085] transition hover:bg-[#FFFFFF] hover:text-[#101828]"
             aria-label="Fermer"
           >
             <X className="size-4" />
@@ -1823,23 +1823,23 @@ function QuickAddStockModal({
 
         <div className="space-y-3 px-5 py-4">
           <label className="block">
-            <span className="mb-1 block text-[#6B6B6B] text-[12px] font-medium">Nom du produit *</span>
+            <span className="mb-1 block text-[#667085] text-[12px] font-medium">Nom du produit *</span>
             <input
               autoFocus
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Ex. Coque transparente iPhone 13"
-              className="h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[14px] text-[#1A1916] outline-none focus:border-[#2A9D8F]"
+              className="h-11 w-full rounded-[12px] border border-[#E4E7EC] bg-white px-3 text-[14px] text-[#101828] outline-none focus:border-[#2A9D8F]"
             />
           </label>
 
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
-              <span className="mb-1 block text-[#6B6B6B] text-[12px] font-medium">Catégorie</span>
+              <span className="mb-1 block text-[#667085] text-[12px] font-medium">Catégorie</span>
               <select
                 value={categoryName}
                 onChange={(event) => setCategoryName(event.target.value)}
-                className="h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[14px] text-[#1A1916] outline-none focus:border-[#2A9D8F]"
+                className="h-11 w-full rounded-[12px] border border-[#E4E7EC] bg-white px-3 text-[14px] text-[#101828] outline-none focus:border-[#2A9D8F]"
               >
                 {QUICK_CATEGORIES.map((cat) => (
                   <option key={cat} value={cat}>
@@ -1850,55 +1850,55 @@ function QuickAddStockModal({
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-[#6B6B6B] text-[12px] font-medium">SKU (optionnel)</span>
+              <span className="mb-1 block text-[#667085] text-[12px] font-medium">SKU (optionnel)</span>
               <input
                 value={sku}
                 onChange={(event) => setSku(event.target.value)}
                 placeholder="REF-..."
-                className="h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 font-mono text-[13px] text-[#1A1916] outline-none focus:border-[#2A9D8F]"
+                className="h-11 w-full rounded-[12px] border border-[#E4E7EC] bg-white px-3 font-mono text-[13px] text-[#101828] outline-none focus:border-[#2A9D8F]"
               />
             </label>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
-              <span className="mb-1 block text-[#6B6B6B] text-[12px] font-medium">Prix de vente TTC *</span>
+              <span className="mb-1 block text-[#667085] text-[12px] font-medium">Prix de vente TTC *</span>
               <div className="relative">
                 <input
                   inputMode="decimal"
                   value={salePrice}
                   onChange={(event) => setSalePrice(event.target.value)}
                   placeholder="0,00"
-                  className="h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-white pl-3 pr-9 text-[14px] text-[#1A1916] tabular-nums outline-none focus:border-[#2A9D8F]"
+                  className="h-11 w-full rounded-[12px] border border-[#E4E7EC] bg-white pl-3 pr-9 text-[14px] text-[#101828] tabular-nums outline-none focus:border-[#2A9D8F]"
                 />
-                <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[#8A8A8A] text-[13px]">
+                <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[#98A2B3] text-[13px]">
                   {store.workshopInfo.currency}
                 </span>
               </div>
             </label>
 
             <label className="block">
-              <span className="mb-1 block text-[#6B6B6B] text-[12px] font-medium">Stock initial</span>
+              <span className="mb-1 block text-[#667085] text-[12px] font-medium">Stock initial</span>
               <input
                 inputMode="numeric"
                 value={quantity}
                 onChange={(event) => setQuantity(event.target.value)}
-                className="h-11 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 text-[14px] text-[#1A1916] tabular-nums outline-none focus:border-[#2A9D8F]"
+                className="h-11 w-full rounded-[12px] border border-[#E4E7EC] bg-white px-3 text-[14px] text-[#101828] tabular-nums outline-none focus:border-[#2A9D8F]"
               />
             </label>
           </div>
 
-          <p className="text-[#8A8A8A] text-[11.5px]">
+          <p className="text-[#98A2B3] text-[11.5px]">
             Crée la pièce en stock et l'ajoute directement au panier. Vous pourrez compléter (achat, fournisseur, modèle
             compatible) plus tard depuis l'onglet Stock.
           </p>
         </div>
 
-        <div className="flex items-center justify-end gap-2 border-t border-[#E8E8E5] bg-[#FFFFFF] px-5 py-3">
+        <div className="flex items-center justify-end gap-2 border-t border-[#E4E7EC] bg-[#FFFFFF] px-5 py-3">
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-10 items-center justify-center rounded-full border border-[#E8E8E5] bg-white px-4 text-[13px] font-medium text-[#1A1916] transition hover:bg-[#FFFFFF]"
+            className="inline-flex h-10 items-center justify-center rounded-full border border-[#E4E7EC] bg-white px-4 text-[13px] font-medium text-[#101828] transition hover:bg-[#FFFFFF]"
           >
             Annuler
           </button>
@@ -1937,11 +1937,11 @@ function SuccessStep({
 }>) {
   return (
     <div className="flex flex-1 items-start justify-center overflow-y-auto py-6 md:py-10">
-      <div className="w-full max-w-md rounded-[24px] border border-[#E8E8E5] bg-white p-6 shadow-[0_8px_28px_rgba(26,25,22,0.06)] md:p-8">
+      <div className="w-full max-w-md rounded-[24px] border border-[#E4E7EC] bg-white p-6 shadow-[0_8px_28px_rgba(16,24,40,0.06)] md:p-8">
         <div className="grid mx-auto mb-4 size-14 place-items-center text-[#2A9D8F]">
           <CheckCircle2 className="size-9" strokeWidth={2} />
         </div>
-        <h2 className="text-center font-semibold text-[#1A1916] text-[20px] tracking-tight">Vente validée</h2>
+        <h2 className="text-center font-semibold text-[#101828] text-[20px] tracking-tight">Vente validée</h2>
         <p className="mt-1 text-center font-mono text-[#2A9D8F] text-[13px]">{sale.number}</p>
 
         <div className="mt-5 space-y-2 rounded-[14px] bg-[#FFFFFF] p-4 text-[13px]">
@@ -1964,7 +1964,7 @@ function SuccessStep({
               <button
                 type="button"
                 onClick={onOpenReceipt}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-medium text-[13px] text-[#1A1916] transition hover:bg-[#FFFFFF]"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-medium text-[13px] text-[#101828] transition hover:bg-[#FFFFFF]"
               >
                 <FileText className="size-4" />
                 Ouvrir le reçu
@@ -1972,7 +1972,7 @@ function SuccessStep({
               <button
                 type="button"
                 onClick={onPrint}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-medium text-[13px] text-[#1A1916] transition hover:bg-[#FFFFFF]"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-medium text-[13px] text-[#101828] transition hover:bg-[#FFFFFF]"
               >
                 <Printer className="size-4" />
                 Imprimer reçu
@@ -1980,14 +1980,14 @@ function SuccessStep({
               <button
                 type="button"
                 onClick={onDownload}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-medium text-[13px] text-[#1A1916] transition hover:bg-[#FFFFFF]"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-medium text-[13px] text-[#101828] transition hover:bg-[#FFFFFF]"
               >
                 <Download className="size-4" />
                 Télécharger reçu PDF
               </button>
             </>
           ) : (
-            <p className="text-center text-[#8A8A8A] text-[12px]">
+            <p className="text-center text-[#98A2B3] text-[12px]">
               Reçu non disponible pour cette vente (vente rattachée — voir la facture du dossier réparation).
             </p>
           )}
@@ -1995,7 +1995,7 @@ function SuccessStep({
             <button
               type="button"
               onClick={onOpenRepair}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-medium text-[13px] text-[#1A1916] transition hover:bg-[#FFFFFF]"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-medium text-[13px] text-[#101828] transition hover:bg-[#FFFFFF]"
             >
               <Wrench className="size-4" />
               Ouvrir la réparation liée
@@ -2005,14 +2005,14 @@ function SuccessStep({
             <button
               type="button"
               onClick={onViewHistory}
-              className="mt-1 inline-flex h-10 items-center justify-center gap-2 text-[12px] text-[#6B6B6B] transition hover:text-[#1A1916]"
+              className="mt-1 inline-flex h-10 items-center justify-center gap-2 text-[12px] text-[#667085] transition hover:text-[#101828]"
             >
               <FileText className="size-3.5" />
               Voir dans l'historique
             </button>
           ) : null}
           {sale.customerName && sale.customerName !== "Vente comptoir" && sale.customerName !== "Client comptoir" ? (
-            <p className="text-center text-[#8A8A8A] text-[11px]">
+            <p className="text-center text-[#98A2B3] text-[11px]">
               <User className="mr-1 inline size-3" />
               Facture nominative disponible depuis Documents.
             </p>

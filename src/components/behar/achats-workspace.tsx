@@ -138,14 +138,14 @@ function invoiceArticles(lines: SupplierInvoiceLine[]) {
 function sourceBadge(source: SupplierPurchaseSource) {
   return source === "textract"
     ? "border-[#D7EFEA] bg-white text-[#167B70]"
-    : "border-[#E8E8E5] bg-white text-[#6B6B6B]";
+    : "border-[#E4E7EC] bg-white text-[#667085]";
 }
 
 function statusBadge(status: SupplierPurchaseStatus) {
   if (status === "reçu") return "border-[#D7EFEA] bg-white text-[#167B70]";
   if (status === "annulé") return "border-[#F2D4D1] bg-white text-[#B42318]";
   if (status === "partiel") return "border-[#FFE6C7] bg-white text-[#936100]";
-  return "border-[#E8E8E5] bg-white text-[#6B6B6B]";
+  return "border-[#E4E7EC] bg-white text-[#667085]";
 }
 
 function downloadTextFile(fileName: string, content: string, type: string) {
@@ -237,15 +237,15 @@ function exportSummaryPdf(invoice: SupplierInvoice, lines: SupplierInvoiceLine[]
   <meta charset="utf-8" />
   <title>Achat ${escapeHtml(invoice.invoiceNumber)}</title>
   <style>
-    body { margin: 0; padding: 28px; background: #FFFFFF; color: #1A1916; font-family: Arial, sans-serif; }
+    body { margin: 0; padding: 28px; background: #FFFFFF; color: #101828; font-family: Arial, sans-serif; }
     h1 { margin: 0 0 8px; font-size: 24px; }
-    p { margin: 4px 0; color: #6B6B6B; }
-    .card { margin-top: 18px; border: 1px solid #E8E8E5; border-radius: 12px; background: #fff; padding: 16px; }
+    p { margin: 4px 0; color: #667085; }
+    .card { margin-top: 18px; border: 1px solid #E4E7EC; border-radius: 12px; background: #fff; padding: 16px; }
     table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
-    th, td { border-bottom: 1px solid #E8E8E5; padding: 8px; text-align: left; }
-    th { color: #6B6B6B; font-weight: 600; }
+    th, td { border-bottom: 1px solid #E4E7EC; padding: 8px; text-align: left; }
+    th { color: #667085; font-weight: 600; }
     .totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
-    .total { border: 1px solid #E8E8E5; border-radius: 10px; padding: 12px; background: #fff; }
+    .total { border: 1px solid #E4E7EC; border-radius: 10px; padding: 12px; background: #fff; }
     .total strong { display: block; margin-top: 4px; font-size: 18px; }
     @media print { body { background: #fff; } }
   </style>
@@ -315,9 +315,9 @@ function Kpi({
     <Panel className="p-4 md:p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[#6B6B6B] text-xs font-medium tracking-tight">{label}</p>
-          <p className="mt-1.5 font-semibold text-[#1A1916] text-[24px] leading-none tracking-tight">{value}</p>
-          <p className="mt-1.5 text-[#8A8A85] text-xs">{helper}</p>
+          <p className="text-[#667085] text-xs font-medium tracking-tight">{label}</p>
+          <p className="mt-1.5 font-semibold text-[#101828] text-[24px] leading-none tracking-tight">{value}</p>
+          <p className="mt-1.5 text-[#98A2B3] text-xs">{helper}</p>
         </div>
         <Icon className="h-5 w-5 text-[#B4B4AE]" />
       </div>
@@ -339,10 +339,10 @@ function FilterInput({
   type?: string;
 }>) {
   return (
-    <label className="flex flex-col gap-1 text-[#6B6B6B] text-xs font-medium">
+    <label className="flex flex-col gap-1 text-[#667085] text-xs font-medium">
       {label}
       <input
-        className="h-10 rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-sm outline-none transition placeholder:text-[#B4B4AE] focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
+        className="h-10 rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[#101828] text-sm outline-none transition placeholder:text-[#B4B4AE] focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         type={type}
@@ -364,10 +364,10 @@ function FilterSelect({
   options: Array<{ value: string; label: string }>;
 }>) {
   return (
-    <label className="flex flex-col gap-1 text-[#6B6B6B] text-xs font-medium">
+    <label className="flex flex-col gap-1 text-[#667085] text-xs font-medium">
       {label}
       <select
-        className="h-10 rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-sm outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
+        className="h-10 rounded-[10px] border border-[#E4E7EC] bg-white px-3 text-[#101828] text-sm outline-none transition focus:border-[#2A9D8F]/60 focus:ring-4 focus:ring-[#2A9D8F]/10"
         onChange={(event) => onChange(event.target.value)}
         value={value}
       >
@@ -385,21 +385,21 @@ function DetailModal({ detail, onClose }: Readonly<{ detail: DetailPayload; onCl
   const invoice = detail.invoice;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1A1916]/24 p-0 md:p-4">
-      <Panel className="mx-auto my-0 min-h-svh max-w-none rounded-none bg-[#FAFAF8] p-5 md:my-6 md:max-w-7xl md:min-h-0 md:rounded-[18px] md:p-6">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-[#101828]/24 p-0 md:p-4">
+      <Panel className="mx-auto my-0 min-h-svh max-w-none rounded-none bg-[#F9FAFB] p-5 md:my-6 md:max-w-7xl md:min-h-0 md:rounded-[18px] md:p-6">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <p className="text-[#6B6B6B] text-xs font-semibold uppercase tracking-[0.12em]">Détail achat fournisseur</p>
-            <h2 className="mt-1 font-semibold text-[#1A1916] text-2xl tracking-tight">
+            <p className="text-[#667085] text-xs font-semibold uppercase tracking-[0.12em]">Détail achat fournisseur</p>
+            <h2 className="mt-1 font-semibold text-[#101828] text-2xl tracking-tight">
               {invoice.invoiceNumber || "Facture sans numéro"}
             </h2>
-            <p className="mt-1.5 text-[#6B6B6B] text-sm">
+            <p className="mt-1.5 text-[#667085] text-sm">
               {invoice.supplierName} · {isoDate(invoice.purchaseDate)}
             </p>
           </div>
           <button
             aria-label="Fermer"
-            className="rounded-full p-2 text-[#6B6B6B] hover:bg-white"
+            className="rounded-full p-2 text-[#667085] hover:bg-white"
             onClick={onClose}
             type="button"
           >
@@ -415,8 +415,8 @@ function DetailModal({ detail, onClose }: Readonly<{ detail: DetailPayload; onCl
             ["Total TTC", formatEuro(invoice.totalIncludingTax)],
           ].map(([label, value]) => (
             <Panel key={label} className="p-4">
-              <p className="text-[#6B6B6B] text-xs">{label}</p>
-              <p className="mt-1 font-semibold text-[#1A1916] text-sm">{value}</p>
+              <p className="text-[#667085] text-xs">{label}</p>
+              <p className="mt-1 font-semibold text-[#101828] text-sm">{value}</p>
             </Panel>
           ))}
         </div>
@@ -424,14 +424,14 @@ function DetailModal({ detail, onClose }: Readonly<{ detail: DetailPayload; onCl
         <Panel className="mt-5 p-4">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h3 className="font-semibold text-[#1A1916] text-sm">Facture originale</h3>
+              <h3 className="font-semibold text-[#101828] text-sm">Facture originale</h3>
               {invoice.originalFileName || detail.documentTitle ? (
-                <p className="mt-1 text-[#6B6B6B] text-xs">
+                <p className="mt-1 text-[#667085] text-xs">
                   {invoice.originalFileName || detail.documentTitle} · {invoiceFileType(invoice)} · Importée le{" "}
                   {isoDate(invoice.createdAt)}
                 </p>
               ) : (
-                <p className="mt-1 text-[#6B6B6B] text-xs">Aucun fichier original attaché</p>
+                <p className="mt-1 text-[#667085] text-xs">Aucun fichier original attaché</p>
               )}
             </div>
             <div className="flex flex-wrap gap-2">
@@ -463,8 +463,8 @@ function DetailModal({ detail, onClose }: Readonly<{ detail: DetailPayload; onCl
 
         <div className="mt-5 grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
           <Panel className="overflow-hidden">
-            <div className="border-[#E8E8E5] border-b p-4">
-              <h3 className="font-semibold text-[#1A1916] text-sm">Lignes achetées</h3>
+            <div className="border-[#E4E7EC] border-b p-4">
+              <h3 className="font-semibold text-[#101828] text-sm">Lignes achetées</h3>
             </div>
             <TableShell>
               <table className={`${tableClassName} min-w-[980px]`}>
@@ -492,10 +492,10 @@ function DetailModal({ detail, onClose }: Readonly<{ detail: DetailPayload; onCl
                         )}
                         {line.internalCode && <span className="mt-1 block text-[#A8A8A2]">{line.internalCode}</span>}
                       </td>
-                      <td className={cn(tableCellClassName, "text-xs text-[#6B6B6B]")}>
+                      <td className={cn(tableCellClassName, "text-xs text-[#667085]")}>
                         {line.compatibleModel || "—"}
                       </td>
-                      <td className={cn(tableCellClassName, "text-xs text-[#6B6B6B]")}>{line.category || "—"}</td>
+                      <td className={cn(tableCellClassName, "text-xs text-[#667085]")}>{line.category || "—"}</td>
                       <td className={cn(tableCellClassName, "text-right tabular-nums")}>{line.quantityPurchased}</td>
                       <td className={cn(tableCellClassName, "text-right tabular-nums")}>
                         {formatEuro(line.unitPurchasePriceExclTax)}
@@ -515,14 +515,14 @@ function DetailModal({ detail, onClose }: Readonly<{ detail: DetailPayload; onCl
 
           <div className="space-y-5">
             <Panel className="p-4">
-              <h3 className="font-semibold text-[#1A1916] text-sm">Pièces créées ou mises à jour</h3>
+              <h3 className="font-semibold text-[#101828] text-sm">Pièces créées ou mises à jour</h3>
               <div className="mt-3 space-y-2">
                 {detail.lines.map((line) => (
-                  <div key={line.id} className="rounded-[12px] border border-[#E8E8E5] bg-white p-3">
+                  <div key={line.id} className="rounded-[12px] border border-[#E4E7EC] bg-white p-3">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="font-semibold text-[#1A1916] text-sm">{line.itemName}</p>
-                        <p className="mt-1 font-mono text-[#6B6B6B] text-xs">
+                        <p className="font-semibold text-[#101828] text-sm">{line.itemName}</p>
+                        <p className="mt-1 font-mono text-[#667085] text-xs">
                           {line.reference || line.sku ? (
                             <PartReferenceLink reference={line.reference || line.sku || ""} />
                           ) : (
@@ -540,17 +540,17 @@ function DetailModal({ detail, onClose }: Readonly<{ detail: DetailPayload; onCl
             </Panel>
 
             <Panel className="p-4">
-              <h3 className="font-semibold text-[#1A1916] text-sm">Mouvements de stock générés</h3>
+              <h3 className="font-semibold text-[#101828] text-sm">Mouvements de stock générés</h3>
               <div className="mt-3 space-y-2">
                 {detail.movements.length ? (
                   detail.movements.map((movement) => (
-                    <div key={movement.id} className="rounded-[12px] border border-[#E8E8E5] bg-white p-3">
+                    <div key={movement.id} className="rounded-[12px] border border-[#E4E7EC] bg-white p-3">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="font-medium text-[#1A1916] text-sm">
+                          <p className="font-medium text-[#101828] text-sm">
                             {movement.reason || movement.movementType}
                           </p>
-                          <p className="mt-1 text-[#6B6B6B] text-xs">
+                          <p className="mt-1 text-[#667085] text-xs">
                             {movement.quantityBefore} → {movement.quantityAfter} · {isoDate(movement.createdAt)}
                           </p>
                         </div>
@@ -561,7 +561,7 @@ function DetailModal({ detail, onClose }: Readonly<{ detail: DetailPayload; onCl
                     </div>
                   ))
                 ) : (
-                  <p className="text-[#6B6B6B] text-sm">Aucun mouvement lié.</p>
+                  <p className="text-[#667085] text-sm">Aucun mouvement lié.</p>
                 )}
               </div>
             </Panel>
@@ -802,8 +802,8 @@ export function AchatsWorkspace() {
     return (
       <PageShell title="Achats" subtitle="Accès restreint.">
         <Panel className="p-10 text-center">
-          <p className="font-semibold text-[#1A1916] text-sm">Accès non autorisé</p>
-          <p className="mt-1.5 text-[#8A8A85] text-xs">
+          <p className="font-semibold text-[#101828] text-sm">Accès non autorisé</p>
+          <p className="mt-1.5 text-[#98A2B3] text-xs">
             Les prix d'achat sont réservés aux rôles disposant de la permission « voir les prix d'achat ».
           </p>
         </Panel>
@@ -833,14 +833,14 @@ export function AchatsWorkspace() {
           <div>
             <div className="flex items-center gap-2">
               <Search className="size-4 text-[#2A9D8F]" />
-              <h2 className="font-semibold text-[#1A1916] text-sm">Filtrer le registre</h2>
+              <h2 className="font-semibold text-[#101828] text-sm">Filtrer le registre</h2>
             </div>
-            <p className="mt-1 text-[#6B6B6B] text-xs">
+            <p className="mt-1 text-[#667085] text-xs">
               Les factures fournisseur et les reprises/achats directs sont séparés pour éviter les doublons.
             </p>
           </div>
           <button
-            className="h-9 w-fit rounded-[9px] border border-[#E8E8E5] bg-white px-3 font-semibold text-[#6B6B6B] text-[12px] hover:border-[#2A9D8F]/45 hover:text-[#1A1916]"
+            className="h-9 w-fit rounded-[9px] border border-[#E4E7EC] bg-white px-3 font-semibold text-[#667085] text-[12px] hover:border-[#2A9D8F]/45 hover:text-[#101828]"
             onClick={resetFilters}
             type="button"
           >
@@ -907,10 +907,10 @@ export function AchatsWorkspace() {
       {showForm && (
         <Panel className="mt-5 p-4 md:p-5">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-semibold text-[#1A1916] text-sm">Saisie manuelle d'achat fournisseur</h2>
+            <h2 className="font-semibold text-[#101828] text-sm">Saisie manuelle d'achat fournisseur</h2>
             <button
               aria-label="Fermer"
-              className="rounded-full p-1 text-[#8A8A85] hover:bg-[#F2F2EF]"
+              className="rounded-full p-1 text-[#98A2B3] hover:bg-[#F2F2EF]"
               onClick={() => setShowForm(false)}
               type="button"
             >
@@ -984,7 +984,7 @@ export function AchatsWorkspace() {
           <Panel className="mt-5 p-4 md:p-5">
             <div className="mb-4 flex items-center gap-2">
               <Search className="size-4 text-[#2A9D8F]" />
-              <h2 className="font-semibold text-[#1A1916] text-sm">Filtres détaillés des factures fournisseur</h2>
+              <h2 className="font-semibold text-[#101828] text-sm">Filtres détaillés des factures fournisseur</h2>
             </div>
             <div className="grid gap-3 md:grid-cols-4 xl:grid-cols-8">
               <FilterInput
@@ -1052,8 +1052,8 @@ export function AchatsWorkspace() {
             {filteredRows.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
                 <ShoppingCart className="h-8 w-8 text-[#C9C9C3]" />
-                <p className="font-medium text-[#1A1916] text-sm">Aucune facture fournisseur</p>
-                <p className="max-w-sm text-[#8A8A85] text-xs">
+                <p className="font-medium text-[#101828] text-sm">Aucune facture fournisseur</p>
+                <p className="max-w-sm text-[#98A2B3] text-xs">
                   Importez une facture ou saisissez un achat fournisseur pour alimenter le stock et les mouvements.
                 </p>
               </div>
@@ -1083,14 +1083,14 @@ export function AchatsWorkspace() {
                       const piecesAdded = row.lines.reduce((sum, line) => sum + line.quantityPurchased, 0);
                       return (
                         <tr key={row.invoice.id}>
-                          <td className={cn(tableCellClassName, "whitespace-nowrap text-xs text-[#6B6B6B]")}>
+                          <td className={cn(tableCellClassName, "whitespace-nowrap text-xs text-[#667085]")}>
                             {isoDate(row.invoice.purchaseDate)}
                           </td>
                           <td className={cn(tableCellClassName, "font-semibold")}>{row.invoice.supplierName}</td>
                           <td className={cn(tableCellClassName, "font-mono text-xs")}>{row.invoice.invoiceNumber}</td>
-                          <td className={cn(tableCellClassName, "max-w-[260px] text-xs text-[#1A1916]")}>
+                          <td className={cn(tableCellClassName, "max-w-[260px] text-xs text-[#101828]")}>
                             {articles.slice(0, 3).join(", ")}
-                            {articles.length > 3 && <span className="text-[#8A8A85]"> +{articles.length - 3}</span>}
+                            {articles.length > 3 && <span className="text-[#98A2B3]"> +{articles.length - 3}</span>}
                           </td>
                           <td className={cn(tableCellClassName, "max-w-[230px] text-xs")}>
                             <div className="flex flex-wrap gap-1.5">
@@ -1098,11 +1098,11 @@ export function AchatsWorkspace() {
                                 <PartReferenceLink key={reference} reference={reference} />
                               ))}
                               {references.length > 4 && (
-                                <span className="text-[#8A8A85]">+{references.length - 4}</span>
+                                <span className="text-[#98A2B3]">+{references.length - 4}</span>
                               )}
                             </div>
                           </td>
-                          <td className={cn(tableCellClassName, "text-xs text-[#6B6B6B]")}>
+                          <td className={cn(tableCellClassName, "text-xs text-[#667085]")}>
                             {piecesAdded} unité(s) · {row.movements.length} mouvement(s)
                           </td>
                           <td className={cn(tableCellClassName, "text-right tabular-nums")}>
@@ -1137,7 +1137,7 @@ export function AchatsWorkspace() {
                           <td className={cn(tableCellClassName, "text-right")}>
                             <button
                               aria-label="Voir détail achat"
-                              className="inline-flex items-center gap-1 rounded-full border border-[#E8E8E5] bg-white px-3 py-1.5 font-semibold text-[#1A1916] text-xs hover:border-[#2A9D8F]/45"
+                              className="inline-flex items-center gap-1 rounded-full border border-[#E4E7EC] bg-white px-3 py-1.5 font-semibold text-[#101828] text-xs hover:border-[#2A9D8F]/45"
                               onClick={() => setDetailId(row.invoice.id)}
                               type="button"
                             >
@@ -1159,15 +1159,15 @@ export function AchatsWorkspace() {
       {entryScope !== "supplier" && (
         <Panel className="mt-4 p-4">
           <div className="mb-3">
-            <p className="font-semibold text-[#1A1916] text-sm">Reprises & achats directs</p>
-            <p className="text-[#6B6B6B] text-xs">
+            <p className="font-semibold text-[#101828] text-sm">Reprises & achats directs</p>
+            <p className="text-[#667085] text-xs">
               Téléphones repris au comptoir, ajoutés en reconditionnement ou entrées stock sans facture fournisseur.
             </p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] border-collapse text-sm">
               <thead>
-                <tr className="border-[#E8E8E5] border-b text-left text-[#6B6B6B] text-xs">
+                <tr className="border-[#E4E7EC] border-b text-left text-[#667085] text-xs">
                   <th className="py-2 pr-3 font-semibold">Article</th>
                   <th className="py-2 pr-3 font-semibold">Source</th>
                   <th className="py-2 pr-3 font-semibold">Date</th>
@@ -1179,9 +1179,9 @@ export function AchatsWorkspace() {
               <tbody>
                 {filteredDirectPurchases.map((purchase) => (
                   <tr key={purchase.id} className="border-[#F0F0ED] border-b last:border-0">
-                    <td className="py-2 pr-3 font-medium text-[#1A1916]">{purchase.label || "—"}</td>
-                    <td className="py-2 pr-3 text-[#6B6B6B]">{purchase.source}</td>
-                    <td className="py-2 pr-3 text-[#6B6B6B]">
+                    <td className="py-2 pr-3 font-medium text-[#101828]">{purchase.label || "—"}</td>
+                    <td className="py-2 pr-3 text-[#667085]">{purchase.source}</td>
+                    <td className="py-2 pr-3 text-[#667085]">
                       {purchase.date ? new Date(purchase.date).toLocaleDateString("fr-FR") : "—"}
                     </td>
                     <td className="py-2 pr-3 text-right tabular-nums">{purchase.quantity}</td>
@@ -1189,7 +1189,7 @@ export function AchatsWorkspace() {
                       {canViewPurchases ? (
                         <input
                           aria-label={`Prix d'achat de ${purchase.label || "l'article"}`}
-                          className="w-24 rounded-[8px] border border-[#E8E8E5] px-2 py-1 text-right tabular-nums outline-none focus:border-[#2A9D8F]"
+                          className="w-24 rounded-[8px] border border-[#E4E7EC] px-2 py-1 text-right tabular-nums outline-none focus:border-[#2A9D8F]"
                           min={0}
                           onChange={(event) => {
                             const unitCost = Math.max(0, Number(event.target.value) || 0);
@@ -1202,7 +1202,7 @@ export function AchatsWorkspace() {
                           value={purchase.unitCost || 0}
                         />
                       ) : (
-                        <span className="text-[#6B6B6B]">Masqué</span>
+                        <span className="text-[#667085]">Masqué</span>
                       )}
                     </td>
                     <td className="py-2 pr-3 text-right font-semibold tabular-nums">
@@ -1214,7 +1214,7 @@ export function AchatsWorkspace() {
                 ))}
                 {filteredDirectPurchases.length === 0 && (
                   <tr>
-                    <td className="py-8 text-center text-[#6B6B6B] text-sm" colSpan={6}>
+                    <td className="py-8 text-center text-[#667085] text-sm" colSpan={6}>
                       Aucune reprise ou entrée directe pour ces filtres.
                     </td>
                   </tr>

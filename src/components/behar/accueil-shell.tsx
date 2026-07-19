@@ -84,7 +84,7 @@ export function AccueilShell({ children }: Readonly<{ children: ReactNode }>) {
   }, [open]);
 
   return (
-    <div className="min-h-svh bg-white text-[#1A1916]">
+    <div className="min-h-svh bg-white text-[#101828]">
       {/* Sidebar desktop */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[292px] flex-col border-[#E9E9E6] border-r bg-white px-3 py-7 md:flex">
         <div className="px-1">
@@ -102,7 +102,7 @@ export function AccueilShell({ children }: Readonly<{ children: ReactNode }>) {
                 href={item.href}
                 prefetch={false}
                 className={cn(
-                  "flex h-[42px] items-center gap-3 rounded-[12px] px-3 font-medium text-[13.5px] text-[#6B6B6B] transition hover:bg-[#F1F2F4] hover:text-[#1A1916]",
+                  "flex h-[42px] items-center gap-3 rounded-[12px] px-3 font-medium text-[13.5px] text-[#667085] transition hover:bg-[#F1F2F4] hover:text-[#101828]",
                   active && "bg-[#EAF6F4] font-semibold text-[#167B70]",
                 )}
               >
@@ -120,7 +120,7 @@ export function AccueilShell({ children }: Readonly<{ children: ReactNode }>) {
       </aside>
 
       {/* Topbar mobile */}
-      <header className="sticky top-0 z-30 flex h-[60px] items-center justify-between border-[#E8E8E5] border-b bg-white px-5 md:hidden">
+      <header className="sticky top-0 z-30 flex h-[60px] items-center justify-between border-[#E4E7EC] border-b bg-white px-5 md:hidden">
         <Link href="/client" prefetch={false}>
           <BeharLogo size="sm" />
         </Link>
@@ -128,7 +128,7 @@ export function AccueilShell({ children }: Readonly<{ children: ReactNode }>) {
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Menu"
-          className="grid size-11 place-items-center rounded-[10px] text-[#6B6B6B] outline-none transition hover:bg-[#F1F2F4] focus-visible:ring-3 focus-visible:ring-[#2A9D8F]/25"
+          className="grid size-11 place-items-center rounded-[10px] text-[#667085] outline-none transition hover:bg-[#F1F2F4] focus-visible:ring-3 focus-visible:ring-[#2A9D8F]/25"
         >
           <Menu className="size-5" />
         </button>
@@ -154,7 +154,7 @@ export function AccueilShell({ children }: Readonly<{ children: ReactNode }>) {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Fermer"
-                className="grid size-11 place-items-center rounded-[10px] text-[#6B6B6B] outline-none hover:bg-[#F1F2F4] focus-visible:ring-3 focus-visible:ring-[#2A9D8F]/25"
+                className="grid size-11 place-items-center rounded-[10px] text-[#667085] outline-none hover:bg-[#F1F2F4] focus-visible:ring-3 focus-visible:ring-[#2A9D8F]/25"
               >
                 <X className="size-5" />
               </button>
@@ -170,7 +170,7 @@ export function AccueilShell({ children }: Readonly<{ children: ReactNode }>) {
                     prefetch={false}
                     onClick={() => setOpen(false)}
                     className={cn(
-                      "flex h-12 items-center gap-3 rounded-[12px] px-3 font-medium text-[15px] text-[#6B6B6B] transition hover:bg-[#F1F2F4] hover:text-[#1A1916]",
+                      "flex h-12 items-center gap-3 rounded-[12px] px-3 font-medium text-[15px] text-[#667085] transition hover:bg-[#F1F2F4] hover:text-[#101828]",
                       active && "bg-[#EAF6F4] font-semibold text-[#167B70]",
                     )}
                   >
@@ -211,18 +211,18 @@ export function AccueilShell({ children }: Readonly<{ children: ReactNode }>) {
                 {currentUser.name.charAt(0).toUpperCase()}
               </span>
               <span className="max-w-44">
-                <span className="block truncate font-medium text-[#1A1916] text-[13px]">{currentUser.name}</span>
-                <span className="block truncate text-[#6B6B6B] text-[11px]">{workshopName || "Mon atelier"}</span>
+                <span className="block truncate font-medium text-[#101828] text-[13px]">{currentUser.name}</span>
+                <span className="block truncate text-[#667085] text-[11px]">{workshopName || "Mon atelier"}</span>
               </span>
             </button>
             {userOpen && (
               <div
-                className="absolute right-0 mt-2 w-52 rounded-[14px] border border-[#E8E8E5] bg-white p-1.5 shadow-[0_16px_40px_rgba(16,24,40,0.12)]"
+                className="absolute right-0 mt-2 w-52 rounded-[14px] border border-[#E4E7EC] bg-white p-1.5 shadow-[0_16px_40px_rgba(16,24,40,0.12)]"
                 role="menu"
               >
                 <Link
                   href="/client?section=offre"
-                  className="flex h-10 items-center rounded-[10px] px-3 text-[#1A1916] text-sm hover:bg-[#F1F2F4]"
+                  className="flex h-10 items-center rounded-[10px] px-3 text-[#101828] text-sm hover:bg-[#F1F2F4]"
                   role="menuitem"
                 >
                   Profil et configuration

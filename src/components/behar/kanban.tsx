@@ -87,8 +87,8 @@ export function KanbanBoard({
             )}
           >
             <div className="mb-3 flex shrink-0 items-center gap-2 px-0.5">
-              <h3 className="font-semibold text-[#1A1916] text-[15px]">{column.title}</h3>
-              <span className="font-semibold text-[#6B6B6B] text-xs">{column.count}</span>
+              <h3 className="font-semibold text-[#101828] text-[15px]">{column.title}</h3>
+              <span className="font-semibold text-[#667085] text-xs">{column.count}</span>
             </div>
             {/* overscroll-y-contain (et pas overscroll-contain) : on bloque la chaîne de scroll
                 verticale vers la page, mais le scroll horizontal doit remonter au board —
@@ -162,7 +162,7 @@ export function KanbanBoard({
             </div>
             {!compact && (
               <button
-                className="mt-3 flex shrink-0 items-center gap-2 rounded-xl px-2 py-2.5 text-[#6B6B6B] text-sm transition hover:bg-[#FFFFFF] hover:text-[#1A1916]"
+                className="mt-3 flex shrink-0 items-center gap-2 rounded-xl px-2 py-2.5 text-[#667085] text-sm transition hover:bg-[#FFFFFF] hover:text-[#101828]"
                 onClick={() => onAdd?.(column.title)}
                 type="button"
               >
@@ -205,7 +205,7 @@ function RepairCardView({
   return (
     <button
       className={cn(
-        "w-full rounded-[14px] border border-[#E8E8E5] bg-white p-[14px] text-left shadow-[0_1px_2px_rgba(26,25,22,0.035)] transition hover:border-[#2A9D8F]/40",
+        "w-full rounded-[14px] border border-[#E4E7EC] bg-white p-[14px] text-left shadow-[0_1px_2px_rgba(16,24,40,0.035)] transition hover:border-[#2A9D8F]/40",
         selected && "border-[#2A9D8F] bg-[#FFFFFF] shadow-[0_1px_3px_rgba(42,157,143,0.10)]",
         draggable && "cursor-grab touch-none active:cursor-grabbing",
         isDragging && "opacity-50",
@@ -224,30 +224,30 @@ function RepairCardView({
         {card.number && (
           <p className="mb-2 font-semibold text-[#2A9D8F] text-[11px] uppercase tracking-[0.04em]">{card.number}</p>
         )}
-        <h4 className="truncate font-semibold text-[#1A1916] text-[13px] leading-tight">{card.device}</h4>
-        <p className="mt-1 line-clamp-2 text-[#6B6B6B] text-[11px] leading-snug">{card.issue}</p>
-        <p className="mt-2 truncate font-medium text-[#1A1916] text-[11px]">{card.customer}</p>
+        <h4 className="truncate font-semibold text-[#101828] text-[13px] leading-tight">{card.device}</h4>
+        <p className="mt-1 line-clamp-2 text-[#667085] text-[11px] leading-snug">{card.issue}</p>
+        <p className="mt-2 truncate font-medium text-[#101828] text-[11px]">{card.customer}</p>
         {card.totalLabel && (
-          <p className="mt-3 font-semibold text-[#1A1916] text-[13px] tabular-nums">{card.totalLabel}</p>
+          <p className="mt-3 font-semibold text-[#101828] text-[13px] tabular-nums">{card.totalLabel}</p>
         )}
         {(card.paymentPaid !== undefined || card.showCounterBadge || card.showInvoiceBadge || card.showReadyBadge) && (
           <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
             {card.paymentPaid !== undefined ? (
-              <span className={cn("font-semibold text-[10px]", card.paymentPaid ? "text-[#147065]" : "text-[#6B6B6B]")}>
+              <span className={cn("font-semibold text-[10px]", card.paymentPaid ? "text-[#147065]" : "text-[#667085]")}>
                 {card.paymentPaid ? "Payé" : "Non payé"}
               </span>
             ) : null}
             {card.showCounterBadge ? (
-              <span className="font-semibold text-[#6B6B6B] text-[10px]">Client comptoir</span>
+              <span className="font-semibold text-[#667085] text-[10px]">Client comptoir</span>
             ) : null}
             {card.showInvoiceBadge ? (
-              <span className="font-semibold text-[#6B6B6B] text-[10px]">Facture à créer</span>
+              <span className="font-semibold text-[#667085] text-[10px]">Facture à créer</span>
             ) : null}
             {card.showReadyBadge ? <span className="font-semibold text-[#147065] text-[10px]">Prêt</span> : null}
           </div>
         )}
         <div className="mt-2 flex items-center justify-between gap-2 pt-2">
-          <p className="truncate text-[#6B6B6B] text-[10px]">{card.time}</p>
+          <p className="truncate text-[#667085] text-[10px]">{card.time}</p>
           <StatusBadge className="h-6 shrink-0 px-2 text-[10px]" status={card.status} />
         </div>
       </div>
