@@ -83,8 +83,6 @@ function payload(): NormalizedBusinessState {
     repairs: [],
     quotes: [],
     invoices: [],
-    payments: [],
-    sales: [],
     documents: [],
     stockMovements: [],
     purchases: [],

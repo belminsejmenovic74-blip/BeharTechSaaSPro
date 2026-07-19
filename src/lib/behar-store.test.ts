@@ -564,8 +564,8 @@ describe("Stock ↔ réparation", () => {
   });
 });
 
-describe("Règlement / CA", () => {
-  it("le CA ne compte que les paiements réglés (Payé)", () => {
+describe("Frontière de paiement (encaissements verrouillés)", () => {
+  it("recordRepairSettlement n'écrit plus aucun paiement", () => {
     const customerId = store().addCustomer({ name: "Client CA" });
     const repairId = store().addRepair({
       customerId,
@@ -578,10 +578,7 @@ describe("Règlement / CA", () => {
       technician: "Tech",
     });
 
-    // Avant règlement : aucun paiement Payé → CA = 0.
-    expect(store().payments.filter((payment) => payment.status === "Payé").length).toBe(0);
-
-    store().recordRepairSettlement(repairId, {
+    const settlementId = store().recordRepairSettlement(repairId, {
       status: "Réglé",
       amount: 100,
       date: nowIso(),
@@ -589,12 +586,11 @@ describe("Règlement / CA", () => {
       confirmExternal: true,
     });
 
-    const paid = store().payments.filter((payment) => payment.status === "Payé");
-    expect(paid.length).toBeGreaterThanOrEqual(1);
-    expect(paid.reduce((sum, payment) => sum + payment.amount, 0)).toBe(100);
+    expect(settlementId).toBe("");
+    expect(store().payments.length).toBe(0);
   });
 
-  it("la restitution avec règlement clôture le dossier", () => {
+  it("closeDossierWithSettlement est verrouillé : ni clôture ni paiement", () => {
     const customerId = store().addCustomer({ name: "Client Clôture" });
     const repairId = store().addRepair({
       customerId,
@@ -615,12 +611,12 @@ describe("Règlement / CA", () => {
       confirmExternal: true,
     });
 
-    expect(ok).toBe(true);
-    expect(store().repairs.find((repair) => repair.id === repairId)?.status).toBe("Clôturé");
-    expect(store().payments.some((payment) => payment.repairId === repairId && payment.status === "Payé")).toBe(true);
+    expect(ok).toBe(false);
+    expect(store().repairs.find((repair) => repair.id === repairId)?.status).toBe("Prêt");
+    expect(store().payments.some((payment) => payment.repairId === repairId)).toBe(false);
   });
 
-  it("un dossier rendu sans règlement indiqué reste hors CA et apparaît comme à finaliser", () => {
+  it("markRepairAsPaid est verrouillé et ne marque plus le dossier réglé", () => {
     const customerId = store().addCustomer({ name: "Client À finaliser" });
     const repairId = store().addRepair({
       customerId,
@@ -633,25 +629,10 @@ describe("Règlement / CA", () => {
       technician: "Tech",
     });
 
-    const ok = store().closeDossierWithSettlement(repairId, {
-      status: "Non réglé",
-      amount: 0,
-      date: nowIso(),
-      method: "Espèces",
-      confirmExternal: false,
-    });
-    expect(ok).toBe(true);
+    expect(store().markRepairAsPaid(repairId, "Espèces")).toBe("");
 
     const repair = store().repairs.find((entry) => entry.id === repairId);
-    expect(repair?.status).toBe("Clôturé");
     expect(repair?.paymentStatus).not.toBe("Réglée");
-    // CA validé = paiements "Payé" → 0 pour ce dossier.
     expect(store().payments.filter((p) => p.repairId === repairId && p.status === "Payé").length).toBe(0);
-    // Il entre dans la liste "règlements à finaliser" (rendu/clôturé, non réglé, total > payé).
-    const isPending =
-      (repair?.status === "Rendu" || repair?.status === "Clôturé") &&
-      repair?.paymentStatus !== "Réglée" &&
-      (repair?.total ?? repair?.amount ?? 0) > 0;
-    expect(isPending).toBe(true);
   });
 });

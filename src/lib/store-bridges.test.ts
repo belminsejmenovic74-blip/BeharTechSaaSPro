@@ -200,7 +200,7 @@ describe("Reconditionnement → stock + achat", () => {
     expect(useBeharStore.getState().stockItems.find((s) => s.id === stockItemId)?.stock).toBe(1);
   });
 
-  it("une vente comptoir payée marque l'appareil reconditionné vendu et écrit le ledger stock", () => {
+  it("paySale est verrouillé : l'appareil reconditionné reste en stock", () => {
     const id = useReconditioningStore.getState().createFile();
     useReconditioningStore.getState().updateFile(id, {
       brand: "Apple",
@@ -235,26 +235,17 @@ describe("Reconditionnement → stock + achat", () => {
         },
       ],
     });
+    // Frontière de paiement : l'encaissement local est verrouillé, la vente reste en brouillon.
     const paymentId = useBeharStore.getState().paySale(saleId, "Carte bancaire");
-    expect(paymentId).toBeTruthy();
+    expect(paymentId).toBe("");
 
-    const sold = useReconditioningStore.getState().files.find((f) => f.id === id);
-    expect(sold?.status).toBe("Vendu");
-    expect(sold?.saleId).toBe(saleId);
-    expect(sold?.finalSalePrice).toBe(399);
-    expect(sold?.realMargin).toBeNull();
-    expect(sold?.marginStatus).toBe("À compléter");
-    expect(useBeharStore.getState().stockItems.find((s) => s.id === stockItemId)?.stock).toBe(0);
+    const notSold = useReconditioningStore.getState().files.find((f) => f.id === id);
+    expect(notSold?.status).toBe("En stock");
+    expect(notSold?.saleId).toBeUndefined();
+    expect(useBeharStore.getState().stockItems.find((s) => s.id === stockItemId)?.stock).toBe(1);
     expect(
-      useBeharStore
-        .getState()
-        .stockMovements.some(
-          (movement) =>
-            movement.movementType === "reconditioned_device_sold" &&
-            movement.linkedSaleId === saleId &&
-            movement.linkedReconditioningDeviceId === id,
-        ),
-    ).toBe(true);
+      useBeharStore.getState().stockMovements.some((movement) => movement.movementType === "reconditioned_device_sold"),
+    ).toBe(false);
   });
 
   it("publishToStock marque l'achat comme tracé — acceptIntake ne le recompte pas ensuite", () => {
