@@ -57,3 +57,6 @@ La route serveur `/api/behar/sync` propage désormais les clients, fournisseurs 
 la validation de la session, de la licence et de l’isolation atelier. Les identifiants externes sont préfixés
 par l’atelier afin d’éviter les collisions entre locataires. Les factures, paiements et mouvements de stock
 ne sont pas envoyés par cette étape tant que leurs workflows comptables et légaux ne sont pas activés.
+
+La route `GET /api/erpnext/status` permet un diagnostic de production. Elle exige le jeton serveur
+`ADMIN_ACCESS_TOKEN`, ne renvoie jamais les clés ERPNext et vérifie le jeton technique avec l’API Frappe.
