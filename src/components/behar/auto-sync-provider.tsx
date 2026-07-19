@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 import { type StoreState, useBeharStore } from "@/lib/behar-store";
-import { checkDeviceQuota } from "@/lib/plan-limits";
+import { getPlanLimits } from "@/lib/plan-limits";
 import { syncNormalizedBusinessState } from "@/lib/data/normalized-sync";
 import { syncPublicTrackingDocumentsToCloud } from "@/lib/public-tracking-documents-sync";
 import { syncPublicTrackingRepairsToCloud } from "@/lib/public-tracking-sync";
@@ -245,24 +245,37 @@ export function AutoSyncProvider() {
       saveTimer = setTimeout(() => {
         const current = useBeharStore.getState();
 
-        // Limite d'appareils connectés selon l'offre : un appareil hors quota
-        // peut consulter, mais n'écrase pas les données de l'atelier.
+        // Limite d'appareils connectés selon l'offre. Historiquement, un appareil
+        // « hors quota » voyait TOUTE sa sauvegarde bloquée en silence
+        // (markSyncStatus("error") + return). Résultat observé : une liste
+        // d'appareils gonflée (sessions de test, cache vidé → nouvel id à chaque
+        // fois) finissait par bloquer n'importe quel appareil dont l'id n'était
+        // pas déjà enregistré — plus aucun dossier ne remontait au cloud.
+        //
+        // Nouvelle politique : on n'interrompt plus jamais la sauvegarde. On garde
+        // la limite « N appareils actifs » via une éviction LRU — l'appareil
+        // réellement utilisé conserve toujours sa place, les ids les plus anciens
+        // tombent d'eux-mêmes. Auto-cicatrisant.
+        const nowIso = new Date().toISOString();
         const knownDevices = (current.cloudSync?.devices ?? []).filter(
           (device) => Date.now() - new Date(device.lastSeenAt).getTime() < 30 * 24 * 60 * 60 * 1000,
         );
-        const deviceQuota = checkDeviceQuota(
-          current.licensePlan,
-          knownDevices.map((device) => device.id),
-          deviceId,
-        );
-        if (!deviceQuota.allowed) {
-          markSyncStatus("error", { lastError: deviceQuota.reason });
-          return;
+        const deviceLimit = getPlanLimits(current.licensePlan).devices;
+        let devices: Array<{ id: string; label?: string; lastSeenAt: string }>;
+        if (knownDevices.some((device) => device.id === deviceId)) {
+          devices = knownDevices.map((device) => (device.id === deviceId ? { ...device, lastSeenAt: nowIso } : device));
+        } else {
+          const withCurrent = [
+            ...knownDevices,
+            { id: deviceId, label: navigator.userAgent.slice(0, 60), lastSeenAt: nowIso },
+          ];
+          devices =
+            deviceLimit == null
+              ? withCurrent
+              : withCurrent
+                  .sort((a, b) => new Date(b.lastSeenAt).getTime() - new Date(a.lastSeenAt).getTime())
+                  .slice(0, Math.max(1, deviceLimit));
         }
-        const nowIso = new Date().toISOString();
-        const devices = knownDevices.some((device) => device.id === deviceId)
-          ? knownDevices.map((device) => (device.id === deviceId ? { ...device, lastSeenAt: nowIso } : device))
-          : [...knownDevices, { id: deviceId, label: navigator.userAgent.slice(0, 60), lastSeenAt: nowIso }];
 
         const saveState = {
           ...current,
