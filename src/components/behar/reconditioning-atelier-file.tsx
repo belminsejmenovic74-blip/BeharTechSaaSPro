@@ -66,6 +66,7 @@ import {
   useReconditioningStore,
   WORK_STATUSES,
 } from "@/lib/reconditioning-store";
+import { syncPublicReconditioningCertificate } from "@/lib/reconditioning-public-sync";
 import {
   canGenerateSaleLabel,
   canMarkSold,
@@ -240,14 +241,31 @@ function FileInner({ file, onBack }: Readonly<{ file: ReconditioningFile; onBack
     openDoc("etiquette");
   };
 
-  const validateFinalDiagnostic = () => {
+  const validateFinalDiagnostic = async () => {
     if (!canPublishPublicCertificate(file)) {
       setTab("final");
       toast.error(`Diagnostic final incomplet — à compléter : ${missing.map((m) => m.label).join(", ")}`);
       return;
     }
     generateCertificate(file.id);
-    toast.success("Diagnostic final validé — QR public et certificat générés.");
+    // Publication cloud du certificat (table QR public) confirmée explicitement :
+    // plus d'échec silencieux. En cas d'erreur réseau/table, l'atelier voit le
+    // problème et peut relancer (« Valider » = retry). Le QR imprimé embarque de
+    // toute façon le certificat encodé en repli, donc il reste scannable.
+    const updated = useReconditioningStore.getState().files.find((f) => f.id === file.id);
+    const published = updated
+      ? await syncPublicReconditioningCertificate(updated, {
+          workshopName: shopName,
+          shopLogoUrl: workshopSettings.logoUrl,
+        }).catch(() => false)
+      : false;
+    if (published) {
+      toast.success("Diagnostic final validé — QR public et certificat publiés.");
+    } else {
+      toast.error(
+        "Diagnostic validé, mais la publication cloud du QR a échoué (réseau/base). Cliquez à nouveau sur « Valider » pour réessayer — le QR imprimé reste scannable.",
+      );
+    }
   };
 
   const markListed = () => {
@@ -2127,6 +2145,10 @@ function QrBlock({ url, label }: Readonly<{ url: string; label: string }>) {
       )}
       <div className="min-w-0">
         <p className="font-semibold text-[#101828] text-[12px]">{label}</p>
+        {/* URL en clair sous le QR : repli si le scan échoue. */}
+        <p className="mt-0.5 truncate text-[#98A2B3] text-[10.5px]" title={url}>
+          {url.replace(/^https?:\/\//, "")}
+        </p>
         <div className="mt-1.5 flex gap-2">
           <button
             className="inline-flex h-7 items-center gap-1 rounded-[7px] border border-[#E4E7EC] bg-white px-2 font-semibold text-[#101828] text-[11px]"

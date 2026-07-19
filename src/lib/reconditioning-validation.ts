@@ -1,5 +1,4 @@
 import type { ReconditioningFile, ReconditioningStatus } from "@/lib/reconditioning-store";
-import { realDeviceImage } from "@/lib/real-product-images";
 
 const clean = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 const FINAL_FUNCTIONAL_TESTS = [
@@ -85,14 +84,16 @@ export function hasFinalDiagnostic(device: ReconditioningFile): boolean {
 }
 
 export function canPublishPublicCertificate(device: ReconditioningFile): boolean {
+  // La photo est 100% optionnelle : elle n'a jamais bloqué la publication du
+  // certificat / de l'étiquette. Une image catalogue sert de repli visuel si
+  // aucune photo n'est ajoutée, mais son absence ne bloque plus rien.
   return Boolean(
     isDeviceComplete(device) &&
       hasFinalDiagnostic(device) &&
       getDeviceGrade(device) &&
       device.batteryHealth != null &&
       device.batteryHealth >= 0 &&
-      device.warrantyMonths > 0 &&
-      (device.photos.cote || realDeviceImage(device.brand, device.model, "smartphone")),
+      device.warrantyMonths > 0,
   );
 }
 
@@ -116,10 +117,7 @@ export function getReadyForSaleChecklist(device: ReconditioningFile): ReadyForSa
     { label: "Prix de vente", done: hasUsableMoney(device.prixVentePrevu) },
     { label: "Garantie (mois)", done: device.warrantyMonths > 0 },
     { label: "Diagnostic final complet", done: hasFinalDiagnostic(device) },
-    {
-      label: "Photo publique ou image catalogue",
-      done: Boolean(device.photos.cote || realDeviceImage(device.brand, device.model, "smartphone")),
-    },
+    // Photo volontairement retirée des conditions : non bloquante.
   ];
 }
 

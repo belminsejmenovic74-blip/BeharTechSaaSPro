@@ -131,7 +131,7 @@ function DeviceDetailInner({ file, onBack }: Readonly<{ file: ReconditioningFile
   const markReady = () => {
     if (!canPublishPublic) {
       window.alert(
-        "Complétez le diagnostic final public, le prix, la batterie, la garantie et une photo/catalogue avant publication.",
+        "Complétez le diagnostic final public, le prix, la batterie et la garantie avant publication. La photo est optionnelle.",
       );
       return;
     }
@@ -148,7 +148,7 @@ function DeviceDetailInner({ file, onBack }: Readonly<{ file: ReconditioningFile
   const generateSaleLabel = () => {
     if (!canGenerateSaleLabel(file)) {
       window.alert(
-        "L'étiquette de vente sera disponible après le diagnostic final, le prix de vente, la batterie, la garantie et la photo.",
+        "L'étiquette de vente sera disponible après le diagnostic final, le prix de vente, la batterie et la garantie. La photo est optionnelle.",
       );
       return;
     }
@@ -581,7 +581,6 @@ function readiness(file: ReconditioningFile, publicReady: boolean) {
   const requiredUntested = uniqueQaItems.filter((item) => item.required && qaState(file, item) === "Non testé").length;
   const uncontrolled = uniqueQaItems.filter((item) => qaState(file, item) === "Non testé").length;
   const defects = finalDefects(file);
-  const hasPhoto = Boolean(file.photos.cote || file.photos.face);
   const defectCommentRequired = defects.some(({ state }) => state === "Défaut final") && !file.testComment.trim();
   const items = [
     { label: "Données appareil complètes", done: Boolean(file.brand && file.model && file.storage && file.color) },
@@ -590,7 +589,7 @@ function readiness(file: ReconditioningFile, publicReady: boolean) {
     { label: "Prix vente renseigné", done: file.prixVentePrevu > 0 },
     { label: "Garantie renseignée", done: file.warrantyMonths > 0 },
     { label: "Tests obligatoires validés", done: requiredUntested === 0 },
-    { label: "Photos publiques ajoutées", done: hasPhoto },
+    // « Photos publiques ajoutées » retiré : la photo n'est plus bloquante.
     { label: "Diagnostic final cohérent", done: uncontrolled === 0 && !defectCommentRequired },
     { label: "Étiquette vente générable", done: publicReady },
     { label: "QR public générable", done: publicReady },
@@ -983,14 +982,34 @@ function FinalQualityControlSection({
               />
             </div>
             <div className="mt-3 flex flex-wrap gap-1.5">
-              {["Écran", "Réseau", "Caméra", "IMEI"].map((label) => (
-                <span
-                  className="rounded-full border border-[#D7EFEA] bg-[#ECF8F4] px-2.5 py-1 font-semibold text-[#147065] text-[11px]"
-                  key={label}
-                >
-                  {label} OK
-                </span>
-              ))}
+              {[
+                { label: "Écran", value: certificateData.screenStatus },
+                { label: "Réseau", value: certificateData.networkStatus },
+                { label: "Caméra", value: certificateData.cameraStatus },
+                { label: "IMEI", value: certificateData.imeiStatus },
+              ].map(({ label, value }) => {
+                // Les badges lisent la MÊME source que le compteur (functionalTests /
+                // imei du diagnostic final). Fini le « OK » hardcodé décorrélé du réel.
+                const raw = String(value ?? "");
+                const defect = /défaut/i.test(raw);
+                const positive = !defect && /ok|propre|testé/i.test(raw);
+                const state = positive ? "OK" : defect ? "Défaut" : "Non testé";
+                return (
+                  <span
+                    className={cn(
+                      "rounded-full border px-2.5 py-1 font-semibold text-[11px]",
+                      positive
+                        ? "border-[#D7EFEA] bg-[#ECF8F4] text-[#147065]"
+                        : defect
+                          ? "border-[#FFD7B5] bg-[#FFF2E8] text-[#C05621]"
+                          : "border-[#E4E7EC] bg-[#F9FAFB] text-[#98A2B3]",
+                    )}
+                    key={label}
+                  >
+                    {label} {state}
+                  </span>
+                );
+              })}
             </div>
           </SectionCard>
         </aside>

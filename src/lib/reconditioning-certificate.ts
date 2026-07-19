@@ -377,6 +377,18 @@ export function encodeCertificate(data: CertificateData): string {
   return b64urlEncode(JSON.stringify(compact));
 }
 
+/**
+ * URL publique du certificat avec le payload encodé en repli (`?d=`). La page
+ * publique lit d'abord la fiche live (table cloud), puis retombe sur ce payload
+ * auto-porté si la table `reconditioning_public_certificates` ou la clé service
+ * n'est pas disponible — le QR scanné reste fonctionnel dans tous les cas.
+ */
+export function withEncodedCertificate(baseUrl: string, data: CertificateData): string {
+  if (!baseUrl) return baseUrl;
+  const sep = baseUrl.includes("?") ? "&" : "?";
+  return `${baseUrl}${sep}d=${encodeCertificate(data)}`;
+}
+
 const CONTROL_LABELS = [
   "Écran",
   "Tactile",

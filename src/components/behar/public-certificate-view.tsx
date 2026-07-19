@@ -55,7 +55,11 @@ export function PublicCertificateView({
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    if (!publicToken || encoded) {
+    // Live d'abord : on tente toujours la fiche cloud si un token est présent,
+    // même quand un payload `?d=` encodé accompagne l'URL. Le payload encodé sert
+    // uniquement de repli si la table/clé service n'est pas disponible (cf. memo
+    // `data` : remoteData > encoded > local).
+    if (!publicToken) {
       setRemoteLoaded(true);
       return;
     }
@@ -77,7 +81,7 @@ export function PublicCertificateView({
     return () => {
       cancelled = true;
     };
-  }, [encoded, publicToken]);
+  }, [publicToken]);
 
   const data: CertificateData | null = useMemo(() => {
     if (remoteData) return remoteData;

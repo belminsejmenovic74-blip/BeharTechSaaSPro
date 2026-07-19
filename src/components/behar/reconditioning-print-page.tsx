@@ -10,7 +10,12 @@ import { generatePdfFromElement } from "@/lib/pdf-generator";
 import { generateQrCodeDataUrl, publicAbsoluteUrl } from "@/lib/public-access";
 import { useRecondSettings } from "@/lib/recond-settings";
 import { useBeharStore } from "@/lib/behar-store";
-import { buildCertificateData, type CertificateData, certificatePublicPath } from "@/lib/reconditioning-certificate";
+import {
+  buildCertificateData,
+  type CertificateData,
+  certificatePublicPath,
+  withEncodedCertificate,
+} from "@/lib/reconditioning-certificate";
 import { useReconditioningStore } from "@/lib/reconditioning-store";
 import { cn } from "@/lib/utils";
 
@@ -63,7 +68,7 @@ export function ReconditioningPrintPage() {
         ? publicAbsoluteUrl(
             `/dashboard/reconditionnement?tab=devices&device=${encodeURIComponent(file.id)}&internal=${encodeURIComponent(file.internalQrToken || file.number)}`,
           )
-        : publicAbsoluteUrl(certificatePublicPath(data));
+        : withEncodedCertificate(publicAbsoluteUrl(certificatePublicPath(data)), data);
     generateQrCodeDataUrl(url)
       .then((value) => alive && setQr(value))
       .catch(() => undefined);
