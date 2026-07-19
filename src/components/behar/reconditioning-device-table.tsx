@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Copy, Smartphone } from "lucide-react";
+import { Copy, Smartphone } from "lucide-react";
 
 import { safeMoney, getDeviceLocation, getDeviceOrigin, getDeviceReference } from "@/lib/reconditioning-formatters";
 import { calculateEstimatedMargin, calculateRepairCost } from "@/lib/reconditioning-calculations";
@@ -196,13 +196,13 @@ function DeviceMobileCard({
         <StatusBadge status={(complete ? file.status : "À compléter") as ReconditioningStatus} />
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 text-[12px]">
-        <Metric label="Reprise" value={complete ? safeMoney(file.prixAchat) : "À compléter"} />
-        <Metric label="Revente" value={complete ? safeMoney(file.prixVentePrevu) : "À compléter"} />
+        <Metric label="Reprise" value={complete ? safeMoney(file.prixAchat) : "—"} />
+        <Metric label="Revente" value={complete ? safeMoney(file.prixVentePrevu) : "—"} />
         <Metric label="Réparation" value={safeMoney(calculateRepairCost(file))} />
         <Metric
           tone={margin == null ? undefined : margin >= 0 ? "good" : "bad"}
           label="Marge"
-          value={margin == null ? "À compléter" : safeMoney(margin)}
+          value={margin == null ? "—" : safeMoney(margin)}
         />
       </div>
       <div className="mt-3 flex items-center justify-between gap-2">
@@ -228,10 +228,8 @@ function DeviceIdentity({
       <span className="grid size-[38px] shrink-0 place-items-center overflow-hidden rounded-[10px] border border-[#E4E7EC] bg-[#F9FAFB]">
         {image ? (
           <img alt="" className="h-full w-full object-contain p-1" src={image} />
-        ) : complete ? (
-          <Smartphone className="size-5 text-[#2A9D8F]" />
         ) : (
-          <AlertTriangle className="size-5 text-[#C05621]" />
+          <Smartphone className={cn("size-5", complete ? "text-[#2A9D8F]" : "text-[#98A2B3]")} />
         )}
       </span>
       <span className="min-w-0">
@@ -287,9 +285,7 @@ function ActionButton({
       className={cn(
         "inline-flex h-8 max-w-[132px] items-center justify-center whitespace-nowrap rounded-[9px] border px-2.5 font-semibold text-[11.5px] transition",
         isPrimary
-          ? action.id === "complete"
-            ? "border-[#FFD7B5] bg-[#FFF2E8] text-[#C05621] hover:bg-[#FFE8D1]"
-            : "border-[#D7EFEA] bg-[#ECF8F4] text-[#147065] hover:bg-[#DFF3ED]"
+          ? "border-[#D7EFEA] bg-[#ECF8F4] text-[#147065] hover:bg-[#DFF3ED]"
           : "border-[#E4E7EC] bg-white text-[#147065] hover:bg-[#F5F7FA]",
       )}
       onClick={() => onRunAction(file, action)}

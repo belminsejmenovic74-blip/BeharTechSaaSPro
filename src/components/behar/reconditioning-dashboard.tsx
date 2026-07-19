@@ -5,7 +5,17 @@
 
 import { useMemo } from "react";
 
-import { AlertTriangle, CheckCircle2, Plus, ShoppingBag, Smartphone, Tag, TrendingUp, Wrench } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle2,
+  Plus,
+  ShoppingBag,
+  Smartphone,
+  Tag,
+  TrendingUp,
+  Wrench,
+} from "lucide-react";
 
 import {
   calculateEstimatedMargin,
@@ -179,14 +189,14 @@ function ReconditioningKpiCards({
     {
       label: "Marge estimée",
       value: safeMoney(marginAmount),
-      hint: marginCount > 0 ? `Sur ${marginCount} appareil${marginCount > 1 ? "s" : ""}` : "À compléter",
+      hint: marginCount > 0 ? `Sur ${marginCount} appareil${marginCount > 1 ? "s" : ""}` : "Aucune fiche complète",
       icon: TrendingUp,
       tone: "amber",
     },
     {
-      label: "À compléter / À risque",
+      label: "À traiter",
       value: String(atRisk),
-      hint: atRisk > 0 ? "À traiter" : "Données propres",
+      hint: atRisk > 0 ? "Fiches incomplètes ou bloquées" : "Rien à signaler",
       icon: AlertTriangle,
       tone: "red",
     },
@@ -295,22 +305,21 @@ function ReconditioningPipelineCard({
   const image = complete ? realDeviceImage(file.brand, file.model, "smartphone") : "";
   const repairCost = calculateRepairCost(file);
   const margin = calculateEstimatedMargin(file);
-  const primaryLabel = !complete
-    ? ""
-    : file.status === "Vendu"
+  const partialName = [file.brand, file.model].filter(Boolean).join(" ").trim();
+  const title = complete ? getDeviceDisplayName(file) : partialName || "Reprise à compléter";
+  const subtitle = complete ? getDeviceSubtitle(file) : "Modèle, stockage ou couleur manquant";
+  const primaryLabel =
+    file.status === "Vendu"
       ? "Vendu"
       : file.status === "Prêt à vendre" || file.status === "En stock"
         ? "Marge est."
         : "Reprise";
-  const primaryValue = !complete
-    ? "À compléter"
-    : file.status === "Prêt à vendre" || file.status === "En stock"
-      ? safeMoney(margin)
-      : safeMoney(file.prixAchat);
+  const primaryValue =
+    file.status === "Prêt à vendre" || file.status === "En stock" ? safeMoney(margin) : safeMoney(file.prixAchat);
 
   return (
     <article
-      className="cursor-pointer rounded-[12px] border border-[#E4E7EC] bg-[#FCFCFD] p-2.5 transition hover:border-[#2A9D8F]/40 hover:bg-white"
+      className="group cursor-pointer rounded-[12px] border border-[#E4E7EC] bg-[#FCFCFD] p-2.5 transition hover:border-[#2A9D8F]/40 hover:bg-white"
       onClick={() => onOpenDevice(file.id)}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") onOpenDevice(file.id);
@@ -323,39 +332,40 @@ function ReconditioningPipelineCard({
           {image ? (
             <img alt="" className="h-full w-full object-contain p-1" src={image} />
           ) : (
-            <Smartphone className="size-4.5 text-[#2A9D8F]" />
+            <Smartphone className={cn("size-4.5", complete ? "text-[#2A9D8F]" : "text-[#98A2B3]")} />
           )}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-semibold text-[#101828] text-[12.5px] leading-tight">
-            {getDeviceDisplayName(file)}
-          </p>
-          <p className="mt-0.5 truncate text-[#98A2B3] text-[11px]">{getDeviceSubtitle(file)}</p>
+          <p className="truncate font-semibold text-[#101828] text-[12.5px] leading-tight">{title}</p>
+          <p className="mt-0.5 truncate text-[#98A2B3] text-[11px]">{subtitle}</p>
         </div>
       </div>
-      <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
-        <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
-          {complete ? (
+      {complete ? (
+        <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
+          <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
             <GradeBadge grade={getDeviceGrade(file) as never} />
-          ) : (
-            <span className="inline-flex h-[22px] max-w-[96px] items-center truncate whitespace-nowrap rounded-full border border-[#FFD7B5] bg-[#FFF2E8] px-2 font-semibold text-[#C05621] text-[10.5px] leading-none">
-              À compléter
-            </span>
-          )}
-          {repairCost > 0 && <span className="truncate text-[#98A2B3] text-[11px]">Rép. {safeMoney(repairCost)}</span>}
-        </span>
-        <span className="flex max-w-[96px] shrink-0 items-baseline justify-end gap-1 leading-tight">
-          {primaryLabel && <span className="truncate text-[#98A2B3] text-[10px]">{primaryLabel}</span>}
-          <span
-            className={cn(
-              "font-semibold text-[12.5px] tabular-nums",
-              margin != null && margin >= 0 ? "text-[#147065]" : "text-[#101828]",
+            {repairCost > 0 && (
+              <span className="truncate text-[#98A2B3] text-[11px]">Rép. {safeMoney(repairCost)}</span>
             )}
-          >
-            {primaryValue}
           </span>
-        </span>
-      </div>
+          <span className="flex max-w-[96px] shrink-0 items-baseline justify-end gap-1 leading-tight">
+            <span className="truncate text-[#98A2B3] text-[10px]">{primaryLabel}</span>
+            <span
+              className={cn(
+                "font-semibold text-[12.5px] tabular-nums",
+                margin != null && margin >= 0 ? "text-[#147065]" : "text-[#101828]",
+              )}
+            >
+              {primaryValue}
+            </span>
+          </span>
+        </div>
+      ) : (
+        <div className="mt-2 flex h-8 items-center justify-center gap-1.5 rounded-[9px] border border-[#2A9D8F]/25 bg-[#ECF8F4] font-semibold text-[#147065] text-[11.5px] transition group-hover:bg-[#DFF3ED]">
+          Compléter la fiche
+          <ArrowRight className="size-3.5" />
+        </div>
+      )}
     </article>
   );
 }

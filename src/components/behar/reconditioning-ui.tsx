@@ -30,7 +30,7 @@ export const numFieldCls =
 /* ───────────────────────── Statuts ───────────────────────── */
 
 const STATUS_TONE: Record<ReconditioningStatus, string> = {
-  "À compléter": "border-[#FFD7B5] bg-[#FFF2E8] text-[#C05621]",
+  "À compléter": "border-transparent bg-[#FFF7E8] text-[#9A6B1B]",
   Brouillon: "border-[#E4E7EC] bg-white text-[#667085]",
   Acheté: "border-[#D7EFEA] bg-[#ECF8F4] text-[#167B70]",
   Évaluation: "border-[#D9E7FF] bg-[#F3F7FF] text-[#2563EB]",

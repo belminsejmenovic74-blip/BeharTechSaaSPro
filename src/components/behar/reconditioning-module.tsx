@@ -21,12 +21,12 @@ import { AccentButton, GhostButton } from "./reconditioning-ui";
 
 export type ReconditioningTab = "overview" | "devices" | "workshop" | "intake" | "settings";
 
+// « Nouvelle reprise » et « Paramètres » ne sont pas des onglets : ce sont les
+// deux boutons d'action de l'en-tête (évite les doublons dans la navigation).
 const TABS: { key: ReconditioningTab; label: string }[] = [
   { key: "overview", label: "Vue d'ensemble" },
   { key: "devices", label: "Appareils" },
   { key: "workshop", label: "Atelier" },
-  { key: "intake", label: "Nouvelle reprise" },
-  { key: "settings", label: "Paramètres" },
 ];
 
 export function ReconditioningModule({
