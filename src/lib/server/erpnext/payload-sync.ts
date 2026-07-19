@@ -72,9 +72,15 @@ export async function syncPayloadToErpNext(
 
   const workshopId = cleanText(payload.workshopId);
   if (!workshopId) throw new Error("L’identifiant atelier est requis pour la synchronisation ERPNext.");
-  if (workshopId !== config.workshopId) {
+  if (!config.allowAllWorkshops && !config.workshopIds.includes(workshopId)) {
     return { enabled: true, eligible: false, customers: 0, suppliers: 0, items: 0, itemPrices: 0 };
   }
+
+  // En mode multi-ateliers, deux boutiques peuvent partager le même SKU :
+  // le code article ERPNext est alors préfixé par l'atelier pour rester unique.
+  const multiWorkshop = config.allowAllWorkshops || config.workshopIds.length > 1;
+  const scopedItemCode = (item: NormalizedBusinessState["stockItems"][number]): string =>
+    multiWorkshop ? `${workshopId.slice(0, 8)}-${itemCode(item)}`.slice(0, 140) : itemCode(item);
 
   await runLimited(payload.customers ?? [], (customer) =>
     syncCustomer(client, {
@@ -100,7 +106,7 @@ export async function syncPayloadToErpNext(
 
   let itemPrices = 0;
   await runLimited(payload.stockItems ?? [], async (item) => {
-    const code = itemCode(item);
+    const code = scopedItemCode(item);
     await syncItem(client, {
       id: externalId(workshopId, item.id),
       sku: code,

@@ -13,7 +13,8 @@ function config(enabled = true): ErpNextConfig {
     baseUrl: "https://erp.example.com",
     apiKey: "key",
     apiSecret: "secret",
-    workshopId: "workshop-1",
+    workshopIds: ["workshop-1"],
+    allowAllWorkshops: false,
     company: "Behar Tech Pro",
     branch: "Boutique principale",
     warehouse: "Entrepôt principal - BTP",
@@ -113,7 +114,7 @@ describe("synchronisation du payload ERPNext", () => {
   it("ignore tout atelier qui n’est pas explicitement autorisé", async () => {
     const upsertByExternalId = vi.fn();
     const result = await syncPayloadToErpNext(payload(), {
-      config: { ...config(), workshopId: "another-workshop" },
+      config: { ...config(), workshopIds: ["another-workshop"] },
       client: { upsertByExternalId } as unknown as ErpNextClient,
     });
 
@@ -158,5 +159,20 @@ describe("synchronisation du payload ERPNext", () => {
         expect.objectContaining({ price_list: "Standard Buying", price_list_rate: 50, currency: "EUR" }),
       ]),
     );
+  });
+
+  it("en mode tous ateliers, chaque atelier est éligible et les codes articles sont préfixés", async () => {
+    const upsertByExternalId = vi.fn().mockResolvedValue({ action: "created", document: { name: "DOC-1" } });
+    const list = vi.fn().mockResolvedValue([]);
+    const create = vi.fn().mockResolvedValue({ name: "PRICE-1" });
+    const result = await syncPayloadToErpNext(payload(), {
+      config: { ...config(), workshopIds: [], allowAllWorkshops: true },
+      client: { upsertByExternalId, list, create } as unknown as ErpNextClient,
+    });
+
+    expect(result.eligible).toBe(true);
+    const itemCall = upsertByExternalId.mock.calls.find(([call]) => call.doctype === "Item");
+    expect(itemCall?.[0].document.item_code).toBe("workshop-ECR-IP15");
+    expect(create.mock.calls.every(([, document]) => document.item_code === "workshop-ECR-IP15")).toBe(true);
   });
 });

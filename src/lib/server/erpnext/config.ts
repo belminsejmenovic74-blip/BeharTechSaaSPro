@@ -10,7 +10,10 @@ export type ErpNextConfig = {
   baseUrl: string;
   apiKey: string;
   apiSecret: string;
-  workshopId: string;
+  /** Ateliers autorisés à synchroniser. Vide + allowAllWorkshops=false → aucun. */
+  workshopIds: string[];
+  /** ERPNEXT_WORKSHOP_ID="*" → tous les ateliers sont synchronisés. */
+  allowAllWorkshops: boolean;
   company: string;
   branch: string;
   warehouse: string;
@@ -52,8 +55,15 @@ export function readErpNextConfig(env: Environment = process.env): ErpNextConfig
   const baseUrl = normalizeBaseUrl(env.ERPNEXT_BASE_URL);
   const apiKey = env.ERPNEXT_API_KEY?.trim() ?? "";
   const apiSecret = env.ERPNEXT_API_SECRET?.trim() ?? "";
-  const workshopId = env.ERPNEXT_WORKSHOP_ID?.trim() ?? "";
-  const configured = Boolean(baseUrl && apiKey && apiSecret && workshopId);
+  const workshopScope = env.ERPNEXT_WORKSHOP_ID?.trim() ?? "";
+  const allowAllWorkshops = workshopScope === "*";
+  const workshopIds = allowAllWorkshops
+    ? []
+    : workshopScope
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+  const configured = Boolean(baseUrl && apiKey && apiSecret && (allowAllWorkshops || workshopIds.length));
 
   if (enabled && !configured) {
     throw new Error(
@@ -67,7 +77,8 @@ export function readErpNextConfig(env: Environment = process.env): ErpNextConfig
     baseUrl,
     apiKey,
     apiSecret,
-    workshopId,
+    workshopIds,
+    allowAllWorkshops,
     company: env.ERPNEXT_COMPANY?.trim() || "Behar Tech Pro",
     branch: env.ERPNEXT_DEFAULT_BRANCH?.trim() || "Boutique principale",
     warehouse: env.ERPNEXT_DEFAULT_WAREHOUSE?.trim() || "Entrepôt principal - BTP",
@@ -87,7 +98,7 @@ export function getErpNextSafeStatus(env: Environment = process.env) {
   return {
     enabled: config.enabled,
     configured: config.configured,
-    workshopScoped: Boolean(config.workshopId),
+    workshopScope: config.allowAllWorkshops ? "all" : config.workshopIds.length,
     baseUrl: config.baseUrl || null,
     company: config.company,
     branch: config.branch,

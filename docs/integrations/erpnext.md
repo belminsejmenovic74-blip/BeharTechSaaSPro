@@ -70,3 +70,16 @@ reste positive avec un avertissement, afin de préserver le fonctionnement local
 
 La route `GET /api/erpnext/status` permet un diagnostic de production. Elle exige le jeton serveur
 `ADMIN_ACCESS_TOKEN`, ne renvoie jamais les clés ERPNext et vérifie le jeton technique avec l’API Frappe.
+
+## Portée multi-ateliers (2026-07-19)
+
+`ERPNEXT_WORKSHOP_ID` accepte désormais un identifiant unique, une liste séparée par des virgules,
+ou `*` pour synchroniser tous les ateliers. En mode multi-ateliers, le `item_code` ERPNext est
+préfixé par les 8 premiers caractères de l'identifiant d'atelier afin d'éviter les collisions de SKU
+entre boutiques ; les clés d'idempotence `custom_identifiant_*` restent préfixées par l'atelier complet.
+
+## Provisionnement
+
+`node scripts/erpnext-provision.mjs` crée de façon idempotente les champs personnalisés
+(Customer/Supplier/Item), les groupes par défaut et vérifie la société et les listes de prix.
+À exécuter une fois avant la première synchronisation.
