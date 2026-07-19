@@ -13,6 +13,10 @@ export type ErpNextConfig = {
   company: string;
   branch: string;
   warehouse: string;
+  customerGroup: string;
+  supplierGroup: string;
+  itemGroup: string;
+  territory: string;
   requestTimeoutMs: number;
 };
 
@@ -61,6 +65,10 @@ export function readErpNextConfig(env: Environment = process.env): ErpNextConfig
     company: env.ERPNEXT_COMPANY?.trim() || "Behar Tech Pro",
     branch: env.ERPNEXT_DEFAULT_BRANCH?.trim() || "Boutique principale",
     warehouse: env.ERPNEXT_DEFAULT_WAREHOUSE?.trim() || "Entrepôt principal - BTP",
+    customerGroup: env.ERPNEXT_DEFAULT_CUSTOMER_GROUP?.trim() || "Particuliers",
+    supplierGroup: env.ERPNEXT_DEFAULT_SUPPLIER_GROUP?.trim() || "Fournisseurs BEHAR TECH PRO",
+    itemGroup: env.ERPNEXT_DEFAULT_ITEM_GROUP?.trim() || "Articles synchronisés BEHAR TECH PRO",
+    territory: env.ERPNEXT_DEFAULT_TERRITORY?.trim() || "All Territories",
     requestTimeoutMs: parseTimeout(env.ERPNEXT_REQUEST_TIMEOUT_MS),
   };
 }
@@ -74,5 +82,9 @@ export function getErpNextSafeStatus(env: Environment = process.env) {
     company: config.company,
     branch: config.branch,
     warehouse: config.warehouse,
+    customerGroup: config.customerGroup,
+    supplierGroup: config.supplierGroup,
+    itemGroup: config.itemGroup,
+    territory: config.territory,
   };
 }

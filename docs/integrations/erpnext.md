@@ -16,6 +16,10 @@ L’absence de clé ne doit donc jamais empêcher l’application de fonctionner
 - `ERPNEXT_COMPANY`
 - `ERPNEXT_DEFAULT_BRANCH`
 - `ERPNEXT_DEFAULT_WAREHOUSE`
+- `ERPNEXT_DEFAULT_CUSTOMER_GROUP`
+- `ERPNEXT_DEFAULT_SUPPLIER_GROUP`
+- `ERPNEXT_DEFAULT_ITEM_GROUP`
+- `ERPNEXT_DEFAULT_TERRITORY`
 - `ERPNEXT_REQUEST_TIMEOUT_MS`
 - `ERPNEXT_SYNC_ENABLED`
 
@@ -48,3 +52,8 @@ mouvement de stock ou un rapprochement dédié afin de préserver le grand livre
 - Le statut actuel est « TVA non applicable, article 293 B du CGI ».
 - Les paiements Stripe, SumUp et PayPal sont enregistrés comme externes ; ils ne sont pas encaissés par ERPNext.
 - La synchronisation doit être testée avec des fixtures et des appels simulés avant activation sur le site réel.
+
+La route serveur `/api/behar/sync` propage désormais les clients, fournisseurs et articles vers ERPNext après
+la validation de la session, de la licence et de l’isolation atelier. Les identifiants externes sont préfixés
+par l’atelier afin d’éviter les collisions entre locataires. Les factures, paiements et mouvements de stock
+ne sont pas envoyés par cette étape tant que leurs workflows comptables et légaux ne sont pas activés.

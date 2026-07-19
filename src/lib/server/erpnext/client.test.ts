@@ -13,6 +13,10 @@ function config(overrides: Partial<ErpNextConfig> = {}): ErpNextConfig {
     company: "Behar Tech Pro",
     branch: "Boutique principale",
     warehouse: "Entrepôt principal - BTP",
+    customerGroup: "Particuliers",
+    supplierGroup: "Fournisseurs BEHAR TECH PRO",
+    itemGroup: "Articles synchronisés BEHAR TECH PRO",
+    territory: "All Territories",
     requestTimeoutMs: 5_000,
     ...overrides,
   };
