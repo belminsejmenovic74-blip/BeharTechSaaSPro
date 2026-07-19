@@ -112,11 +112,16 @@ function extractTrackingInfoFromUrl() {
 
 import { getSupabase } from "@/lib/supabase/client";
 
-async function readPublicRepairFromSupabase(token: string): Promise<PublicRepairDto | null> {
+// Résultat discriminé : on distingue explicitement « pas en base » (introuvable)
+// de « la requête a échoué » (réseau / accès). Afficher « expiré » sur une simple
+// erreur réseau induit le client en erreur.
+type TrackingFetchResult = { status: "found"; data: PublicRepairDto } | { status: "not_found" } | { status: "error" };
+
+async function readPublicRepairFromSupabase(token: string): Promise<TrackingFetchResult> {
   const supabase = getSupabase();
   if (!supabase) {
     console.error("[public-tracking] Supabase client non configuré.");
-    return null;
+    return { status: "error" };
   }
 
   // Les tokens de suivi peuvent contenir des underscores (`rp_XXXX`,
@@ -124,7 +129,7 @@ async function readPublicRepairFromSupabase(token: string): Promise<PublicRepair
   // Supabase ne matche jamais et la page affiche « Suivi introuvable ».
   // On garde uniquement [a-zA-Z0-9_-] : sûr pour le filtre PostgREST `.or()`.
   const safeToken = token.replace(/[^a-zA-Z0-9_-]/g, "");
-  if (!safeToken) return null;
+  if (!safeToken) return { status: "not_found" };
 
   // On recherche par tracking_id en respectant la casse (originale ou majuscule) ou par numéro de dossier
   const { data, error } = await supabase
@@ -136,19 +141,20 @@ async function readPublicRepairFromSupabase(token: string): Promise<PublicRepair
     .limit(1);
 
   if (error) {
+    // Erreur réseau / accès refusé : ce N'EST PAS un lien expiré.
     console.error("[public-tracking] Error fetching repair:", error.message);
-    return null;
+    return { status: "error" };
   }
 
   if (!data || data.length === 0 || !data[0].public_data) {
     console.warn("[public-tracking] Tracking not found for token:", token);
-    return null;
+    return { status: "not_found" };
   }
 
-  return data[0].public_data as PublicRepairDto;
+  return { status: "found", data: data[0].public_data as PublicRepairDto };
 }
 
-function notFound(shopName?: string) {
+function statusScreen(variant: "missing" | "error", shopName?: string) {
   const name = shopName ? shopName.trim() : "";
   const cleanName =
     name &&
@@ -167,6 +173,16 @@ function notFound(shopName?: string) {
       /^(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(hostname);
   }
 
+  const title = variant === "error" ? "Suivi momentanément indisponible" : "Suivi introuvable";
+  // On n'affiche PLUS « expiré » : la cause réelle est soit un dossier pas encore
+  // remonté (introuvable), soit un problème réseau/accès (erreur) — jamais une
+  // expiration. Message honnête dans les deux cas.
+  const body = isLocalIp
+    ? "Dossier introuvable en local. Pour tester depuis un téléphone, utilisez Supabase ou créez le dossier depuis le même appareil."
+    : variant === "error"
+      ? "Nous n'arrivons pas à charger votre suivi pour le moment (problème de connexion ou d'accès). Vérifiez votre connexion et réessayez dans un instant."
+      : `Nous ne trouvons pas ce dossier. Si vous venez de déposer votre appareil, réessayez dans quelques instants. Sinon, vérifiez le lien ou contactez ${cleanName}.`;
+
   return (
     <div className="grid min-h-screen place-items-center px-6" style={{ background: COLORS.bg, color: COLORS.text }}>
       <div
@@ -179,12 +195,20 @@ function notFound(shopName?: string) {
         >
           <ShieldCheck className="size-6" />
         </span>
-        <p className="mt-4 font-bold text-[19px] tracking-tight">Suivi introuvable</p>
+        <p className="mt-4 font-bold text-[19px] tracking-tight">{title}</p>
         <p className="mt-2 text-[14px] leading-relaxed" style={{ color: COLORS.sub }}>
-          {isLocalIp
-            ? "Dossier introuvable en local. Pour tester depuis un téléphone, utilisez Supabase ou créez le dossier depuis le même appareil."
-            : `Ce lien n'est plus valide ou a expiré. Veuillez contacter ${cleanName} pour obtenir un nouveau lien de suivi.`}
+          {body}
         </p>
+        {variant === "error" && typeof window !== "undefined" ? (
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-5 inline-flex h-11 items-center justify-center rounded-[12px] px-5 font-semibold text-[14px] text-white active:scale-[0.99]"
+            style={{ background: COLORS.accent }}
+          >
+            Réessayer
+          </button>
+        ) : null}
       </div>
     </div>
   );
@@ -206,7 +230,7 @@ export function PublicTrackingView({
   const shopSlug = propShopSlug || browserShopSlug;
 
   const [data, setData] = useState<PublicRepairDto | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<"loading" | "found" | "not_found" | "error">("loading");
   const [draft, setDraft] = useState("");
   const [qr, setQr] = useState("");
   const [copied, setCopied] = useState(false);
@@ -219,14 +243,13 @@ export function PublicTrackingView({
   }, []);
 
   useEffect(() => {
-    console.log("[tracking-page] token from URL:", token);
     if (!token) {
-      setLoading(false);
+      setStatus("not_found");
       return;
     }
 
     let cancelled = false;
-    setLoading(true);
+    setStatus("loading");
 
     let isLocalhost = false;
     if (typeof window !== "undefined") {
@@ -234,21 +257,28 @@ export function PublicTrackingView({
       isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
     }
 
-    const loadLocalData = async () => {
-      await (
-        useBeharStore as typeof useBeharStore & { persist?: { rehydrate?: () => Promise<void> | void } }
-      ).persist?.rehydrate?.();
-      const localState = useBeharStore.getState();
-      const localDto = buildPublicRepairDtoFromLocalState(localState, token);
-      console.log("[tracking-page] local state found repair:", localDto);
-      if (!cancelled) {
-        setData(localDto ?? null);
-        setLoading(false);
-      }
-    };
-
+    // ── Dev local : lecture du store local, avec relève courte (le dossier peut
+    //    venir d'être créé dans un autre onglet) ─────────────────────────────
     let interval: number | undefined;
     if (isLocalhost) {
+      let localTries = 0;
+      const loadLocalData = async () => {
+        await (
+          useBeharStore as typeof useBeharStore & { persist?: { rehydrate?: () => Promise<void> | void } }
+        ).persist?.rehydrate?.();
+        const localState = useBeharStore.getState();
+        const localDto = buildPublicRepairDtoFromLocalState(localState, token);
+        if (cancelled) return;
+        if (localDto) {
+          setData(localDto);
+          setStatus("found");
+          if (interval) window.clearInterval(interval);
+        } else if (localTries >= 8) {
+          setStatus("not_found");
+          if (interval) window.clearInterval(interval);
+        }
+        localTries += 1;
+      };
       void loadLocalData();
       interval = window.setInterval(() => {
         void loadLocalData();
@@ -259,25 +289,49 @@ export function PublicTrackingView({
       };
     }
 
-    readPublicRepairFromSupabase(token)
-      .then((fetchedData) => {
-        console.log("[tracking-page] found repair:", fetchedData);
-        if (fetchedData) {
-          if (!cancelled) setData(fetchedData);
-        } else {
-          if (!cancelled) setData(null);
-        }
-      })
-      .catch((err) => {
-        console.log("[tracking-page] error:", err);
-        if (!cancelled) setData(null);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    // ── Production : lecture Supabase (clé anon). On distingue introuvable vs
+    //    erreur, et on retente pour couvrir la propagation d'un dossier tout
+    //    juste créé (le push suivi est asynchrone). ────────────────────────────
+    const MAX_RETRIES = 4;
+    const RETRY_DELAY_MS = 1800;
+    let attempt = 0;
+    let retryTimer: number | undefined;
+
+    const run = () => {
+      readPublicRepairFromSupabase(token)
+        .then((result) => {
+          if (cancelled) return;
+          if (result.status === "found") {
+            setData(result.data);
+            setStatus("found");
+            return;
+          }
+          // Introuvable OU erreur transitoire : on retente quelques fois avant de
+          // conclure (le dossier peut être en cours de remontée).
+          if (attempt < MAX_RETRIES) {
+            attempt += 1;
+            retryTimer = window.setTimeout(run, RETRY_DELAY_MS);
+            return;
+          }
+          setData(null);
+          setStatus(result.status === "error" ? "error" : "not_found");
+        })
+        .catch(() => {
+          if (cancelled) return;
+          if (attempt < MAX_RETRIES) {
+            attempt += 1;
+            retryTimer = window.setTimeout(run, RETRY_DELAY_MS);
+            return;
+          }
+          setData(null);
+          setStatus("error");
+        });
+    };
+    run();
 
     return () => {
       cancelled = true;
+      if (retryTimer) window.clearTimeout(retryTimer);
     };
   }, [token]);
 
@@ -394,7 +448,7 @@ export function PublicTrackingView({
     }
   };
 
-  if (loading || (!token && loading)) {
+  if (status === "loading") {
     return (
       <div className="grid min-h-screen place-items-center" style={{ background: COLORS.bg, color: COLORS.sub }}>
         Chargement…
@@ -402,7 +456,8 @@ export function PublicTrackingView({
     );
   }
 
-  if (!data) return notFound(shopSlug);
+  if (status === "error") return statusScreen("error", shopSlug);
+  if (status === "not_found" || !data) return statusScreen("missing", shopSlug);
 
   const shopName = resolveShopName([data.workshop.name]);
   // On affiche le numéro de dossier lisible (ex. REP-0009) plutôt que le token

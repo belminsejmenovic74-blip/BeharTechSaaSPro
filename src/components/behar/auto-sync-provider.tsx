@@ -96,6 +96,63 @@ export function AutoSyncProvider() {
     installReconditioningSalesBridge();
   }, []);
 
+  // ── Publication du suivi public (page /suivi), DÉCOUPLÉE de la sauvegarde
+  //    snapshot ─────────────────────────────────────────────────────────────
+  // Les tables `public_tracking_repairs` / `public_tracking_documents` ont leur
+  // propre RLS anonyme (lecture ET écriture) : elles ne dépendent ni de la
+  // licence, ni du succès de `saveSnapshotState`. Historiquement le push suivi
+  // était chaîné sur `saveSnapshotState(...).then()` ; dès que ce chemin
+  // (verrouillé/licence) cesse de s'exécuter, plus AUCUN dossier neuf ne remonte
+  // et la page publique affiche « Suivi introuvable ». On pousse donc le suivi
+  // directement dès qu'un dossier / document change, indépendamment de la synchro
+  // atelier. Upsert idempotent (onConflict: tracking_id) → doublon inoffensif.
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+
+    let disposed = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const pushTracking = () => {
+      const state = useBeharStore.getState();
+      if (!state._hasHydrated) return;
+      const trackedRepairs = (state.repairs ?? []).filter((repair) => repair?.publicAccess?.active !== false);
+      if (trackedRepairs.length > 0) {
+        void syncPublicTrackingRepairsToCloud(trackedRepairs, state);
+      }
+      void syncPublicTrackingDocumentsToCloud(state);
+    };
+
+    const schedule = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (!disposed) pushTracking();
+      }, 500);
+    };
+
+    const unsubscribe = useBeharStore.subscribe((state, previous) => {
+      if (disposed) return;
+      // On ne réagit qu'aux données réellement exposées côté suivi public.
+      if (
+        state.repairs === previous.repairs &&
+        state.documents === previous.documents &&
+        state.quotes === previous.quotes &&
+        state.invoices === previous.invoices
+      ) {
+        return;
+      }
+      schedule();
+    });
+
+    // Au montage : rattrape les dossiers déjà créés mais jamais remontés.
+    schedule();
+
+    return () => {
+      disposed = true;
+      if (timer) clearTimeout(timer);
+      unsubscribe();
+    };
+  }, []);
+
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
 
