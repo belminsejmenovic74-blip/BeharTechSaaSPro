@@ -14,17 +14,19 @@ import { WidgetAppointmentsProvider } from "@/components/behar/widget-appointmen
 // installation + PIN) et providers de sync.
 export default function Layout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <PrintProvider>
-      <AccueilLicenseBridge>
-        <InstallationGate>
-          <PinLoginGate>
-            <AutoSyncProvider />
-            <WidgetAppointmentsProvider />
-            <WidgetLeadNotificationsProvider />
-            <AccueilShell>{children}</AccueilShell>
-          </PinLoginGate>
-        </InstallationGate>
-      </AccueilLicenseBridge>
-    </PrintProvider>
+    <div className="behar-app min-h-svh bg-white text-[#1A1916]">
+      <PrintProvider>
+        <AccueilLicenseBridge>
+          <InstallationGate>
+            <PinLoginGate>
+              <AutoSyncProvider />
+              <WidgetAppointmentsProvider />
+              <WidgetLeadNotificationsProvider />
+              <AccueilShell>{children}</AccueilShell>
+            </PinLoginGate>
+          </InstallationGate>
+        </AccueilLicenseBridge>
+      </PrintProvider>
+    </div>
   );
 }

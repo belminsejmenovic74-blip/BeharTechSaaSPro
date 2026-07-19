@@ -1,17 +1,16 @@
 import type { BeharDocument, Repair, StoreState, WorkshopInfo } from "@/lib/behar-store";
-import { getBillingWorkshopInfo, getRepairReadyDisplayLabel, repairHasConfirmedPayment } from "@/lib/behar-store";
+import { getBillingWorkshopInfo } from "@/lib/behar-store";
 import { getTrackingCode } from "@/lib/customer-tracking";
 import type { PublicRepairDto } from "@/lib/public-dtos";
 import { PUBLIC_REPAIR_TIMELINE_STEPS, publicRepairProgress, publicRepairStatusLabel } from "@/lib/repair-status";
 import { getWorkshopCountryConfig } from "@/lib/workshop-country";
 
-const PUBLIC_DOCUMENT_TYPES = new Set(["intake", "quote", "invoice", "payment", "summary", "diagnostic_report"]);
+const PUBLIC_DOCUMENT_TYPES = new Set(["intake", "quote", "invoice", "summary", "diagnostic_report"]);
 
 const PUBLIC_DOCUMENT_TITLE_BY_TYPE: Record<string, string> = {
   intake: "Bon de prise en charge",
   quote: "Devis",
   invoice: "Facture",
-  payment: "Confirmation de règlement",
   summary: "Rapport final",
   diagnostic_report: "Rapport diagnostic",
 };
@@ -78,28 +77,12 @@ function isPublicDocument(document: BeharDocument): boolean {
   return PUBLIC_DOCUMENT_TYPES.has(document.type) && document.type !== "internal";
 }
 
-function isPaymentConfirmed(status?: Repair["paymentStatus"]) {
-  return status === "Réglée" || status === "Partiellement réglée";
-}
-
 function publicDocumentTitle(document: BeharDocument, number?: string) {
   const base = PUBLIC_DOCUMENT_TITLE_BY_TYPE[document.type] ?? document.title;
-  if (document.type === "payment") return base;
   return number ? `${base} ${number}` : base;
 }
 
-function documentNumber(
-  document: BeharDocument,
-  state: Pick<StoreState, "quotes" | "invoices" | "payments">,
-  repair: Repair,
-) {
-  if (document.type === "payment") {
-    return (
-      state.payments.find((payment) => payment.id === document.paymentId)?.paymentNumber ||
-      state.payments.find((payment) => payment.invoiceId === document.invoiceId && payment.repairId === repair.id)
-        ?.paymentNumber
-    );
-  }
+function documentNumber(document: BeharDocument, state: Pick<StoreState, "quotes" | "invoices">, repair: Repair) {
   if (document.type === "invoice") {
     return state.invoices.find((invoice) => invoice.id === document.invoiceId)?.number;
   }
@@ -110,23 +93,22 @@ function documentNumber(
 }
 
 /**
- * Chemin public d'un document commercial (devis/facture/reçu), lu par les pages
- * /devis /facture /recu depuis `public_tracking_documents`. Le token est l'id de
- * l'entité liée (quoteId/invoiceId/paymentId). Remplace l'ancienne route
+ * Chemin public d'un document commercial (devis/facture), lu par les pages
+ * /devis /facture depuis `public_tracking_documents`. Le token est l'id de
+ * l'entité liée. Remplace l'ancienne route
  * `/print/document/...` qui n'est lisible qu'en local (cassée à distance).
  */
 function commercialDocumentPath(document: BeharDocument): string | undefined {
   if (document.type === "intake" && document.repairId) return `/bon/${document.repairId}`;
   if (document.type === "quote" && document.quoteId) return `/devis/${document.quoteId}`;
   if (document.type === "invoice" && document.invoiceId) return `/facture/${document.invoiceId}`;
-  if (document.type === "payment" && document.paymentId) return `/recu/${document.paymentId}`;
   return undefined;
 }
 
 export function buildPublicRepairDtoFromLocalState(
   state: Pick<
     StoreState,
-    "customers" | "documents" | "invoices" | "payments" | "quotes" | "repairs" | "workshopInfo" | "workshopSettings"
+    "customers" | "documents" | "invoices" | "quotes" | "repairs" | "workshopInfo" | "workshopSettings"
   >,
   token: string,
 ): PublicRepairDto | null {
@@ -141,27 +123,15 @@ export function buildPublicRepairDtoFromLocalState(
     (state.workshopSettings ?? state.workshopInfo) as WorkshopInfo,
     repair.billingCountry,
   );
-  const paymentConfirmed = isPaymentConfirmed(repair.paymentStatus);
-  const hasPaidPayment = repairHasConfirmedPayment(repair, state.payments);
-  const documents = state.documents.filter(
-    (document) =>
-      document.repairId === repair.id &&
-      isPublicDocument(document) &&
-      (document.type !== "payment" || paymentConfirmed),
-  );
+  const documents = state.documents.filter((document) => document.repairId === repair.id && isPublicDocument(document));
 
   return {
     workshop: publicWorkshop(workshop),
     repair: {
       number: repair.number,
       status: repair.status,
-      statusLabel:
-        repair.status === "Prêt"
-          ? getRepairReadyDisplayLabel(repair, state.payments)
-          : publicRepairStatusLabel(repair.status),
-      readyLabel: repair.status === "Prêt" ? getRepairReadyDisplayLabel(repair, state.payments) : undefined,
-      paymentStatus: repair.paymentStatus,
-      hasPaidPayment,
+      statusLabel: publicRepairStatusLabel(repair.status),
+      readyLabel: repair.status === "Prêt" ? publicRepairStatusLabel(repair.status) : undefined,
       finalTestStatus: repair.finalTest?.status,
       deviceBrand: repair.brandName || undefined,
       deviceModel: repair.deviceModel || repair.device || undefined,
@@ -223,17 +193,6 @@ export function buildPublicRepairDtoFromLocalState(
           downloadUrl: document?.fileUrl || undefined,
         };
       }),
-    receiptLinks: state.payments
-      .filter((payment) => paymentConfirmed && payment.repairId === repair.id && payment.status === "Payé")
-      .map((payment) => {
-        const document = documents.find((entry) => entry.paymentId === payment.id && entry.type === "payment");
-        return {
-          number: payment.paymentNumber,
-          status: payment.status,
-          amount: payment.amount,
-          previewUrl: `/recu/${payment.id}`,
-          downloadUrl: document?.fileUrl || undefined,
-        };
-      }),
+    receiptLinks: [],
   };
 }

@@ -72,7 +72,7 @@ export const DEMO_CONFIG: WidgetConfig = {
     contentWidth: "wide",
   },
   texts: {},
-  features: { multiIssue: true, photos: true },
+  features: { multiIssue: true, photos: true, homeService: true },
   catalogPolicy: {
     allowOutOfCatalog: true,
     allowUnconfiguredModels: true,
@@ -239,7 +239,7 @@ function demoServices(query: CatalogQuery): PublicService[] {
     recommended: entry.recommended,
     qualireparEligible: entry.qualireparEligible,
     qualireparBonus: entry.qualireparBonus,
-    price: { mode: "from", amount: entry.amount, currency: "EUR" },
+    price: { mode: "exact", amount: entry.amount, currency: "EUR" },
     stock: { mode: "simple", status: "available" },
     durationMinutes: entry.durationMinutes,
     warranty: entry.warranty,
@@ -267,8 +267,14 @@ function demoReference(): string {
 
 // Client factice type-compatible : renvoie des données d'exemple, ne crée rien.
 export class DemoWidgetClient extends WidgetPublicClient {
+  private previewServices: PublicService[] | undefined;
+
   constructor() {
     super("demo", "");
+  }
+
+  setPreviewServices(services: PublicService[] | undefined) {
+    this.previewServices = services;
   }
 
   override getConfig(): Promise<WidgetConfig> {
@@ -292,13 +298,25 @@ export class DemoWidgetClient extends WidgetPublicClient {
   }
 
   override getServices(_token: string, query: CatalogQuery): Promise<PublicService[]> {
-    return Promise.resolve(demoServices(query));
+    if (!this.previewServices) return Promise.resolve(demoServices(query));
+    const category = fold(query.category ?? "");
+    const brand = fold(query.brand ?? "");
+    const model = fold(query.model ?? "");
+    return Promise.resolve(
+      this.previewServices.filter(
+        (service) =>
+          (!category || fold(service.category) === category) &&
+          (!brand || fold(service.brand) === brand) &&
+          (!model || fold(service.model) === model) &&
+          (!query.shop || !service.shops?.length || service.shops.includes(query.shop)),
+      ),
+    );
   }
 
   override quote(): Promise<QuoteResult> {
     return Promise.resolve({
       service: { publicId: "demo-svc-0", label: "Écran (OLED premium)" },
-      price: { mode: "from", amount: 129, currency: "EUR" },
+      price: { mode: "exact", amount: 129, currency: "EUR" },
       durationMinutes: 45,
       warranty: "12 mois",
       shop: DEMO_SHOPS[0],

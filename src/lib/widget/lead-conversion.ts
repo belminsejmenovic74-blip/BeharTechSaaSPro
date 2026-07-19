@@ -37,11 +37,23 @@ export function findExistingCustomerId(
 }
 
 export function leadToCustomerInput(lead: DashboardWidgetLead) {
+  const serviceAddress = lead.submission_payload?.serviceAddress;
+  const address =
+    serviceAddress && typeof serviceAddress === "object"
+      ? [
+          (serviceAddress as Record<string, unknown>).address,
+          (serviceAddress as Record<string, unknown>).postalCode,
+          (serviceAddress as Record<string, unknown>).city,
+        ]
+          .filter((value) => typeof value === "string" && value.trim())
+          .join(", ")
+      : "";
   return {
     name: leadCustomerName(lead),
     phone: lead.phone || "",
     email: lead.email || "",
     device: leadDeviceLabel(lead),
+    address: address || undefined,
     source: "Widget site internet",
     notes: [lead.issue_description, lead.comment].filter(Boolean).join(" — "),
   };

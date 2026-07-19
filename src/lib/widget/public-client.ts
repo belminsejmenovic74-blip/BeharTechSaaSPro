@@ -55,6 +55,13 @@ export type LeadPayload = {
   contactPreference?: ContactPreference;
   requestedCallbackAt?: string;
   shopPublicId?: string;
+  serviceMode: "appointment" | "walk_in" | "home_service" | "request";
+  serviceAddress?: {
+    address: string;
+    postalCode: string;
+    city: string;
+    country: "FR" | "CH";
+  };
   photos: string[];
   tags: string[];
   selectedOffers: Array<{

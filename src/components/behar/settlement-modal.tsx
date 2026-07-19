@@ -2,12 +2,10 @@
 
 import { useState } from "react";
 
-import { toast } from "sonner";
-
 import type { Invoice, PaymentMethod, SettlementStatus } from "@/lib/behar-store";
 import { useBeharStore } from "@/lib/behar-store";
 
-import { ComingSoonModal } from "./coming-soon-integration";
+import { ExternalPaymentRequestModal } from "./external-payment-request-modal";
 
 /**
  * Compatibilite temporaire avec les anciens appelants. Les champs financiers
@@ -55,8 +53,11 @@ export function SettlementModal({
   total: number;
   invoice?: Invoice;
 }>) {
+  const customer = useBeharStore((state) =>
+    invoice ? state.customers.find((entry) => entry.id === invoice.customerId) : undefined,
+  );
   if (!invoice) return null;
-  return <ComingSoonModal isOpen={isOpen} name="Paiements externes" onClose={onClose} />;
+  return <ExternalPaymentRequestModal customer={customer} invoice={invoice} isOpen={isOpen} onClose={onClose} />;
 }
 
 /**
@@ -77,10 +78,7 @@ export function useSettlementModal() {
     const finalizedInvoice = store.invoices.find(
       (entry) => entry.repairId === targetRepairId && entry.status !== "Brouillon" && entry.status !== "Annulée",
     );
-    if (!finalizedInvoice) {
-      toast.error("Finalisez d'abord la facture du dossier.");
-      return;
-    }
+    if (!finalizedInvoice) return;
     setRepairId(targetRepairId);
     setDraft(defaultSettlementDraft(0));
     setIsOpen(true);
@@ -88,8 +86,6 @@ export function useSettlementModal() {
 
   const close = () => setIsOpen(false);
   const submit = () => {
-    // Garde-fou : les anciens appelants ne peuvent plus enregistrer un resultat financier.
-    toast.info("Utilisez la demande Stripe ou SumUp.");
     return false;
   };
   const total = invoice ? invoice.lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0) : 0;

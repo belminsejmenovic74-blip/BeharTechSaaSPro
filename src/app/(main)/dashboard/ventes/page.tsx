@@ -1,10 +1,5 @@
-import { PageShell } from "@/components/behar/page-shell";
-import { SalesWorkspace } from "@/components/behar/sales-workspace";
+import { redirect } from "next/navigation";
 
-export default function SalesPage() {
-  return (
-    <PageShell title="Ventes accessoires" subtitle="Ventes hors flux dossier, conservées en gestion stock." fitScreen>
-      <SalesWorkspace />
-    </PageShell>
-  );
+export default function LegacySalesPage() {
+  redirect("/dashboard/factures");
 }

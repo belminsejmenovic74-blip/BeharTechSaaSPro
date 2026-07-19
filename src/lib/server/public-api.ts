@@ -8,12 +8,7 @@ import type {
   PublicRepairDto,
   PublicWorkshopDto,
 } from "@/lib/public-dtos";
-import {
-  PUBLIC_REPAIR_TIMELINE_STEPS,
-  repairReadyStatusLabel,
-  publicRepairProgress,
-  publicRepairStatusLabel,
-} from "@/lib/repair-status";
+import { PUBLIC_REPAIR_TIMELINE_STEPS, publicRepairProgress, publicRepairStatusLabel } from "@/lib/repair-status";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { getWorkshopCountryConfig } from "@/lib/workshop-country";
 
@@ -24,9 +19,6 @@ const PUBLIC_DOCUMENT_TITLES: Record<string, string> = {
   repair_intake: "Bon de prise en charge",
   quote: "Devis",
   invoice: "Facture",
-  payment: "Confirmation de règlement",
-  payment_confirmation: "Confirmation de règlement",
-  payment_receipt: "Confirmation de règlement",
   summary: "Rapport final",
   diagnostic_report: "Rapport diagnostic",
 };
@@ -133,19 +125,14 @@ function publicTimelineFromRepair(repair: any, events: any[] = []): PublicRepair
   });
 }
 
-function isPublicRepairDocument(doc: any, paidPaymentIds: Set<string>) {
+function isPublicRepairDocument(doc: any) {
   const type = String(doc?.document_type ?? "");
-  if (!Object.hasOwn(PUBLIC_DOCUMENT_TITLES, type)) return false;
-  if (type === "payment" || type === "payment_confirmation" || type === "payment_receipt") {
-    return paidPaymentIds.has(String(doc.payment_id ?? ""));
-  }
-  return true;
+  return Object.hasOwn(PUBLIC_DOCUMENT_TITLES, type);
 }
 
 function publicDocumentTitle(doc: any) {
   const type = String(doc?.document_type ?? "");
   const base = PUBLIC_DOCUMENT_TITLES[type] ?? doc?.title ?? "Document";
-  if (type === "payment" || type === "payment_confirmation" || type === "payment_receipt") return base;
   return doc?.document_number ? `${base} ${doc.document_number}` : base;
 }
 
@@ -166,48 +153,41 @@ export async function getPublicRepair(token: string): Promise<PublicRepairDto | 
   if (repairError) throw repairError;
   if (!repair) return null;
 
-  const [workshopRes, clientRes, eventsRes, docsRes, messagesRes, quotesRes, invoicesRes, paymentsRes] =
-    await Promise.all([
-      supabase.from("workshops").select("*").eq("id", repair.workshop_id).single(),
-      repair.client_id ? supabase.from("clients").select("full_name").eq("id", repair.client_id).maybeSingle() : null,
-      supabase
-        .from("repair_events")
-        .select("title, description, visibility, created_at")
-        .eq("repair_id", repair.id)
-        .in("visibility", ["client", "system"])
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("documents")
-        .select("document_type, title, document_number, status, public_url, file_url, quote_id, invoice_id, payment_id")
-        .eq("repair_id", repair.id)
-        .eq("public_visible", true)
-        .neq("document_type", "internal_intervention_sheet")
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("repair_messages")
-        .select("author_type, author_name, body, created_at")
-        .eq("repair_id", repair.id)
-        .eq("visibility", "client")
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("quotes")
-        .select("id, quote_number, status, total_ttc, public_url")
-        .eq("repair_id", repair.id)
-        .eq("public_active", true)
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("invoices")
-        .select("id, invoice_number, status, total_ttc, public_url")
-        .eq("repair_id", repair.id)
-        .eq("public_active", true)
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("payments")
-        .select("id, payment_number, status, amount, public_url")
-        .eq("repair_id", repair.id)
-        .eq("public_active", true)
-        .order("created_at", { ascending: true }),
-    ]);
+  const [workshopRes, clientRes, eventsRes, docsRes, messagesRes, quotesRes, invoicesRes] = await Promise.all([
+    supabase.from("workshops").select("*").eq("id", repair.workshop_id).single(),
+    repair.client_id ? supabase.from("clients").select("full_name").eq("id", repair.client_id).maybeSingle() : null,
+    supabase
+      .from("repair_events")
+      .select("title, description, visibility, created_at")
+      .eq("repair_id", repair.id)
+      .in("visibility", ["client", "system"])
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("documents")
+      .select("document_type, title, document_number, status, public_url, file_url, quote_id, invoice_id")
+      .eq("repair_id", repair.id)
+      .eq("public_visible", true)
+      .neq("document_type", "internal_intervention_sheet")
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("repair_messages")
+      .select("author_type, author_name, body, created_at")
+      .eq("repair_id", repair.id)
+      .eq("visibility", "client")
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("quotes")
+      .select("id, quote_number, status, total_ttc, public_url")
+      .eq("repair_id", repair.id)
+      .eq("public_active", true)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("invoices")
+      .select("id, invoice_number, status, total_ttc, public_url")
+      .eq("repair_id", repair.id)
+      .eq("public_active", true)
+      .order("created_at", { ascending: true }),
+  ]);
 
   if (workshopRes.error) throw workshopRes.error;
   if (clientRes && "error" in clientRes && clientRes.error) throw clientRes.error;
@@ -216,20 +196,9 @@ export async function getPublicRepair(token: string): Promise<PublicRepairDto | 
   if (messagesRes.error) throw messagesRes.error;
   if (quotesRes.error) throw quotesRes.error;
   if (invoicesRes.error) throw invoicesRes.error;
-  if (paymentsRes.error) throw paymentsRes.error;
-
-  const paidPaymentIds = new Set(
-    (paymentsRes.data ?? [])
-      .filter((payment: any) => ["Payé", "paid", "partially_paid", "Partiellement réglé"].includes(payment.status))
-      .map((payment: any) => String(payment.id)),
-  );
-  const hasPaidPayment = (paymentsRes.data ?? []).some((payment: any) => ["Payé", "paid"].includes(payment.status));
-  const publicDocs = (docsRes.data ?? []).filter((doc: any) => isPublicRepairDocument(doc, paidPaymentIds));
+  const publicDocs = (docsRes.data ?? []).filter((doc: any) => isPublicRepairDocument(doc));
   const repairProgress = publicRepairProgress(repair.status);
-  const readyLabel =
-    repairProgress.key === "ready"
-      ? repairReadyStatusLabel(repair.status, repair.payment_status, hasPaidPayment)
-      : undefined;
+  const readyLabel = repairProgress.key === "ready" ? publicRepairStatusLabel(repair.status) : undefined;
 
   return {
     workshop: trackingWorkshopDto(workshopRes.data),
@@ -238,8 +207,6 @@ export async function getPublicRepair(token: string): Promise<PublicRepairDto | 
       status: repair.status,
       statusLabel: readyLabel ?? publicRepairStatusLabel(repair.status),
       readyLabel,
-      paymentStatus: repair.payment_status || undefined,
-      hasPaidPayment,
       finalTestStatus: repair.final_test_status || repair.final_test?.status || undefined,
       deviceBrand: repair.device_brand || undefined,
       deviceModel: repair.device_model || undefined,
@@ -282,22 +249,7 @@ export async function getPublicRepair(token: string): Promise<PublicRepairDto | 
         publicDocs.find((doc: any) => doc.document_type === "invoice" && doc.invoice_id === invoice.id)?.file_url ||
         undefined,
     })),
-    receiptLinks: (paymentsRes.data ?? [])
-      .filter((payment: any) => paidPaymentIds.has(String(payment.id)))
-      .map((payment: any) => ({
-        number: payment.payment_number,
-        status: payment.status,
-        amount: Number(payment.amount ?? 0),
-        previewUrl: payment.public_url,
-        downloadUrl:
-          publicDocs.find(
-            (doc: any) =>
-              (doc.document_type === "payment" ||
-                doc.document_type === "payment_confirmation" ||
-                doc.document_type === "payment_receipt") &&
-              doc.payment_id === payment.id,
-          )?.file_url || undefined,
-      })),
+    receiptLinks: [],
   };
 }
 
@@ -352,8 +304,10 @@ export async function getPublicCommercialDocument(
   const supabase = getSupabaseAdmin();
   if (!supabase) throw new Error("Supabase server non configuré.");
 
-  const table =
-    kind === "quote" ? "quotes" : kind === "invoice" ? "invoices" : kind === "receipt" ? "payments" : "sales";
+  // Historical receipt and counter-sale pages are intentionally unavailable.
+  if (kind === "receipt" || kind === "sale") return null;
+
+  const table = kind === "quote" ? "quotes" : "invoices";
   const record = await getCommercialDocument(supabase, table, token);
   if (!record) return null;
 
@@ -371,8 +325,6 @@ export async function getPublicCommercialDocument(
         [
           record.id && kind === "quote" ? `quote_id.eq.${record.id}` : "",
           record.id && kind === "invoice" ? `invoice_id.eq.${record.id}` : "",
-          record.id && kind === "receipt" ? `payment_id.eq.${record.id}` : "",
-          record.id && kind === "sale" ? `sale_id.eq.${record.id}` : "",
         ]
           .filter(Boolean)
           .join(","),
@@ -393,7 +345,7 @@ export async function getPublicCommercialDocument(
       .order("created_at", { ascending: true });
     if (lineError) throw lineError;
     lines = data ?? [];
-  } else if (kind === "invoice") {
+  } else {
     const { data, error: lineError } = await supabase
       .from("invoice_lines")
       .select("label, quantity, unit_price_ttc, total_ttc")
@@ -401,21 +353,10 @@ export async function getPublicCommercialDocument(
       .order("created_at", { ascending: true });
     if (lineError) throw lineError;
     lines = data ?? [];
-  } else if (kind === "sale") {
-    const { data, error: lineError } = await supabase
-      .from("sale_lines")
-      .select("label, quantity, unit_price_ttc, total_ttc")
-      .eq("sale_id", record.id)
-      .order("created_at", { ascending: true });
-    if (lineError) throw lineError;
-    lines = data ?? [];
-  } else {
-    lines = [{ label: "Paiement", quantity: 1, unit_price_ttc: record.amount, total_ttc: record.amount }];
   }
 
-  const number =
-    record.quote_number || record.invoice_number || record.payment_number || record.sale_number || "Document";
-  const total = Number(record.total_ttc ?? record.amount ?? 0);
+  const number = record.quote_number || record.invoice_number || "Document";
+  const total = Number(record.total_ttc ?? 0);
 
   return {
     kind,
@@ -423,7 +364,7 @@ export async function getPublicCommercialDocument(
     client: { displayName: clientRes?.data?.full_name || "Client comptoir" },
     document: {
       number,
-      status: record.status || record.payment_status || "ready",
+      status: record.status || "ready",
       totalTtc: total,
       createdAt: record.created_at,
       publicUrl: record.public_url || undefined,
@@ -504,6 +445,9 @@ export async function getPublicPrintableDocument(token: string): Promise<PublicP
     .maybeSingle();
   if (documentError) throw documentError;
   if (!document) return null;
+  if (["payment", "payment_confirmation", "payment_receipt", "sale_receipt"].includes(document.document_type)) {
+    return null;
+  }
 
   const [workshopRes, clientRes, repairRes] = await Promise.all([
     supabase.from("workshops").select("*").eq("id", document.workshop_id).single(),
@@ -553,36 +497,6 @@ export async function getPublicPrintableDocument(token: string): Promise<PublicP
       unitPriceTtc: Number(line.unit_price_ttc ?? 0),
       totalTtc: Number(line.total_ttc ?? 0),
     }));
-  } else if (
-    (document.document_type === "payment_confirmation" || document.document_type === "payment_receipt") &&
-    document.payment_id
-  ) {
-    const { data: payment, error: paymentError } = await supabase
-      .from("payments")
-      .select("amount, method")
-      .eq("id", document.payment_id)
-      .maybeSingle();
-    if (paymentError) throw paymentError;
-    totalTtc = Number(payment?.amount ?? 0);
-    lines = [{ label: `Paiement ${payment?.method ?? ""}`.trim(), quantity: 1, unitPriceTtc: totalTtc, totalTtc }];
-  } else if (document.document_type === "sale_receipt" && document.sale_id) {
-    const [saleRes, lineRes] = await Promise.all([
-      supabase.from("sales").select("total_ttc").eq("id", document.sale_id).maybeSingle(),
-      supabase
-        .from("sale_lines")
-        .select("label, quantity, unit_price_ttc, total_ttc")
-        .eq("sale_id", document.sale_id)
-        .order("created_at", { ascending: true }),
-    ]);
-    if (saleRes.error) throw saleRes.error;
-    if (lineRes.error) throw lineRes.error;
-    totalTtc = Number(saleRes.data?.total_ttc ?? 0);
-    lines = (lineRes.data ?? []).map((line: any) => ({
-      label: line.label,
-      quantity: Number(line.quantity ?? 1),
-      unitPriceTtc: Number(line.unit_price_ttc ?? 0),
-      totalTtc: Number(line.total_ttc ?? 0),
-    }));
   }
 
   if (!lines.length && repairRes?.data) {
@@ -599,7 +513,7 @@ export async function getPublicPrintableDocument(token: string): Promise<PublicP
   }
 
   return {
-    documentType: document.document_type === "payment_receipt" ? "payment_confirmation" : document.document_type,
+    documentType: document.document_type,
     workshop: workshopDto(workshopRes.data),
     client: {
       displayName: clientRes?.data?.full_name || "Client comptoir",

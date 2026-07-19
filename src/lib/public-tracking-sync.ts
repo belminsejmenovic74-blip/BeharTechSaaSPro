@@ -7,15 +7,7 @@ export async function syncPublicTrackingRepairsToCloud(
   repairs: Repair[],
   state: Pick<
     StoreState,
-    | "cloudSync"
-    | "customers"
-    | "documents"
-    | "invoices"
-    | "payments"
-    | "quotes"
-    | "repairs"
-    | "workshopInfo"
-    | "workshopSettings"
+    "cloudSync" | "customers" | "documents" | "invoices" | "quotes" | "repairs" | "workshopInfo" | "workshopSettings"
   >,
 ): Promise<boolean> {
   if (!repairs.length) return true;
@@ -24,7 +16,12 @@ export async function syncPublicTrackingRepairsToCloud(
   if (!supabase) return false;
 
   const workshopId = state.cloudSync?.workshopId || "unknown";
-  const shopName = (state.workshopSettings?.commercialName || state.workshopSettings?.name || state.workshopInfo?.name || "behar-tech").trim();
+  const shopName = (
+    state.workshopSettings?.commercialName ||
+    state.workshopSettings?.name ||
+    state.workshopInfo?.name ||
+    "behar-tech"
+  ).trim();
   const shopSlug = createShopSlug(shopName);
 
   const payload = repairs
@@ -56,4 +53,3 @@ export async function syncPublicTrackingRepairsToCloud(
   }
   return true;
 }
-

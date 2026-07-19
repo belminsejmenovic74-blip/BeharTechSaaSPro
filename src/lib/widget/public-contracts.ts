@@ -36,6 +36,19 @@ const contactFields = {
   contactPreference: z.enum(["phone", "sms", "email", "whatsapp"]).optional(),
   requestedCallbackAt: z.string().datetime({ offset: true }).optional(),
   shopPublicId: z.string().trim().max(100).optional(),
+  serviceMode: z.enum(["appointment", "walk_in", "home_service", "request"]).optional().default("request"),
+  serviceAddress: z
+    .object({
+      address: safeText(240).min(3),
+      postalCode: z
+        .string()
+        .trim()
+        .regex(/^(?:\d{4}|\d{5})$/),
+      city: safeText(120).min(2),
+      country: z.enum(["FR", "CH"]),
+    })
+    .strict()
+    .optional(),
   photos: z.array(z.string().trim().min(8).max(500)).max(5).optional().default([]),
   tags: z.array(safeText(60)).max(12).optional().default([]),
   selectedOffers: z
@@ -92,6 +105,24 @@ export const leadInputSchema = z
   })
   .strict()
   .refine(hasPhone, { message: "Un numéro de téléphone valide est requis." })
+  .refine((value) => value.serviceMode !== "home_service" || Boolean(value.serviceAddress), {
+    message: "L’adresse d’intervention est requise pour un déplacement.",
+    path: ["serviceAddress"],
+  })
+  .refine(
+    (value) =>
+      value.serviceMode !== "home_service" ||
+      value.serviceAddress?.country !== "CH" ||
+      /^\d{4}$/.test(value.serviceAddress.postalCode),
+    { message: "Le NPA suisse doit contenir 4 chiffres.", path: ["serviceAddress", "postalCode"] },
+  )
+  .refine(
+    (value) =>
+      value.serviceMode !== "home_service" ||
+      value.serviceAddress?.country !== "FR" ||
+      /^\d{5}$/.test(value.serviceAddress.postalCode),
+    { message: "Le code postal français doit contenir 5 chiffres.", path: ["serviceAddress", "postalCode"] },
+  )
   .refine((value) => plausibleElapsed(value.startedAt), { message: "Soumission trop rapide ou expirée." });
 
 export const appointmentInputSchema = z

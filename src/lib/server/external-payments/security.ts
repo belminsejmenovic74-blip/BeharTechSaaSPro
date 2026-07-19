@@ -45,10 +45,16 @@ export async function authorizeExternalPayments(
   const auth = await authorizeWorkshopLicense(workshopId, licenseKey);
   if (auth instanceof Response) return auth;
   const session = auth.session ?? (await getCurrentAppSession());
-  if (permission === "manage" && (!session || !["owner", "admin"].includes(session.role))) {
+  if (!session || session.workshopId !== workshopId) {
+    return Response.json({ error: "Session entreprise authentifiée requise." }, { status: 401 });
+  }
+  if (permission === "manage" && !["owner", "admin"].includes(session.role)) {
     return Response.json({ error: "Action reservee au gerant ou a un administrateur." }, { status: 403 });
   }
-  return { ...auth, userId: session?.userId ?? null };
+  if (!["owner", "admin", "technician", "member"].includes(session.role)) {
+    return Response.json({ error: "Role entreprise non autorise." }, { status: 403 });
+  }
+  return { ...auth, userId: session.userId };
 }
 
 export async function resolveActiveShop(admin: SupabaseClient, workshopId: string, requestedShopId?: string) {

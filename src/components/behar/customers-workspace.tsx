@@ -102,7 +102,6 @@ export function CustomersWorkspace() {
       const customerRepairs = store.repairs.filter((repair) => repair.customerId === customer.id);
       const customerQuotes = store.quotes.filter((quote) => quote.customerId === customer.id);
       const customerInvoices = store.invoices.filter((invoice) => invoice.customerId === customer.id);
-      const customerPayments = store.payments.filter((payment) => payment.customerId === customer.id);
       const customerDocuments = store.documents.filter((document) => document.customerId === customer.id);
       const customerMessages = store.messageLogs.filter((message) => message.customerId === customer.id);
       const haystack = normalizeSearch(
@@ -131,7 +130,6 @@ export function CustomersWorkspace() {
             quote.status,
           ]),
           ...customerInvoices.flatMap((invoice) => [invoice.number, invoice.status]),
-          ...customerPayments.flatMap((payment) => [payment.paymentNumber, payment.method, payment.status]),
           ...customerDocuments.flatMap((document) => [document.title, document.type]),
           ...customerMessages.flatMap((message) => [message.channel, message.body]),
         ].join(" "),
@@ -156,7 +154,6 @@ export function CustomersWorkspace() {
     store.documents,
     store.invoices,
     store.messageLogs,
-    store.payments,
     store.quotes,
     store.repairs,
   ]);
@@ -174,17 +171,10 @@ export function CustomersWorkspace() {
           String(a.updatedAt ?? a.droppedAt ?? a.createdAt ?? ""),
         ),
       );
-    const paidRepairIds = new Set(
-      store.payments
-        .filter((payment) => payment.customerId === selectedCustomer.id && payment.status === "Payé")
-        .map((payment) => payment.repairId)
-        .filter(Boolean),
-    );
     const activeRepairs = repairs.filter(
       (repair) => !["Rendu", "Clôturé", "Annulé", "Irréparable"].includes(repair.status),
     );
     const finishedRepairs = repairs.filter((repair) => ["Rendu", "Clôturé"].includes(repair.status));
-    const unpaidReturned = repairs.filter((repair) => repair.status === "Rendu" && !paidRepairIds.has(repair.id));
     const devices = Array.from(
       new Set(
         repairs
@@ -197,18 +187,16 @@ export function CustomersWorkspace() {
       devices,
       finishedRepairs,
       latestRepair: repairs[0],
-      paidRepairIds,
       repairs,
-      unpaidReturned,
     };
-  }, [selectedCustomer, store.payments, store.repairs]);
+  }, [selectedCustomer, store.repairs]);
 
   type HistoryItem = {
     title: string;
     detail: string;
     time: string;
     icon: any;
-    type?: "repair" | "quote" | "invoice" | "payment";
+    type?: "repair" | "quote" | "invoice";
     id?: string;
     device?: string;
     documentsCount?: number;
@@ -324,16 +312,6 @@ export function CustomersWorkspace() {
               title: `Facture ${invoice.status}`,
               type: "invoice" as const,
               id: invoice.id,
-            })),
-          ...store.payments
-            .filter((payment) => payment.customerId === selectedCustomer.id)
-            .map((payment) => ({
-              detail: `${payment.method} — ${formatEuro(payment.amount)}`,
-              icon: ReceiptText,
-              time: payment.date,
-              title: `Règlement indiqué`,
-              type: "payment" as const,
-              id: payment.id,
             })),
           ...store.messageLogs
             .filter((message) => message.customerId === selectedCustomer.id)
@@ -627,15 +605,6 @@ export function CustomersWorkspace() {
                     />
                     <DetailRow
                       className="py-2.5"
-                      label="Règlements"
-                      value={
-                        selectedCustomerSummary?.unpaidReturned.length
-                          ? `${selectedCustomerSummary.unpaidReturned.length} règlement non indiqué`
-                          : "Aucun règlement manquant"
-                      }
-                    />
-                    <DetailRow
-                      className="py-2.5"
                       label="Appareils liés"
                       value={
                         selectedCustomerSummary?.devices.length
@@ -670,8 +639,6 @@ export function CustomersWorkspace() {
                     {selectedCustomerSummary?.repairs.length ? (
                       <div className="mb-4 space-y-2">
                         {selectedCustomerSummary.repairs.slice(0, 4).map((repair) => {
-                          const isPaymentMissing =
-                            repair.status === "Rendu" && !selectedCustomerSummary.paidRepairIds.has(repair.id);
                           return (
                             <Link
                               key={repair.id}
@@ -683,13 +650,12 @@ export function CustomersWorkspace() {
                                   {repair.number} · {repair.deviceModel || repair.device}
                                 </span>
                                 <span className="block truncate text-[#6B6B6B] text-[11px]">
-                                  {repair.issue || "Intervention"} ·{" "}
-                                  {isPaymentMissing ? "Règlement non indiqué" : repair.status}
+                                  {repair.issue || "Intervention"} · {repair.status}
                                 </span>
                               </span>
                               <StatusBadge
                                 className="h-6 shrink-0 px-2 text-[10px] font-medium"
-                                status={isPaymentMissing ? "Règlement non indiqué" : repair.status}
+                                status={repair.status}
                               />
                             </Link>
                           );

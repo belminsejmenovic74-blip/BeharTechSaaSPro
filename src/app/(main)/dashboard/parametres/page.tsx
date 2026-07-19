@@ -30,6 +30,7 @@ import { PageShell } from "@/components/behar/page-shell";
 import { Panel, PrimaryButton, SecondaryButton } from "@/components/behar/primitives";
 import { UpdateChecker } from "@/components/behar/update-checker";
 import { useBeharStore, type WorkshopSettings } from "@/lib/behar-store";
+import { sanitizePaymentDataForPersistence } from "@/lib/payment-data-boundary";
 import { createBillingProfile, getLegalFieldsByCountry, getWorkshopCountryConfig } from "@/lib/workshop-country";
 import { formatWorkshopWeeklyHours } from "@/lib/workshop-hours";
 import {
@@ -358,7 +359,6 @@ export default function SettingsPage() {
       repairs: store.repairs,
       quotes: store.quotes,
       invoices: store.invoices,
-      payments: store.payments,
       appointments: store.appointments,
       stockItems: store.stockItems,
       documents: store.documents,
@@ -367,7 +367,6 @@ export default function SettingsPage() {
       selectedRepairId: store.selectedRepairId,
       selectedQuoteId: store.selectedQuoteId,
       selectedInvoiceId: store.selectedInvoiceId,
-      selectedPaymentId: store.selectedPaymentId,
       selectedAppointmentId: store.selectedAppointmentId,
       selectedStockItemId: store.selectedStockItemId,
       selectedDocumentId: store.selectedDocumentId,
@@ -380,7 +379,8 @@ export default function SettingsPage() {
       toast.error("Export réservé au gérant/admin.");
       return;
     }
-    const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), state: dataSnapshot }, null, 2)], {
+    const safeSnapshot = sanitizePaymentDataForPersistence(dataSnapshot);
+    const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), state: safeSnapshot }, null, 2)], {
       type: "application/json",
     });
     const url = URL.createObjectURL(blob);
@@ -399,7 +399,7 @@ export default function SettingsPage() {
     try {
       const raw = await file.text();
       const parsed = JSON.parse(raw);
-      const importedState = parsed.state ?? parsed;
+      const importedState = sanitizePaymentDataForPersistence(parsed.state ?? parsed);
       localStorage.setItem("behar-tech-local-demo-v3", JSON.stringify({ state: importedState, version: 1 }));
       toast.success("Import terminé. Rechargement...");
       window.location.reload();
@@ -987,8 +987,8 @@ export default function SettingsPage() {
             <div className="mt-5">
               <Section
                 icon={CreditCard}
-                title="Paiements Suisse"
-                description="TWINT reste un moyen de paiement manuel : aucune API externe n'est connectée."
+                title="Lien externe TWINT"
+                description="TWINT reste un service externe : BEHAR TECH PRO ne conserve aucun résultat de paiement."
               >
                 <div className="grid gap-4 md:grid-cols-2">
                   <Field label="TWINT">

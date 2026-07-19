@@ -99,33 +99,10 @@ function invoiceStatus(status: unknown): string {
     case "Envoyée":
       return "sent";
     case "Payée":
-      return "paid";
+      // Legacy input is normalized to an issued invoice; no local payment result.
+      return "sent";
     case "Annulée":
       return "cancelled";
-    default:
-      return "draft";
-  }
-}
-
-function paymentStatus(status: unknown): string {
-  switch (status) {
-    case "Annulé":
-      return "cancelled";
-    case "Remboursé":
-      return "refunded";
-    default:
-      return "paid";
-  }
-}
-
-function saleStatus(status: unknown): string {
-  switch (status) {
-    case "Payée":
-      return "paid";
-    case "Annulée":
-      return "cancelled";
-    case "Rattachée":
-      return "attached";
     default:
       return "draft";
   }
@@ -139,11 +116,6 @@ function documentType(type: unknown): string {
       return "quote";
     case "invoice":
       return "invoice";
-    case "payment":
-      return "payment_confirmation";
-    case "sale-receipt":
-    case "sale-invoice":
-      return "sale_receipt";
     case "summary":
       return "repair_summary";
     default:
@@ -156,6 +128,16 @@ function cleanIso(value: unknown): string | undefined {
   if (!source) return undefined;
   const parsed = new Date(source);
   return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
+}
+
+function cleanInvoiceDate(value: unknown): string | undefined {
+  const source = text(value);
+  const french = /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/.exec(source);
+  if (french) {
+    return new Date(Date.UTC(Number(french[3]), Number(french[2]) - 1, Number(french[1]), 12)).toISOString();
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(source)) return `${source}T12:00:00.000Z`;
+  return cleanIso(source);
 }
 
 async function replaceLines(
@@ -307,6 +289,9 @@ export async function POST(request: Request) {
     phone: text(client.phone) || null,
     email: text(client.email) || null,
     address: text(client.address) || null,
+    company_name: text(client.companyName) || null,
+    siret: text(client.siret) || null,
+    vat_number: text(client.vatNumber) || null,
   }));
   if (clients.length) await supabase.from("clients").upsert(clients, { onConflict: "id" });
 
@@ -413,6 +398,9 @@ export async function POST(request: Request) {
   const invoices = (payload.invoices ?? []).map((invoice) => {
     const token = stableToken("fc", invoice.id);
     const total = (invoice.lines ?? []).reduce((sum, line) => sum + (money(line.total) ?? 0), 0);
+    const totalTtc = money(invoice.snapshot?.totals.ttc) ?? total;
+    const totalHt = money(invoice.snapshot?.totals.ht) ?? totalTtc;
+    const totalVat = money(invoice.snapshot?.totals.tva) ?? totalTtc - totalHt;
     return {
       id: stableUuid(`invoice:${workshopId}:${invoice.id}`),
       workshop_id: workshopId,
@@ -422,8 +410,21 @@ export async function POST(request: Request) {
       quote_id: invoice.quoteId ? stableUuid(`quote:${workshopId}:${invoice.quoteId}`) : null,
       invoice_number: text(invoice.number, invoice.id),
       status: invoiceStatus(invoice.status),
-      total_ht: total,
-      total_ttc: total,
+      document_type: invoice.documentType ?? "invoice",
+      total_ht: totalHt,
+      total_vat: totalVat,
+      total_ttc: totalTtc,
+      vat_rate: money(invoice.snapshot?.vat.rate) ?? money(ws?.vatRate) ?? 0,
+      vat_exemption_reason:
+        (invoice.documentType === "credit_note"
+          ? null
+          : text(invoice.vatExemptionReason || invoice.snapshot?.vat.mention || ws?.tvaMention)) || null,
+      currency: invoice.currency ?? ws?.currency ?? "EUR",
+      issued_at: cleanInvoiceDate(invoice.date || invoice.createdAt),
+      validated_at:
+        invoice.status === "Brouillon"
+          ? null
+          : cleanIso(invoice.lockedAt || invoice.updatedAt || invoice.createdAt || invoice.date),
       public_token: token,
       public_url: makePublicUrl("/facture", token),
       public_active: true,
@@ -443,107 +444,52 @@ export async function POST(request: Request) {
     }
   }
 
-  const payments = (payload.payments ?? []).map((payment) => {
-    const token = stableToken("py", payment.id);
-    return {
-      id: stableUuid(`payment:${workshopId}:${payment.id}`),
-      workshop_id: workshopId,
-      client_id: stableUuid(`client:${workshopId}:${payment.customerId}`),
-      repair_id: payment.repairId ? stableUuid(`repair:${workshopId}:${payment.repairId}`) : null,
-      invoice_id: payment.invoiceId ? stableUuid(`invoice:${workshopId}:${payment.invoiceId}`) : null,
-      payment_number: text(payment.paymentNumber || payment.reference, payment.id),
-      amount: money(payment.amount) ?? 0,
-      method: text(payment.method, "Carte"),
-      status: paymentStatus(payment.status),
-      paid_at: cleanIso(payment.date || payment.createdAt),
-      public_token: token,
-      public_url: makePublicUrl("/recu", token),
-      public_active: true,
-      created_at: cleanIso(payment.createdAt || payment.date),
-    };
-  });
-  if (payments.length) await supabase.from("payments").upsert(payments, { onConflict: "id" });
-
-  const sales = (payload.sales ?? []).map((sale) => {
-    const token = stableToken("vt", sale.id);
-    return {
-      id: stableUuid(`sale:${workshopId}:${sale.id}`),
-      workshop_id: workshopId,
-      client_id: sale.customerId ? stableUuid(`client:${workshopId}:${sale.customerId}`) : null,
-      sale_number: text(sale.number, sale.id),
-      total_ttc: money(sale.total) ?? 0,
-      payment_status: saleStatus(sale.status),
-      public_token: token,
-      public_url: makePublicUrl("/vente", token),
-      public_active: true,
-      created_at: cleanIso(sale.createdAt),
-    };
-  });
-  if (sales.length) {
-    await supabase.from("sales").upsert(sales, { onConflict: "id" });
-    for (const sale of payload.sales ?? []) {
-      await replaceLines(
-        supabase,
-        "sale_lines",
-        "sale_id",
-        stableUuid(`sale:${workshopId}:${sale.id}`),
-        sale.lines ?? [],
-      );
-    }
-  }
-
-  const docs = (payload.documents ?? []).map((document) => {
-    const type = documentType(document.type);
-    const publicVisible = type !== "internal_intervention_sheet";
-    const token = publicVisible ? stableToken("dc", document.id) : null;
-    const documentNumber =
-      type === "quote" && document.quoteId
-        ? text((payload.quotes ?? []).find((quote) => quote.id === document.quoteId)?.number)
-        : type === "invoice" && document.invoiceId
-          ? text((payload.invoices ?? []).find((invoice) => invoice.id === document.invoiceId)?.number)
-          : type === "payment_confirmation" && document.paymentId
-            ? text((payload.payments ?? []).find((payment) => payment.id === document.paymentId)?.paymentNumber)
-            : type === "sale_receipt" && document.saleId
-              ? text((payload.sales ?? []).find((sale) => sale.id === document.saleId)?.number)
-              : (text(document.title).match(/(?:#|-\s*)([A-Z]+-\d+)/)?.[1] ?? null);
-    const linkedUrl =
-      type === "repair_intake" && token
-        ? makePublicUrl("/document", token)
-        : type === "quote" && document.quoteId
-          ? makePublicUrl("/devis", stableToken("dv", document.quoteId))
+  const docs = (payload.documents ?? [])
+    .filter((document) => !["payment", "sale-receipt", "sale-invoice"].includes(document.type))
+    .map((document) => {
+      const type = documentType(document.type);
+      const publicVisible = type !== "internal_intervention_sheet";
+      const token = publicVisible ? stableToken("dc", document.id) : null;
+      const documentNumber =
+        type === "quote" && document.quoteId
+          ? text((payload.quotes ?? []).find((quote) => quote.id === document.quoteId)?.number)
           : type === "invoice" && document.invoiceId
-            ? makePublicUrl("/facture", stableToken("fc", document.invoiceId))
-            : type === "payment_confirmation" && document.paymentId
-              ? makePublicUrl("/recu", stableToken("py", document.paymentId))
-              : type === "sale_receipt" && document.saleId
-                ? makePublicUrl("/vente", stableToken("vt", document.saleId))
-                : document.repairId
-                  ? makePublicUrl(
-                      "/suivi",
-                      (payload.repairs ?? []).find((repair) => repair.id === document.repairId)?.publicAccess?.token ||
-                        stableToken("rp", document.repairId),
-                    )
-                  : null;
-    return {
-      id: stableUuid(`document:${workshopId}:${document.id}`),
-      workshop_id: workshopId,
-      client_id: document.customerId ? stableUuid(`client:${workshopId}:${document.customerId}`) : null,
-      repair_id: document.repairId ? stableUuid(`repair:${workshopId}:${document.repairId}`) : null,
-      quote_id: document.quoteId ? stableUuid(`quote:${workshopId}:${document.quoteId}`) : null,
-      invoice_id: document.invoiceId ? stableUuid(`invoice:${workshopId}:${document.invoiceId}`) : null,
-      payment_id: document.paymentId ? stableUuid(`payment:${workshopId}:${document.paymentId}`) : null,
-      sale_id: document.saleId ? stableUuid(`sale:${workshopId}:${document.saleId}`) : null,
-      document_type: type,
-      document_number: documentNumber || null,
-      title: text(document.title, "Document"),
-      public_visible: publicVisible,
-      public_token: token,
-      public_url: publicVisible ? linkedUrl : null,
-      file_url: text(document.fileUrl) || null,
-      status: "ready",
-      created_at: cleanIso(document.createdAt),
-    };
-  });
+            ? text((payload.invoices ?? []).find((invoice) => invoice.id === document.invoiceId)?.number)
+            : (text(document.title).match(/(?:#|-\s*)([A-Z]+-\d+)/)?.[1] ?? null);
+      const linkedUrl =
+        type === "repair_intake" && token
+          ? makePublicUrl("/document", token)
+          : type === "quote" && document.quoteId
+            ? makePublicUrl("/devis", stableToken("dv", document.quoteId))
+            : type === "invoice" && document.invoiceId
+              ? makePublicUrl("/facture", stableToken("fc", document.invoiceId))
+              : document.repairId
+                ? makePublicUrl(
+                    "/suivi",
+                    (payload.repairs ?? []).find((repair) => repair.id === document.repairId)?.publicAccess?.token ||
+                      stableToken("rp", document.repairId),
+                  )
+                : null;
+      return {
+        id: stableUuid(`document:${workshopId}:${document.id}`),
+        workshop_id: workshopId,
+        client_id: document.customerId ? stableUuid(`client:${workshopId}:${document.customerId}`) : null,
+        repair_id: document.repairId ? stableUuid(`repair:${workshopId}:${document.repairId}`) : null,
+        quote_id: document.quoteId ? stableUuid(`quote:${workshopId}:${document.quoteId}`) : null,
+        invoice_id: document.invoiceId ? stableUuid(`invoice:${workshopId}:${document.invoiceId}`) : null,
+        payment_id: null,
+        sale_id: null,
+        document_type: type,
+        document_number: documentNumber || null,
+        title: text(document.title, "Document"),
+        public_visible: publicVisible,
+        public_token: token,
+        public_url: publicVisible ? linkedUrl : null,
+        file_url: text(document.fileUrl) || null,
+        status: "ready",
+        created_at: cleanIso(document.createdAt),
+      };
+    });
   if (docs.length) await supabase.from("documents").upsert(docs, { onConflict: "id" });
 
   type SyncedCommitment = {

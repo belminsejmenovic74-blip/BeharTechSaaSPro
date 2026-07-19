@@ -27,8 +27,12 @@ type Mode = "list" | "create" | "edit" | "permissions" | "audit" | "greetings";
 // Groupes UI des permissions
 const permissionGroups: Array<{ title: string; keys: PermissionKey[] }> = [
   {
+    title: "Accès aux espaces",
+    keys: ["canAccessCounter", "canAccessWorkshopMode", "canViewDashboard"],
+  },
+  {
     title: "Tableau de bord",
-    keys: ["canViewDashboard", "canViewFullDashboard"],
+    keys: ["canViewFullDashboard"],
   },
   {
     title: "Réparations",
@@ -60,8 +64,8 @@ const permissionGroups: Array<{ title: string; keys: PermissionKey[] }> = [
     ],
   },
   {
-    title: "Paiements",
-    keys: ["canViewPayments", "canMarkPaymentPaid", "canCancelPayment"],
+    title: "Liens externes",
+    keys: ["canMarkPaymentPaid"],
   },
   {
     title: "Stock",
@@ -103,7 +107,9 @@ const permissionGroups: Array<{ title: string; keys: PermissionKey[] }> = [
 ];
 
 const PERMISSION_LABELS: Partial<Record<PermissionKey, string>> = {
-  canViewDashboard: "Voir le tableau de bord",
+  canAccessCounter: "Autoriser l’accès au Comptoir",
+  canAccessWorkshopMode: "Autoriser l’accès au mode Atelier",
+  canViewDashboard: "Autoriser l’accès au Dashboard",
   canViewFullDashboard: "Voir les KPI complets",
   canViewRepairs: "Voir les réparations",
   canCreateRepair: "Créer une réparation",
@@ -124,9 +130,9 @@ const PERMISSION_LABELS: Partial<Record<PermissionKey, string>> = {
   canViewInvoices: "Voir les factures",
   canCreateInvoice: "Créer une facture",
   canEditInvoice: "Modifier une facture",
-  canViewPayments: "Voir les paiements",
+  canViewPayments: "Permission historique désactivée",
   canMarkPaymentPaid: "Créer une demande de paiement externe",
-  canCancelPayment: "Annuler / rembourser",
+  canCancelPayment: "Permission historique désactivée",
   canViewStock: "Voir le stock",
   canManageStock: "Gérer le stock",
   canUseStockItem: "Utiliser une pièce",
@@ -478,7 +484,7 @@ function MemberForm({
                     ? "Accès complet, paramètres, équipe."
                     : r === "technician"
                       ? "Réparations, diagnostics, clients."
-                      : "Clients, RDV, dépôt, paiements."}
+                      : "Clients, RDV, dépôt, liens externes."}
                 </span>
               </button>
             ))}

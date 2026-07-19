@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import type { LucideIcon } from "lucide-react";
 import {
@@ -18,7 +17,6 @@ import {
   MoreHorizontal,
   Package,
   Plus,
-  Receipt,
   TrendingUp,
   Wrench,
 } from "lucide-react";
@@ -28,7 +26,6 @@ import { FinanceOverview } from "@/components/behar/finance-overview";
 import { KanbanBoard } from "@/components/behar/kanban";
 import { DetailRow, Panel, PrimaryButton, StatusBadge } from "@/components/behar/primitives";
 import { RevenueChart } from "@/components/behar/revenue-chart";
-import { SettlementModal, useSettlementModal } from "@/components/behar/settlement-modal";
 import {
   formatEuro,
   formatIsoToDisplay,
@@ -40,7 +37,6 @@ import {
 } from "@/lib/behar-store";
 import { formatDeviceLabel } from "@/lib/format-device";
 import { computeReconditioningKpis, useReconditioningStore } from "@/lib/reconditioning-store";
-import { paymentDateToIso } from "@/lib/payment-date";
 import type { RepairCard } from "@/mock/repairs";
 
 // Action principale dynamique du panneau détail (même logique que le comptoir).
@@ -58,14 +54,12 @@ const repairActivityTime = (repair: Pick<Repair, "updatedAt" | "droppedAt" | "cr
 
 export function DashboardWorkspace() {
   const store = useBeharStore();
-  const settlement = useSettlementModal();
-  const router = useRouter();
   const reconditioningFiles = useReconditioningStore((s) => s.files);
   const recondKpis = computeReconditioningKpis(reconditioningFiles);
   const selected = store.repairs.find((repair) => repair.id === store.selectedRepairId) ?? store.repairs[0];
   const customer = selected ? store.customers.find((entry) => entry.id === selected.customerId) : undefined;
-  const unpaidInvoices = store.invoices.filter((invoice) => invoice.status !== "Payée");
-  const amountToCollect = unpaidInvoices.reduce(
+  const issuedInvoices = store.invoices.filter((invoice) => !["Brouillon", "Annulée"].includes(invoice.status));
+  const billedAmount = issuedInvoices.reduce(
     (total, invoice) => total + invoice.lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0),
     0,
   );
@@ -90,22 +84,14 @@ export function DashboardWorkspace() {
     (repair) => (repair.droppedAt || repair.createdAt || "").slice(0, 10) === todayIsoLocal,
   );
   const readyRepairs = store.repairs.filter((repair) => repair.status === "Prêt");
-  const todaysPaidPayments = store.payments.filter(
-    (payment) =>
-      payment.status === "Payé" &&
-      // Les paiements stockent un libellé humain ("09 juin 2026, 14:32"), pas un ISO :
-      // on normalise via paymentDateToIso (sinon les règlements du jour ne sont jamais comptés).
-      (paymentDateToIso(payment.date) === todayIsoLocal || paymentDateToIso(payment.createdAt) === todayIsoLocal),
+  const todayInvoices = issuedInvoices.filter(
+    (invoice) => (invoice.date || invoice.createdAt || "").includes(todayIsoLocal) || invoice.date === today,
   );
-  const paidTodayRepairIds = new Set(todaysPaidPayments.map((payment) => payment.repairId).filter(Boolean));
   const lowStockItems = store.stockItems.filter((item) => item.stock <= item.threshold);
   const pendingQuotes = store.quotes.filter((quote) => quote.status === "Envoyé" || quote.status === "Brouillon");
   const blockedRepairs = activeRepairs.filter((repair) =>
     isOlderThanDays(repair.updatedAt || repair.droppedAt || repair.createdAt, 3),
   );
-  const selectedPaid = selected
-    ? store.payments.some((payment) => payment.repairId === selected.id && payment.status === "Payé")
-    : false;
   const relatedQuotes = selected ? store.quotes.filter((quote) => quote.repairId === selected.id) : [];
   const canViewAuditLog = store.hasPermission("canViewAuditLog");
   const recentAuditLogs = [...store.auditLogs].sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1)).slice(0, 5);
@@ -134,11 +120,16 @@ export function DashboardWorkspace() {
     { label: "Dossiers prêts", value: String(readyRepairs.length), href: "/dashboard/reparations", icon: CheckCheck },
     { label: "Dossiers du jour", value: String(todayRepairs.length), href: "/dashboard/dossiers", icon: FolderOpen },
     { label: "RDV du jour", value: String(todaysAppointments), href: "/dashboard/rendez-vous", icon: CalendarDays },
-    { label: "Dossiers réglés", value: String(paidTodayRepairIds.size), href: "/dashboard/paiements", icon: Receipt },
     {
-      label: "Factures à régler",
-      value: formatEuro(amountToCollect),
-      href: "/dashboard/factures?status=unpaid",
+      label: "Factures émises aujourd'hui",
+      value: String(todayInvoices.length),
+      href: "/dashboard/factures",
+      icon: FileText,
+    },
+    {
+      label: "CA facturé",
+      value: formatEuro(billedAmount),
+      href: "/dashboard/factures",
       icon: FileText,
     },
     { label: "Devis en attente", value: String(pendingQuotes.length), href: "/dashboard/devis", icon: FileText },
@@ -436,23 +427,10 @@ export function DashboardWorkspace() {
                 label="Montant"
                 value={selectedMontant > 0 ? formatEuro(selectedMontant) : "À chiffrer"}
               />
-              <DetailRow
-                label="Règlement"
-                value={
-                  selectedPaid
-                    ? "Réglé"
-                    : selected.status === "Rendu" || selected.status === "Clôturé"
-                      ? "Non indiqué"
-                      : "À régler"
-                }
-              />
             </dl>
 
             {(() => {
               const nextStep = DASHBOARD_NEXT_STATUS[selected.status];
-              const indiquerReglement = () => {
-                settlement.open(selected.id);
-              };
               return (
                 <div className="mt-5 space-y-2">
                   {nextStep ? (
@@ -465,20 +443,6 @@ export function DashboardWorkspace() {
                     >
                       {nextStep.label}
                     </PrimaryButton>
-                  ) : (
-                    <PrimaryButton className="w-full" disabled={selectedPaid} onClick={indiquerReglement}>
-                      Créer une demande de paiement
-                    </PrimaryButton>
-                  )}
-                  {nextStep && selected.status === "Prêt" ? null : nextStep ? (
-                    <button
-                      type="button"
-                      disabled={selectedPaid}
-                      onClick={indiquerReglement}
-                      className="h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white px-3 font-medium text-[#1A1916] text-[13px] transition hover:border-[#2A9D8F]/40 disabled:cursor-not-allowed disabled:opacity-45"
-                    >
-                      Créer une demande de paiement
-                    </button>
                   ) : null}
                   <Link
                     className="flex h-10 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-3 font-medium text-[#1A1916] text-[13px] transition hover:border-[#2A9D8F]/40"
@@ -497,7 +461,7 @@ export function DashboardWorkspace() {
 
       <Panel className="p-4">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Règlements indiqués par jour</h2>
+          <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">Factures émises par jour</h2>
           <span className="text-[#6B6B6B] text-[13px]">30 derniers jours</span>
         </div>
         <RevenueChart />
@@ -530,15 +494,6 @@ export function DashboardWorkspace() {
           )}
         </Panel>
       )}
-      <SettlementModal
-        draft={settlement.draft}
-        invoice={settlement.invoice}
-        isOpen={settlement.isOpen}
-        onClose={settlement.close}
-        onDraftChange={settlement.setDraft}
-        onSubmit={settlement.submit}
-        total={settlement.total}
-      />
     </div>
   );
 }
@@ -552,21 +507,6 @@ function isOlderThanDays(value: string | undefined, days: number) {
   const timestamp = new Date(value).getTime();
   if (!Number.isFinite(timestamp)) return false;
   return Date.now() - timestamp > days * 24 * 60 * 60 * 1000;
-}
-
-function isCurrentMonthLabel(value: string) {
-  if (!value) return false;
-  // Démo : libellés relatifs créés par les mocks comptent comme « ce mois ».
-  if (/^aujourd['’]hui/i.test(value)) return true;
-  if (/^hier/i.test(value)) return true;
-  const now = new Date();
-  const year = String(now.getFullYear());
-  const month = monthNames[now.getMonth()];
-  const short = shortMonthNames[now.getMonth()];
-  // Format ISO « 2026-05-17 »
-  const isoPrefix = `${year}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  if (value.startsWith(isoPrefix)) return true;
-  return value.includes(year) && (value.includes(month) || value.includes(short));
 }
 
 const monthNames = [
@@ -584,28 +524,13 @@ const monthNames = [
   "décembre",
 ];
 
-const shortMonthNames = [
-  "janv.",
-  "févr.",
-  "mars",
-  "avr.",
-  "mai",
-  "juin",
-  "juil.",
-  "août",
-  "sept.",
-  "oct.",
-  "nov.",
-  "déc.",
-];
-
 const DASHBOARD_TESTIDS: Record<string, string> = {
   Dossiers: "dashboard-active-repairs-card",
   "Dossiers en cours": "dashboard-active-repairs-card",
   "Réparations prêtes": "dashboard-ready-repairs-card",
   "Devis en attente": "dashboard-pending-quotes-card",
   Devis: "dashboard-pending-quotes-card",
-  "Factures à régler": "dashboard-unpaid-invoices-card",
+  "CA facturé": "dashboard-billed-revenue-card",
   "RDV du jour": "dashboard-today-appointments-card",
   "Stock bas": "dashboard-low-stock-card",
 };
@@ -632,39 +557,6 @@ function AppointmentBadge({ status }: Readonly<{ status: string }>) {
           ? "bg-[#FFFFFF] text-[#167B70]"
           : "bg-[#FFFFFF] text-[#6B6B6B]";
   return <span className={`shrink-0 rounded-full px-2.5 py-1 font-semibold text-[11px] ${tone}`}>{status}</span>;
-}
-
-function DashboardMetricCard({
-  label,
-  value,
-  trend,
-  helper,
-  icon: Icon,
-  href,
-}: Readonly<{ label: string; value: string; trend: string; helper: string; icon: LucideIcon; href?: string }>) {
-  const testId = dashboardTestId(label);
-  const content = (
-    <div className="flex h-full flex-col justify-center gap-1">
-      <p className="text-[#6B6B6B] text-[13px]">{label}</p>
-      <p className="font-semibold text-[28px] text-[#1A1916] leading-none tracking-tight">{value}</p>
-      {trend ? <p className="mt-1 font-medium text-[#2A9D8F] text-[13px]">{trend}</p> : null}
-      <p className="mt-0.5 text-[#8A8A8A] text-[12px]">{helper}</p>
-    </div>
-  );
-
-  if (href) {
-    return (
-      <Link href={href} className="block transition-transform duration-200 hover:scale-[1.015]" data-testid={testId}>
-        <Panel className="h-[116px] p-5">{content}</Panel>
-      </Link>
-    );
-  }
-
-  return (
-    <Panel className="h-[116px] p-5" data-testid={testId}>
-      {content}
-    </Panel>
-  );
 }
 
 /** Ligne de KPI secondaires : 4 visibles à la fois, flèches gauche/droite pour faire défiler. */

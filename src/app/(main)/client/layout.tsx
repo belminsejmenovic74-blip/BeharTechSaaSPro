@@ -11,17 +11,19 @@ import { WidgetLeadNotificationsProvider } from "@/components/behar/widget-lead-
 
 export default function ClientLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <PrintProvider>
-      <AccueilLicenseBridge>
-        <InstallationGate deferOnboarding>
-          <PinLoginGate>
-            <AutoSyncProvider />
-            <WidgetAppointmentsProvider />
-            <WidgetLeadNotificationsProvider />
-            <AccueilShell>{children}</AccueilShell>
-          </PinLoginGate>
-        </InstallationGate>
-      </AccueilLicenseBridge>
-    </PrintProvider>
+    <div className="behar-app min-h-svh bg-white text-[#1A1916]">
+      <PrintProvider>
+        <AccueilLicenseBridge>
+          <InstallationGate deferOnboarding>
+            <PinLoginGate>
+              <AutoSyncProvider />
+              <WidgetAppointmentsProvider />
+              <WidgetLeadNotificationsProvider />
+              <AccueilShell>{children}</AccueilShell>
+            </PinLoginGate>
+          </InstallationGate>
+        </AccueilLicenseBridge>
+      </PrintProvider>
+    </div>
   );
 }

@@ -1,5 +1,3 @@
-"use client";
-
 const TOKEN_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 export type StockReferenceCarrier = {

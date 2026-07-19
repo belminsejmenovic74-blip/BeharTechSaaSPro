@@ -2,8 +2,7 @@
 
 import { useMemo } from "react";
 
-import { useBeharStore } from "@/lib/behar-store";
-import { paymentDateToIso } from "@/lib/payment-date";
+import { getInvoiceTotal, useBeharStore } from "@/lib/behar-store";
 import { formatMoneyShort } from "@/lib/workshop-country";
 
 const chartWidth = 720;
@@ -31,24 +30,28 @@ function formatDayShort(iso: string): string {
 }
 
 export function RevenueChart() {
-  const payments = useBeharStore((s) => s.payments);
+  const invoices = useBeharStore((s) => s.invoices);
   const currency = useBeharStore((s) => s.workshopInfo.currency);
 
-  // Agrégation par jour des règlements indiqués sur les 30 derniers jours.
-  // Source : uniquement payments.status === "Payé" — les factures impayées
-  // n'entrent pas dans le total réglé.
+  // Agrégation par date d'émission des factures, nette des avoirs.
   const dailyRevenue = useMemo(() => {
     const days = buildLast30Days();
     const totals = new Map<string, number>(days.map((d) => [d, 0]));
-    for (const payment of payments) {
-      if (payment.status !== "Payé") continue;
-      const iso = paymentDateToIso(payment.date);
+    for (const invoice of invoices) {
+      if (["Brouillon", "Annulée"].includes(invoice.status)) continue;
+      const source = String(invoice.date || invoice.createdAt || invoice.snapshot?.generatedAt || "");
+      const french = /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/.exec(source);
+      const iso = /^\d{4}-\d{2}-\d{2}/.test(source)
+        ? source.slice(0, 10)
+        : french
+          ? `${french[3]}-${french[2].padStart(2, "0")}-${french[1].padStart(2, "0")}`
+          : null;
       if (!iso || !totals.has(iso)) continue;
-      const amount = Number.isFinite(payment.amount) ? Math.max(0, payment.amount) : 0;
+      const amount = (invoice.documentType === "credit_note" ? -1 : 1) * getInvoiceTotal(invoice);
       totals.set(iso, (totals.get(iso) ?? 0) + amount);
     }
     return days.map((iso) => ({ iso, amount: totals.get(iso) ?? 0 }));
-  }, [payments]);
+  }, [invoices]);
 
   const maxRevenue = Math.max(100, ...dailyRevenue.map((point) => point.amount));
   const totalPeriod = dailyRevenue.reduce((sum, point) => sum + point.amount, 0);
@@ -79,7 +82,7 @@ export function RevenueChart() {
       </p>
       <div className="h-[260px] w-full">
         <svg
-          aria-label="Règlements indiqués par jour, 30 derniers jours"
+          aria-label="Factures émises par jour, 30 derniers jours"
           className="h-full w-full overflow-visible"
           role="img"
           viewBox={`0 0 ${chartWidth} ${chartHeight}`}

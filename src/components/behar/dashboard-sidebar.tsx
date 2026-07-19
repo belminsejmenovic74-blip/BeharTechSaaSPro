@@ -9,11 +9,11 @@ import {
   CalendarDays,
   ChevronsLeft,
   ChevronsRight,
-  ChevronsUpDown,
   Files,
   FileText,
-  LayoutDashboard,
   Inbox,
+  Landmark,
+  LayoutDashboard,
   LogOut,
   Package,
   Receipt,
@@ -26,69 +26,106 @@ import {
 } from "lucide-react";
 
 import { BeharLogo } from "@/components/behar/behar-logo";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useBeharStore } from "@/lib/behar-store";
+import { type PermissionKey, useBeharStore } from "@/lib/behar-store";
+import { getUserFirstName } from "@/lib/user-display";
 import { cn } from "@/lib/utils";
 
-const navItems = [
-  { label: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Réparations", href: "/dashboard/reparations", icon: Wrench },
-  { label: "Clients", href: "/dashboard/clients", icon: Users },
-  { label: "Demandes du site", href: "/dashboard/demandes-site", icon: Inbox },
-  { label: "Devis", href: "/dashboard/devis", icon: FileText },
-  { label: "Factures", href: "/dashboard/factures", icon: Receipt },
-  { label: "Rendez-vous", href: "/dashboard/rendez-vous", icon: CalendarDays },
-  { label: "Stock", href: "/dashboard/stock", icon: Package },
-  { label: "Achats", href: "/dashboard/achats", icon: ShoppingCart },
-  { label: "Reconditionnement", href: "/dashboard/reconditionnement", icon: RefreshCw },
-  { label: "Documents", href: "/dashboard/documents", icon: Files },
-  { label: "Paramètres", href: "/dashboard/parametres", icon: Settings },
-];
+const navGroups = [
+  {
+    label: "Général",
+    items: [{ label: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard, permission: "canViewDashboard" }],
+  },
+  {
+    label: "Atelier",
+    items: [
+      { label: "Réparations", href: "/dashboard/reparations", icon: Wrench, permission: "canViewRepairs" },
+      { label: "Clients", href: "/dashboard/clients", icon: Users, permission: "canViewClients" },
+      {
+        label: "Demandes du site",
+        href: "/dashboard/demandes-site",
+        icon: Inbox,
+        permission: "canViewNotifications",
+      },
+      { label: "Rendez-vous", href: "/dashboard/rendez-vous", icon: CalendarDays, permission: "canViewRepairs" },
+    ],
+  },
+  {
+    label: "Ventes & gestion",
+    items: [
+      { label: "Devis", href: "/dashboard/devis", icon: FileText, permission: "canViewQuotes" },
+      { label: "Factures", href: "/dashboard/factures", icon: Receipt, permission: "canViewInvoices" },
+      {
+        label: "Export comptable",
+        href: "/dashboard/comptabilite/export",
+        icon: Landmark,
+        permission: "canExportData",
+      },
+      { label: "Stock", href: "/dashboard/stock", icon: Package, permission: "canViewStock" },
+      { label: "Achats", href: "/dashboard/achats", icon: ShoppingCart, permission: "canViewPurchasePrice" },
+    ],
+  },
+  {
+    label: "Services",
+    items: [
+      {
+        label: "Reconditionnement",
+        href: "/dashboard/reconditionnement",
+        icon: RefreshCw,
+        permission: "canViewRepairs",
+      },
+      { label: "Documents", href: "/dashboard/documents", icon: Files, permission: "canViewDocuments" },
+    ],
+  },
+  {
+    label: "Modes de travail",
+    items: [
+      { label: "Comptoir", href: "/comptoir", icon: Store, permission: "canAccessCounter" },
+      { label: "Atelier plein écran", href: "/atelier", icon: Wrench, permission: "canAccessWorkshopMode" },
+    ],
+  },
+  {
+    label: "Configuration",
+    items: [{ label: "Paramètres", href: "/dashboard/parametres", icon: Settings, permission: "canViewSettings" }],
+  },
+] satisfies Array<{
+  label: string;
+  items: Array<{ label: string; href: string; icon: typeof LayoutDashboard; permission: PermissionKey }>;
+}>;
 
 export function DashboardSidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-  const workshopName = useBeharStore((s) => s.workshopSettings.name || s.workshopInfo.name);
-  const workshopLogo = useBeharStore((s) => s.workshopSettings.logoUrl || s.workshopInfo.logoUrl || "");
-  const canViewSettings = useBeharStore((s) => s.hasPermission("canViewSettings"));
-  // L'onglet Achats expose les prix d'achat : réservé aux rôles autorisés.
-  const canViewPurchases = useBeharStore((s) => s.hasPermission("canViewPurchasePrice"));
+  const hasPermission = useBeharStore((s) => s.hasPermission);
   const currentUser = useBeharStore((s) => s.currentUser);
   const logout = useBeharStore((s) => s.logout);
   const userRoleLabel =
     currentUser.role === "admin" ? "Gérant" : currentUser.role === "technician" ? "Technicien" : "Accueil";
-  const workshopInitials = workshopName
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
+  const userFirstName = getUserFirstName(currentUser.name, currentUser.id);
+  const visibleGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => hasPermission(item.permission)),
+    }))
+    .filter((group) => group.items.length > 0);
 
   useEffect(() => {
     const saved = window.localStorage.getItem("behar-sidebar-collapsed") === "true";
     setCollapsed(saved);
-    document.documentElement.style.setProperty("--behar-sidebar-width", saved ? "78px" : "234px");
+    document.documentElement.style.setProperty("--behar-sidebar-width", saved ? "72px" : "232px");
   }, []);
 
   function toggleCollapsed() {
     const next = !collapsed;
     setCollapsed(next);
     window.localStorage.setItem("behar-sidebar-collapsed", String(next));
-    document.documentElement.style.setProperty("--behar-sidebar-width", next ? "78px" : "230px");
+    document.documentElement.style.setProperty("--behar-sidebar-width", next ? "72px" : "232px");
   }
 
   return (
     <aside
       className={cn(
-        "fixed inset-y-0 left-0 z-30 hidden border-[#E8E8E5] border-r bg-white py-6 transition-[width,padding] duration-200 md:flex md:flex-col",
-        collapsed ? "w-[78px] px-2.5" : "w-[234px] px-3",
+        "fixed inset-y-0 left-0 z-30 hidden border-[#E8E8E5] border-r bg-white py-5 transition-[width,padding] duration-200 md:flex md:flex-col",
+        collapsed ? "w-[72px] px-2" : "w-[232px] px-3",
       )}
     >
       <div className={cn("flex h-10 items-center", collapsed ? "justify-center" : "gap-1.5")}>
@@ -100,7 +137,7 @@ export function DashboardSidebar() {
         <button
           type="button"
           onClick={toggleCollapsed}
-          className="grid size-8 shrink-0 place-items-center rounded-[10px] border border-[#E8E8E5] bg-white text-[#6B6B6B] transition hover:border-[#2A9D8F]/45 hover:text-[#1A1916]"
+          className="grid size-8 shrink-0 place-items-center rounded-[9px] border border-[#E8E8E5] bg-white text-[#6B6B6B] transition-colors hover:bg-[#F7F7F4] hover:text-[#1A1916]"
           aria-label={collapsed ? "Afficher le menu" : "Masquer le menu"}
           title={collapsed ? "Afficher le menu" : "Masquer le menu"}
         >
@@ -108,120 +145,70 @@ export function DashboardSidebar() {
         </button>
       </div>
 
-      <nav className="mt-6 flex flex-1 flex-col gap-0.5">
-        {navItems
-          .filter((item) => item.href !== "/dashboard/parametres" || canViewSettings)
-          .filter((item) => item.href !== "/dashboard/achats" || canViewPurchases)
-          .map((item) => {
-            const Icon = item.icon;
-            const active = item.href === "/dashboard" ? pathname === item.href : pathname.startsWith(item.href);
+      <nav className="mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-0.5">
+        {visibleGroups.map((group) => (
+          <section key={group.label}>
+            {!collapsed && (
+              <p className="mb-1 px-2 font-semibold text-[#9A9A95] text-[9px] uppercase leading-4 tracking-[0.12em]">
+                {group.label}
+              </p>
+            )}
+            <div className={cn("space-y-0.5", !collapsed && "ml-2 border-[#ECECE9] border-l pl-2")}>
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const active = item.href === "/dashboard" ? pathname === item.href : pathname.startsWith(item.href);
 
-            return (
-              <Link
-                className={cn(
-                  "flex h-[42px] items-center rounded-[12px] font-medium text-[#6B6B6B] text-[13.5px] transition",
-                  collapsed ? "justify-center px-0" : "gap-3 px-3",
-                  "hover:bg-[#FFFFFF] hover:text-[#1A1916]",
-                  active && "bg-[#FFFFFF] font-semibold text-[#167B70]",
-                )}
-                href={item.href}
-                key={item.href}
-                prefetch={false}
-              >
-                <Icon className={cn("size-[17px] shrink-0", active && "text-[#2A9D8F]")} />
-                {!collapsed && <span>{item.label}</span>}
-              </Link>
-            );
-          })}
+                return (
+                  <Link
+                    className={cn(
+                      "flex h-9 items-center rounded-[9px] border border-transparent font-medium text-[#6B6B6B] text-[12.5px] transition-colors",
+                      collapsed ? "justify-center px-0" : "gap-2.5 px-2.5",
+                      "hover:bg-[#F4FBF9] hover:text-[#1A1916]",
+                      active && "border-[#D8EEEA] bg-[#F4FBF9] font-semibold text-[#167B70]",
+                    )}
+                    href={item.href}
+                    key={item.href}
+                    prefetch={false}
+                    title={collapsed ? item.label : undefined}
+                  >
+                    <Icon className={cn("size-4 shrink-0", active && "text-[#2A9D8F]")} />
+                    {!collapsed && <span className="truncate">{item.label}</span>}
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        ))}
       </nav>
 
-      <div className="space-y-2">
+      <div className="border-[#ECECE9] border-t pt-3">
         <div
           className={cn(
-            "flex items-center rounded-[14px] border border-[#E8E8E5] bg-white py-2.5",
-            collapsed ? "justify-center px-1.5" : "gap-3 px-3",
+            "group flex min-h-9 items-center rounded-[9px] bg-white py-1 transition-colors hover:bg-[#F4FBF9]",
+            collapsed ? "justify-center px-1" : "gap-2 px-2",
           )}
         >
-          <span className="grid size-9 place-items-center rounded-[10px] bg-[#FFFFFF] font-semibold text-[#2A9D8F] text-[13px]">
-            {currentUser.name.charAt(0).toUpperCase()}
+          <span className="grid size-7 shrink-0 place-items-center rounded-[8px] border border-[#D8EEEA] bg-white font-semibold text-[#167B70] text-[11px]">
+            {userFirstName.charAt(0).toUpperCase()}
           </span>
           {!collapsed && (
             <>
               <div className="min-w-0 flex-1 leading-tight">
-                <div className="truncate font-medium text-[#1A1916] text-[13px]">{currentUser.name}</div>
-                <div className="text-[#6B6B6B] text-[11px]">{userRoleLabel}</div>
+                <div className="truncate font-medium text-[#1A1916] text-[12px]">{userFirstName}</div>
+                <div className="text-[#8A8A85] text-[9.5px]">{userRoleLabel}</div>
               </div>
               <button
                 type="button"
                 onClick={() => logout()}
-                className="grid size-8 place-items-center rounded-[10px] text-[#B42318] transition hover:bg-[#FFFFFF]"
+                className="grid size-7 place-items-center rounded-[8px] text-[#A3A3A0] opacity-60 transition hover:bg-white hover:text-[#B42318] hover:opacity-100"
                 title="Changer d'utilisateur"
                 aria-label="Déconnexion"
               >
-                <LogOut className="size-4" />
+                <LogOut className="size-3.5" />
               </button>
             </>
           )}
         </div>
-        {/* Modes plein écran (comptoir/atelier) rangés dans le menu de l'atelier — discrets, hors du flux principal. */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className={cn(
-                "flex w-full items-center rounded-[14px] border border-[#E8E8E5] bg-white py-3 text-left transition-colors duration-200 hover:bg-[#FFFFFF]",
-                collapsed ? "justify-center px-1.5" : "gap-3 px-3",
-              )}
-            >
-              {workshopLogo ? (
-                // biome-ignore lint/performance/noImgElement: logo atelier déjà fourni par l'utilisateur, pas une image LCP.
-                <img
-                  alt={`Logo ${workshopName}`}
-                  className="size-9 rounded-[10px] border border-[#E8E8E5] bg-white object-cover"
-                  src={workshopLogo}
-                />
-              ) : (
-                <span className="grid size-9 place-items-center rounded-[10px] border border-[#E8E8E5] bg-[#FFFFFF] font-semibold text-[#1A1916] text-[11px] tracking-wide">
-                  {workshopInitials || "AT"}
-                </span>
-              )}
-              {!collapsed && (
-                <>
-                  <div className="min-w-0 flex-1 leading-tight">
-                    <div className="truncate font-medium text-[#1A1916] text-[13px]">{workshopName}</div>
-                    <div className="text-[#8A8A8A] text-[11px]">Atelier principal</div>
-                  </div>
-                  <ChevronsUpDown className="size-4 text-[#A3A3A3]" />
-                </>
-              )}
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-[206px]" side="top">
-            <DropdownMenuItem asChild>
-              <Link className="flex items-center gap-2.5" href="/comptoir" prefetch={false}>
-                <Store className="size-4" />
-                Mode comptoir
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link className="flex items-center gap-2.5" href="/atelier" prefetch={false}>
-                <Wrench className="size-4" />
-                Mode atelier
-              </Link>
-            </DropdownMenuItem>
-            {canViewSettings && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link className="flex items-center gap-2.5" href="/dashboard/parametres" prefetch={false}>
-                    <Settings className="size-4" />
-                    Paramètres
-                  </Link>
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
     </aside>
   );

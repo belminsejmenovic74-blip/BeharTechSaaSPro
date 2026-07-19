@@ -37,6 +37,7 @@ import {
   type PublicWidgetContext,
 } from "@/lib/server/widget-public-api";
 import { brandsForType, deviceTypeLabels, fold, issuesForType, modelsForBrand } from "@/lib/widget/global-catalog";
+import { applyCustomerReceptionPolicy } from "@/lib/widget/reception-policy";
 
 type RouteParams = { params: Promise<{ publicId: string }> };
 
@@ -151,9 +152,17 @@ export async function handleConfig(request: Request, route: RouteParams) {
     settingsResult.data?.settings && typeof settingsResult.data.settings === "object"
       ? (settingsResult.data.settings as Record<string, unknown>)
       : {};
-  if (workshopSettings.customerReceptionMode === "mobile") {
-    publicConfig.features = { ...publicConfig.features, walkIn: false };
-  }
+  const customerReceptionMode =
+    workshopSettings.customerReceptionMode === "mobile" || workshopSettings.customerReceptionMode === "hybrid"
+      ? workshopSettings.customerReceptionMode
+      : "shop";
+  publicConfig.features = applyCustomerReceptionPolicy(publicConfig.features, customerReceptionMode);
+  const isSwiss = workshopSettings.country === "CH";
+  publicConfig.general = {
+    ...publicConfig.general,
+    locale: isSwiss ? "fr-CH" : "fr-FR",
+    currency: isSwiss ? "CHF" : "EUR",
+  };
   return publicSuccess(
     context,
     {

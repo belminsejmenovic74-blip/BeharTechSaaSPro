@@ -18,7 +18,7 @@ import {
 /* DA Behar Tech Pro                                                    */
 /* ------------------------------------------------------------------ */
 export const DA = {
-  bg: "#FAFAF8",
+  bg: "#FFFFFF",
   text: "#1A1916",
   muted: "#6B6B6B",
   accent: "#2A9D8F",

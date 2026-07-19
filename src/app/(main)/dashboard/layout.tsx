@@ -4,6 +4,7 @@ import { AutoSyncProvider } from "@/components/behar/auto-sync-provider";
 import { DashboardSidebar } from "@/components/behar/dashboard-sidebar";
 import { InstallationGate } from "@/components/behar/installation-gate";
 import { MobileTopbar } from "@/components/behar/mobile-topbar";
+import { ModeAccessGuard } from "@/components/behar/mode-access-guard";
 import { PermissionRouteGuard } from "@/components/behar/permission-route-guard";
 import { PinLoginGate } from "@/components/behar/pin-login-gate";
 import { PrintProvider } from "@/components/behar/print-provider";
@@ -13,26 +14,28 @@ import { WidgetAppointmentsProvider } from "@/components/behar/widget-appointmen
 
 export default function Layout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <PrintProvider>
-      <InstallationGate>
-        <PinLoginGate>
-          <AutoSyncProvider />
-          <WidgetAppointmentsProvider />
-          <WidgetLeadNotificationsProvider />
-          <div className="behar-app min-h-svh bg-[#FFFFFF] text-[#1A1916]">
-            <DashboardSidebar />
-            <div className="flex min-h-svh flex-col md:pl-[var(--behar-sidebar-width,234px)]">
-              <div className="hidden md:block">
-                <Topbar />
+    <div className="behar-app min-h-svh bg-white text-[#1A1916]">
+      <PrintProvider>
+        <InstallationGate>
+          <PinLoginGate>
+            <AutoSyncProvider />
+            <WidgetAppointmentsProvider />
+            <WidgetLeadNotificationsProvider />
+            <ModeAccessGuard permission="canViewDashboard" label="Dashboard">
+              <DashboardSidebar />
+              <div className="flex min-h-svh flex-col md:pl-[var(--behar-sidebar-width,232px)]">
+                <div className="hidden md:block">
+                  <Topbar />
+                </div>
+                <MobileTopbar />
+                <main className="flex-1">
+                  <PermissionRouteGuard>{children}</PermissionRouteGuard>
+                </main>
               </div>
-              <MobileTopbar />
-              <main className="flex-1">
-                <PermissionRouteGuard>{children}</PermissionRouteGuard>
-              </main>
-            </div>
-          </div>
-        </PinLoginGate>
-      </InstallationGate>
-    </PrintProvider>
+            </ModeAccessGuard>
+          </PinLoginGate>
+        </InstallationGate>
+      </PrintProvider>
+    </div>
   );
 }

@@ -237,7 +237,7 @@ function exportSummaryPdf(invoice: SupplierInvoice, lines: SupplierInvoiceLine[]
   <meta charset="utf-8" />
   <title>Achat ${escapeHtml(invoice.invoiceNumber)}</title>
   <style>
-    body { margin: 0; padding: 28px; background: #FAFAF8; color: #1A1916; font-family: Arial, sans-serif; }
+    body { margin: 0; padding: 28px; background: #FFFFFF; color: #1A1916; font-family: Arial, sans-serif; }
     h1 { margin: 0 0 8px; font-size: 24px; }
     p { margin: 4px 0; color: #6B6B6B; }
     .card { margin-top: 18px; border: 1px solid #E8E8E5; border-radius: 12px; background: #fff; padding: 16px; }

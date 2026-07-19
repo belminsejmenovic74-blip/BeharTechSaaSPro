@@ -80,6 +80,26 @@ describe("demandes du site — contrat de soumission", () => {
     expect(leadInputSchema.safeParse({ ...base, type: "request", phone: "" }).success).toBe(false);
   });
 
+  it("exige et valide l’adresse quand le client demande un déplacement", () => {
+    expect(leadInputSchema.safeParse({ ...base, type: "request", serviceMode: "home_service" }).success).toBe(false);
+    expect(
+      leadInputSchema.safeParse({
+        ...base,
+        type: "request",
+        serviceMode: "home_service",
+        serviceAddress: { address: "12 rue du Rhône", postalCode: "1201", city: "Genève", country: "CH" },
+      }).success,
+    ).toBe(true);
+    expect(
+      leadInputSchema.safeParse({
+        ...base,
+        type: "request",
+        serviceMode: "home_service",
+        serviceAddress: { address: "12 rue du Rhône", postalCode: "12010", city: "Genève", country: "CH" },
+      }).success,
+    ).toBe(false);
+  });
+
   it("conserve les champs supplémentaires métier connus", () => {
     const result = leadInputSchema.safeParse({
       ...base,

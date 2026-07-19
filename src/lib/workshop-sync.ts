@@ -5,6 +5,7 @@ import { useConditionneStore } from "@/lib/conditionne-store";
 import { useRecondSettings } from "@/lib/recond-settings";
 import { useReconditioningRules } from "@/lib/reconditioning-pricing";
 import { useReconditioningStore } from "@/lib/reconditioning-store";
+import { sanitizePaymentDataForPersistence } from "@/lib/payment-data-boundary";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
 
 export const WORKSHOP_STORAGE_KEY = "behar-tech-local-demo-v3";
@@ -151,7 +152,11 @@ export function readCachedWorkshopState(): (Partial<StoreState> & Record<string,
 
 export function cacheWorkshopState(state: Partial<StoreState> & Record<string, unknown>) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(WORKSHOP_STORAGE_KEY, JSON.stringify({ state, version: WORKSHOP_SCHEMA_VERSION }));
+  const sanitized = sanitizePaymentDataForPersistence(state);
+  window.localStorage.setItem(
+    WORKSHOP_STORAGE_KEY,
+    JSON.stringify({ state: sanitized, version: WORKSHOP_SCHEMA_VERSION }),
+  );
 }
 
 function detectDeviceLabel(): string {
@@ -249,8 +254,9 @@ function withLicenseState(
 }
 
 function rowToSnapshot(row: WorkshopSnapshotRow, fallbackLicense: string): WorkshopSnapshot {
-  const state =
+  const rawState =
     row.state && typeof row.state === "object" ? (row.state as Partial<StoreState> & Record<string, unknown>) : {};
+  const state = sanitizePaymentDataForPersistence(rawState);
   return {
     id: String(row.id ?? ""),
     workshopId: String(row.workshop_id ?? ""),
@@ -350,7 +356,8 @@ async function upsertSnapshot(
   const supabase = getSupabase();
   if (!supabase) throw new Error("Client Supabase indisponible.");
 
-  const mergedState = withLicenseState(normalizedKey, state, {
+  const safeState = sanitizePaymentDataForPersistence(state);
+  const mergedState = withLicenseState(normalizedKey, safeState, {
     workshopId,
     stateVersion: options.stateVersion,
     lastDeviceId: options.lastDeviceId,
@@ -557,7 +564,8 @@ export function hydrateStoreFromCloud(
 ) {
   const snapshot =
     "state" in snapshotOrState && "updatedAt" in snapshotOrState ? (snapshotOrState as WorkshopSnapshot) : null;
-  const rawState = snapshot ? snapshot.state : (snapshotOrState as Partial<StoreState> & Record<string, unknown>);
+  const unsafeState = snapshot ? snapshot.state : (snapshotOrState as Partial<StoreState> & Record<string, unknown>);
+  const rawState = sanitizePaymentDataForPersistence(unsafeState);
   // Le champ technique __auxStores ne doit jamais entrer dans le store principal.
   const { [AUX_STORES_FIELD]: auxStores, ...state } = rawState;
   const licenseKey = normalizeLicenseKey(snapshot?.licenseKey || (state.licenseKey as string | undefined));

@@ -80,12 +80,19 @@ export async function POST(request: Request) {
     );
     const existing = await auth.admin
       .from("external_payment_requests")
-      .select("id,provider_request_id,hosted_url,delivery_channel,technical_state,created_at,sent_at")
+      .select("id,provider_request_id,hosted_url,created_at")
       .eq("id", requestId)
       .eq("workshop_id", auth.workshopId)
       .maybeSingle();
-    if (existing.data && existing.data.technical_state !== "dispatch_error") {
-      return NextResponse.json({ request: existing.data, reused: true });
+    if (existing.data && (existing.data.hosted_url || existing.data.provider_request_id)) {
+      return NextResponse.json({
+        request: {
+          ...existing.data,
+          delivery_channel: parsed.data.deliveryChannel,
+          technical_state: "sent",
+        },
+        reused: true,
+      });
     }
 
     const currencyRow = await auth.admin
@@ -134,56 +141,31 @@ export async function POST(request: Request) {
       workshop_id: auth.workshopId,
       shop_id: shopId,
       invoice_id: invoice.id,
-      repair_id: invoice.repair_id,
-      reader_id: parsed.data.readerId || null,
       provider: parsed.data.provider,
-      requested_amount: Number(invoice.total_ttc),
-      currency,
-      delivery_channel: parsed.data.deliveryChannel,
-      created_by: auth.userId,
     };
 
-    let created: CreatedExternalRequest;
-    try {
-      created = await getExternalPaymentProvider(parsed.data.provider).createExternalRequest({
-        invoiceId: invoice.id,
-        invoiceNumber: invoice.invoice_number,
-        amount: Number(invoice.total_ttc),
-        currency,
-        externalAccountId: connection.external_account_id,
-        externalLocationId,
-        accessToken,
-        readerId: parsed.data.readerId,
-        connectionMode: typedConnection.connection_mode,
-        manualPaymentUrl,
-        requestId,
-      });
-    } catch (providerError) {
-      const failedRow = {
-        ...baseRow,
-        provider_request_id: null,
-        hosted_url: null,
-        technical_state: "dispatch_error",
-        sent_at: null,
-      };
-      if (existing.data) {
-        await auth.admin
-          .from("external_payment_requests")
-          .update(failedRow)
-          .eq("id", requestId)
-          .eq("workshop_id", auth.workshopId);
-      } else {
-        await auth.admin.from("external_payment_requests").insert(failedRow);
-      }
-      throw providerError;
-    }
+    // Failed transmissions are deliberately not persisted. The provider
+    // remains the sole source of truth for payment execution and results.
+    const created: CreatedExternalRequest = await getExternalPaymentProvider(
+      parsed.data.provider,
+    ).createExternalRequest({
+      invoiceId: invoice.id,
+      invoiceNumber: invoice.invoice_number,
+      amount: Number(invoice.total_ttc),
+      currency,
+      externalAccountId: connection.external_account_id,
+      externalLocationId,
+      accessToken,
+      readerId: parsed.data.readerId,
+      connectionMode: typedConnection.connection_mode,
+      manualPaymentUrl,
+      requestId,
+    });
 
     const row = {
       ...baseRow,
       provider_request_id: created.providerRequestId || null,
       hosted_url: created.hostedUrl || null,
-      technical_state: created.technicalState,
-      sent_at: created.technicalState === "sent" ? new Date().toISOString() : null,
     };
     const inserted = existing.data
       ? await auth.admin
@@ -191,15 +173,24 @@ export async function POST(request: Request) {
           .update(row)
           .eq("id", requestId)
           .eq("workshop_id", auth.workshopId)
-          .select("id,provider_request_id,hosted_url,delivery_channel,technical_state,created_at,sent_at")
+          .select("id,provider_request_id,hosted_url,created_at")
           .single()
       : await auth.admin
           .from("external_payment_requests")
           .insert(row)
-          .select("id,provider_request_id,hosted_url,delivery_channel,technical_state,created_at,sent_at")
+          .select("id,provider_request_id,hosted_url,created_at")
           .single();
     if (inserted.error || !inserted.data) throw new Error("Enregistrement technique de la demande impossible.");
-    return NextResponse.json({ request: inserted.data }, { status: 201 });
+    return NextResponse.json(
+      {
+        request: {
+          ...inserted.data,
+          delivery_channel: parsed.data.deliveryChannel,
+          technical_state: created.technicalState,
+        },
+      },
+      { status: 201 },
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Creation impossible.";
     return NextResponse.json({ error: message }, { status: 503 });

@@ -82,9 +82,11 @@ export async function syncWidgetShopFromLicense(
   const address = String(settings.address || "").trim();
   const postalCode = String(settings.postalCode || "").trim();
   const city = String(settings.city || settings.postalCity || "").trim();
+  const country = settings.country === "CH" ? "CH" : "FR";
   if (address) nextAddress.address = address;
   if (postalCode) nextAddress.postalCode = postalCode;
   if (city) nextAddress.city = city;
+  nextAddress.country = country;
   const patch: Record<string, unknown> = {
     commercial_name: String(settings.commercialName || settings.name || "").trim() || null,
     address_config: nextAddress,

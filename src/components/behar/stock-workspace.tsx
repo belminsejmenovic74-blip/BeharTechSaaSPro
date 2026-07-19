@@ -308,7 +308,7 @@ function printElement(element: HTMLElement, title: string, format: StockLabelFor
   <title>${title}</title>
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; background: #FAFAF8; color: #1A1916; font-family: Arial, sans-serif; }
+    body { margin: 0; background: #FFFFFF; color: #1A1916; font-family: Arial, sans-serif; }
     @page { size: ${format === "a4" ? "A4" : format === "thermal40" ? "40mm 25mm" : "60mm 30mm"}; margin: 0; }
     @media print {
       body { background: #fff; }

@@ -20,6 +20,7 @@ export function ConfirmationStep({ ctx, result }: { ctx: StepContext; result: Su
   const shop = config.shops.find((entry) => entry.id === draft.shopId) ?? config.shops[0];
 
   const isAppointment = draft.requestType === "appointment";
+  const isHomeService = draft.serviceMode === "home_service";
   const appointmentDate = result?.date ?? draft.appointmentDate;
   const appointmentTime = result?.time ?? draft.appointmentTime;
 
@@ -80,7 +81,13 @@ export function ConfirmationStep({ ctx, result }: { ctx: StepContext; result: Su
   if (isAppointment && appointmentDate && appointmentTime) {
     rows.push({ icon: CalendarDays, value: formatDateTimeFr(appointmentDate, appointmentTime) });
   }
-  if (shop) rows.push({ icon: MapPin, value: shop.name, sub: address || undefined });
+  if (isHomeService) {
+    rows.push({
+      icon: MapPin,
+      value: "Déplacement à domicile",
+      sub: [draft.serviceAddress, draft.servicePostalCode, draft.serviceCity].filter(Boolean).join(", "),
+    });
+  } else if (shop) rows.push({ icon: MapPin, value: shop.name, sub: address || undefined });
   rows.push({ icon: Smartphone, value: deviceLabel(draft), sub: issuesLabel(draft) });
   if (estimation.hasPricedService)
     rows.push({ icon: Receipt, value: `Estimation : ${estimationLabel(estimation, locale)}` });

@@ -22,7 +22,7 @@ import {
 } from "@/lib/repair-status";
 import { formatMoney, getDocumentFilename } from "@/lib/workshop-country";
 
-const COLORS = { bg: "#FAFAF8", text: "#1A1916", sub: "#6B6B6B", accent: "#2A9D8F", border: "#E8E8E5" };
+const COLORS = { bg: "#FFFFFF", text: "#1A1916", sub: "#6B6B6B", accent: "#2A9D8F", border: "#E8E8E5" };
 
 function resolveShopName(candidates: Array<string | undefined>): string {
   for (const candidate of candidates) {

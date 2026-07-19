@@ -11,6 +11,7 @@ import {
   FileText,
   FolderPlus,
   Mail,
+  MapPin,
   MessageSquare,
   Phone,
   RefreshCw,
@@ -58,6 +59,39 @@ function tomorrow() {
   const date = new Date();
   date.setDate(date.getDate() + 1);
   return date.toISOString().slice(0, 10);
+}
+
+function leadServiceDetails(lead: DashboardWidgetLead) {
+  const mode = typeof lead.submission_payload?.serviceMode === "string" ? lead.submission_payload.serviceMode : "";
+  const rawAddress = lead.submission_payload?.serviceAddress;
+  const address = rawAddress && typeof rawAddress === "object" ? (rawAddress as Record<string, unknown>) : null;
+  return {
+    isHomeService: mode === "home_service",
+    modeLabel:
+      mode === "home_service"
+        ? "Déplacement à domicile"
+        : mode === "walk_in"
+          ? "Sans rendez-vous"
+          : mode === "appointment"
+            ? "Rendez-vous"
+            : "Demande à distance",
+    address: address
+      ? [address.address, address.postalCode, address.city]
+          .filter((value) => typeof value === "string" && value.trim())
+          .join(", ")
+      : "",
+  };
+}
+
+function formatDisplayedPrice(lead: DashboardWidgetLead, fallbackCurrency: "EUR" | "CHF") {
+  if (lead.displayed_price == null) return "Non affiché";
+  const snapshotCurrency = lead.displayed_price_snapshot?.currency;
+  const currency = snapshotCurrency === "CHF" || snapshotCurrency === "EUR" ? snapshotCurrency : fallbackCurrency;
+  return new Intl.NumberFormat(currency === "CHF" ? "fr-CH" : "fr-FR", {
+    style: "currency",
+    currency,
+    currencyDisplay: currency === "CHF" ? "code" : "symbol",
+  }).format(lead.displayed_price);
 }
 
 export function WidgetLeadsWorkspace() {
@@ -383,6 +417,11 @@ export function WidgetLeadsWorkspace() {
                           {lead.photos.length} photo{lead.photos.length > 1 ? "s" : ""}
                         </Badge>
                       ) : null}
+                      {leadServiceDetails(lead).isHomeService ? (
+                        <Badge>
+                          <MapPin className="mr-1 inline size-3" /> Déplacement
+                        </Badge>
+                      ) : null}
                     </div>
                     <div className="md:text-right">
                       <p className="text-xs text-[#6B6B6B]">{isoDate(lead.created_at)}</p>
@@ -433,13 +472,24 @@ export function WidgetLeadsWorkspace() {
             </div>
 
             <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
+              {(() => {
+                const service = leadServiceDetails(selected);
+                return (
+                  <>
+                    <Info label="Prise en charge" value={service.modeLabel} />
+                    {service.isHomeService ? (
+                      <Info label="Adresse d’intervention" value={service.address || "—"} />
+                    ) : null}
+                  </>
+                );
+              })()}
               <Info label="Téléphone" value={selected.phone || "—"} />
               <Info label="E-mail" value={selected.email || "—"} />
               <Info label="Modèle" value={leadDeviceLabel(selected)} />
               <Info label="Prestation" value={selected.service_label || "—"} />
               <Info
                 label="Prix affiché"
-                value={selected.displayed_price != null ? `${selected.displayed_price} €` : "Non affiché"}
+                value={formatDisplayedPrice(selected, store.workshopSettings.country === "CH" ? "CHF" : "EUR")}
               />
               <Info label="Disponibilité affichée" value={selected.displayed_stock || "À confirmer"} />
               <Info

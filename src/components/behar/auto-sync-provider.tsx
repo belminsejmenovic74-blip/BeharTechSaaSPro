@@ -38,7 +38,6 @@ const SHARED_STATE_KEYS = [
   "repairs",
   "quotes",
   "invoices",
-  "payments",
   "appointments",
   "stockItems",
   "stockMovements",
@@ -269,7 +268,7 @@ export function AutoSyncProvider() {
             if (trackedRepairs.length > 0) {
               void syncPublicTrackingRepairsToCloud(trackedRepairs, trackingState);
             }
-            // Idem pour les documents commerciaux (devis/facture/reçu/vente) :
+            // Idem pour les documents commerciaux (devis/facture) :
             // alimente `public_tracking_documents` lu par les pages publiques.
             void syncPublicTrackingDocumentsToCloud(trackingState);
           })

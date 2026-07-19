@@ -197,7 +197,6 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
         .filter((entry) => entry.repairId === repair.id)
         .sort((a, b) => (docTypeOrder[a.type] ?? 9) - (docTypeOrder[b.type] ?? 9))
     : [];
-  const payments = repair ? store.payments.filter((entry) => entry.repairId === repair.id) : [];
   const quote = quotes[0];
   const acceptedQuote = quotes.find((entry) => entry.status === "Accepté" || entry.status === "Facturé");
   const invoice = invoices[0];
@@ -1443,10 +1442,10 @@ function ActionsCard({
         <ActionRow icon={<Printer className="size-4" />} label="Imprimer documents" onClick={onPrint} />
         <Link
           className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white font-medium text-[#1A1916] text-sm hover:bg-[#FFFFFF]"
-          href="/dashboard/ventes"
+          href="/dashboard/factures"
         >
-          <ShoppingCart className="size-4" />
-          Vente comptoir
+          <Receipt className="size-4" />
+          Voir les factures
         </Link>
         <ActionRow
           icon={<Lock className="size-4" />}

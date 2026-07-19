@@ -4,10 +4,8 @@ import type {
   BeharDocument,
   Customer,
   Invoice,
-  Payment,
   Quote,
   Repair,
-  Sale,
   StockItem,
   StockMovement,
   StoreState,
@@ -18,6 +16,7 @@ import type {
   WorkshopSettings,
 } from "@/lib/behar-store";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { sanitizePaymentDataForPersistence } from "@/lib/payment-data-boundary";
 
 export type NormalizedBusinessState = {
   workshopId?: string;
@@ -27,8 +26,6 @@ export type NormalizedBusinessState = {
   repairs: Repair[];
   quotes: Quote[];
   invoices: Invoice[];
-  payments: Payment[];
-  sales: Sale[];
   documents: BeharDocument[];
   stockItems: StockItem[];
   stockMovements: StockMovement[];
@@ -42,26 +39,25 @@ export type NormalizedBusinessState = {
 const SYNC_ENDPOINT = "/api/behar/sync";
 
 export function getNormalizedBusinessState(state: Partial<StoreState>): NormalizedBusinessState | null {
-  const workshopId = state.cloudSync?.workshopId;
+  const safeState = sanitizePaymentDataForPersistence(state as Partial<StoreState> & Record<string, unknown>);
+  const workshopId = safeState.cloudSync?.workshopId;
   if (!workshopId) return null;
   return {
     workshopId,
-    licenseKey: state.licenseKey,
-    workshopSettings: state.workshopSettings,
-    customers: Array.isArray(state.customers) ? state.customers : [],
-    repairs: Array.isArray(state.repairs) ? state.repairs : [],
-    quotes: Array.isArray(state.quotes) ? state.quotes : [],
-    invoices: Array.isArray(state.invoices) ? state.invoices : [],
-    payments: Array.isArray(state.payments) ? state.payments : [],
-    sales: Array.isArray(state.sales) ? state.sales : [],
-    documents: Array.isArray(state.documents) ? state.documents : [],
-    stockItems: Array.isArray(state.stockItems) ? state.stockItems : [],
-    stockMovements: Array.isArray(state.stockMovements) ? state.stockMovements : [],
-    purchases: Array.isArray(state.purchases) ? state.purchases : [],
-    suppliers: Array.isArray(state.suppliers) ? state.suppliers : [],
-    supplierInvoices: Array.isArray(state.supplierInvoices) ? state.supplierInvoices : [],
-    supplierInvoiceLines: Array.isArray(state.supplierInvoiceLines) ? state.supplierInvoiceLines : [],
-    users: Array.isArray(state.users) ? state.users : [],
+    licenseKey: safeState.licenseKey,
+    workshopSettings: safeState.workshopSettings,
+    customers: Array.isArray(safeState.customers) ? safeState.customers : [],
+    repairs: Array.isArray(safeState.repairs) ? safeState.repairs : [],
+    quotes: Array.isArray(safeState.quotes) ? safeState.quotes : [],
+    invoices: Array.isArray(safeState.invoices) ? safeState.invoices : [],
+    documents: Array.isArray(safeState.documents) ? safeState.documents : [],
+    stockItems: Array.isArray(safeState.stockItems) ? safeState.stockItems : [],
+    stockMovements: Array.isArray(safeState.stockMovements) ? safeState.stockMovements : [],
+    purchases: Array.isArray(safeState.purchases) ? safeState.purchases : [],
+    suppliers: Array.isArray(safeState.suppliers) ? safeState.suppliers : [],
+    supplierInvoices: Array.isArray(safeState.supplierInvoices) ? safeState.supplierInvoices : [],
+    supplierInvoiceLines: Array.isArray(safeState.supplierInvoiceLines) ? safeState.supplierInvoiceLines : [],
+    users: Array.isArray(safeState.users) ? safeState.users : [],
   };
 }
 

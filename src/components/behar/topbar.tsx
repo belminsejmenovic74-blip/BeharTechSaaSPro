@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { Bell, ChevronDown, FileText, LogOut, Menu, Plus, Search, UserRound, X } from "lucide-react";
 
@@ -11,6 +12,7 @@ import { SyncStatusBadge } from "@/components/behar/sync-status-badge";
 import { type AppNotification, useBeharStore } from "@/lib/behar-store";
 import { WidgetNotificationCenter } from "@/components/behar/widget-notification-center";
 import { formatDeviceLabel } from "@/lib/format-device";
+import { getUserFirstName } from "@/lib/user-display";
 import { cn } from "@/lib/utils";
 
 type NotificationItem = {
@@ -36,6 +38,7 @@ const notificationHref = (notification: AppNotification) => {
 };
 
 export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) {
+  const pathname = usePathname();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [docOpen, setDocOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -56,6 +59,7 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
 
   const roleLabel =
     currentUser.role === "admin" ? "Gérant" : currentUser.role === "technician" ? "Technicien" : "Accueil";
+  const userFirstName = getUserFirstName(currentUser.name, currentUser.id);
   const canViewNotifications = currentUser.permissions?.canViewNotifications !== false;
 
   const notifications = useMemo<NotificationItem[]>(() => {
@@ -201,7 +205,7 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
         type="button"
         aria-label="Menu"
         onClick={onMenuClick}
-        className="grid size-10 place-items-center rounded-[10px] text-[#6B6B6B] transition hover:bg-[#FFFFFF] hover:text-[#1A1916] md:hidden"
+        className="grid size-10 place-items-center rounded-[10px] text-[#6B6B6B] transition-colors hover:bg-[#F7F7F4] hover:text-[#1A1916] md:hidden"
       >
         <Menu className="size-5" />
       </button>
@@ -218,16 +222,16 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
           }}
           onFocus={() => setSearchOpen(true)}
           placeholder="Rechercher (client, réparation, facture…)"
-          className="h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white pr-14 pl-10 text-[#1A1916] text-sm outline-none placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10"
+          className="h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white pr-14 pl-10 text-[#1A1916] text-sm outline-none placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/55 focus:ring-2 focus:ring-[#2A9D8F]/10"
         />
-        <kbd className="-translate-y-1/2 pointer-events-none absolute top-1/2 right-3 hidden h-6 items-center gap-0.5 rounded-md border border-[#E8E8E5] bg-[#FFFFFF] px-1.5 font-medium text-[#6B6B6B] text-[10px] sm:flex">
+        <kbd className="-translate-y-1/2 pointer-events-none absolute top-1/2 right-3 hidden h-6 items-center gap-0.5 rounded-md border border-[#E8E8E5] bg-[#F7F7F4] px-1.5 font-medium text-[#6B6B6B] text-[10px] sm:flex">
           ⌘ K
         </kbd>
 
         {searchOpen && searchQuery.length >= 2 && (
           <>
             <button className="fixed inset-0 z-10 cursor-default" onClick={() => setSearchOpen(false)} type="button" />
-            <div className="absolute top-12 left-0 z-20 w-full overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-white shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
+            <div className="absolute top-12 left-0 z-20 w-full overflow-hidden rounded-[12px] border border-[#E8E8E5] bg-white shadow-[0_10px_30px_rgba(26,25,22,0.08)]">
               {searchResults.length === 0 ? (
                 <p className="px-4 py-6 text-center text-[#6B6B6B] text-sm">Aucun résultat pour "{searchQuery}"</p>
               ) : (
@@ -243,16 +247,16 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
                         if (res.type === "customer") useBeharStore.getState().setSelected("customer", res.id);
                         if (res.type === "invoice") useBeharStore.getState().setSelected("invoice", res.id);
                       }}
-                      className="flex items-center gap-3 border-[#E8E8E5] border-b px-4 py-3 transition hover:bg-[#FFFFFF] last:border-0"
+                      className="flex items-center gap-3 border-[#E8E8E5] border-b px-4 py-3 transition-colors hover:bg-[#F7F7F4] last:border-0"
                     >
-                      <div className="grid size-8 place-items-center rounded-lg bg-[#FFFFFF] text-[#6B6B6B]">
+                      <div className="grid size-8 place-items-center rounded-[8px] bg-[#F1F1ED] text-[#6B6B6B]">
                         <Search className="size-4" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <span className="block font-medium text-[#1A1916] text-sm">{res.title}</span>
                         <span className="block truncate text-[#6B6B6B] text-xs">{res.subtitle}</span>
                       </div>
-                      <span className="rounded-md bg-[#FFFFFF] px-1.5 py-0.5 font-medium text-[#6B6B6B] text-[10px] uppercase">
+                      <span className="rounded-md bg-[#F1F1ED] px-1.5 py-0.5 font-medium text-[#6B6B6B] text-[10px] uppercase">
                         {res.type}
                       </span>
                     </Link>
@@ -272,17 +276,14 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
             aria-label="Compte utilisateur"
             onClick={() => setUserMenuOpen((v) => !v)}
             className={cn(
-              "flex h-10 items-center gap-2.5 rounded-[12px] border border-[#E8E8E5] bg-white px-2.5 text-[#1A1916] text-sm transition hover:bg-[#FFFFFF]",
-              userMenuOpen && "bg-[#FFFFFF]",
+              "flex h-9 items-center gap-2 rounded-[9px] bg-white px-1.5 text-[#1A1916] transition-colors hover:bg-[#F4FBF9]",
+              userMenuOpen && "bg-[#F4FBF9]",
             )}
           >
-            <span className="grid size-7 place-items-center rounded-[8px] bg-[#FFFFFF] font-semibold text-[#2A9D8F] text-[12px]">
-              {currentUser.name.charAt(0).toUpperCase()}
+            <span className="grid size-7 place-items-center rounded-[8px] border border-[#D8EEEA] bg-white font-semibold text-[#167B70] text-[11px]">
+              {userFirstName.charAt(0).toUpperCase()}
             </span>
-            <span className="hidden xl:flex flex-col items-start leading-tight">
-              <span className="font-medium">{currentUser.name}</span>
-              <span className="text-[10px] text-[#6B6B6B]">{roleLabel}</span>
-            </span>
+            <span className="hidden font-medium text-[12px] xl:block">{userFirstName}</span>
           </button>
           {userMenuOpen && (
             <>
@@ -292,16 +293,16 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
                 className="fixed inset-0 z-10 cursor-default"
                 onClick={() => setUserMenuOpen(false)}
               />
-              <div className="absolute top-12 right-0 z-20 w-[240px] overflow-hidden rounded-[14px] border border-[#E8E8E5] bg-white p-1 shadow-[0_1px_2px_rgba(26,25,22,0.035)]">
-                <div className="px-3 py-2.5 border-b border-[#FFFFFF]">
-                  <p className="font-semibold text-[#1A1916] text-sm leading-tight">{currentUser.name}</p>
+              <div className="absolute top-12 right-0 z-20 w-[240px] overflow-hidden rounded-[12px] border border-[#E8E8E5] bg-white p-1 shadow-[0_10px_30px_rgba(26,25,22,0.08)]">
+                <div className="border-b border-[#E8E8E5] px-3 py-2.5">
+                  <p className="font-semibold text-[#1A1916] text-sm leading-tight">{userFirstName}</p>
                   <p className="mt-0.5 text-[#6B6B6B] text-[11px]">{roleLabel}</p>
                 </div>
                 <Link
                   href="/dashboard/parametres"
                   prefetch={false}
                   onClick={() => setUserMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-[8px] px-3 py-2 text-[#1A1916] text-sm hover:bg-[#FFFFFF]"
+                  className="flex items-center gap-2 rounded-[8px] px-3 py-2 text-[#1A1916] text-sm hover:bg-[#F7F7F4]"
                 >
                   <UserRound className="size-4 text-[#6B6B6B]" /> Mon compte
                 </Link>
@@ -311,7 +312,7 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
                     setUserMenuOpen(false);
                     logout();
                   }}
-                  className="flex w-full items-center gap-2 rounded-[8px] px-3 py-2 text-[#B42318] text-sm hover:bg-[#FFFFFF]"
+                  className="flex w-full items-center gap-2 rounded-[8px] px-3 py-2 text-[#B42318] text-sm hover:bg-[#FFF1F0]"
                 >
                   <LogOut className="size-4" /> Changer d'utilisateur
                 </button>
@@ -319,19 +320,21 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
             </>
           )}
         </div>
-        <Link className="hidden lg:block" href="/dashboard/reparations?create=1" prefetch={false}>
-          <PrimaryButton className="h-10 gap-2 px-4">
-            <Plus className="size-4" />
-            Nouvelle prise en charge
-          </PrimaryButton>
-        </Link>
+        {pathname !== "/dashboard" && !pathname.startsWith("/dashboard/reparations") && (
+          <Link className="hidden lg:block" href="/dashboard/reparations?create=1" prefetch={false}>
+            <PrimaryButton className="h-10 gap-2 px-4">
+              <Plus className="size-4" />
+              Nouvelle prise en charge
+            </PrimaryButton>
+          </Link>
+        )}
         {canViewNotifications && (
           <div className="relative">
             <button
               aria-label="Notifications"
               className={cn(
-                "relative grid size-10 place-items-center rounded-[10px] text-[#6B6B6B] transition hover:bg-[#FFFFFF] hover:text-[#1A1916]",
-                notifOpen && "bg-[#FFFFFF] text-[#1A1916]",
+                "relative grid size-10 place-items-center rounded-[10px] text-[#6B6B6B] transition-colors hover:bg-[#F7F7F4] hover:text-[#1A1916]",
+                notifOpen && "bg-[#F1F1ED] text-[#1A1916]",
               )}
               onClick={() => setNotifOpen((v) => !v)}
               type="button"
@@ -418,8 +421,8 @@ export function Topbar({ onMenuClick }: Readonly<{ onMenuClick?: () => void }>) 
             aria-label="Documents"
             onClick={() => setDocOpen((v) => !v)}
             className={cn(
-              "flex h-10 items-center gap-1 rounded-[10px] px-2 text-[#6B6B6B] transition hover:bg-[#FFFFFF] hover:text-[#1A1916]",
-              docOpen && "bg-[#FFFFFF] text-[#1A1916]",
+              "flex h-10 items-center gap-1 rounded-[10px] px-2 text-[#6B6B6B] transition-colors hover:bg-[#F7F7F4] hover:text-[#1A1916]",
+              docOpen && "bg-[#F1F1ED] text-[#1A1916]",
             )}
           >
             <FileText className="size-[18px]" />
@@ -474,7 +477,7 @@ export function CloseButton({ onClick, className }: Readonly<{ onClick?: () => v
       aria-label="Fermer"
       onClick={onClick}
       className={cn(
-        "grid size-9 place-items-center rounded-[10px] text-[#6B6B6B] transition hover:bg-[#FFFFFF] hover:text-[#1A1916]",
+        "grid size-9 place-items-center rounded-[10px] text-[#6B6B6B] transition-colors hover:bg-[#F7F7F4] hover:text-[#1A1916]",
         className,
       )}
     >

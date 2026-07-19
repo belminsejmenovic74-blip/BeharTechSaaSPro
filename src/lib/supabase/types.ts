@@ -27,6 +27,9 @@ export type Database = {
           id: string;
           workshop_id: string;
           full_name: string;
+          company_name: string | null;
+          siret: string | null;
+          vat_number: string | null;
           phone: string | null;
           email: string | null;
           address: string | null;
@@ -121,10 +124,18 @@ export type Database = {
           client_id: string | null;
           repair_id: string | null;
           quote_id: string | null;
+          shop_id: string | null;
           invoice_number: string;
+          document_type: "invoice" | "credit_note";
           status: string;
           total_ht: number | null;
+          total_vat: number | null;
           total_ttc: number | null;
+          vat_rate: number | null;
+          vat_exemption_reason: string | null;
+          currency: "EUR" | "CHF" | null;
+          issued_at: string | null;
+          validated_at: string | null;
           public_token: string;
           public_url: string;
           public_active: boolean;

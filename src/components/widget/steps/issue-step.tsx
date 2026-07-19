@@ -125,9 +125,12 @@ export function IssueStep({ ctx, hideHeader = false }: { ctx: StepContext; hideH
           next[issue] = null;
           changed = true;
         }
-      } else if (!stillValid) {
-        // Défaut = la qualité recommandée par l'atelier, sinon la première.
-        next[issue] = matches.find((match) => match.recommended) ?? matches[0];
+      } else if (matches.length === 1 && !stillValid) {
+        next[issue] = matches[0];
+        changed = true;
+      } else if (matches.length > 1 && current !== undefined && !stillValid) {
+        // Plusieurs qualités : aucun prix n'est choisi à la place du client.
+        delete next[issue];
         changed = true;
       }
     }
@@ -188,12 +191,12 @@ export function IssueStep({ ctx, hideHeader = false }: { ctx: StepContext; hideH
   const subtitle = features.multiIssue ? "Sélectionnez une ou plusieurs pannes." : "Sélectionnez la panne concernée.";
 
   const renderCard = (issue: string) => {
-    const service = services.items.find((entry) => sameIssue(entry.issue, issue));
+    const issueServices = services.items.filter((entry) => sameIssue(entry.issue, issue));
     return (
       <IssueCard
         key={issue}
         issue={issue}
-        service={service}
+        services={issueServices}
         selected={draft.issues.includes(issue)}
         onToggle={() => toggle(issue)}
         ctx={ctx}
@@ -357,21 +360,23 @@ export function IssueStep({ ctx, hideHeader = false }: { ctx: StepContext; hideH
 
 function IssueCard({
   issue,
-  service,
+  services,
   selected,
   onToggle,
   ctx,
 }: {
   issue: string;
-  service: PublicService | undefined;
+  services: PublicService[];
   selected: boolean;
   onToggle: () => void;
   ctx: StepContext;
 }) {
   const Icon = issueIcon(issue);
+  const service = services.length === 1 ? services[0] : undefined;
   const price = service ? formatPrice(service.price, ctx.currency, ctx.locale) : null;
   const duration = formatDuration(service?.durationMinutes);
   const meta = [duration, ctx.features.warranty ? service?.warranty : null].filter(Boolean).join(" · ");
+  const multipleQualities = services.length > 1;
 
   return (
     <button
@@ -420,10 +425,12 @@ function IssueCard({
       </span>
       <span className="pl-10">
         <span className="block text-sm font-semibold text-[var(--w-text)]">
-          {price && !price.onRequest ? price.label : "Sur devis"}
+          {multipleQualities ? "Plusieurs qualités disponibles" : price && !price.onRequest ? price.label : "Sur devis"}
         </span>
         <span className="mt-0.5 block text-xs text-[var(--w-muted)]">
-          {meta || (service ? "Durée à confirmer" : "Estimation personnalisée")}
+          {multipleQualities
+            ? "Choisissez la pièce et son prix à l’étape suivante"
+            : meta || (service ? "Durée à confirmer" : "Estimation personnalisée")}
         </span>
       </span>
     </button>

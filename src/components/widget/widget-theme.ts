@@ -17,8 +17,8 @@ import type {
 
 const DEFAULT_PRIMARY = "#2A9D8F";
 const DEFAULT_TEXT = "#1A1916";
-const DEFAULT_BACKGROUND = "#FFFFFF";
-const DEFAULT_RADIUS = 14;
+const DEFAULT_BACKGROUND = "#FAFAF8";
+const DEFAULT_RADIUS = 12;
 
 export const FEATURE_DEFAULTS: Required<WidgetFeatures> = {
   deviceSearch: true,
@@ -29,6 +29,7 @@ export const FEATURE_DEFAULTS: Required<WidgetFeatures> = {
   callbackRequest: true,
   booking: true,
   walkIn: true,
+  homeService: false,
   shopChoice: true,
   qualityChoice: true,
   multiIssue: false,
@@ -140,12 +141,7 @@ export function buildTheme(visual: WidgetVisual | undefined): WidgetTheme {
   const button = parseHex(visual?.buttonColor) ? (visual?.buttonColor as string) : primary;
   const onButton = parseHex(visual?.buttonTextColor) ? (visual?.buttonTextColor as string) : readableOn(button);
   const buttonStyle = visual?.buttonStyle ?? "solid";
-  const pageBackground =
-    visual?.backgroundStyle === "gradient"
-      ? `linear-gradient(145deg, ${background}, ${tintOf(primary)})`
-      : visual?.backgroundStyle === "tinted"
-        ? `linear-gradient(${tintOf(primary)}, ${tintOf(primary)}), ${background}`
-        : background;
+  const pageBackground = background;
   const theme: Omit<WidgetTheme, "style"> = {
     primary,
     onPrimary,

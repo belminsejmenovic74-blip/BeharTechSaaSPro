@@ -18,7 +18,7 @@ import { fold } from "@/lib/widget/global-catalog";
 import { cn } from "@/lib/utils";
 
 const FIELD_CLASS =
-  "h-[54px] w-full rounded-[15px] border border-[var(--w-border)] bg-[var(--w-surface)] px-4 text-sm text-[var(--w-text)] outline-none transition placeholder:text-[var(--w-muted)] hover:border-[var(--w-primary-border,var(--w-border))] focus-visible:border-[var(--w-primary)] focus-visible:ring-2 focus-visible:ring-[var(--w-focus-ring,var(--w-tint))]";
+  "h-12 w-full rounded-[var(--w-radius)] border border-[var(--w-border)] bg-[var(--w-surface)] px-4 text-sm text-[var(--w-text)] outline-none transition-colors placeholder:text-[var(--w-muted)] hover:border-[var(--w-primary-border,var(--w-border))] focus-visible:border-[var(--w-primary)] focus-visible:ring-2 focus-visible:ring-[var(--w-focus-ring,var(--w-tint))]";
 
 export function Spinner({ className }: { className?: string }) {
   return <LoaderCircle className={cn("h-5 w-5 animate-spin", className)} aria-hidden="true" />;
@@ -36,7 +36,7 @@ export function WidgetButton({
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant; loading?: boolean }) {
   const variants: Record<ButtonVariant, string> = {
     primary:
-      "border border-[var(--w-button-border,var(--w-primary))] bg-[var(--w-button-bg,var(--w-primary))] text-[var(--w-button-fg,var(--w-on-primary))] shadow-sm hover:brightness-95",
+      "border border-[var(--w-button-border,var(--w-primary))] bg-[var(--w-button-bg,var(--w-primary))] text-[var(--w-button-fg,var(--w-on-primary))] hover:brightness-95",
     secondary:
       "border border-[var(--w-border)] bg-[var(--w-surface)] text-[var(--w-text)] hover:border-[var(--w-primary)]",
     ghost: "text-[var(--w-muted)] hover:text-[var(--w-text)]",
@@ -46,7 +46,7 @@ export function WidgetButton({
       type="button"
       disabled={disabled || loading}
       className={cn(
-        "inline-flex h-11 select-none items-center justify-center gap-2 rounded-[var(--w-radius)] px-5 text-sm font-semibold transition duration-150 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--w-focus-ring,var(--w-tint))] disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex h-11 select-none items-center justify-center gap-2 rounded-[var(--w-radius)] px-5 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--w-focus-ring,var(--w-tint))] disabled:pointer-events-none disabled:opacity-50",
         variants[variant],
         className,
       )}
@@ -82,10 +82,10 @@ export function OptionCard({
       disabled={disabled}
       aria-pressed={selected}
       className={cn(
-        "flex w-full items-center justify-between gap-3 rounded-[var(--w-radius)] border px-4 py-3.5 text-left transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--w-focus-ring,var(--w-tint))] disabled:opacity-50",
+        "flex w-full items-center justify-between gap-3 rounded-[var(--w-radius)] border px-4 py-3 text-left transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--w-focus-ring,var(--w-tint))] disabled:opacity-50",
         selected
-          ? "border-[var(--w-primary)] bg-white shadow-[0_5px_18px_var(--w-primary-soft)]"
-          : "border-[var(--w-border)] bg-white hover:border-[#B9B9B4] hover:shadow-[0_2px_8px_rgba(26,25,22,0.05)]",
+          ? "border-[var(--w-primary)] bg-[var(--w-tint)]"
+          : "border-[var(--w-border)] bg-white hover:border-[#B9B9B4] hover:bg-[#FAFAF8]",
       )}
     >
       <span className="flex min-w-0 items-center gap-3">
@@ -135,11 +135,11 @@ export function WidgetChip({
       aria-pressed={selected}
       className={cn(
         "border px-3.5 py-2 text-sm font-medium transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--w-focus-ring,var(--w-tint))] disabled:opacity-50",
-        segmented ? "rounded-[10px]" : "rounded-full",
+        "rounded-[10px]",
         selected
           ? segmented
-            ? "border-[var(--w-primary)] bg-white text-[var(--w-primary)] shadow-sm"
-            : "border-[var(--w-primary)] bg-white text-[var(--w-primary)] shadow-sm"
+            ? "border-[var(--w-primary)] bg-[var(--w-tint)] text-[var(--w-primary)]"
+            : "border-[var(--w-primary)] bg-[var(--w-tint)] text-[var(--w-primary)]"
           : segmented
             ? "border-transparent bg-transparent text-[var(--w-muted)] hover:bg-white"
             : "border-[var(--w-border)] bg-[var(--w-surface)] text-[var(--w-text)] hover:border-[var(--w-primary-border,var(--w-primary))] hover:bg-[var(--w-primary-soft,var(--w-tint))]",

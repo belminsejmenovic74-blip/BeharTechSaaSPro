@@ -18,6 +18,15 @@ describe("mini-CMS widget", () => {
     expect(config.visual.radius).toBe(DEFAULT_WIDGET_CMS_CONFIG.visual.radius);
     expect(config.layout.columns).toBe(1);
     expect(config.layout.blockOrder).toEqual(["header", "progress", "content", "actions"]);
+    expect(config.features.homeService).toBe(false);
+  });
+
+  it("permet d’activer le déplacement chez le client", () => {
+    const result = editableWidgetConfigSchema.safeParse({
+      ...DEFAULT_WIDGET_CMS_CONFIG,
+      features: { ...DEFAULT_WIDGET_CMS_CONFIG.features, homeService: true },
+    });
+    expect(result.success).toBe(true);
   });
 
   it("interdit de masquer les coordonnées, le consentement, le contenu ou les actions", () => {

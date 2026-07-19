@@ -10,6 +10,7 @@ import {
   Files,
   FileText,
   LayoutDashboard,
+  Landmark,
   LogOut,
   MoreHorizontal,
   Package,
@@ -37,6 +38,7 @@ const moreItems = [
   { label: "Mode comptoir", href: "/comptoir", icon: Store },
   { label: "Réparations", href: "/dashboard/reparations", icon: Wrench },
   { label: "Factures", href: "/dashboard/factures", icon: Receipt },
+  { label: "Export comptable", href: "/dashboard/comptabilite/export", icon: Landmark },
   { label: "Rendez-vous", href: "/dashboard/rendez-vous", icon: CalendarDays },
   { label: "Stock", href: "/dashboard/stock", icon: Package },
   { label: "Achats", href: "/dashboard/achats", icon: ShoppingCart },
@@ -51,8 +53,11 @@ export function MobileBottomNav() {
   const [open, setOpen] = useState(false);
   const currentUser = useBeharStore((s) => s.currentUser);
   const canViewPurchases = useBeharStore((s) => s.hasPermission("canViewPurchasePrice"));
+  const canExport = useBeharStore((s) => s.hasPermission("canExportData"));
   const logout = useBeharStore((s) => s.logout);
-  const visibleMoreItems = moreItems.filter((item) => item.href !== "/dashboard/achats" || canViewPurchases);
+  const visibleMoreItems = moreItems
+    .filter((item) => item.href !== "/dashboard/achats" || canViewPurchases)
+    .filter((item) => item.href !== "/dashboard/comptabilite/export" || canExport);
 
   const moreActive = moreItems.some((m) => pathname.startsWith(m.href));
   const roleLabel =
@@ -68,7 +73,7 @@ export function MobileBottomNav() {
             return (
               <Link
                 className={cn(
-                  "group relative flex min-w-0 flex-col items-center gap-1 rounded-[12px] px-1 py-1.5 font-medium text-[#6B6B6B] text-[10.5px] tracking-tight transition-colors",
+                  "group relative flex min-h-12 min-w-0 flex-col items-center gap-1 rounded-[10px] px-1 py-1.5 font-medium text-[#6B6B6B] text-[10.5px] tracking-tight transition-colors",
                   active && "text-[#2A9D8F]",
                 )}
                 href={item.href}
@@ -88,7 +93,7 @@ export function MobileBottomNav() {
           })}
           <button
             className={cn(
-              "group relative flex min-w-0 flex-col items-center gap-1 rounded-[12px] px-1 py-1.5 font-medium text-[#6B6B6B] text-[10.5px] tracking-tight transition-colors",
+              "group relative flex min-h-12 min-w-0 flex-col items-center gap-1 rounded-[10px] px-1 py-1.5 font-medium text-[#6B6B6B] text-[10.5px] tracking-tight transition-colors",
               (open || moreActive) && "text-[#2A9D8F]",
             )}
             onClick={() => setOpen(true)}
@@ -111,13 +116,13 @@ export function MobileBottomNav() {
             type="button"
             aria-label="Fermer"
           />
-          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-hidden rounded-t-[20px] border border-[#E8E8E5] bg-white pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_-8px_28px_rgba(26,25,22,0.08)] animate-in slide-in-from-bottom duration-300">
+          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-hidden rounded-t-[14px] border border-[#E8E8E5] bg-white pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_-8px_28px_rgba(26,25,22,0.08)] animate-in slide-in-from-bottom duration-250">
             <div className="flex items-end justify-between gap-3 px-6 pt-5 pb-4">
               <div>
                 <p className="font-semibold text-[#1A1916] text-[22px] leading-tight tracking-tight">Modules</p>
               </div>
               <button
-                className="grid size-9 place-items-center rounded-[12px] bg-[#FFFFFF] text-[#6B6B6B] transition active:scale-90"
+                className="grid size-9 place-items-center rounded-[9px] bg-[#F1F1ED] text-[#6B6B6B] transition-colors active:bg-[#E8E8E5]"
                 onClick={() => setOpen(false)}
                 type="button"
                 aria-label="Fermer"
@@ -125,9 +130,9 @@ export function MobileBottomNav() {
                 <X className="size-4" />
               </button>
             </div>
-            <div className="mx-4 mb-4 mt-1 flex items-center justify-between gap-3 rounded-[16px] bg-[#FFFFFF] px-4 py-3">
+            <div className="mx-4 mb-4 mt-1 flex items-center justify-between gap-3 rounded-[12px] border border-[#E8E8E5] bg-[#FAFAF8] px-4 py-3">
               <div className="flex items-center gap-3 min-w-0">
-                <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-[#FFFFFF] font-semibold text-[#2A9D8F]">
+                <span className="grid size-10 shrink-0 place-items-center rounded-[10px] bg-[#EAF6F3] font-semibold text-[#167B70]">
                   {currentUser.name.charAt(0).toUpperCase()}
                 </span>
                 <div className="min-w-0">
@@ -159,13 +164,13 @@ export function MobileBottomNav() {
                     prefetch={false}
                     onClick={() => setOpen(false)}
                     className={cn(
-                      "flex items-center gap-3 rounded-[14px] border border-[#E8E8E5] bg-white px-4 py-3.5 text-left transition active:scale-[0.98] active:bg-[#FFFFFF]",
-                      active && "border-[#D7EFEA] bg-[#FFFFFF]",
+                      "flex min-h-14 items-center gap-3 rounded-[12px] border border-[#E8E8E5] bg-white px-4 py-3 text-left transition-colors active:bg-[#F7F7F4]",
+                      active && "border-[#CDE9E3] bg-[#EAF6F3]",
                     )}
                   >
                     <span
                       className={cn(
-                        "grid size-10 shrink-0 place-items-center rounded-[12px] bg-[#FFFFFF] text-[#2A9D8F]",
+                        "grid size-10 shrink-0 place-items-center rounded-[10px] bg-[#F1F1ED] text-[#2A9D8F]",
                         active && "bg-[#2A9D8F] text-white",
                       )}
                     >

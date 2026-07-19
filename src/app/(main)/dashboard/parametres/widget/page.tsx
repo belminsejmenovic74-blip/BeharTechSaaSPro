@@ -44,7 +44,8 @@ import {
   type WidgetBlockKey,
   type WidgetFieldKey,
 } from "@/lib/widget/cms-config";
-import type { WidgetConfig, WidgetFeatureKey, WidgetTextKey } from "@/lib/widget/public-types";
+import { applyCustomerReceptionPolicy, type CustomerReceptionMode } from "@/lib/widget/reception-policy";
+import type { PublicService, WidgetConfig, WidgetFeatureKey, WidgetTextKey } from "@/lib/widget/public-types";
 import { cn } from "@/lib/utils";
 
 type EditorTab = "content" | "style" | "offers" | "structure" | "media" | "display";
@@ -63,7 +64,7 @@ type WidgetEditorResponse = {
 };
 
 const inputClass =
-  "h-10 w-full rounded-xl border border-[#E8E8E5] bg-white px-3 text-sm outline-none transition focus:border-[#2A9D8F] focus:ring-2 focus:ring-[#2A9D8F]/10";
+  "h-11 w-full rounded-xl border border-[#DEDFDA] bg-white px-3.5 text-sm text-[#1A1916] shadow-[0_1px_2px_rgba(26,25,22,.03)] outline-none transition placeholder:text-[#A2A29D] hover:border-[#C8CAC4] focus:border-[#2A9D8F] focus:ring-3 focus:ring-[#2A9D8F]/10";
 const labelClass = "mb-1.5 block text-xs font-semibold text-[#52524F]";
 
 const BLOCK_LABELS: Record<WidgetBlockKey, string> = {
@@ -122,6 +123,23 @@ export default function WidgetSettingsPage() {
     () => ({ workshopId: store.cloudSync?.workshopId, licenseKey: store.licenseKey }),
     [store.cloudSync?.workshopId, store.licenseKey],
   );
+  const workshopMarket = store.workshopSettings.country === "CH" ? "CH" : "FR";
+  const customerReceptionMode: CustomerReceptionMode = store.workshopSettings.customerReceptionMode || "shop";
+  const normalizeForWorkshop = useCallback(
+    (value: unknown) => {
+      const normalized = normalizeEditableWidgetConfig(value);
+      return {
+        ...normalized,
+        general: {
+          ...normalized.general,
+          locale: workshopMarket === "CH" ? ("fr-CH" as const) : ("fr-FR" as const),
+          currency: workshopMarket === "CH" ? ("CHF" as const) : ("EUR" as const),
+        },
+        features: applyCustomerReceptionPolicy(normalized.features, customerReceptionMode),
+      };
+    },
+    [customerReceptionMode, workshopMarket],
+  );
 
   useEffect(() => {
     if (!(credentials.workshopId && credentials.licenseKey)) {
@@ -136,7 +154,10 @@ export default function WidgetSettingsPage() {
       defaults: {
         commercialName: store.workshopSettings.commercialName || store.workshopSettings.name || "Mon atelier",
         phone: store.workshopSettings.phone || "",
-        address: [store.workshopSettings.address, store.workshopSettings.postalCity].filter(Boolean).join(", "),
+        address: store.workshopSettings.address || "",
+        postalCode: store.workshopSettings.postalCode || "",
+        city: store.workshopSettings.city || store.workshopSettings.postalCity || "",
+        country: workshopMarket,
         locale: store.workshopSettings.country === "CH" ? "fr-CH" : "fr-FR",
         currency: store.workshopSettings.country === "CH" ? "CHF" : "EUR",
         businessHours: store.workshopSettings.businessHours || "",
@@ -147,7 +168,7 @@ export default function WidgetSettingsPage() {
         setWidget(result.widget);
         setVersions(result.versions);
         setAllowedDomains(result.widget.allowedDomains || []);
-        setConfig(normalizeEditableWidgetConfig(result.widget.config));
+        setConfig(normalizeForWorkshop(result.widget.config));
       })
       .catch((error) => {
         const message = error instanceof Error ? error.message : "Chargement impossible.";
@@ -155,7 +176,7 @@ export default function WidgetSettingsPage() {
         toast.error(message);
       })
       .finally(() => setLoading(false));
-  }, [credentials, store.workshopSettings]);
+  }, [credentials, normalizeForWorkshop, store.workshopSettings, workshopMarket]);
 
   const change = (updater: (current: EditableWidgetConfig) => EditableWidgetConfig) => {
     setConfig(updater);
@@ -173,9 +194,20 @@ export default function WidgetSettingsPage() {
   const updateText = (key: WidgetTextKey, value: string) =>
     change((current) => ({ ...current, texts: { ...current.texts, [key]: value } }));
 
+  const previewServices = useMemo<PublicService[]>(
+    () =>
+      buildWidgetCatalog(store.priceBookItems, {
+        market: config.general.currency === "CHF" ? "CH" : "FR",
+        stockMode: config.features.stockAvailability ? "simple" : "hidden",
+        priceRules: config.features.priceEstimate ? [{ mode: "exact" }] : [],
+      }).map(({ stockItemIds: _stockItemIds, ...service }) => service),
+    [config.features.priceEstimate, config.features.stockAvailability, config.general.currency, store.priceBookItems],
+  );
+
   const persist = async (operation: "save_draft" | "publish") => {
     if (!(widget && credentials.workshopId && credentials.licenseKey)) return;
-    const parsed = editableWidgetConfigSchema.safeParse(config);
+    const marketConfig = normalizeForWorkshop(config);
+    const parsed = editableWidgetConfigSchema.safeParse(marketConfig);
     if (!parsed.success) {
       toast.error(parsed.error.issues[0]?.message || "Configuration invalide.");
       return;
@@ -207,6 +239,9 @@ export default function WidgetSettingsPage() {
             commercialName: config.general.commercialName,
             phone: config.general.phone,
             address: config.general.address,
+            postalCode: store.workshopSettings.postalCode || "",
+            city: store.workshopSettings.city || store.workshopSettings.postalCity || "",
+            country: workshopMarket,
             locale: config.general.locale,
             currency: config.general.currency,
             businessHours: store.workshopSettings.businessHours || "",
@@ -235,6 +270,9 @@ export default function WidgetSettingsPage() {
         commercialName: config.general.commercialName,
         phone: config.general.phone,
         address: config.general.address,
+        postalCode: store.workshopSettings.postalCode || "",
+        city: store.workshopSettings.city || store.workshopSettings.postalCity || "",
+        country: workshopMarket,
         locale: config.general.locale,
         currency: config.general.currency,
         businessHours: store.workshopSettings.businessHours || "",
@@ -244,7 +282,7 @@ export default function WidgetSettingsPage() {
     setWidget(refreshed.widget);
     setVersions(refreshed.versions);
     setAllowedDomains(refreshed.widget.allowedDomains || []);
-    setConfig(normalizeEditableWidgetConfig(refreshed.widget.config));
+    setConfig(normalizeForWorkshop(refreshed.widget.config));
     setDirty(false);
   };
 
@@ -330,16 +368,22 @@ export default function WidgetSettingsPage() {
   }
 
   return (
-    <PageShell title="Widget client" subtitle="Personnalisez le parcours sans compromettre son responsive.">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <PageShell title="Widget client" subtitle="Créez, prévisualisez et publiez votre parcours client.">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#E3E4DF] bg-white px-4 py-3.5 shadow-[0_8px_28px_rgba(26,25,22,.05)] sm:px-5">
         <Link
           href="/dashboard/parametres"
-          className="inline-flex items-center gap-2 text-sm font-medium text-[#6B6B6B] hover:text-[#1A1916]"
+          className="inline-flex items-center gap-2 rounded-lg text-sm font-semibold text-[#54544F] transition hover:text-[#147065]"
         >
           <ArrowLeft className="size-4" /> Retour aux paramètres
         </Link>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="mr-1 text-xs text-[#6B6B6B]">
+          <span
+            className={cn(
+              "mr-1 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold",
+              dirty ? "bg-[#FFF6DE] text-[#806000]" : "bg-[#EEF8F5] text-[#27665E]",
+            )}
+          >
+            <span className={cn("size-1.5 rounded-full", dirty ? "bg-[#D69E00]" : "bg-[#2A9D8F]")} />
             {dirty
               ? "Modifications non enregistrées"
               : widget.publishedVersion
@@ -372,35 +416,45 @@ export default function WidgetSettingsPage() {
         </div>
       </div>
 
-      <div className="grid min-h-[760px] gap-4 xl:grid-cols-[390px_minmax(0,1fr)]">
-        <Panel className="min-h-0 overflow-hidden p-0">
-          <div className="grid grid-cols-6 border-b border-[#E8E8E5] bg-[#FAFAF8] p-1.5">
-            {(
-              [
-                ["content", "Contenu", PanelLeft],
-                ["style", "Style", LayoutTemplate],
-                ["offers", "Offres", Tags],
-                ["structure", "Blocs", GripVertical],
-                ["media", "Médias", Images],
-                ["display", "Affichage", Monitor],
-              ] as const
-            ).map(([key, label, Icon]) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setTab(key)}
-                className={cn(
-                  "flex flex-col items-center gap-1 rounded-lg px-1 py-2 text-[11px] font-semibold transition",
-                  tab === key ? "bg-white text-[#1A1916] shadow-sm" : "text-[#73736F] hover:text-[#1A1916]",
-                )}
-              >
-                <Icon className="size-4" /> {label}
-              </button>
-            ))}
+      <div className="grid min-h-[800px] gap-5 xl:grid-cols-[400px_minmax(0,1fr)]">
+        <Panel className="min-h-0 overflow-hidden border-[#E3E4DF] bg-[#F8F9F6] p-0 shadow-[0_10px_35px_rgba(26,25,22,.05)]">
+          <div className="overflow-x-auto border-b border-[#E3E4DF] bg-white p-2">
+            <div className="grid min-w-[372px] grid-cols-6 gap-1">
+              {(
+                [
+                  ["content", "Contenu", PanelLeft],
+                  ["style", "Style", LayoutTemplate],
+                  ["offers", "Offres", Tags],
+                  ["structure", "Blocs", GripVertical],
+                  ["media", "Médias", Images],
+                  ["display", "Affichage", Monitor],
+                ] as const
+              ).map(([key, label, Icon]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setTab(key)}
+                  className={cn(
+                    "flex flex-col items-center gap-1.5 rounded-xl px-1 py-2.5 text-[10px] font-bold transition",
+                    tab === key
+                      ? "bg-[#EAF7F5] text-[#147065] shadow-[inset_0_0_0_1px_#CFE9E4]"
+                      : "text-[#777772] hover:bg-[#F5F6F3] hover:text-[#1A1916]",
+                  )}
+                >
+                  <Icon className="size-4" /> {label}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="h-[700px] overflow-y-auto p-4">
+          <div className="h-[735px] overflow-y-auto p-3.5 [scrollbar-gutter:stable]">
             {tab === "content" ? (
-              <ContentPanel config={config} updateGeneral={updateGeneral} updateText={updateText} change={change} />
+              <ContentPanel
+                config={config}
+                customerReceptionMode={customerReceptionMode}
+                updateGeneral={updateGeneral}
+                updateText={updateText}
+                change={change}
+              />
             ) : null}
             {tab === "style" ? <StylePanel config={config} updateVisual={updateVisual} /> : null}
             {tab === "offers" ? <OffersPanel config={config} change={change} /> : null}
@@ -443,13 +497,18 @@ export default function WidgetSettingsPage() {
           </div>
         </Panel>
 
-        <Panel className="min-w-0 overflow-hidden p-0">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E8E8E5] bg-white px-4 py-3">
+        <Panel className="min-w-0 overflow-hidden border-[#E3E4DF] bg-white p-0 shadow-[0_10px_35px_rgba(26,25,22,.05)]">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E3E4DF] bg-white px-5 py-3.5">
             <div>
-              <p className="text-sm font-semibold">Aperçu en direct</p>
-              <p className="text-xs text-[#73736F]">Chaque réglage est appliqué immédiatement.</p>
+              <p className="flex items-center gap-2 text-sm font-bold text-[#1A1916]">
+                Aperçu en direct
+                <span className="rounded-full bg-[#EAF7F5] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-[#147065]">
+                  Live
+                </span>
+              </p>
+              <p className="mt-0.5 text-xs text-[#777772]">Le rendu public réel, mis à jour instantanément.</p>
             </div>
-            <div className="flex rounded-xl border border-[#E8E8E5] bg-[#F7F7F4] p-1">
+            <div className="flex rounded-xl border border-[#E1E2DD] bg-[#F5F6F3] p-1">
               {(
                 [
                   ["desktop", Monitor, "Ordinateur"],
@@ -464,7 +523,9 @@ export default function WidgetSettingsPage() {
                   onClick={() => setDevice(key)}
                   className={cn(
                     "grid size-9 place-items-center rounded-lg transition",
-                    device === key ? "bg-white text-[#2A9D8F] shadow-sm" : "text-[#73736F]",
+                    device === key
+                      ? "bg-white text-[#147065] shadow-[0_2px_8px_rgba(26,25,22,.09)]"
+                      : "text-[#777772] hover:text-[#1A1916]",
                   )}
                 >
                   <Icon className="size-4" />
@@ -472,7 +533,7 @@ export default function WidgetSettingsPage() {
               ))}
             </div>
           </div>
-          <WidgetPreview config={config} device={device} />
+          <WidgetPreview config={config} device={device} services={previewServices} />
         </Panel>
       </div>
     </PageShell>
@@ -481,11 +542,13 @@ export default function WidgetSettingsPage() {
 
 function ContentPanel({
   config,
+  customerReceptionMode,
   updateGeneral,
   updateText,
   change,
 }: {
   config: EditableWidgetConfig;
+  customerReceptionMode: CustomerReceptionMode;
   updateGeneral: <K extends keyof EditableWidgetConfig["general"]>(
     key: K,
     value: EditableWidgetConfig["general"][K],
@@ -521,6 +584,15 @@ function ContentPanel({
             placeholder="https://…/logo.png"
           />
         </EditorField>
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-[#D9ECE8] bg-[#F2FAF8] px-3.5 py-3">
+          <div>
+            <p className="text-xs font-bold text-[#245D56]">Marché de la boutique</p>
+            <p className="mt-0.5 text-[11px] text-[#5D746F]">Synchronisé avec les paramètres généraux.</p>
+          </div>
+          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#147065] shadow-sm ring-1 ring-[#D4EAE6]">
+            {config.general.currency === "CHF" ? "Suisse · CHF" : "France · EUR"}
+          </span>
+        </div>
       </EditorSection>
       <EditorSection title="Titres, sous-titres et boutons">
         {(Object.keys(WIDGET_TEXT_LABELS) as WidgetTextKey[]).map((key) => (
@@ -531,19 +603,26 @@ function ContentPanel({
       </EditorSection>
       <EditorSection title="Champs et fonctionnalités">
         <p className="mb-3 rounded-xl border border-[#D9ECE8] bg-[#F4FBF9] p-3 text-xs leading-5 text-[#42645F]">
-          Désactivez « Accueil sans rendez-vous en boutique » si vous travaillez uniquement en déplacement. Le widget ne
-          proposera alors plus « Venir directement » ni « Passez en boutique ».
+          {customerReceptionMode === "mobile"
+            ? `Mode Déplacement uniquement : le widget est verrouillé sur l’intervention à domicile. Le client renseigne obligatoirement une adresse ${config.general.currency === "CHF" ? "suisse" : "française"} et aucun autre mode de prise en charge n’est proposé.`
+            : "Activez « Déplacement chez le client » pour afficher le mode à domicile. L’adresse, le code postal et la ville seront alors demandés au client et transmis avec sa demande."}
         </p>
-        {(Object.keys(WIDGET_FEATURE_LABELS) as WidgetFeatureKey[]).map((key) => (
-          <Toggle
-            key={key}
-            label={WIDGET_FEATURE_LABELS[key]}
-            checked={config.features[key]}
-            onChange={(checked) =>
-              change((current) => ({ ...current, features: { ...current.features, [key]: checked } }))
-            }
-          />
-        ))}
+        {(Object.keys(WIDGET_FEATURE_LABELS) as WidgetFeatureKey[]).map((key) => {
+          const receptionFeature = ["booking", "walkIn", "homeService", "quoteRequest", "callbackRequest"].includes(
+            key,
+          );
+          return (
+            <Toggle
+              key={key}
+              label={WIDGET_FEATURE_LABELS[key]}
+              checked={config.features[key]}
+              disabled={customerReceptionMode === "mobile" && receptionFeature}
+              onChange={(checked) =>
+                change((current) => ({ ...current, features: { ...current.features, [key]: checked } }))
+              }
+            />
+          );
+        })}
       </EditorSection>
       <EditorSection title="Demandes hors catalogue">
         <p className="mb-2 text-xs text-[#6B6B6B]">
@@ -1304,9 +1383,20 @@ function DisplayPanel({
   );
 }
 
-function WidgetPreview({ config, device }: { config: EditableWidgetConfig; device: PreviewDevice }) {
+function WidgetPreview({
+  config,
+  device,
+  services,
+}: {
+  config: EditableWidgetConfig;
+  device: PreviewDevice;
+  services: PublicService[];
+}) {
   const frameRef = useRef<HTMLIFrameElement | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const [previewScale, setPreviewScale] = useState(1);
   const viewport = device === "desktop" ? 1120 : device === "tablet" ? 760 : 390;
+  const frameHeight = 680;
   const previewConfig = useMemo<WidgetConfig>(
     () => ({
       id: "demo",
@@ -1334,8 +1424,13 @@ function WidgetPreview({ config, device }: { config: EditableWidgetConfig; devic
         {
           id: "shop-preview",
           name: config.general.commercialName || "Mon atelier",
-          address: { address: config.general.address || "", postalCode: "", city: "", country: "FR" },
-          timezone: "Europe/Paris",
+          address: {
+            address: config.general.address || "",
+            postalCode: "",
+            city: "",
+            country: config.general.currency === "CHF" ? "CH" : "FR",
+          },
+          timezone: config.general.currency === "CHF" ? "Europe/Zurich" : "Europe/Paris",
         },
       ],
       sessionToken: "cms-preview",
@@ -1345,10 +1440,10 @@ function WidgetPreview({ config, device }: { config: EditableWidgetConfig; devic
   const sendConfig = useCallback(
     () =>
       frameRef.current?.contentWindow?.postMessage(
-        { type: "behar.widget.cms-preview", config: previewConfig },
+        { type: "behar.widget.cms-preview", config: previewConfig, services },
         window.location.origin,
       ),
-    [previewConfig],
+    [previewConfig, services],
   );
   useEffect(() => {
     const receive = (event: MessageEvent) => {
@@ -1359,16 +1454,39 @@ function WidgetPreview({ config, device }: { config: EditableWidgetConfig; devic
     sendConfig();
     return () => window.removeEventListener("message", receive);
   }, [sendConfig]);
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage || typeof ResizeObserver === "undefined") return;
+    const updateScale = () => setPreviewScale(Math.min(1, Math.max(0.35, (stage.clientWidth - 40) / viewport)));
+    const observer = new ResizeObserver(updateScale);
+    observer.observe(stage);
+    updateScale();
+    return () => observer.disconnect();
+  }, [viewport]);
   return (
-    <div data-testid="widget-preview" className="h-[700px] overflow-auto bg-[#EFEFEB] p-4">
-      <iframe
-        ref={frameRef}
-        src="/widget-preview"
-        title="Aperçu réel du widget"
-        onLoad={sendConfig}
-        style={{ width: viewport, height: 660 }}
-        className="mx-auto block rounded-2xl border border-black/10 bg-white shadow-sm transition-all duration-300"
-      />
+    <div
+      ref={stageRef}
+      data-testid="widget-preview"
+      className="h-[735px] overflow-auto bg-[radial-gradient(circle_at_1px_1px,#D7D9D2_1px,transparent_0)] bg-[length:18px_18px] p-5"
+    >
+      <div
+        className="mx-auto transition-[width,height] duration-300"
+        style={{ width: viewport * previewScale, height: frameHeight * previewScale }}
+      >
+        <iframe
+          ref={frameRef}
+          src="/widget-preview"
+          title="Aperçu réel du widget"
+          onLoad={sendConfig}
+          style={{
+            width: viewport,
+            height: frameHeight,
+            transform: `scale(${previewScale})`,
+            transformOrigin: "top left",
+          }}
+          className="block rounded-[24px] border border-black/10 bg-white shadow-[0_24px_70px_rgba(26,25,22,.18)] transition-transform duration-300"
+        />
+      </div>
     </div>
   );
 }
@@ -1547,10 +1665,10 @@ function EditorSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-3">
-      <div>
-        <h3 className="text-sm font-bold">{title}</h3>
-        {description ? <p className="text-xs text-[#73736F]">{description}</p> : null}
+    <section className="space-y-3.5 rounded-2xl border border-[#E3E4DF] bg-white p-4 shadow-[0_3px_14px_rgba(26,25,22,.035)]">
+      <div className="border-b border-[#EEEFEA] pb-3">
+        <h3 className="text-sm font-extrabold tracking-[-0.01em] text-[#1A1916]">{title}</h3>
+        {description ? <p className="mt-1 text-xs leading-relaxed text-[#777772]">{description}</p> : null}
       </div>
       {children}
     </section>
@@ -1558,7 +1676,7 @@ function EditorSection({
 }
 function EditorField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="block">
+    <div className="block space-y-1.5">
       <span className={labelClass}>{label}</span>
       {children}
     </div>
@@ -1587,18 +1705,26 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
 function Toggle({
   label,
   checked,
+  disabled = false,
   onChange,
 }: {
   label: string;
   checked: boolean;
+  disabled?: boolean;
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-[#ECECE8] px-3 py-2.5">
+    <label
+      className={cn(
+        "flex items-center justify-between gap-3 rounded-xl border border-[#ECECE8] px-3 py-2.5",
+        disabled ? "cursor-not-allowed bg-[#F6F6F3] text-[#92928D]" : "cursor-pointer",
+      )}
+    >
       <span className="text-xs font-medium">{label}</span>
       <input
         type="checkbox"
         checked={checked}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
         className="size-4 accent-[#2A9D8F]"
       />

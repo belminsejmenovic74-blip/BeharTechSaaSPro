@@ -144,6 +144,7 @@ export type WidgetFeatureKey =
   | "callbackRequest"
   | "booking"
   | "walkIn"
+  | "homeService"
   | "shopChoice"
   | "qualityChoice"
   | "multiIssue"

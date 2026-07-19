@@ -397,7 +397,7 @@ async function openPreparedStockLabelSheet(
   <title>Planche étiquettes stock</title>
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; background: #FAFAF8; color: #1A1916; font-family: Arial, sans-serif; }
+    body { margin: 0; background: #FFFFFF; color: #1A1916; font-family: Arial, sans-serif; }
     .sheet { width: 210mm; min-height: 297mm; padding: 8mm; display: grid; grid-template-columns: repeat(3, 60mm); grid-auto-rows: 30mm; gap: 5mm 4mm; background: #fff; }
     .label { width: 60mm; height: 30mm; padding: 2.8mm; overflow: hidden; border: 1px solid #1A1916; background: #fff; break-inside: avoid; page-break-inside: avoid; }
     .brand { display: flex; align-items: center; gap: 1.4mm; font-weight: 800; font-size: 5.5px; line-height: 1; }

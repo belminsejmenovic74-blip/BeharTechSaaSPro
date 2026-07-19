@@ -5,6 +5,7 @@ import { persist } from "zustand/middleware";
 
 import { type DeviceCategory, deviceCatalog } from "@/data/deviceCatalog";
 import { repairReadyStatusLabel } from "@/lib/repair-status";
+import { sanitizePaymentDataForPersistence } from "@/lib/payment-data-boundary";
 import {
   createPriceBookItem,
   normalizePriceBookItem,
@@ -113,6 +114,8 @@ export type UserRole = "admin" | "technician" | "frontdesk";
 export type PermissionKey =
   | "canViewDashboard"
   | "canViewFullDashboard"
+  | "canAccessCounter"
+  | "canAccessWorkshopMode"
   | "canViewSettings"
   | "canEditSettings"
   | "canManageUsers"
@@ -236,6 +239,9 @@ export type Customer = {
   initials: string;
   phone: string;
   email: string;
+  companyName?: string;
+  siret?: string;
+  vatNumber?: string;
   address?: string;
   device: string;
   lastVisit: string;
@@ -721,6 +727,8 @@ export type Invoice = {
   repairId?: string;
   quoteId?: string;
   status: InvoiceStatus;
+  documentType?: "invoice" | "credit_note";
+  vatExemptionReason?: string;
   date: string;
   lines: QuoteLine[];
   sourceType: "quote" | "repair" | "client" | "manual";
@@ -1835,6 +1843,8 @@ const shopId = "shop_atelier_belmin";
 export const permissionKeys: PermissionKey[] = [
   "canViewDashboard",
   "canViewFullDashboard",
+  "canAccessCounter",
+  "canAccessWorkshopMode",
   "canViewSettings",
   "canEditSettings",
   "canManageUsers",
@@ -1895,6 +1905,7 @@ export const permissionsByRole: Record<UserRole, Record<PermissionKey, boolean>>
   technician: {
     ...allPermissions(false),
     canViewDashboard: true,
+    canAccessWorkshopMode: true,
     canViewClients: true,
     canViewRepairs: true,
     canCreateRepair: true,
@@ -1914,7 +1925,7 @@ export const permissionsByRole: Record<UserRole, Record<PermissionKey, boolean>>
   },
   frontdesk: {
     ...allPermissions(false),
-    canViewDashboard: true,
+    canAccessCounter: true,
     canViewClients: true,
     canCreateClient: true,
     canEditClient: true,
@@ -1999,7 +2010,7 @@ export const DEFAULT_ROLE_GREETINGS: Record<UserRole, string[]> = {
 const defaultUsers: CurrentUser[] = [
   withRolePermissions({
     id: "user_belmin_admin",
-    name: "Gérant",
+    name: "Belmin",
     role: "admin",
     pin: "0000",
     active: true,
@@ -2636,6 +2647,9 @@ const changesTerminalRepair = (patch: Record<string, unknown>) =>
 const quoteStatuses: QuoteStatus[] = ["Brouillon", "Envoyé", "Accepté", "Refusé", "Facturé"];
 const invoiceStatuses: InvoiceStatus[] = ["Brouillon", "Envoyée", "Payée", "Annulée"];
 const paymentStatuses: PaymentStatus[] = ["Payé", "Annulé", "Remboursé"];
+// Permanent compatibility lock. Historical code remains readable until the
+// separately approved purge, but it cannot create or mutate payment records.
+const legacyPaymentWriteBlocked = (): boolean => true;
 export const paymentMethods: PaymentMethod[] = [
   "Espèces",
   "Carte bancaire",
@@ -4674,9 +4688,14 @@ const normalizePersistedState = (state: unknown) => {
               // (utile pour les anciennes installs avant introduction du PIN).
               const persistedPin = typeof (user as any).pin === "string" ? (user as any).pin : undefined;
               const pin = persistedPin && persistedPin.length > 0 ? persistedPin : seed?.pin;
+              const persistedName = String((user as any).name || seed?.name || "Utilisateur");
+              const name =
+                id === "user_belmin_admin" && ["gérant", "gerant"].includes(persistedName.toLocaleLowerCase("fr"))
+                  ? "Belmin"
+                  : persistedName;
               return withRolePermissions({
                 id,
-                name: String((user as any).name || seed?.name || "Utilisateur"),
+                name,
                 role: ["admin", "technician", "frontdesk"].includes((user as any).role)
                   ? ((user as any).role as UserRole)
                   : "frontdesk",
@@ -7453,6 +7472,7 @@ export const useBeharStore = create<StoreState>()(
         });
       },
       markInvoicePaid: (invoiceId, method, note = "") => {
+        if (legacyPaymentWriteBlocked()) return "";
         if (!get().requirePermission("canMarkPaymentPaid", "Créer une demande de paiement")) return "";
         const normalizedMethod = normalizeSelectedPaymentMethod(method);
         if (!normalizedMethod) return "";
@@ -7622,6 +7642,7 @@ export const useBeharStore = create<StoreState>()(
         return paymentId;
       },
       addPayment: (input) => {
+        if (legacyPaymentWriteBlocked()) return "";
         if (!get().requirePermission("canMarkPaymentPaid", "Créer un paiement")) return "";
         const normalizedMethod = normalizeSelectedPaymentMethod(input.method);
         if (!normalizedMethod) return "";
@@ -7718,6 +7739,7 @@ export const useBeharStore = create<StoreState>()(
         });
       },
       markRepairAsPaid: (repairId: string, method, note = "") => {
+        if (legacyPaymentWriteBlocked()) return "";
         const state = get();
         const normalizedMethod = normalizeSelectedPaymentMethod(method);
         if (!normalizedMethod) return "";
@@ -7738,6 +7760,7 @@ export const useBeharStore = create<StoreState>()(
         return state.markInvoicePaid(invoiceId, normalizedMethod, note);
       },
       recordRepairSettlement: (repairId, input) => {
+        if (legacyPaymentWriteBlocked()) return "";
         if (!get().requirePermission("canMarkPaymentPaid", "Créer une demande de paiement")) return "";
         const isOffert = input.status === "Offert / Garantie / SAV";
         if (!isOffert && !input.confirmExternal) return "";
@@ -7931,6 +7954,7 @@ export const useBeharStore = create<StoreState>()(
         return payment?.id || repairId;
       },
       closeDossierWithSettlement: (repairId, input) => {
+        if (legacyPaymentWriteBlocked()) return false;
         const state = get();
         const repair = state.repairs.find((entry) => entry.id === repairId);
         if (!repair) return false;
@@ -7970,6 +7994,7 @@ export const useBeharStore = create<StoreState>()(
         return true;
       },
       updatePaymentStatus: (id, status) => {
+        if (legacyPaymentWriteBlocked()) return;
         if (status === "Annulé" && !get().requirePermission("canCancelPayment", "Annuler un paiement")) return;
         const actor = get().currentUser ?? defaultCurrentUser;
         const previousPayment = get().payments.find((entry) => entry.id === id);
@@ -9648,6 +9673,7 @@ export const useBeharStore = create<StoreState>()(
         return id;
       },
       paySale: (saleId, method) => {
+        if (legacyPaymentWriteBlocked()) return "";
         if (!get().requirePermission("canTakePayment", "Valider une vente")) return "";
         const state = get();
         const sale = state.sales.find((s) => s.id === saleId);
@@ -9886,12 +9912,17 @@ export const useBeharStore = create<StoreState>()(
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { priceBookItems, _hasHydrated, setHasHydrated, ...rest } = state;
         const manualItems = priceBookItems.filter((item) => item.source === "manual");
-        return { ...rest, priceBookItems: manualItems };
+        return sanitizePaymentDataForPersistence({ ...rest, priceBookItems: manualItems });
       },
-      migrate: (persistedState) => normalizePersistedState(persistedState) as any,
+      migrate: (persistedState) =>
+        normalizePersistedState(
+          sanitizePaymentDataForPersistence((persistedState ?? {}) as Record<string, unknown>),
+        ) as any,
       merge: (persistedState, currentState) => ({
         ...currentState,
-        ...normalizePersistedState(persistedState),
+        ...normalizePersistedState(
+          sanitizePaymentDataForPersistence((persistedState ?? {}) as Record<string, unknown>),
+        ),
       }),
       onRehydrateStorage: () => (state, error) => {
         if (error) {

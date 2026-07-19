@@ -493,6 +493,7 @@ export function sanitizePublicConfig(widget: WidgetRow) {
       "callbackRequest",
       "booking",
       "walkIn",
+      "homeService",
       "shopChoice",
       "qualityChoice",
       "multiIssue",

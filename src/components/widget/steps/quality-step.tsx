@@ -55,7 +55,7 @@ export function QualityStep({ ctx }: { ctx: StepContext }) {
         changed = true;
       } else if (current && !stillValid && matches.length > 1) {
         // Prestation devenue invalide (ex. changement de modèle) : on la retire.
-        next[issue] = matches.find((m) => m.recommended) ?? null;
+        delete next[issue];
         changed = true;
       }
     }
@@ -160,7 +160,11 @@ function QualityCard({
       </span>
 
       <span>
-        <span className="block text-base font-semibold text-[var(--w-text)]">{service.service || service.issue}</span>
+        <span className="block text-base font-semibold text-[var(--w-text)]">
+          {service.quality
+            ? `${service.service || service.issue} · ${service.quality}`
+            : service.service || service.issue}
+        </span>
         {service.description ? (
           <span className="mt-0.5 block text-xs leading-relaxed text-[var(--w-muted)]">{service.description}</span>
         ) : null}

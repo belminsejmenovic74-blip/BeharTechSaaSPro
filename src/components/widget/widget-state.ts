@@ -11,6 +11,7 @@ import type { WidgetEventData, WidgetEventName, WidgetPublicClient } from "@/lib
 import type { WidgetTheme } from "@/components/widget/widget-theme";
 
 export type RequestType = "callback" | "quote" | "price_request" | "request" | "appointment";
+export type ServiceMode = "appointment" | "walk_in" | "home_service" | "request";
 
 // Parcours façon WeFix : appareil (type+marque+modèle) → réparations & offres →
 // récapitulatif prix → coordonnées → créneau. La dernière étape (créneau) n'est
@@ -35,6 +36,11 @@ export type WidgetDraft = {
   contactPreference: ContactPreference | "";
   photos: string[]; // chemins de stockage renvoyés par /uploads
   requestType: RequestType;
+  serviceMode: ServiceMode;
+  serviceAddress: string;
+  servicePostalCode: string;
+  serviceCity: string;
+  serviceCountry: "FR" | "CH";
   appointmentDate: string;
   appointmentTime: string;
   consent: boolean;
@@ -57,6 +63,11 @@ export const EMPTY_DRAFT: WidgetDraft = {
   contactPreference: "",
   photos: [],
   requestType: "appointment",
+  serviceMode: "appointment",
+  serviceAddress: "",
+  servicePostalCode: "",
+  serviceCity: "",
+  serviceCountry: "FR",
   appointmentDate: "",
   appointmentTime: "",
   consent: false,

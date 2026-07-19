@@ -253,9 +253,6 @@ function DocumentTrackingQr({ url }: Readonly<{ url?: string }>) {
   }
 
   if (!qr) return null;
-  const isLocalhost =
-    absoluteUrl.includes("localhost") || absoluteUrl.includes("127.0.0.1") || absoluteUrl.includes("[::1]");
-
   return (
     <div className="flex shrink-0 flex-col items-center gap-1">
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -265,13 +262,6 @@ function DocumentTrackingQr({ url }: Readonly<{ url?: string }>) {
         src={qr}
       />
       <p className="max-w-[90px] text-center text-[#6B6B6B] text-[9px] leading-tight">Suivi client</p>
-      {isLocalhost && (
-        <p className="mt-1 max-w-[120px] text-center font-medium text-[#B54708] text-[7px] leading-tight print:hidden">
-          Attention : ce QR Code pointe vers localhost. Un téléphone ne peut pas ouvrir le localhost de votre
-          ordinateur. Pour tester depuis un téléphone, configurez VITE_PUBLIC_APP_URL avec l'IP locale de votre
-          ordinateur, par exemple http://192.168.1.25:5173.
-        </p>
-      )}
     </div>
   );
 }

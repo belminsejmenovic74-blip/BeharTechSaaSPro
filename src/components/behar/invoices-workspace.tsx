@@ -98,15 +98,13 @@ export function InvoicesWorkspace() {
   const [invoiceFilterTab, setInvoiceFilterTab] = useState<"all" | "month" | "cancelled" | "counter">("all");
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
-  // Métadonnées enrichies par facture : dossier / devis / reçu liés + index de
-  // recherche puissant (n°, client, téléphone, appareil, REP, DEV, REC).
+  // Métadonnées enrichies par facture : dossier / devis liés + index de recherche.
   const invoiceMeta = useMemo(() => {
     const map = new Map<
       string,
       {
         repairNumber?: string;
         quoteNumber?: string;
-        receiptNumber?: string;
         deviceLabel: string;
         refs: string[];
         haystack: string;
@@ -160,8 +158,8 @@ export function InvoicesWorkspace() {
 
   const invoiceGrandTotal = selected ? getInvoiceTotal(selected) : 0;
   const selectedCurrency = selected?.currency ?? store.workshopInfo.currency;
-  const paidLocked = selected?.status === "Payée";
-  const lineInputsLocked = paidLocked || !linesEditing;
+  const documentLocked = Boolean(selected && (selected.lockedAt || selected.status !== "Brouillon"));
+  const lineInputsLocked = documentLocked || !linesEditing;
 
   const updateInvoiceLine = (lineId: string, patch: Partial<QuoteLine>) => {
     if (!selected || lineInputsLocked) return;
@@ -443,7 +441,7 @@ export function InvoicesWorkspace() {
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b border-[#FFFFFF] pb-2">
                 <p className="text-[10px] font-bold text-[#8A8A8A] uppercase tracking-wider">Détails de facturation</p>
-                {!paidLocked && (
+                {!documentLocked && (
                   <button
                     onClick={() => setLinesEditing(!linesEditing)}
                     className="text-[10px] font-bold text-[#2A9D8F] uppercase tracking-wider hover:underline"
@@ -578,8 +576,7 @@ export function InvoicesWorkspace() {
             </div>
 
             <p className="rounded-[14px] border border-[#D7EFEA] bg-[#F0FAF8] p-4 text-[#47706B] text-xs leading-relaxed">
-              Le règlement est géré en dehors de Behar Tech Pro par Stripe, SumUp, PayPal, Square, Revolut, Mollie ou le
-              système de paiement du réparateur.
+              Le paiement est réalisé et conservé hors de BEHAR TECH PRO par votre prestataire de paiement.
             </p>
           </div>
 
@@ -594,7 +591,7 @@ export function InvoicesWorkspace() {
                   className="h-11 rounded-xl bg-[#1A1916] text-white font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2"
                 >
                   <CreditCard className="size-4" />
-                  Créer une demande Stripe
+                  Créer un lien de paiement externe · Stripe
                 </button>
                 <button
                   onClick={() => {
@@ -604,7 +601,7 @@ export function InvoicesWorkspace() {
                   className="h-11 rounded-xl border border-[#2A9D8F]/30 bg-[#E9F7F4] text-[#167B70] font-bold text-sm hover:border-[#2A9D8F] transition-all flex items-center justify-center gap-2"
                 >
                   <CreditCard className="size-4" />
-                  Créer un lien SumUp
+                  Créer un lien de paiement externe · SumUp
                 </button>
                 <button
                   onClick={() => {
@@ -614,7 +611,7 @@ export function InvoicesWorkspace() {
                   className="h-11 rounded-xl border border-[#167B70]/25 bg-white text-[#167B70] font-bold text-sm hover:border-[#167B70] transition-all flex items-center justify-center gap-2"
                 >
                   <CreditCard className="size-4" />
-                  Créer une demande PayPal
+                  Créer un lien de paiement externe · PayPal
                 </button>
                 <button
                   onClick={() => {
@@ -1209,7 +1206,7 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
               <label className="text-sm font-bold text-[#1A1916]">Commentaires internes</label>
               <textarea
                 className="w-full min-h-[120px] p-4 rounded-[12px] border border-[#E8E8E5] bg-white text-sm outline-none focus:border-[#2A9D8F] transition-all resize-none"
-                placeholder="Notes visibles uniquement par l'équipe (réf paiement, historique...)"
+                placeholder="Notes visibles uniquement par l'équipe (correction documentaire, historique...)"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
               />

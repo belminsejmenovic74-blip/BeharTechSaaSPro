@@ -28,9 +28,7 @@ function normalizeFormat(value: string | null): QrFormat {
   return value === "A4" || value === "A6" || value === "58mm" || value === "80mm" ? value : "80mm";
 }
 
-export function LocalRepairQrPrintPage({
-  repairId,
-}: Readonly<{ repairId: string }>) {
+export function LocalRepairQrPrintPage({ repairId }: Readonly<{ repairId: string }>) {
   const store = useBeharStore();
   const hydrated = useBeharStore((state) => state._hasHydrated);
   const [query, setQuery] = useState<{ repairId: string; autoPrint: boolean; format: QrFormat }>({
@@ -67,7 +65,9 @@ export function LocalRepairQrPrintPage({
       return;
     }
     let cancelled = false;
-    generateQrDataUrl(getCustomerTrackingUrl({ ...repair, publicAccess: access }, store.workshopSettings ?? store.workshopInfo))
+    generateQrDataUrl(
+      getCustomerTrackingUrl({ ...repair, publicAccess: access }, store.workshopSettings ?? store.workshopInfo),
+    )
       .then((value) => {
         if (!cancelled) setQrDataUrl(value);
       })
@@ -87,7 +87,9 @@ export function LocalRepairQrPrintPage({
   }, [hydrated, query.autoPrint, qrDataUrl, repair]);
 
   if (!hydrated) {
-    return <main className="grid min-h-screen place-items-center bg-white text-[#6B6B6B]">Chargement du QR Code...</main>;
+    return (
+      <main className="grid min-h-screen place-items-center bg-white text-[#6B6B6B]">Chargement du QR Code...</main>
+    );
   }
 
   if (!repair) {
@@ -108,7 +110,6 @@ export function LocalRepairQrPrintPage({
   const trackingUrl = getCustomerTrackingUrl(repair, shop);
   const shortLink = trackingUrl.replace(/^https?:\/\//, "");
   const deviceLabel = [repair.brandName, repair.deviceModel || repair.model || repair.device].filter(Boolean).join(" ");
-  const isLocalhost = trackingUrl.includes("localhost") || trackingUrl.includes("127.0.0.1") || trackingUrl.includes("[::1]");
 
   return (
     <main className="min-h-screen bg-white text-[#111111]">
@@ -159,12 +160,9 @@ export function LocalRepairQrPrintPage({
             <div className={`${QR_SIZE_CLASS[query.format]} bg-white`} />
           )}
         </div>
-        {shortLink ? <p className="mt-3 w-full break-all text-[9px] leading-tight text-[#111111]">{shortLink}</p> : null}
-        {isLocalhost && (
-          <p className="mt-3 w-full max-w-[200px] break-words font-medium text-[#B54708] text-[9px] leading-tight print:hidden">
-            Attention : ce QR Code pointe vers localhost. Un téléphone ne peut pas ouvrir le localhost de votre ordinateur. Pour tester depuis un téléphone, configurez VITE_PUBLIC_APP_URL avec l'IP locale de votre ordinateur.
-          </p>
-        )}
+        {shortLink ? (
+          <p className="mt-3 w-full break-all text-[9px] leading-tight text-[#111111]">{shortLink}</p>
+        ) : null}
       </section>
     </main>
   );

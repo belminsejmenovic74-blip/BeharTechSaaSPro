@@ -31,13 +31,7 @@ import {
   resolveLayout,
   resolveTexts,
 } from "@/components/widget/widget-theme";
-import {
-  EMPTY_DRAFT,
-  primaryService,
-  type RequestType,
-  type StepContext,
-  type WidgetDraft,
-} from "@/components/widget/widget-state";
+import { EMPTY_DRAFT, primaryService, type StepContext, type WidgetDraft } from "@/components/widget/widget-state";
 import { Spinner, WidgetButton, WidgetProgress } from "@/components/widget/widget-primitives";
 import { ConfirmationStep } from "@/components/widget/steps/confirmation-step";
 import { cn } from "@/lib/utils";
@@ -48,6 +42,7 @@ import { QualityStep } from "@/components/widget/steps/quality-step";
 import { IntakeStep } from "@/components/widget/steps/intake-step";
 import { RepairSummary } from "@/components/widget/steps/repair-summary";
 import { ContactStep } from "@/components/widget/steps/contact-step";
+import { defaultServiceSelection, isHomeServiceOnly } from "@/lib/widget/reception-policy";
 
 const JOURNEY_STEPS = ["Appareil", "Réparation", "Prise en charge", "Coordonnées"] as const;
 
@@ -70,13 +65,22 @@ function postToParent(publicId: string, message: Record<string, unknown>) {
   }
 }
 
-export function WidgetApp({ publicId, previewConfig }: { publicId: string; previewConfig?: WidgetConfig }) {
+export function WidgetApp({
+  publicId,
+  previewConfig,
+  previewServices,
+}: {
+  publicId: string;
+  previewConfig?: WidgetConfig;
+  previewServices?: PublicService[];
+}) {
   const clientRef = useRef<WidgetPublicClient | null>(null);
   if (!clientRef.current) {
     clientRef.current =
       publicId === "demo" ? new DemoWidgetClient() : new WidgetPublicClient(publicId, detectHostOrigin());
   }
   const client = clientRef.current;
+  if (client instanceof DemoWidgetClient) client.setPreviewServices(previewServices);
 
   const sessionIdRef = useRef<string>(randomId("wses"));
   const startedAtRef = useRef<string>(new Date().toISOString());
@@ -108,13 +112,14 @@ export function WidgetApp({ publicId, previewConfig }: { publicId: string; previ
   useEffect(() => {
     if (previewConfig) {
       const feats = resolveFeatures(previewConfig.features);
-      const firstAction: RequestType = feats.booking ? "appointment" : feats.callbackRequest ? "callback" : "quote";
+      const initialService = defaultServiceSelection(feats);
       setConfig(previewConfig);
       setLoadError(null);
       setDraft((current) => ({
         ...current,
         shopId: previewConfig.shops.length === 1 ? previewConfig.shops[0].id : current.shopId,
-        requestType: firstAction,
+        ...initialService,
+        serviceCountry: previewConfig.general.currency === "CHF" ? "CH" : "FR",
       }));
       return;
     }
@@ -123,12 +128,13 @@ export function WidgetApp({ publicId, previewConfig }: { publicId: string; previ
       .getConfig(controller.signal)
       .then((cfg) => {
         const feats = resolveFeatures(cfg.features);
-        const firstAction: RequestType = feats.booking ? "appointment" : feats.callbackRequest ? "callback" : "quote";
+        const initialService = defaultServiceSelection(feats);
         setConfig(cfg);
         setDraft((current) => ({
           ...current,
           shopId: cfg.shops.length === 1 ? cfg.shops[0].id : current.shopId,
-          requestType: firstAction,
+          ...initialService,
+          serviceCountry: cfg.general.currency === "CHF" ? "CH" : "FR",
         }));
         postToParent(publicId, { type: "behar.widget.ready" });
         void client.sendEvent(cfg.sessionToken, "widget_loaded", sessionIdRef.current);
@@ -270,11 +276,28 @@ export function WidgetApp({ publicId, previewConfig }: { publicId: string; previ
     // 3 : un créneau est obligatoire uniquement pour le rendez-vous.
     if (index === 3 && draft.requestType === "appointment")
       return Boolean(draft.appointmentDate && draft.appointmentTime) && (!needShop || Boolean(draft.shopId));
+    if (index === 3 && draft.serviceMode === "home_service") {
+      const postalLength = draft.serviceCountry === "CH" ? 4 : 5;
+      return Boolean(
+        draft.serviceAddress.trim().length >= 3 &&
+          draft.serviceCity.trim().length >= 2 &&
+          draft.servicePostalCode.length === postalLength,
+      );
+    }
     return true;
   };
 
   const canSubmit = (): boolean => {
     if (!hasRequiredPhone(draft) || !draft.consent) return false;
+    if (draft.serviceMode === "home_service") {
+      const postalLength = draft.serviceCountry === "CH" ? 4 : 5;
+      if (
+        draft.serviceAddress.trim().length < 3 ||
+        draft.serviceCity.trim().length < 2 ||
+        draft.servicePostalCode.length !== postalLength
+      )
+        return false;
+    }
     if (draft.requestType === "appointment")
       return Boolean(draft.appointmentDate && draft.appointmentTime) && (!needShop || Boolean(draft.shopId));
     return true;
@@ -332,25 +355,28 @@ export function WidgetApp({ publicId, previewConfig }: { publicId: string; previ
     setSubmitResult(null);
     setSubmitError(null);
     startedAtRef.current = new Date().toISOString();
-    const firstAction: RequestType = features.booking ? "appointment" : features.callbackRequest ? "callback" : "quote";
+    const initialService = defaultServiceSelection(features);
     setDraft({
       ...EMPTY_DRAFT,
       shopId: config && config.shops.length === 1 ? config.shops[0].id : "",
-      requestType: firstAction,
+      ...initialService,
+      serviceCountry: config?.general.currency === "CHF" ? "CH" : "FR",
     });
     setStep(0);
   };
 
   const submitLabel =
-    draft.requestType === "appointment"
-      ? "Confirmer mon rendez-vous"
-      : draft.requestType === "quote"
-        ? texts.quoteLabel
-        : draft.requestType === "price_request"
-          ? "Demander le prix"
-          : draft.requestType === "request"
-            ? "Envoyer ma demande"
-            : texts.callbackLabel;
+    draft.serviceMode === "home_service"
+      ? "Demander le déplacement"
+      : draft.requestType === "appointment"
+        ? "Confirmer mon rendez-vous"
+        : draft.requestType === "quote"
+          ? texts.quoteLabel
+          : draft.requestType === "price_request"
+            ? "Demander le prix"
+            : draft.requestType === "request"
+              ? "Envoyer ma demande"
+              : texts.callbackLabel;
 
   const alignment =
     layout.alignment === "center" ? "text-center" : layout.alignment === "right" ? "text-right" : "text-left";
@@ -367,10 +393,15 @@ export function WidgetApp({ publicId, previewConfig }: { publicId: string; previ
             subtitle: "Comparez les pièces disponibles, leur garantie et leur délai.",
           }
         : step === 3
-          ? {
-              title: "Comment souhaitez-vous nous confier votre appareil ?",
-              subtitle: "Réservez un créneau, venez directement ou envoyez une demande.",
-            }
+          ? isHomeServiceOnly(features)
+            ? {
+                title: "Où devons-nous intervenir ?",
+                subtitle: `Renseignez votre adresse ${draft.serviceCountry === "CH" ? "en Suisse" : "en France"} pour organiser le déplacement à domicile.`,
+              }
+            : {
+                title: "Comment souhaitez-vous nous confier votre appareil ?",
+                subtitle: "Réservez un créneau, venez en boutique, demandez un déplacement ou envoyez votre demande.",
+              }
           : null;
 
   const rightColumn = ctx ? (
@@ -569,6 +600,16 @@ function buildLead(
     comment: draft.comment.trim(),
     contactPreference: preference,
     shopPublicId: draft.shopId || undefined,
+    serviceMode: draft.serviceMode,
+    serviceAddress:
+      draft.serviceMode === "home_service"
+        ? {
+            address: draft.serviceAddress.trim(),
+            postalCode: draft.servicePostalCode,
+            city: draft.serviceCity.trim(),
+            country: draft.serviceCountry,
+          }
+        : undefined,
     photos: draft.photos,
     tags,
     selectedOffers: (config.offers?.offers ?? [])

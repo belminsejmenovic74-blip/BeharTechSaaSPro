@@ -16,7 +16,6 @@ import {
   Mail,
   Phone,
   Printer,
-  ShoppingCart,
   Sparkles,
   Tag,
   User,
@@ -852,9 +851,9 @@ export function RepairModal({
     onClose();
     router.push("/dashboard/rendez-vous");
   };
-  const goToCounterSale = () => {
+  const goToInvoices = () => {
     onClose();
-    router.push("/dashboard/ventes");
+    router.push("/dashboard/factures");
   };
   const goToCreatedQuote = () => {
     if (!created?.quoteId) return;
@@ -968,10 +967,10 @@ export function RepairModal({
                 onClick={goToLinkedAppointment}
               />
               <DoneAction
-                icon={<ShoppingCart className="size-[18px]" />}
-                title="Vente comptoir"
-                desc="Accessoire ou prestation"
-                onClick={goToCounterSale}
+                icon={<FileText className="size-[18px]" />}
+                title="Voir les factures"
+                desc="Facturation de l’atelier"
+                onClick={goToInvoices}
               />
               {created.quoteId ? (
                 <DoneAction

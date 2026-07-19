@@ -8,25 +8,16 @@ type CommercialKind = PublicCommercialDocumentDto["kind"];
 
 type DocumentSyncState = Pick<
   StoreState,
-  | "cloudSync"
-  | "customers"
-  | "invoices"
-  | "payments"
-  | "quotes"
-  | "repairs"
-  | "sales"
-  | "workshopInfo"
-  | "workshopSettings"
+  "cloudSync" | "customers" | "invoices" | "quotes" | "repairs" | "workshopInfo" | "workshopSettings"
 >;
 
 // Statuts à ne PAS publier : brouillons / annulations (rien d'utile pour le client).
 const SKIPPED_STATUSES = new Set(["Brouillon", "Annulée", "Annulé", "draft", "cancelled", "canceled"]);
-const CONFIRMED_PAYMENT_STATUSES = new Set(["Payé", "paid", "Partiellement réglé", "partially_paid"]);
 
 /**
- * Pousse les documents commerciaux (devis, factures, reçus, ventes) vers la table
+ * Pousse les documents commerciaux (devis et factures) vers la table
  * dénormalisée `public_tracking_documents`, lue par les pages publiques
- * /devis /facture /recu /vente via la clé anon. Même mécanisme que les
+ * /devis /facture via la clé anon. Même mécanisme que les
  * réparations (cf. syncPublicTrackingRepairsToCloud). Fire-and-forget.
  */
 export async function syncPublicTrackingDocumentsToCloud(state: DocumentSyncState): Promise<boolean> {
@@ -50,14 +41,6 @@ export async function syncPublicTrackingDocumentsToCloud(state: DocumentSyncStat
   for (const invoice of state.invoices ?? []) {
     if (SKIPPED_STATUSES.has(invoice.status)) continue;
     entries.push({ kind: "invoice", id: invoice.id, number: invoice.number });
-  }
-  for (const payment of state.payments ?? []) {
-    if (!CONFIRMED_PAYMENT_STATUSES.has(payment.status)) continue;
-    entries.push({ kind: "receipt", id: payment.id, number: payment.paymentNumber });
-  }
-  for (const sale of state.sales ?? []) {
-    if (SKIPPED_STATUSES.has(sale.status)) continue;
-    entries.push({ kind: "sale", id: sale.id, number: sale.number });
   }
   // Bon de prise en charge : un « intake » par réparation active (token = repair.id),
   // pour que le client puisse le consulter/télécharger depuis la page de suivi.

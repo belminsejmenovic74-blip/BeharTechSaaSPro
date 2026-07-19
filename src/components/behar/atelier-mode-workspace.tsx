@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
-import { LogOut, Sparkles, Wrench } from "lucide-react";
+import { LayoutDashboard, LogOut, Sparkles, Store, Wrench } from "lucide-react";
 
 import { AtelierWorkspace } from "@/components/behar/atelier-workspace";
 import { BeharLogo } from "@/components/behar/behar-logo";
@@ -17,6 +18,7 @@ export function AtelierModeWorkspace() {
   const currentUser = useBeharStore((s) => s.currentUser);
   const workshopInfo = useBeharStore((s) => s.workshopInfo);
   const logout = useBeharStore((s) => s.logout);
+  const hasPermission = useBeharStore((s) => s.hasPermission);
   const addAuditLog = useBeharStore((s) => s.addAuditLog);
   const [now, setNow] = useState(() => new Date());
   const [mode, setMode] = useState<"reparations" | "reconditionnement">("reparations");
@@ -47,6 +49,22 @@ export function AtelierModeWorkspace() {
         </div>
 
         <div className="flex items-center gap-3">
+          {hasPermission("canViewDashboard") ? (
+            <Link
+              href="/dashboard"
+              className="hidden h-10 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-3.5 text-[13px] font-medium text-[#4F4F4B] transition hover:border-[#CFE9E4] hover:text-[#167B70] sm:inline-flex"
+            >
+              <LayoutDashboard className="size-4" /> Dashboard
+            </Link>
+          ) : null}
+          {hasPermission("canAccessCounter") ? (
+            <Link
+              href="/comptoir"
+              className="hidden h-10 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-3.5 text-[13px] font-medium text-[#4F4F4B] transition hover:border-[#CFE9E4] hover:text-[#167B70] md:inline-flex"
+            >
+              <Store className="size-4" /> Comptoir
+            </Link>
+          ) : null}
           <span className="hidden h-10 items-center rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-[#6B6B6B] text-[13px] sm:inline-flex">
             {currentUser.name} · {currentUser.role}
           </span>

@@ -27,7 +27,7 @@ export function RepairSummary({ ctx, onModify }: { ctx: StepContext; onModify?: 
   const offerLines = estimation.lines.filter((line) => line.kind !== "service");
   const duration = formatDuration(services.find((s) => s.durationMinutes)?.durationMinutes);
   const warranty = services.find((s) => s.warranty)?.warranty;
-  const compactQuality = chosen[0]?.service.service || chosen[0]?.service.quality || chosen[0]?.issue;
+  const compactQuality = chosen[0]?.service.quality || chosen[0]?.service.service || chosen[0]?.issue;
   const compactPrice = estimation.hasPricedService ? estimationLabel(estimation, locale) : "Sur devis";
 
   return (
@@ -86,7 +86,13 @@ export function RepairSummary({ ctx, onModify }: { ctx: StepContext; onModify?: 
               <div className="grid gap-0.5">
                 <dt className="text-xs font-medium text-[var(--w-muted)]">Qualité choisie</dt>
                 <dd className="font-medium text-[var(--w-text)]">
-                  {chosen.map((entry) => entry.service.service || entry.service.issue).join(", ")}
+                  {chosen
+                    .map((entry) =>
+                      entry.service.quality
+                        ? `${entry.service.service || entry.service.issue} · ${entry.service.quality}`
+                        : entry.service.service || entry.service.issue,
+                    )
+                    .join(", ")}
                 </dd>
               </div>
             ) : null}

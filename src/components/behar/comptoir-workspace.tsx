@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import {
   ArrowLeft,
@@ -55,6 +56,7 @@ import {
   Database,
   Lock,
   Inbox,
+  LayoutDashboard,
 } from "lucide-react";
 
 import { CounterLeadSearch } from "@/components/behar/counter-lead-search";
@@ -597,6 +599,22 @@ export function ComptoirWorkspace({ initialScreen = "home" }: Readonly<{ initial
         <BeharLogo size="sm" />
 
         <div className="flex items-center gap-3">
+          {hasPermission("canViewDashboard") ? (
+            <Link
+              href="/dashboard"
+              className="hidden h-10 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-3.5 text-[13px] font-medium text-[#4F4F4B] transition hover:border-[#CFE9E4] hover:text-[#167B70] sm:inline-flex"
+            >
+              <LayoutDashboard className="size-4" /> Dashboard
+            </Link>
+          ) : null}
+          {hasPermission("canAccessWorkshopMode") ? (
+            <Link
+              href="/atelier"
+              className="hidden h-10 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-3.5 text-[13px] font-medium text-[#4F4F4B] transition hover:border-[#CFE9E4] hover:text-[#167B70] md:inline-flex"
+            >
+              <Wrench className="size-4" /> Atelier
+            </Link>
+          ) : null}
           <span className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-[14px]">
             <span className="size-2.5 rounded-full bg-[#2A9D8F]" />
             Session active
@@ -1067,6 +1085,8 @@ function CounterChrome({
   onHome: () => void;
   onLogout: () => void;
 }>) {
+  const hasPermission = useBeharStore((state) => state.hasPermission);
+
   return (
     <div className="behar-app fixed inset-0 z-50 flex h-svh w-svw flex-col bg-white text-[#1A1916]">
       <header className="flex h-[72px] shrink-0 items-center justify-between gap-3 border-[#E8E8E5] border-b bg-white px-8 lg:px-12">
@@ -1074,6 +1094,22 @@ function CounterChrome({
           <BeharLogo size="sm" />
         </button>
         <div className="flex items-center gap-3">
+          {hasPermission("canViewDashboard") ? (
+            <Link
+              href="/dashboard"
+              className="hidden h-10 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-3.5 text-[13px] font-medium text-[#4F4F4B] transition hover:border-[#CFE9E4] hover:text-[#167B70] sm:inline-flex"
+            >
+              <LayoutDashboard className="size-4" /> Dashboard
+            </Link>
+          ) : null}
+          {hasPermission("canAccessWorkshopMode") ? (
+            <Link
+              href="/atelier"
+              className="hidden h-10 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-3.5 text-[13px] font-medium text-[#4F4F4B] transition hover:border-[#CFE9E4] hover:text-[#167B70] md:inline-flex"
+            >
+              <Wrench className="size-4" /> Atelier
+            </Link>
+          ) : null}
           <span className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[#E8E8E5] bg-white px-4 text-[14px]">
             <span className="size-2.5 rounded-full bg-[#2A9D8F]" /> Session active
           </span>

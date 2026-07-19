@@ -50,7 +50,7 @@
 /* Default theme styles (used when no data-theme-preset is set or when 'default' is selected).
 These serve as the fallback; there is no separate default.css file. */
 :root {
-  --radius: 0.875rem;
+  --radius: 0.75rem;
   --behar-bg: #ffffff;
   --behar-surface: #ffffff;
   --behar-subtle: #ffffff;
@@ -142,6 +142,8 @@ These serve as the fallback; there is no separate default.css file. */
     font-family: var(--font-sans), system-ui, sans-serif;
     color-scheme: light;
     background: #ffffff;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   html {
@@ -172,7 +174,7 @@ These serve as the fallback; there is no separate default.css file. */
     background-position: right 12px center;
     background-size: 16px 16px;
     padding-right: 36px;
-    background-color: transparent;
+    background-color: #ffffff;
   }
 }
 
@@ -231,15 +233,15 @@ html {
   transition: none !important;
 }
 
-/* Behar Tech Pro visual cleanup: keep product screens premium, white,
-   and prevent old theme presets or decorative utilities from reintroducing noisy UI. */
+/* Behar Tech Pro design system: quiet canvas, crisp surfaces and restrained motion. */
 .behar-app,
-.behar-app main,
-.behar-app section,
-.behar-app aside,
-.behar-app header,
-.behar-app footer {
-  background-color: #ffffff;
+.behar-app main {
+  background-color: var(--behar-bg);
+}
+
+/* Le canvas reste blanc pur. Les anciennes teintes grises ne servent plus de fond. */
+:where([class*="bg-[#FAFAF8]"], [class*="bg-[#F7F7F4]"], [class*="bg-[#F5F5F2]"], [class*="bg-[#F1F1ED]"]) {
+  background-color: #ffffff !important;
 }
 
 .behar-app :where(.print-document),
@@ -263,7 +265,7 @@ html {
 }
 
 .behar-app [class*="shadow-"] {
-  box-shadow: 0 1px 2px rgba(26, 25, 22, 0.035) !important;
+  box-shadow: 0 1px 2px rgba(26, 25, 22, 0.045) !important;
 }
 
 .behar-app button[class*="shadow-"],
@@ -282,18 +284,29 @@ html {
   filter: none !important;
 }
 
-.behar-app [class*="bg-stone"],
-.behar-app [class*="bg-neutral"],
-.behar-app [class*="bg-zinc"],
-.behar-app [class*="bg-slate"],
-.behar-app [class*="bg-gray"],
-.behar-app [class*="bg-[#FA"],
-.behar-app [class*="bg-[#F8"],
-.behar-app [class*="bg-[#F7"],
-.behar-app [class*="bg-[#F6"],
-.behar-app [class*="bg-[#F5"],
-.behar-app [class*="bg-[#F4"] {
-  background-color: #ffffff !important;
+.behar-app :where(button, a, input, select, textarea) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.behar-app :where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid rgba(42, 157, 143, 0.42);
+  outline-offset: 2px;
+}
+
+.behar-app ::selection {
+  background: rgba(42, 157, 143, 0.18);
+  color: #1a1916;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .behar-app *,
+  .behar-app *::before,
+  .behar-app *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
 
 /* Scroll du kanban (horizontal board + vertical colonnes) : barre fine discrète */

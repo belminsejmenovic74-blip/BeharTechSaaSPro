@@ -16,7 +16,7 @@ import { squareTerminalSchema } from "@/app/api/external-payments/square-termina
 import { decryptPaymentToken, encryptPaymentToken, signExternalReturnState, verifyExternalReturnState } from "./crypto";
 import { MOLLIE_OAUTH_SCOPES, MollieConnectProvider } from "./mollie";
 import { getValidMollieAccessToken } from "./mollie-tokens";
-import { buildPayPalManualRequestUrl, capturePayPalOrder, isPayPalPartnerEnabled, PayPalProvider } from "./paypal";
+import { buildPayPalManualRequestUrl, isPayPalPartnerEnabled, PayPalProvider } from "./paypal";
 import { consumeOAuthState, hashOAuthState } from "./security";
 import { StripeConnectProvider } from "./stripe";
 import {
@@ -45,6 +45,7 @@ function externalPaymentMigrations() {
     "20260714200000_revolut_external_requests.sql",
     "20260714213000_mollie_connect_external_requests.sql",
     "20260714230000_external_payment_shop_defaults.sql",
+    "20260717163000_minimize_external_payment_request_storage.sql",
   ]
     .map((file) => readFileSync(join(process.cwd(), "supabase/migrations", file), "utf8"))
     .join("\n");
@@ -587,61 +588,16 @@ describe("provider creation payloads", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("creates a direct PayPal order for the repairer without partner fee or vault", async () => {
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "partner-token" }), { status: 200 }))
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            id: "ORDER123456",
-            status: "APPROVED",
-            payer: { payer_id: "must-be-ignored" },
-            links: [{ rel: "payer-action", href: "https://www.sandbox.paypal.com/checkoutnow?token=ORDER123456" }],
-          }),
-          { status: 201 },
-        ),
-      );
-    const result = await new PayPalProvider().createExternalRequest({
-      ...input,
-      externalAccountId: "SELLER123456",
-      connectionMode: "commerce",
-    });
-    const headers = new Headers(fetchMock.mock.calls[1][1]?.headers);
-    const body = JSON.parse(String(fetchMock.mock.calls[1][1]?.body));
-    expect(headers.get("paypal-request-id")).toBe(input.requestId);
-    expect(headers.get("paypal-auth-assertion")).toBeTruthy();
-    expect(body.purchase_units[0]).toMatchObject({
-      invoice_id: "FAC-0042",
-      amount: { currency_code: "EUR", value: "129.90" },
-      payee: { merchant_id: "SELLER123456" },
-    });
-    expect(body.payment_source.paypal.experience_context.user_action).toBe("PAY_NOW");
-    expect(body.payment_source.paypal.experience_context.landing_page).toBe("LOGIN");
-    expect(JSON.stringify(body)).not.toMatch(
-      /platform_fees|disbursement_mode|vault|billing_agreement|subscription|pay_?later|installment/i,
-    );
-    expect(result).toEqual({
-      providerRequestId: "ORDER123456",
-      hostedUrl: "https://www.sandbox.paypal.com/checkoutnow?token=ORDER123456",
-      technicalState: "created",
-    });
-    expect(JSON.stringify(result)).not.toMatch(/APPROVED|payer/i);
-  });
-
-  it("does not read or retain the PayPal capture response body", async () => {
-    const captureResponse = new Response(
-      JSON.stringify({ status: "COMPLETED", payer: { payer_id: "forbidden" }, purchase_units: [] }),
-      { status: 201 },
-    );
-    const jsonSpy = vi.spyOn(captureResponse, "json");
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "partner-token" }), { status: 200 }))
-      .mockResolvedValueOnce(captureResponse);
+  it("refuses PayPal commerce capture and requires a provider-hosted external link", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch");
     await expect(
-      capturePayPalOrder({ orderId: "ORDER123456", merchantId: "SELLER123456", requestId: input.requestId }),
-    ).resolves.toBe(true);
-    expect(jsonSpy).not.toHaveBeenCalled();
+      new PayPalProvider().createExternalRequest({
+        ...input,
+        externalAccountId: "SELLER123456",
+        connectionMode: "commerce",
+      }),
+    ).rejects.toThrow(/ne capture aucune commande PayPal/i);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -1055,11 +1011,11 @@ describe("repository financial-result boundary", () => {
     );
   });
 
-  it("enforces tenant, shop, invoice and exact total constraints in SQL", () => {
+  it("enforces tenant, shop, finalized invoice and minimal request storage in SQL", () => {
     const migration = externalPaymentMigrations();
     expect(migration).toContain("foreign key (workshop_id, shop_id)");
     expect(migration).toContain("foreign key (workshop_id, invoice_id)");
-    expect(migration).toContain("requested_amount_must_equal_invoice_total_ttc");
+    expect(migration).toContain("external_payment_request_forbidden_persistence");
     expect(migration).toContain("private.member_of(workshop_id)");
     expect(migration).toContain("private.can_manage(workshop_id)");
     expect(migration).toContain("external_payment_requests_invoice_channel_unique");
@@ -1074,6 +1030,8 @@ describe("repository financial-result boundary", () => {
     expect(migration).toContain("invoice_not_in_shop");
     expect(migration).toContain("external_payment_connections_one_default_per_shop");
     expect(migration).toContain("add column if not exists currency text");
+    expect(migration).toContain("alter column requested_amount drop not null");
+    expect(migration).toContain("alter column technical_state drop not null");
   });
 
   it("keeps connection defaults and shop selection technical and server-validated", () => {
@@ -1098,7 +1056,9 @@ describe("repository financial-result boundary", () => {
     expect(route).toContain("shopId: z.string().uuid().optional()");
     expect(route).toContain("resolveActiveShop(auth.admin, auth.workshopId, parsed.data.shopId)");
     expect(route).toContain('.eq("reader_id", parsed.data.readerId as string)');
-    expect(route).toContain('technical_state: "dispatch_error"');
+    expect(route).not.toContain("requested_amount:");
+    expect(route).not.toContain("sent_at:");
+    expect(route).not.toContain('technical_state: "dispatch_error"');
   });
 
   it("keeps the PayPal return generic and never stores capture data", () => {

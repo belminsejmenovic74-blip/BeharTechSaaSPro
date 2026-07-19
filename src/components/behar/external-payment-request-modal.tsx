@@ -318,7 +318,7 @@ export function ExternalPaymentRequestModal({
                   active={deliveryChannel === "link"}
                   description="À partager par SMS, e-mail ou QR code"
                   icon={Link2}
-                  label="Créer un lien de paiement"
+                  label="Créer un lien de paiement externe"
                   onClick={() => setDeliveryChannel("link")}
                 />
                 {TERMINAL_PROVIDERS.includes(selectedProvider) ? (
@@ -377,7 +377,7 @@ export function ExternalPaymentRequestModal({
             ) : null}
             <div className="flex items-center gap-3 rounded-[14px] border border-[#D7EFEA] bg-[#F1FAF8] px-4 py-3 text-[#47706B] text-sm">
               <ShieldCheck className="size-5 shrink-0 text-[#2A9D8F]" />
-              Le règlement est géré en dehors de Behar Tech Pro par {providerLabel}.
+              Le paiement est réalisé et conservé hors de BEHAR TECH PRO par votre prestataire de paiement.
             </div>
             <ModalActions
               backLabel="Retour"
@@ -607,10 +607,13 @@ function SuccessView({
           target="_blank"
         >
           <ExternalLink className="size-4" />
-          Ouvrir {providerLabel} pour vérifier le règlement
+          Ouvrir dans {providerLabel}
         </a>
       ) : null}
-      <p className="text-[#6B6B6B] text-xs">Le règlement est géré directement par {providerLabel}.</p>
+      <p className="text-[#6B6B6B] text-xs">
+        Le paiement est réalisé et conservé hors de BEHAR TECH PRO par votre prestataire de paiement. Consultez son
+        résultat directement dans {providerLabel}.
+      </p>
       <PrimaryButton className="h-12 w-full justify-center" onClick={onClose}>
         Terminer
       </PrimaryButton>

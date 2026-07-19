@@ -1,6 +1,5 @@
 import "server-only";
 
-import { signExternalReturnState } from "./crypto";
 import { providerJson, requireServerEnv } from "./http";
 import type {
   CreateExternalRequestInput,
@@ -12,7 +11,6 @@ import type {
 type PayPalAccessToken = { access_token?: string };
 type PayPalLink = { href?: string; rel?: string };
 type PartnerReferralResponse = { links?: PayPalLink[] };
-type PayPalOrderResponse = { id?: string; links?: PayPalLink[] };
 
 function environment() {
   const value = process.env.PAYPAL_ENVIRONMENT || "production";
@@ -125,15 +123,6 @@ export function buildPayPalManualRequestUrl(raw: string, amount: number, currenc
   return url.toString();
 }
 
-function checkoutReturnUrl(requestId: string, cancelled: boolean) {
-  const { returnUrl } = requirePartnerConfiguration();
-  const url = new URL(returnUrl);
-  url.searchParams.set("state", signExternalReturnState(requestId));
-  if (cancelled) url.searchParams.set("cancel", "1");
-  else url.searchParams.delete("cancel");
-  return url.toString();
-}
-
 export class PayPalProvider implements ExternalPaymentRequestProvider {
   async getAuthorizationUrl(state: string): Promise<URL> {
     const { appUrl } = requirePartnerConfiguration();
@@ -187,41 +176,9 @@ export class PayPalProvider implements ExternalPaymentRequestProvider {
         technicalState: "sent",
       };
     }
-    if (input.connectionMode !== "commerce") throw new Error("Configuration PayPal invalide.");
-
-    const accessToken = await getPartnerAccessToken();
-    const response = await fetch(`${apiBase()}/v2/checkout/orders`, {
-      method: "POST",
-      headers: paypalHeaders(accessToken, input.externalAccountId, input.requestId),
-      body: JSON.stringify({
-        intent: "CAPTURE",
-        purchase_units: [
-          {
-            reference_id: input.requestId,
-            invoice_id: input.invoiceNumber,
-            description: `Facture ${input.invoiceNumber}`.slice(0, 127),
-            amount: { currency_code: input.currency, value: input.amount.toFixed(2) },
-            payee: { merchant_id: input.externalAccountId },
-          },
-        ],
-        payment_source: {
-          paypal: {
-            experience_context: {
-              landing_page: "LOGIN",
-              user_action: "PAY_NOW",
-              shipping_preference: "NO_SHIPPING",
-              return_url: checkoutReturnUrl(input.requestId, false),
-              cancel_url: checkoutReturnUrl(input.requestId, true),
-            },
-          },
-        },
-      }),
-      cache: "no-store",
-    });
-    const order = await providerJson<PayPalOrderResponse>(response, "Création de la demande PayPal impossible.");
-    const approvalUrl = order.links?.find((link) => link.rel === "payer-action" || link.rel === "approve")?.href;
-    if (!order.id || !approvalUrl) throw new Error("Lien hébergé PayPal absent.");
-    return { providerRequestId: order.id, hostedUrl: approvalUrl, technicalState: "created" };
+    throw new Error(
+      "Utilisez un lien PayPal.Me ou PayPal Business externe. BEHAR TECH PRO ne capture aucune commande PayPal.",
+    );
   }
 
   async disconnect(): Promise<void> {
@@ -232,17 +189,4 @@ export class PayPalProvider implements ExternalPaymentRequestProvider {
   getExternalDashboardUrl(): string {
     return paypalDashboardUrl();
   }
-}
-
-export async function capturePayPalOrder(input: { orderId: string; merchantId: string; requestId: string }) {
-  const accessToken = await getPartnerAccessToken();
-  const response = await fetch(`${apiBase()}/v2/checkout/orders/${encodeURIComponent(input.orderId)}/capture`, {
-    method: "POST",
-    headers: paypalHeaders(accessToken, input.merchantId, `${input.requestId}-capture`),
-    body: "{}",
-    cache: "no-store",
-  });
-  // Le corps contient le résultat financier : il n'est ni lu, ni journalisé,
-  // ni renvoyé, ni persisté. Seule la page générique est ensuite affichée.
-  return response.ok;
 }

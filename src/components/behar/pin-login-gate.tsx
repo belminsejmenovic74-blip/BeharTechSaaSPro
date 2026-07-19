@@ -153,7 +153,7 @@ function UserSelectorScreen({
   onSelect: (user: CurrentUser) => void;
 }>) {
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center overflow-x-hidden bg-[#FAFAF8] px-4 py-[max(2.5rem,env(safe-area-inset-top))] sm:px-5">
+    <div className="flex min-h-svh flex-col items-center justify-center overflow-x-hidden bg-white px-4 py-[max(2.5rem,env(safe-area-inset-top))] sm:px-5">
       <div className="w-full max-w-[480px]">
         {/* Header */}
         <div className="mb-8 text-center sm:mb-10">
@@ -278,7 +278,7 @@ function PinEntryScreen({
   };
 
   return (
-    <div className="flex min-h-svh items-center justify-center overflow-x-hidden bg-[#FAFAF8] px-4 py-[max(1.5rem,env(safe-area-inset-top))] sm:px-5 sm:py-10">
+    <div className="flex min-h-svh items-center justify-center overflow-x-hidden bg-white px-4 py-[max(1.5rem,env(safe-area-inset-top))] sm:px-5 sm:py-10">
       <div className="w-full max-w-[380px]">
         {/* Back button */}
         <button

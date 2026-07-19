@@ -1,14 +1,14 @@
-import type { QuoteLine, SaleLine, StoreState, WorkshopInfo } from "@/lib/behar-store";
+import type { QuoteLine, StoreState, WorkshopInfo } from "@/lib/behar-store";
 import { getBillingWorkshopInfo } from "@/lib/behar-store";
 import { getCustomerTrackingPath } from "@/lib/customer-tracking";
 import type { PublicCommercialDocumentDto, PublicWorkshopDto } from "@/lib/public-dtos";
 import { getWorkshopCountryConfig } from "@/lib/workshop-country";
 
-type CommercialKind = PublicCommercialDocumentDto["kind"]; // "quote" | "invoice" | "receipt" | "sale"
+type CommercialKind = PublicCommercialDocumentDto["kind"];
 
 type CommercialState = Pick<
   StoreState,
-  "customers" | "invoices" | "payments" | "quotes" | "repairs" | "sales" | "workshopInfo" | "workshopSettings"
+  "customers" | "invoices" | "quotes" | "repairs" | "workshopInfo" | "workshopSettings"
 >;
 
 function resolveShopName(candidates: Array<string | undefined>): string {
@@ -66,15 +66,6 @@ function lineFromQuoteLine(line: QuoteLine): PublicCommercialDocumentDto["lines"
   };
 }
 
-function lineFromSaleLine(line: SaleLine): PublicCommercialDocumentDto["lines"][number] {
-  return {
-    label: line.name,
-    quantity: Number(line.quantity ?? 1),
-    unitPriceTtc: Number(line.unitPrice ?? 0),
-    totalTtc: Number(line.total ?? Number(line.quantity ?? 1) * Number(line.unitPrice ?? 0)),
-  };
-}
-
 function relatedRepair(
   state: CommercialState,
   repairId: string | undefined,
@@ -88,9 +79,10 @@ function relatedRepair(
 }
 
 /**
- * Construit le DTO public d'un document commercial (devis, facture, reçu, vente)
+ * Construit le DTO public d'un document commercial (devis ou facture)
  * à partir de l'état local du store. Le `token` est l'identifiant de l'entité
- * (quote.id / invoice.id / payment.id / sale.id). Renvoie null si introuvable.
+ * (quote.id / invoice.id). Renvoie null si introuvable ou si un ancien type de
+ * reçu/vente est demandé.
  */
 export function buildPublicCommercialDtoFromLocalState(
   state: CommercialState,
@@ -146,27 +138,6 @@ export function buildPublicCommercialDtoFromLocalState(
     };
   }
 
-  if (kind === "receipt") {
-    const payment = state.payments.find((entry) => entry.id === cleanToken);
-    if (!payment) return null;
-    const workshop = getBillingWorkshopInfo(workshopInfo, payment.billingCountry);
-    const amount = Number(payment.amount ?? 0);
-    return {
-      kind,
-      workshop: publicWorkshop(workshop),
-      client: { displayName: clientDisplayName(state, payment.customerId) },
-      document: {
-        number: payment.paymentNumber,
-        status: payment.status,
-        totalTtc: amount,
-        createdAt: payment.createdAt || payment.date || new Date().toISOString(),
-      },
-      lines: [{ label: "Règlement", quantity: 1, unitPriceTtc: amount, totalTtc: amount }],
-      relatedRepair: relatedRepair(state, payment.repairId, workshop),
-      documents: [],
-    };
-  }
-
   if (kind === "intake") {
     // Bon de prise en charge : construit depuis la réparation (token = repair.id).
     const repair = state.repairs.find((entry) => entry.id === cleanToken);
@@ -197,22 +168,5 @@ export function buildPublicCommercialDtoFromLocalState(
     };
   }
 
-  // kind === "sale"
-  const sale = state.sales.find((entry) => entry.id === cleanToken);
-  if (!sale) return null;
-  const workshop = getBillingWorkshopInfo(workshopInfo, sale.billingCountry);
-  return {
-    kind,
-    workshop: publicWorkshop(workshop),
-    client: { displayName: clientDisplayName(state, sale.customerId, sale.customerName) },
-    document: {
-      number: sale.number,
-      status: sale.status,
-      totalTtc: Number(sale.total ?? 0),
-      createdAt: sale.createdAt || new Date().toISOString(),
-    },
-    lines: (sale.lines ?? []).map(lineFromSaleLine),
-    relatedRepair: relatedRepair(state, sale.repairId, workshop),
-    documents: [],
-  };
+  return null;
 }

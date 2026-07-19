@@ -12,6 +12,7 @@ import {
 import { authorizeWorkshopLicense } from "@/lib/server/workshop-license-auth";
 import { publicServices } from "@/lib/server/widget-public-api";
 import { syncWidgetShopFromLicense, syncWidgetStockLinks } from "@/lib/server/widget-license-data";
+import { applyCustomerReceptionPolicy, type CustomerReceptionMode } from "@/lib/widget/reception-policy";
 
 // Catalogue envoyé par l'éditeur (projeté depuis le vrai PriceBook côté client).
 // Volontairement permissif : le serveur le re-passe par la liste blanche
@@ -36,6 +37,9 @@ const defaultsSchema = z
     commercialName: z.string().trim().max(160),
     phone: z.string().trim().max(40),
     address: z.string().trim().max(300),
+    postalCode: z.string().trim().max(20).optional(),
+    city: z.string().trim().max(120).optional(),
+    country: z.enum(["FR", "CH"]).optional(),
     locale: z.enum(["fr-FR", "fr-CH"]),
     currency: z.enum(["EUR", "CHF"]),
     businessHours: z.string().trim().max(500).optional(),
@@ -123,10 +127,7 @@ function responseError(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
 }
 
-function editableFromRow(
-  row: WidgetRow,
-  customerReceptionMode: "shop" | "mobile" | "hybrid" = "shop",
-): EditableWidgetConfig {
+function editableFromRow(row: WidgetRow, customerReceptionMode: CustomerReceptionMode = "shop"): EditableWidgetConfig {
   const source = Object.keys(row.draft_config || {}).length ? row.draft_config : (row.published_config ?? {});
   const normalized = normalizeEditableWidgetConfig(source, {
     internalName: row.internal_name,
@@ -135,11 +136,10 @@ function editableFromRow(
     features: {
       ...DEFAULT_WIDGET_CMS_CONFIG.features,
       walkIn: customerReceptionMode !== "mobile",
+      homeService: customerReceptionMode !== "shop",
     },
   });
-  return customerReceptionMode === "mobile"
-    ? { ...normalized, features: { ...normalized.features, walkIn: false } }
-    : normalized;
+  return { ...normalized, features: applyCustomerReceptionPolicy(normalized.features, customerReceptionMode) };
 }
 
 async function loadWidget(admin: SupabaseClient, workshopId: string, widgetId?: string) {
@@ -198,10 +198,14 @@ export async function POST(request: Request) {
           locale: parsed.data.defaults.locale,
           currency: parsed.data.defaults.currency,
         },
-        features: {
-          ...DEFAULT_WIDGET_CMS_CONFIG.features,
-          walkIn: parsed.data.defaults.customerReceptionMode !== "mobile",
-        },
+        features: applyCustomerReceptionPolicy(
+          {
+            ...DEFAULT_WIDGET_CMS_CONFIG.features,
+            walkIn: parsed.data.defaults.customerReceptionMode !== "mobile",
+            homeService: parsed.data.defaults.customerReceptionMode !== "shop",
+          },
+          parsed.data.defaults.customerReceptionMode || "shop",
+        ),
       });
       const created = await admin
         .from("widget_settings")

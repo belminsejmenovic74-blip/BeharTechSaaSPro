@@ -527,7 +527,7 @@ function StepDevice({
             value={state.customerName}
           />
           <datalist id="recond-customers">
-            {customers.slice(0, 50).map((name) => (
+            {[...new Set(customers)].slice(0, 50).map((name) => (
               <option key={name} value={name} />
             ))}
           </datalist>

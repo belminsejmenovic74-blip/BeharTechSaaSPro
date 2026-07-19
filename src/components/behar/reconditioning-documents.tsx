@@ -538,7 +538,7 @@ export function EtiquetteStockPrintable({
             display: "grid",
             placeItems: "center",
             overflow: "hidden",
-            background: "#FAFAF8",
+            background: "#FFFFFF",
           }}
         >
           {data.imageUrl ? (

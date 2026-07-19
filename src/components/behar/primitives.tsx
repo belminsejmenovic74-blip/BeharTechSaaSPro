@@ -22,10 +22,7 @@ export function Panel({
 }>) {
   return (
     <section
-      className={cn(
-        "rounded-[16px] border border-[#E8E8E5] bg-white shadow-[0_1px_2px_rgba(26,25,22,0.035)]",
-        className,
-      )}
+      className={cn("rounded-[12px] border border-[var(--behar-border)] bg-[var(--behar-surface)]", className)}
       data-testid={dataTestId}
     >
       {children}
@@ -46,9 +43,9 @@ export function SearchBox({
 }>) {
   return (
     <label className={cn("relative block", className)}>
-      <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[#6B6B6B]" />
+      <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-[var(--behar-muted)]" />
       <input
-        className="h-10 w-full rounded-[12px] border border-[#E8E8E5] bg-white pr-4 pl-10 text-[#1A1916] text-sm outline-none transition placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/55 focus:ring-3 focus:ring-[#2A9D8F]/10"
+        className="h-10 w-full rounded-[10px] border border-[var(--behar-border)] bg-white pr-4 pl-10 text-[var(--behar-text)] text-sm outline-none transition-colors placeholder:text-[var(--behar-muted)] focus:border-[#2A9D8F]/55 focus:ring-2 focus:ring-[#2A9D8F]/10"
         placeholder={placeholder}
         type="search"
         value={value}
@@ -61,11 +58,11 @@ export function SearchBox({
 export function ToolbarSelect({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <button
-      className="inline-flex h-10 items-center gap-2 rounded-[12px] border border-[#E8E8E5] bg-white px-4 font-medium text-[#1A1916] text-sm transition hover:border-[#2A9D8F]/35"
+      className="inline-flex h-10 items-center gap-2 rounded-[10px] border border-[var(--behar-border)] bg-white px-4 font-medium text-[var(--behar-text)] text-sm transition-colors hover:bg-[var(--behar-subtle)]"
       type="button"
     >
       <span>{children}</span>
-      <ChevronDown className="size-4 text-[#6B6B6B]" />
+      <ChevronDown className="size-4 text-[var(--behar-muted)]" />
     </button>
   );
 }
@@ -82,7 +79,7 @@ export function PrimaryButton({
   return (
     <Button
       className={cn(
-        "h-11 rounded-[12px] bg-[#2A9D8F] px-5 font-semibold text-white shadow-[0_1px_2px_rgba(42,157,143,0.14)] transition-colors duration-200 hover:bg-[#238579]",
+        "h-10 rounded-[10px] bg-[#2A9D8F] px-4 font-semibold text-white transition-colors duration-150 hover:bg-[#238579]",
         className,
       )}
       type="button"
@@ -105,7 +102,7 @@ export function SecondaryButton({
   return (
     <Button
       className={cn(
-        "h-11 rounded-[12px] border-[#E8E8E5] bg-white px-5 font-medium text-[#1A1916] transition-colors duration-200 hover:bg-[#FFFFFF]",
+        "h-10 rounded-[10px] border-[var(--behar-border)] bg-white px-4 font-medium text-[var(--behar-text)] transition-colors duration-150 hover:bg-[var(--behar-subtle)]",
         className,
       )}
       type="button"
@@ -133,16 +130,16 @@ export function MetricCard({
   negative?: boolean;
 }>) {
   return (
-    <Panel className="p-5">
-      <div className="flex items-center gap-4">
-        <div className="grid size-10 shrink-0 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#6B6B6B]">
+    <Panel className="p-4">
+      <div className="flex items-center gap-3.5">
+        <div className="grid size-9 shrink-0 place-items-center rounded-[9px] bg-[#EAF6F3] text-[#167B70]">
           <Icon className="size-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[#6B6B6B] text-[13px] leading-5">{label}</p>
-          <p className="mt-1.5 font-semibold text-[#1A1916] text-[28px] leading-none tracking-tight">{value}</p>
+          <p className="text-[var(--behar-muted)] text-[13px] leading-5">{label}</p>
+          <p className="mt-1 font-semibold text-[var(--behar-text)] text-[24px] leading-none tracking-tight">{value}</p>
           <p className={cn("mt-2 font-medium text-[13px]", negative ? "text-[#C84848]" : "text-[#2A9D8F]")}>{trend}</p>
-          <p className="mt-0.5 text-[#6B6B6B] text-xs">{helper}</p>
+          <p className="mt-0.5 text-[var(--behar-muted)] text-xs">{helper}</p>
         </div>
       </div>
     </Panel>
@@ -150,46 +147,46 @@ export function MetricCard({
 }
 
 const statusStyles: Record<string, string> = {
-  Reçu: "border-[#D7EFEA] bg-[#FFFFFF] text-[#1E7D72]",
-  Diagnostic: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
-  "En attente": "border-[#FFE6C7] bg-[#FFFFFF] text-[#936100]",
-  "En attente pièce": "border-[#FFE6C7] bg-[#FFFFFF] text-[#936100]",
-  "Pièce en attente": "border-[#FFE6C7] bg-[#FFFFFF] text-[#936100]",
-  "Pièce commandée": "border-[#FFE6C7] bg-[#FFFFFF] text-[#936100]",
-  "Pièce reçue": "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
-  "En attente validation client": "border-[#E5DEFF] bg-[#FFFFFF] text-[#5D4BA8]",
-  "Devis envoyé": "border-[#FFE6C7] bg-[#FFFFFF] text-[#936100]",
-  "Devis accepté": "border-[#D7EFEA] bg-[#FFFFFF] text-[#1E7D72]",
-  "En réparation": "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
-  "Test final": "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
-  Test: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
-  Prêt: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
-  "Téléphone prêt": "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
-  "Prêt — paiement à encaisser": "border-[#FFE6C7] bg-[#FFFFFF] text-[#936100]",
-  "Prêt à remettre au client": "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
-  "Test final validé": "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
-  "Test non applicable": "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
-  "Test impossible": "border-[#FEF0C7] bg-[#FFFFFF] text-[#B54708]",
-  "Test refusé par le client": "border-[#FEF0C7] bg-[#FFFFFF] text-[#B54708]",
-  Rendu: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
-  Irréparable: "border-[#F2D4D1] bg-[#FFFFFF] text-[#B42318]",
-  SAV: "border-[#FFE6C7] bg-[#FFFFFF] text-[#936100]",
-  Clôturé: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
-  Actif: "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
-  "Client fidèle": "border-[#D7EFEA] bg-[#FFFFFF] text-[#147065]",
-  Payée: "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
-  Envoyée: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
-  Payé: "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
-  Annulé: "border-[#F2D4D1] bg-[#FFFFFF] text-[#B42318]",
-  Réussi: "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
-  "En retard": "border-[#F2D4D1] bg-[#FFFFFF] text-[#B42318]",
-  Remboursé: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
-  Brouillon: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
-  Envoyé: "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
-  Accepté: "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
-  Refusé: "border-[#F2D4D1] bg-[#FFFFFF] text-[#B42318]",
-  "En stock": "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
-  ActifWidget: "border-[#D7EFEA] bg-[#FFFFFF] text-[#167B70]",
+  Reçu: "border-[#CDE9E3] bg-[#EEF8F5] text-[#1E7D72]",
+  Diagnostic: "border-[#E1E1DC] bg-[#F7F7F4] text-[#5F5F5A]",
+  "En attente": "border-[#F1D7A9] bg-[#FFF8EA] text-[#8A5A00]",
+  "En attente pièce": "border-[#F1D7A9] bg-[#FFF8EA] text-[#8A5A00]",
+  "Pièce en attente": "border-[#F1D7A9] bg-[#FFF8EA] text-[#8A5A00]",
+  "Pièce commandée": "border-[#F1D7A9] bg-[#FFF8EA] text-[#8A5A00]",
+  "Pièce reçue": "border-[#CDE9E3] bg-[#EEF8F5] text-[#167B70]",
+  "En attente validation client": "border-[#DED7F4] bg-[#F7F4FF] text-[#5D4BA8]",
+  "Devis envoyé": "border-[#F1D7A9] bg-[#FFF8EA] text-[#8A5A00]",
+  "Devis accepté": "border-[#CDE9E3] bg-[#EEF8F5] text-[#1E7D72]",
+  "En réparation": "border-[#CDE9E3] bg-[#EEF8F5] text-[#167B70]",
+  "Test final": "border-[#DDE3EA] bg-[#F5F7FA] text-[#52606D]",
+  Test: "border-[#DDE3EA] bg-[#F5F7FA] text-[#52606D]",
+  Prêt: "border-[#CDE9E3] bg-[#EEF8F5] text-[#167B70]",
+  "Téléphone prêt": "border-[#CDE9E3] bg-[#EEF8F5] text-[#167B70]",
+  "Prêt — paiement à encaisser": "border-[#F1D7A9] bg-[#FFF8EA] text-[#8A5A00]",
+  "Prêt à remettre au client": "border-[#CDE9E3] bg-[#EEF8F5] text-[#167B70]",
+  "Test final validé": "border-[#CDE9E3] bg-[#EEF8F5] text-[#167B70]",
+  "Test non applicable": "border-[#E1E1DC] bg-[#F7F7F4] text-[#5F5F5A]",
+  "Test impossible": "border-[#F0D5A4] bg-[#FFF6E5] text-[#A65A00]",
+  "Test refusé par le client": "border-[#F0D5A4] bg-[#FFF6E5] text-[#A65A00]",
+  Rendu: "border-[#E1E1DC] bg-[#F7F7F4] text-[#5F5F5A]",
+  Irréparable: "border-[#EFCBC7] bg-[#FFF1F0] text-[#B42318]",
+  SAV: "border-[#F1D7A9] bg-[#FFF8EA] text-[#8A5A00]",
+  Clôturé: "border-[#E1E1DC] bg-[#F7F7F4] text-[#5F5F5A]",
+  Actif: "border-[#CDE9E3] bg-[#EEF8F5] text-[#167B70]",
+  "Client fidèle": "border-[#CDE9E3] bg-[#EEF8F5] text-[#147065]",
+  Payée: "border-[#CDE9E3] bg-[#EEF8F5] text-[#167B70]",
+  Envoyée: "border-[#E1E1DC] bg-[#F7F7F4] text-[#5F5F5A]",
+  Payé: "border-[#CDE9E3] bg-[#EEF8F5] text-[#167B70]",
+  Annulé: "border-[#EFCBC7] bg-[#FFF1F0] text-[#B42318]",
+  Réussi: "border-[#CDE9E3] bg-[#EEF8F5] text-[#167B70]",
+  "En retard": "border-[#EFCBC7] bg-[#FFF1F0] text-[#B42318]",
+  Remboursé: "border-[#E1E1DC] bg-[#F7F7F4] text-[#5F5F5A]",
+  Brouillon: "border-[#E1E1DC] bg-[#F7F7F4] text-[#5F5F5A]",
+  Envoyé: "border-[#E1E1DC] bg-[#F7F7F4] text-[#5F5F5A]",
+  Accepté: "border-[#CDE9E3] bg-[#EEF8F5] text-[#167B70]",
+  Refusé: "border-[#EFCBC7] bg-[#FFF1F0] text-[#B42318]",
+  "En stock": "border-[#CDE9E3] bg-[#EEF8F5] text-[#167B70]",
+  ActifWidget: "border-[#CDE9E3] bg-[#EEF8F5] text-[#167B70]",
 };
 
 export function StatusBadge({ status, className }: Readonly<{ status: string; className?: string }>) {
@@ -197,7 +194,7 @@ export function StatusBadge({ status, className }: Readonly<{ status: string; cl
     <span
       className={cn(
         "inline-flex min-h-6 items-center rounded-[7px] border px-2 py-0.5 font-semibold text-[11px] leading-none",
-        statusStyles[status] ?? "border-[#E8E8E5] bg-[#FFFFFF] text-[#6B6B6B]",
+        statusStyles[status] ?? "border-[#E1E1DC] bg-[#F7F7F4] text-[#5F5F5A]",
         className,
       )}
     >
@@ -220,7 +217,7 @@ export function DetailRow({
   return (
     <div
       className={cn(
-        "flex items-start justify-between gap-6 py-3 text-sm border-b border-[#FFFFFF] last:border-0",
+        "flex items-start justify-between gap-6 border-b border-[var(--behar-border)] py-3 text-sm last:border-0",
         className,
       )}
     >
@@ -239,7 +236,8 @@ export function TableShell({ children, className }: Readonly<{ children: ReactNo
 }
 
 export const tableClassName = "w-full min-w-[720px] border-collapse text-sm";
-export const tableHeadClassName = "border-b border-[#E8E8E5] bg-[#FFFFFF] text-left text-xs font-semibold text-[#6B6B6B]";
+export const tableHeadClassName =
+  "border-b border-[#E8E8E5] bg-[#FAFAF8] text-left text-xs font-semibold text-[#6B6B6B]";
 export const tableCellClassName = "border-b border-[#E8E8E5] px-4 py-3 text-[#1A1916]";
 
 export type TimelineItem = {
@@ -273,7 +271,7 @@ export function Timeline({ items }: Readonly<{ items: readonly (string | Timelin
               >
                 {Icon ? <Icon className="size-3" /> : <span className="size-1.5 rounded-full bg-current" />}
               </span>
-              {index < items.length - 1 && <div className="absolute top-5 h-full w-[1px] bg-[#FFFFFF]" />}
+              {index < items.length - 1 && <div className="absolute top-5 h-full w-px bg-[#E8E8E5]" />}
             </div>
             <div className="flex-1 pb-2">
               <p className="font-semibold text-[#1A1916]">{text}</p>
@@ -289,7 +287,7 @@ export function Timeline({ items }: Readonly<{ items: readonly (string | Timelin
 
 export function SuccessNote({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <div className="flex items-center gap-3 rounded-[16px] border border-[#2A9D8F]/15 bg-[#FFFFFF] p-4 text-[#167B70] text-sm">
+    <div className="flex items-center gap-3 rounded-[12px] border border-[#CDE9E3] bg-[#EEF8F5] p-4 text-[#167B70] text-sm">
       <span className="grid size-7 shrink-0 place-items-center rounded-[9px] bg-[#2A9D8F] text-white">
         <Check className="size-4" />
       </span>
@@ -338,18 +336,27 @@ export function PreviewLogo() {
 
 export function FormField({
   label,
+  htmlFor,
   children,
   error,
   className,
 }: Readonly<{
   label?: string;
+  htmlFor?: string;
   children: ReactNode;
   error?: string;
   className?: string;
 }>) {
   return (
     <div className={cn("space-y-2", className)}>
-      {label && <label className="font-medium text-[#1A1916] text-sm">{label}</label>}
+      {label &&
+        (htmlFor ? (
+          <label className="font-medium text-[#1A1916] text-sm" htmlFor={htmlFor}>
+            {label}
+          </label>
+        ) : (
+          <span className="block font-medium text-[#1A1916] text-sm">{label}</span>
+        ))}
       {children}
       {error && <p className="text-[#DC3545] text-xs mt-1">{error}</p>}
     </div>
@@ -374,10 +381,8 @@ export function ChoiceCard({
   return (
     <button
       className={cn(
-        "flex flex-col items-center gap-3 rounded-[14px] border p-5 text-center transition-colors duration-200",
-        selected
-          ? "border-[#2A9D8F] bg-[#FFFFFF]"
-          : "border-[#E8E8E5] bg-white hover:border-[#2A9D8F]/35",
+        "flex flex-col items-center gap-3 rounded-[12px] border p-4 text-center transition-colors duration-150",
+        selected ? "border-[#2A9D8F] bg-[#EAF6F3]" : "border-[#E8E8E5] bg-white hover:bg-[#FAFAF8]",
         disabled && "cursor-not-allowed opacity-50",
       )}
       disabled={disabled}
@@ -387,7 +392,7 @@ export function ChoiceCard({
       <div
         className={cn(
           "grid size-10 place-items-center rounded-[10px]",
-          selected ? "bg-[#2A9D8F] text-white" : "bg-[#FFFFFF] text-[#6B6B6B]",
+          selected ? "bg-[#2A9D8F] text-white" : "bg-[#F1F1ED] text-[#6B6B6B]",
         )}
       >
         <Icon className="size-5" />
@@ -404,7 +409,7 @@ export function Input({ className, ...props }: Readonly<React.InputHTMLAttribute
   return (
     <input
       className={cn(
-        "h-11 w-full rounded-[14px] border border-[#E8E8E5] bg-white px-4 text-[#1A1916] text-sm outline-none transition-all duration-200 placeholder:text-[#8A8A8A] focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/8 disabled:cursor-not-allowed disabled:opacity-50",
+        "h-10 w-full rounded-[10px] border border-[#E8E8E5] bg-white px-3 text-[#1A1916] text-sm outline-none transition-colors duration-150 placeholder:text-[#8A8A8A] focus:border-[#2A9D8F] focus:ring-2 focus:ring-[#2A9D8F]/10 disabled:cursor-not-allowed disabled:bg-[#F5F5F2] disabled:opacity-55",
         className,
       )}
       {...props}
@@ -417,7 +422,7 @@ export function Select({ children, className, ...props }: Readonly<React.SelectH
     <div className="relative">
       <select
         className={cn(
-          "h-10 w-full appearance-none rounded-[12px] border border-[#E8E8E5] bg-white px-4 pr-10 text-[#1A1916] text-sm outline-none transition focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10 disabled:cursor-not-allowed disabled:opacity-50",
+          "h-10 w-full appearance-none rounded-[10px] border border-[#E8E8E5] bg-white px-3 pr-10 text-[#1A1916] text-sm outline-none transition-colors focus:border-[#2A9D8F]/55 focus:ring-2 focus:ring-[#2A9D8F]/10 disabled:cursor-not-allowed disabled:bg-[#F5F5F2] disabled:opacity-55",
           className,
         )}
         {...props}
@@ -433,7 +438,7 @@ export function Textarea({ className, ...props }: Readonly<React.TextareaHTMLAtt
   return (
     <textarea
       className={cn(
-        "w-full rounded-[12px] border border-[#E8E8E5] bg-white p-4 text-[#1A1916] text-sm outline-none transition placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/55 focus:ring-4 focus:ring-[#2A9D8F]/10 disabled:cursor-not-allowed disabled:opacity-50",
+        "w-full rounded-[10px] border border-[#E8E8E5] bg-white p-3 text-[#1A1916] text-sm outline-none transition-colors placeholder:text-[#6B6B6B] focus:border-[#2A9D8F]/55 focus:ring-2 focus:ring-[#2A9D8F]/10 disabled:cursor-not-allowed disabled:bg-[#F5F5F2] disabled:opacity-55",
         className,
       )}
       {...props}
@@ -458,17 +463,22 @@ export function Modal({
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-stretch justify-stretch p-0 md:items-center md:justify-center md:p-4">
-      <div className="fixed inset-0 bg-[#1A1916]/32 transition-opacity" onClick={onClose} />
+      <button
+        aria-label="Fermer la fenêtre"
+        className="fixed inset-0 bg-[#1A1916]/28 transition-opacity"
+        onClick={onClose}
+        type="button"
+      />
       <Panel
         className={cn(
-          "relative z-10 w-full flex flex-col min-h-svh rounded-none md:min-h-0 md:max-h-[90vh] md:rounded-[20px]",
+          "relative z-10 flex min-h-svh w-full flex-col rounded-none md:max-h-[90vh] md:min-h-0 md:rounded-[14px] md:shadow-[0_16px_48px_rgba(26,25,22,0.10)]",
           maxWidth,
         )}
       >
-        <div className="flex items-center justify-between border-b border-[#FFFFFF] px-5 py-4 md:px-7 md:py-5">
+        <div className="flex items-center justify-between border-b border-[#E8E8E5] px-5 py-4 md:px-6">
           <h2 className="font-semibold text-[#1A1916] text-[17px] tracking-tight">{title}</h2>
           <button
-            className="grid size-9 place-items-center rounded-[10px] bg-[#FFFFFF] text-[#6B6B6B] transition hover:bg-[#FFFFFF] hover:text-[#1A1916] md:size-8 md:bg-transparent"
+            className="grid size-9 place-items-center rounded-[9px] bg-[#F1F1ED] text-[#6B6B6B] transition-colors hover:bg-[#E8E8E5] hover:text-[#1A1916] md:size-8"
             onClick={onClose}
             type="button"
             aria-label="Fermer"
@@ -476,7 +486,7 @@ export function Modal({
             <X className="size-4" />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-5 md:p-7">{children}</div>
+        <div className="flex-1 overflow-y-auto p-5 md:p-6">{children}</div>
       </Panel>
     </div>,
     document.body,
