@@ -58,7 +58,7 @@ export function readErpNextConfig(env: Environment = process.env): ErpNextConfig
     baseUrl,
     apiKey,
     apiSecret,
-    company: env.ERPNEXT_COMPANY?.trim() || "BEHAR TECH PRO",
+    company: env.ERPNEXT_COMPANY?.trim() || "Behar Tech Pro",
     branch: env.ERPNEXT_DEFAULT_BRANCH?.trim() || "Boutique principale",
     warehouse: env.ERPNEXT_DEFAULT_WAREHOUSE?.trim() || "Entrepôt principal - BTP",
     requestTimeoutMs: parseTimeout(env.ERPNEXT_REQUEST_TIMEOUT_MS),

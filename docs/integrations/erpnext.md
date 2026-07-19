@@ -19,6 +19,10 @@ L’absence de clé ne doit donc jamais empêcher l’application de fonctionner
 - `ERPNEXT_REQUEST_TIMEOUT_MS`
 - `ERPNEXT_SYNC_ENABLED`
 
+`ERPNEXT_COMPANY` doit contenir le nom interne exact du document ERPNext. Il reste actuellement
+`Behar Tech Pro` pendant la phase provisoire ; la raison sociale légale affichée est « BEHAR TECH PRO ».
+Il faudra mettre cette variable à jour si le document ERPNext est renommé après l’immatriculation.
+
 L’utilisateur associé au token doit être un utilisateur technique distinct. Il ne doit pas recevoir le rôle
 `System Manager` ni le profil `Administrateur BEHAR TECH PRO`.
 

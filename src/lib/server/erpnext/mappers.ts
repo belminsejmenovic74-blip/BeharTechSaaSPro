@@ -159,6 +159,7 @@ export function mapDraftInvoiceToErpNext(input: ErpNextDraftInvoiceInput): Recor
       due_date: input.dueDate ? isoDate(input.dueDate, "La date d’échéance") : undefined,
       currency: input.currency?.trim() || "EUR",
       terms: VAT_EXEMPTION_MENTION,
+      custom_mention_tva: VAT_EXEMPTION_MENTION,
       custom_identifiant_dossier_behar_tech_pro: input.repairId?.trim(),
       custom_identifiant_de_suivi_behar_tech_pro:
         input.trackingId?.trim() || requireText(input.externalId, "L’identifiant facture"),

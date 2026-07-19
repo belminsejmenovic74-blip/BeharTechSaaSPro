@@ -49,7 +49,7 @@ describe("mappages ERPNext", () => {
 describe("garde-fous de facturation", () => {
   const invoice = {
     legalInvoicingEnabled: true,
-    company: "BEHAR TECH PRO",
+    company: "Behar Tech Pro",
     customerErpNextName: "CLI-0001",
     externalId: "invoice-1",
     shopName: "Boutique principale",
@@ -68,6 +68,7 @@ describe("garde-fous de facturation", () => {
       docstatus: 0,
       update_stock: 0,
       terms: VAT_EXEMPTION_MENTION,
+      custom_mention_tva: VAT_EXEMPTION_MENTION,
       custom_paiement_effectue_hors_behar_tech_pro: 1,
       custom_prestataire_de_paiement_externe: "Stripe",
     });

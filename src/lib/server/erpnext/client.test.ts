@@ -10,7 +10,7 @@ function config(overrides: Partial<ErpNextConfig> = {}): ErpNextConfig {
     baseUrl: "https://erp.example.com",
     apiKey: "key-value",
     apiSecret: "secret-value",
-    company: "BEHAR TECH PRO",
+    company: "Behar Tech Pro",
     branch: "Boutique principale",
     warehouse: "Entrepôt principal - BTP",
     requestTimeoutMs: 5_000,
