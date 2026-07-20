@@ -482,8 +482,7 @@ export const DEFAULT_CONTENT = {
 				name: 'Facturation électronique',
 				desc: 'Passage à la facture électronique',
 				logo: '/imgs/facturation-electronique-logo.png',
-				// ⚠ Passer à true dès que le fichier logo est ajouté dans static/imgs/.
-				visible: false
+				visible: true
 			},
 			{
 				id: 'int-quali',
