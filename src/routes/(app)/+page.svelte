@@ -4,6 +4,8 @@
 	import type { SiteContent } from '$lib/cms/types';
 	import { createDefaultDb, loadPublishedDb } from '$lib/cms/db';
 	import SectionRenderer from '$lib/components/landing/SectionRenderer.svelte';
+	import JsonLd from '$lib/components/guides/JsonLd.svelte';
+	import { organizationJsonLd } from '$lib/guides/jsonld';
 
 	export let data: { content: SiteContent };
 	$: seoContent = data.content.seo;
@@ -36,6 +38,8 @@
 	<meta name="twitter:description" content={seoContent.description} />
 	<meta name="twitter:image" content={seoContent.image} />
 </svelte:head>
+
+<JsonLd data={organizationJsonLd()} />
 
 {#each sections as section (section.id)}
 	{#if section.settings.visible}

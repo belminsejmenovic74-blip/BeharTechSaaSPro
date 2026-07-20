@@ -7,9 +7,11 @@ import { z } from 'zod';
 import { CTA_KEYS } from './cta';
 import { DEFAULT_AUTHOR } from './config';
 
-const iso = z
-	.string()
-	.regex(/^\d{4}-\d{2}-\d{2}(T.*)?$/, 'date ISO 8601 attendue (AAAA-MM-JJ)');
+// YAML transforme « 2026-07-19 » en Date JS : on recoerce en chaîne ISO.
+const iso = z.preprocess(
+	(v) => (v instanceof Date ? v.toISOString().slice(0, 10) : v),
+	z.string().regex(/^\d{4}-\d{2}-\d{2}(T.*)?$/, 'date ISO 8601 attendue (AAAA-MM-JJ)')
+);
 
 /** Frontmatter d'un article de guide. */
 export const articleFrontmatter = z
