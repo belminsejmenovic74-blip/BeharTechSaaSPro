@@ -10,12 +10,7 @@ import { generatePdfFromElement } from "@/lib/pdf-generator";
 import { generateQrCodeDataUrl, publicAbsoluteUrl } from "@/lib/public-access";
 import { useRecondSettings } from "@/lib/recond-settings";
 import { useBeharStore } from "@/lib/behar-store";
-import {
-  buildCertificateData,
-  type CertificateData,
-  certificatePublicPath,
-  withEncodedCertificate,
-} from "@/lib/reconditioning-certificate";
+import { buildCertificateData, type CertificateData, certificatePublicPath } from "@/lib/reconditioning-certificate";
 import { useReconditioningStore } from "@/lib/reconditioning-store";
 import { cn } from "@/lib/utils";
 
@@ -63,12 +58,17 @@ export function ReconditioningPrintPage() {
   useEffect(() => {
     if (!data || !file) return;
     let alive = true;
+    // QR = URL courte par token (scannable). On N'EMBARQUE PAS le certificat
+    // encodé (?d=) dans le QR : avec les photos/contrôles, l'URL devient énorme
+    // et le QR trop dense → illisible au scan. La page publique lit la fiche via
+    // le token (table cloud) ; le payload encodé reste un repli accepté seulement
+    // sur les liens déjà partagés qui le contiennent.
     const url =
       doc === "interne"
         ? publicAbsoluteUrl(
             `/dashboard/reconditionnement?tab=devices&device=${encodeURIComponent(file.id)}&internal=${encodeURIComponent(file.internalQrToken || file.number)}`,
           )
-        : withEncodedCertificate(publicAbsoluteUrl(certificatePublicPath(data)), data);
+        : publicAbsoluteUrl(certificatePublicPath(data));
     generateQrCodeDataUrl(url)
       .then((value) => alive && setQr(value))
       .catch(() => undefined);

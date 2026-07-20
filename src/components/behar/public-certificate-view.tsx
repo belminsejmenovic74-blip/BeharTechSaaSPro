@@ -16,6 +16,7 @@ import {
 } from "@/lib/reconditioning-certificate";
 import { formatEuro } from "@/lib/behar-store";
 import { useReconditioningStore } from "@/lib/reconditioning-store";
+import { getSupabase } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 const STATUS_UI: Record<ControlStatus, { cls: string; icon: typeof CheckCircle2; label: string }> = {
@@ -65,12 +66,38 @@ export function PublicCertificateView({
     }
     let cancelled = false;
     setRemoteLoaded(false);
-    fetch(`/api/public/reconditioned/${encodeURIComponent(publicToken)}`, { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((payload) => {
-        if (cancelled) return;
-        const certificate = payload?.certificate;
-        setRemoteData(certificate && typeof certificate === "object" ? (certificate as CertificateData) : null);
+
+    const extractCertificate = (payload: unknown): CertificateData | null => {
+      const certificate = (payload as { certificate?: unknown } | null)?.certificate;
+      return certificate && typeof certificate === "object" ? (certificate as CertificateData) : null;
+    };
+
+    const load = async (): Promise<CertificateData | null> => {
+      // 1) API serveur (service-role) si disponible.
+      try {
+        const res = await fetch(`/api/public/reconditioned/${encodeURIComponent(publicToken)}`, { cache: "no-store" });
+        if (res.ok) {
+          const found = extractCertificate(await res.json());
+          if (found) return found;
+        }
+      } catch {
+        /* on tente le repli anon ci-dessous */
+      }
+      // 2) Repli lecture directe anon (RLS select ouverte) : fonctionne même si la
+      //    clé service-role n'est pas configurée sur le déploiement.
+      const supabase = getSupabase();
+      if (!supabase) return null;
+      const { data: row } = await supabase
+        .from("reconditioning_public_certificates")
+        .select("display_payload")
+        .eq("public_token", publicToken)
+        .maybeSingle();
+      return extractCertificate((row as { display_payload?: unknown } | null)?.display_payload ?? null);
+    };
+
+    load()
+      .then((found) => {
+        if (!cancelled) setRemoteData(found);
       })
       .catch(() => {
         if (!cancelled) setRemoteData(null);
