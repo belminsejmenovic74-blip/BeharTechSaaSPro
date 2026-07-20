@@ -75,13 +75,13 @@ export const DEFAULT_CONTENT = {
 	],
 
 	seo: {
-		title: 'Behar Tech Pro — Le logiciel premium pour ateliers de réparation',
+		title: 'Behar Tech Pro — Logiciel pour réparateurs de téléphones',
 		description:
-			'Behar Tech Pro centralise votre atelier de réparation : suivi client, QR code, devis & factures, reconditionnement et encaissement dans un seul outil.',
-		image: 'https://i.pinimg.com/736x/85/9a/92/859a92a2629f912010a0a72270aefedc.jpg',
-		url: 'https://startup-sve.vercel.app',
+			'Le logiciel de gestion pour ateliers de réparation de téléphones : suivi client, devis, factures, stock, reconditionnement et encaissement en un seul outil.',
+		image: 'https://behartechpro.fr/brand/behar-tech-pro-logo.png',
+		url: 'https://behartechpro.fr',
 		keywords:
-			'logiciel réparation, atelier réparation, suivi client, devis facture, reconditionnement, QR code, SAV smartphone'
+			'logiciel réparation téléphone, logiciel réparation smartphone, logiciel atelier réparation, logiciel réparateur mobile, gestion atelier réparation, suivi client réparation, devis facture réparation'
 	},
 
 	header: {

@@ -10,8 +10,16 @@
 	let email = '';
 	let phone = '';
 	let shopName = '';
-	let contactPref = 'peu-importe';
+	let date = '';
+	let time = '';
 	let company = ''; // honeypot
+
+	// Date minimale = aujourd'hui ; créneaux 09:00 → 18:30 (pas de 30 min).
+	const today = new Date().toISOString().slice(0, 10);
+	const slots: string[] = [];
+	for (let m = 9 * 60; m <= 18 * 60 + 30; m += 30) {
+		slots.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
+	}
 
 	let state: 'idle' | 'loading' | 'success' | 'error' = 'idle';
 	let errorMsg = '';
@@ -24,7 +32,7 @@
 			const res = await fetch('/api/reservation', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ firstName, lastName, email, phone, shopName, contactPref, company })
+				body: JSON.stringify({ firstName, lastName, email, phone, shopName, date, time, company })
 			});
 			const data = await res.json().catch(() => ({}));
 			if (res.ok && data.ok) {
@@ -107,15 +115,30 @@
 						<span class="mb-1 block text-sm font-medium" style="color: var(--bt-text)">Téléphone</span>
 						<input bind:value={phone} type="tel" required autocomplete="tel" class="field" />
 					</label>
-					<label class="block sm:col-span-2">
-						<span class="mb-1 block text-sm font-medium" style="color: var(--bt-text)">Quand vous recontacter ?</span>
-						<select bind:value={contactPref} class="field">
-							<option value="peu-importe">Peu importe</option>
-							<option value="matin">Le matin</option>
-							<option value="apres-midi">L'après-midi</option>
-							<option value="soir">En soirée</option>
-						</select>
-					</label>
+				</div>
+
+				<div class="mt-4 rounded-xl border p-4" style="border-color: rgba(26,25,22,0.10); background:#fff">
+					<p class="mb-3 text-sm font-semibold" style="color: var(--bt-text)">
+						Choisissez un créneau d'appel
+					</p>
+					<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+						<label class="block">
+							<span class="mb-1 block text-sm font-medium" style="color: var(--bt-text)">Date</span>
+							<input bind:value={date} type="date" min={today} required class="field" />
+						</label>
+						<label class="block">
+							<span class="mb-1 block text-sm font-medium" style="color: var(--bt-text)">Heure</span>
+							<select bind:value={time} required class="field">
+								<option value="" disabled selected>Choisir une heure</option>
+								{#each slots as slot}
+									<option value={slot}>{slot}</option>
+								{/each}
+							</select>
+						</label>
+					</div>
+					<p class="mt-2 text-xs text-gray-500">
+						Vous recevrez une invitation agenda par e-mail pour ce créneau.
+					</p>
 				</div>
 
 				<!-- Honeypot anti-spam (masqué aux humains) -->

@@ -1,11 +1,19 @@
 import { env } from '$env/dynamic/private';
 
+type EmailAttachment = {
+	filename: string;
+	/** Contenu encodé en base64. */
+	content: string;
+	contentType?: string;
+};
+
 type SendEmailInput = {
 	to: string;
 	subject: string;
 	html: string;
 	text: string;
 	idempotencyKey: string;
+	attachments?: EmailAttachment[];
 };
 
 type LicenseEmailInput = {
@@ -48,7 +56,16 @@ export async function sendTransactionalEmail(input: SendEmailInput) {
 			subject: input.subject,
 			html: input.html,
 			text: input.text,
-			...(env.EMAIL_REPLY_TO ? { reply_to: env.EMAIL_REPLY_TO } : {})
+			...(env.EMAIL_REPLY_TO ? { reply_to: env.EMAIL_REPLY_TO } : {}),
+			...(input.attachments?.length
+				? {
+						attachments: input.attachments.map((a) => ({
+							filename: a.filename,
+							content: a.content,
+							...(a.contentType ? { content_type: a.contentType } : {})
+						}))
+					}
+				: {})
 		})
 	});
 

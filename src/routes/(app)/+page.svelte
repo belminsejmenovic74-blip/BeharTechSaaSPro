@@ -22,11 +22,14 @@
 	<title>{seoContent.title || seo.title}</title>
 	<meta name="description" content={seoContent.description} />
 	<meta name="keywords" content={seoContent.keywords} />
+	<link rel="canonical" href="https://behartechpro.fr/" />
 
+	<meta property="og:type" content="website" />
+	<meta property="og:locale" content="fr_FR" />
 	<meta property="og:title" content={seoContent.title} />
 	<meta property="og:description" content={seoContent.description} />
 	<meta property="og:image" content={seoContent.image} />
-	<meta property="og:site_name" content={seoContent.title} />
+	<meta property="og:site_name" content="Behar Tech Pro" />
 	<meta property="og:url" content={seoContent.url} />
 
 	<meta name="twitter:card" content="summary_large_image" />
