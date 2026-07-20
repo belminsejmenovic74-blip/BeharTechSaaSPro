@@ -74,9 +74,7 @@
 	$: emailButton = invitationTicket ? 'Activer mon accès' : isSignup ? `Continuer avec l’offre ${selectedPlanData.name}` : 'Se connecter';
 	$: googleButton = isSignup ? 'Google' : 'Continuer avec Google';
 	$: alternateHref = isSignup ? '/connexion' : '/inscription';
-	$: alternateText = isSignup
-		? 'Déjà un compte ? Se connecter'
-		: 'Pas encore de compte ? Créer un compte';
+	$: alternateText = isSignup ? 'Déjà un compte ? Se connecter' : 'Pas encore de compte ? Créer un compte';
 	$: verificationTitle = verificationStep === 'signup-phone-entry'
 		? 'Ajoutez votre téléphone'
 		: verificationStep === 'signup-phone-code'
