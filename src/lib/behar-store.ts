@@ -1060,6 +1060,13 @@ export type SaleLine = {
   supplierInternal?: string;
   /** Dossier reconditionnement vendu via cette ligne, si connu. */
   reconditioningFileId?: string;
+  /**
+   * URL publique auto-portée du certificat de reconditionnement (diagnostic +
+   * photos), figée au moment de la vente. Alimente le QR du reçu pour que
+   * l'acheteur du téléphone voie le diagnostic. Contient le payload `?d=` de
+   * repli → fonctionne même sans table cloud.
+   */
+  certificateUrl?: string;
 };
 
 export type Sale = {
@@ -3889,6 +3896,7 @@ const normalizeSale = (sale: Partial<Sale>, customers: Customer[], repairs: Repa
       purchasePriceInternal: clampMoney(line.purchasePriceInternal),
       supplierInternal: normalizeText(line.supplierInternal) || undefined,
       reconditioningFileId: normalizeText(line.reconditioningFileId) || undefined,
+      certificateUrl: normalizeText(line.certificateUrl) || undefined,
     };
   });
   const customerId =

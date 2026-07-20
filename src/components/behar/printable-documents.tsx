@@ -266,6 +266,38 @@ function DocumentTrackingQr({ url }: Readonly<{ url?: string }>) {
   );
 }
 
+// QR auto-porté (certificat de reconditionnement : diagnostic + photos). L'URL
+// contient déjà tout le nécessaire (`?d=`), donc — contrairement au QR de suivi —
+// on l'affiche toujours, sans dépendre de l'état de synchro cloud.
+function CertificateQr({ url, label = "Diagnostic & photos" }: Readonly<{ url?: string; label?: string }>) {
+  const [qr, setQr] = useState("");
+  const absoluteUrl = url ? publicAbsoluteUrl(url) : "";
+  useEffect(() => {
+    if (!absoluteUrl) return;
+    let active = true;
+    generateQrDataUrl(absoluteUrl)
+      .then((data) => {
+        if (active) setQr(data);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [absoluteUrl]);
+  if (!absoluteUrl || !qr) return null;
+  return (
+    <div className="flex shrink-0 flex-col items-center gap-1">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        alt="QR code du certificat de reconditionnement (diagnostic et photos)"
+        className="size-[80px] rounded-[6px] border border-[#E4E7EC] bg-white p-1"
+        src={qr}
+      />
+      <p className="max-w-[90px] text-center text-[#667085] text-[9px] leading-tight">{label}</p>
+    </div>
+  );
+}
+
 function DocumentHeader({
   type,
   number,
@@ -1348,12 +1380,17 @@ export function SaleReceiptDocument({
   workshop,
 }: Readonly<{ sale: Sale; customer: Customer; workshop?: WorkshopInfo }>) {
   const ws = workshop ?? defaultWorkshopInfo;
+  // Pour un téléphone reconditionné, le QR renvoie au certificat public
+  // (diagnostic + photos). À défaut (accessoire), il renvoie au reçu de vente.
+  const certificateUrl = sale.lines.find((line) => text(line.certificateUrl, ""))?.certificateUrl;
   return (
     <DocumentPage
       badge={sale.status === "Payée" ? "Acquittée" : "À régler"}
       date={sale.paidAt || sale.createdAt}
       number={sale.number}
-      qrSlot={<DocumentTrackingQr url={`/vente/${sale.id}`} />}
+      qrSlot={
+        certificateUrl ? <CertificateQr url={certificateUrl} /> : <DocumentTrackingQr url={`/vente/${sale.id}`} />
+      }
       type="recu-vente"
       workshop={ws}
     >

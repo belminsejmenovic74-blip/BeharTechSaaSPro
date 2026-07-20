@@ -49,6 +49,9 @@ import {
   useBeharStore,
 } from "@/lib/behar-store";
 import { getInternalDocumentUrl } from "@/lib/documents/document-actions";
+import { publicAbsoluteUrl } from "@/lib/public-link";
+import { buildCertificateData, certificatePublicPath, withEncodedCertificate } from "@/lib/reconditioning-certificate";
+import { useReconditioningStore } from "@/lib/reconditioning-store";
 import { realProductImage } from "@/lib/real-product-images";
 import { getWorkshopCountryConfig } from "@/lib/workshop-country";
 
@@ -173,8 +176,22 @@ function formatPaymentLabel(method?: PaymentMethod) {
 
 export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () => void }>) {
   const store = useBeharStore();
+  const reconditioningFiles = useReconditioningStore((s) => s.files);
   const router = useRouter();
   const { print, download } = useDocument();
+
+  // Certificat public (diagnostic + photos) du téléphone reconditionné vendu :
+  // on fige l'URL auto-portée au moment de la vente → le QR du reçu est
+  // scannable même sans table cloud (payload `?d=` de repli).
+  const certificateUrlForReconditioningFile = (fileId?: string): string | undefined => {
+    if (!fileId) return undefined;
+    const file = reconditioningFiles.find((entry) => entry.id === fileId);
+    if (!file) return undefined;
+    const ws = store.workshopSettings ?? store.workshopInfo;
+    const shopName = ws.commercialName || ws.name || ws.brand || "Boutique";
+    const data = buildCertificateData(file, { workshopName: shopName, shopLogoUrl: ws.logoUrl });
+    return withEncodedCertificate(publicAbsoluteUrl(certificatePublicPath(data)), data);
+  };
 
   const [step, setStep] = useState<Step>("cashier");
   const [search, setSearch] = useState("");
@@ -364,6 +381,7 @@ export function CashRegister({ onViewHistory }: Readonly<{ onViewHistory?: () =>
         serialNumber: serialDraft[line.stockItemId]?.trim() || line.serialNumber,
         conditionLabel: conditionDraft[line.stockItemId]?.trim() || line.conditionLabel,
         warrantyMonths: warrantyDraft[line.stockItemId] ?? line.warrantyMonths,
+        certificateUrl: certificateUrlForReconditioningFile(line.reconditioningFileId) || line.certificateUrl,
       };
     });
 
