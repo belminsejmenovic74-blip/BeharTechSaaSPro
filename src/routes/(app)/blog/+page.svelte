@@ -2,57 +2,56 @@
 	import GuidesLayout from '$lib/components/guides/GuidesLayout.svelte';
 	import Breadcrumb from '$lib/components/guides/Breadcrumb.svelte';
 	import SeoHead from '$lib/components/guides/SeoHead.svelte';
-	import { ORG, absUrl } from '$lib/guides/config';
+	import JsonLd from '$lib/components/guides/JsonLd.svelte';
+	import PilierBadge from '$lib/components/guides/PilierBadge.svelte';
+	import { breadcrumbJsonLd } from '$lib/guides/jsonld';
+	import { blogHubUrl, blogUrl, ORG } from '$lib/guides/config';
+	import type { PageData } from './$types';
 
-	const title = 'Blog — Behar Tech Pro';
+	export let data: PageData;
+
+	const title = 'Blog — conseils pour ateliers de réparation | Behar Tech Pro';
 	const description =
-		'Le blog Behar Tech Pro : conseils, actualités et bonnes pratiques pour les ateliers de réparation de smartphones. Premiers articles bientôt disponibles.';
+		'Conseils, méthodes et actualités pour créer, gérer et développer votre atelier de réparation de smartphones.';
 
-	// Sujets prévus — cartes « à venir » (pas de faux contenu publié).
-	const upcoming = [
-		{
-			kicker: 'Gestion d’atelier',
-			title: 'Réduire les délais de réparation sans embaucher',
-			teaser: 'Les leviers d’organisation qui font gagner du temps sur chaque dossier.'
-		},
-		{
-			kicker: 'Rentabilité',
-			title: 'Fixer ses prix de réparation au juste niveau',
-			teaser: 'Une méthode simple pour calculer une marge saine, pièces et main-d’œuvre comprises.'
-		},
-		{
-			kicker: 'Relation client',
-			title: 'Transformer chaque réparation en avis 5 étoiles',
-			teaser: 'Le suivi digital qui rassure le client et améliore votre réputation.'
-		}
-	];
+	const fmtDate = (iso: string) =>
+		new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(
+			new Date(iso)
+		);
 </script>
 
-<SeoHead {title} {description} canonical={absUrl('/blog')} image={ORG.logo} imageAlt={ORG.name} />
+<SeoHead {title} {description} canonical={blogHubUrl()} image={ORG.logo} imageAlt={ORG.name} />
+<JsonLd data={breadcrumbJsonLd([{ name: 'Accueil', url: ORG.url }, { name: 'Blog' }])} />
 
 <GuidesLayout wide>
 	<div class="container">
 		<Breadcrumb items={[{ name: 'Accueil', href: '/' }, { name: 'Blog' }]} />
-
 		<header class="hero">
 			<p class="kicker">Blog</p>
-			<h1>Conseils et actualités pour votre atelier</h1>
-			<p class="lede">
-				Nos premiers articles arrivent avec le lancement. En attendant, retrouvez nos
-				<a href="/guides/">guides pratiques</a> pour créer et gérer votre atelier de réparation.
-			</p>
+			<h1>Conseils pour votre atelier de réparation</h1>
+			<p class="lede">{description}</p>
 		</header>
 
-		<div class="grid">
-			{#each upcoming as item}
-				<article class="card">
-					<span class="badge">{item.kicker}</span>
-					<h2 class="card-title">{item.title}</h2>
-					<p class="teaser">{item.teaser}</p>
-					<p class="soon">Bientôt disponible</p>
-				</article>
-			{/each}
-		</div>
+		{#if data.posts.length}
+			<div class="grid">
+				{#each data.posts as post}
+					<article class="card">
+						<PilierBadge label={post.category} />
+						<h2 class="card-title"><a href={blogUrl(post.slug)}>{post.title}</a></h2>
+						<p class="excerpt">{post.description}</p>
+						<p class="meta">
+							<time datetime={post.datePublished}>{fmtDate(post.datePublished)}</time> · {post.readingMinutes}
+							min de lecture
+						</p>
+					</article>
+				{/each}
+			</div>
+		{:else}
+			<p class="empty">
+				Nos premiers articles arrivent avec le lancement. En attendant, consultez nos
+				<a href="/guides/">guides pratiques</a>.
+			</p>
+		{/if}
 	</div>
 </GuidesLayout>
 
@@ -96,36 +95,36 @@
 	.card {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: 0.6rem;
 		background: var(--surface);
 		border: 1px solid var(--border);
 		border-radius: 16px;
 		padding: 24px;
 	}
-	.badge {
-		align-self: flex-start;
-		padding: 4px 12px;
-		border-radius: 999px;
-		background: var(--accent-soft);
-		color: var(--accent);
-		font-size: 12px;
-		font-weight: 600;
-	}
 	.card-title {
 		font-size: 20px;
 		font-weight: 600;
 		margin: 0;
-		color: var(--text);
 	}
-	.teaser {
+	.card-title a {
+		color: var(--text);
+		text-decoration: none;
+	}
+	.card-title a:hover {
+		color: var(--accent);
+	}
+	.excerpt {
 		font-size: 15px;
 		color: var(--text-muted);
 		margin: 0;
 	}
-	.soon {
-		margin: auto 0 0;
+	.meta {
 		font-size: 13px;
-		font-weight: 600;
-		color: var(--accent);
+		color: var(--text-muted);
+		margin: auto 0 0;
+	}
+	.empty {
+		text-align: center;
+		color: var(--text-muted);
 	}
 </style>

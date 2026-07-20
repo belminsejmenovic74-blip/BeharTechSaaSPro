@@ -1,5 +1,6 @@
 import { getPiliers, getArticles } from '$lib/guides/content';
-import { ORG, hubUrl, faqUrl, pilierUrl, articleUrl } from '$lib/guides/config';
+import { getPosts } from '$lib/blog/content';
+import { ORG, hubUrl, faqUrl, pilierUrl, articleUrl, blogHubUrl, blogUrl } from '$lib/guides/config';
 
 export const prerender = true;
 
@@ -20,6 +21,7 @@ export function GET() {
 	lines.push('## Guides');
 	lines.push('');
 	lines.push(`- [Hub des guides](${hubUrl()})`);
+	lines.push(`- [Blog](${blogHubUrl()})`);
 	lines.push(`- [Questions fréquentes](${faqUrl()})`);
 	lines.push('');
 
@@ -41,6 +43,18 @@ export function GET() {
 		for (const a of articles) {
 			lines.push(
 				`- [${a.frontmatter.title}](${articleUrl(a.frontmatter.slug)}) — ${a.frontmatter.metaDescription}`
+			);
+		}
+		lines.push('');
+	}
+
+	const posts = getPosts();
+	if (posts.length) {
+		lines.push('## Blog');
+		lines.push('');
+		for (const p of posts) {
+			lines.push(
+				`- [${p.frontmatter.title}](${blogUrl(p.frontmatter.slug)}) — ${p.frontmatter.metaDescription}`
 			);
 		}
 		lines.push('');

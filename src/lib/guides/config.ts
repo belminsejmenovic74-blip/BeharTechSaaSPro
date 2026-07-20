@@ -38,3 +38,7 @@ export const pilierUrl = (slug: string) => absUrl(`/guides/${slug}`);
 export const hubUrl = () => absUrl('/guides');
 /** URL canonique de la FAQ. */
 export const faqUrl = () => absUrl('/faq');
+/** URL canonique du hub blog. */
+export const blogHubUrl = () => absUrl('/blog');
+/** URL canonique d'un article de blog. */
+export const blogUrl = (slug: string) => absUrl(`/blog/${slug}`);

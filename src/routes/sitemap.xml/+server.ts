@@ -1,5 +1,6 @@
 import { getArticles, getPiliers } from '$lib/guides/content';
-import { hubUrl, faqUrl, articleUrl, pilierUrl, absUrl } from '$lib/guides/config';
+import { getPosts } from '$lib/blog/content';
+import { hubUrl, faqUrl, articleUrl, pilierUrl, blogHubUrl, blogUrl, absUrl } from '$lib/guides/config';
 
 export const prerender = true;
 
@@ -9,15 +10,19 @@ export function GET() {
 	const urls: Url[] = [
 		{ loc: absUrl('/') },
 		{ loc: hubUrl() },
+		{ loc: blogHubUrl() },
 		{ loc: faqUrl() }
 	];
 
 	for (const p of getPiliers()) {
 		urls.push({ loc: pilierUrl(p.frontmatter.slug) });
 	}
-	// getArticles() exclut déjà les drafts en prod (PRD §5).
+	// getArticles() / getPosts() excluent déjà les drafts en prod.
 	for (const a of getArticles()) {
 		urls.push({ loc: articleUrl(a.frontmatter.slug), lastmod: a.frontmatter.dateModified });
+	}
+	for (const p of getPosts()) {
+		urls.push({ loc: blogUrl(p.frontmatter.slug), lastmod: p.frontmatter.dateModified });
 	}
 
 	const body =

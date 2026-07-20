@@ -112,7 +112,7 @@ export const DEFAULT_CONTENT = {
 			{ text: 'Mise en route prioritaire' },
 			{ text: 'Sans engagement' }
 		],
-		showImage: true,
+		showImage: false,
 		image: '/imgs/mockup-dashboard.png',
 		image2: '/imgs/mockup-c-suivi.png',
 		image2Position: 'bottom-right'
@@ -124,6 +124,8 @@ export const DEFAULT_CONTENT = {
 		items: [
 			{ id: 'st2', value: '15 août 2026', label: 'ouverture officielle', visible: true },
 			{ id: 'st3', value: 'UE + Suisse', label: 'disponible dès le lancement', icon: 'globe', visible: true },
+			{ id: 'st6', value: 'RGPD', label: 'conforme, vos données protégées', icon: 'shieldCheck', visible: true },
+			{ id: 'st7', value: '4 h', label: 'gagnées en moyenne par semaine', icon: 'clock', visible: true },
 			{ id: 'st5', value: '-10 %', label: 'pendant 12 mois', visible: true }
 		]
 	},
@@ -476,6 +478,14 @@ export const DEFAULT_CONTENT = {
 				visible: true
 			},
 			{
+				id: 'int-facture-elec',
+				name: 'Facturation électronique',
+				desc: 'Passage à la facture électronique',
+				logo: '/imgs/facturation-electronique-logo.png',
+				// ⚠ Passer à true dès que le fichier logo est ajouté dans static/imgs/.
+				visible: false
+			},
+			{
 				id: 'int-quali',
 				name: 'Label Quali Répar',
 				desc: 'Gestion des aides réparation',
@@ -495,14 +505,6 @@ export const DEFAULT_CONTENT = {
 				desc: 'Encaissement en boutique',
 				logo: '/imgs/sumup-logo.png',
 				visible: true
-			},
-			{
-				id: 'int-facture-elec',
-				name: 'Facturation électronique',
-				desc: 'Passage à la facture électronique',
-				logo: '/imgs/facturation-electronique-logo.png',
-				// ⚠ Passer à true dès que le fichier logo est ajouté dans static/imgs/.
-				visible: false
 			}
 		]
 	},
@@ -598,7 +600,7 @@ export const DEFAULT_CONTENT = {
 			note: 'paiement unique',
 			buttonText: 'En savoir plus',
 			buttonHref: '#cta',
-			visible: true
+			visible: false
 		}
 	},
 
@@ -665,7 +667,7 @@ export const DEFAULT_CONTENT = {
 			{
 				label: 'RESSOURCES',
 				items: [
-					{ label: 'Blog', href: '/blog' },
+					{ label: 'Blog', href: '/blog/' },
 					{ label: 'Guides', href: '/guides/' },
 					{ label: 'Centre d’aide', href: '/' },
 					{ label: 'API', href: '/' }
