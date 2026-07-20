@@ -132,3 +132,39 @@ export function pickStockLotForQuantity(
 ): StockLot | undefined {
   return getStockLotsForItem(state, stockItem).find((lot) => lot.quantityRemaining >= quantity);
 }
+
+/**
+ * N° interne DISTINCT d'un lot : deux pièces identiques venant de factures
+ * d'achat différentes doivent être différenciables. On dérive un code lisible du
+ * code interne de la pièce + du n° de facture d'origine (repli : fin de l'id du lot).
+ */
+export function stockLotInternalCode(itemInternalCode: string | undefined, lot: StockLot): string {
+  const base = (itemInternalCode ?? "").trim();
+  const suffix = (lot.invoiceNumber ?? "").trim() || lot.id.slice(-5).toUpperCase();
+  return base ? `${base}·${suffix}` : suffix;
+}
+
+/**
+ * Résout un LOT à partir du token scanné (= id de ligne de facture / de lot).
+ * Renvoie la pièce parente + le lot précis, pour que le scan affiche la bonne
+ * facture d'achat quand deux lots de la même pièce coexistent.
+ */
+export function findStockLotByToken(
+  state: StockLotState,
+  stockItems: StockItem[],
+  token: string,
+): { item: StockItem; lot: StockLot } | null {
+  const clean = (token ?? "").trim();
+  if (!clean) return null;
+  const line = state.supplierInvoiceLines.find((entry) => entry.id === clean);
+  const purchase = line ? undefined : state.purchases.find((entry) => entry.id === clean);
+  const stockItemId = line?.stockItemId ?? purchase?.stockItemId;
+  if (!stockItemId) return null;
+  const item = stockItems.find((entry) => entry.id === stockItemId);
+  if (!item) return null;
+  const lot = getStockLotsForItem(state, item).find(
+    (entry) => entry.id === clean || entry.supplierInvoiceLineId === clean || entry.purchaseId === clean,
+  );
+  if (!lot) return null;
+  return { item, lot };
+}

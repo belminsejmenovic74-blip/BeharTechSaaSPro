@@ -12,7 +12,7 @@ import { BeharLogo } from "@/components/behar/behar-logo";
 import { PrimaryButton, SecondaryButton, StatusBadge } from "@/components/behar/primitives";
 import { formatEuro, type StockMovementType, useBeharStore } from "@/lib/behar-store";
 import { getPartTraceability } from "@/lib/part-traceability";
-import { getStockLotsForItem } from "@/lib/stock-lots";
+import { findStockLotByToken, getStockLotsForItem, stockLotInternalCode } from "@/lib/stock-lots";
 import { resolveStockItem, stockPrimaryReference } from "@/lib/stock-reference";
 import { cn } from "@/lib/utils";
 
@@ -93,9 +93,12 @@ export function ScannedPartPage({ scanToken }: Readonly<{ scanToken: string }>) 
   const canViewSupplier = connected && store.hasPermission("canViewSupplier");
   const canManageStock = connected && store.hasPermission("canManageStock");
   const canUseStockItem = connected && store.hasPermission("canUseStockItem");
+  // Un QR peut cibler soit une pièce (scanToken pièce), soit un LOT précis
+  // (id de ligne de facture) : deux lots d'une même pièce ont un QR distinct.
+  const scannedLot = useMemo(() => findStockLotByToken(store, store.stockItems, scanToken), [scanToken, store]);
   const item = useMemo(
-    () => resolveStockItem(store.stockItems, scanToken, { includeDisabledScanToken: true }),
-    [scanToken, store.stockItems],
+    () => resolveStockItem(store.stockItems, scanToken, { includeDisabledScanToken: true }) ?? scannedLot?.item,
+    [scanToken, store.stockItems, scannedLot],
   );
   const primaryReference = item ? stockPrimaryReference(item) : "";
   const trace = useMemo(() => getPartTraceability(store, primaryReference), [store, primaryReference]);
@@ -225,6 +228,26 @@ export function ScannedPartPage({ scanToken }: Readonly<{ scanToken: string }>) 
             <InfoRow label="Référence interne" mono value={displayText(primaryReference)} />
             {item.internalCode && item.internalCode !== primaryReference && (
               <InfoRow label="Code interne" mono value={displayText(item.internalCode)} />
+            )}
+            {scannedLot?.lot && (
+              <>
+                <InfoRow
+                  label="N° interne du lot"
+                  mono
+                  value={displayText(stockLotInternalCode(item.internalCode, scannedLot.lot))}
+                />
+                {(canViewSupplier || !connected) && scannedLot.lot.supplierName && (
+                  <InfoRow label="Fournisseur du lot" value={displayText(scannedLot.lot.supplierName)} />
+                )}
+                {scannedLot.lot.invoiceNumber && (
+                  <InfoRow label="Facture d'achat" mono value={displayText(scannedLot.lot.invoiceNumber)} />
+                )}
+                <InfoRow label="Reçu le" value={shortDate(scannedLot.lot.purchaseDate)} />
+                <InfoRow label="Restant sur ce lot" value={String(scannedLot.lot.quantityRemaining)} />
+                {canViewPurchasePrice && scannedLot.lot.unitCost !== undefined && (
+                  <InfoRow label="Coût unitaire du lot" mono value={formatEuro(scannedLot.lot.unitCost)} />
+                )}
+              </>
             )}
             <InfoRow
               label="Modèle compatible"

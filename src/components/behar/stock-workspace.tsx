@@ -52,7 +52,7 @@ import { getPartTraceability } from "@/lib/part-traceability";
 import type { PriceBookItem } from "@/lib/price-book";
 import { buildScannedPartUrl } from "@/lib/stock-label-url";
 import { downloadStockLabelPdf } from "@/lib/stock-label-pdf";
-import { getStockLotsForItem } from "@/lib/stock-lots";
+import { getStockLotsForItem, stockLotInternalCode, type StockLot } from "@/lib/stock-lots";
 import {
   findPriceBookBySelection,
   findStockBySelection,
@@ -2654,17 +2654,54 @@ export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string
     );
   }
 
+  async function printLotLabel(lot: StockLot) {
+    if (!item) return;
+    try {
+      const targetUrl = buildScannedPartUrl(lot.id);
+      const qrDataUrl = await QRCode.toDataURL(targetUrl, {
+        errorCorrectionLevel: "M",
+        margin: 2,
+        width: 320,
+        color: { dark: "#101828", light: "#FFFFFF" },
+      });
+      const lotCode = stockLotInternalCode(item.internalCode, lot);
+      downloadStockLabelPdf({
+        copies: Math.max(1, lot.quantityRemaining || 1),
+        filename: `etiquette-lot-${lotCode}.pdf`,
+        format: "thermal40",
+        // Étiquette propre au lot : code interne distinct + QR pointant sur ce lot
+        // précis (deux lots d'une même pièce = deux étiquettes différenciables).
+        item: { ...item, internalCode: lotCode },
+        qrDataUrl,
+      });
+      toast.success("Étiquette(s) du lot téléchargée(s).");
+    } catch {
+      toast.error("Étiquette du lot impossible (URL de production à configurer).");
+    }
+  }
+
   function renderLots(limit?: number) {
     const visibleLots = typeof limit === "number" ? lots.slice(0, limit) : lots;
     if (!visibleLots.length) return <StockEmptyBlock>Aucun lot fournisseur relié à cette pièce.</StockEmptyBlock>;
     return (
       <StockCompactTable
-        headers={["Lot", "Fournisseur", "Facture", "Reçu", "Restant", "Date", "Coût unitaire"]}
-        minWidth={860}
+        headers={[
+          "N° interne du lot",
+          "Fournisseur",
+          "Facture",
+          "Reçu",
+          "Restant",
+          "Date",
+          "Coût unitaire",
+          "Étiquette",
+        ]}
+        minWidth={980}
       >
         {visibleLots.map((lot) => (
           <tr key={lot.id}>
-            <td className="px-4 py-3 font-mono text-[#101828] text-xs">{lot.id}</td>
+            <td className="px-4 py-3 font-mono font-semibold text-[#101828] text-xs">
+              {stockLotInternalCode(item?.internalCode, lot)}
+            </td>
             <td className="px-4 py-3 text-[#101828]">{canViewSupplier ? lot.supplierName || "—" : "Masqué"}</td>
             <td className="px-4 py-3 font-mono text-[#167B70] text-xs">{lot.invoiceNumber || "—"}</td>
             <td className="px-4 py-3 tabular-nums">{lot.quantityPurchased}</td>
@@ -2672,6 +2709,15 @@ export function StockItemDetailWorkspace({ pieceId }: Readonly<{ pieceId: string
             <td className="px-4 py-3 text-[#667085]">{shortDate(lot.purchaseDate || lot.createdAt)}</td>
             <td className="px-4 py-3 text-right tabular-nums">
               {canViewPurchasePrice ? formatEuro(lot.unitCost ?? 0) : "Masqué"}
+            </td>
+            <td className="px-4 py-3">
+              <button
+                type="button"
+                onClick={() => void printLotLabel(lot)}
+                className="rounded-full border border-[#2A9D8F] px-3 py-1 font-semibold text-[#167B70] text-xs hover:bg-[#F2FAF8]"
+              >
+                Étiquette QR
+              </button>
             </td>
           </tr>
         ))}
