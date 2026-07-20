@@ -1,13 +1,11 @@
 <script lang="ts">
 	import '../app.css';
 	import { ModeWatcher } from 'mode-watcher';
-	import { onMount, setContext } from 'svelte';
+	import { setContext } from 'svelte';
 	import { writable } from 'svelte/store';
 	import { page } from '$app/stores';
 	import ThirdPartyScripts from '$lib/components/ThirdPartyScripts.svelte';
 	import { themeToCssVars } from '$lib/cms/theme';
-	import { loadPublishedSiteContent } from '$lib/cms/db';
-	import { getAdminSession } from '$lib/cms/local';
 	import EditorRoot from '$lib/components/editor/EditorRoot.svelte';
 	import { breakpoint, editMode } from '$lib/editor/store';
 	import type { SiteContent } from '$lib/cms/types';
@@ -21,17 +19,9 @@
 
 	$: isPublic = !$page.url.pathname.startsWith('/admin');
 
-	// Le site public affiche DEFAULT_CONTENT (source de vérité depuis 44364e9).
-	// On ne recharge le contenu publié Supabase que pour un admin connecté, pour
-	// ne pas écraser le contenu du code par une version publiée obsolète.
-	// (L'éditeur « Mode édition » charge le brouillon de son côté, voir EditorRoot.)
-	onMount(() => {
-		if (isPublic && getAdminSession()) {
-			loadPublishedSiteContent(data.content)
-				.then((published) => content.set(published))
-				.catch((e) => console.error('[cms] load published failed', e));
-		}
-	});
+	// Le site public affiche TOUJOURS DEFAULT_CONTENT (source de vérité depuis
+	// 44364e9), admin ou non : le contenu publié Supabase (obsolète) ne recharge
+	// plus par-dessus. L'éditeur « Mode édition » charge le brouillon (EditorRoot).
 
 	// Variables de thème appliquées sur un wrapper display:contents (héritées par
 	// tous les descendants, sans boîte supplémentaire).

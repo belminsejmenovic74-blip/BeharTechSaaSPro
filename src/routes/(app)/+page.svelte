@@ -1,9 +1,7 @@
 <script lang="ts">
 	import { seo } from '$lib';
-	import { onMount } from 'svelte';
 	import type { SiteContent } from '$lib/cms/types';
-	import { createDefaultDb, loadPublishedDb } from '$lib/cms/db';
-	import { getAdminSession } from '$lib/cms/local';
+	import { createDefaultDb } from '$lib/cms/db';
 	import SectionRenderer from '$lib/components/landing/SectionRenderer.svelte';
 	import JsonLd from '$lib/components/guides/JsonLd.svelte';
 	import { organizationJsonLd } from '$lib/guides/jsonld';
@@ -11,18 +9,10 @@
 	export let data: { content: SiteContent };
 	$: seoContent = data.content.seo;
 
+	// Le site public affiche TOUJOURS DEFAULT_CONTENT (source de vérité depuis
+	// 44364e9), admin ou non. Le contenu publié Supabase (obsolète) n'écrase plus
+	// la landing. L'éditeur « Mode édition » charge le brouillon de son côté.
 	let db = createDefaultDb();
-
-	onMount(() => {
-		// Le site public affiche DEFAULT_CONTENT (source de vérité depuis 44364e9).
-		// On ne recharge le contenu publié Supabase que pour un admin connecté, pour
-		// ne pas écraser la landing du code par une version publiée obsolète.
-		if (getAdminSession()) {
-			loadPublishedDb().then((published) => {
-				db = published;
-			});
-		}
-	});
 
 	// Trier les sections selon l'ordre défini par l'admin
 	$: sections = db.page_sections.sort((a, b) => a.order - b.order);
