@@ -626,13 +626,6 @@ export async function ensureCloudStateForLicense(
   const normalizedKey = normalizeLicenseKey(key);
   if (!normalizedKey) throw new Error("Licence requise.");
 
-  const localState = {
-    ...useBeharStore.getState(),
-    licenseActivated: true,
-    licenseKey: normalizedKey,
-    licensePlan: useBeharStore.getState().licensePlan || "Pilote",
-  } as Partial<StoreState> & Record<string, unknown>;
-
   if (!isSupabaseConfigured()) {
     markSyncStatus("error", { lastError: "Supabase non configuré sur ce déploiement." });
     throw new Error("Connexion cloud requise. Configurez Supabase avant d'activer la licence.");
@@ -643,6 +636,25 @@ export async function ensureCloudStateForLicense(
     hydrateStoreFromCloud(remote, { force });
     return "loaded";
   }
+
+  // Nouveau compte (aucun snapshot cloud) : on ne doit JAMAIS initialiser son
+  // atelier cloud avec les données d'un autre atelier encore présentes en local
+  // (fuite « nouveau compte = données de l'ancien »). Si l'état local
+  // n'appartient pas déjà à cette licence, on repart d'un état vierge.
+  const store = useBeharStore.getState();
+  const ownsLocalState =
+    normalizeLicenseKey((store.licenseKey as string) ?? "") === normalizedKey ||
+    normalizeLicenseKey((store.lastLicenseKey as string) ?? "") === normalizedKey;
+  if (!ownsLocalState) {
+    store.resetLocalStateForLicense(normalizedKey);
+  }
+
+  const localState = {
+    ...useBeharStore.getState(),
+    licenseActivated: true,
+    licenseKey: normalizedKey,
+    licensePlan: useBeharStore.getState().licensePlan || "Pilote",
+  } as Partial<StoreState> & Record<string, unknown>;
 
   const created = await createSnapshotForLicenseKey(normalizedKey, localState);
   hydrateStoreFromCloud(created, { force: true });

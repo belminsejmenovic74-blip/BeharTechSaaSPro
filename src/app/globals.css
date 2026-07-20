@@ -166,6 +166,24 @@ These serve as the fallback; there is no separate default.css file. */
     @apply font-sans;
   }
 
+  /* Champs date/heure : forcer un rendu clair et lisible. Sans cela, selon le
+     thème/OS, les chiffres du sélecteur natif peuvent s'afficher très clairs
+     (voire blancs) sur fond blanc → « on ne voit rien » dans les horaires. */
+  input[type="time"],
+  input[type="date"],
+  input[type="datetime-local"] {
+    color-scheme: light;
+    color: #101828;
+  }
+  input[type="time"]::-webkit-datetime-edit,
+  input[type="date"]::-webkit-datetime-edit,
+  input[type="datetime-local"]::-webkit-datetime-edit {
+    color: #101828;
+  }
+  input[type="time"]::-webkit-datetime-edit-fields-wrapper {
+    color: #101828;
+  }
+
   /* Global Select Styling for Behar Tech SaaS */
   select:not([multiple]) {
     appearance: none;

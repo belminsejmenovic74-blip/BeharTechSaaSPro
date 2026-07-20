@@ -294,8 +294,11 @@ function DocumentHeader({
   return (
     <header className="flex flex-col items-start justify-between gap-5 border-[#E4E7EC] border-b pb-5 sm:flex-row sm:gap-8">
       <div className="min-w-0 max-w-[470px] text-left">
-        <div className="text-[#667085] text-[12px] leading-relaxed">
-          <p className="mb-1 font-bold text-[#101828] text-[15px] tracking-tight">{atelierName}</p>
+        {/* Colonne flex + gap réel : html2canvas mesure mal `line-height`
+            relatif et faisait se chevaucher les lignes (adresse, SIRET, email…)
+            dans le PDF. Un espacement par `gap` est rendu fidèlement. */}
+        <div className="flex flex-col gap-[3px] text-[#667085] text-[12px] leading-[1.35]">
+          <p className="mb-1 font-bold text-[#101828] text-[15px] leading-[1.2] tracking-tight">{atelierName}</p>
           {isSet(workshop.address) && <p>{workshop.address}</p>}
           {isSet(workshop.postalCity) ? (
             <p>

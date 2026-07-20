@@ -1393,6 +1393,7 @@ export type StoreState = {
   activateLicense: (key: string) => boolean;
   activateTrustedLicense: (key: string, plan?: string, organizationRole?: string) => void;
   deactivateLicense: () => void;
+  resetLocalStateForLicense: (key: string) => void;
 
   // Team
   addTeamMember: (member: Omit<TeamMember, "id">) => void;
@@ -4411,6 +4412,41 @@ const syncPriceBookToStockItems = (pbItems: PriceBookItem[], stockItems: StockIt
   return nextStock;
 };
 
+// Reverse de syncPriceBookToStockItems : quand on enregistre une pièce avec un
+// prix d'achat, on renseigne automatiquement ce prix d'achat sur la fiche Tarif
+// (PriceBook) correspondante. On ne met à jour QUE la première fiche qui
+// correspond (lien direct, SKU, ou marque+modèle+catégorie) — jamais de création
+// automatique, pour ne pas polluer les Tarifs.
+const applyStockPurchasePriceToPriceBook = (pbItems: PriceBookItem[], item: StockItem): PriceBookItem[] => {
+  const purchase = clampMoney(item.purchasePrice);
+  if (!(purchase > 0)) return pbItems;
+  const itemName = (item.name || "").toLowerCase();
+  const itemSku = (item.sku || item.reference || "").toLowerCase();
+  const itemBrand = (item.brandName || "").toLowerCase();
+  const itemModels = (item.compatibleModels || []).map((m) => m.toLowerCase());
+  const itemCat = (item.categoryName || item.category || "").toLowerCase();
+  let matched = false;
+  return pbItems.map((pb) => {
+    if (matched) return pb;
+    const linkMatch = pb.stockItemId === item.id || (Boolean(item.priceBookItemId) && pb.id === item.priceBookItemId);
+    const skuMatch = Boolean(itemSku) && (pb.sku || "").toLowerCase() === itemSku;
+    const attrMatch =
+      Boolean(itemBrand) &&
+      (pb.marque || "").toLowerCase() === itemBrand &&
+      itemModels.some((m) => m === (pb.modele || "").toLowerCase()) &&
+      ((pb.piece || "").toLowerCase() === itemName ||
+        getCategoryFromIntervention(pb.reparation).toLowerCase() === itemCat);
+    if (!(linkMatch || skuMatch || attrMatch)) return pb;
+    matched = true;
+    return {
+      ...pb,
+      prixAchat: purchase,
+      stockItemId: pb.stockItemId || item.id,
+      updatedAt: getNowIso(),
+    };
+  });
+};
+
 // Déduit le modèle d'appareil à partir du nom de la pièce quand l'utilisateur
 // n'a sélectionné aucun modèle compatible. Ex. "Écran iPhone 13" → "iPhone 13".
 const inferModelFromPartName = (partName: string, brandName?: string): string | undefined => {
@@ -5482,6 +5518,20 @@ export const useBeharStore = create<StoreState>()(
           lastLicenseKey: state.licenseKey || state.lastLicenseKey,
         }));
       },
+      // Repart d'un état LOCAL vierge rattaché à `key`. Sert de garde-fou anti-fuite
+      // entre ateliers : avant de créer le snapshot cloud d'un nouveau compte, on
+      // s'assure de ne jamais y pousser les données d'un autre atelier restées en local.
+      resetLocalStateForLicense: (key: string) => {
+        const normalizedKey = key.toUpperCase().trim();
+        set({
+          ...createSeed(),
+          licenseActivated: true,
+          licenseKey: normalizedKey || undefined,
+          lastLicenseKey: normalizedKey || undefined,
+          licenseActivatedAt: new Date().toISOString(),
+          _hasHydrated: true,
+        } as Partial<StoreState>);
+      },
 
       addTeamMember: (member) => {
         set((state) => ({
@@ -5563,12 +5613,18 @@ export const useBeharStore = create<StoreState>()(
         const cleanName = normalizeText(input.name, "Client comptoir");
         const cleanPhone = normalizePhone(input.phone);
         const cleanEmail = normalizeEmail(input.email);
-        if (cleanName !== "Client comptoir" && (cleanPhone || cleanEmail)) {
+        // Un email/téléphone identifiant réel, jamais un placeholder : sans ces
+        // garde-fous, deux clients créés sans email partagent la valeur
+        // normalisée « non renseigné » et le second est fusionné à tort avec le
+        // premier (mauvais customerId, nom du client précédent affiché).
+        const hasRealEmail = cleanEmail.includes("@");
+        const hasRealPhone = cleanPhone.length >= 6;
+        if (cleanName !== "Client comptoir" && (hasRealPhone || hasRealEmail)) {
           const existing = get().customers.find(
             (customer) =>
               customer.type !== "counter" &&
-              ((cleanPhone && normalizePhone(customer.phone) === cleanPhone) ||
-                (cleanEmail && normalizeEmail(customer.email) === cleanEmail)),
+              ((hasRealPhone && normalizePhone(customer.phone) === cleanPhone) ||
+                (hasRealEmail && normalizeEmail(customer.email) === cleanEmail)),
           );
           if (existing) {
             set({ selectedCustomerId: existing.id });
@@ -6518,7 +6574,18 @@ export const useBeharStore = create<StoreState>()(
                     modelId: currentItem.modelIds?.[0],
                   },
                 ];
-            const amount = clampMoney((repair.laborPrice ?? 0) + repairPartsTotal(parts));
+            // Réserver une pièce du stock ne doit PAS regonfler un prix client
+            // déjà fixé (intervention/devis) : sinon le prix de la pièce est
+            // compté deux fois (dans le total convenu ET par la réservation).
+            // Sans prix fixé, les pièces définissent le montant.
+            const priorClientTotal = repair.total ?? repair.amount ?? 0;
+            const hasFixedClientPrice =
+              (repair.selectedPriceSnapshot?.prixClientTotal ?? 0) > 0 ||
+              priorClientTotal > 0 ||
+              current.quotes.some((quote) => quote.repairId === repairId && (quote.lines?.length ?? 0) > 0);
+            const amount = hasFixedClientPrice
+              ? clampMoney(priorClientTotal)
+              : clampMoney((repair.laborPrice ?? 0) + repairPartsTotal(parts));
             return {
               ...repair,
               amount,
@@ -6802,23 +6869,27 @@ export const useBeharStore = create<StoreState>()(
 
           return {
             stockItems: nextStock,
-            repairs: current.repairs.map((entry) =>
-              entry.id === repairId
-                ? {
-                    ...entry,
-                    amount: clampMoney(
-                      (entry.laborPrice ?? 0) +
-                        repairPartsTotal(entry.parts.filter((repairPart) => repairPart.stockItemId !== stockItemId)),
-                    ),
-                    total: clampMoney(
-                      (entry.laborPrice ?? 0) +
-                        repairPartsTotal(entry.parts.filter((repairPart) => repairPart.stockItemId !== stockItemId)),
-                    ),
-                    parts: entry.parts.filter((repairPart) => repairPart.stockItemId !== stockItemId),
-                    history: [...entry.history, `Pièce retirée : ${currentPart.name} x${currentPart.quantity}`],
-                  }
-                : entry,
-            ),
+            repairs: current.repairs.map((entry) => {
+              if (entry.id !== repairId) return entry;
+              const remainingParts = entry.parts.filter((repairPart) => repairPart.stockItemId !== stockItemId);
+              // Symétrique de addPartToRepair : un prix client fixé ne bouge pas
+              // quand on retire une pièce réservée (traçabilité/stock seulement).
+              const priorClientTotal = entry.total ?? entry.amount ?? 0;
+              const hasFixedClientPrice =
+                (entry.selectedPriceSnapshot?.prixClientTotal ?? 0) > 0 ||
+                priorClientTotal > 0 ||
+                current.quotes.some((quote) => quote.repairId === repairId && (quote.lines?.length ?? 0) > 0);
+              const nextAmount = hasFixedClientPrice
+                ? clampMoney(priorClientTotal)
+                : clampMoney((entry.laborPrice ?? 0) + repairPartsTotal(remainingParts));
+              return {
+                ...entry,
+                amount: nextAmount,
+                total: nextAmount,
+                parts: remainingParts,
+                history: [...entry.history, `Pièce retirée : ${currentPart.name} x${currentPart.quantity}`],
+              };
+            }),
           };
         });
         if (part.stockDecremented === true || part.confirmed === true) {
@@ -8436,6 +8507,12 @@ export const useBeharStore = create<StoreState>()(
             originSupplierInvoiceLineId:
               enrichedInput.originSupplierInvoiceLineId || duplicate.originSupplierInvoiceLineId,
           });
+          const mergedItem = get().stockItems.find((entry) => entry.id === duplicate.id);
+          if (mergedItem) {
+            set((state) => ({
+              priceBookItems: applyStockPurchasePriceToPriceBook(state.priceBookItems, mergedItem),
+            }));
+          }
           if (stockToAdd > 0) {
             if (input.skipPurchaseLog) {
               const before = get().stockItems.find((entry) => entry.id === duplicate.id) ?? duplicate;
@@ -8494,6 +8571,8 @@ export const useBeharStore = create<StoreState>()(
           const stockItems = [item, ...state.stockItems];
           return {
             stockItems,
+            // Renseigne le prix d'achat de la pièce sur la fiche Tarif correspondante.
+            priceBookItems: applyStockPurchasePriceToPriceBook(state.priceBookItems, item),
             selectedStockItemId: id,
           };
         });

@@ -18,7 +18,7 @@ type Props = {
 };
 
 const timeClass =
-  "h-10 min-w-0 rounded-[12px] border border-[#E4E7EC] bg-white px-2.5 text-sm text-[#101828] outline-none focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/10";
+  "h-10 w-full min-w-[104px] rounded-[12px] border border-[#E4E7EC] bg-white px-2.5 text-sm text-[#101828] [color-scheme:light] outline-none focus:border-[#2A9D8F] focus:ring-4 focus:ring-[#2A9D8F]/10";
 
 export function BusinessHoursEditor({ value, onChange, compact = false }: Props) {
   const hours = value ? normalizeWorkshopWeeklyHours(value) : defaultWorkshopWeeklyHours();

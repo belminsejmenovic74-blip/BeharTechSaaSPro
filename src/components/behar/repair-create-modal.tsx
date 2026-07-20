@@ -261,6 +261,9 @@ export function RepairModal({
   const [marque, setMarque] = useState(sourceDeviceParts.brand);
   const [modele, setModele] = useState(sourceDeviceParts.model);
 
+  const [imei, setImei] = useState(
+    source?.imei && source.imei !== "Non renseigné" && source.imei !== "IMEI non renseigné" ? source.imei : "",
+  );
   const [intervention, setIntervention] = useState(source?.issue ?? "");
   const [interventionSearch, setInterventionSearch] = useState("");
   const [prixPiece, setPrixPiece] = useState("");
@@ -312,6 +315,7 @@ export function RepairModal({
     setDeviceType(source.deviceType ?? "Smartphone");
     setMarque(parts.brand);
     setModele(parts.model);
+    setImei(source.imei && source.imei !== "Non renseigné" && source.imei !== "IMEI non renseigné" ? source.imei : "");
     setIntervention(source.issue ?? "");
     const snap = source.selectedPriceSnapshot;
     if (snap) {
@@ -573,8 +577,11 @@ export function RepairModal({
         .join(", ");
       return addCustomer({
         name: newName.trim() || "Nouveau client",
-        phone: newPhone.trim() || "Non renseigné",
-        email: newEmail.trim() || "Non renseigné",
+        // Champs vides laissés vides (jamais le placeholder « Non renseigné ») :
+        // le placeholder polluait la déduplication et rattachait le dossier au
+        // client précédent. Voir addCustomer.
+        phone: newPhone.trim() || "",
+        email: newEmail.trim() || "",
         address,
         device: modelFull,
         lastRepair: intervention,
@@ -751,7 +758,7 @@ export function RepairModal({
       total: totalClient,
       notes: notesInternes || "",
       technician: "Atelier principal",
-      imei: "Non renseigné",
+      imei: imei.trim() || "Non renseigné",
       estimatedDoneAt: getTomorrowIso(),
       appointmentId,
       selectedPriceSnapshot: snapshot,
@@ -1014,7 +1021,7 @@ export function RepairModal({
                   droppedAt: getNowIso(),
                   history: [],
                   technician: "Atelier principal",
-                  imei: "Non renseigné",
+                  imei: imei.trim() || "Non renseigné",
                   intakeCondition: intakeDraft,
                 } as unknown as Repair
               }
@@ -1470,6 +1477,24 @@ export function RepairModal({
                           </div>
                         </>
                       )}
+                    </div>
+                  )}
+
+                  {deviceType && (
+                    <div>
+                      <label className="mb-1 block text-[#667085] text-xs" htmlFor="repair-imei-input">
+                        IMEI / n° de série <span className="text-[#98A2B3]">(optionnel)</span>
+                      </label>
+                      <input
+                        id="repair-imei-input"
+                        data-testid="repair-imei-input"
+                        className="h-11 w-full rounded-xl border border-[#E4E7EC] px-3 text-sm focus:border-[#2A9D8F] focus:outline-none"
+                        onChange={(e) => setImei(e.target.value)}
+                        placeholder="Ex. 356789012345678"
+                        value={imei}
+                        inputMode="numeric"
+                        autoComplete="off"
+                      />
                     </div>
                   )}
                 </section>
