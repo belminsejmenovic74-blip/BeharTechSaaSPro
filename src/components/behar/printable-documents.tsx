@@ -1353,6 +1353,7 @@ export function SaleReceiptDocument({
       badge={sale.status === "Payée" ? "Acquittée" : "À régler"}
       date={sale.paidAt || sale.createdAt}
       number={sale.number}
+      qrSlot={<DocumentTrackingQr url={`/vente/${sale.id}`} />}
       type="recu-vente"
       workshop={ws}
     >

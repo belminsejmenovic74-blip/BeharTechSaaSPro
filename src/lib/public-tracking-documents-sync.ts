@@ -8,7 +8,7 @@ type CommercialKind = PublicCommercialDocumentDto["kind"];
 
 type DocumentSyncState = Pick<
   StoreState,
-  "cloudSync" | "customers" | "invoices" | "quotes" | "repairs" | "workshopInfo" | "workshopSettings"
+  "cloudSync" | "customers" | "invoices" | "quotes" | "repairs" | "sales" | "workshopInfo" | "workshopSettings"
 >;
 
 // Statuts à ne PAS publier : brouillons / annulations (rien d'utile pour le client).
@@ -41,6 +41,13 @@ export async function syncPublicTrackingDocumentsToCloud(state: DocumentSyncStat
   for (const invoice of state.invoices ?? []) {
     if (SKIPPED_STATUSES.has(invoice.status)) continue;
     entries.push({ kind: "invoice", id: invoice.id, number: invoice.number });
+  }
+  // Ventes comptoir (téléphone reconditionné / accessoire) : token = sale.id,
+  // lu par la page publique /vente via la clé anon. On ne publie pas les
+  // brouillons ni les ventes annulées.
+  for (const sale of state.sales ?? []) {
+    if (SKIPPED_STATUSES.has(sale.status)) continue;
+    entries.push({ kind: "sale", id: sale.id, number: sale.number });
   }
   // Bon de prise en charge : un « intake » par réparation active (token = repair.id),
   // pour que le client puisse le consulter/télécharger depuis la page de suivi.

@@ -8,7 +8,7 @@ type CommercialKind = PublicCommercialDocumentDto["kind"];
 
 type CommercialState = Pick<
   StoreState,
-  "customers" | "invoices" | "quotes" | "repairs" | "workshopInfo" | "workshopSettings"
+  "customers" | "invoices" | "quotes" | "repairs" | "sales" | "workshopInfo" | "workshopSettings"
 >;
 
 function resolveShopName(candidates: Array<string | undefined>): string {
@@ -134,6 +134,39 @@ export function buildPublicCommercialDtoFromLocalState(
       },
       lines: (invoice.lines ?? []).map(lineFromQuoteLine),
       relatedRepair: relatedRepair(state, invoice.repairId, workshop),
+      documents: [],
+    };
+  }
+
+  if (kind === "sale") {
+    // Vente comptoir (téléphone reconditionné / accessoire). token = sale.id.
+    const sale = state.sales.find((entry) => entry.id === cleanToken);
+    if (!sale) return null;
+    const workshop = getBillingWorkshopInfo(workshopInfo, sale.billingCountry);
+    return {
+      kind,
+      workshop: publicWorkshop(workshop),
+      client: { displayName: clientDisplayName(state, sale.customerId, sale.customerName) },
+      document: {
+        number: sale.number,
+        status: sale.status,
+        totalTtc: Number(sale.total ?? 0),
+        createdAt: sale.paidAt || sale.createdAt || new Date().toISOString(),
+      },
+      lines: (sale.lines ?? []).map((line) => ({
+        label: [
+          line.name,
+          line.conditionLabel ? `État : ${line.conditionLabel}` : "",
+          line.serialNumber ? `N° série ${line.serialNumber}` : "",
+          line.warrantyMonths ? `Garantie ${line.warrantyMonths} mois` : "",
+        ]
+          .filter(Boolean)
+          .join(" · "),
+        quantity: Number(line.quantity ?? 1),
+        unitPriceTtc: Number(line.unitPrice ?? 0),
+        totalTtc: Number(line.total ?? Number(line.quantity ?? 1) * Number(line.unitPrice ?? 0)),
+      })),
+      relatedRepair: relatedRepair(state, sale.repairId, workshop),
       documents: [],
     };
   }
