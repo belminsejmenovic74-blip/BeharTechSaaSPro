@@ -22,7 +22,7 @@
 		...($clerkSession.signedIn
 			? []
 			: [
-					{ label: header.loginLabel, href: header.loginHref },
+					...(header.loginLabel ? [{ label: header.loginLabel, href: header.loginHref }] : []),
 					{ label: header.ctaLabel, href: header.ctaHref }
 				])
 	];
@@ -63,12 +63,14 @@
 			{#if $clerkSession.signedIn}
 				<ClerkUserButton />
 			{:else}
-				<a
-					class="text-sm text-[#1A1916]"
-					href={header.loginHref}
-					use:editable={{ id: 'header.login', kind: 'button', path: 'header.loginLabel', label: 'Connexion', fields: { href: 'header.loginHref' } }}
-					>{header.loginLabel}</a
-				>
+				{#if header.loginLabel}
+					<a
+						class="text-sm text-[#1A1916]"
+						href={header.loginHref}
+						use:editable={{ id: 'header.login', kind: 'button', path: 'header.loginLabel', label: 'Connexion', fields: { href: 'header.loginHref' } }}
+						>{header.loginLabel}</a
+					>
+				{/if}
 				<a
 					class="rounded-lg px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
 					style="background: var(--bt-button)"

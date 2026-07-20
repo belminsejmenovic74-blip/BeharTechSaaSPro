@@ -92,7 +92,7 @@ export const DEFAULT_CONTENT = {
 			{ label: 'Tarifs', href: '#pricing' },
 			{ label: 'FAQ', href: '#faq' }
 		],
-		loginLabel: 'Connexion',
+		loginLabel: '',
 		loginHref: '/connexion',
 		ctaLabel: 'Réserver ma place',
 		ctaHref: '#cta'
@@ -104,7 +104,7 @@ export const DEFAULT_CONTENT = {
 		subtitle: 'Gagnez du temps. Gagnez des clients.\nCentralisez votre atelier dans un seul outil.',
 		ctaLabel: 'Réserver ma place',
 		ctaHref: '#cta',
-		cta2Label: 'Voir la démo',
+		cta2Label: 'Voir la démo du widget',
 		cta2Href: '/exemple',
 		showProofs: true,
 		proofs: [
@@ -660,7 +660,7 @@ export const DEFAULT_CONTENT = {
 					{ label: 'Fonctionnalités', href: '#pense' },
 					{ label: 'Tarifs', href: '#pricing' },
 					{ label: 'FAQ', href: '#faq' },
-					{ label: 'Connexion', href: '/connexion' }
+					{ label: 'Réserver ma place', href: '#cta' }
 				]
 			},
 			{

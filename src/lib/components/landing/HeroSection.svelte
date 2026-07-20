@@ -55,6 +55,17 @@
 		</a>
 	{/if}
 
+	{#if hero.cta2Label}
+		<a
+			href={hero.cta2Href}
+			use:editable={{ id: 'hero.cta2', kind: 'button', path: 'hero.cta2Label', label: 'Bouton secondaire', fields: { href: 'hero.cta2Href' } }}
+			class="-translate-y-4 animate-fade-in mt-4 inline-flex items-center gap-2 rounded-lg border px-6 py-3 text-sm font-semibold opacity-0 transition hover:bg-black/[0.03] [--animation-delay:500ms] md:mt-8 md:ml-3"
+			style="border-color: rgba(26,25,22,0.14); color: var(--bt-text)"
+		>
+			{hero.cta2Label}
+		</a>
+	{/if}
+
 	{#if hero.showImage && hero.image}
 		<div class="relative mt-16 w-full max-w-[1200px] animate-fade-up opacity-0 [--animation-delay:400ms] md:mt-20">
 			<img

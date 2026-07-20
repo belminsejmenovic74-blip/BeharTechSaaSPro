@@ -10,7 +10,7 @@
 		.filter((l) => l.visible !== false);
 </script>
 
-<section id="cta" class="relative scroll-mt-28 overflow-hidden px-6 pb-24 pt-32 md:px-8">
+<section id="integrations" class="relative scroll-mt-28 overflow-hidden px-6 pb-24 pt-32 md:px-8">
 	<!-- Halo chaud en haut -->
 	<div
 		aria-hidden="true"
