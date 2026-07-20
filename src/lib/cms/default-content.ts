@@ -90,8 +90,7 @@ export const DEFAULT_CONTENT = {
 		nav: [
 			{ label: 'Fonctionnalités', href: '#pense' },
 			{ label: 'Tarifs', href: '#pricing' },
-			{ label: 'FAQ', href: '#faq' },
-			{ label: 'Connexion', href: '/connexion' }
+			{ label: 'FAQ', href: '#faq' }
 		],
 		loginLabel: 'Connexion',
 		loginHref: '/connexion',
@@ -123,16 +122,8 @@ export const DEFAULT_CONTENT = {
 		kicker: 'LANCEMENT EN COURS',
 		subtitle: 'Une plateforme pensée pour organiser, suivre et faire grandir votre atelier.',
 		items: [
-			{ id: 'st1', value: '3 ateliers', label: 'testent déjà la plateforme', visible: true },
 			{ id: 'st2', value: '15 août 2026', label: 'ouverture officielle', visible: true },
 			{ id: 'st3', value: 'UE + Suisse', label: 'disponible dès le lancement', icon: 'globe', visible: true },
-			{
-				id: 'st4',
-				value: 'Support humain',
-				label: 'accompagnement prioritaire',
-				icon: 'headset',
-				visible: true
-			},
 			{ id: 'st5', value: '-10 %', label: 'pendant 12 mois', visible: true }
 		]
 	},
@@ -504,6 +495,14 @@ export const DEFAULT_CONTENT = {
 				desc: 'Encaissement en boutique',
 				logo: '/imgs/sumup-logo.png',
 				visible: true
+			},
+			{
+				id: 'int-facture-elec',
+				name: 'Facturation électronique',
+				desc: 'Passage à la facture électronique',
+				logo: '/imgs/facturation-electronique-logo.png',
+				// ⚠ Passer à true dès que le fichier logo est ajouté dans static/imgs/.
+				visible: false
 			}
 		]
 	},
@@ -666,8 +665,8 @@ export const DEFAULT_CONTENT = {
 			{
 				label: 'RESSOURCES',
 				items: [
-					{ label: 'Blog', href: '/' },
-					{ label: 'Guides', href: '/' },
+					{ label: 'Blog', href: '/blog' },
+					{ label: 'Guides', href: '/guides/' },
 					{ label: 'Centre d’aide', href: '/' },
 					{ label: 'API', href: '/' }
 				]

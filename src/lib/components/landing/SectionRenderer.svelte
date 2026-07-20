@@ -9,6 +9,7 @@
 	import CtaSection from '$lib/components/landing/CtaSection.svelte';
 	import PricingSection from '$lib/components/landing/PricingSection.svelte';
 	import ShowcaseCarousel from '$lib/components/landing/ShowcaseCarousel.svelte';
+	import FaqSection from '$lib/components/landing/FaqSection.svelte';
 	import SphereMask from '$lib/components/magic/SphereMask/SphereMask.svelte';
 
 	export let section: PageSection;
@@ -24,6 +25,7 @@
 		else if (section.type === 'stats') mockContent.stats = section.content;
 		else if (section.type === 'integrations') mockContent.integrations = section.content;
 		else if (section.type === 'pricing') mockContent.pricing = section.content;
+		else if (section.type === 'faq') mockContent.faq = section.content;
 		else if (section.type.startsWith('showcase')) {
 			const key = section.type.replace('showcase', '') as 'A' | 'B' | 'C';
 			if (mockContent.showcases[key]) {
@@ -47,4 +49,6 @@
 	<CtaSection />
 {:else if section.type === 'pricing'}
 	<PricingSection />
+{:else if section.type === 'faq'}
+	<FaqSection />
 {/if}
