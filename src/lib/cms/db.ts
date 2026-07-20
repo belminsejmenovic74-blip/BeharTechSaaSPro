@@ -17,7 +17,10 @@ const SECTION_IDS = [
 	'00000000-0000-4000-8000-000000000106',
 	'00000000-0000-4000-8000-000000000107',
 	'00000000-0000-4000-8000-000000000108',
-	'00000000-0000-4000-8000-000000000109'
+	'00000000-0000-4000-8000-000000000109',
+	'00000000-0000-4000-8000-000000000110',
+	'00000000-0000-4000-8000-000000000111',
+	'00000000-0000-4000-8000-000000000112'
 ];
 
 function now() {
@@ -50,6 +53,9 @@ export function createDefaultDb(): LocalDbSchema {
 		'showcaseC',
 		'integrations',
 		'pricing',
+		'faq',
+		'widget',
+		'cta',
 		'footer'
 	];
 
@@ -230,13 +236,14 @@ export async function clearDb(sessionToken?: string) {
 	if (error) throw error;
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════════════════════
  *  Éditeur visuel « Mode édition » — persistance du SiteContent complet.
  *  On embarque le SiteContent dans le snapshot Supabase (champ `site_content`),
  *  à côté du squelette LocalDbSchema attendu par les RPC. Additif : n'altère pas
  *  l'éditeur /admin existant, et les champs supplémentaires sont conservés tels
  *  quels dans cms_versions.snapshot.
- * ════════════════════════════════════════════════════════════════════════ */
+ * ════════════════════════════════════════════════════════════════════════════════
+ */
 function siteContentPayload(content: SiteContent) {
 	const skeleton = createDefaultDb();
 	return { ...skeleton, site_content: content };

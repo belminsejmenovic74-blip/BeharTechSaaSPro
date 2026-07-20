@@ -1,8 +1,8 @@
-// ══════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
 //  Contenu par défaut — DA Behar Tech Pro (Apple / Stripe / Linear).
 //  Sert de seed initial ET de valeur de "Réinitialiser" dans l'admin.
 //  NE PAS modifier pour éditer le site : passer par /admin.
-// ══════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
 import type { SiteContent } from './types';
 
 // Les écrans/slides omettent quelques champs optionnels à l'exécution (device,
@@ -90,39 +90,50 @@ export const DEFAULT_CONTENT = {
 		nav: [
 			{ label: 'Fonctionnalités', href: '#pense' },
 			{ label: 'Tarifs', href: '#pricing' },
-			{ label: 'Ressources', href: '#' }
+			{ label: 'FAQ', href: '#faq' },
+			{ label: 'Connexion', href: '/connexion' }
 		],
 		loginLabel: 'Connexion',
 		loginHref: '/connexion',
-		ctaLabel: 'Essayer gratuitement',
-		ctaHref: '/inscription'
+		ctaLabel: 'Réserver ma place',
+		ctaHref: '#cta'
 	},
 
 	hero: {
-		badge: '',
+		badge: 'Prévente ouverte jusqu’au 15 août',
 		title: 'Transformez votre atelier.',
 		subtitle: 'Gagnez du temps. Gagnez des clients.\nCentralisez votre atelier dans un seul outil.',
-		ctaLabel: 'Essayer gratuitement',
-		ctaHref: '/inscription',
-		showImage: false,
-		image: '/imgs/mockup-dashboard.png'
+		ctaLabel: 'Réserver ma place',
+		ctaHref: '#cta',
+		cta2Label: 'Voir la démo',
+		cta2Href: '/exemple',
+		showProofs: true,
+		proofs: [
+			{ text: 'Accès fondateur' },
+			{ text: 'Mise en route prioritaire' },
+			{ text: 'Sans engagement' }
+		],
+		showImage: true,
+		image: '/imgs/mockup-dashboard.png',
+		image2: '/imgs/mockup-c-suivi.png',
+		image2Position: 'bottom-right'
 	},
 
 	stats: {
-		kicker: 'ILS NOUS FONT CONFIANCE',
-		subtitle: 'Une plateforme connectée à tous les outils utiles de votre atelier.',
+		kicker: 'LANCEMENT EN COURS',
+		subtitle: 'Une plateforme pensée pour organiser, suivre et faire grandir votre atelier.',
 		items: [
-			{ id: 'st1', value: '20 boutiques', label: 'utilisent nos services', visible: true },
-			{ id: 'st2', value: 'UE + Suisse', label: 'disponible', icon: 'globe', visible: true },
-			{ id: 'st3', value: '3 h', label: 'de temps gagné par semaine', visible: true },
+			{ id: 'st1', value: '3 ateliers', label: 'testent déjà la plateforme', visible: true },
+			{ id: 'st2', value: '15 août 2026', label: 'ouverture officielle', visible: true },
+			{ id: 'st3', value: 'UE + Suisse', label: 'disponible dès le lancement', icon: 'globe', visible: true },
 			{
 				id: 'st4',
-				value: '+1,4',
-				label: 'de note Google en moyenne',
-				icon: 'google',
+				value: 'Support humain',
+				label: 'accompagnement prioritaire',
+				icon: 'headset',
 				visible: true
 			},
-			{ id: 'st5', value: '+18 %', label: 'de chiffre d’affaires', visible: true }
+			{ id: 'st5', value: '-10 %', label: 'pendant 12 mois', visible: true }
 		]
 	},
 
@@ -131,7 +142,7 @@ export const DEFAULT_CONTENT = {
 			id: 'A',
 			layout: 'screen',
 			tabStyle: 'dots',
-			titleLines: ['Pensé pour chaque besoin', 'de votre boutique.'],
+			titleLines: ['Pensé pour chaque besoin', 'de votre atelier.'],
 			slides: [
 				{
 					id: 'a-dashboard',
@@ -153,7 +164,6 @@ export const DEFAULT_CONTENT = {
 					sideTitle: 'Comptoir',
 					img: '/imgs/mockup-comptoir.png',
 					portrait: false,
-					device: true,
 					visible: true,
 					bullets: [
 						'Encaissement rapide',
@@ -197,9 +207,9 @@ export const DEFAULT_CONTENT = {
 			id: 'B',
 			layout: 'screen',
 			tabStyle: 'filled',
-			titleLines: ['Gagnez du temps.', 'Gagnez des clients grâce à nos services.'],
+			titleLines: ['Gagnez du temps.', 'Gagnez des clients.'],
 			subtitle:
-				'Des outils intelligents pour automatiser, centraliser et développer votre activité.',
+				'Des outils simples pour automatiser, centraliser et développer votre activité.',
 			sideTitle: 'Avantages réparateur',
 			slides: [
 				{
@@ -267,7 +277,7 @@ export const DEFAULT_CONTENT = {
 			titleLines: ['On pense à vos clients'],
 			subtitleTeal: 'Expérience plus professionnelle',
 			description:
-				'Au lieu d’un papier perdu ou d’un message WhatsApp flou, le client a un vrai suivi digital, comme dans un service premium.',
+				'Au lieu d’un papier perdu ou d’un message flou, le client profite d’un vrai suivi digital, comme dans un service premium.',
 			sideTitle: 'Avantages client',
 			slides: [
 				{
@@ -447,24 +457,24 @@ export const DEFAULT_CONTENT = {
 	},
 
 	integrations: {
-		kicker: 'ILS NOUS FONT CONFIANCE',
-		titleStrong: 'Ils nous font confiance.',
-		titleMuted: 'Pourquoi pas vous ?',
+		kicker: 'INTÉGRATIONS',
+		titleStrong: 'Connecté aux outils utiles de votre atelier.',
+		titleMuted: '',
 		subtitle:
-			'Des intégrations utiles pour automatiser votre atelier, informer vos clients et encaisser simplement.',
+			'Automatisez vos documents, informez vos clients et encaissez simplement grâce à des intégrations concrètes.',
 		items: [
 			{
 				id: 'int-sms',
-				name: 'Beevo SMS',
+				name: 'Brevo SMS',
 				desc: 'Envoi automatique de SMS',
-				logo: '/imgs/beevo-sms-logo.png',
+				logo: '/imgs/brevo-sms-logo.png',
 				visible: true
 			},
 			{
 				id: 'int-email',
-				name: 'Beevo E-mail',
+				name: 'Brevo E-mail',
 				desc: 'E-mails transactionnels',
-				logo: '/imgs/beevo-email-logo.png',
+				logo: '/imgs/brevo-email-logo.png',
 				visible: true
 			},
 			{
@@ -499,24 +509,22 @@ export const DEFAULT_CONTENT = {
 	},
 
 	pricing: {
-		kicker: 'Tarifs',
+		kicker: 'Prévente jusqu’au 15 août • -10 % pendant 12 mois pour les premiers ateliers',
 		title: 'Simple, transparent, sans engagement.',
 		subtitle: 'Choisissez l’offre Behar Tech Pro adaptée à votre atelier.',
-		intervalNote: '2 MOIS OFFERTS',
+		intervalNote: '',
 		plans: [
 			{
 				id: 'price_free',
 				name: 'Gratuit',
 				description: 'Pour démarrer et tester l’outil sur un premier appareil.',
-				buttonText: 'Commencer',
-				buttonHref: '/inscription',
+				buttonText: 'Réserver Gratuit',
+				buttonHref: '#cta',
 				features: [
 					'1 appareil connecté',
 					'10 réparations / mois',
-					'10 SMS inclus',
-					'Suivi client & QR Code',
-					'Devis & Factures',
-					'Support email'
+					'Rapports de base',
+					'Support par email'
 				],
 				monthlyPrice: 0,
 				yearlyPrice: 0,
@@ -527,15 +535,13 @@ export const DEFAULT_CONTENT = {
 				id: 'price_starter',
 				name: 'Starter',
 				description: 'Pour les petits ateliers qui veulent l’essentiel.',
-				buttonText: 'Choisir Starter',
-				buttonHref: '/inscription',
+				buttonText: 'Réserver Starter',
+				buttonHref: '#cta',
 				features: [
 					'2 appareils connectés',
 					'Réparations illimitées',
-					'30 SMS inclus',
-					'Suivi client & QR Code',
-					'Devis & Factures',
-					'Support prioritaire'
+					'Historique et rapports',
+					'Support par email'
 				],
 				monthlyPrice: 2900,
 				yearlyPrice: 29000,
@@ -546,16 +552,14 @@ export const DEFAULT_CONTENT = {
 				id: 'price_pro',
 				name: 'Pro',
 				description: 'Le plus choisi par les ateliers en croissance.',
-				buttonText: 'Choisir Pro',
-				buttonHref: '/inscription',
+				buttonText: 'Réserver Pro',
+				buttonHref: '#cta',
 				features: [
 					'4 appareils connectés',
 					'Réparations illimitées',
-					'150 SMS inclus',
-					'Suivi client & QR Code',
-					'Devis & Factures',
-					'Support prioritaire',
-					'Export comptable'
+					'Statistiques avancées',
+					'Notifications et rappels',
+					'Support prioritaire'
 				],
 				monthlyPrice: 4900,
 				yearlyPrice: 49000,
@@ -566,16 +570,14 @@ export const DEFAULT_CONTENT = {
 				id: 'price_business',
 				name: 'Business',
 				description: 'Pour les ateliers multi-postes et le volume.',
-				buttonText: 'Choisir Business',
-				buttonHref: '/inscription',
+				buttonText: 'Réserver Business',
+				buttonHref: '#cta',
 				features: [
 					'Appareils illimités',
 					'Réparations illimitées',
-					'250 SMS inclus',
-					'Suivi client & QR Code',
-					'Devis & Factures',
-					'Support dédié',
-					'Export comptable'
+					'Statistiques avancées',
+					'API & export de données',
+					'Support prioritaire dédié'
 				],
 				monthlyPrice: 9900,
 				yearlyPrice: 99000,
@@ -601,8 +603,52 @@ export const DEFAULT_CONTENT = {
 		}
 	},
 
+	faq: {
+		kicker: 'Questions fréquentes',
+		title: '',
+		subtitle: 'Tout ce qu’il faut savoir avant le lancement du 15 août.',
+		items: [
+			{
+				id: 'faq1',
+				question: 'Quand ouvre Behar Tech Pro ?',
+				answer: 'Lancement officiel le 15 août 2026. La prévente vous garantit un accès prioritaire dès l’ouverture.'
+			},
+			{
+				id: 'faq2',
+				question: 'Comment fonctionne la prévente ?',
+				answer: 'La prévente vous permet de réserver votre accès à Behar Tech Pro avant le lancement. Vous bénéficiez de l’offre fondateur (-10% pendant 12 mois) et d’un accompagnement prioritaire.'
+			},
+			{
+				id: 'faq3',
+				question: 'Dois-je payer aujourd’hui ?',
+				answer: 'Non, aucun paiement n’est requis lors de la prévente. Vous payerez uniquement lorsque vous activerez votre compte après le 15 août.'
+			},
+			{
+				id: 'faq4',
+				question: 'Pouvez-vous m’aider à configurer mon atelier ?',
+				answer: 'Oui, tous les forfaits incluent un accompagnement à la configuration. Les forfaits Pro et Business offrent un support prioritaire dédié.'
+			},
+			{
+				id: 'faq5',
+				question: 'Puis-je tester le logiciel avant le lancement ?',
+				answer: 'Selon disponibilité, nous pouvons vous proposer un accès pilote ou une démonstration personnalisée pour tester la plateforme avant le lancement officiel.'
+			}
+		]
+	},
+
+	cta: {
+		kicker: '',
+		title: 'Réservez votre place avant le 15 août.',
+		subtitle: 'Accès fondateur, accompagnement prioritaire et lancement dès l’ouverture.',
+		button1Text: 'Réserver ma place',
+		button1Href: '#cta',
+		button2Text: 'Connexion',
+		button2Href: '/connexion',
+		showGlow: true
+	},
+
 	footer: {
-		brand: 'BEHAR • TECH',
+		brand: 'BEHAR • TECH PRO',
 		tagline: '',
 		newsletterTitle: 'Restez informé',
 		newsletterPlaceholder: 'Votre e-mail',
@@ -613,12 +659,12 @@ export const DEFAULT_CONTENT = {
 				items: [
 					{ label: 'Fonctionnalités', href: '#pense' },
 					{ label: 'Tarifs', href: '#pricing' },
-					{ label: 'Mises à jour', href: '/' },
-					{ label: 'Sécurité', href: '/' }
+					{ label: 'FAQ', href: '#faq' },
+					{ label: 'Connexion', href: '/connexion' }
 				]
 			},
 			{
-				label: 'Ressources',
+				label: 'RESSOURCES',
 				items: [
 					{ label: 'Blog', href: '/' },
 					{ label: 'Guides', href: '/' },
@@ -627,7 +673,7 @@ export const DEFAULT_CONTENT = {
 				]
 			},
 			{
-				label: 'Entreprise',
+				label: 'ENTREPRISE',
 				items: [
 					{ label: 'À propos', href: '/' },
 					{ label: 'Contact', href: '/' },
@@ -641,11 +687,15 @@ export const DEFAULT_CONTENT = {
 
 	sections: [
 		{ id: 'hero', label: 'Hero', visible: true },
-		{ id: 'stats', label: 'Ils nous font confiance (chiffres)', visible: true },
+		{ id: 'stats', label: 'Lancement en cours (preuves)', visible: true },
 		{ id: 'showcaseA', label: 'Pensé pour chaque besoin', visible: true },
-		{ id: 'showcaseB', label: 'Gagnez du temps (services)', visible: true },
+		{ id: 'showcaseB', label: 'Gagnez du temps / Gagnez des clients', visible: true },
 		{ id: 'showcaseC', label: 'On pense à vos clients', visible: true },
 		{ id: 'integrations', label: 'Intégrations / API', visible: true },
-		{ id: 'pricing', label: 'Tarifs', visible: true }
+		{ id: 'pricing', label: 'Tarifs prévente', visible: true },
+		{ id: 'faq', label: 'Questions fréquentes', visible: true },
+		{ id: 'cta', label: 'Appel à l\'action final', visible: true },
+		{ id: 'header', label: 'Header', visible: true },
+		{ id: 'footer', label: 'Footer', visible: true }
 	]
 } as SiteContent;

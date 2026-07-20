@@ -147,6 +147,18 @@ export interface PricingContent {
 	setup: PricingSetup;
 }
 
+export interface WidgetContent {
+	kicker: string;
+	title: string;
+	subtitle: string;
+	benefits: string[]; // liste à puces du côté gauche
+	image: string; // mockup principal du widget
+	image2?: string; // image optionnelle secondaire
+	image2Position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+	menuTitle?: string; // titre du menu vertical
+	menuItems?: string[]; // items du menu vertical
+}
+
 export interface FooterColumn {
 	label: string;
 	items: NavLink[];
@@ -170,7 +182,10 @@ export type SectionId =
 	| 'showcaseB'
 	| 'showcaseC'
 	| 'integrations'
-	| 'pricing';
+	| 'pricing'
+	| 'widget'
+	| 'faq'
+	| 'cta';
 
 export interface SectionRef {
 	id: SectionId;
@@ -261,6 +276,7 @@ export interface SiteContent {
 	};
 	integrations: IntegrationsContent;
 	pricing: PricingContent;
+	widget: WidgetContent;
 	footer: FooterContent;
 	sections: SectionRef[];
 }
@@ -285,6 +301,9 @@ export type SectionType =
 	| 'showcaseC'
 	| 'integrations'
 	| 'pricing'
+	| 'widget'
+	| 'faq'
+	| 'cta'
 	| 'footer';
 
 export interface PageSection {
