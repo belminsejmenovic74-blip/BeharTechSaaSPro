@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import type { SiteContent } from '$lib/cms/types';
 	import { createDefaultDb, loadPublishedDb } from '$lib/cms/db';
+	import { getAdminSession } from '$lib/cms/local';
 	import SectionRenderer from '$lib/components/landing/SectionRenderer.svelte';
 	import JsonLd from '$lib/components/guides/JsonLd.svelte';
 	import { organizationJsonLd } from '$lib/guides/jsonld';
@@ -13,9 +14,14 @@
 	let db = createDefaultDb();
 
 	onMount(() => {
-		loadPublishedDb().then((published) => {
-			db = published;
-		});
+		// Le site public affiche DEFAULT_CONTENT (source de vérité depuis 44364e9).
+		// On ne recharge le contenu publié Supabase que pour un admin connecté, pour
+		// ne pas écraser la landing du code par une version publiée obsolète.
+		if (getAdminSession()) {
+			loadPublishedDb().then((published) => {
+				db = published;
+			});
+		}
 	});
 
 	// Trier les sections selon l'ordre défini par l'admin

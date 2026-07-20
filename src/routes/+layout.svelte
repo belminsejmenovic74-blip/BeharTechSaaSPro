@@ -7,6 +7,7 @@
 	import ThirdPartyScripts from '$lib/components/ThirdPartyScripts.svelte';
 	import { themeToCssVars } from '$lib/cms/theme';
 	import { loadPublishedSiteContent } from '$lib/cms/db';
+	import { getAdminSession } from '$lib/cms/local';
 	import EditorRoot from '$lib/components/editor/EditorRoot.svelte';
 	import { breakpoint, editMode } from '$lib/editor/store';
 	import type { SiteContent } from '$lib/cms/types';
@@ -20,10 +21,12 @@
 
 	$: isPublic = !$page.url.pathname.startsWith('/admin');
 
-	// Sur le site public : charge le SiteContent publié depuis Supabase (repli sur
-	// le contenu prérendu). L'éditeur « Mode édition » gère ensuite le brouillon.
+	// Le site public affiche DEFAULT_CONTENT (source de vérité depuis 44364e9).
+	// On ne recharge le contenu publié Supabase que pour un admin connecté, pour
+	// ne pas écraser le contenu du code par une version publiée obsolète.
+	// (L'éditeur « Mode édition » charge le brouillon de son côté, voir EditorRoot.)
 	onMount(() => {
-		if (isPublic) {
+		if (isPublic && getAdminSession()) {
 			loadPublishedSiteContent(data.content)
 				.then((published) => content.set(published))
 				.catch((e) => console.error('[cms] load published failed', e));
