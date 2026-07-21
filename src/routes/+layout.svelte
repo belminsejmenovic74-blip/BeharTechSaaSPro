@@ -3,7 +3,12 @@
 	import { ModeWatcher } from 'mode-watcher';
 	import { setContext } from 'svelte';
 	import { writable } from 'svelte/store';
+	import { dev } from '$app/environment';
+	import { injectAnalytics } from '@vercel/analytics/sveltekit';
 	import { page } from '$app/stores';
+
+	// Vercel Web Analytics (pages vues). S'exécute côté client.
+	injectAnalytics({ mode: dev ? 'development' : 'production' });
 	import ThirdPartyScripts from '$lib/components/ThirdPartyScripts.svelte';
 	import { themeToCssVars } from '$lib/cms/theme';
 	import EditorRoot from '$lib/components/editor/EditorRoot.svelte';
