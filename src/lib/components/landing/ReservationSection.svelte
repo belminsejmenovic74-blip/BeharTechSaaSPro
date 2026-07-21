@@ -5,34 +5,79 @@
 	const cms = getCms();
 	$: cta = $cms.cta;
 
+	let step: 1 | 2 = 1;
+	let state: 'idle' | 'loading' | 'success' | 'error' = 'idle';
+	let errorMsg = '';
+
 	let firstName = '';
 	let lastName = '';
 	let email = '';
 	let phone = '';
 	let shopName = '';
-	let date = '';
-	let time = '';
+	let selectedDate = '';
+	let selectedTime = '';
 	let company = ''; // honeypot
 
-	// Date minimale = aujourd'hui ; créneaux 09:00 → 18:30 (pas de 30 min).
-	const today = new Date().toISOString().slice(0, 10);
+	$: canContinue =
+		firstName.trim() && lastName.trim() && shopName.trim() && email.trim() && phone.trim();
+
+	// Prochains jours ouvrés (hors dimanche), à partir de demain.
+	type Day = { iso: string; weekday: string; label: string };
+	const days: Day[] = (() => {
+		const out: Day[] = [];
+		const d = new Date();
+		d.setHours(12, 0, 0, 0);
+		while (out.length < 12) {
+			d.setDate(d.getDate() + 1);
+			if (d.getDay() === 0) continue; // dimanche fermé
+			out.push({
+				iso: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+				weekday: new Intl.DateTimeFormat('fr-FR', { weekday: 'short' }).format(d),
+				label: new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' }).format(d)
+			});
+		}
+		return out;
+	})();
+
 	const slots: string[] = [];
 	for (let m = 9 * 60; m <= 18 * 60 + 30; m += 30) {
 		slots.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
 	}
 
-	let state: 'idle' | 'loading' | 'success' | 'error' = 'idle';
-	let errorMsg = '';
+	function goStep2() {
+		if (!canContinue) {
+			errorMsg = 'Merci de remplir tous les champs.';
+			state = 'error';
+			return;
+		}
+		errorMsg = '';
+		state = 'idle';
+		step = 2;
+	}
 
-	async function submit() {
+	async function submit(withSlot: boolean) {
 		if (state === 'loading') return;
+		if (withSlot && (!selectedDate || !selectedTime)) {
+			errorMsg = 'Choisissez un jour et une heure.';
+			state = 'error';
+			return;
+		}
 		state = 'loading';
 		errorMsg = '';
 		try {
 			const res = await fetch('/api/reservation', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ firstName, lastName, email, phone, shopName, date, time, company })
+				body: JSON.stringify({
+					firstName,
+					lastName,
+					email,
+					phone,
+					shopName,
+					date: withSlot ? selectedDate : undefined,
+					time: withSlot ? selectedTime : undefined,
+					company
+				})
 			});
 			const data = await res.json().catch(() => ({}));
 			if (res.ok && data.ok) {
@@ -43,7 +88,7 @@
 			}
 		} catch {
 			state = 'error';
-			errorMsg = 'Connexion impossible. Vérifiez votre réseau et réessayez.';
+			errorMsg = 'Connexion impossible. Réessayez.';
 		}
 	}
 </script>
@@ -73,105 +118,123 @@
 		</div>
 
 		{#if state === 'success'}
-			<div
-				class="mt-10 rounded-2xl border p-8 text-center"
-				style="background: var(--bt-card); border-color: #cfe9e4"
-			>
-				<p class="text-xl font-semibold" style="color: var(--bt-text)">Votre place est réservée ✅</p>
+			<div class="mt-10 rounded-2xl border p-8 text-center" style="background: var(--bt-card); border-color: #cfe9e4">
+				<p class="text-xl font-semibold" style="color: var(--bt-text)">C'est noté ✅</p>
 				<p class="mx-auto mt-3 max-w-md text-gray-500">
-					Merci {firstName || ''} ! Un e-mail de confirmation vient de vous être envoyé. Nous vous
-					recontacterons très vite.
+					Merci {firstName} ! Un e-mail de confirmation vient de vous être envoyé.
+					{selectedDate ? 'Votre rendez-vous est enregistré.' : 'Nous vous recontacterons très vite.'}
 				</p>
-				<a
-					href="/exemple"
-					class="mt-6 inline-block rounded-xl px-5 py-3 text-sm font-semibold text-white"
-					style="background: var(--bt-button)">Voir la démo en attendant</a
-				>
+				<a href="/exemple" class="mt-6 inline-block rounded-xl px-5 py-3 text-sm font-semibold text-white" style="background: var(--bt-button)">Voir la démo</a>
 			</div>
 		{:else}
-			<form
-				class="mt-10 rounded-2xl border p-6 sm:p-8"
-				style="background: var(--bt-card); border-color: rgba(26,25,22,0.08)"
-				on:submit|preventDefault={submit}
-			>
-				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-					<label class="block">
-						<span class="mb-1 block text-sm font-medium" style="color: var(--bt-text)">Prénom</span>
-						<input bind:value={firstName} required autocomplete="given-name" class="field" />
-					</label>
-					<label class="block">
-						<span class="mb-1 block text-sm font-medium" style="color: var(--bt-text)">Nom</span>
-						<input bind:value={lastName} required autocomplete="family-name" class="field" />
-					</label>
-					<label class="block sm:col-span-2">
-						<span class="mb-1 block text-sm font-medium" style="color: var(--bt-text)">Nom de la boutique</span>
-						<input bind:value={shopName} required autocomplete="organization" class="field" />
-					</label>
-					<label class="block">
-						<span class="mb-1 block text-sm font-medium" style="color: var(--bt-text)">E-mail</span>
-						<input bind:value={email} type="email" required autocomplete="email" class="field" />
-					</label>
-					<label class="block">
-						<span class="mb-1 block text-sm font-medium" style="color: var(--bt-text)">Téléphone</span>
-						<input bind:value={phone} type="tel" required autocomplete="tel" class="field" />
-					</label>
-				</div>
-
-				<div class="mt-4 rounded-xl border p-4" style="border-color: rgba(26,25,22,0.10); background:#fff">
-					<p class="mb-3 text-sm font-semibold" style="color: var(--bt-text)">
-						Choisissez un créneau d'appel
-					</p>
+			<div class="mt-10 rounded-2xl border p-6 sm:p-8" style="background: var(--bt-card); border-color: rgba(26,25,22,0.08)">
+				<!-- Étape 1 : informations -->
+				{#if step === 1}
 					<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 						<label class="block">
-							<span class="mb-1 block text-sm font-medium" style="color: var(--bt-text)">Date</span>
-							<input bind:value={date} type="date" min={today} required class="field" />
+							<span class="lbl">Prénom</span>
+							<input bind:value={firstName} required autocomplete="given-name" class="field" />
 						</label>
 						<label class="block">
-							<span class="mb-1 block text-sm font-medium" style="color: var(--bt-text)">Heure</span>
-							<select bind:value={time} required class="field">
-								<option value="" disabled selected>Choisir une heure</option>
-								{#each slots as slot}
-									<option value={slot}>{slot}</option>
-								{/each}
-							</select>
+							<span class="lbl">Nom</span>
+							<input bind:value={lastName} required autocomplete="family-name" class="field" />
+						</label>
+						<label class="block sm:col-span-2">
+							<span class="lbl">Nom de la boutique</span>
+							<input bind:value={shopName} required autocomplete="organization" class="field" />
+						</label>
+						<label class="block">
+							<span class="lbl">E-mail</span>
+							<input bind:value={email} type="email" required autocomplete="email" class="field" />
+						</label>
+						<label class="block">
+							<span class="lbl">Téléphone</span>
+							<input bind:value={phone} type="tel" required autocomplete="tel" class="field" />
 						</label>
 					</div>
-					<p class="mt-2 text-xs text-gray-500">
-						Vous recevrez une invitation agenda par e-mail pour ce créneau.
+
+					<input bind:value={company} name="company" tabindex="-1" autocomplete="off" aria-hidden="true" class="absolute left-[-9999px] h-0 w-0 opacity-0" />
+
+					{#if state === 'error'}<p class="mt-4 text-sm font-medium text-red-600">{errorMsg}</p>{/if}
+
+					<button type="button" on:click={goStep2} class="btn-primary mt-6">Continuer</button>
+					<p class="mt-3 text-center text-xs text-gray-500">Sans engagement · Aucun paiement aujourd'hui · Données confidentielles</p>
+
+				<!-- Étape 2 : créneau optionnel -->
+				{:else}
+					<button type="button" on:click={() => (step = 1)} class="text-sm text-gray-500 hover:text-[#1a1916]">← Retour</button>
+
+					<p class="mt-3 text-base font-semibold" style="color: var(--bt-text)">
+						Réservez un créneau d'appel <span class="font-normal text-gray-400">(optionnel)</span>
 					</p>
-				</div>
+					<p class="mt-1 text-sm text-gray-500">Choisissez un moment qui vous arrange, ou laissez-nous vous rappeler.</p>
 
-				<!-- Honeypot anti-spam (masqué aux humains) -->
-				<input
-					bind:value={company}
-					name="company"
-					tabindex="-1"
-					autocomplete="off"
-					aria-hidden="true"
-					class="absolute left-[-9999px] h-0 w-0 opacity-0"
-				/>
+					<div class="mt-5">
+						<p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Jour</p>
+						<div class="flex flex-wrap gap-2">
+							{#each days as d}
+								<button
+									type="button"
+									on:click={() => { selectedDate = d.iso; selectedTime = ''; }}
+									class="chip"
+									class:chip-active={selectedDate === d.iso}
+								>
+									<span class="block text-[11px] uppercase opacity-70">{d.weekday}</span>
+									<span class="block font-semibold">{d.label}</span>
+								</button>
+							{/each}
+						</div>
+					</div>
 
-				{#if state === 'error'}
-					<p class="mt-4 text-sm font-medium text-red-600">{errorMsg}</p>
+					{#if selectedDate}
+						<div class="mt-5">
+							<p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Heure</p>
+							<div class="flex flex-wrap gap-2">
+								{#each slots as s}
+									<button
+										type="button"
+										on:click={() => (selectedTime = s)}
+										class="chip"
+										class:chip-active={selectedTime === s}
+									>{s}</button>
+								{/each}
+							</div>
+						</div>
+					{/if}
+
+					{#if state === 'error'}<p class="mt-4 text-sm font-medium text-red-600">{errorMsg}</p>{/if}
+
+					<button
+						type="button"
+						on:click={() => submit(true)}
+						disabled={state === 'loading' || !selectedDate || !selectedTime}
+						class="btn-primary mt-6"
+					>
+						{state === 'loading' ? 'Envoi…' : 'Confirmer le rendez-vous'}
+					</button>
+					<button
+						type="button"
+						on:click={() => submit(false)}
+						disabled={state === 'loading'}
+						class="mt-3 w-full rounded-xl border px-5 py-3 text-sm font-semibold transition hover:bg-black/[0.03] disabled:opacity-60"
+						style="border-color: rgba(26,25,22,0.14); color: var(--bt-text)"
+					>
+						Non merci, rappelez-moi simplement
+					</button>
 				{/if}
-
-				<button
-					type="submit"
-					disabled={state === 'loading'}
-					class="mt-6 w-full rounded-xl px-5 py-3.5 text-base font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
-					style="background: var(--bt-button)"
-				>
-					{state === 'loading' ? 'Envoi…' : cta.button1Text || 'Réserver ma place'}
-				</button>
-				<p class="mt-3 text-center text-xs text-gray-500">
-					Sans engagement · Aucun paiement aujourd'hui · Vos données restent confidentielles
-				</p>
-			</form>
+			</div>
 		{/if}
 	</div>
 </section>
 
 <style>
+	.lbl {
+		display: block;
+		margin-bottom: 0.25rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--bt-text);
+	}
 	.field {
 		width: 100%;
 		border-radius: 10px;
@@ -185,5 +248,43 @@
 	}
 	.field:focus {
 		border-color: var(--bt-accent, #2a9d8f);
+	}
+	.btn-primary {
+		width: 100%;
+		border-radius: 12px;
+		background: var(--bt-button);
+		padding: 14px 20px;
+		font-size: 1rem;
+		font-weight: 600;
+		color: #fff;
+		transition: opacity 150ms ease;
+	}
+	.btn-primary:hover {
+		opacity: 0.9;
+	}
+	.btn-primary:disabled {
+		opacity: 0.6;
+	}
+	.chip {
+		min-width: 64px;
+		border-radius: 12px;
+		border: 1px solid rgba(26, 25, 22, 0.14);
+		background: #fff;
+		padding: 8px 12px;
+		font-size: 14px;
+		line-height: 1.2;
+		color: var(--bt-text);
+		text-align: center;
+		transition:
+			border-color 120ms ease,
+			background 120ms ease;
+	}
+	.chip:hover {
+		border-color: var(--bt-accent, #2a9d8f);
+	}
+	.chip-active {
+		border-color: var(--bt-accent, #2a9d8f);
+		background: rgba(42, 157, 143, 0.1);
+		color: var(--bt-accent, #2a9d8f);
 	}
 </style>

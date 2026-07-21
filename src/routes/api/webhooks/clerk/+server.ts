@@ -1,8 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { resend } from '$lib/server/resend';
-import { RESEND_FROM_EMAIL, RESEND_REPLY_TO, RESEND_TEMPLATE_ID, RESEND_ADMIN_EMAIL } from '$env/static/private';
-import { CLERK_WEBHOOK_SIGNING_SECRET } from '$env/static/private';
+import { getResend } from '$lib/server/resend';
+import { env } from '$env/dynamic/private';
 import { Webhook } from 'svix';
 
 export const POST: RequestHandler = async ({ request }) => {
@@ -22,7 +21,7 @@ export const POST: RequestHandler = async ({ request }) => {
 
   try {
     // Créer une instance Svix Webhook avec le secret de signature
-    const wh = new Webhook(CLERK_WEBHOOK_SIGNING_SECRET);
+    const wh = new Webhook(env.CLERK_WEBHOOK_SIGNING_SECRET ?? "");
 
     // Verifier la signature
     wh.verify(body, {
@@ -56,15 +55,21 @@ export const POST: RequestHandler = async ({ request }) => {
       return json({ success: true }, { status: 200 });
     }
 
+    const resend = getResend();
+    if (!resend) {
+      console.warn('[clerk-webhook] RESEND_API_KEY manquant — e-mail non envoyé.');
+      return json({ success: true }, { status: 200 });
+    }
+
     try {
       // Envoyer l'email de confirmation a l'utilisateur
       const { data: emailData, error: emailError } = await resend.emails.send({
-        from: RESEND_FROM_EMAIL,
+        from: env.RESEND_FROM_EMAIL,
         to: [emailAddress],
-        replyTo: RESEND_REPLY_TO,
+        replyTo: env.RESEND_REPLY_TO,
         subject: 'Votre inscription à Behar Tech Pro est confirmée',
         template: {
-          id: RESEND_TEMPLATE_ID
+          id: env.RESEND_TEMPLATE_ID
         },
         tags: [
           { name: 'category', value: 'signup_confirmation' }
@@ -91,8 +96,8 @@ export const POST: RequestHandler = async ({ request }) => {
       `.trim();
 
       const { data: adminData, error: adminError } = await resend.emails.send({
-        from: RESEND_FROM_EMAIL,
-        to: [RESEND_ADMIN_EMAIL],
+        from: env.RESEND_FROM_EMAIL,
+        to: [env.RESEND_ADMIN_EMAIL],
         subject: `Nouvelle inscription Behar Tech Pro — ${emailAddress}`,
         html: adminContent,
         tags: [

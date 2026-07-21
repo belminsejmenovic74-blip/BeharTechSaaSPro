@@ -74,7 +74,9 @@
 	$: emailButton = invitationTicket ? 'Activer mon accès' : isSignup ? `Continuer avec l’offre ${selectedPlanData.name}` : 'Se connecter';
 	$: googleButton = isSignup ? 'Google' : 'Continuer avec Google';
 	$: alternateHref = isSignup ? '/connexion' : '/inscription';
-	$: alternateText = isSignup ? 'Déjà un compte ? Se connecter' : 'Pas encore de compte ? Créer un compte';
+	$: alternateText = isSignup
+		? 'Déjà un compte ? Se connecter'
+		: 'Pas encore de compte ? Créer un compte';
 	$: verificationTitle = verificationStep === 'signup-phone-entry'
 		? 'Ajoutez votre téléphone'
 		: verificationStep === 'signup-phone-code'
@@ -91,7 +93,7 @@
 					? 'Saisissez le code de votre application d’authentification.'
 					: secondFactorStrategy === 'backup_code'
 						? 'Saisissez l’un de vos codes de secours.'
-						: 'Saisissez le code de sécurité que Clerk vient de vous envoyé.'
+						: 'Saisissez le code de sécurité que Clerk vient de vous envoyer.'
 				: `Saisissez le code envoyé à ${pendingEmail || 'votre adresse e-mail'}.`;
 
 	function getCallbackUrl() {
@@ -505,7 +507,8 @@
 						</ul>
 					</div>
 					<p class="mt-3 text-center text-xs text-[#6B6B6B]">Sans engagement · Changez de formule à tout moment depuis votre espace</p>
-				{/if}
+				</div>
+			{/if}
 
 			<form class="mt-8 w-full max-w-[430px] space-y-4" on:submit|preventDefault={handleEmailAuth}>
 				<input class="h-[52px] w-full rounded-[8px] border border-[#E8E5DF] bg-white px-4 text-[15px] text-[#1A1916] outline-none transition placeholder:text-[#6B6B6B] focus:border-[#2A9D8F] disabled:bg-[#F4F4F1]" type="email" placeholder="nom@exemple.com" bind:value={email} autocomplete="email" disabled={!!invitationTicket} />
@@ -519,11 +522,11 @@
 			</form>
 
 			{#if !invitationTicket}
-				<div class="my-8 flex w-full max-w-[430px] items-center gap-4 text-[12px] font-medium uppercase tracking-normal text-[#6B6B6B]"><span class="h-px flex-1 bg-[#E8E5DF]"></span>OU CONTINUER AVEC<span class="h-px flex-1 bg-[#E8E5DF]"></span></div>
+			<div class="my-8 flex w-full max-w-[430px] items-center gap-4 text-[12px] font-medium uppercase tracking-normal text-[#6B6B6B]"><span class="h-px flex-1 bg-[#E8E5DF]"></span>OU CONTINUER AVEC<span class="h-px flex-1 bg-[#E8E5DF]"></span></div>
 
-				<button type="button" class="flex h-[52px] w-full max-w-[430px] items-center justify-center rounded-[8px] border border-[#E8E5DF] bg-white px-5 text-[15px] font-semibold text-[#1A1916] transition hover:border-[#2A9D8F]" on:click={handleGoogle} disabled={loading}>
-					<span use:editable={{ id: `auth.${initialMode}.googleBtn`, kind: 'button', label: 'Bouton Google' }}>{googleButton}</span>
-				</button>
+			<button type="button" class="flex h-[52px] w-full max-w-[430px] items-center justify-center rounded-[8px] border border-[#E8E5DF] bg-white px-5 text-[15px] font-semibold text-[#1A1916] transition hover:border-[#2A9D8F]" on:click={handleGoogle} disabled={loading}>
+				<span use:editable={{ id: `auth.${initialMode}.googleBtn`, kind: 'button', label: 'Bouton Google' }}>{googleButton}</span>
+			</button>
 			{/if}
 
 			{#if errorMessage}<p class="mt-4 w-full rounded-[8px] border border-red-200 bg-red-50 px-4 py-3 text-center text-[13px] leading-5 text-red-700">{errorMessage}</p>{/if}
