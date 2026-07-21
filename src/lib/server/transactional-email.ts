@@ -34,8 +34,16 @@ function escapeHtml(value: unknown) {
 		.replaceAll("'", '&#039;');
 }
 
+/** Adresse expéditeur : accepte EMAIL_FROM ou RESEND_FROM_EMAIL (deux conventions). */
+function fromAddress() {
+	return env.EMAIL_FROM || env.RESEND_FROM_EMAIL || '';
+}
+function replyToAddress() {
+	return env.EMAIL_REPLY_TO || env.RESEND_REPLY_TO || '';
+}
+
 export function transactionalEmailConfigured() {
-	return Boolean(env.RESEND_API_KEY && env.EMAIL_FROM);
+	return Boolean(env.RESEND_API_KEY && fromAddress());
 }
 
 export async function sendTransactionalEmail(input: SendEmailInput) {
@@ -51,12 +59,12 @@ export async function sendTransactionalEmail(input: SendEmailInput) {
 			'Idempotency-Key': input.idempotencyKey.slice(0, 256)
 		},
 		body: JSON.stringify({
-			from: env.EMAIL_FROM,
+			from: fromAddress(),
 			to: [input.to],
 			subject: input.subject,
 			html: input.html,
 			text: input.text,
-			...(env.EMAIL_REPLY_TO ? { reply_to: env.EMAIL_REPLY_TO } : {}),
+			...(replyToAddress() ? { reply_to: replyToAddress() } : {}),
 			...(input.attachments?.length
 				? {
 						attachments: input.attachments.map((a) => ({
