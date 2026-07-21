@@ -45,14 +45,41 @@ function readAuxStores(): Record<string, unknown> {
   return aux;
 }
 
+/** Vide TOUS les stores annexes (dossiers reconditionnement, règles, réglages…).
+ *  Anti-fuite entre comptes : on repart d'un état vierge avant de charger/créer
+ *  l'atelier d'une autre licence. */
+export function clearAuxStores() {
+  if (typeof window === "undefined") return;
+  try {
+    useReconditioningStore.getState().reset();
+  } catch {
+    // ignore
+  }
+  for (const key of AUX_STORE_KEYS) {
+    try {
+      window.localStorage.removeItem(key);
+      AUX_STORE_REHYDRATE[key]();
+    } catch {
+      // storage bloqué — best effort
+    }
+  }
+}
+
 /** Restaure les stores annexes d'un snapshot cloud, puis réhydrate les stores en mémoire. */
 function applyAuxStores(aux: unknown) {
-  if (typeof window === "undefined" || !aux || typeof aux !== "object") return;
+  if (typeof window === "undefined") return;
+  const auxObject = aux && typeof aux === "object" ? (aux as Record<string, unknown>) : {};
   for (const key of AUX_STORE_KEYS) {
-    const value = (aux as Record<string, unknown>)[key];
-    if (value === undefined) continue;
+    const value = auxObject[key];
     try {
-      window.localStorage.setItem(key, JSON.stringify(value));
+      if (value === undefined) {
+        // Le snapshot de CE compte n'a pas ce store → on efface l'éventuel
+        // reliquat local d'un autre compte (dossiers recond qui « restaient »).
+        window.localStorage.removeItem(key);
+        if (key === "behar-reconditioning") useReconditioningStore.getState().reset();
+      } else {
+        window.localStorage.setItem(key, JSON.stringify(value));
+      }
       AUX_STORE_REHYDRATE[key]();
     } catch {
       // quota / storage bloqué — la restauration du store principal continue
@@ -647,6 +674,9 @@ export async function ensureCloudStateForLicense(
     normalizeLicenseKey((store.lastLicenseKey as string) ?? "") === normalizedKey;
   if (!ownsLocalState) {
     store.resetLocalStateForLicense(normalizedKey);
+    // Les dossiers de reconditionnement (store annexe) doivent aussi être vidés,
+    // sinon ceux d'un autre atelier « restent » à chaque nouvelle clé.
+    clearAuxStores();
   }
 
   const localState = {

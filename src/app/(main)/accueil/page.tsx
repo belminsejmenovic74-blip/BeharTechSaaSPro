@@ -76,21 +76,27 @@ export default function AccueilHome() {
     <PortalPage>
       <PageHeader title={`Bonjour ${firstName}`} subtitle="Que souhaitez-vous gérer aujourd'hui ?" />
 
-      {/* Sélection de l'espace — entre dans le vrai SaaS */}
+      {/* Sélection de l'espace — entre dans le vrai SaaS.
+          Les modes tablette (Comptoir / Atelier) sont masqués sur mobile :
+          sur téléphone, on n'accède qu'au tableau de bord. */}
       <div className="grid gap-4 md:grid-cols-3">
-        <ModeCard
-          icon={Store}
-          title="Mode comptoir"
-          description="Accueillez un client, créez une prise en charge, un devis ou une vente."
-          href="/comptoir"
-        />
-        <ModeCard
-          icon={Wrench}
-          title="Mode atelier"
-          description="Suivez les appareils, statuts, pièces, photos et le travail en cours."
-          href="/atelier"
-          hint={`${activeRepairs} en cours · ${readyRepairs} prêt${readyRepairs > 1 ? "s" : ""}`}
-        />
+        <div className="hidden md:block">
+          <ModeCard
+            icon={Store}
+            title="Mode comptoir"
+            description="Accueillez un client, créez une prise en charge, un devis ou une vente."
+            href="/comptoir"
+          />
+        </div>
+        <div className="hidden md:block">
+          <ModeCard
+            icon={Wrench}
+            title="Mode atelier"
+            description="Suivez les appareils, statuts, pièces, photos et le travail en cours."
+            href="/atelier"
+            hint={`${activeRepairs} en cours · ${readyRepairs} prêt${readyRepairs > 1 ? "s" : ""}`}
+          />
+        </div>
         <ModeCard
           icon={LayoutDashboard}
           title="Tableau de bord détaillé"

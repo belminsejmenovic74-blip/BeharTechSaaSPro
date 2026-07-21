@@ -131,6 +131,7 @@ function TimeRange({
         aria-label={`${label} ouverture`}
         type="time"
         className={timeClass}
+        style={{ colorScheme: "light", color: "#101828", WebkitTextFillColor: "#101828", opacity: 1 }}
         disabled={!value}
         value={value?.start || ""}
         onChange={(event) => onChange("start", event.target.value)}
@@ -140,6 +141,7 @@ function TimeRange({
         aria-label={`${label} fermeture`}
         type="time"
         className={timeClass}
+        style={{ colorScheme: "light", color: "#101828", WebkitTextFillColor: "#101828", opacity: 1 }}
         disabled={!value}
         value={value?.end || ""}
         onChange={(event) => onChange("end", event.target.value)}

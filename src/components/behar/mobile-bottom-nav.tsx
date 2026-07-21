@@ -27,18 +27,17 @@ import {
 import { useBeharStore } from "@/lib/behar-store";
 import { cn } from "@/lib/utils";
 
+// Sur mobile, on n'expose PAS les modes tablette « Atelier » et « Mode comptoir »
+// (pensés pour tablette/PC) : accès aux modules du dashboard uniquement.
 const mobileItems = [
   { label: "Accueil", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Atelier", href: "/dashboard/atelier", icon: Wrench },
+  { label: "Réparations", href: "/dashboard/reparations", icon: Wrench },
   { label: "Clients", href: "/dashboard/clients", icon: Users },
   { label: "Devis", href: "/dashboard/devis", icon: FileText },
 ] as const;
 
 const moreItems = [
-  { label: "Mode comptoir", href: "/comptoir", icon: Store },
-  { label: "Réparations", href: "/dashboard/reparations", icon: Wrench },
   { label: "Factures", href: "/dashboard/factures", icon: Receipt },
-  { label: "Export comptable", href: "/dashboard/comptabilite/export", icon: Landmark },
   { label: "Rendez-vous", href: "/dashboard/rendez-vous", icon: CalendarDays },
   { label: "Stock", href: "/dashboard/stock", icon: Package },
   { label: "Achats", href: "/dashboard/achats", icon: ShoppingCart },
@@ -53,11 +52,8 @@ export function MobileBottomNav() {
   const [open, setOpen] = useState(false);
   const currentUser = useBeharStore((s) => s.currentUser);
   const canViewPurchases = useBeharStore((s) => s.hasPermission("canViewPurchasePrice"));
-  const canExport = useBeharStore((s) => s.hasPermission("canExportData"));
   const logout = useBeharStore((s) => s.logout);
-  const visibleMoreItems = moreItems
-    .filter((item) => item.href !== "/dashboard/achats" || canViewPurchases)
-    .filter((item) => item.href !== "/dashboard/comptabilite/export" || canExport);
+  const visibleMoreItems = moreItems.filter((item) => item.href !== "/dashboard/achats" || canViewPurchases);
 
   const moreActive = moreItems.some((m) => pathname.startsWith(m.href));
   const roleLabel =

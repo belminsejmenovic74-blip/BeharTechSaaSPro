@@ -40,17 +40,10 @@ const allModules = [
   },
   { label: "Devis", href: "/dashboard/devis", icon: FileText, permission: "canViewQuotes" },
   { label: "Factures", href: "/dashboard/factures", icon: Receipt, permission: "canViewInvoices" },
-  {
-    label: "Export comptable",
-    href: "/dashboard/comptabilite/export",
-    icon: Landmark,
-    permission: "canExportData",
-  },
   { label: "Rendez-vous", href: "/dashboard/rendez-vous", icon: CalendarDays, permission: "canViewRepairs" },
   { label: "Stock", href: "/dashboard/stock", icon: Package, permission: "canViewStock" },
   { label: "Documents", href: "/dashboard/documents", icon: Files, permission: "canViewDocuments" },
-  { label: "Comptoir", href: "/comptoir", icon: Store, permission: "canAccessCounter" },
-  { label: "Atelier plein écran", href: "/atelier", icon: Wrench, permission: "canAccessWorkshopMode" },
+  // Modes tablette (Comptoir / Atelier plein écran) volontairement masqués sur mobile.
   { label: "Paramètres", href: "/dashboard/parametres", icon: Settings, permission: "canViewSettings" },
 ] satisfies Array<{ label: string; href: string; icon: typeof LayoutDashboard; permission: PermissionKey }>;
 

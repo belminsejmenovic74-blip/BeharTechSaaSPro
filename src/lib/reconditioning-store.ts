@@ -725,6 +725,8 @@ export const RECONDITIONING_STEPS = [
 type ReconditioningState = {
   files: ReconditioningFile[];
   sequence: number;
+  /** Vide les dossiers de reconditionnement (isolation entre comptes/licences). */
+  reset: () => void;
   createFile: () => string;
   updateFile: (id: string, patch: Partial<ReconditioningFile>) => void;
   setPhoto: (id: string, slot: keyof ReconditioningFile["photos"], dataUrl: string | undefined) => void;
@@ -784,6 +786,7 @@ export const useReconditioningStore = create<ReconditioningState>()(
     (set, get) => ({
       files: [],
       sequence: 1,
+      reset: () => set({ files: [], sequence: 1 }),
       createFile: () => {
         const seq = get().sequence;
         const file = createBlankFile(seq);

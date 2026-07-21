@@ -54,12 +54,6 @@ const navGroups = [
     items: [
       { label: "Devis", href: "/dashboard/devis", icon: FileText, permission: "canViewQuotes" },
       { label: "Factures", href: "/dashboard/factures", icon: Receipt, permission: "canViewInvoices" },
-      {
-        label: "Export comptable",
-        href: "/dashboard/comptabilite/export",
-        icon: Landmark,
-        permission: "canExportData",
-      },
       { label: "Stock", href: "/dashboard/stock", icon: Package, permission: "canViewStock" },
       { label: "Achats", href: "/dashboard/achats", icon: ShoppingCart, permission: "canViewPurchasePrice" },
     ],
