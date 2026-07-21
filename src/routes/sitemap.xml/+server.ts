@@ -11,7 +11,12 @@ export function GET() {
 		{ loc: absUrl('/') },
 		{ loc: hubUrl() },
 		{ loc: blogHubUrl() },
-		{ loc: faqUrl() }
+		{ loc: faqUrl() },
+		{ loc: absUrl('/a-propos') },
+		{ loc: absUrl('/contact') },
+		{ loc: absUrl('/mentions-legales') },
+		{ loc: absUrl('/confidentialite') },
+		{ loc: absUrl('/cgu') }
 	];
 
 	for (const p of getPiliers()) {

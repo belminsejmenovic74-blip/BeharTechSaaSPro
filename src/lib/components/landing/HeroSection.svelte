@@ -24,6 +24,17 @@
 		style="background: radial-gradient(58% 48% at 50% 44%, rgba(255,214,186,0.85), transparent 70%);"
 	></div>
 
+	{#if hero.badge}
+		<div
+			use:editable={{ id: 'hero.badge', kind: 'text', path: 'hero.badge', label: 'Badge' }}
+			class="-translate-y-4 animate-fade-in mb-4 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium opacity-0 [--animation-delay:100ms]"
+			style="border-color: var(--bt-accent); color: var(--bt-accent); background: rgba(42,157,143,0.08)"
+		>
+			<span class="inline-block h-1.5 w-1.5 rounded-full" style="background: var(--bt-accent)"></span>
+			{hero.badge}
+		</div>
+	{/if}
+
 	<h1
 		use:editable={{ id: 'hero.title', kind: 'heading', path: 'hero.title', label: 'Titre principal' }}
 		class="-translate-y-4 animate-fade-in mt-6 max-w-4xl text-balance py-2 text-6xl font-medium leading-[1.02] tracking-tighter opacity-0 [--animation-delay:150ms] md:text-7xl lg:text-8xl"

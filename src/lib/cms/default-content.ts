@@ -99,7 +99,7 @@ export const DEFAULT_CONTENT = {
 	},
 
 	hero: {
-		badge: 'Prévente ouverte jusqu’au 15 août',
+		badge: 'Accès anticipé · Lancement le 15 août 2026',
 		title: 'Transformez votre atelier.',
 		subtitle: 'Gagnez du temps. Gagnez des clients.\nCentralisez votre atelier dans un seul outil.',
 		ctaLabel: 'Réserver ma place',
@@ -649,7 +649,7 @@ export const DEFAULT_CONTENT = {
 
 	footer: {
 		brand: 'BEHAR • TECH PRO',
-		tagline: '',
+		tagline: 'L’atelier dans la poche. Accès anticipé — lancement le 15 août 2026.',
 		newsletterTitle: 'Restez informé',
 		newsletterPlaceholder: 'Votre e-mail',
 		newsletterButton: 'S’inscrire',
@@ -675,10 +675,11 @@ export const DEFAULT_CONTENT = {
 			{
 				label: 'ENTREPRISE',
 				items: [
-					{ label: 'À propos', href: '/' },
-					{ label: 'Contact', href: '/' },
-					{ label: 'Mentions légales', href: '/' },
-					{ label: 'Politique de confidentialité', href: '/' }
+					{ label: 'À propos', href: '/a-propos/' },
+					{ label: 'Contact', href: '/contact/' },
+					{ label: 'Mentions légales', href: '/mentions-legales/' },
+					{ label: 'Confidentialité', href: '/confidentialite/' },
+					{ label: 'CGU', href: '/cgu/' }
 				]
 			}
 		],
