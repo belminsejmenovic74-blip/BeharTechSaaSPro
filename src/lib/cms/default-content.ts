@@ -99,13 +99,14 @@ export const DEFAULT_CONTENT = {
 	},
 
 	hero: {
-		badge: 'Accès anticipé · Lancement le 15 août 2026',
+		badge: 'Cohorte fondatrice · 30 places · Lancement le 15 août 2026',
 		title: 'Transformez votre atelier.',
-		subtitle: 'Gagnez du temps. Gagnez des clients.\nCentralisez votre atelier dans un seul outil.',
+		subtitle:
+			'Le logiciel tout-en-un des ateliers de réparation smartphone, tablette et PC. Gagnez du temps, gagnez des clients.',
 		ctaLabel: 'Réserver ma place',
 		ctaHref: '#cta',
-		cta2Label: 'Voir la démo du widget',
-		cta2Href: '/exemple',
+		cta2Label: 'Réserver une démo de 15 min',
+		cta2Href: 'https://calendly.com/belmin-sejmenovic74/nouvelle-reunion',
 		showProofs: true,
 		proofs: [
 			{ text: 'Accès fondateur' },
@@ -126,7 +127,7 @@ export const DEFAULT_CONTENT = {
 			{ id: 'st3', value: 'UE + Suisse', label: 'disponible dès le lancement', icon: 'globe', visible: true },
 			{ id: 'st6', value: 'RGPD', label: 'conforme, vos données protégées', icon: 'shieldCheck', visible: true },
 			{ id: 'st7', value: '4 h', label: 'gagnées en moyenne par semaine', icon: 'clock', visible: true },
-			{ id: 'st5', value: '-10 %', label: 'pendant 12 mois', visible: true }
+			{ id: 'st5', value: '-10 %', label: 'pendant 12 mois · offre fondateur', visible: true }
 		]
 	},
 
@@ -639,7 +640,8 @@ export const DEFAULT_CONTENT = {
 	cta: {
 		kicker: '',
 		title: 'Réservez votre place avant le 15 août.',
-		subtitle: 'Accès fondateur, accompagnement prioritaire et lancement dès l’ouverture.',
+		subtitle:
+			'Cohorte fondatrice limitée à 30 ateliers : accompagnement personnalisé au démarrage, −10 % pendant 12 mois, accès dès l’ouverture.',
 		button1Text: 'Réserver ma place',
 		button1Href: '#cta',
 		button2Text: 'Connexion',

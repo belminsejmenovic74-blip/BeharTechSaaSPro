@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { getCms } from '$lib/cms/context';
 	import { editable } from '$lib/editor/editable';
+	import CalendlyBooking from './CalendlyBooking.svelte';
 
 	const cms = getCms();
 	$: cta = $cms.cta;
@@ -56,7 +57,13 @@
 				{cta.title}
 			</h2>
 			<p
-				use:editable={{ id: 'cta.subtitle', kind: 'text', path: 'cta.subtitle', label: 'Sous-titre', multiline: true }}
+				use:editable={{
+					id: 'cta.subtitle',
+					kind: 'text',
+					path: 'cta.subtitle',
+					label: 'Sous-titre',
+					multiline: true
+				}}
 				class="mx-auto mt-4 max-w-lg text-lg text-gray-500"
 			>
 				{cta.subtitle}
@@ -64,13 +71,22 @@
 		</div>
 
 		{#if state === 'success'}
-			<div class="mt-10 rounded-2xl border p-8 text-center" style="background: var(--bt-card); border-color: #cfe9e4">
-				<p class="text-xl font-semibold" style="color: var(--bt-text)">Votre place est réservée ✅</p>
-				<p class="mx-auto mt-3 max-w-md text-gray-500">
-					Merci {firstName} ! Un e-mail de confirmation vient de vous être envoyé. Nous vous
-					recontacterons très vite.
+			<div
+				class="mt-10 rounded-2xl border p-8 text-center"
+				style="background: var(--bt-card); border-color: #cfe9e4"
+			>
+				<p class="text-xl font-semibold" style="color: var(--bt-text)">
+					Votre place est réservée ✅
 				</p>
-				<a href="/exemple" class="mt-6 inline-block rounded-xl px-5 py-3 text-sm font-semibold text-white" style="background: var(--bt-button)">Voir la démo</a>
+				<p class="mx-auto mt-3 max-w-md text-gray-500">
+					Merci {firstName} ! Un e-mail de confirmation vient de vous être envoyé. Nous vous recontacterons
+					très vite.
+				</p>
+				<a
+					href="/exemple"
+					class="mt-6 inline-block rounded-xl px-5 py-3 text-sm font-semibold text-white"
+					style="background: var(--bt-button)">Voir la démo</a
+				>
 			</div>
 		{:else}
 			<form
@@ -102,15 +118,18 @@
 				</div>
 
 				<!-- Honeypot anti-spam -->
-				<input bind:value={company} name="company" tabindex="-1" autocomplete="off" aria-hidden="true" class="absolute left-[-9999px] h-0 w-0 opacity-0" />
+				<input
+					bind:value={company}
+					name="company"
+					tabindex="-1"
+					autocomplete="off"
+					aria-hidden="true"
+					class="absolute left-[-9999px] h-0 w-0 opacity-0"
+				/>
 
 				{#if state === 'error'}<p class="mt-4 text-sm font-medium text-red-600">{errorMsg}</p>{/if}
 
-				<button
-					type="submit"
-					disabled={state === 'loading'}
-					class="btn-primary mt-6"
-				>
+				<button type="submit" disabled={state === 'loading'} class="btn-primary mt-6">
 					{state === 'loading' ? 'Envoi…' : cta.button1Text || 'Réserver ma place'}
 				</button>
 				<p class="mt-3 text-center text-xs text-gray-500">
@@ -118,6 +137,10 @@
 				</p>
 			</form>
 		{/if}
+	</div>
+
+	<div class="mx-auto mt-20 max-w-5xl">
+		<CalendlyBooking />
 	</div>
 </section>
 
