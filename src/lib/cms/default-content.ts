@@ -99,7 +99,7 @@ export const DEFAULT_CONTENT = {
 	},
 
 	hero: {
-		badge: 'Cohorte fondatrice · 30 places · Lancement le 15 août 2026',
+		badge: 'Offre fondateur · 30 places · Lancement le 15 août 2026',
 		title: 'Transformez votre atelier.',
 		subtitle:
 			'Le logiciel tout-en-un des ateliers de réparation smartphone, tablette et PC. Gagnez du temps, gagnez des clients.',
@@ -641,7 +641,7 @@ export const DEFAULT_CONTENT = {
 		kicker: '',
 		title: 'Réservez votre place avant le 15 août.',
 		subtitle:
-			'Cohorte fondatrice limitée à 30 ateliers : accompagnement personnalisé au démarrage, −10 % pendant 12 mois, accès dès l’ouverture.',
+			'Offre fondateur limitée à 30 ateliers : accompagnement personnalisé au démarrage, −10 % pendant 12 mois, accès dès l’ouverture.',
 		button1Text: 'Réserver ma place',
 		button1Href: '#cta',
 		button2Text: 'Connexion',
