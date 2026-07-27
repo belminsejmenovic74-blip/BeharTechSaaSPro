@@ -1,42 +1,55 @@
 # Behar Tech Pro — Rapport QA Playwright complet
 
-_Généré le 2026-06-26T23:45:00.693Z — durée 0.4 s_
+_Généré le 2026-07-27T18:49:04.961Z — durée 92.1 s_
 
 ## Résumé
-- **Score global** : 0/100
-- **Checkpoints** : 0
-- OK : 0
-- FAIL : 0
-- PARTIAL : 0
-- BLOCKED : 0
-- P0 : 0
-- P1 : 0
-- P2 : 0
+- **Score global** : 77/100
+- **Checkpoints** : 22
+- OK : 16
+- FAIL : 2
+- PARTIAL : 2
+- BLOCKED : 2
+- P0 : 1
+- P1 : 1
+- P2 : 1
 
 ## Verdict
-Vendable pour les ateliers pilotes (sous réserve des P1 listés).
+PAS VENDABLE — bloqueurs P0 à corriger avant toute vente.
 
 ## P0 (bloqueurs)
-_Aucun P0 détecté._
+### QA-03.3 — Facture liée à la réparation = 119 € (et non 29 €)
+- **Module** : Facturation
+- **Statut** : FAIL (P0)
+- **Obtenu** : Aucune facture trouvée pour cette réparation — bouton UI non accessible (à vérifier manuellement)
+- **Capture** : qa-results/screenshots/1785178086685-qa-03.3.png
+- **Impact business** : Manque à gagner 90 € par réparation — fraude comptable involontaire.
 
 ## P1 (importants)
-_Aucun P1 détecté._
+### QA-08.2 — Système de rôles détecté — checks détaillés à scripter manuellement
+- **Module** : Permissions
+- **Statut** : PARTIAL (P1)
+- **Obtenu** : Module détecté mais flux Stagiaire non automatisé dans cette mission.
 
 ## P2 (mineurs)
-_Aucun P2 détecté._
+### QA-03.1 — Création réparation 90+29 via seed (fallback UI)
+- **Module** : Réparations
+- **Statut** : PARTIAL (P2)
+- **Obtenu** : Création seed direct, formulaire non scripté pour cette mission.
 
 ## Données créées
-- Clients : 0
-- Stock : 0
-- Réparations : 0
-- Devis : 0
-- Factures : 0
-- Paiements : 0
-- Rendez-vous : 0
+- Clients : 30
+- Stock : 100
+- Réparations : 51
+- Devis : 50
+- Factures : 40
+- Paiements : 30
+- Rendez-vous : 20
 - Anti-litige : 0
 
 ## Top 10 corrections prioritaires
-_Aucune correction critique._
+1. **[P0]** Facture liée à la réparation = 119 € (et non 29 €) — Facturation
+2. **[P1]** Système de rôles détecté — checks détaillés à scripter manuellement — Permissions
+3. **[P2]** Création réparation 90+29 via seed (fallback UI) — Réparations
 
 ## Conclusion
-Vendable pour les ateliers pilotes (sous réserve des P1 listés).
+PAS VENDABLE — bloqueurs P0 à corriger avant toute vente.

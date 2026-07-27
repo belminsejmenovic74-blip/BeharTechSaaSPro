@@ -31,6 +31,20 @@ export type WidgetFieldKey = (typeof WIDGET_FIELDS)[number];
 const color = z.string().regex(/^#[0-9a-fA-F]{6}$/);
 const cleanText = (max: number) => z.string().trim().max(max);
 
+function relativeLuminance(hex: string): number {
+  const channels = [1, 3, 5].map((start) => Number.parseInt(hex.slice(start, start + 2), 16) / 255);
+  const [red, green, blue] = channels.map((channel) =>
+    channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
+  );
+  return red * 0.2126 + green * 0.7152 + blue * 0.0722;
+}
+
+export function widgetColorContrast(foreground: string, background: string): number {
+  const lighter = Math.max(relativeLuminance(foreground), relativeLuminance(background));
+  const darker = Math.min(relativeLuminance(foreground), relativeLuminance(background));
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
 const generalSchema = z
   .object({
     commercialName: cleanText(160),
@@ -57,7 +71,15 @@ const visualSchema = z
     textSize: z.enum(["small", "medium", "large"]),
     contentWidth: z.enum(["compact", "standard", "wide"]),
   })
-  .strict();
+  .strict()
+  .refine((visual) => widgetColorContrast(visual.buttonTextColor, visual.buttonColor) >= 4.5, {
+    message: "Le contraste du texte des boutons doit être d’au moins 4,5:1.",
+    path: ["buttonTextColor"],
+  })
+  .refine((visual) => widgetColorContrast(visual.textColor, visual.backgroundColor) >= 4.5, {
+    message: "Le contraste du texte sur le fond doit être d’au moins 4,5:1.",
+    path: ["textColor"],
+  });
 
 const textsSchema = z
   .object({
@@ -254,7 +276,7 @@ export const DEFAULT_WIDGET_CMS_CONFIG: EditableWidgetConfig = {
   },
   visual: {
     primaryColor: "#2A9D8F",
-    buttonColor: "#2A9D8F",
+    buttonColor: "#167B70",
     buttonTextColor: "#FFFFFF",
     textColor: "#101828",
     backgroundColor: "#FFFFFF",

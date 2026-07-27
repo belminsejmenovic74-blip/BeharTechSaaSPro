@@ -144,7 +144,11 @@ describe("Reconditionnement → stock + achat", () => {
       prixAchat: 150,
       prixVentePrevu: 300,
       status: "Reconditionnement",
+      laborCost: 25,
     });
+    useReconditioningStore.getState().addPart(id);
+    const partId = useReconditioningStore.getState().files.find((entry) => entry.id === id)?.parts[0]?.id ?? "";
+    useReconditioningStore.getState().updatePart(id, partId, { label: "Écran", quantity: 1, cost: 38 });
     completeFinalDiagnostic(id);
     useReconditioningStore.getState().generateCertificate(id);
 
@@ -160,6 +164,13 @@ describe("Reconditionnement → stock + achat", () => {
     const file = useReconditioningStore.getState().files.find((entry) => entry.id === id);
     expect(file?.publishedToStock).toBe(true);
     expect(file?.stockItemId).toBeTruthy();
+    const stockItem = useBeharStore.getState().stockItems.find((entry) => entry.id === file?.stockItemId);
+    expect(stockItem?.purchasePrice).toBe(213);
+    expect(stockItem?.averagePurchasePrice).toBe(213);
+    expect(
+      useBeharStore.getState().stockMovements.find((movement) => movement.linkedReconditioningDeviceId === id)
+        ?.unitCost,
+    ).toBe(213);
 
     const purchase = useBeharStore.getState().purchases[0];
     expect(purchase.source).toBe("Reconditionnement");

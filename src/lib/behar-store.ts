@@ -30,6 +30,8 @@ import {
   getWorkshopCountryConfig,
   isBillingProfileComplete,
   normalizeWorkshopCountry,
+  normalizeAllowedMarkets,
+  resolveAllowedMarket,
   parseMoney,
   type BillingProfiles,
   type WorkshopCountry,
@@ -49,6 +51,8 @@ import {
   stockReferenceMatches,
 } from "@/lib/stock-reference";
 import { pickStockLotForQuantity } from "@/lib/stock-lots";
+import { calculateWeightedAverageCost } from "@/lib/stock-cost";
+import { normalizeStockQuality } from "@/lib/stock-catalog-link";
 
 export type RepairStatus =
   | "Reçu"
@@ -865,6 +869,7 @@ export type StockItem = {
   ean?: string;
   supplierWarranty?: string;
   purchasePrice: number;
+  currency?: WorkshopCurrency;
   averagePurchasePrice?: number;
   lastPurchasePrice?: number;
   salePrice: number;
@@ -1188,6 +1193,7 @@ export type SupplierInvoice = {
   totalExcludingTax: number;
   taxAmount: number;
   totalIncludingTax: number;
+  currency?: WorkshopCurrency;
   status: SupplierPurchaseStatus;
   source: SupplierPurchaseSource;
   textractJson?: Record<string, unknown>;
@@ -1217,6 +1223,7 @@ export type SupplierInvoiceLine = {
   supplierWarranty?: string;
   quantityPurchased: number;
   unitPurchasePriceExclTax: number;
+  currency?: WorkshopCurrency;
   taxRate?: number;
   taxAmount?: number;
   lineTotalExclTax: number;
@@ -1743,6 +1750,7 @@ type StockInput = Pick<StockItem, "purchasePrice" | "threshold" | "supplier"> &
       | "scanEnabled"
       | "location"
       | "quality"
+      | "currency"
       | "averagePurchasePrice"
       | "lastPurchasePrice"
       | "primarySupplierId"
@@ -1839,6 +1847,7 @@ type SupplierInvoiceCommitInput = {
   totalExcludingTax?: number;
   taxAmount?: number;
   totalIncludingTax?: number;
+  currency?: WorkshopCurrency;
   status?: SupplierPurchaseStatus;
   source?: SupplierPurchaseSource;
   textractJson?: Record<string, unknown>;
@@ -4195,11 +4204,8 @@ const normalizeStockItem = (item: Partial<StockItem> & { skipModelInference?: bo
   const supplierModels = /EAN\s*\d+|Garantie|UTOPYA|\biPhone\s+[0-9A-Za-z\s/]+/i.test(rawName || name)
     ? inferSupplierIphoneModels(rawName || name)
     : [];
-  const compatibleModelInputs = uniqueIds([
-    modelFromName,
-    ...supplierModels,
-    ...(Array.isArray(item.compatibleModels) ? item.compatibleModels : []),
-  ]);
+  const explicitCompatibleModels = Array.isArray(item.compatibleModels) ? item.compatibleModels : [];
+  const compatibleModelInputs = uniqueIds([...explicitCompatibleModels, modelFromName, ...supplierModels]);
   const modelIds = uniqueIds([
     ...compatibleModelInputs.map((modelName) => findModelIdByName(modelName, brand?.id)),
     ...rawModelIds.map((modelIdOrName) =>
@@ -4232,7 +4238,7 @@ const normalizeStockItem = (item: Partial<StockItem> & { skipModelInference?: bo
       : typeof item.counterVisible === "boolean"
         ? item.counterVisible && itemType !== "part"
         : itemType !== "part";
-  const quality = normalizeText(item.quality, inferSupplierPartQuality(rawName || name));
+  const quality = normalizeStockQuality(normalizeText(item.quality, inferSupplierPartQuality(rawName || name)));
   const categoryName = category?.name ?? normalizeText(item.categoryName, normalizeText(item.category, "Autre"));
   const displayName = normalizeText(
     item.displayName,
@@ -4271,6 +4277,7 @@ const normalizeStockItem = (item: Partial<StockItem> & { skipModelInference?: bo
     ean: normalizeText(item.ean, extractSupplierEan(rawName)),
     supplierWarranty: normalizeText(item.supplierWarranty, extractSupplierWarranty(rawName)),
     purchasePrice: clampMoney(item.purchasePrice),
+    currency: item.currency === "CHF" ? "CHF" : item.currency === "EUR" ? "EUR" : undefined,
     averagePurchasePrice:
       typeof item.averagePurchasePrice === "number"
         ? clampMoney(item.averagePurchasePrice)
@@ -4422,9 +4429,9 @@ const syncPriceBookToStockItems = (pbItems: PriceBookItem[], stockItems: StockIt
 
 // Reverse de syncPriceBookToStockItems : quand on enregistre une pièce avec un
 // prix d'achat, on renseigne automatiquement ce prix d'achat sur la fiche Tarif
-// (PriceBook) correspondante. On ne met à jour QUE la première fiche qui
-// correspond (lien direct, SKU, ou marque+modèle+catégorie) — jamais de création
-// automatique, pour ne pas polluer les Tarifs.
+// (PriceBook) correspondante. Un prix existant strictement positif n'est jamais
+// écrasé silencieusement. Si aucune référence n'existe et que les attributs
+// structurants sont complets, une fiche atelier est créée.
 const applyStockPurchasePriceToPriceBook = (pbItems: PriceBookItem[], item: StockItem): PriceBookItem[] => {
   const purchase = clampMoney(item.purchasePrice);
   if (!(purchase > 0)) return pbItems;
@@ -4434,7 +4441,7 @@ const applyStockPurchasePriceToPriceBook = (pbItems: PriceBookItem[], item: Stoc
   const itemModels = (item.compatibleModels || []).map((m) => m.toLowerCase());
   const itemCat = (item.categoryName || item.category || "").toLowerCase();
   let matched = false;
-  return pbItems.map((pb) => {
+  const next = pbItems.map((pb) => {
     if (matched) return pb;
     const linkMatch = pb.stockItemId === item.id || (Boolean(item.priceBookItemId) && pb.id === item.priceBookItemId);
     const skuMatch = Boolean(itemSku) && (pb.sku || "").toLowerCase() === itemSku;
@@ -4446,6 +4453,13 @@ const applyStockPurchasePriceToPriceBook = (pbItems: PriceBookItem[], item: Stoc
         getCategoryFromIntervention(pb.reparation).toLowerCase() === itemCat);
     if (!(linkMatch || skuMatch || attrMatch)) return pb;
     matched = true;
+    if (pb.prixAchat > 0) {
+      return {
+        ...pb,
+        stockItemId: pb.stockItemId || item.id,
+        updatedAt: getNowIso(),
+      };
+    }
     return {
       ...pb,
       prixAchat: purchase,
@@ -4453,6 +4467,40 @@ const applyStockPurchasePriceToPriceBook = (pbItems: PriceBookItem[], item: Stoc
       updatedAt: getNowIso(),
     };
   });
+  const model = item.compatibleModels[0]?.trim();
+  const quality = normalizeStockQuality(item.quality);
+  if (matched || !itemBrand || !model || !itemCat || !quality) return next;
+  const typeAppareil: PriceBookDeviceType =
+    item.deviceType === "Smartphone"
+      ? "smartphone"
+      : item.deviceType === "Tablette"
+        ? "tablet"
+        : item.deviceType === "Ordinateur"
+          ? "computer"
+          : item.deviceType === "Console"
+            ? "console"
+            : "other";
+  return [
+    createPriceBookItem({
+      source: "workshop_import",
+      typeAppareil,
+      marque: item.brandName || "",
+      modele: model,
+      reparation: item.categoryName || item.category,
+      piece: item.name,
+      qualite: quality,
+      sku: item.sku || item.reference,
+      prixAchat: purchase,
+      prixVentePiece: item.salePrice,
+      mainOeuvre: 0,
+      fournisseur: item.supplier,
+      stockDisponible: item.stock,
+      stockItemId: item.id,
+      notes: `Créé automatiquement depuis le stock (${item.currency ?? "EUR"}, prix HT).`,
+      isActive: true,
+    }),
+    ...next,
+  ];
 };
 
 // Déduit le modèle d'appareil à partir du nom de la pièce quand l'utilisateur
@@ -6947,10 +6995,14 @@ export const useBeharStore = create<StoreState>()(
         }
 
         const id = uid("quote");
+        const allowedMarkets = normalizeAllowedMarkets(ws.allowedMarkets, ws.country);
         const quoteBillingConfig = getWorkshopCountryConfig(
-          input.billingCountry ?? repairForQuote?.billingCountry ?? ws.country,
+          resolveAllowedMarket(input.billingCountry ?? repairForQuote?.billingCountry, allowedMarkets, ws.country),
         );
-        const currency = input.currency ?? repairForQuote?.currency ?? quoteBillingConfig.currency;
+        const currency =
+          allowedMarkets.length === 1
+            ? quoteBillingConfig.currency
+            : (input.currency ?? repairForQuote?.currency ?? quoteBillingConfig.currency);
         const quote = normalizeQuote(
           {
             ...input,
@@ -7345,10 +7397,18 @@ export const useBeharStore = create<StoreState>()(
           return "";
         }
         const id = uid("invoice");
+        const allowedMarkets = normalizeAllowedMarkets(ws.allowedMarkets, ws.country);
         const invoiceBillingConfig = getWorkshopCountryConfig(
-          input.billingCountry ?? quote?.billingCountry ?? repair?.billingCountry ?? ws.country,
+          resolveAllowedMarket(
+            input.billingCountry ?? quote?.billingCountry ?? repair?.billingCountry,
+            allowedMarkets,
+            ws.country,
+          ),
         );
-        const currency = input.currency ?? quote?.currency ?? repair?.currency ?? invoiceBillingConfig.currency;
+        const currency =
+          allowedMarkets.length === 1
+            ? invoiceBillingConfig.currency
+            : (input.currency ?? quote?.currency ?? repair?.currency ?? invoiceBillingConfig.currency);
         const invoice: Invoice = {
           id,
           billingCountry: invoiceBillingConfig.country,
@@ -8483,6 +8543,19 @@ export const useBeharStore = create<StoreState>()(
         const duplicate = findDuplicateStockItem(get().stockItems, enrichedInput);
         if (duplicate) {
           const stockToAdd = clampQuantity(enrichedInput.quantity ?? enrichedInput.stock);
+          const incomingUnitCost =
+            enrichedInput.purchasePrice === undefined
+              ? (duplicate.lastPurchasePrice ?? duplicate.purchasePrice)
+              : clampMoney(enrichedInput.purchasePrice);
+          const nextAveragePurchasePrice =
+            stockToAdd > 0
+              ? calculateWeightedAverageCost({
+                  currentQuantity: duplicate.stock,
+                  currentAverageCost: duplicate.averagePurchasePrice ?? duplicate.purchasePrice,
+                  addedQuantity: stockToAdd,
+                  addedUnitCost: incomingUnitCost,
+                })
+              : (duplicate.averagePurchasePrice ?? duplicate.purchasePrice);
           get().updateStockItem(duplicate.id, {
             name: enrichedInput.name || enrichedInput.part || duplicate.name,
             part: enrichedInput.name || enrichedInput.part || duplicate.part,
@@ -8499,6 +8572,8 @@ export const useBeharStore = create<StoreState>()(
               enrichedInput.purchasePrice === undefined
                 ? duplicate.purchasePrice
                 : clampMoney(enrichedInput.purchasePrice),
+            currency: enrichedInput.currency ?? duplicate.currency,
+            averagePurchasePrice: nextAveragePurchasePrice,
             lastPurchasePrice:
               enrichedInput.lastPurchasePrice ??
               (enrichedInput.purchasePrice === undefined
@@ -8515,12 +8590,6 @@ export const useBeharStore = create<StoreState>()(
             originSupplierInvoiceLineId:
               enrichedInput.originSupplierInvoiceLineId || duplicate.originSupplierInvoiceLineId,
           });
-          const mergedItem = get().stockItems.find((entry) => entry.id === duplicate.id);
-          if (mergedItem) {
-            set((state) => ({
-              priceBookItems: applyStockPurchasePriceToPriceBook(state.priceBookItems, mergedItem),
-            }));
-          }
           if (stockToAdd > 0) {
             if (input.skipPurchaseLog) {
               const before = get().stockItems.find((entry) => entry.id === duplicate.id) ?? duplicate;
@@ -8545,11 +8614,19 @@ export const useBeharStore = create<StoreState>()(
                   linkedPurchaseId: after.originPurchaseId,
                   linkedSupplierInvoiceId: after.originSupplierInvoiceId,
                   linkedSupplierInvoiceLineId: after.originSupplierInvoiceLineId,
+                  unitCost: incomingUnitCost,
+                  totalCost: clampMoney(incomingUnitCost * stockToAdd),
                 });
               }
             } else {
               get().restockItem(duplicate.id, stockToAdd);
             }
+          }
+          const mergedItem = get().stockItems.find((entry) => entry.id === duplicate.id);
+          if (mergedItem) {
+            set((state) => ({
+              priceBookItems: applyStockPurchasePriceToPriceBook(state.priceBookItems, mergedItem),
+            }));
           }
           set((state) => ({ selectedStockItemId: duplicate.id }));
           get().addAuditLog({
@@ -9022,7 +9099,7 @@ export const useBeharStore = create<StoreState>()(
             const taxAmount = clampMoney(line.taxAmount ?? (taxRate ? lineTotalExclTax * (taxRate / 100) : 0));
             const rawName = normalizeText(line.rawName, normalizeText(line.itemName));
             const category = normalizeText(line.category);
-            const quality = normalizeText(line.quality, inferSupplierPartQuality(rawName));
+            const quality = normalizeStockQuality(normalizeText(line.quality, inferSupplierPartQuality(rawName)));
             const displayName = normalizeText(line.displayName, compactSupplierPartName(rawName, category, quality));
             return {
               ...line,
@@ -9061,6 +9138,11 @@ export const useBeharStore = create<StoreState>()(
         const totalExcludingTax = clampMoney(input.totalExcludingTax ?? computedTotalExcludingTax);
         const taxAmount = clampMoney(input.taxAmount ?? computedTaxAmount);
         const totalIncludingTax = clampMoney(input.totalIncludingTax ?? totalExcludingTax + taxAmount);
+        const currency =
+          input.currency ??
+          getWorkshopCountryConfig(
+            normalizeWorkshopCountry(get().workshopSettings.defaultMarket ?? get().workshopSettings.country),
+          ).currency;
         const invoice: SupplierInvoice = {
           id: invoiceId,
           shopId,
@@ -9074,6 +9156,7 @@ export const useBeharStore = create<StoreState>()(
           totalExcludingTax,
           taxAmount,
           totalIncludingTax,
+          currency,
           status: input.status ?? "reçu",
           source: input.source ?? "manuel",
           textractJson: input.textractJson,
@@ -9085,6 +9168,7 @@ export const useBeharStore = create<StoreState>()(
 
         set((state) => {
           const stockItems = [...state.stockItems];
+          let priceBookItems = [...state.priceBookItems];
           const purchases = [...state.purchases];
           const stockMovements = [...state.stockMovements];
           const supplierInvoiceLines: SupplierInvoiceLine[] = [];
@@ -9125,14 +9209,12 @@ export const useBeharStore = create<StoreState>()(
             purchaseSeq += 1;
             const purchaseId = uid("pur");
             const purchaseNumber = `ACH-${new Date().getFullYear()}-${String(purchaseSeq).padStart(6, "0")}`;
-            const weightedAverage =
-              afterStock > 0
-                ? clampMoney(
-                    ((existingItem?.averagePurchasePrice ?? existingItem?.purchasePrice ?? 0) * beforeStock +
-                      line.unitPurchasePriceExclTax * line.quantityPurchased) /
-                      afterStock,
-                  )
-                : line.unitPurchasePriceExclTax;
+            const weightedAverage = calculateWeightedAverageCost({
+              currentQuantity: beforeStock,
+              currentAverageCost: existingItem?.averagePurchasePrice ?? existingItem?.purchasePrice,
+              addedQuantity: line.quantityPurchased,
+              addedUnitCost: line.unitPurchasePriceExclTax,
+            });
 
             const stockPatch: Partial<StockItem> = {
               rawName: line.rawName || existingItem?.rawName || line.itemName,
@@ -9141,6 +9223,7 @@ export const useBeharStore = create<StoreState>()(
               quantity: afterStock,
               stock: afterStock,
               purchasePrice: line.unitPurchasePriceExclTax,
+              currency,
               averagePurchasePrice: weightedAverage,
               lastPurchasePrice: line.unitPurchasePriceExclTax,
               supplier: supplierName,
@@ -9201,6 +9284,7 @@ export const useBeharStore = create<StoreState>()(
                   ean: line.ean,
                   supplierWarranty: line.supplierWarranty,
                   purchasePrice: line.unitPurchasePriceExclTax,
+                  currency,
                   averagePurchasePrice: line.unitPurchasePriceExclTax,
                   lastPurchasePrice: line.unitPurchasePriceExclTax,
                   salePrice: line.salePrice ?? clampMoney(line.unitPurchasePriceExclTax * 1.8),
@@ -9243,6 +9327,7 @@ export const useBeharStore = create<StoreState>()(
               invoiceNumber,
               quantity: line.quantityPurchased,
               unitCost: line.unitPurchasePriceExclTax,
+              currency,
               taxRate: line.taxRate,
               taxAmount: line.taxAmount,
               totalExcludingTax: line.lineTotalExclTax,
@@ -9283,6 +9368,7 @@ export const useBeharStore = create<StoreState>()(
               supplierWarranty: line.supplierWarranty,
               quantityPurchased: line.quantityPurchased,
               unitPurchasePriceExclTax: line.unitPurchasePriceExclTax,
+              currency,
               taxRate: line.taxRate,
               taxAmount: line.taxAmount,
               lineTotalExclTax: line.lineTotalExclTax,
@@ -9295,6 +9381,11 @@ export const useBeharStore = create<StoreState>()(
             });
 
             if (!createsStock || !stockItemId) return;
+
+            const linkedStockItem = stockItems.find((entry) => entry.id === stockItemId);
+            if (linkedStockItem) {
+              priceBookItems = applyStockPurchasePriceToPriceBook(priceBookItems, linkedStockItem);
+            }
 
             const movement: StockMovement = {
               id: uid("mov"),
@@ -9348,6 +9439,7 @@ export const useBeharStore = create<StoreState>()(
 
           return {
             stockItems,
+            priceBookItems,
             purchases,
             stockMovements: stockMovements.slice(0, 2000),
             supplierInvoices: [invoice, ...state.supplierInvoices],
@@ -9717,7 +9809,7 @@ export const useBeharStore = create<StoreState>()(
         const taxAmount = 0;
         const linkedRepair = input.repairId ? get().repairs.find((repair) => repair.id === input.repairId) : undefined;
         const saleBillingConfig = getWorkshopCountryConfig(
-          input.billingCountry ?? linkedRepair?.billingCountry ?? ws.country,
+          resolveAllowedMarket(input.billingCountry ?? linkedRepair?.billingCountry, ws.allowedMarkets, ws.country),
         );
         const sale: Sale = {
           id,
@@ -9741,6 +9833,19 @@ export const useBeharStore = create<StoreState>()(
         set((state) => ({
           customers: customerId === counterCustomerId ? ensureCounterCustomer(state.customers) : state.customers,
           sales: [sale, ...state.sales],
+          repairs: sale.repairId
+            ? state.repairs.map((repair) =>
+                repair.id === sale.repairId
+                  ? {
+                      ...repair,
+                      history: [
+                        ...repair.history,
+                        `Vente comptoir ${sale.number} rattachée — ${formatEuro(sale.total)}`,
+                      ],
+                    }
+                  : repair,
+              )
+            : state.repairs,
           selectedSaleId: id,
           workshopSettings: {
             ...state.workshopSettings,

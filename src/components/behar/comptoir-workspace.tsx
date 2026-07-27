@@ -100,7 +100,7 @@ import {
 } from "@/lib/behar-store";
 import type { PriceBookItem } from "@/lib/price-book";
 import { cn, formatDateTimeFr, formatIntakeBonNumber } from "@/lib/utils";
-import { getWorkshopCountryConfig } from "@/lib/workshop-country";
+import { getWorkshopCountryConfig, normalizeAllowedMarkets } from "@/lib/workshop-country";
 import { getCustomerTrackingUrl } from "@/lib/customer-tracking";
 
 type Tile = {
@@ -3673,6 +3673,7 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
   const addSale = useBeharStore((s) => s.addSale);
   const addCustomer = useBeharStore((s) => s.addCustomer);
   const workshopInfo = useBeharStore((s) => s.workshopInfo);
+  const configuredMarkets = useBeharStore((s) => s.workshopSettings.allowedMarkets);
   const [cart, setCart] = useState<CounterCartItem[]>([]);
   const [freeName, setFreeName] = useState("");
   const [freePrice, setFreePrice] = useState("");
@@ -3687,9 +3688,32 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
   const [newClientName, setNewClientName] = useState("");
   const [newClientPhone, setNewClientPhone] = useState("");
   const [query, setQuery] = useState("");
+  const [repairQuery, setRepairQuery] = useState("");
   const selectedCustomer = customers.find((c) => c.id === customerId);
-  // Dossiers ouverts auxquels on peut rattacher une vente.
-  const openRepairs = useMemo(() => repairs.filter((r) => !isTerminalRepairStatus(r.status)).slice(0, 40), [repairs]);
+  const allowedMarkets = useMemo(
+    () => normalizeAllowedMarkets(configuredMarkets, workshopInfo.country),
+    [configuredMarkets, workshopInfo.country],
+  );
+  // Tous les dossiers non terminaux restent recherchables ; la limite n'est
+  // appliquée qu'après filtrage afin qu'un dossier ancien ne disparaisse pas.
+  const openRepairs = useMemo(() => {
+    const search = compactText(repairQuery);
+    return repairs
+      .filter((repair) => !isTerminalRepairStatus(repair.status))
+      .filter((repair) => {
+        if (!search) return true;
+        const customer = customers.find((entry) => entry.id === repair.customerId);
+        return compactText(
+          `${repair.number} ${customer?.name || ""} ${repair.deviceModel || repair.device || ""} ${repair.status}`,
+        ).includes(search);
+      })
+      .sort(
+        (left, right) =>
+          new Date(right.droppedAt || right.createdAt || 0).getTime() -
+          new Date(left.droppedAt || left.createdAt || 0).getTime(),
+      )
+      .slice(0, 100);
+  }, [customers, repairQuery, repairs]);
   const linkedRepair = openRepairs.find((r) => r.id === linkedRepairId);
   const saleCountry = mode === "repair" && linkedRepair ? linkedRepair.billingCountry : billingCountry;
   const saleConfig = getWorkshopCountryConfig(saleCountry);
@@ -3851,42 +3875,60 @@ function CounterAccessorySaleScreen({ onClose }: Readonly<{ onClose: () => void 
 
         <div className="rounded-[14px] border border-[#DDEFEA] bg-[#FFFFFF] p-3">
           <p className="text-xs font-semibold text-[#101828]">Pays de facturation de la vente</p>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {(["FR", "CH"] as const).map((country) => (
-              <button
-                key={country}
-                type="button"
-                disabled={mode === "repair" && Boolean(linkedRepair)}
-                onClick={() => setBillingCountry(country)}
-                className={cn(
-                  "h-10 rounded-[10px] border text-xs font-bold disabled:cursor-not-allowed disabled:opacity-70",
-                  saleCountry === country
-                    ? "border-[#2A9D8F] bg-white text-[#167B70]"
-                    : "border-[#E4E7EC] bg-white text-[#667085]",
-                )}
-              >
-                {country === "CH" ? "Suisse · CHF" : "France · EUR"}
-              </button>
-            ))}
-          </div>
+          {allowedMarkets.length > 1 ? (
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {allowedMarkets.map((country) => (
+                <button
+                  key={country}
+                  type="button"
+                  disabled={mode === "repair" && Boolean(linkedRepair)}
+                  onClick={() => setBillingCountry(country)}
+                  className={cn(
+                    "h-10 rounded-[10px] border text-xs font-bold disabled:cursor-not-allowed disabled:opacity-70",
+                    saleCountry === country
+                      ? "border-[#2A9D8F] bg-white text-[#167B70]"
+                      : "border-[#E4E7EC] bg-white text-[#667085]",
+                  )}
+                >
+                  {country === "CH" ? "Suisse · CHF" : "France · EUR"}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 rounded-[10px] bg-white px-3 py-2 text-xs font-bold text-[#167B70]">
+              {allowedMarkets[0] === "CH" ? "Suisse · CHF" : "France · EUR"}
+            </p>
+          )}
         </div>
 
         {mode === "repair" && (
-          <select
-            value={linkedRepairId}
-            onChange={(e) => setLinkedRepairId(e.target.value)}
-            className="h-12 w-full rounded-[14px] border border-[#E4E7EC] bg-white px-4 font-semibold text-[#101828] outline-none focus:border-[#2A9D8F]"
-          >
-            <option value="">Choisir un dossier…</option>
-            {openRepairs.map((r) => {
-              const c = customers.find((entry) => entry.id === r.customerId);
-              return (
-                <option key={r.id} value={r.id}>
-                  #{r.number} · {c?.name || "Client"} · {r.deviceModel || r.device}
-                </option>
-              );
-            })}
-          </select>
+          <div className="grid gap-2">
+            <CounterInput
+              value={repairQuery}
+              onChange={(event) => setRepairQuery(event.target.value)}
+              placeholder="Rechercher un dossier, client, appareil ou statut…"
+            />
+            <select
+              value={linkedRepairId}
+              onChange={(e) => setLinkedRepairId(e.target.value)}
+              className="h-12 w-full rounded-[14px] border border-[#E4E7EC] bg-white px-4 font-semibold text-[#101828] outline-none focus:border-[#2A9D8F]"
+            >
+              <option value="">Choisir un dossier…</option>
+              {openRepairs.map((r) => {
+                const c = customers.find((entry) => entry.id === r.customerId);
+                const date = new Date(r.droppedAt || r.createdAt || "").toLocaleDateString("fr-FR");
+                return (
+                  <option key={r.id} value={r.id}>
+                    {r.number} · {c?.name || "Client"} · {r.deviceModel || r.device || "Appareil"} · {r.status} · {date}
+                  </option>
+                );
+              })}
+            </select>
+            <p className="text-xs text-[#667085]">
+              {openRepairs.length} dossier{openRepairs.length > 1 ? "s" : ""} actif
+              {openRepairs.length > 1 ? "s" : ""} affiché{openRepairs.length > 1 ? "s" : ""}.
+            </p>
+          </div>
         )}
 
         {mode === "client" && (

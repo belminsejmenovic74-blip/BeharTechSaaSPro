@@ -134,6 +134,10 @@ export const appointmentInputSchema = z
   })
   .strict()
   .refine(hasContact, { message: "Un téléphone ou un email valide est requis." })
+  .refine((value) => value.serviceMode === "appointment", {
+    message: "Un rendez-vous doit utiliser le mode boutique.",
+    path: ["serviceMode"],
+  })
   .refine((value) => plausibleElapsed(value.startedAt), { message: "Soumission trop rapide ou expirée." });
 
 export const quoteInputSchema = z

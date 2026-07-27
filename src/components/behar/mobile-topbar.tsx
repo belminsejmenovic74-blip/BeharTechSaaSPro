@@ -9,6 +9,7 @@ import {
   CalendarDays,
   Files,
   FileText,
+  Home,
   LayoutDashboard,
   Inbox,
   Landmark,
@@ -132,6 +133,17 @@ export function MobileTopbar() {
             </div>
 
             <nav className="mt-4 flex-1 overflow-y-auto px-3 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+              <Link
+                href="/client"
+                prefetch={false}
+                onClick={() => setOpen(false)}
+                className="mb-3 flex min-h-12 items-center gap-3.5 rounded-[10px] border border-[#D8EEEA] bg-[#F4FBF9] px-3 py-2.5 font-semibold text-[#167B70]"
+              >
+                <span className="grid size-9 shrink-0 place-items-center rounded-[9px] bg-white">
+                  <Home className="size-[18px]" />
+                </span>
+                Retour espace client
+              </Link>
               {allModules
                 .filter((item) => hasPermission(item.permission))
                 .map((item) => {

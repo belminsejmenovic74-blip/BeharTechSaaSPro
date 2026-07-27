@@ -1,6 +1,7 @@
 "use client";
 
-import { CheckCircle2, Key, RefreshCw, ShieldOff } from "lucide-react";
+import { CheckCircle2, Copy, Key, RefreshCw, ShieldOff } from "lucide-react";
+import { toast } from "sonner";
 
 import { useBeharStore } from "@/lib/behar-store";
 
@@ -53,6 +54,12 @@ export function LicenseCard() {
     ? new Date(licenseActivatedAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })
     : "N/A";
 
+  const copyLicenseKey = async () => {
+    if (!licenseKey) return;
+    await navigator.clipboard.writeText(licenseKey);
+    toast.success("Clé de licence copiée.");
+  };
+
   return (
     <Panel className="p-5">
       <div className="flex items-start gap-4">
@@ -71,7 +78,24 @@ export function LicenseCard() {
           <div className="mt-5 space-y-3">
             <InfoRow label="Statut" value="Active" />
             <InfoRow label="Plan" value={licensePlan || "Pilote"} />
-            <InfoRow label="Clé" value={maskedKey} />
+            <div className="flex items-center justify-between gap-3 py-0.5 text-sm">
+              <span className="text-[#667085]">Clé</span>
+              <div className="flex min-w-0 items-center gap-2">
+                <code className="truncate font-medium text-[#101828]" data-testid="masked-license-key">
+                  {maskedKey}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => void copyLicenseKey()}
+                  disabled={!licenseKey}
+                  className="grid size-8 shrink-0 place-items-center rounded-[9px] border border-[#E4E7EC] text-[#167B70] transition hover:bg-[#F4FBF9] disabled:opacity-40"
+                  aria-label="Copier la clé de licence"
+                  title="Copier la clé complète"
+                >
+                  <Copy className="size-3.5" />
+                </button>
+              </div>
+            </div>
             <InfoRow label="Activée le" value={formattedDate} />
           </div>
 

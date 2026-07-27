@@ -518,7 +518,7 @@ export default function SettingsPage() {
   return (
     <PageShell title="Réglages" subtitle="Identité de l'atelier, fiscalité et préférences.">
       {/* Tabs + Save bar */}
-      <div className="mb-6 flex min-w-0 flex-wrap items-start justify-between gap-4">
+      <div className="sticky top-[60px] z-20 mb-6 flex min-w-0 flex-wrap items-start justify-between gap-4 border-b border-[#E4E7EC] bg-[#F8F9FA]/95 py-2 backdrop-blur md:top-0">
         <nav className="flex w-full min-w-0 max-w-full gap-1 overflow-x-auto border-b border-[#FFFFFF] lg:w-auto">
           {TABS.map((t) => {
             const isActive =

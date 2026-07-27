@@ -24,9 +24,30 @@ export function applyCustomerReceptionPolicy<T extends WidgetFeatures>(features:
     };
   }
   if (mode === "hybrid") {
-    return { ...features, homeService: true };
+    return {
+      ...features,
+      booking: true,
+      walkIn: false,
+      homeService: true,
+      quoteRequest: false,
+      callbackRequest: false,
+    };
   }
-  return features;
+  return {
+    ...features,
+    booking: true,
+    walkIn: false,
+    homeService: false,
+    quoteRequest: false,
+    callbackRequest: false,
+  };
+}
+
+export function isServiceModeAllowed(features: WidgetFeatures, serviceMode: ServiceSelection["serviceMode"]): boolean {
+  if (serviceMode === "appointment") return Boolean(features.booking);
+  if (serviceMode === "walk_in") return Boolean(features.walkIn);
+  if (serviceMode === "home_service") return Boolean(features.homeService);
+  return Boolean(features.quoteRequest || features.callbackRequest);
 }
 
 export function isHomeServiceOnly(features: WidgetFeatures): boolean {

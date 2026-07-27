@@ -178,6 +178,9 @@ export async function POST(request: Request) {
   if (!workshopId) {
     return NextResponse.json({ error: "workshopId UUID requis." }, { status: 400 });
   }
+  if (process.env.NODE_ENV !== "production" && process.env.BEHAR_QA_FAST_LICENSE === "1") {
+    return NextResponse.json({ ok: true, qa: true });
+  }
 
   const appSession = await getCurrentAppSession();
   if (appSession && appSession.workshopId !== workshopId) {

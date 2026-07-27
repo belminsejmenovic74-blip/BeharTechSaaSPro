@@ -58,6 +58,18 @@ describe("mini-CMS widget", () => {
     expect(badColor.success).toBe(false);
   });
 
+  it("refuse un thème dont le contraste est insuffisant", () => {
+    const result = editableWidgetConfigSchema.safeParse({
+      ...DEFAULT_WIDGET_CMS_CONFIG,
+      visual: {
+        ...DEFAULT_WIDGET_CMS_CONFIG.visual,
+        buttonColor: "#FFFFFF",
+        buttonTextColor: "#F5F5F5",
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
   it("accepte les trois modes, les dispositions encadrées et deux colonnes", () => {
     for (const displayMode of ["inline", "modal", "floating"] as const) {
       const result = editableWidgetConfigSchema.safeParse({

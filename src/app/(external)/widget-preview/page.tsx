@@ -5,12 +5,20 @@ import { useEffect, useState } from "react";
 import { WidgetApp } from "@/components/widget/widget-app";
 import { DEMO_CONFIG } from "@/lib/widget/demo-data";
 import type { PublicService, WidgetConfig } from "@/lib/widget/public-types";
+import { applyCustomerReceptionPolicy, type CustomerReceptionMode } from "@/lib/widget/reception-policy";
 
 export default function WidgetPreviewPage() {
   const [config, setConfig] = useState<WidgetConfig>(DEMO_CONFIG);
   const [services, setServices] = useState<PublicService[] | undefined>(undefined);
 
   useEffect(() => {
+    const requestedMode = new URLSearchParams(window.location.search).get("mode");
+    if (requestedMode === "shop" || requestedMode === "mobile" || requestedMode === "hybrid") {
+      setConfig((current) => ({
+        ...current,
+        features: applyCustomerReceptionPolicy(current.features, requestedMode as CustomerReceptionMode),
+      }));
+    }
     const receive = (event: MessageEvent) => {
       const trustedOrigins = new Set([window.location.origin, "https://behartechpro.fr"]);
       if (!trustedOrigins.has(event.origin) || event.source !== window.parent) return;

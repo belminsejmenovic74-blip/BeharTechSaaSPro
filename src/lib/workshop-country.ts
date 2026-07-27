@@ -68,7 +68,9 @@ const COUNTRY_CONFIG: Record<WorkshopCountry, WorkshopCountryConfig> = {
 };
 
 export function normalizeWorkshopCountry(value: unknown): WorkshopCountry {
-  const normalized = String(value ?? "").trim().toLowerCase();
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase();
   if (normalized === "ch" || normalized === "suisse") return "CH";
   if (normalized === "autre") return "autre";
   return "FR";
@@ -76,6 +78,37 @@ export function normalizeWorkshopCountry(value: unknown): WorkshopCountry {
 
 export function getWorkshopCountryConfig(value: unknown): WorkshopCountryConfig {
   return COUNTRY_CONFIG[normalizeWorkshopCountry(value)];
+}
+
+export function normalizeAllowedMarkets(
+  values: readonly unknown[] | null | undefined,
+  fallback: unknown = "FR",
+): Array<"FR" | "CH"> {
+  const normalized = Array.from(
+    new Set(
+      (values ?? []).map(normalizeWorkshopCountry).filter((country): country is "FR" | "CH" => country !== "autre"),
+    ),
+  );
+  if (normalized.length) return normalized;
+  const fallbackCountry = normalizeWorkshopCountry(fallback);
+  return [fallbackCountry === "CH" ? "CH" : "FR"];
+}
+
+export function getAllowedCurrencies(
+  values: readonly unknown[] | null | undefined,
+  fallback: unknown = "FR",
+): WorkshopCurrency[] {
+  return normalizeAllowedMarkets(values, fallback).map((country) => COUNTRY_CONFIG[country].currency);
+}
+
+export function resolveAllowedMarket(
+  requested: unknown,
+  values: readonly unknown[] | null | undefined,
+  fallback: unknown = "FR",
+): "FR" | "CH" {
+  const allowed = normalizeAllowedMarkets(values, fallback);
+  const target = normalizeWorkshopCountry(requested);
+  return target !== "autre" && allowed.includes(target) ? target : allowed[0];
 }
 
 export function getLegalFieldsByCountry(value: unknown) {
@@ -136,13 +169,13 @@ export function createBillingProfile(
     address: settings.address ?? "",
     postalCode: settings.postalCode ?? "",
     city: settings.city ?? "",
-    canton: isSwiss ? settings.canton ?? "" : "",
+    canton: isSwiss ? (settings.canton ?? "") : "",
     phone: settings.phone ?? config.phonePrefix,
     email: settings.email ?? "",
-    siret: isSwiss ? "" : settings.siret ?? "",
-    tvaNumber: isSwiss ? "" : settings.tvaNumber ?? "",
-    swissUid: isSwiss ? settings.swissUid ?? "" : "",
-    swissVatNumber: isSwiss && vatApplicable ? settings.swissVatNumber ?? "" : "",
+    siret: isSwiss ? "" : (settings.siret ?? ""),
+    tvaNumber: isSwiss ? "" : (settings.tvaNumber ?? ""),
+    swissUid: isSwiss ? (settings.swissUid ?? "") : "",
+    swissVatNumber: isSwiss && vatApplicable ? (settings.swissVatNumber ?? "") : "",
     vatApplicable,
     vatRate: vatApplicable ? Number(settings.vatRate || config.defaultVatRate) : 0,
     tvaMention: vatApplicable
@@ -184,13 +217,13 @@ export function formatMoney(value: number, settings: MoneySettings = "FR"): stri
   );
   const currency =
     typeof settings === "object"
-      ? settings.currency ?? countryConfig.currency
+      ? (settings.currency ?? countryConfig.currency)
       : byCurrency
         ? settings
         : countryConfig.currency;
   const locale =
     typeof settings === "object"
-      ? settings.locale ?? (currency === "CHF" ? "fr-CH" : "fr-FR")
+      ? (settings.locale ?? (currency === "CHF" ? "fr-CH" : "fr-FR"))
       : currency === "CHF"
         ? "fr-CH"
         : "fr-FR";
@@ -210,9 +243,7 @@ export function formatMoneyShort(value: number, settings: MoneySettings = "FR"):
   const finiteValue = typeof value === "number" && Number.isFinite(value) ? value : 0;
   const full = formatMoney(0, settings);
   const unit =
-    full
-      .replace(/[\d\s.,'’\u00a0]/g, "")
-      .trim() || (settings === "CH" || settings === "CHF" ? "CHF" : "EUR");
+    full.replace(/[\d\s.,'’\u00a0]/g, "").trim() || (settings === "CH" || settings === "CHF" ? "CHF" : "EUR");
   if (Math.abs(finiteValue) >= 1000) {
     const thousands = finiteValue / 1000;
     return `${thousands % 1 === 0 ? thousands.toFixed(0) : thousands.toFixed(1)}k ${unit}`;

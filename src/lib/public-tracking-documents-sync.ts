@@ -2,13 +2,20 @@ import type { StoreState } from "@/lib/behar-store";
 import { createShopSlug } from "@/lib/customer-tracking";
 import { buildPublicCommercialDtoFromLocalState } from "@/lib/public-commercial-dto";
 import type { PublicCommercialDocumentDto } from "@/lib/public-dtos";
-import { getSupabase } from "@/lib/supabase/client";
 
 type CommercialKind = PublicCommercialDocumentDto["kind"];
 
 type DocumentSyncState = Pick<
   StoreState,
-  "cloudSync" | "customers" | "invoices" | "quotes" | "repairs" | "sales" | "workshopInfo" | "workshopSettings"
+  | "cloudSync"
+  | "customers"
+  | "invoices"
+  | "licenseKey"
+  | "quotes"
+  | "repairs"
+  | "sales"
+  | "workshopInfo"
+  | "workshopSettings"
 >;
 
 // Statuts à ne PAS publier : brouillons / annulations (rien d'utile pour le client).
@@ -21,10 +28,9 @@ const SKIPPED_STATUSES = new Set(["Brouillon", "Annulée", "Annulé", "draft", "
  * réparations (cf. syncPublicTrackingRepairsToCloud). Fire-and-forget.
  */
 export async function syncPublicTrackingDocumentsToCloud(state: DocumentSyncState): Promise<boolean> {
-  const supabase = getSupabase();
-  if (!supabase) return false;
-
-  const workshopId = state.cloudSync?.workshopId || "unknown";
+  const workshopId = state.cloudSync?.workshopId;
+  const licenseKey = state.licenseKey;
+  if (!workshopId || !licenseKey) return false;
   const shopName = (
     state.workshopSettings?.commercialName ||
     state.workshopSettings?.name ||
@@ -63,21 +69,23 @@ export async function syncPublicTrackingDocumentsToCloud(state: DocumentSyncStat
       return {
         token: entry.id,
         kind: entry.kind,
-        workshop_id: workshopId,
         shop_slug: shopSlug,
         document_number: entry.number || publicData.document.number,
         status: publicData.document.status,
         public_data: publicData,
-        updated_at: new Date().toISOString(),
       };
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
 
   if (!payload.length) return true;
 
-  const { error } = await supabase.from("public_tracking_documents").upsert(payload, { onConflict: "token" });
-  if (error) {
-    console.error("[public-tracking-documents-sync] Failed to sync documents:", error.message);
+  const response = await fetch("/api/behar/publications", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ licenseKey, workshopId, repairs: [], documents: payload }),
+  });
+  if (!response.ok) {
+    console.error("[public-tracking-documents-sync] Failed to sync documents:", response.status);
     return false;
   }
   return true;

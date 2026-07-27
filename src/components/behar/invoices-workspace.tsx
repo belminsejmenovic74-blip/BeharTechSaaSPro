@@ -14,12 +14,10 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
-  CreditCard,
   Download,
   FileText,
   GripVertical,
   Layers,
-  Mail,
   MessageCircle,
   MoreHorizontal,
   Plus,
@@ -60,8 +58,8 @@ import {
 } from "@/lib/behar-store";
 import { displayCustomerName, isCounterCustomer } from "@/lib/customer-display";
 import { cn } from "@/lib/utils";
+import { getAllowedCurrencies, normalizeAllowedMarkets } from "@/lib/workshop-country";
 
-import { ComingSoonModal } from "./coming-soon-integration";
 import { useDocument } from "./print-provider";
 
 const invoiceStatuses: InvoiceStatus[] = ["Brouillon", "Envoyée", "Annulée"];
@@ -88,10 +86,6 @@ export function InvoicesWorkspace() {
   const store = useBeharStore();
   const { print, download } = useDocument();
 
-  const [paymentOpen, setPaymentOpen] = useState(false);
-  const [requestProvider, setRequestProvider] = useState<
-    "stripe" | "sumup" | "paypal" | "square" | "revolut" | "mollie"
-  >("stripe");
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [linesEditing, setLinesEditing] = useState(false);
   const [invoiceSearch, setInvoiceSearch] = useState("");
@@ -581,76 +575,6 @@ export function InvoicesWorkspace() {
           </div>
 
           <div className="mt-8 pt-6 border-t border-[#FFFFFF] space-y-3">
-            {selected.status !== "Brouillon" && selected.status !== "Annulée" ? (
-              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                <button
-                  onClick={() => {
-                    setRequestProvider("stripe");
-                    setPaymentOpen(true);
-                  }}
-                  className="h-11 rounded-xl bg-[#101828] text-white font-bold text-sm hover:bg-black transition-all flex items-center justify-center gap-2"
-                >
-                  <CreditCard className="size-4" />
-                  Créer un lien de paiement externe · Stripe
-                </button>
-                <button
-                  onClick={() => {
-                    setRequestProvider("sumup");
-                    setPaymentOpen(true);
-                  }}
-                  className="h-11 rounded-xl border border-[#2A9D8F]/30 bg-[#E9F7F4] text-[#167B70] font-bold text-sm hover:border-[#2A9D8F] transition-all flex items-center justify-center gap-2"
-                >
-                  <CreditCard className="size-4" />
-                  Créer un lien de paiement externe · SumUp
-                </button>
-                <button
-                  onClick={() => {
-                    setRequestProvider("paypal");
-                    setPaymentOpen(true);
-                  }}
-                  className="h-11 rounded-xl border border-[#167B70]/25 bg-white text-[#167B70] font-bold text-sm hover:border-[#167B70] transition-all flex items-center justify-center gap-2"
-                >
-                  <CreditCard className="size-4" />
-                  Créer un lien de paiement externe · PayPal
-                </button>
-                <button
-                  onClick={() => {
-                    setRequestProvider("square");
-                    setPaymentOpen(true);
-                  }}
-                  className="h-11 rounded-xl border border-[#101828]/20 bg-white text-[#101828] font-bold text-sm hover:border-[#101828] transition-all flex items-center justify-center gap-2"
-                >
-                  <CreditCard className="size-4" />
-                  Créer un lien Square
-                </button>
-                <button
-                  onClick={() => {
-                    setRequestProvider("revolut");
-                    setPaymentOpen(true);
-                  }}
-                  className="h-11 rounded-xl border border-[#101828]/20 bg-[#F9FAFB] text-[#101828] font-bold text-sm hover:border-[#101828] transition-all flex items-center justify-center gap-2"
-                >
-                  <CreditCard className="size-4" />
-                  Créer un lien Revolut
-                </button>
-                <button
-                  onClick={() => {
-                    setRequestProvider("mollie");
-                    setPaymentOpen(true);
-                  }}
-                  className="h-11 rounded-xl border border-[#167B70]/25 bg-[#F0FAF8] text-[#167B70] font-bold text-sm hover:border-[#167B70] transition-all flex items-center justify-center gap-2"
-                  type="button"
-                >
-                  <CreditCard className="size-4" />
-                  Créer une demande Mollie
-                </button>
-              </div>
-            ) : (
-              <div className="w-full py-2.5 rounded-xl border border-[#FFFFFF] text-[#667085] text-xs font-bold text-center">
-                Finalisez la facture pour créer une demande
-              </div>
-            )}
-
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => download("invoice", selected.id)}
@@ -667,42 +591,9 @@ export function InvoicesWorkspace() {
                 Imprimer
               </button>
             </div>
-
-            <button
-              onClick={() => {
-                const body = `Bonjour ${displayCustomerName(customer)}, votre facture ${selected.number} (${formatCurrency(invoiceGrandTotal, selectedCurrency)}) est disponible. Merci de votre confiance.`;
-                if (window.confirm(`Envoyer le lien de la facture par SMS au ${customer?.phone} ?`)) {
-                  toast.success("SMS envoyé");
-                }
-              }}
-              className="w-full h-10 rounded-xl border border-[#FFFFFF] text-[#98A2B3] font-bold text-xs hover:text-[#667085] transition-all flex items-center justify-center gap-2"
-            >
-              <Mail className="size-3.5" />
-              Notifier par SMS
-            </button>
           </div>
         </Panel>
       )}
-
-      {paymentOpen && selected ? (
-        <ComingSoonModal
-          isOpen={paymentOpen}
-          name={
-            requestProvider === "stripe"
-              ? "Stripe"
-              : requestProvider === "sumup"
-                ? "SumUp"
-                : requestProvider === "paypal"
-                  ? "PayPal"
-                  : requestProvider === "square"
-                    ? "Square"
-                    : requestProvider === "revolut"
-                      ? "Revolut Business"
-                      : "Mollie"
-          }
-          onClose={() => setPaymentOpen(false)}
-        />
-      ) : null}
     </section>
   );
 }
@@ -722,9 +613,23 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
   const [customerInfo, setCustomerInfo] = useState({ name: "", phone: "", email: "", device: "", issue: "" });
   const [billingCountry, setBillingCountry] = useState<WorkshopCountry>(store.workshopInfo.country);
   const [docCurrency, setDocCurrency] = useState<WorkshopCurrency>(store.workshopInfo.country === "CH" ? "CHF" : "EUR");
+  const allowedMarkets = useMemo(
+    () => normalizeAllowedMarkets(store.workshopSettings.allowedMarkets, store.workshopInfo.country),
+    [store.workshopInfo.country, store.workshopSettings.allowedMarkets],
+  );
+  const allowedCurrencies = useMemo(
+    () => getAllowedCurrencies(allowedMarkets, store.workshopInfo.country),
+    [allowedMarkets, store.workshopInfo.country],
+  );
 
   const availableQuotes = store.quotes.filter((q) => q.status === "Accepté" && !q.invoiceId);
   const availableRepairs = store.repairs.filter((r) => !r.invoiceId);
+
+  useEffect(() => {
+    if (allowedMarkets.length !== 1) return;
+    setBillingCountry(allowedMarkets[0]);
+    setDocCurrency(allowedCurrencies[0]);
+  }, [allowedCurrencies, allowedMarkets]);
 
   // Synchronisation des données selon la source
   useEffect(() => {
@@ -960,47 +865,55 @@ function CreateInvoiceModal({ onClose }: Readonly<{ onClose: () => void }>) {
 
             <div className="mt-5 rounded-[14px] border border-[#DDEFEA] bg-[#FFFFFF] p-4">
               <p className="text-xs font-semibold text-[#101828]">Pays de facturation du dossier</p>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {(["FR", "CH"] as const).map((country) => (
-                  <button
-                    key={country}
-                    type="button"
-                    disabled={(sourceType === "quote" || sourceType === "repair") && Boolean(selectedId)}
-                    onClick={() => {
-                      setBillingCountry(country);
-                      setDocCurrency(country === "CH" ? "CHF" : "EUR");
-                    }}
-                    className={`h-10 rounded-[10px] border text-xs font-semibold ${
-                      billingCountry === country
-                        ? "border-[#2A9D8F] bg-white text-[#167B70]"
-                        : "border-[#E4E7EC] bg-white text-[#667085]"
-                    } disabled:cursor-not-allowed disabled:opacity-70`}
-                  >
-                    {country === "CH" ? "Suisse · CHF" : "France · EUR"}
-                  </button>
-                ))}
-              </div>
+              {allowedMarkets.length > 1 ? (
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {allowedMarkets.map((country) => (
+                    <button
+                      key={country}
+                      type="button"
+                      disabled={(sourceType === "quote" || sourceType === "repair") && Boolean(selectedId)}
+                      onClick={() => {
+                        setBillingCountry(country);
+                        setDocCurrency(country === "CH" ? "CHF" : "EUR");
+                      }}
+                      className={`h-10 rounded-[10px] border text-xs font-semibold ${
+                        billingCountry === country
+                          ? "border-[#2A9D8F] bg-white text-[#167B70]"
+                          : "border-[#E4E7EC] bg-white text-[#667085]"
+                      } disabled:cursor-not-allowed disabled:opacity-70`}
+                    >
+                      {country === "CH" ? "Suisse · CHF" : "France · EUR"}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 rounded-[10px] bg-white px-3 py-2 text-xs font-bold text-[#167B70]">
+                  {allowedMarkets[0] === "CH" ? "Suisse · CHF" : "France · EUR"}
+                </p>
+              )}
             </div>
 
-            <div className="mt-4">
-              <p className="text-xs font-semibold text-[#101828]">Devise du document</p>
-              <div className="mt-2 flex gap-2">
-                {(["EUR", "CHF"] as const).map((curr) => (
-                  <button
-                    key={curr}
-                    type="button"
-                    onClick={() => setDocCurrency(curr)}
-                    className={`h-9 px-4 rounded-[10px] border text-xs font-semibold transition ${
-                      docCurrency === curr
-                        ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
-                        : "border-[#E4E7EC] bg-white text-[#667085] hover:border-[#D0D5DD]"
-                    }`}
-                  >
-                    {curr === "EUR" ? "EUR (€)" : "CHF (CHF)"}
-                  </button>
-                ))}
+            {allowedCurrencies.length > 1 ? (
+              <div className="mt-4">
+                <p className="text-xs font-semibold text-[#101828]">Devise du document</p>
+                <div className="mt-2 flex gap-2">
+                  {allowedCurrencies.map((curr) => (
+                    <button
+                      key={curr}
+                      type="button"
+                      onClick={() => setDocCurrency(curr)}
+                      className={`h-9 px-4 rounded-[10px] border text-xs font-semibold transition ${
+                        docCurrency === curr
+                          ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
+                          : "border-[#E4E7EC] bg-white text-[#667085] hover:border-[#D0D5DD]"
+                      }`}
+                    >
+                      {curr === "EUR" ? "EUR (€)" : "CHF (CHF)"}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : null}
 
             {/* 2. Informations */}
             <div className="mt-10 space-y-4">

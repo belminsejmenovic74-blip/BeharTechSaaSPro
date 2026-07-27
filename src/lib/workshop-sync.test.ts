@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const supabaseMocks = vi.hoisted(() => ({
-  getSupabase: vi.fn(),
   isSupabaseConfigured: vi.fn(() => true),
 }));
 
@@ -23,6 +22,7 @@ const UPDATED_AT = "2026-07-11T10:00:00.000Z";
 describe("hydrateStoreFromCloud", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllGlobals();
     supabaseMocks.isSupabaseConfigured.mockReturnValue(true);
     window.localStorage.clear();
     useBeharStore.setState({
@@ -63,25 +63,79 @@ describe("hydrateStoreFromCloud", () => {
   });
 
   it("leaves the loading state after a successful cloud read", async () => {
-    const row = {
+    const snapshotResponse = {
       id: "snapshot-1",
-      workshop_id: WORKSHOP_ID,
-      license_key: LICENSE_KEY,
+      workshopId: WORKSHOP_ID,
+      licenseKey: LICENSE_KEY,
       state: { cloudSync: { stateVersion: 7 } },
-      state_size_bytes: 1,
-      updated_at: UPDATED_AT,
+      stateSizeBytes: 1,
+      updatedAt: UPDATED_AT,
     };
-    const chain: Record<string, ReturnType<typeof vi.fn>> = {};
-    for (const method of ["select", "ilike", "order", "limit", "abortSignal"]) {
-      chain[method] = vi.fn(() => chain);
-    }
-    chain.maybeSingle = vi.fn(async () => ({ data: row, error: null }));
-    supabaseMocks.getSupabase.mockReturnValue({ from: vi.fn(() => chain) });
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ snapshot: snapshotResponse }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
     markSyncStatus("loading");
 
     const snapshot = await loadSnapshotByLicenseKey(LICENSE_KEY);
 
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/behar/snapshot",
+      expect.objectContaining({ method: "POST", cache: "no-store" }),
+    );
     expect(snapshot?.workshopId).toBe(WORKSHOP_ID);
     expect(getWorkshopSyncState()).toMatchObject({ status: "synced", lastSyncedAt: UPDATED_AT });
+  });
+
+  it("remplace intégralement les dossiers lorsqu'une autre licence est hydratée", () => {
+    const store = useBeharStore.getState();
+    store.resetDemo();
+    const customerA = store.addCustomer({ name: "Client A isolation" });
+    const repairAId = store.addRepair({
+      customerId: customerA,
+      device: "iPhone A",
+      issue: "Dossier licence A",
+      status: "Reçu",
+      amount: 80,
+      notes: "",
+      droppedAt: UPDATED_AT,
+      technician: "Technicien A",
+    });
+    const repairA = useBeharStore.getState().repairs.find((repair) => repair.id === repairAId);
+    expect(repairA).toBeTruthy();
+
+    hydrateStoreFromCloud(
+      {
+        id: "snapshot-a",
+        workshopId: WORKSHOP_ID,
+        licenseKey: "BHT-2026-CLIENT-A",
+        state: { repairs: [repairA!], licenseKey: "BHT-2026-CLIENT-A" },
+        stateSizeBytes: 1,
+        updatedAt: "2026-07-11T11:00:00.000Z",
+      },
+      { force: true },
+    );
+
+    const repairB = { ...repairA!, id: "repair-client-b", number: "REP-B-0001", issue: "Dossier licence B" };
+    hydrateStoreFromCloud(
+      {
+        id: "snapshot-b",
+        workshopId: "10000000-0000-4000-8000-000000000002",
+        licenseKey: "BHT-2026-CLIENT-B",
+        state: { repairs: [repairB], licenseKey: "BHT-2026-CLIENT-B" },
+        stateSizeBytes: 1,
+        updatedAt: "2026-07-11T12:00:00.000Z",
+      },
+      { force: true },
+    );
+
+    expect(useBeharStore.getState().licenseKey).toBe("BHT-2026-CLIENT-B");
+    expect(useBeharStore.getState().cloudSync?.workshopId).toBe("10000000-0000-4000-8000-000000000002");
+    expect(useBeharStore.getState().repairs.map((repair) => repair.id)).toEqual(["repair-client-b"]);
+    expect(useBeharStore.getState().repairs.some((repair) => repair.id === repairAId)).toBe(false);
   });
 });

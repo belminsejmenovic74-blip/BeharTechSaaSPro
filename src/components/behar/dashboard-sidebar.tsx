@@ -14,6 +14,7 @@ import {
   Inbox,
   Landmark,
   LayoutDashboard,
+  Home,
   LogOut,
   Package,
   Receipt,
@@ -176,6 +177,18 @@ export function DashboardSidebar() {
       </nav>
 
       <div className="border-[#EAECF0] border-t pt-3">
+        <Link
+          href="/client"
+          prefetch={false}
+          className={cn(
+            "mb-2 flex h-9 items-center rounded-[9px] border border-[#D8EEEA] bg-[#F4FBF9] font-semibold text-[#167B70] text-[12px] transition hover:bg-[#EAF6F3]",
+            collapsed ? "justify-center px-0" : "gap-2.5 px-2.5",
+          )}
+          title={collapsed ? "Retour espace client" : undefined}
+        >
+          <Home className="size-4 shrink-0" />
+          {!collapsed && <span>Retour espace client</span>}
+        </Link>
         <div
           className={cn(
             "group flex min-h-9 items-center rounded-[9px] bg-white py-1 transition-colors hover:bg-[#F4FBF9]",

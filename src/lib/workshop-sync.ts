@@ -6,7 +6,7 @@ import { useRecondSettings } from "@/lib/recond-settings";
 import { useReconditioningRules } from "@/lib/reconditioning-pricing";
 import { useReconditioningStore } from "@/lib/reconditioning-store";
 import { sanitizePaymentDataForPersistence } from "@/lib/payment-data-boundary";
-import { getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
+import { isSupabaseConfigured } from "@/lib/supabase/client";
 
 export const WORKSHOP_STORAGE_KEY = "behar-tech-local-demo-v3";
 export const WORKSHOP_SCHEMA_VERSION = 1;
@@ -118,16 +118,6 @@ export type WorkshopSyncState = {
   lastError?: string;
 };
 
-type WorkshopSnapshotRow = {
-  id?: unknown;
-  workshop_id?: unknown;
-  license_key?: unknown;
-  workshop_name?: unknown;
-  state?: unknown;
-  state_size_bytes?: unknown;
-  updated_at?: unknown;
-};
-
 type SupabaseLikeError = {
   code?: string;
   message?: string;
@@ -214,12 +204,6 @@ function createWorkshopId(): string {
  * workshop_snapshots sur la base live). Déterministe => un ré-upsert ne l'écrase
  * jamais par du vide.
  */
-function recoveryCodeFromWorkshopId(workshopId: string): string {
-  const hex = workshopId.replace(/-/g, "").toUpperCase();
-  const padded = (hex + "0".repeat(16)).slice(0, 16);
-  return `${padded.slice(0, 4)}-${padded.slice(4, 8)}-${padded.slice(8, 12)}-${padded.slice(12, 16)}`;
-}
-
 export function getWorkshopStateVersion(
   state: (Partial<StoreState> & Record<string, unknown>) | null | undefined,
 ): number {
@@ -280,21 +264,6 @@ function withLicenseState(
   };
 }
 
-function rowToSnapshot(row: WorkshopSnapshotRow, fallbackLicense: string): WorkshopSnapshot {
-  const rawState =
-    row.state && typeof row.state === "object" ? (row.state as Partial<StoreState> & Record<string, unknown>) : {};
-  const state = sanitizePaymentDataForPersistence(rawState);
-  return {
-    id: String(row.id ?? ""),
-    workshopId: String(row.workshop_id ?? ""),
-    licenseKey: normalizeLicenseKey(String(row.license_key ?? fallbackLicense)),
-    workshopName: typeof row.workshop_name === "string" ? row.workshop_name : undefined,
-    state,
-    stateSizeBytes: typeof row.state_size_bytes === "number" ? row.state_size_bytes : getStateSizeBytes(state),
-    updatedAt: typeof row.updated_at === "string" ? row.updated_at : new Date().toISOString(),
-  };
-}
-
 function getErrorMessage(error: unknown, fallback: string): string {
   return error && typeof error === "object" && "message" in error && typeof error.message === "string"
     ? error.message
@@ -312,31 +281,30 @@ export async function loadSnapshotByLicenseKey(key: string): Promise<WorkshopSna
     markSyncStatus("error", { lastError: "Supabase non configuré sur ce déploiement." });
     return null;
   }
-  const supabase = getSupabase();
-  if (!supabase) return null;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), CLOUD_REQUEST_TIMEOUT_MS);
 
   markSyncStatus("loading");
   try {
-    // Accès direct à la table (la base live n'expose pas encore les RPC snapshot_*
-    // introduits par la migration 0019 — voir upsertSnapshot). Match insensible à
-    // la casse sur license_key, la ligne la plus récente d'abord.
-    const selectColumns = "id, workshop_id, license_key, workshop_name, state, state_size_bytes, updated_at";
-    const { data, error } = await supabase
-      .from("workshop_snapshots")
-      .select(selectColumns)
-      .ilike("license_key", normalizedKey)
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .abortSignal(controller.signal)
-      .maybeSingle<WorkshopSnapshotRow>();
-
-    if (error) {
-      markSyncStatus(isNetworkError(error.message) ? "offline" : "error", { lastError: error.message });
-      throw error;
-    }
-    const snapshot = data ? rowToSnapshot(data, normalizedKey) : null;
+    const response = await fetch("/api/behar/snapshot", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "load", licenseKey: normalizedKey }),
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    const result = (await response.json().catch(() => ({}))) as {
+      snapshot?: WorkshopSnapshot | null;
+      error?: string;
+    };
+    if (!response.ok) throw new Error(result.error || "Lecture cloud impossible.");
+    const snapshot = result.snapshot
+      ? {
+          ...result.snapshot,
+          licenseKey: normalizeLicenseKey(result.snapshot.licenseKey || normalizedKey),
+          state: sanitizePaymentDataForPersistence(result.snapshot.state),
+        }
+      : null;
     if (snapshot) {
       markSyncStatus("synced", { lastSyncedAt: snapshot.updatedAt, lastError: undefined });
     } else {
@@ -380,9 +348,6 @@ async function upsertSnapshot(
   workshopId: string,
   options: { stateVersion: number; lastDeviceId?: string },
 ): Promise<WorkshopSnapshot> {
-  const supabase = getSupabase();
-  if (!supabase) throw new Error("Client Supabase indisponible.");
-
   const safeState = sanitizePaymentDataForPersistence(state);
   const mergedState = withLicenseState(normalizedKey, safeState, {
     workshopId,
@@ -407,38 +372,28 @@ async function upsertSnapshot(
     sizeBytes,
   });
 
-  // UPSERT direct sur workshop_id (contrainte unique) — la base live n'a pas les
-  // RPC snapshot_* (migrations 0004/0019 non déployées). recovery_code déterministe
-  // dérivé du workshop_id, donc jamais écrasé par une valeur vide.
-  const payload: Record<string, unknown> = {
-    workshop_id: workshopId,
-    recovery_code: recoveryCodeFromWorkshopId(workshopId),
-    license_key: normalizedKey,
-    workshop_name: mergedState.workshopSettings?.name || mergedState.workshopInfo?.name || null,
-    device_label: detectDeviceLabel(),
-    state: stateForUpload,
-    state_size_bytes: sizeBytes,
-    schema_version: WORKSHOP_SCHEMA_VERSION,
+  const response = await fetch("/api/behar/snapshot", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      action: "upsert",
+      licenseKey: normalizedKey,
+      workshopId,
+      workshopName: mergedState.workshopSettings?.name || mergedState.workshopInfo?.name || null,
+      deviceLabel: detectDeviceLabel(),
+      state: stateForUpload,
+      stateSizeBytes: sizeBytes,
+      schemaVersion: WORKSHOP_SCHEMA_VERSION,
+    }),
+    cache: "no-store",
+  });
+  const result = (await response.json().catch(() => ({}))) as { snapshot?: WorkshopSnapshot; error?: string };
+  if (!response.ok || !result.snapshot) throw new Error(result.error || "Sauvegarde cloud impossible.");
+  const snapshot = {
+    ...result.snapshot,
+    licenseKey: normalizeLicenseKey(result.snapshot.licenseKey || normalizedKey),
+    state: sanitizePaymentDataForPersistence(result.snapshot.state),
   };
-
-  const { data, error } = await supabase
-    .from("workshop_snapshots")
-    .upsert(payload, { onConflict: "workshop_id" })
-    .select("id, workshop_id, license_key, workshop_name, state, state_size_bytes, updated_at")
-    .single<WorkshopSnapshotRow>();
-
-  if (error) {
-    const pgError = error as { code?: string; message?: string; details?: string; hint?: string };
-    devLog("upsert ✗ erreur Supabase", {
-      code: pgError.code,
-      message: pgError.message,
-      details: pgError.details,
-      hint: pgError.hint,
-    });
-    throw error;
-  }
-
-  const snapshot = rowToSnapshot(data, normalizedKey);
   snapshot.state = withLicenseState(normalizedKey, snapshot.state, {
     workshopId: snapshot.workshopId,
     lastSyncedAt: snapshot.updatedAt,

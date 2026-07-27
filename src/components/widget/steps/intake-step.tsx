@@ -32,8 +32,8 @@ export function IntakeStep({ ctx, submitError: _submitError }: { ctx: StepContex
             {
               value: "appointment" as ServiceMode,
               requestType: "appointment" as RequestType,
-              label: "Prendre rendez-vous",
-              description: "Choisissez un créneau disponible dans l’agenda.",
+              label: "Rendez-vous en boutique",
+              description: "Choisissez un créneau et rendez-vous à l’adresse de la boutique.",
               icon: CalendarClock,
             },
           ]
@@ -54,7 +54,7 @@ export function IntakeStep({ ctx, submitError: _submitError }: { ctx: StepContex
             {
               value: "home_service" as ServiceMode,
               requestType: "request" as RequestType,
-              label: "Déplacement à domicile",
+              label: "Intervention à domicile",
               description: "L’atelier intervient à l’adresse indiquée.",
               icon: House,
             },
@@ -141,10 +141,24 @@ export function IntakeStep({ ctx, submitError: _submitError }: { ctx: StepContex
       ) : null}
 
       {isAppointment ? (
-        <section className="grid gap-2.5">
-          <h3 className="text-sm font-semibold text-[var(--w-text)]">Choisissez votre créneau</h3>
-          <AppointmentCalendar ctx={ctx} />
-        </section>
+        <>
+          <section className="flex items-start gap-3 rounded-[16px] border border-[var(--w-border)] bg-[#F5F6F3] p-4">
+            <MapPin className="mt-0.5 size-5 shrink-0 text-[var(--w-primary)]" />
+            <div className="grid gap-1">
+              <span className="text-xs font-semibold uppercase tracking-wide text-[var(--w-primary)]">
+                Adresse de la boutique
+              </span>
+              {shopAddress ? <p className="text-sm font-medium text-[var(--w-text)]">{shopAddress}</p> : null}
+              <p className="text-xs leading-relaxed text-[var(--w-muted)]">
+                Ce rendez-vous aura lieu dans la boutique sélectionnée.
+              </p>
+            </div>
+          </section>
+          <section className="grid gap-2.5">
+            <h3 className="text-sm font-semibold text-[var(--w-text)]">Choisissez votre créneau</h3>
+            <AppointmentCalendar ctx={ctx} />
+          </section>
+        </>
       ) : null}
 
       {isWalkIn ? (

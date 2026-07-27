@@ -3229,7 +3229,16 @@ function StockModal({ onClose }: Readonly<{ onClose: () => void }>) {
   const categoryName = selectedCategory?.name ?? "";
 
   // Qualités contextuelles : OLED uniquement pour Écran, etc.
-  const availableQualities = useMemo(() => getQualitiesForCategory(categoryName), [categoryName]);
+  const availableQualities = useMemo(
+    () =>
+      getQualitiesForCategory(
+        categoryName,
+        store.stockItems
+          .filter((item) => (item.categoryName || item.category) === categoryName)
+          .map((item) => item.quality || ""),
+      ),
+    [categoryName, store.stockItems],
+  );
   // La qualité réelle envoyée au système : si "Autre", on prend le texte libre.
   const effectiveQuality = quality === "Autre" ? customQuality.trim() : quality;
 

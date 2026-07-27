@@ -33,8 +33,8 @@ export function BusinessHoursEditor({ value, onChange, compact = false }: Props)
   };
 
   return (
-    <div className="overflow-hidden rounded-[18px] border border-[#E4E7EC] bg-white">
-      <div className="flex items-start gap-3 border-b border-[#EFEFEB] bg-[#FBFBF9] px-4 py-3.5">
+    <div className="flex max-h-[min(72vh,760px)] min-h-0 flex-col overflow-hidden rounded-[18px] border border-[#E4E7EC] bg-white">
+      <div className="z-10 flex shrink-0 items-start gap-3 border-b border-[#EFEFEB] bg-[#FBFBF9] px-4 py-3.5">
         <div className="grid size-9 shrink-0 place-items-center rounded-[12px] bg-[#E9F7F4] text-[#238579]">
           <Clock3 className="size-[18px]" />
         </div>
@@ -46,7 +46,11 @@ export function BusinessHoursEditor({ value, onChange, compact = false }: Props)
         </div>
       </div>
 
-      <div className="divide-y divide-[#EFEFEB]">
+      <div
+        className="min-h-0 flex-1 touch-pan-y divide-y divide-[#EFEFEB] overflow-y-auto overscroll-contain [scrollbar-gutter:stable]"
+        data-testid="business-hours-scroll"
+        aria-label="Horaires hebdomadaires, faire défiler pour afficher tous les jours"
+      >
         {WORKSHOP_DAYS.map(({ key, label }) => {
           const day = hours[key];
           return (

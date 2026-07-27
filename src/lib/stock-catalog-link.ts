@@ -130,10 +130,38 @@ const FALLBACK_QUALITIES: readonly string[] = ["Normale", "Compatible", "Origina
  * Renvoie la liste des qualités valides pour une catégorie donnée.
  * Pour une catégorie inconnue, renvoie la liste générique.
  */
-export function getQualitiesForCategory(category: string | undefined | null): readonly string[] {
+export function getQualitiesForCategory(
+  category: string | undefined | null,
+  customQualities: readonly string[] = [],
+): readonly string[] {
   const key = normalizeKey(category);
-  if (!key) return FALLBACK_QUALITIES;
-  return QUALITIES_BY_CATEGORY[key] ?? FALLBACK_QUALITIES;
+  const presets = !key ? FALLBACK_QUALITIES : (QUALITIES_BY_CATEGORY[key] ?? FALLBACK_QUALITIES);
+  return Array.from(new Set([...presets, ...customQualities.map(normalizeStockQuality).filter(Boolean)]));
+}
+
+const QUALITY_ALIASES: Record<string, string> = {
+  original: "Original",
+  originale: "Originale",
+  oem: "OEM",
+  oled: "OLED",
+  "soft oled": "Soft OLED",
+  softoled: "Soft OLED",
+  "hard oled": "Hard OLED",
+  hardoled: "Hard OLED",
+  incell: "Incell",
+  compatible: "Compatible",
+  reconditionne: "Reconditionné",
+  reconditionnee: "Reconditionnée",
+  ltps: "LTPS",
+};
+
+export function normalizeStockQuality(value: unknown): string {
+  const raw = String(value ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!raw) return "";
+  const key = normalizeKey(raw);
+  return QUALITY_ALIASES[key] ?? raw.replace(/\b\p{L}/gu, (letter) => letter.toLocaleUpperCase("fr"));
 }
 
 /**

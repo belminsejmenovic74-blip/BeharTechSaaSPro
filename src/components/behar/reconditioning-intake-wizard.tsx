@@ -457,7 +457,7 @@ export function NewReconditioningIntakeWizard({
             <span className="font-semibold text-[#B4342A] text-[14px]">Reprise bloquée</span>
           ) : (
             <span className="font-semibold text-[#147065] text-[16px]">
-              Prix conseillé : {formatMoney(calc.suggestedOffer)}
+              Prix de reprise conseillé : {formatMoney(calc.suggestedOffer)}
             </span>
           )}
         </div>
@@ -1117,7 +1117,7 @@ function OfferSummaryPanel({
         <SummaryRow label="Risque" negative value={formatMoney(calc.riskAmount)} />
         <div className="border-[#F2F4F7] border-t pt-1.5">
           <SummaryRow label="Prix de reprise max" strong value={formatMoney(calc.maxBuyback)} />
-          <SummaryRow label="Prix conseillé" strong tone="accent" value={formatMoney(calc.suggestedOffer)} />
+          <SummaryRow label="Prix de reprise conseillé" strong tone="accent" value={formatMoney(calc.suggestedOffer)} />
           <SummaryRow label="Prix proposé" strong tone="accent" value={formatMoney(proposedPrice)} />
         </div>
       </div>

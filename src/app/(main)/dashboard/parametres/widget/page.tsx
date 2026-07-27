@@ -25,6 +25,7 @@ import {
   Tablet,
   Tags,
   Plus,
+  RefreshCw,
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -456,7 +457,7 @@ export default function WidgetSettingsPage() {
                 change={change}
               />
             ) : null}
-            {tab === "style" ? <StylePanel config={config} updateVisual={updateVisual} /> : null}
+            {tab === "style" ? <StylePanel config={config} updateVisual={updateVisual} change={change} /> : null}
             {tab === "offers" ? <OffersPanel config={config} change={change} /> : null}
             {tab === "structure" ? (
               <StructurePanel
@@ -991,12 +992,14 @@ function OffersPanel({
 function StylePanel({
   config,
   updateVisual,
+  change,
 }: {
   config: EditableWidgetConfig;
   updateVisual: <K extends keyof EditableWidgetConfig["visual"]>(
     key: K,
     value: EditableWidgetConfig["visual"][K],
   ) => void;
+  change: (updater: (current: EditableWidgetConfig) => EditableWidgetConfig) => void;
 }) {
   return (
     <div className="space-y-6">
@@ -1073,6 +1076,19 @@ function StylePanel({
           onChange={(value) => updateVisual("textSize", value as EditableWidgetConfig["visual"]["textSize"])}
         />
       </EditorSection>
+      <button
+        type="button"
+        data-testid="widget-reset-theme"
+        onClick={() =>
+          change((current) => ({
+            ...current,
+            visual: { ...DEFAULT_WIDGET_CMS_CONFIG.visual },
+          }))
+        }
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#DADAD6] bg-white px-3 py-2.5 text-sm font-semibold text-[#147065] transition hover:bg-[#F4FBF9]"
+      >
+        <RefreshCw className="size-4" /> Réinitialiser le thème
+      </button>
     </div>
   );
 }
@@ -1236,6 +1252,20 @@ function DisplayPanel({
   const widgetScriptOrigin =
     process.env.NEXT_PUBLIC_WIDGET_SCRIPT_ORIGIN?.replace(/\/$/, "") || "https://behartechpro.fr";
   const integrationCode = `<div data-behar-widget-search></div>\n<script async src="${widgetScriptOrigin}/widget.js" data-widget-id="${publicWidgetId}"></script>`;
+  const publicUrl = `${widgetScriptOrigin}/widget/${publicWidgetId}`;
+  const iframeCode = `<iframe src="${publicUrl}" title="Prendre rendez-vous" loading="lazy" style="width:100%;min-height:720px;border:0;border-radius:16px" allow="clipboard-write"></iframe>`;
+  const aiPrompt = `Intègre le widget public de prise de rendez-vous BEHAR TECH PRO sur mon site.
+
+URL publique : ${publicUrl}
+Identifiant public d’intégration : ${publicWidgetId}
+
+Code recommandé :
+${integrationCode}
+
+Alternative iframe :
+${iframeCode}
+
+Règles : le widget doit occuper 100 % de la largeur disponible, conserver une hauteur minimale de 720 px, ne jamais créer de défilement horizontal et rester lisible sur ordinateur, tablette et mobile. Vérifie le chargement, la sélection du mode de prise en charge et l’envoi du formulaire sur ordinateur et mobile. N’ajoute et n’expose aucune clé secrète.`;
   return (
     <div className="space-y-6">
       <EditorSection title="Mode d’intégration">
@@ -1313,6 +1343,67 @@ function DisplayPanel({
             Publiez d’abord le widget pour obtenir son code d’intégration stable.
           </p>
         )}
+      </EditorSection>
+      <EditorSection
+        title="URL publique et intégration responsive"
+        description="L’identifiant ci-dessous est public et distinct de la clé de licence."
+      >
+        <div className="grid gap-2 rounded-xl border border-[#DDEBE8] bg-[#F4FBF9] p-3">
+          <span className="text-[11px] font-bold uppercase tracking-wide text-[#37635E]">URL publique du widget</span>
+          <code className="break-all text-xs text-[#173F39]">{publicUrl}</code>
+        </div>
+        <button
+          type="button"
+          onClick={async () => {
+            await navigator.clipboard.writeText(publicUrl);
+            toast.success("URL publique copiée.");
+          }}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#DADAD6] bg-white px-3 py-2.5 text-sm font-semibold text-[#147065]"
+        >
+          <Copy className="size-4" /> Copier l’URL publique
+        </button>
+        <pre
+          data-testid="widget-iframe-code"
+          className="overflow-x-auto rounded-xl bg-[#17211E] p-3 text-[11px] leading-5 text-[#D9EFE9]"
+        >
+          <code>{iframeCode}</code>
+        </pre>
+      </EditorSection>
+      <EditorSection title="Instructions WordPress et autres CMS">
+        <div className="space-y-3 text-xs leading-5 text-[#52524F]">
+          <div className="rounded-xl border border-[#E4E7EC] bg-white p-3">
+            <p className="font-bold text-[#101828]">WordPress</p>
+            <p>
+              Ajoutez un bloc « HTML personnalisé », collez le script recommandé, puis publiez. Avec un constructeur qui
+              filtre les scripts, utilisez l’iframe responsive.
+            </p>
+          </div>
+          <div className="rounded-xl border border-[#E4E7EC] bg-white p-3">
+            <p className="font-bold text-[#101828]">Shopify, Webflow, Wix et autres CMS</p>
+            <p>
+              Utilisez un bloc Embed/HTML. Le conteneur doit faire 100 % de largeur et au moins 720 px de hauteur.
+              Testez également à 390 px de largeur.
+            </p>
+          </div>
+          <div className="rounded-xl border border-[#F0DCA4] bg-[#FFF9E9] p-3 text-[#6F5411]">
+            Pour la sécurité, ajoutez le domaine exact du site dans « Sites autorisés ». N’insérez jamais la clé de
+            licence dans le code public.
+          </div>
+        </div>
+      </EditorSection>
+      <EditorSection title="Prompt pour une IA de création de site">
+        <textarea className={`${inputClass} h-64 py-3 font-mono text-[11px] leading-5`} value={aiPrompt} readOnly />
+        <button
+          type="button"
+          data-testid="widget-copy-ai-prompt"
+          onClick={async () => {
+            await navigator.clipboard.writeText(aiPrompt);
+            toast.success("Prompt IA copié.");
+          }}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#DADAD6] bg-white px-3 py-2.5 text-sm font-semibold text-[#147065]"
+        >
+          <Copy className="size-4" /> Copier le prompt IA
+        </button>
       </EditorSection>
       <EditorSection title="Modèle de disposition">
         <div className="grid grid-cols-3 gap-2">

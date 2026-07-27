@@ -800,7 +800,10 @@ function InitialDiagnosticTab({ file }: Readonly<{ file: ReconditioningFile }>) 
         {file.originalEstimation && (
           <div className="mt-4 space-y-3 border-[#F2F4F7] border-t pt-4">
             <InfoLine label="Cote de base" value={formatMoney(file.originalEstimation.coteDeBase)} />
-            <InfoLine label="Prix conseillé (reprise)" value={formatMoney(file.originalEstimation.prixConseille)} />
+            <InfoLine
+              label="Prix de reprise conseillé (distinct du prix de revente cible)"
+              value={formatMoney(file.originalEstimation.prixConseille)}
+            />
             <InfoLine label="Prix payé" value={formatMoney(file.originalEstimation.prixFinalPaye)} />
           </div>
         )}

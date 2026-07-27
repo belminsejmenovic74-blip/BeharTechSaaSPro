@@ -1,16 +1,33 @@
 import { NextResponse } from "next/server";
 
-import { addPublicRepairMessage, publicError } from "@/lib/server/public-api";
+import { isValidPublicRepairToken, PublicMessageError } from "@/lib/public-repair-message";
+import { addPublicRepairMessage, getPublicRepair, publicError } from "@/lib/server/public-api";
 
 export const dynamic = "force-dynamic";
+
+export async function GET(_request: Request, { params }: { params: Promise<{ token: string }> }) {
+  try {
+    const { token } = await params;
+    if (!isValidPublicRepairToken(token)) return publicError();
+    const repair = await getPublicRepair(token);
+    return repair ? NextResponse.json(repair) : publicError();
+  } catch {
+    return publicError("Service temporairement indisponible.", 503);
+  }
+}
 
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
   try {
     const { token } = await params;
     const body = await request.json().catch(() => ({}));
-    const result = await addPublicRepairMessage(token, String(body.body ?? ""), String(body.authorName ?? "Client"));
-    return result ? NextResponse.json(result) : publicError();
+    const result = await addPublicRepairMessage(token, {
+      body: String(body.body ?? ""),
+      authorName: String(body.authorName ?? "Client"),
+      clientMessageId: String(body.clientMessageId ?? ""),
+    });
+    return NextResponse.json(result);
   } catch (error) {
-    return publicError(error instanceof Error ? error.message : "Erreur serveur", 500);
+    if (error instanceof PublicMessageError) return publicError(error.message, error.status);
+    return publicError("Service temporairement indisponible.", 503);
   }
 }

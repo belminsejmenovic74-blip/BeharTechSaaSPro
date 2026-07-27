@@ -8,6 +8,7 @@ import type {
   PublicRepairDto,
   PublicWorkshopDto,
 } from "@/lib/public-dtos";
+import { isValidPublicRepairToken, PublicMessageError, publicRepairMessageSchema } from "@/lib/public-repair-message";
 import { PUBLIC_REPAIR_TIMELINE_STEPS, publicRepairProgress, publicRepairStatusLabel } from "@/lib/repair-status";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { getWorkshopCountryConfig } from "@/lib/workshop-country";
@@ -253,11 +254,20 @@ export async function getPublicRepair(token: string): Promise<PublicRepairDto | 
   };
 }
 
-export async function addPublicRepairMessage(token: string, body: string, authorName = "Client") {
+export async function addPublicRepairMessage(
+  token: string,
+  input: { body: string; authorName?: string; clientMessageId: string },
+) {
   const supabase = getSupabaseAdmin();
-  if (!supabase) throw new Error("Supabase server non configuré.");
-  const clean = body.trim();
-  if (!clean) throw new Error("Message vide.");
+  if (!supabase) throw new PublicMessageError("Service temporairement indisponible.", 503, "unavailable");
+  if (!isValidPublicRepairToken(token)) throw new PublicMessageError("Lien de suivi invalide.", 404, "not_found");
+  const parsed = publicRepairMessageSchema.safeParse({
+    body: input.body,
+    authorName: input.authorName || "Client",
+    clientMessageId: input.clientMessageId,
+  });
+  if (!parsed.success)
+    throw new PublicMessageError(parsed.error.issues[0]?.message || "Message invalide.", 400, "invalid");
 
   const { data: repair, error: repairError } = await supabase
     .from("repairs")
@@ -265,21 +275,52 @@ export async function addPublicRepairMessage(token: string, body: string, author
     .eq("public_token", token)
     .eq("public_active", true)
     .maybeSingle();
-  if (repairError) throw repairError;
-  if (!repair) return null;
+  if (repairError) throw new PublicMessageError("Service temporairement indisponible.", 503, "unavailable");
+  if (!repair) throw new PublicMessageError("Lien de suivi introuvable.", 404, "not_found");
 
-  const { error: insertError } = await supabase.from("repair_messages").insert({
-    workshop_id: repair.workshop_id,
-    repair_id: repair.id,
-    author_type: "client",
-    author_name: authorName || "Client",
-    visibility: "client",
-    body: clean,
-    read_by_client: true,
-    read_by_staff: false,
-  });
-  if (insertError) throw insertError;
-  return { ok: true };
+  const since = new Date(Date.now() - 60_000).toISOString();
+  const { data: recent, error: recentError } = await supabase
+    .from("repair_messages")
+    .select("id, client_message_id, created_at")
+    .eq("workshop_id", repair.workshop_id)
+    .eq("repair_id", repair.id)
+    .eq("author_type", "client")
+    .gte("created_at", since)
+    .order("created_at", { ascending: false })
+    .limit(6);
+  if (recentError) throw new PublicMessageError("Service temporairement indisponible.", 503, "unavailable");
+  const duplicate = (recent ?? []).find((message) => message.client_message_id === parsed.data.clientMessageId);
+  if (duplicate) return { ok: true, duplicate: true };
+  if ((recent ?? []).length >= 5)
+    throw new PublicMessageError("Trop de messages envoyés. Réessayez dans une minute.", 429, "rate_limited");
+
+  const { data: inserted, error: insertError } = await supabase
+    .from("repair_messages")
+    .insert({
+      workshop_id: repair.workshop_id,
+      repair_id: repair.id,
+      author_type: "client",
+      author_name: parsed.data.authorName,
+      visibility: "client",
+      body: parsed.data.body,
+      client_message_id: parsed.data.clientMessageId,
+      read_by_client: true,
+      read_by_staff: false,
+    })
+    .select("author_type, author_name, body, created_at")
+    .single();
+  if (insertError?.code === "23505") return { ok: true, duplicate: true };
+  if (insertError || !inserted) throw new PublicMessageError("Message non envoyé. Réessayez.", 503, "unavailable");
+  return {
+    ok: true,
+    duplicate: false,
+    message: {
+      authorType: inserted.author_type,
+      authorName: inserted.author_name,
+      body: inserted.body,
+      createdAt: inserted.created_at,
+    },
+  };
 }
 
 async function getCommercialDocument(

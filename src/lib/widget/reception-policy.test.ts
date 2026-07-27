@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { applyCustomerReceptionPolicy, defaultServiceSelection, isHomeServiceOnly } from "./reception-policy";
+import {
+  applyCustomerReceptionPolicy,
+  defaultServiceSelection,
+  isHomeServiceOnly,
+  isServiceModeAllowed,
+} from "./reception-policy";
 
 describe("widget reception policy", () => {
   const configurableModes = {
@@ -25,11 +30,31 @@ describe("widget reception policy", () => {
     expect(defaultServiceSelection(features)).toEqual({ requestType: "request", serviceMode: "home_service" });
   });
 
-  it("ajoute le déplacement sans supprimer les autres modes en hybride", () => {
+  it("limite le mode hybride aux deux parcours métier", () => {
     const features = applyCustomerReceptionPolicy(configurableModes, "hybrid");
 
-    expect(features.homeService).toBe(true);
-    expect(features.booking).toBe(true);
-    expect(features.walkIn).toBe(true);
+    expect(features).toMatchObject({
+      booking: true,
+      walkIn: false,
+      homeService: true,
+      quoteRequest: false,
+      callbackRequest: false,
+    });
+    expect(isServiceModeAllowed(features, "appointment")).toBe(true);
+    expect(isServiceModeAllowed(features, "home_service")).toBe(true);
+    expect(isServiceModeAllowed(features, "walk_in")).toBe(false);
+  });
+
+  it("limite le mode boutique au rendez-vous sur place", () => {
+    const features = applyCustomerReceptionPolicy(configurableModes, "shop");
+
+    expect(features).toMatchObject({
+      booking: true,
+      walkIn: false,
+      homeService: false,
+      quoteRequest: false,
+      callbackRequest: false,
+    });
+    expect(defaultServiceSelection(features)).toEqual({ requestType: "appointment", serviceMode: "appointment" });
   });
 });

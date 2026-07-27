@@ -110,48 +110,27 @@ function extractTrackingInfoFromUrl() {
   };
 }
 
-import { getSupabase } from "@/lib/supabase/client";
-
 // Résultat discriminé : on distingue explicitement « pas en base » (introuvable)
 // de « la requête a échoué » (réseau / accès). Afficher « expiré » sur une simple
 // erreur réseau induit le client en erreur.
 type TrackingFetchResult = { status: "found"; data: PublicRepairDto } | { status: "not_found" } | { status: "error" };
 
 async function readPublicRepairFromSupabase(token: string): Promise<TrackingFetchResult> {
-  const supabase = getSupabase();
-  if (!supabase) {
-    console.error("[public-tracking] Supabase client non configuré.");
-    return { status: "error" };
-  }
-
-  // Les tokens de suivi peuvent contenir des underscores (`rp_XXXX`,
-  // `repair_1783..._94a6ec`). Il faut donc les conserver, sinon la recherche
-  // Supabase ne matche jamais et la page affiche « Suivi introuvable ».
-  // On garde uniquement [a-zA-Z0-9_-] : sûr pour le filtre PostgREST `.or()`.
   const safeToken = token.replace(/[^a-zA-Z0-9_-]/g, "");
   if (!safeToken) return { status: "not_found" };
 
-  // On recherche par tracking_id en respectant la casse (originale ou majuscule) ou par numéro de dossier
-  const { data, error } = await supabase
-    .from("public_tracking_repairs")
-    .select("public_data")
-    .or(
-      `tracking_id.eq.${safeToken},tracking_id.eq.${safeToken.toUpperCase()},repair_number.eq.${safeToken},repair_number.eq.${safeToken.toUpperCase()}`,
-    )
-    .limit(1);
-
-  if (error) {
-    // Erreur réseau / accès refusé : ce N'EST PAS un lien expiré.
-    console.error("[public-tracking] Error fetching repair:", error.message);
+  try {
+    const response = await fetch(`/api/public/repairs/${encodeURIComponent(safeToken)}/messages`, {
+      cache: "no-store",
+    });
+    if (response.status === 404) return { status: "not_found" };
+    if (!response.ok) return { status: "error" };
+    const data = (await response.json()) as PublicRepairDto;
+    return { status: "found", data };
+  } catch (error) {
+    console.error("[public-tracking] Error fetching repair:", error);
     return { status: "error" };
   }
-
-  if (!data || data.length === 0 || !data[0].public_data) {
-    console.warn("[public-tracking] Tracking not found for token:", token);
-    return { status: "not_found" };
-  }
-
-  return { status: "found", data: data[0].public_data as PublicRepairDto };
 }
 
 function statusScreen(variant: "missing" | "error", shopName?: string) {
@@ -232,6 +211,8 @@ export function PublicTrackingView({
   const [data, setData] = useState<PublicRepairDto | null>(null);
   const [status, setStatus] = useState<"loading" | "found" | "not_found" | "error">("loading");
   const [draft, setDraft] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [messageError, setMessageError] = useState("");
   const [qr, setQr] = useState("");
   const [copied, setCopied] = useState(false);
   const [downloadingDocument, setDownloadingDocument] = useState("");
@@ -335,6 +316,41 @@ export function PublicTrackingView({
     };
   }, [token]);
 
+  useEffect(() => {
+    if (!token || status !== "found") return;
+    let cancelled = false;
+    const refresh = async () => {
+      const hostname = window.location.hostname;
+      const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
+      if (isLocalhost) {
+        const localDto = buildPublicRepairDtoFromLocalState(useBeharStore.getState(), token);
+        if (!cancelled && localDto) setData(localDto);
+        return;
+      }
+      try {
+        const response = await fetch(`/api/public/repairs/${encodeURIComponent(token)}/messages`, {
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+        const next = (await response.json()) as PublicRepairDto;
+        if (!cancelled) setData(next);
+      } catch {
+        // Une relève échouée ne masque jamais les données déjà affichées.
+      }
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    void refresh();
+    const interval = window.setInterval(() => void refresh(), 10_000);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [status, token]);
+
   const publicUrl = useMemo(() => {
     if (!data) return "";
     // biome-ignore lint/nursery/useNullishCoalescing: fallback needed on falsy empty string
@@ -431,10 +447,47 @@ export function PublicTrackingView({
   }, [publicUrl]);
 
   const send = async () => {
-    // La fonctionnalité d'envoi de message client nécessitera l'utilisation
-    // d'une table Supabase dédiée aux messages à l'avenir, car l'API locale n'est pas dispo
-    toast("L'envoi de messages est temporairement désactivé.");
-    setDraft("");
+    const body = draft.trim();
+    if (!body || sendingMessage || !token) return;
+    setSendingMessage(true);
+    setMessageError("");
+    const clientMessageId = `msg_${crypto.randomUUID()}`;
+    try {
+      const hostname = window.location.hostname;
+      const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
+      if (isLocalhost) {
+        const store = useBeharStore.getState();
+        const repair = store.findRepairByPublicToken(token);
+        if (!repair) throw new Error("Dossier introuvable.");
+        const id = store.addRepairMessage(repair.id, {
+          body,
+          visibility: "client",
+          authorType: "client",
+          authorName: "Client",
+        });
+        if (!id) throw new Error("Message non envoyé.");
+        const next = buildPublicRepairDtoFromLocalState(useBeharStore.getState(), token);
+        if (next) setData(next);
+      } else {
+        const response = await fetch(`/api/public/repairs/${encodeURIComponent(token)}/messages`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ body, authorName: "Client", clientMessageId }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || "Message non envoyé.");
+        const refreshed = await fetch(`/api/public/repairs/${encodeURIComponent(token)}/messages`, {
+          cache: "no-store",
+        });
+        if (refreshed.ok) setData((await refreshed.json()) as PublicRepairDto);
+      }
+      setDraft("");
+      toast.success("Message envoyé.");
+    } catch (error) {
+      setMessageError(error instanceof Error ? error.message : "Message non envoyé. Réessayez.");
+    } finally {
+      setSendingMessage(false);
+    }
   };
 
   const copyLink = async () => {
@@ -767,10 +820,18 @@ export function PublicTrackingView({
               <div className="mt-4 flex items-center gap-2">
                 <input
                   value={draft}
-                  onChange={(event) => setDraft(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") void send();
+                  onChange={(event) => {
+                    setDraft(event.target.value);
+                    setMessageError("");
                   }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      void send();
+                    }
+                  }}
+                  maxLength={1000}
+                  disabled={sendingMessage}
                   placeholder="Écrivez-nous un message…"
                   className="h-11 flex-1 rounded-[12px] border bg-white px-4 text-[14px] outline-none focus:border-[#2A9D8F]"
                   style={{ borderColor: COLORS.border }}
@@ -778,12 +839,23 @@ export function PublicTrackingView({
                 <button
                   type="button"
                   onClick={() => void send()}
-                  className="grid size-11 shrink-0 place-items-center rounded-[12px] text-white active:scale-[0.97]"
+                  disabled={!draft.trim() || sendingMessage}
+                  className="grid size-11 shrink-0 place-items-center rounded-[12px] text-white active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
                   style={{ background: COLORS.accent }}
                   aria-label="Envoyer le message"
                 >
-                  <Send className="size-5" />
+                  {sendingMessage ? (
+                    <span className="size-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                  ) : (
+                    <Send className="size-5" />
+                  )}
                 </button>
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-3 text-[11px]">
+                <p className="text-[#B42318]" role="status" aria-live="polite">
+                  {messageError}
+                </p>
+                <span className="ml-auto text-[#98A2B3]">{draft.length}/1000</span>
               </div>
             </section>
 

@@ -7,6 +7,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { useBeharStore } from "@/lib/behar-store";
+import { calculateCompleteReconditioningCost } from "@/lib/stock-cost";
 import { publishDomainEvent, subscribeDomainEvent } from "@/lib/domain-events";
 import { getMarketData } from "@/data/marketData";
 import type { IntakeCondition } from "@/lib/reconditioning-calc";
@@ -474,7 +475,11 @@ export function createBlankFile(seq: number): ReconditioningFile {
 /** Calcule la marge à partir du dossier (coût total = achat + pièces + main-d'œuvre). */
 export function computeMargin(file: ReconditioningFile): MarginSummary {
   const partsTotal = file.parts.reduce((sum, part) => sum + part.cost * part.quantity, 0);
-  const coutTotal = file.prixAchat + partsTotal + (file.laborCost ?? 0);
+  const coutTotal = calculateCompleteReconditioningCost({
+    purchasePrice: file.prixAchat,
+    partsCost: partsTotal,
+    laborCost: file.laborCost,
+  });
   const margeBrute = file.prixVentePrevu - coutTotal;
   const margePct = file.prixVentePrevu > 0 ? (margeBrute / file.prixVentePrevu) * 100 : 0;
   let rentabilite: MarginSummary["rentabilite"] = "Faible";

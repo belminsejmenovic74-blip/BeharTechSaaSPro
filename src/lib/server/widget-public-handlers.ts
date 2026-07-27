@@ -37,7 +37,7 @@ import {
   type PublicWidgetContext,
 } from "@/lib/server/widget-public-api";
 import { brandsForType, deviceTypeLabels, fold, issuesForType, modelsForBrand } from "@/lib/widget/global-catalog";
-import { applyCustomerReceptionPolicy } from "@/lib/widget/reception-policy";
+import { applyCustomerReceptionPolicy, isServiceModeAllowed } from "@/lib/widget/reception-policy";
 
 type RouteParams = { params: Promise<{ publicId: string }> };
 
@@ -77,6 +77,21 @@ function filteredServices(context: PublicWidgetContext, request: Request) {
       same(service.model, values.model) &&
       same(service.issue, values.issue),
   );
+}
+
+async function publishedFeatures(context: PublicWidgetContext) {
+  const { data } = await context.admin
+    .from("app_settings")
+    .select("settings")
+    .eq("workshop_id", context.widget.tenant_id)
+    .maybeSingle();
+  const settings =
+    data?.settings && typeof data.settings === "object" ? (data.settings as Record<string, unknown>) : {};
+  const mode =
+    settings.customerReceptionMode === "mobile" || settings.customerReceptionMode === "hybrid"
+      ? settings.customerReceptionMode
+      : "shop";
+  return applyCustomerReceptionPolicy(sanitizePublicConfig(context.widget).features, mode);
 }
 
 // Préserve l'ordre de la projection (classement logique / populaires d'abord),
@@ -452,6 +467,8 @@ export async function handleLead(request: Request, route: RouteParams) {
       400,
       context.requestId,
     );
+  if (!isServiceModeAllowed(await publishedFeatures(context), parsed.data.serviceMode))
+    return publicError("bad_request", 400, context.requestId);
   if (!photosAreOwned(context, parsed.data.photos)) return publicError("bad_request", 400, context.requestId);
   const shop = await resolveShop(context, parsed.data.shopPublicId);
   if (!shop) return publicError("bad_request", 400, context.requestId);
@@ -504,6 +521,8 @@ export async function handleAppointment(request: Request, route: RouteParams) {
   }
   const parsed = appointmentInputSchema.safeParse(await readJson(request));
   if (!parsed.success) return publicError("bad_request", 400, context.requestId);
+  if (!isServiceModeAllowed(await publishedFeatures(context), parsed.data.serviceMode))
+    return publicError("bad_request", 400, context.requestId);
   if (!photosAreOwned(context, parsed.data.photos)) return publicError("bad_request", 400, context.requestId);
   const shop = await resolveShop(context, parsed.data.shopPublicId);
   if (!shop) return publicError("bad_request", 400, context.requestId);

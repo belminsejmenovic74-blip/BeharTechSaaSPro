@@ -380,6 +380,12 @@ export function WidgetApp({
 
   const alignment =
     layout.alignment === "center" ? "text-center" : layout.alignment === "right" ? "text-right" : "text-left";
+  const configuredIntakeSubtitle =
+    features.booking && features.homeService && !features.walkIn
+      ? "Choisissez un rendez-vous à l’adresse de la boutique ou une intervention à votre domicile."
+      : features.booking && !features.homeService && !features.walkIn
+        ? "Réservez un créneau et rendez-vous à l’adresse de la boutique."
+        : "Choisissez uniquement l’un des modes de prise en charge proposés par l’atelier.";
 
   const stepCopy =
     step === 1
@@ -400,7 +406,7 @@ export function WidgetApp({
               }
             : {
                 title: "Comment souhaitez-vous nous confier votre appareil ?",
-                subtitle: "Réservez un créneau, venez en boutique, demandez un déplacement ou envoyez votre demande.",
+                subtitle: configuredIntakeSubtitle,
               }
           : null;
 

@@ -66,7 +66,10 @@ export const PRICE_BOOK_SOURCE_LABELS: Record<PriceBookSource, string> = {
 const toNumber = (value: unknown): number => {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string") {
-    const cleaned = value.replace(/\s/g, "").replace(",", ".").replace(/[\u20AC$]/g, "");
+    const cleaned = value
+      .replace(/\s/g, "")
+      .replace(",", ".")
+      .replace(/[\u20AC$]/g, "");
     const parsed = Number.parseFloat(cleaned);
     if (Number.isFinite(parsed)) return parsed;
   }
@@ -130,10 +133,7 @@ export type PriceBookMarketPrice = {
   hasPrice: boolean;
 };
 
-export const getPriceBookMarketPrice = (
-  item: PriceBookItem,
-  country: WorkshopCountry,
-): PriceBookMarketPrice => {
+export const getPriceBookMarketPrice = (item: PriceBookItem, country: WorkshopCountry): PriceBookMarketPrice => {
   if (country === "CH") {
     const prixAchat = item.prixAchatChf ?? 0;
     const mainOeuvre = item.mainOeuvreChf ?? 0;
@@ -364,14 +364,16 @@ export const normalizePriceBookStructure = (raw: PriceBookItem): PriceBookNormal
   }
 
   const hasSuspicious = normalizedModel !== originalModel;
-  const mergedQuality = Array.from(
+  const mergedQualities = Array.from(
     new Set(
       [originalQuality, ...extractedQualities]
         .flatMap((q) => cleanSpaces(q).split(/\s*\/\s*/g))
         .map((q) => cleanSpaces(q))
         .filter(Boolean),
     ),
-  ).join(" / ");
+  );
+  const hasSpecificOled = mergedQualities.some((quality) => /^(?:soft|hard)\s+oled$/i.test(quality));
+  const mergedQuality = mergedQualities.filter((quality) => !(hasSpecificOled && /^oled$/i.test(quality))).join(" / ");
 
   // Cas incertains
   const needsReview = hasSuspicious && isModelTooVague(normalizedModel);
@@ -477,8 +479,7 @@ export const updatePriceBookItem = (current: PriceBookItem, patch: Partial<Price
   const prixAchatChf = toOptionalNumber(next.prixAchatChf);
   const prixVentePieceChf = toOptionalNumber(next.prixVentePieceChf);
   const mainOeuvreChf = toOptionalNumber(next.mainOeuvreChf);
-  const hasSwissPrice =
-    prixAchatChf !== undefined || prixVentePieceChf !== undefined || mainOeuvreChf !== undefined;
+  const hasSwissPrice = prixAchatChf !== undefined || prixVentePieceChf !== undefined || mainOeuvreChf !== undefined;
   const swissTotals = hasSwissPrice
     ? computePriceBookTotals(prixVentePieceChf ?? 0, mainOeuvreChf ?? 0, prixAchatChf ?? 0)
     : undefined;
