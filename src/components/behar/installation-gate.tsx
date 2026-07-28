@@ -25,7 +25,7 @@ export function isWorkshopConfigurationComplete(settings: WorkshopSettings): boo
   return /^\d{5}$/.test(postalCode) && /^\d{14}$/.test(siret) && !/^0+$/.test(siret);
 }
 
-function getAppEntryState({
+export function getAppEntryState({
   hasHydrated,
   hydrationTimedOut,
   licenseActivated,
@@ -60,6 +60,14 @@ function getAppEntryState({
   if (!isAutomatedBrowser && (cloudLoading || (normalizedActiveKey && cloudCheckedKey !== normalizedActiveKey))) {
     return "loading_cloud";
   }
+  // Le snapshot cloud et la configuration métier sont deux sources historiques
+  // de vérité. Les accès créés depuis Admin → Licences sont provisionnés avec
+  // onboardingCompleted=true avant que toutes les coordonnées légales soient
+  // renseignées ; inversement, d'anciens snapshots peuvent avoir une
+  // configuration complète sans le drapeau. Après la vérification cloud, une
+  // seule de ces preuves suffit pour ne pas forcer une nouvelle configuration
+  // sur chaque appareil.
+  if (onboardingCompleted || workshopConfigurationComplete) return "dashboard";
   return "onboarding";
 }
 

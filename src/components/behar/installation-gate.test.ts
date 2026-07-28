@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isWorkshopConfigurationComplete } from "@/components/behar/installation-gate";
+import { getAppEntryState, isWorkshopConfigurationComplete } from "@/components/behar/installation-gate";
 import type { WorkshopSettings } from "@/lib/behar-store";
 
 function settings(patch: Partial<WorkshopSettings> = {}): WorkshopSettings {
@@ -39,5 +39,41 @@ describe("isWorkshopConfigurationComplete", () => {
         settings({ country: "CH", currency: "CHF", defaultPhonePrefix: "+41", postalCode: "1201", siret: "" }),
       ),
     ).toBe(true);
+  });
+});
+
+describe("getAppEntryState", () => {
+  const base = {
+    hasHydrated: true,
+    hydrationTimedOut: false,
+    licenseActivated: true,
+    isAutomatedBrowser: false,
+    cloudLoading: false,
+    normalizedActiveKey: "BTP-TEST-1234-5678",
+    cloudCheckedKey: "BTP-TEST-1234-5678",
+    onboardingCompleted: false,
+    workshopConfigurationComplete: false,
+  };
+
+  it("attend le snapshot cloud avant de décider sur un nouvel appareil", () => {
+    expect(
+      getAppEntryState({
+        ...base,
+        cloudCheckedKey: "",
+        onboardingCompleted: true,
+      }),
+    ).toBe("loading_cloud");
+  });
+
+  it("ouvre le tableau de bord pour un compte provisionné et déjà marqué terminé", () => {
+    expect(getAppEntryState({ ...base, onboardingCompleted: true })).toBe("dashboard");
+  });
+
+  it("ouvre aussi un ancien atelier complet dont le drapeau est absent", () => {
+    expect(getAppEntryState({ ...base, workshopConfigurationComplete: true })).toBe("dashboard");
+  });
+
+  it("conserve l'onboarding pour un vrai nouvel atelier vide", () => {
+    expect(getAppEntryState(base)).toBe("onboarding");
   });
 });
