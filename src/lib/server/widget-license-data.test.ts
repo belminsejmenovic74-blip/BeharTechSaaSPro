@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseWorkshopBusinessHours } from "@/lib/server/widget-license-data";
+import { isMissingWidgetStockSchema, parseWorkshopBusinessHours } from "@/lib/server/widget-license-data";
 
 describe("connexion widget aux horaires de la licence", () => {
   it("convertit les horaires français en planning ISO", () => {
@@ -16,5 +16,14 @@ describe("connexion widget aux horaires de la licence", () => {
 
   it("ignore les plages invalides au lieu d'ouvrir de faux créneaux", () => {
     expect(parseWorkshopBusinessHours("Lun 18:00-09:00 · texte libre")).toEqual({});
+  });
+});
+
+describe("publication widget sans migration de stock optionnelle", () => {
+  it("reconnaît uniquement une fonction ou une table absente", () => {
+    expect(isMissingWidgetStockSchema({ code: "PGRST205" })).toBe(true);
+    expect(isMissingWidgetStockSchema({ code: "42P01" })).toBe(true);
+    expect(isMissingWidgetStockSchema({ code: "23505" })).toBe(false);
+    expect(isMissingWidgetStockSchema(new Error("réseau indisponible"))).toBe(false);
   });
 });

@@ -1786,11 +1786,13 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
       <span className="flex items-center gap-2">
         <input
           type="color"
+          aria-label={`${label} — sélecteur`}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="size-9 cursor-pointer rounded-lg border-0 bg-transparent"
         />
         <input
+          aria-label={`${label} — code hexadécimal`}
           className="h-9 w-24 rounded-lg border border-[#E4E7EC] px-2 font-mono text-xs"
           value={value}
           onChange={(e) => onChange(e.target.value)}

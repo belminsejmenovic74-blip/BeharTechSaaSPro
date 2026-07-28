@@ -5,9 +5,9 @@ test("widget démo — parcours réel sans message technique", async ({ page }) 
   await expect(page.getByText("Atelier de démonstration")).toHaveCount(0);
   await expect(page.getByRole("progressbar", { name: "Appareil — 1 / 4" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Smartphone" }).click();
-  await page.getByRole("button", { name: "Apple" }).click();
-  await page.getByRole("button", { name: "iPhone SE (2020)" }).click();
+  await page.getByLabel("Quel appareil ?").selectOption({ label: "Smartphone" });
+  await page.getByLabel("Quelle marque ?").selectOption({ label: "Apple" });
+  await page.getByLabel("Quel modèle ?").selectOption({ label: "iPhone SE (2020)" });
   await page.getByRole("button", { name: "Continuer" }).click();
 
   await page.getByRole("button", { name: /Écran cassé/ }).click();
@@ -15,6 +15,7 @@ test("widget démo — parcours réel sans message technique", async ({ page }) 
   await expect(page.getByRole("heading", { name: "Choisissez la qualité de votre réparation" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Personnalisez votre réparation" })).toBeVisible();
 
+  await page.getByRole("button", { name: /Écran premium OLED/ }).click();
   await page.getByRole("button", { name: "Continuer" }).click();
   await expect(
     page.getByRole("heading", { name: "Comment souhaitez-vous nous confier votre appareil ?" }),

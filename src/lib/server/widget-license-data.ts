@@ -109,6 +109,17 @@ function stableUuid(input: unknown): string {
   return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-4${hash.slice(13, 16)}-a${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
 }
 
+/**
+ * La publication du widget (thème, parcours, prix) ne doit pas échouer si la
+ * migration optionnelle de stock public n'est pas encore présente sur un
+ * déploiement. Le stock temps réel reste alors masqué jusqu'à la migration.
+ */
+export function isMissingWidgetStockSchema(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const code = "code" in error ? String(error.code || "") : "";
+  return code === "PGRST202" || code === "PGRST205" || code === "42P01" || code === "42883";
+}
+
 /** Relie les prestations publiées au stock normalisé du même atelier/licence. */
 export async function syncWidgetStockLinks(
   admin: SupabaseClient,
@@ -165,9 +176,15 @@ export async function syncWidgetStockLinks(
     .eq("tenant_id", tenantId)
     .eq("widget_id", widgetId)
     .eq("shop_id", shopId);
-  if (removed.error) throw removed.error;
+  if (removed.error) {
+    if (isMissingWidgetStockSchema(removed.error)) return;
+    throw removed.error;
+  }
   if (rows.length) {
     const inserted = await admin.from("widget_stock_publications").insert(rows);
-    if (inserted.error) throw inserted.error;
+    if (inserted.error) {
+      if (isMissingWidgetStockSchema(inserted.error)) return;
+      throw inserted.error;
+    }
   }
 }

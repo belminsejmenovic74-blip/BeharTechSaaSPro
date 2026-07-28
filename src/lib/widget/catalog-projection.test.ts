@@ -8,6 +8,7 @@ import {
 } from "@/lib/price-book";
 import { leadInputSchema } from "@/lib/widget/public-contracts";
 import { buildWidgetCatalog, isEntryAvailableInShop, type WidgetCatalogEntry } from "@/lib/widget/catalog-projection";
+import { applyCustomerReceptionPolicy, isHomeServiceOnly } from "@/lib/widget/reception-policy";
 
 type Over = {
   marque: string;
@@ -198,6 +199,28 @@ describe("buildWidgetCatalog — connexion au vrai catalogue", () => {
     expect(byModel(entries)).toMatch(/^svc_[a-z0-9]+$/);
     // Aucune donnée interne (pièce, SKU) n'est exposée.
     expect(JSON.stringify(entries)).not.toContain("OEM");
+  });
+
+  it("conserve les tarifs exacts pour un réparateur en déplacement uniquement", () => {
+    const features = applyCustomerReceptionPolicy(
+      {
+        booking: true,
+        walkIn: true,
+        homeService: false,
+        quoteRequest: true,
+        callbackRequest: true,
+        priceEstimate: true,
+      },
+      "mobile",
+    );
+    const mobileCatalog = buildWidgetCatalog(priceBook, {
+      market: "FR",
+      priceRules: features.priceEstimate ? EXACT_ALL : [],
+    });
+    const battery = mobileCatalog.find((entry) => entry.model === "iPhone 13" && entry.issue === "Batterie");
+
+    expect(isHomeServiceOnly(features)).toBe(true);
+    expect(battery?.price).toEqual({ mode: "exact", amount: 69, currency: "EUR" });
   });
 });
 
