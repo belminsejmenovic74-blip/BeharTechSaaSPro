@@ -23,6 +23,7 @@ describe("publication widget sans migration de stock optionnelle", () => {
   it("reconnaît uniquement une fonction ou une table absente", () => {
     expect(isMissingWidgetStockSchema({ code: "PGRST205" })).toBe(true);
     expect(isMissingWidgetStockSchema({ code: "42P01" })).toBe(true);
+    expect(isMissingWidgetStockSchema({ code: "42703" })).toBe(true);
     expect(isMissingWidgetStockSchema({ code: "23505" })).toBe(false);
     expect(isMissingWidgetStockSchema(new Error("réseau indisponible"))).toBe(false);
   });

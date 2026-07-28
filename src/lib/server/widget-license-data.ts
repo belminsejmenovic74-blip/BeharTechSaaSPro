@@ -117,7 +117,7 @@ function stableUuid(input: unknown): string {
 export function isMissingWidgetStockSchema(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   const code = "code" in error ? String(error.code || "") : "";
-  return code === "PGRST202" || code === "PGRST205" || code === "42P01" || code === "42883";
+  return code === "PGRST202" || code === "PGRST205" || code === "42P01" || code === "42703" || code === "42883";
 }
 
 /** Relie les prestations publiées au stock normalisé du même atelier/licence. */
@@ -144,7 +144,10 @@ export async function syncWidgetStockLinks(
         .eq("workshop_id", tenantId)
         .in("id", databaseIds)
     : { data: [], error: null };
-  if (stockError) throw stockError;
+  if (stockError) {
+    if (isMissingWidgetStockSchema(stockError)) return;
+    throw stockError;
+  }
   const byId = new Map((stocks || []).map((row) => [row.id, row]));
   const rows = entries.flatMap((entry) => {
     const publicId = typeof entry.publicId === "string" ? entry.publicId : "";
