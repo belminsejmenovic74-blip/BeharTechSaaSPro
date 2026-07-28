@@ -786,15 +786,17 @@ function OverviewTab({
   onNotes: (target?: "internal" | "client") => void;
 }>) {
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,300px)_minmax(0,1fr)_300px]">
-      <ActivityCard repair={repair} />
-      <div className="space-y-4">
-        <DiagnosticNotesCard repair={repair} />
-        <RepairPartsTraceabilitySection repair={repair} />
-        <DocumentsLiesCard documents={documents} invoices={invoices} quotes={quotes} />
-        <SuiviClientCard repair={repair} />
+    <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid min-w-0 gap-4 min-[1800px]:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
+        <ActivityCard repair={repair} />
+        <div className="min-w-0 space-y-4">
+          <DiagnosticNotesCard repair={repair} />
+          <RepairPartsTraceabilitySection repair={repair} />
+          <DocumentsLiesCard documents={documents} invoices={invoices} quotes={quotes} />
+          <SuiviClientCard repair={repair} />
+        </div>
       </div>
-      <div className="space-y-4">
+      <div className="min-w-0 space-y-4 xl:sticky xl:top-20 xl:self-start">
         <ActionsCard
           onAdvance={onAdvance}
           onClose={onClose}
@@ -1133,7 +1135,7 @@ function RepairPartsTraceabilitySection({ compact = false, repair }: Readonly<{ 
                   </span>
                 </div>
 
-                <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                   <TraceMetric label="Quantité utilisée" value={`×${row.part.quantity}`} />
                   {canViewPurchasePrice && (
                     <TraceMetric label="Prix d'achat" value={formatEuro(row.part.purchasePrice || 0)} />
@@ -1167,7 +1169,7 @@ function RepairPartsTraceabilitySection({ compact = false, repair }: Readonly<{ 
                   </SecondaryButton>
                 </div>
 
-                <ol className="grid gap-2 lg:grid-cols-5">
+                <ol className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3 min-[1800px]:grid-cols-5">
                   {timeline.map((step, index) => (
                     <li
                       className="rounded-[12px] border border-[#E4E7EC] bg-white p-3"
@@ -1184,7 +1186,7 @@ function RepairPartsTraceabilitySection({ compact = false, repair }: Readonly<{ 
                         </span>
                         <p className="font-semibold text-[#101828] text-xs">{step.label}</p>
                       </div>
-                      <p className="mt-2 line-clamp-2 text-[#667085] text-[11px]">{step.meta}</p>
+                      <p className="mt-2 break-words text-[#667085] text-[11px]">{step.meta}</p>
                       <p className="mt-1 font-mono text-[#98A2B3] text-[10px]">{traceDate(step.date)}</p>
                     </li>
                   ))}
@@ -1200,9 +1202,9 @@ function RepairPartsTraceabilitySection({ compact = false, repair }: Readonly<{ 
 
 function TraceMetric({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
-    <div className="rounded-[10px] border border-[#E4E7EC] bg-white px-3 py-2">
+    <div className="min-w-0 rounded-[10px] border border-[#E4E7EC] bg-white px-3 py-2">
       <p className="text-[#667085] text-[11px]">{label}</p>
-      <p className="mt-0.5 truncate font-semibold text-[#101828] text-xs">{value}</p>
+      <p className="mt-0.5 break-words font-semibold text-[#101828] text-xs leading-snug">{value}</p>
     </div>
   );
 }
@@ -1506,9 +1508,9 @@ function InfosDossierCard({
       <h3 className="font-semibold text-[#101828]">Informations dossier</h3>
       <dl className="mt-3 divide-y divide-[#FFFFFF]">
         {rows.map(([label, value]) => (
-          <div className="flex items-center justify-between gap-3 py-2" key={label}>
-            <dt className="text-[#667085] text-xs">{label}</dt>
-            <dd className="truncate text-right font-medium text-[#101828] text-sm">{value}</dd>
+          <div className="flex items-start justify-between gap-3 py-2" key={label}>
+            <dt className="shrink-0 text-[#667085] text-xs">{label}</dt>
+            <dd className="min-w-0 break-words text-right font-medium text-[#101828] text-sm">{value}</dd>
           </div>
         ))}
       </dl>
