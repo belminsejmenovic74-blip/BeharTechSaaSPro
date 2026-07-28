@@ -95,6 +95,18 @@ export type PaymentMethod =
   | "Carte"
   | "En ligne";
 export type SettlementStatus = "Non réglé" | "Partiellement réglé" | "Réglé" | "Offert / Garantie / SAV";
+export type ExternalSettlementDeclaration = {
+  status: SettlementStatus;
+  amount: number;
+  date: string;
+  method?: PaymentMethod;
+  customMethod?: string;
+  externalReference?: string;
+  note?: string;
+  recordedOutsideBeharTechPro: true;
+  recordedAt: string;
+  recordedBy: string;
+};
 export type AppointmentStatus =
   | "Planifié"
   | "En attente"
@@ -517,6 +529,11 @@ export type Repair = {
   counterTasks?: Array<{ id: string; label: string; fait: boolean }>;
   counterPieces?: Array<{ id: string; nom: string; prix: number }>;
   counterNotifiedAt?: string;
+  /**
+   * Déclaration métier faite lors de la restitution. Behar Tech Pro ne traite
+   * pas l'encaissement : il mémorise seulement le montant déclaré par l'atelier.
+   */
+  externalSettlement?: ExternalSettlementDeclaration;
   repairSaleLines?: RepairSaleLine[];
   intakeCondition?: RepairIntakeCondition;
   publicAccess?: PublicAccess;
@@ -1496,6 +1513,20 @@ export type StoreState = {
       confirmExternal: boolean;
     },
   ) => string;
+  recordExternalRepairSettlement: (
+    repairId: string,
+    input: {
+      status: SettlementStatus;
+      amount: number;
+      date: string;
+      method?: PaymentMethod;
+      customMethod?: string;
+      externalReference?: string;
+      note?: string;
+      confirmExternal: boolean;
+      markReturned?: boolean;
+    },
+  ) => boolean;
   closeDossierWithSettlement: (
     repairId: string,
     input: {
@@ -3531,6 +3562,26 @@ const normalizeRepair = (
           .filter((entry) => entry.nom)
       : undefined,
     counterNotifiedAt: normalizeText(repair.counterNotifiedAt) || undefined,
+    externalSettlement: repair.externalSettlement
+      ? {
+          status: (["Non réglé", "Partiellement réglé", "Réglé", "Offert / Garantie / SAV"].includes(
+            String(repair.externalSettlement.status),
+          )
+            ? repair.externalSettlement.status
+            : "Non réglé") as SettlementStatus,
+          amount: clampMoney(repair.externalSettlement.amount),
+          date: normalizeText(repair.externalSettlement.date, getNowIso().slice(0, 10)),
+          method: repair.externalSettlement.method
+            ? normalizePaymentMethod(repair.externalSettlement.method)
+            : undefined,
+          customMethod: normalizeText(repair.externalSettlement.customMethod) || undefined,
+          externalReference: normalizeText(repair.externalSettlement.externalReference) || undefined,
+          note: normalizeText(repair.externalSettlement.note) || undefined,
+          recordedOutsideBeharTechPro: true,
+          recordedAt: normalizeText(repair.externalSettlement.recordedAt, getNowIso()),
+          recordedBy: normalizeText(repair.externalSettlement.recordedBy, "Atelier"),
+        }
+      : undefined,
     repairSaleLines,
     intakeCondition: normalizeIntakeCondition(repair.intakeCondition),
     // Backfill : tout dossier existant reçoit un lien public sécurisé s'il n'en a pas.
@@ -7897,6 +7948,76 @@ export const useBeharStore = create<StoreState>()(
         if (!invoiceId) return "";
 
         return state.markInvoicePaid(invoiceId, normalizedMethod, note);
+      },
+      recordExternalRepairSettlement: (repairId, input) => {
+        if (!get().requirePermission("canChangeRepairStatus", "Rendre le téléphone au client")) return false;
+
+        const state = get();
+        const repair = state.repairs.find((entry) => entry.id === repairId);
+        if (!repair) return false;
+
+        const isPaid = input.status === "Réglé" || input.status === "Partiellement réglé";
+        if (isPaid && (!input.confirmExternal || !input.method)) return false;
+
+        const actor = state.currentUser ?? defaultCurrentUser;
+        const recordedAt = getNowIso();
+        const amount = isPaid ? clampMoney(input.amount) : 0;
+        if (isPaid && amount <= 0) return false;
+
+        const declaration: ExternalSettlementDeclaration = {
+          status: input.status,
+          amount,
+          date: normalizeText(input.date, recordedAt.slice(0, 10)),
+          method: isPaid ? (normalizeSelectedPaymentMethod(input.method) ?? input.method) : undefined,
+          customMethod: normalizeText(input.customMethod) || undefined,
+          externalReference: normalizeText(input.externalReference) || undefined,
+          note: normalizeText(input.note) || undefined,
+          recordedOutsideBeharTechPro: true,
+          recordedAt,
+          recordedBy: actor.name,
+        };
+        const markReturned = input.markReturned !== false;
+        const historyEvent = isPaid
+          ? `Téléphone rendu — ${formatEuro(amount)} de CA déclaré hors Behar Tech Pro`
+          : input.status === "Offert / Garantie / SAV"
+            ? "Téléphone rendu — offert / garantie / SAV, aucun CA déclaré"
+            : "Téléphone rendu — aucun CA déclaré";
+
+        set((current) => ({
+          repairs: current.repairs.map((entry) =>
+            entry.id === repairId
+              ? {
+                  ...entry,
+                  status: markReturned ? ("Rendu" as RepairStatus) : entry.status,
+                  closedAt: markReturned ? recordedAt : entry.closedAt,
+                  externalSettlement: declaration,
+                  history: [...entry.history, historyEvent],
+                  ...updateActorFields(actor),
+                }
+              : entry,
+          ),
+        }));
+
+        get().addAuditLog({
+          action: "repair.external_turnover_declared",
+          targetType: "repair",
+          targetId: repairId,
+          message: `${actor.name} a rendu ${repair.number} — CA externe déclaré : ${formatEuro(amount)}`,
+          metadata: {
+            status: input.status,
+            amount,
+            method: declaration.method,
+            recordedOutsideBeharTechPro: true,
+          },
+        });
+        get().addNotification({
+          type: "success",
+          title: markReturned ? "Téléphone rendu" : "CA externe déclaré",
+          message: `${repair.number} — ${isPaid ? formatEuro(amount) : input.status} · hors Behar Tech Pro`,
+          targetType: "repair",
+          targetId: repairId,
+        });
+        return true;
       },
       recordRepairSettlement: (repairId, input) => {
         if (legacyPaymentWriteBlocked()) return "";

@@ -49,6 +49,25 @@ describe("payment data boundary", () => {
     expect(containsForbiddenPaymentProperty(persistedBusinessData)).toBe(false);
   });
 
+  it("persists the explicit outside-Behar turnover declaration", () => {
+    const declaration = {
+      status: "Réglé",
+      amount: 149,
+      date: "2026-07-28",
+      method: "Carte bancaire",
+      recordedOutsideBeharTechPro: true,
+      recordedAt: "2026-07-28T12:00:00.000Z",
+      recordedBy: "Réparateur",
+    };
+    const clean = sanitizePaymentDataForPersistence({
+      repairs: [{ id: "repair", externalSettlement: declaration }],
+    });
+
+    expect(clean.repairs).toEqual([{ id: "repair", externalSettlement: declaration }]);
+    expect((clean as Record<string, unknown>).payments).toEqual([]);
+    expect(containsForbiddenPaymentProperty({ repairs: clean.repairs })).toBe(false);
+  });
+
   it("keeps every historical payment mutator permanently read-only", () => {
     const before = useBeharStore.getState();
     const paymentCount = before.payments.length;

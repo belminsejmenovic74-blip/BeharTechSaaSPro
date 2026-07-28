@@ -42,4 +42,40 @@ describe("conversation du lien public de suivi", () => {
     ]);
     expect(dto?.messages.every((message) => !Number.isNaN(new Date(message.createdAt).getTime()))).toBe(true);
   });
+
+  it("expose la facture liée dans le suivi public du client", () => {
+    const store = useBeharStore.getState();
+    const customerId = store.addCustomer({ name: "Client facture publique" });
+    const repairId = store.addRepair({
+      customerId,
+      device: "Samsung Galaxy S24",
+      issue: "Connecteur de charge",
+      status: "Prêt",
+      amount: 129,
+      notes: "",
+      droppedAt: "2026-07-28T10:00:00.000Z",
+      technician: "Atelier",
+    });
+    const invoiceId = useBeharStore.getState().createInvoiceFromRepair(repairId);
+    const access = useBeharStore.getState().ensureRepairPublicAccess(repairId);
+    const invoice = useBeharStore.getState().invoices.find((entry) => entry.id === invoiceId);
+
+    const dto = buildPublicRepairDtoFromLocalState(useBeharStore.getState(), access?.token || "");
+
+    expect(invoice).toBeDefined();
+    expect(dto?.invoiceLinks).toContainEqual(
+      expect.objectContaining({
+        number: invoice?.number,
+        totalTtc: 129,
+        previewUrl: `/facture/${invoiceId}`,
+      }),
+    );
+    expect(dto?.documents).toContainEqual(
+      expect.objectContaining({
+        type: "invoice",
+        number: invoice?.number,
+        previewUrl: `/facture/${invoiceId}`,
+      }),
+    );
+  });
 });

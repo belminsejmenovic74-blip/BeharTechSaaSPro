@@ -11,6 +11,7 @@ import {
   CalendarPlus,
   Camera,
   Check,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
@@ -3520,7 +3521,7 @@ function CounterFollowScreen({
               repair.status === "Prêt" ? "bg-[#2A9D8F]" : "bg-[#FFFFFF]",
             )}
           >
-            Créer une demande de paiement <ChevronRight className="ml-2 inline size-5" />
+            Téléphone rendu / règlement <ChevronRight className="ml-2 inline size-5" />
           </button>
         </aside>
       </div>
@@ -5677,8 +5678,8 @@ function CounterRepairDetailScreen({
 
   const openPaymentRequest = () => {
     const invoiceId = invoice?.id || store.createInvoiceFromRepair(repair.id);
-    if (!invoiceId) return toast.error("Finalisez une facture avant de créer la demande.");
-    settlement.open(repair.id);
+    if (!invoiceId) return toast.error("Finalisez une facture avant d’indiquer le règlement.");
+    settlement.open(repair.id, { closeAfterSubmit: true });
   };
   // Étape suivante du dossier atelier (statut), pensée pour le comptoir tactile.
   const COUNTER_NEXT_STATUS: Partial<Record<Repair["status"], { next: Repair["status"]; label: string }>> = {
@@ -5926,6 +5927,15 @@ function CounterRepairDetailScreen({
           {nextStep.label} <ChevronRight className="size-5" />
         </button>
       ) : null}
+      {repair.status === "Prêt" ? (
+        <button
+          type="button"
+          onClick={() => settlement.open(repair.id, { closeAfterSubmit: true })}
+          className="mt-5 flex h-[64px] w-full items-center justify-center gap-2 rounded-[16px] bg-[#2A9D8F] font-black text-[17px] text-white shadow-sm active:scale-[0.99]"
+        >
+          <CheckCircle2 className="size-5" /> Téléphone rendu · indiquer le règlement
+        </button>
+      ) : null}
       <section className="mt-5 rounded-[18px] border border-[#E4E7EC] bg-white p-4">
         <h2 className="font-black">Ajouter une note interne</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_190px]">
@@ -6003,7 +6013,7 @@ function CounterRepairDetailScreen({
                 }}
                 className="flex h-12 w-full items-center gap-3 rounded-[12px] px-3 font-bold hover:bg-[#FFFFFF]"
               >
-                <Receipt className="size-4" /> Créer une demande de paiement
+                <Receipt className="size-4" /> Téléphone rendu / règlement
               </button>
               <button
                 type="button"
@@ -6932,10 +6942,10 @@ function CounterCheckoutScreen({
           <div className="grid gap-3 sm:grid-cols-3">
             <button
               className="h-[56px] rounded-[14px] bg-[#2A9D8F] font-bold text-white"
-              onClick={() => settlement.open(repair.id)}
+              onClick={() => settlement.open(repair.id, { closeAfterSubmit: true })}
               type="button"
             >
-              Demander le paiement
+              Téléphone rendu · indiquer le règlement
             </button>
             <button
               className="h-[56px] rounded-[14px] border border-[#E4E7EC] bg-white font-bold"

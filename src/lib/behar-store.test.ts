@@ -616,6 +616,43 @@ describe("Frontière de paiement (encaissements verrouillés)", () => {
     expect(store().payments.some((payment) => payment.repairId === repairId)).toBe(false);
   });
 
+  it("déclare le règlement externe, rend le téléphone et conserve payments vide", () => {
+    const customerId = store().addCustomer({ name: "Client Restitution" });
+    const repairId = store().addRepair({
+      customerId,
+      device: "iPhone 15",
+      issue: "Écran",
+      status: "Prêt",
+      amount: 149,
+      notes: "",
+      droppedAt: nowIso(),
+      technician: "Tech",
+    });
+
+    const ok = store().recordExternalRepairSettlement(repairId, {
+      status: "Réglé",
+      amount: 149,
+      date: "2026-07-28",
+      method: "Carte bancaire",
+      externalReference: "TPE-4242",
+      confirmExternal: true,
+      markReturned: true,
+    });
+
+    const repair = store().repairs.find((entry) => entry.id === repairId);
+    expect(ok).toBe(true);
+    expect(repair?.status).toBe("Rendu");
+    expect(repair?.externalSettlement).toMatchObject({
+      status: "Réglé",
+      amount: 149,
+      date: "2026-07-28",
+      method: "Carte bancaire",
+      externalReference: "TPE-4242",
+      recordedOutsideBeharTechPro: true,
+    });
+    expect(store().payments.some((payment) => payment.repairId === repairId)).toBe(false);
+  });
+
   it("markRepairAsPaid est verrouillé et ne marque plus le dossier réglé", () => {
     const customerId = store().addCustomer({ name: "Client À finaliser" });
     const repairId = store().addRepair({

@@ -372,7 +372,13 @@ export function PublicTrackingView({
       ...data.documents.map((doc) => ({
         key: `${doc.type}:${doc.number || doc.title}`,
         type: doc.type,
-        title: doc.title,
+        title:
+          doc.type === "invoice"
+            ? (() => {
+                const invoice = data.invoiceLinks.find((entry) => entry.number === doc.number);
+                return invoice ? `${doc.title} - ${formatMoney(invoice.totalTtc, data.workshop.currency)}` : doc.title;
+              })()
+            : doc.title,
         status: doc.status,
         number: doc.number,
         previewUrl: doc.previewUrl,

@@ -63,6 +63,12 @@ export function DashboardWorkspace() {
     (total, invoice) => total + invoice.lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0),
     0,
   );
+  const collectedAmount = store.repairs.reduce((total, repair) => {
+    const declaration = repair.externalSettlement;
+    return declaration && ["Réglé", "Partiellement réglé"].includes(declaration.status)
+      ? total + declaration.amount
+      : total;
+  }, 0);
   const today = displayDate(new Date());
   const todayIsoLocal = (() => {
     const d = new Date();
@@ -125,6 +131,12 @@ export function DashboardWorkspace() {
       value: String(todayInvoices.length),
       href: "/dashboard/factures",
       icon: FileText,
+    },
+    {
+      label: "CA encaissé",
+      value: formatEuro(collectedAmount),
+      href: "/dashboard/factures",
+      icon: TrendingUp,
     },
     {
       label: "CA facturé",
@@ -461,7 +473,7 @@ export function DashboardWorkspace() {
 
       <Panel className="p-4">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-semibold text-[#101828] text-[17px] tracking-tight">Factures émises par jour</h2>
+          <h2 className="font-semibold text-[#101828] text-[17px] tracking-tight">CA encaissé déclaré par jour</h2>
           <span className="text-[#667085] text-[13px]">30 derniers jours</span>
         </div>
         <RevenueChart />
@@ -531,6 +543,7 @@ const DASHBOARD_TESTIDS: Record<string, string> = {
   "Devis en attente": "dashboard-pending-quotes-card",
   Devis: "dashboard-pending-quotes-card",
   "CA facturé": "dashboard-billed-revenue-card",
+  "CA encaissé": "dashboard-collected-revenue-card",
   "RDV du jour": "dashboard-today-appointments-card",
   "Stock bas": "dashboard-low-stock-card",
 };

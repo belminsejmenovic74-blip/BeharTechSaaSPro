@@ -1293,7 +1293,7 @@ export function AtelierWorkspace() {
       case "Prêt":
         return [
           { label: "Envoyer message client", onClick: () => sendClientMessage(READY_CLIENT_MESSAGE) },
-          { label: "Clôturer / règlement", onClick: markDelivered },
+          { label: "Téléphone rendu / règlement", onClick: markDelivered },
           { label: "Rapport / documents", onClick: () => setView("documents") },
           { label: "Créer SAV", onClick: () => setView("sav") },
         ];

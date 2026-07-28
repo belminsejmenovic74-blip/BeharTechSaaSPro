@@ -65,9 +65,10 @@ function DeltaBadge({ value, compare }: Readonly<{ value: number | null; compare
   );
 }
 
-/** Indicateurs calculés uniquement depuis les factures émises et les avoirs. */
+/** CA facturé et CA encaissé déclaré hors Behar Tech Pro. */
 export function FinanceOverview() {
   const invoices = useBeharStore((state) => state.invoices);
+  const repairs = useBeharStore((state) => state.repairs);
   const workshopInfo = useBeharStore((state) => state.workshopInfo);
   const [period, setPeriod] = useState<PeriodKey>("week");
   const config = PERIODS.find((entry) => entry.key === period) ?? PERIODS[1];
@@ -83,6 +84,8 @@ export function FinanceOverview() {
     const sparkStart = isoDaysAgo(sparkDays - 1);
     let billed = 0;
     let previousBilled = 0;
+    let collected = 0;
+    let previousCollected = 0;
     let vat = 0;
     let invoiceCount = 0;
     let creditNoteCount = 0;
@@ -106,15 +109,31 @@ export function FinanceOverview() {
         if (index >= 0 && index < sparkDays) daily[index] += total;
       }
     }
-    return { billed, previousBilled, vat, invoiceCount, creditNoteCount, daily };
-  }, [config.days, invoices, workshopInfo]);
+    for (const repair of repairs) {
+      const declaration = repair.externalSettlement;
+      if (!declaration || !["Réglé", "Partiellement réglé"].includes(declaration.status)) continue;
+      const iso = documentDateToIso(declaration.date || declaration.recordedAt);
+      if (inWindow(iso, start)) collected += declaration.amount;
+      else if (inWindow(iso, previousStart, start)) previousCollected += declaration.amount;
+    }
+    return {
+      billed,
+      previousBilled,
+      collected,
+      previousCollected,
+      vat,
+      invoiceCount,
+      creditNoteCount,
+      daily,
+    };
+  }, [config.days, invoices, repairs, workshopInfo]);
 
   return (
     <section className="space-y-4" data-testid="dashboard-finance-overview">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-[#667085] text-[13px]">
-            CA facturé ·{" "}
+            CA encaissé déclaré ·{" "}
             {config.label === "Jour"
               ? "aujourd'hui"
               : config.label === "Semaine"
@@ -123,9 +142,9 @@ export function FinanceOverview() {
           </p>
           <div className="mt-0.5 flex items-baseline gap-3">
             <span className="font-semibold text-[#101828] text-[32px] leading-none tracking-tight tabular-nums">
-              {formatEuro(stats.billed)}
+              {formatEuro(stats.collected)}
             </span>
-            <DeltaBadge compare={config.compare} value={delta(stats.billed, stats.previousBilled)} />
+            <DeltaBadge compare={config.compare} value={delta(stats.collected, stats.previousCollected)} />
           </div>
         </div>
         <div className="flex gap-1 rounded-[10px] border border-[#E4E7EC] bg-white p-1">
@@ -147,6 +166,12 @@ export function FinanceOverview() {
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <FinanceCard
+          helper="déclaré hors Behar Tech Pro"
+          label="CA encaissé"
+          value={formatEuro(stats.collected)}
+          href="/dashboard/factures"
+        />
+        <FinanceCard
           helper="net des avoirs"
           label="CA facturé TTC"
           value={formatEuro(stats.billed)}
@@ -162,12 +187,6 @@ export function FinanceOverview() {
           helper="calculée sur les factures"
           label="TVA facturée"
           value={formatEuro(stats.vat)}
-          href="/dashboard/factures"
-        />
-        <FinanceCard
-          helper="documents correctifs"
-          label="Avoirs émis"
-          value={String(stats.creditNoteCount)}
           href="/dashboard/factures"
         />
       </div>

@@ -101,7 +101,9 @@ const seed = {
       repairId: "rep_doc_0",
       status: "Envoyée",
       date: "2026-06-26",
-      lines: [{ id: "line_doc_0", description: "Remplacement écran iPhone 13", quantity: 1, unitPrice: 149, total: 149 }],
+      lines: [
+        { id: "line_doc_0", description: "Remplacement écran iPhone 13", quantity: 1, unitPrice: 149, total: 149 },
+      ],
       sourceType: "repair",
       sourceNumber: "REP-2026-DOC1",
       paymentMethod: "Non réglée",
@@ -137,7 +139,10 @@ const seed = {
   ],
 };
 
-async function injectSeed(page: Page, options: { brokenIntakePdf?: boolean; repairStatus?: string; paymentStatus?: string } = {}) {
+async function injectSeed(
+  page: Page,
+  options: { brokenIntakePdf?: boolean; repairStatus?: string; paymentStatus?: string } = {},
+) {
   await page.evaluate(
     ({ key, seedValue, brokenIntakePdf, repairStatus, paymentStatus }) => {
       const raw = window.localStorage.getItem(key);
@@ -227,7 +232,12 @@ function dossierDocumentCard(page: Page, title: string | RegExp) {
 async function openDossierTab(page: Page, name: string) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await page.goto("/dashboard/dossiers/_/?id=rep_doc_0", { waitUntil: "domcontentloaded" });
-    const found = await page.locator("body").getByText("REP-2026-DOC1").first().isVisible({ timeout: 5_000 }).catch(() => false);
+    const found = await page
+      .locator("body")
+      .getByText("REP-2026-DOC1")
+      .first()
+      .isVisible({ timeout: 5_000 })
+      .catch(() => false);
     if (!found) {
       await injectSeed(page);
       continue;
@@ -243,7 +253,10 @@ async function gotoPublicTracking(page: Page, status: string) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await injectSeed(page, { repairStatus: status });
     await page.goto("/suivi/rp_doc_token_0", { waitUntil: "domcontentloaded" });
-    const unavailable = await page.getByText("Lien de suivi indisponible").isVisible({ timeout: 1_500 }).catch(() => false);
+    const unavailable = await page
+      .getByText("Lien de suivi indisponible")
+      .isVisible({ timeout: 1_500 })
+      .catch(() => false);
     if (!unavailable) return;
   }
 }
@@ -268,8 +281,12 @@ test.describe("Documents, impression et règlement", () => {
       await expect(page.locator("body")).toContainText(entry.badge);
       await expect(page.locator("body")).toContainText(entry.active);
       if (entry.status === "Rendu" || entry.status === "Clôturé") {
-        await expect(page.locator("body")).toContainText("Votre appareil a été remis au client. Merci pour votre confiance.");
-        await expect(page.locator("body")).not.toContainText("Votre appareil est bien arrivé à l'atelier. Le diagnostic va démarrer.");
+        await expect(page.locator("body")).toContainText(
+          "Votre appareil a été remis au client. Merci pour votre confiance.",
+        );
+        await expect(page.locator("body")).not.toContainText(
+          "Votre appareil est bien arrivé à l'atelier. Le diagnostic va démarrer.",
+        );
       }
       await context.close();
     });
@@ -317,10 +334,14 @@ test.describe("Documents, impression et règlement", () => {
     await injectSeed(page);
     await openDossierDocuments(page);
 
-    await expectPdfDownload(page, () => dossierDocumentCard(page, "Facture - FAC-2026-DOC1").getByRole("button", { name: "Télécharger" }).click(), {
-      contains: /facture-FAC-2026-DOC1\.pdf/i,
-      notContains: new RegExp(`${LEGACY_PAYMENT_FILENAME_PATTERN.source}|confirmation-reglement`, "i"),
-    });
+    await expectPdfDownload(
+      page,
+      () => dossierDocumentCard(page, "Facture - FAC-2026-DOC1").getByRole("button", { name: "Télécharger" }).click(),
+      {
+        contains: /facture-FAC-2026-DOC1\.pdf/i,
+        notContains: new RegExp(`${LEGACY_PAYMENT_FILENAME_PATTERN.source}|confirmation-reglement`, "i"),
+      },
+    );
     await context.close();
   });
 
@@ -336,8 +357,12 @@ test.describe("Documents, impression et règlement", () => {
     await page.getByRole("button", { name: "Enregistrer le règlement" }).click();
 
     const state = await readStoreState(page);
-    const invoiceDocument = state.documents.find((entry: any) => entry.type === "invoice" && entry.invoiceId === "invoice_doc_0");
-    const paymentDocument = state.documents.find((entry: any) => entry.type === "payment" && entry.invoiceId === "invoice_doc_0");
+    const invoiceDocument = state.documents.find(
+      (entry: any) => entry.type === "invoice" && entry.invoiceId === "invoice_doc_0",
+    );
+    const paymentDocument = state.documents.find(
+      (entry: any) => entry.type === "payment" && entry.invoiceId === "invoice_doc_0",
+    );
     expect(invoiceDocument.id).not.toBe(paymentDocument.id);
 
     await page.goto(`/print/document/_/?doc=${invoiceDocument.id}&public=1`, { waitUntil: "domcontentloaded" });
@@ -355,14 +380,25 @@ test.describe("Documents, impression et règlement", () => {
     await expect(page.locator("body")).toContainText("SUMUP-4242");
 
     await openDossierDocuments(page);
-    await expectPdfDownload(page, () => dossierDocumentCard(page, "Facture - FAC-2026-DOC1").getByRole("button", { name: "Télécharger" }).click(), {
-      contains: /facture-FAC-2026-DOC1\.pdf/i,
-      notContains: new RegExp(`${LEGACY_PAYMENT_FILENAME_PATTERN.source}|confirmation-reglement`, "i"),
-    });
-    await expectPdfDownload(page, () => dossierDocumentCard(page, /Confirmation de règlement - CONF-/i).getByRole("button", { name: "Télécharger" }).click(), {
-      contains: /confirmation-reglement-CONF-\d{4}\.pdf/i,
-      notContains: new RegExp(`${LEGACY_PAYMENT_FILENAME_PATTERN.source}|FAC-2026-DOC1`, "i"),
-    });
+    await expectPdfDownload(
+      page,
+      () => dossierDocumentCard(page, "Facture - FAC-2026-DOC1").getByRole("button", { name: "Télécharger" }).click(),
+      {
+        contains: /facture-FAC-2026-DOC1\.pdf/i,
+        notContains: new RegExp(`${LEGACY_PAYMENT_FILENAME_PATTERN.source}|confirmation-reglement`, "i"),
+      },
+    );
+    await expectPdfDownload(
+      page,
+      () =>
+        dossierDocumentCard(page, /Confirmation de règlement - CONF-/i)
+          .getByRole("button", { name: "Télécharger" })
+          .click(),
+      {
+        contains: /confirmation-reglement-CONF-\d{4}\.pdf/i,
+        notContains: new RegExp(`${LEGACY_PAYMENT_FILENAME_PATTERN.source}|FAC-2026-DOC1`, "i"),
+      },
+    );
     await context.close();
   });
 
@@ -373,6 +409,17 @@ test.describe("Documents, impression et règlement", () => {
     await expect(page.getByText("Suivi de votre réparation")).toBeVisible();
 
     await expectPdfDownload(page, () => page.getByLabel("Télécharger le document").first().click());
+    await context.close();
+  });
+
+  test("portail client: la facture liée est visible et consultable", async ({ browser }) => {
+    const { page, context } = await openPoste(browser, { name: "docs-public-invoice" });
+    await gotoPublicTracking(page, "Prêt");
+
+    const invoiceRow = page.getByRole("listitem").filter({ hasText: "Facture FAC-2026-DOC1" });
+    await expect(invoiceRow).toContainText("149,00");
+    await expect(invoiceRow.getByRole("button", { name: "Ouvrir" })).toBeVisible();
+    await expect(invoiceRow.getByLabel("Télécharger le document")).toBeVisible();
     await context.close();
   });
 
@@ -426,41 +473,35 @@ test.describe("Documents, impression et règlement", () => {
     await context.close();
   });
 
-  test("clôture de dossier: modal de règlement obligatoire", async ({ browser }) => {
-    const { page, context } = await openPoste(browser, { name: "docs-closure-flow" });
+  test("atelier: téléphone rendu, règlement hors Behar et CA encaissé", async ({ browser }) => {
+    const { page, context } = await openPoste(browser, { name: "atelier-return-turnover" });
     await injectSeed(page);
-    await page.goto("/dashboard/dossiers/_/?id=rep_doc_0", { waitUntil: "domcontentloaded" });
-    
-    // Rendre l'appareil
-    await page.getByRole("button", { name: "Rendre l'appareil" }).first().click();
-    
-    // Le modal "Clôture & règlement" s'affiche
-    await expect(page.getByRole("dialog", { name: "Clôture & règlement" })).toBeVisible();
-    
-    // Tenter de soumettre sans moyen de paiement (bouton désactivé)
-    const submitBtn = page.getByRole("button", { name: "Clôturer et marquer réglé" });
-    await expect(submitBtn).toBeDisabled();
-    
-    // Choisir un moyen de paiement
+    await page.goto("/dashboard/atelier", { waitUntil: "domcontentloaded" });
+    await page
+      .getByRole("button", { name: /iPhone 13/i })
+      .first()
+      .click();
+    await page.getByRole("button", { name: "Téléphone rendu / règlement" }).click();
+
+    await expect(page.getByText("Téléphone rendu · indiquer le règlement", { exact: true })).toBeVisible();
     await page.getByLabel("Moyen de paiement").selectOption("Carte bancaire");
-    
-    // Toujours désactivé car la case de confirmation externe n'est pas cochée
-    await expect(submitBtn).toBeDisabled();
-    
-    // Cocher la case
-    await page.getByLabel("Je confirme que ce paiement a bien été encaissé hors de l'application Behar Tech Pro.").check();
-    
-    // Soumettre
-    await expect(submitBtn).toBeEnabled();
-    await submitBtn.click();
-    
-    // Le dossier passe en Clôturé / Rendu
-    await expect(page.locator("body")).toContainText("Dossier clôturé avec succès");
+    await page.getByLabel("Je confirme que le règlement a été encaissé hors Behar Tech Pro.").check();
+    await page.getByRole("button", { name: "Enregistrer le règlement" }).click();
+
     const state = await readStoreState(page);
     const repair = state.repairs.find((entry: any) => entry.id === "rep_doc_0");
-    expect(repair.status).toBe("Clôturé");
-    expect(repair.paymentStatus).toBe("Réglé");
-    
+    expect(repair.status).toBe("Rendu");
+    expect(repair.externalSettlement).toMatchObject({
+      status: "Réglé",
+      amount: 149,
+      method: "Carte bancaire",
+      recordedOutsideBeharTechPro: true,
+    });
+    expect(state.payments).toEqual([]);
+
+    await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("dashboard-finance-overview")).toContainText("CA encaissé");
+    await expect(page.getByTestId("dashboard-finance-overview")).toContainText("149");
     await context.close();
   });
 });
