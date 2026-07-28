@@ -152,7 +152,21 @@ export async function getPublicRepair(token: string): Promise<PublicRepairDto | 
     .eq("public_active", true)
     .maybeSingle();
   if (repairError) throw repairError;
-  if (!repair) return null;
+  if (!repair) {
+    // Les ateliers historiques publient déjà un DTO client filtré dans
+    // `public_tracking_repairs`. La synchronisation des tables métier
+    // normalisées a été ajoutée plus tard : refuser ce fallback rendrait leurs
+    // QR existants indisponibles alors que la publication publique est valide.
+    const { data: published, error: publishedError } = await supabase
+      .from("public_tracking_repairs")
+      .select("public_data")
+      .eq("tracking_id", token)
+      .maybeSingle();
+    if (publishedError) throw publishedError;
+    if (!published?.public_data || typeof published.public_data !== "object" || Array.isArray(published.public_data))
+      return null;
+    return published.public_data as unknown as PublicRepairDto;
+  }
 
   const [workshopRes, clientRes, eventsRes, docsRes, messagesRes, quotesRes, invoicesRes] = await Promise.all([
     supabase.from("workshops").select("*").eq("id", repair.workshop_id).single(),
