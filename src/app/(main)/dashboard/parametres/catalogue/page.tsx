@@ -24,7 +24,7 @@ import {
   type PriceBookItem,
   type PriceBookSource,
 } from "@/lib/price-book";
-import { getWorkshopCountryConfig, type WorkshopCountry } from "@/lib/workshop-country";
+import { getWorkshopCountryConfig, normalizeAllowedMarkets, type WorkshopCountry } from "@/lib/workshop-country";
 import {
   getDefaultQualityForCategory,
   getQualitiesForCategory,
@@ -164,6 +164,7 @@ const exportCatalogueCsv = (items: PriceBookItem[]) => {
 export default function CataloguePrixPage() {
   const router = useRouter();
   const defaultCountry = useBeharStore((s) => s.workshopInfo.country);
+  const allowedMarketsSetting = useBeharStore((s) => s.workshopInfo.allowedMarkets);
   const items = useBeharStore((s) => s.priceBookItems);
   const deviceBrands = useBeharStore((s) => s.deviceBrands);
   const deviceModels = useBeharStore((s) => s.deviceModels);
@@ -243,6 +244,16 @@ export default function CataloguePrixPage() {
     Number.parseFloat(form.prixAchatChf.replace(",", ".")) || 0,
   );
   const marketConfig = getWorkshopCountryConfig(marketCountry);
+  // Marchés réellement activés par l'atelier (ex. France seule → pas de bloc CHF).
+  const allowedMarkets = normalizeAllowedMarkets(allowedMarketsSetting, defaultCountry);
+  const showChf = allowedMarkets.includes("CH");
+
+  // Si le marché courant n'est plus autorisé, on retombe sur le premier permis.
+  useEffect(() => {
+    if (!allowedMarkets.includes(marketCountry as "FR" | "CH")) {
+      setMarketCountry(allowedMarkets[0]);
+    }
+  }, [allowedMarkets, marketCountry]);
 
   const openCreate = () => {
     setForm(emptyForm);
@@ -594,20 +605,22 @@ export default function CataloguePrixPage() {
             <span className="text-[#667085] text-sm">
               {filtered.length} ligne{filtered.length > 1 ? "s" : ""} sur {items.length}
             </span>
-            <div className="inline-flex rounded-[12px] border border-[#E4E7EC] bg-white p-1 text-xs">
-              {(["FR", "CH"] as const).map((country) => (
-                <button
-                  key={country}
-                  type="button"
-                  onClick={() => setMarketCountry(country)}
-                  className={`rounded-[9px] px-3 py-1 font-semibold transition ${
-                    marketCountry === country ? "bg-[#FFFFFF] text-[#167B70]" : "text-[#667085]"
-                  }`}
-                >
-                  {country === "CH" ? "Suisse · CHF" : "France · EUR"}
-                </button>
-              ))}
-            </div>
+            {allowedMarkets.length > 1 && (
+              <div className="inline-flex rounded-[12px] border border-[#E4E7EC] bg-white p-1 text-xs">
+                {allowedMarkets.map((country) => (
+                  <button
+                    key={country}
+                    type="button"
+                    onClick={() => setMarketCountry(country)}
+                    className={`rounded-[9px] px-3 py-1 font-semibold transition ${
+                      marketCountry === country ? "bg-[#FFFFFF] text-[#167B70]" : "text-[#667085]"
+                    }`}
+                  >
+                    {country === "CH" ? "Suisse · CHF" : "France · EUR"}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="ml-auto inline-flex rounded-[12px] border border-[#E4E7EC] bg-white p-1 text-xs">
               <button
                 className={`rounded-[9px] px-3 py-1 transition ${view === "tree" ? "bg-[#FFFFFF] text-[#167B70]" : "text-[#667085] hover:text-[#101828]"}`}
@@ -803,6 +816,7 @@ export default function CataloguePrixPage() {
             setForm={setForm}
             totalsFr={formTotalsFr}
             totalsCh={formTotalsCh}
+            showChf={showChf}
             items={items}
             marques={marques}
             onCancel={() => {
@@ -875,6 +889,7 @@ function FormDialog({
   setForm,
   totalsFr,
   totalsCh,
+  showChf,
   items,
   marques,
   onCancel,
@@ -884,6 +899,7 @@ function FormDialog({
   setForm: (next: FormState) => void;
   totalsFr: { prixClientTotal: number; marge: number; margePourcentage: number };
   totalsCh: { prixClientTotal: number; marge: number; margePourcentage: number };
+  showChf: boolean;
   items: PriceBookItem[];
   marques: string[];
   onCancel: () => void;
@@ -1025,43 +1041,47 @@ function FormDialog({
               data-testid="price-modal-client-price"
             />
           </Field>
-          <div className="md:col-span-2 mt-2 rounded-[10px] bg-[#FFFFFF] px-3 py-2 font-semibold text-[#167B70] text-sm">
-            Tarif Suisse · CHF — aucune conversion automatique
-          </div>
-          <Field label="Prix achat (CHF)">
-            <input
-              value={form.prixAchatChf}
-              onChange={(event) => update("prixAchatChf", event.target.value)}
-              className={inputClass}
-              inputMode="decimal"
-            />
-          </Field>
-          <Field label="Prix vente pièce (CHF)">
-            <input
-              value={form.prixVentePieceChf}
-              onChange={(event) => update("prixVentePieceChf", event.target.value)}
-              className={inputClass}
-              inputMode="decimal"
-            />
-          </Field>
-          <Field label="Main-d’œuvre (CHF)">
-            <input
-              value={form.mainOeuvreChf}
-              onChange={(event) => update("mainOeuvreChf", event.target.value)}
-              className={inputClass}
-              inputMode="decimal"
-            />
-          </Field>
-          <Field label="Prix client final (CHF) — optionnel, prioritaire">
-            <input
-              value={form.prixClientFinalChf}
-              onChange={(event) => update("prixClientFinalChf", event.target.value)}
-              className={`${inputClass} border-[#2A9D8F]/40 font-semibold text-[#167B70]`}
-              inputMode="decimal"
-              placeholder={String(totalsCh.prixClientTotal || "")}
-              data-testid="price-modal-client-price-chf"
-            />
-          </Field>
+          {showChf && (
+            <>
+              <div className="md:col-span-2 mt-2 rounded-[10px] bg-[#FFFFFF] px-3 py-2 font-semibold text-[#167B70] text-sm">
+                Tarif Suisse · CHF — aucune conversion automatique
+              </div>
+              <Field label="Prix achat (CHF)">
+                <input
+                  value={form.prixAchatChf}
+                  onChange={(event) => update("prixAchatChf", event.target.value)}
+                  className={inputClass}
+                  inputMode="decimal"
+                />
+              </Field>
+              <Field label="Prix vente pièce (CHF)">
+                <input
+                  value={form.prixVentePieceChf}
+                  onChange={(event) => update("prixVentePieceChf", event.target.value)}
+                  className={inputClass}
+                  inputMode="decimal"
+                />
+              </Field>
+              <Field label="Main-d’œuvre (CHF)">
+                <input
+                  value={form.mainOeuvreChf}
+                  onChange={(event) => update("mainOeuvreChf", event.target.value)}
+                  className={inputClass}
+                  inputMode="decimal"
+                />
+              </Field>
+              <Field label="Prix client final (CHF) — optionnel, prioritaire">
+                <input
+                  value={form.prixClientFinalChf}
+                  onChange={(event) => update("prixClientFinalChf", event.target.value)}
+                  className={`${inputClass} border-[#2A9D8F]/40 font-semibold text-[#167B70]`}
+                  inputMode="decimal"
+                  placeholder={String(totalsCh.prixClientTotal || "")}
+                  data-testid="price-modal-client-price-chf"
+                />
+              </Field>
+            </>
+          )}
           <Field label="Garantie">
             <input
               value={form.garantie}
@@ -1096,15 +1116,17 @@ function FormDialog({
             />
             <Stat label="Marge FR %" value={`${totalsFr.margePourcentage.toFixed(1)} %`} />
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <Stat label="Total CH" value={formatEuroPriceBook(totalsCh.prixClientTotal, "CHF")} highlight />
-            <Stat
-              label="Marge CH"
-              value={formatEuroPriceBook(totalsCh.marge, "CHF")}
-              tone={totalsCh.marge < 0 ? "danger" : "ok"}
-            />
-            <Stat label="Marge CH %" value={`${totalsCh.margePourcentage.toFixed(1)} %`} />
-          </div>
+          {showChf && (
+            <div className="grid grid-cols-3 gap-3">
+              <Stat label="Total CH" value={formatEuroPriceBook(totalsCh.prixClientTotal, "CHF")} highlight />
+              <Stat
+                label="Marge CH"
+                value={formatEuroPriceBook(totalsCh.marge, "CHF")}
+                tone={totalsCh.marge < 0 ? "danger" : "ok"}
+              />
+              <Stat label="Marge CH %" value={`${totalsCh.margePourcentage.toFixed(1)} %`} />
+            </div>
+          )}
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <SecondaryButton onClick={onCancel}>Annuler</SecondaryButton>

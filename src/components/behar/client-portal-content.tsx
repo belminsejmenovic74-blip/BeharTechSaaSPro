@@ -1,12 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 
 import {
   Building2,
   CalendarDays,
+  Check,
+  Copy,
   CreditCard,
   FileText,
+  KeyRound,
   LayoutTemplate,
   Mail,
   MessageSquareText,
@@ -18,6 +22,59 @@ import {
 import AccueilHome from "@/app/(main)/accueil/page";
 import { ExternalPaymentIntegrations } from "@/components/behar/external-payment-integrations";
 import { PageHeader, PortalPage } from "@/components/behar/accueil-ui";
+import { useBeharStore } from "@/lib/behar-store";
+
+function LicenseKeyCard() {
+  const licenseKey = useBeharStore((s) => s.licenseKey);
+  const licensePlan = useBeharStore((s) => s.licensePlan);
+  const licenseActivated = useBeharStore((s) => s.licenseActivated);
+  const [copied, setCopied] = useState(false);
+
+  if (!licenseActivated || !licenseKey) return null;
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(licenseKey);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* presse-papiers indisponible */
+    }
+  };
+
+  return (
+    <div className="mb-5 max-w-3xl rounded-[20px] border border-[#D8EDEA] bg-[#F3FAF9] p-6 sm:p-7">
+      <div className="flex items-center gap-2 text-[#167B70]">
+        <KeyRound className="size-5" />
+        <p className="text-xs font-bold uppercase tracking-[0.14em]">
+          Clé de licence{licensePlan ? ` · ${licensePlan}` : ""}
+        </p>
+      </div>
+      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="break-all font-mono text-lg font-semibold tracking-wide text-[#101828]">{licenseKey}</p>
+        <button
+          type="button"
+          onClick={copy}
+          className="inline-flex h-10 shrink-0 items-center gap-2 rounded-[12px] border border-[#2A9D8F] px-4 text-sm font-semibold text-[#167B70] transition hover:bg-[#EAF7F4]"
+        >
+          {copied ? (
+            <>
+              <Check className="size-4" /> Copiée
+            </>
+          ) : (
+            <>
+              <Copy className="size-4" /> Copier
+            </>
+          )}
+        </button>
+      </div>
+      <p className="mt-3 text-xs leading-5 text-[#5A726D]">
+        Cette clé active votre logiciel Behar Tech Pro. Conservez-la : elle sert à réactiver l’accès sur un nouvel
+        appareil.
+      </p>
+    </div>
+  );
+}
 
 export type ClientSection =
   | "accueil"
@@ -133,6 +190,7 @@ export function ClientPortalContent({ section }: Readonly<{ section: ClientSecti
   return (
     <PortalPage>
       <PageHeader title={content.title} subtitle={content.subtitle} />
+      {section === "offre" ? <LicenseKeyCard /> : null}
       <div className="max-w-3xl rounded-[20px] border border-[#E9E9E6] bg-white p-6 shadow-[0_12px_36px_rgba(16,24,40,0.04)] sm:p-8">
         <span className="grid size-12 place-items-center rounded-[14px] border border-[#E9E9E6] text-[#2A9D8F]">
           <Icon className="size-5" />

@@ -91,11 +91,14 @@ export function IntakeStep({ ctx, submitError: _submitError }: { ctx: StepContex
   const isWalkIn = draft.serviceMode === "walk_in";
   const isHomeService = draft.serviceMode === "home_service";
   const selectedShop = config.shops.find((shop) => shop.id === draft.shopId) ?? config.shops[0];
-  const shopAddress = selectedShop
-    ? [selectedShop.address.address, selectedShop.address.postalCode, selectedShop.address.city]
-        .filter(Boolean)
-        .join(", ")
-    : config.general.address;
+  const shopAddress =
+    (selectedShop
+      ? [selectedShop.address.address, selectedShop.address.postalCode, selectedShop.address.city]
+          .filter(Boolean)
+          .join(", ")
+      : "") ||
+    config.general.address ||
+    "";
 
   return (
     <div className="grid gap-6">

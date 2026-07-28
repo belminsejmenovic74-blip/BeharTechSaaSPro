@@ -1488,6 +1488,12 @@ function WidgetPreview({
   const [previewScale, setPreviewScale] = useState(1);
   const viewport = device === "desktop" ? 1120 : device === "tablet" ? 760 : 390;
   const frameHeight = 680;
+  // L'adresse configurée de la boutique (Paramètres/Boutiques) doit apparaître
+  // dans l'aperçu, pas seulement la phrase générique.
+  const shopStreet = useBeharStore((s) => s.workshopSettings.address);
+  const shopPostalCode = useBeharStore((s) => s.workshopSettings.postalCode);
+  const shopCity = useBeharStore((s) => s.workshopSettings.city);
+  const shopPostalCity = useBeharStore((s) => s.workshopSettings.postalCity);
   const previewConfig = useMemo<WidgetConfig>(
     () => ({
       id: "demo",
@@ -1516,9 +1522,9 @@ function WidgetPreview({
           id: "shop-preview",
           name: config.general.commercialName || "Mon atelier",
           address: {
-            address: config.general.address || "",
-            postalCode: "",
-            city: "",
+            address: shopStreet || config.general.address || "",
+            postalCode: shopPostalCode || "",
+            city: shopCity || shopPostalCity || "",
             country: config.general.currency === "CHF" ? "CH" : "FR",
           },
           timezone: config.general.currency === "CHF" ? "Europe/Zurich" : "Europe/Paris",
@@ -1526,7 +1532,7 @@ function WidgetPreview({
       ],
       sessionToken: "cms-preview",
     }),
-    [config],
+    [config, shopStreet, shopPostalCode, shopCity, shopPostalCity],
   );
   const sendConfig = useCallback(
     () =>
