@@ -58,6 +58,7 @@ import {
   useBeharStore,
 } from "@/lib/behar-store";
 import { displayCustomerName } from "@/lib/customer-display";
+import { normalizeCustomerPhone } from "@/lib/customer-phone";
 import { getCustomerTrackingUrl } from "@/lib/customer-tracking";
 import { formatDeviceLabel } from "@/lib/format-device";
 import { getPartTraceability } from "@/lib/part-traceability";
@@ -980,7 +981,10 @@ export function AtelierWorkspace() {
     appendRepairHistory(selectedRepair.id, "Message client publié sur le suivi", { source: "atelier.message" });
     setClientDraft("");
 
-    const phone = selectedCustomer?.phone?.trim();
+    const phone = normalizeCustomerPhone(
+      selectedCustomer?.phone,
+      selectedRepair.billingCountry ?? useBeharStore.getState().workshopInfo.country,
+    );
     if (!phone) {
       toast.success("Message publié sur le suivi client.");
       return;

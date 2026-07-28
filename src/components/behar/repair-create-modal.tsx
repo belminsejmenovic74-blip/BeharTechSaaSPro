@@ -47,6 +47,7 @@ import {
   useBeharStore,
 } from "@/lib/behar-store";
 import { CALLING_CODES, COUNTRIES, COUNTRY_NAMES } from "@/lib/countries";
+import { isValidCustomerPhone, normalizeCustomerPhone } from "@/lib/customer-phone";
 import { getDeviceSeries } from "@/lib/device-series";
 import {
   extractPartQuality,
@@ -85,13 +86,13 @@ function digitsOnly(value: unknown): string {
   return String(value ?? "").replace(/\D/g, "");
 }
 
-function phoneParts(value: unknown): { prefix: string; local: string } {
+function phoneParts(value: unknown, fallbackPrefix = "+33"): { prefix: string; local: string } {
   const raw = String(value ?? "").trim();
   const match = raw.match(/^(\+\d{1,4})\s*(.*)$/);
   if (!match) {
     const digits = digitsOnly(raw);
-    if (digits.startsWith("0")) return { prefix: "+33", local: digits.slice(1) };
-    return { prefix: "+33", local: digits };
+    if (digits.startsWith("0")) return { prefix: fallbackPrefix, local: digits.slice(1) };
+    return { prefix: fallbackPrefix, local: digits };
   }
   return { prefix: match[1], local: digitsOnly(match[2]) };
 }
@@ -108,16 +109,6 @@ function formatPhoneLocal(prefix: string, value: unknown): string {
     return toFormat.replace(/(\d)(?=(?:\d{2})+$)/g, "$1 ").trim();
   }
   return digits.replace(/(\d{3})(?=\d)/g, "$1 ").trim();
-}
-
-function isValidPhoneNumber(value: unknown): boolean {
-  const compact = String(value ?? "")
-    .trim()
-    .replace(/[\s().-]/g, "");
-  if (!compact) return true;
-  if (!/^\+\d{7,15}$/.test(compact)) return false;
-  if (compact.startsWith("+33")) return /^\+33[1-9]\d{8}$/.test(compact);
-  return true;
 }
 
 function withoutDuplicateBrand(brand: string, model: string) {
@@ -245,7 +236,9 @@ export function RepairModal({
   const [newAddress, setNewAddress] = useState("");
   const [newPostalCode, setNewPostalCode] = useState("");
   const [newCity, setNewCity] = useState("");
-  const [newCountry, setNewCountry] = useState<(typeof countryOptions)[number]>("France");
+  const [newCountry, setNewCountry] = useState<(typeof countryOptions)[number]>(
+    defaultCountry === "CH" ? "Suisse" : "France",
+  );
   const [billingCountry, setBillingCountry] = useState<WorkshopCountry>(source?.billingCountry ?? defaultMarket);
   const billingConfig = getWorkshopCountryConfig(billingCountry);
   const currency = billingConfig.currency;
@@ -341,7 +334,8 @@ export function RepairModal({
   }, [customers, customerSearch]);
 
   const chosenCustomer = customers.find((c) => c.id === selectedCustomerId);
-  const newPhoneParts = phoneParts(newPhone);
+  const newPhoneCountry: WorkshopCountry = newCountry === "Suisse" ? "CH" : billingCountry;
+  const newPhoneParts = phoneParts(newPhone, newPhoneCountry === "CH" ? "+41" : "+33");
   const newPhoneLocal = formatPhoneLocal(newPhoneParts.prefix, newPhoneParts.local);
   const { cities: newPostalCities } = usePostalCities(newPostalCode, newCountry);
   const { suggestions: newAddressSuggestions } = useAddressAutocomplete(newAddress, newCountry);
@@ -580,7 +574,7 @@ export function RepairModal({
         // Champs vides laissés vides (jamais le placeholder « Non renseigné ») :
         // le placeholder polluait la déduplication et rattachait le dossier au
         // client précédent. Voir addCustomer.
-        phone: newPhone.trim() || "",
+        phone: normalizeCustomerPhone(newPhone, newPhoneCountry),
         email: newEmail.trim() || "",
         address,
         device: modelFull,
@@ -603,7 +597,7 @@ export function RepairModal({
       toast.error("Sélectionnez une intervention.");
       return false;
     }
-    if (clientType === "nouveau" && newPhone.trim() && !isValidPhoneNumber(newPhone)) {
+    if (clientType === "nouveau" && newPhone.trim() && !isValidCustomerPhone(newPhone, newPhoneCountry)) {
       toast.error("Numéro client invalide.");
       return false;
     }

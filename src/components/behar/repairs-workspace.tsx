@@ -69,6 +69,7 @@ import {
   type RepairStatus,
   useBeharStore,
 } from "@/lib/behar-store";
+import { isValidCustomerPhone, normalizeCustomerPhone } from "@/lib/customer-phone";
 import { displayCustomerName, isCounterCustomer } from "@/lib/customer-display";
 import { formatDeviceLabel } from "@/lib/format-device";
 import { sendRealSms } from "@/lib/send-sms";
@@ -566,19 +567,21 @@ export function RepairsWorkspace() {
     }
 
     const message = `Bonjour ${displayCustomerName(selectedCustomer)}, votre ${selectedRepair.device} est prêt. — Behar Tech`;
+    const phoneCountry = selectedRepair.billingCountry ?? workshopInfo.country;
+    const smsPhone = normalizeCustomerPhone(selectedCustomer.phone, phoneCountry);
 
-    if (!/^(\+?\d[\d\s.-]{7,})$/.test(selectedCustomer.phone)) {
+    if (!isValidCustomerPhone(smsPhone, phoneCountry)) {
       toast.error("Numéro de téléphone invalide ou manquant.");
       return;
     }
 
-    if (!window.confirm(`Envoyer ce SMS au client (${selectedCustomer.phone}) ?\n\n"${message}"`)) {
+    if (!window.confirm(`Envoyer ce SMS au client (${smsPhone}) ?\n\n"${message}"`)) {
       return;
     }
 
     setIsSendingSms(true);
     try {
-      await sendRealSms(selectedCustomer.phone, message);
+      await sendRealSms(smsPhone, message);
       toast.success("SMS envoyé.");
       sendMessage({
         body: message,
@@ -589,7 +592,7 @@ export function RepairsWorkspace() {
       });
 
       updateRepair(selectedRepair.id, {
-        history: [...selectedRepair.history, `SMS envoyé à ${selectedCustomer.phone}`],
+        history: [...selectedRepair.history, `SMS envoyé à ${smsPhone}`],
       });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erreur lors de l’envoi.");

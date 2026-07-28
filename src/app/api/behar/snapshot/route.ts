@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { isLicenseActive } from "@/lib/server/verify-license";
+import { buildWorkshopSnapshotWrite } from "@/lib/server/workshop-snapshot-write";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -97,21 +98,26 @@ export async function POST(request: Request) {
   const { data: saved, error: saveError } = await admin
     .from("workshop_snapshots")
     .upsert(
-      {
-        workshop_id: parsed.data.workshopId,
-        recovery_code: recoveryCode(parsed.data.workshopId),
-        license_key: normalizedKey,
-        license_key_normalized: normalizedKey,
-        workshop_name: parsed.data.workshopName ?? null,
-        device_label: parsed.data.deviceLabel ?? "Navigateur",
+      buildWorkshopSnapshotWrite({
+        workshopId: parsed.data.workshopId,
+        recoveryCode: recoveryCode(parsed.data.workshopId),
+        licenseKey: normalizedKey,
+        workshopName: parsed.data.workshopName,
+        deviceLabel: parsed.data.deviceLabel,
         state: parsed.data.state,
-        state_size_bytes: parsed.data.stateSizeBytes,
-        schema_version: parsed.data.schemaVersion,
-      },
+        stateSizeBytes: parsed.data.stateSizeBytes,
+        schemaVersion: parsed.data.schemaVersion,
+      }),
       { onConflict: "workshop_id" },
     )
     .select("id,workshop_id,license_key,workshop_name,state,state_size_bytes,updated_at")
     .single();
-  if (saveError || !saved) return NextResponse.json({ error: "Sauvegarde cloud impossible." }, { status: 503 });
+  if (saveError || !saved) {
+    console.error("[snapshot] workshop upsert failed", {
+      code: saveError?.code,
+      workshopId: parsed.data.workshopId,
+    });
+    return NextResponse.json({ error: "Sauvegarde cloud impossible." }, { status: 503 });
+  }
   return NextResponse.json({ snapshot: snapshotDto(saved) }, { headers: { "cache-control": "no-store" } });
 }

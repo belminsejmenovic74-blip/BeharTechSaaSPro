@@ -40,6 +40,7 @@ import {
   type WorkshopCountry,
   useBeharStore,
 } from "@/lib/behar-store";
+import { isValidCustomerPhone, normalizeCustomerPhone } from "@/lib/customer-phone";
 import { getPriceBookMarketPrice, type PriceBookDeviceType, type PriceBookItem } from "@/lib/price-book";
 import { cn } from "@/lib/utils";
 import { getWorkshopCountryConfig } from "@/lib/workshop-country";
@@ -534,6 +535,10 @@ export function MobileRepairIntakeWizard({
         toast.error("Renseignez le nom et le téléphone du client.");
         return false;
       }
+      if (clientMode === "new" && !isValidCustomerPhone(newPhone, billingCountry)) {
+        toast.error(billingCountry === "CH" ? "Numéro suisse invalide." : "Numéro français invalide.");
+        return false;
+      }
       if (clientMode === "existing" && !selectedCustomerId) {
         toast.error("Sélectionnez un client existant.");
         return false;
@@ -582,7 +587,7 @@ export function MobileRepairIntakeWizard({
       } else if (clientMode === "new") {
         customerId = store.addCustomer({
           name: newName.trim(),
-          phone: newPhone.trim(),
+          phone: normalizeCustomerPhone(newPhone, billingCountry),
           email: newEmail.trim(),
           device: `${effectiveBrand} ${model}`.trim(),
           lastRepair: issue,
