@@ -524,11 +524,11 @@ export function PublicTrackingView({
   const contactHref = data.workshop.phone ? `tel:${data.workshop.phone}` : "#messages";
 
   return (
-    <div className="min-h-screen" style={{ background: COLORS.bg, color: COLORS.text }}>
+    <div className="min-h-screen overflow-x-hidden" style={{ background: COLORS.bg, color: COLORS.text }}>
       <div className="mx-auto w-full max-w-[1080px] px-4 py-6 lg:px-8 lg:py-12">
         <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_330px] lg:items-start lg:gap-10">
           {/* Colonne principale — mobile-first, max ~460px */}
-          <main className="mx-auto w-full max-w-[460px] pb-10 lg:mx-0 lg:pb-0">
+          <main className="mx-auto min-w-0 w-full max-w-[460px] pb-10 lg:mx-0 lg:max-w-none lg:pb-0">
             {/* Header boutique : logo ou initiales + nom, bordure basse fine */}
             <header className="flex items-center gap-3 border-b pb-4" style={{ borderColor: COLORS.border }}>
               {data.workshop.logoUrl ? (
@@ -562,14 +562,16 @@ export function PublicTrackingView({
               className="mt-5 rounded-[20px] border bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.035)]"
               style={{ borderColor: COLORS.border }}
             >
-              <div className="flex items-center justify-between gap-3">
-                <span className="font-bold font-mono text-[20px] tracking-tight">{trackingCode}</span>
+              <div className="flex min-w-0 flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <span className="min-w-0 break-words font-bold font-mono text-[20px] tracking-tight">
+                  {trackingCode}
+                </span>
                 <span
-                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-semibold text-[12px]"
+                  className="inline-flex max-w-full shrink-0 items-center gap-1.5 rounded-full px-3 py-1 font-semibold text-[12px]"
                   style={{ background: "#FFFFFF", color: "#1E7A6E" }}
                 >
-                  <span className="size-2 rounded-full" style={{ background: COLORS.accent }} />{" "}
-                  {data.repair.statusLabel}
+                  <span className="size-2 shrink-0 rounded-full" style={{ background: COLORS.accent }} />{" "}
+                  <span className="min-w-0 break-words">{data.repair.statusLabel}</span>
                 </span>
               </div>
               <div className="mt-4 grid gap-4 sm:grid-cols-[104px_1fr] sm:items-center">
@@ -579,28 +581,30 @@ export function PublicTrackingView({
                   model={data.repair.deviceModel}
                   type={data.repair.deviceType}
                 />
-                <div className="grid grid-cols-1 gap-3 text-[13px] sm:grid-cols-4">
-                  <div>
+                <div className="grid min-w-0 grid-cols-1 gap-3 text-[13px] sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="min-w-0">
                     <p style={{ color: COLORS.sub }}>Client</p>
-                    <p className="font-semibold">{data.client.displayName}</p>
+                    <p className="break-words font-semibold">{data.client.displayName}</p>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p style={{ color: COLORS.sub }}>Dossier</p>
-                    <p className="font-semibold">{data.repair.number}</p>
+                    <p className="break-words font-semibold">{data.repair.number}</p>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p style={{ color: COLORS.sub }}>Appareil</p>
-                    <p className="font-semibold">
+                    <p className="break-words font-semibold">
                       {[data.repair.deviceBrand, data.repair.deviceModel].filter(Boolean).join(" ") || "—"}
                     </p>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p style={{ color: COLORS.sub }}>Problème</p>
-                    <p className="font-semibold">{data.repair.issueDescription || "—"}</p>
+                    <p className="break-words font-semibold">{data.repair.issueDescription || "—"}</p>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p style={{ color: COLORS.sub }}>Contrôle</p>
-                    <p className="font-semibold">{data.repair.finalTestStatus || data.repair.readyLabel || "—"}</p>
+                    <p className="break-words font-semibold">
+                      {data.repair.finalTestStatus || data.repair.readyLabel || "—"}
+                    </p>
                   </div>
                 </div>
               </div>
