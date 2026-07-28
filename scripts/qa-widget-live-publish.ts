@@ -161,11 +161,15 @@ async function main() {
     const browserErrors: string[] = [];
     page.on("pageerror", (error) => browserErrors.push(error.message));
     await page.goto(DEMO_URL, { waitUntil: "domcontentloaded", timeout: 60_000 });
-    await page.getByLabel("Quel appareil ?").selectOption({ label: first.category });
-    await page.getByLabel("Quelle marque ?").selectOption({ label: first.brand });
-    await page.getByLabel("Quel modèle ?").selectOption({ label: first.model });
-    await page.getByRole("button", { name: "Voir les réparations et les prix" }).click();
-    const frame = page.frameLocator("[data-behar-widget-overlay] iframe");
+    const demoSite = page.frameLocator('iframe[title="Site exemple d’un atelier avec Widget Behar Tech Pro"]');
+    const search = demoSite.locator("[data-behar-widget-search]").filter({
+      has: demoSite.locator('select[aria-label="Quel appareil ?"]:enabled'),
+    }).first();
+    await search.locator('select[aria-label="Quel appareil ?"]').selectOption({ label: first.category });
+    await search.locator('select[aria-label="Quelle marque ?"]').selectOption({ label: first.brand });
+    await search.locator('select[aria-label="Quel modèle ?"]').selectOption({ label: first.model });
+    await search.getByRole("button", { name: "Voir les réparations et les prix" }).click();
+    const frame = demoSite.frameLocator("[data-behar-widget-overlay] iframe");
     await frame.getByRole("progressbar").waitFor({ state: "visible", timeout: 30_000 });
     const livePrimary = await frame.locator("div[style*='--w-primary']").first().evaluate((element) =>
       getComputedStyle(element).getPropertyValue("--w-primary").trim().toUpperCase(),
