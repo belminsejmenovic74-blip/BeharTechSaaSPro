@@ -13,7 +13,8 @@ export const POST: RequestHandler = async ({ locals }) => {
 	try {
 		const admin = getSupabaseAdmin();
 		const { data, error } = await admin.rpc('admin_create_workshop_handoff', {
-			p_clerk_user_id: user.id
+			p_clerk_user_id: user.id,
+			p_email: user.email ?? undefined
 		});
 		if (error) throw error;
 		if (typeof data !== 'string' || !data) {
