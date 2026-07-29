@@ -9,18 +9,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import {
-  ChevronDown,
-  ChevronRight,
-  Copy,
-  RotateCcw,
-  Save,
-  Search,
-  Settings,
-  Smartphone,
-  Trash2,
-  X,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, Copy, Save, Search, Settings, Smartphone, Trash2, X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 
 import { type StockItem, useBeharStore } from "@/lib/behar-store";
@@ -46,7 +35,6 @@ import {
   type ModelBatteryConfig,
   type ModelDefectRules,
   type ModelPartCosts,
-  PART_COST_SOURCE_LABELS,
   PART_LABELS,
   type PartCostSource,
   type PartKey,
@@ -118,13 +106,6 @@ const modeBadgeTone = (mode: ReconditioningCalculationMode) => {
   if (mode === "ai") return "border-[#D7EFEA] bg-[#ECF8F4] text-[#147065]";
   if (mode === "manual") return "border-[#D9E7FF] bg-[#F3F7FF] text-[#2563EB]";
   return "border-[#F0E0BC] bg-[#FFF7E8] text-[#9A6B1B]";
-};
-
-const SOURCE_BADGE_TONE: Record<PartCostSource, string> = {
-  stock: "border-[#D7EFEA] bg-[#ECF8F4] text-[#147065]",
-  manual: "border-[#D9E7FF] bg-[#F3F7FF] text-[#2563EB]",
-  default: "border-[#E4E7EC] bg-[#F5F7FA] text-[#667085]",
-  missing: "border-[#F0D9D6] bg-[#FCF4F3] text-[#B4342A]",
 };
 
 function buildDraft(
@@ -635,9 +616,6 @@ function ReconditioningModelConfigModal({
       onSelectStorage(storageLabel);
   };
 
-  const patchPart = (key: PartKey, patch: Partial<DraftPartCost>) =>
-    setDraft((current) => ({ ...current, parts: { ...current.parts, [key]: { ...current.parts[key], ...patch } } }));
-
   return (
     <div
       className="fixed inset-0 z-50 grid place-items-center bg-[#101828]/25 p-3 backdrop-blur-[2px]"
@@ -859,24 +837,6 @@ function ReconditioningModelConfigModal({
             </div>
           </ModalPanel>
 
-          <ModalPanel
-            subtitle={`Pièces compatibles avec ${selected.model.modelName}, reliées au stock. Le stock n'est jamais décrémenté ici.`}
-            title="Pièces + main-d'œuvre"
-          >
-            <div className="overflow-hidden rounded-[14px] border border-[#E4E7EC] bg-white">
-              {PART_KEYS.map((key) => (
-                <PartCostRow
-                  compatible={compatibleByKey[key]}
-                  entry={draft.parts[key]}
-                  key={key}
-                  onPatch={(patch) => patchPart(key, patch)}
-                  partKey={key}
-                  stockItems={stockItems}
-                />
-              ))}
-            </div>
-          </ModalPanel>
-
           {/* Actions secondaires */}
           <ModalPanel title="Actions">
             <div className="flex flex-wrap items-center gap-2">
@@ -944,115 +904,6 @@ function ReconditioningModelConfigModal({
   );
 }
 
-/* ─────────────── Ligne pièce reliée au stock ─────────────── */
-
-function PartCostRow({
-  partKey,
-  entry,
-  compatible,
-  stockItems,
-  onPatch,
-}: Readonly<{
-  partKey: PartKey;
-  entry: DraftPartCost;
-  compatible: CompatibleStockPart[];
-  stockItems: StockItem[];
-  onPatch: (patch: Partial<DraftPartCost>) => void;
-}>) {
-  const selectedStockItem = entry.stockItemId ? stockItems.find((item) => item.id === entry.stockItemId) : undefined;
-  const stockPrice =
-    selectedStockItem && isPriceKnown(selectedStockItem.purchasePrice) ? selectedStockItem.purchasePrice : null;
-  const manualPrice = parseMoneyInput(entry.manualPiece);
-  const piece = entry.stockItemId ? stockPrice : manualPrice;
-  const labor = parseMoneyInput(entry.labor) ?? (entry.labor.trim() === "0" ? 0 : null);
-  const source: PartCostSource = entry.stockItemId
-    ? stockPrice != null
-      ? "stock"
-      : "missing"
-    : manualPrice != null
-      ? "manual"
-      : "missing";
-  const total = piece != null ? piece + (labor ?? 0) : null;
-
-  return (
-    <div className={cn("border-[#F2F4F7] border-b px-3 py-2.5 last:border-0", !entry.active && "opacity-45")}>
-      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
-        <Toggle on={entry.active} onToggle={() => onPatch({ active: !entry.active })} />
-        <span className="min-w-[110px] font-semibold text-[#101828] text-[12.5px]">{PART_LABELS[partKey]}</span>
-        <span
-          className={cn(
-            "inline-flex h-6 items-center whitespace-nowrap rounded-full border px-2 font-semibold text-[10.5px]",
-            SOURCE_BADGE_TONE[source],
-          )}
-        >
-          {source === "missing" && entry.stockItemId ? "Prix à renseigner" : PART_COST_SOURCE_LABELS[source]}
-        </span>
-        <span className="ml-auto whitespace-nowrap text-right font-semibold text-[12.5px]">
-          {total != null ? (
-            <span className="text-[#147065]">= {formatMoney(total)}</span>
-          ) : (
-            <span className="text-[#B4342A]">À renseigner</span>
-          )}
-        </span>
-      </div>
-
-      <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-2 pl-[50px]">
-        {compatible.length > 0 ? (
-          <select
-            className={cn(selectCls, "h-8 w-full max-w-[330px] text-[11.5px]")}
-            onChange={(event) => onPatch({ stockItemId: event.target.value })}
-            value={entry.stockItemId}
-          >
-            <option value="">Prix manuel (sans lien stock)</option>
-            {compatible.map(({ stockItem, purchasePrice, quantity, supplier }) => (
-              <option key={stockItem.id} value={stockItem.id}>
-                {stockItem.name} — {purchasePrice != null ? formatMoney(purchasePrice) : "prix à renseigner"} ·{" "}
-                {quantity} en stock
-                {supplier ? ` · ${supplier}` : ""}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <span className="text-[#98A2B3] text-[12px]">Aucune pièce trouvée dans le stock</span>
-        )}
-
-        {entry.stockItemId ? (
-          <span className="whitespace-nowrap text-[#667085] text-[12px]">
-            Prix achat :{" "}
-            <strong className="text-[#101828]">
-              {stockPrice != null ? formatMoney(stockPrice) : "à renseigner dans le stock"}
-            </strong>
-          </span>
-        ) : (
-          <label className="flex items-center gap-1.5 whitespace-nowrap text-[#667085] text-[12px]">
-            Pièce
-            <input
-              className={cn(inputCls, "h-8 w-[88px] text-right text-[12px]", manualPrice == null && "border-[#F0D9D6]")}
-              inputMode="decimal"
-              onChange={(event) => onPatch({ manualPiece: event.target.value })}
-              placeholder="—"
-              value={entry.manualPiece}
-            />
-            €
-          </label>
-        )}
-
-        <label className="flex items-center gap-1.5 whitespace-nowrap text-[#667085] text-[12px]">
-          MO
-          <input
-            className={cn(inputCls, "h-8 w-[72px] text-right text-[12px]")}
-            inputMode="decimal"
-            onChange={(event) => onPatch({ labor: event.target.value })}
-            placeholder="—"
-            value={entry.labor}
-          />
-          €
-        </label>
-      </div>
-    </div>
-  );
-}
-
 /** Indication du coût de remplacement batterie depuis le stock (lecture seule). */
 function BatteryStockHint({
   draft,
@@ -1074,7 +925,7 @@ function BatteryStockHint({
       ) : (
         <strong className="text-[#B4342A]">à renseigner</strong>
       )}{" "}
-      — configurable dans la section « Pièces + main-d'œuvre ».
+      — estimation issue du stock.
     </p>
   );
 }
