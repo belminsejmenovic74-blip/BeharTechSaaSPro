@@ -10,6 +10,7 @@ import {
   fetchLicenses,
   isAdminAuthed,
   loginAdmin,
+  revealFounderLicenseKey,
 } from "./actions";
 import type { LicenseKey } from "@/lib/supabase/license-types";
 import { toast } from "sonner";
@@ -22,6 +23,7 @@ export default function AdminLicensesPage() {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreatingFounder, setIsCreatingFounder] = useState(false);
+  const [resendingLicenseId, setResendingLicenseId] = useState<string | null>(null);
   const [founderForm, setFounderForm] = useState({ workshopName: "", email: "" });
   const [lastGeneratedClientKey, setLastGeneratedClientKey] = useState("");
 
@@ -87,6 +89,35 @@ export default function AdminLicensesPage() {
       setLastGeneratedClientKey(res.licenseKey || "");
       setFounderForm({ workshopName: "", email: "" });
       loadLicenses();
+    } else {
+      toast.error(res.message);
+    }
+  }
+
+  async function handleCopyFounderKey(id: string) {
+    const res = await revealFounderLicenseKey(id);
+    if (!(res.success && res.licenseKey)) {
+      toast.error(res.message || "Clé introuvable");
+      return;
+    }
+    await navigator.clipboard.writeText(res.licenseKey);
+    toast.success("Clé complète copiée");
+  }
+
+  async function handleResendFounderInvitation(license: LicenseKey) {
+    if (!(license.assigned_customer_name && license.assigned_customer_email)) {
+      toast.error("Nom ou e-mail client manquant.");
+      return;
+    }
+    setResendingLicenseId(license.id);
+    const res = await createFounderClient({
+      workshopName: license.assigned_customer_name,
+      email: license.assigned_customer_email,
+    });
+    setResendingLicenseId(null);
+    if (res.success) {
+      toast.success(res.message);
+      await loadLicenses();
     } else {
       toast.error(res.message);
     }
@@ -298,27 +329,44 @@ export default function AdminLicensesPage() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          // Note: In reality, we don't know the exact token from the DB.
-                          // It is ONLY known right after generation.
-                          // So copying a link here will only work for NEWLY generated ones available in memory,
-                          // OR we'd need to create a new token or store the full token if the user insists.
-                          // The prompt says "stocker le hash du token". But if we only store the hash,
-                          // we CANNOT reconstruct the download link later.
-                          // Let's implement a "Générer un nouveau lien" if they lost it.
-                          toast.error(
-                            "Le lien complet n'est disponible qu'à la création ou via l'export CSV pour des raisons de sécurité.",
-                          );
-                        }}
-                        className="p-2 text-[#667085] hover:text-[#2A9D8F] hover:bg-[#E5F5F3] rounded-lg transition-colors"
-                        title="Copier le lien (indisponible pour les anciennes clés sécurisées)"
-                      >
-                        <Copy className="size-4" />
-                      </button>
+                      {lic.founder_access ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyFounderKey(lic.id)}
+                            className="rounded-lg p-2 text-[#667085] transition-colors hover:bg-[#E5F5F3] hover:text-[#2A9D8F]"
+                            title="Copier la clé complète"
+                          >
+                            <KeyRound className="size-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleResendFounderInvitation(lic)}
+                            disabled={resendingLicenseId === lic.id}
+                            className="rounded-lg p-2 text-[#667085] transition-colors hover:bg-[#E5F5F3] hover:text-[#2A9D8F] disabled:opacity-50"
+                            title="Renvoyer l’invitation sans changer la clé"
+                          >
+                            <Mail className="size-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            toast.error(
+                              "Le lien complet n'est disponible qu'à la création ou via l'export CSV pour des raisons de sécurité.",
+                            )
+                          }
+                          className="rounded-lg p-2 text-[#667085] transition-colors hover:bg-[#E5F5F3] hover:text-[#2A9D8F]"
+                          title="Copier le lien (indisponible pour les anciennes clés sécurisées)"
+                        >
+                          <Copy className="size-4" />
+                        </button>
+                      )}
 
                       {lic.status === "active" && (
                         <button
+                          type="button"
                           onClick={() => handleDeactivate(lic.id)}
                           className="p-2 text-[#667085] hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Désactiver la licence"

@@ -26,6 +26,12 @@ export type FounderClientResult = {
   licenseKey?: string;
 };
 
+export type FounderLicenseSecretResult = {
+  success: boolean;
+  message?: string;
+  licenseKey?: string;
+};
+
 /** Empreinte attendue dans le cookie de session admin, dérivée du secret serveur. */
 function adminSessionHash(): string | null {
   const secret = process.env.ADMIN_ACCESS_TOKEN;
@@ -95,8 +101,24 @@ export async function createFounderClient(input: FounderClientInput): Promise<Fo
 
   const provisionId = crypto.randomUUID();
   let actualProvisionId: string = provisionId;
-  const licenseKey = generateRandomKey();
+  let licenseKey = generateRandomKey();
   try {
+    const { data: existingFounder, error: existingFounderError } = await supabase.rpc(
+      "admin_get_founder_license_by_email",
+      { p_email: values.email },
+    );
+    if (existingFounderError) throw existingFounderError;
+    const existing = existingFounder as {
+      clerk_invitation_id?: string;
+      license_key?: string;
+      status?: string;
+    } | null;
+    const existingLicenseKey = existing?.license_key?.trim();
+    if (existingLicenseKey) licenseKey = existingLicenseKey;
+    if (existing?.status === "pending" && existing.clerk_invitation_id) {
+      await clerk.invitations.revokeInvitation(existing.clerk_invitation_id).catch(() => undefined);
+    }
+
     const { data: provision, error: clerkProvisionError } = await supabase.rpc("admin_prepare_clerk_founder_client", {
       p_provision_id: provisionId,
       p_email: values.email,
@@ -127,8 +149,11 @@ export async function createFounderClient(input: FounderClientInput): Promise<Fo
     revalidatePath("/admin/licenses");
     return {
       success: true,
+      existingUser: Boolean(existingLicenseKey),
       licenseKey,
-      message: "Invitation Clerk envoyée. Le client choisira son mot de passe depuis l’e-mail reçu.",
+      message: existingLicenseKey
+        ? "Invitation Clerk renvoyée. La boutique et la clé existantes ont été conservées."
+        : "Invitation Clerk envoyée. Le client choisira son mot de passe depuis l’e-mail reçu.",
     };
   } catch (error) {
     await supabase
@@ -235,6 +260,23 @@ export async function deactivateLicense(id: string) {
 
   revalidatePath("/admin/licenses");
   return { success: true };
+}
+
+export async function revealFounderLicenseKey(id: string): Promise<FounderLicenseSecretResult> {
+  if (!(await isAdmin())) return { success: false, message: "Non autorisé" };
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+    return { success: false, message: "Licence invalide" };
+  }
+
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return { success: false, message: "Supabase non configuré" };
+
+  const { data, error } = await supabase.rpc("admin_get_founder_license_secret", { p_license_id: id });
+  if (error) return { success: false, message: error.message };
+
+  const licenseKey = typeof data === "string" ? data.trim() : "";
+  if (!licenseKey) return { success: false, message: "Clé complète introuvable pour cette licence." };
+  return { success: true, licenseKey };
 }
 
 export async function fetchLicenses() {
