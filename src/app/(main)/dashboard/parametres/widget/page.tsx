@@ -9,6 +9,7 @@ import {
   ArrowDown,
   ArrowLeft,
   ArrowUp,
+  Code2,
   Copy,
   Eye,
   EyeOff,
@@ -428,7 +429,7 @@ export default function WidgetSettingsPage() {
                   ["offers", "Offres", Tags],
                   ["structure", "Blocs", GripVertical],
                   ["media", "Médias", Images],
-                  ["display", "Affichage", Monitor],
+                  ["display", "Installer", Code2],
                 ] as const
               ).map(([key, label, Icon]) => (
                 <button
@@ -1268,6 +1269,44 @@ ${iframeCode}
 Règles : le widget doit occuper 100 % de la largeur disponible, conserver une hauteur minimale de 720 px, ne jamais créer de défilement horizontal et rester lisible sur ordinateur, tablette et mobile. Vérifie le chargement, la sélection du mode de prise en charge et l’envoi du formulaire sur ordinateur et mobile. N’ajoute et n’expose aucune clé secrète.`;
   return (
     <div className="space-y-6">
+      <EditorSection
+        title="Installer le widget sur votre site"
+        description="Ce code est personnalisé pour cet atelier et reste identique après chaque nouvelle publication."
+      >
+        <div
+          className="grid gap-1.5 rounded-xl border border-[#DDEBE8] bg-[#F4FBF9] p-3"
+          data-testid="widget-public-integration-id"
+        >
+          <span className="text-[11px] font-bold uppercase tracking-wide text-[#37635E]">
+            Identifiant public lié à votre licence
+          </span>
+          <code className="break-all text-xs font-semibold text-[#173F39]">{publicWidgetId}</code>
+          <p className="text-[11px] leading-4 text-[#52736E]">
+            Votre vraie clé de licence reste privée et ne doit jamais être copiée dans le code HTML du site.
+          </p>
+        </div>
+        {!publishedVersion ? (
+          <p className="rounded-xl border border-[#F0DCA4] bg-[#FFF9E9] p-3 text-xs leading-5 text-[#6F5411]">
+            Vous pouvez déjà copier ce code. Publiez ensuite le widget pour le rendre actif sur votre site.
+          </p>
+        ) : null}
+        <pre
+          className="overflow-x-auto rounded-xl bg-[#17211E] p-3 text-[11px] leading-5 text-[#D9EFE9]"
+          data-testid="widget-integration-code"
+        >
+          <code>{integrationCode}</code>
+        </pre>
+        <button
+          type="button"
+          onClick={async () => {
+            await navigator.clipboard.writeText(integrationCode);
+            toast.success("Code HTML copié.");
+          }}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#DADAD6] bg-white px-3 py-2.5 text-sm font-semibold text-[#147065]"
+        >
+          <Copy className="size-4" /> Copier le code HTML
+        </button>
+      </EditorSection>
       <EditorSection title="Mode d’intégration">
         <div className="grid gap-2">
           {(
@@ -1319,32 +1358,6 @@ Règles : le widget doit occuper 100 % de la largeur disponible, conserver une h
         />
       </EditorSection>
       <EditorSection
-        title="Code d’intégration"
-        description="À coller une seule fois sur le site du réparateur. Les publications suivantes gardent le même code."
-      >
-        {publishedVersion ? (
-          <>
-            <pre className="overflow-x-auto rounded-xl bg-[#17211E] p-3 text-[11px] leading-5 text-[#D9EFE9]">
-              <code>{integrationCode}</code>
-            </pre>
-            <button
-              type="button"
-              onClick={async () => {
-                await navigator.clipboard.writeText(integrationCode);
-                toast.success("Code d’intégration copié.");
-              }}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#DADAD6] bg-white px-3 py-2.5 text-sm font-semibold text-[#147065]"
-            >
-              <Copy className="size-4" /> Copier le code
-            </button>
-          </>
-        ) : (
-          <p className="rounded-xl bg-[#FFF8E6] p-3 text-xs text-[#7A5A00]">
-            Publiez d’abord le widget pour obtenir son code d’intégration stable.
-          </p>
-        )}
-      </EditorSection>
-      <EditorSection
         title="URL publique et intégration responsive"
         description="L’identifiant ci-dessous est public et distinct de la clé de licence."
       >
@@ -1377,6 +1390,22 @@ Règles : le widget doit occuper 100 % de la largeur disponible, conserver une h
               Ajoutez un bloc « HTML personnalisé », collez le script recommandé, puis publiez. Avec un constructeur qui
               filtre les scripts, utilisez l’iframe responsive.
             </p>
+            <pre
+              className="mt-3 overflow-x-auto rounded-lg bg-[#17211E] p-3 text-[10.5px] leading-5 text-[#D9EFE9]"
+              data-testid="widget-wordpress-code"
+            >
+              <code>{integrationCode}</code>
+            </pre>
+            <button
+              type="button"
+              onClick={async () => {
+                await navigator.clipboard.writeText(integrationCode);
+                toast.success("Code WordPress copié.");
+              }}
+              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[#DADAD6] bg-white px-3 py-2 text-xs font-semibold text-[#147065]"
+            >
+              <Copy className="size-3.5" /> Copier pour WordPress
+            </button>
           </div>
           <div className="rounded-xl border border-[#E4E7EC] bg-white p-3">
             <p className="font-bold text-[#101828]">Shopify, Webflow, Wix et autres CMS</p>

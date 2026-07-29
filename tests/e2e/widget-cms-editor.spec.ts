@@ -175,7 +175,7 @@ test("Widget client — aperçu direct, disposition contrôlée et publication",
   await page.getByRole("button", { name: "Proposée" }).click();
   await page.getByLabel("Mention « Propulsé par Behar Tech Pro »").check();
 
-  await page.getByRole("button", { name: "Affichage" }).click();
+  await page.getByRole("button", { name: "Installer" }).click();
   await page.getByRole("button", { name: /Fenêtre modale/ }).click();
   await page.getByRole("button", { name: "Compact", exact: true }).click();
 
@@ -222,10 +222,14 @@ test("Widget client — aperçu direct, disposition contrôlée et publication",
     ]),
   );
 
-  await page.getByRole("button", { name: "Affichage" }).click();
-  const integrationSection = page.getByRole("heading", { name: "Code d’intégration" }).locator("..").locator("..");
+  await page.getByRole("button", { name: "Installer" }).click();
+  const integrationSection = page
+    .getByRole("heading", { name: "Installer le widget sur votre site" })
+    .locator("..")
+    .locator("..");
   await expect(integrationSection).toContainText("wdg_cms_e2e_123456");
   await expect(integrationSection).toContainText("https://behartechpro.fr/widget.js");
+  await expect(page.getByTestId("widget-wordpress-code")).toContainText("wdg_cms_e2e_123456");
   const iframeCode = page.getByTestId("widget-iframe-code");
   await expect(iframeCode).toContainText("https://behartechpro.fr/widget/wdg_cms_e2e_123456");
   const aiPrompt = page.locator("textarea[readonly]");
