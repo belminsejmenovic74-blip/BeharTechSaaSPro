@@ -28,6 +28,14 @@ describe("fusion catalogue global ↔ boutique", () => {
     expect(rows.some((r) => r.issue === "Prestation spéciale atelier" && r.configured)).toBe(true);
   });
 
+  it("associe « Écran cassé » au service atelier publié sous « Écran »", () => {
+    const rows = mergeIssues(["Écran cassé", "Batterie"], [service({ issue: "Écran", service: "Écran" })]);
+    const screen = rows.find((row) => row.issue === "Écran cassé");
+    expect(screen?.configured).toBe(true);
+    expect(screen?.service?.price).toMatchObject({ mode: "exact", amount: 129 });
+    expect(rows.some((row) => row.issue === "Écran")).toBe(false);
+  });
+
   it("retrouve les prestations d'un modèle de façon tolérante", () => {
     const shop = [service({ model: "iPhone 13" }), service({ model: "iPhone 14", publicId: "x" })];
     expect(shopServicesForModel(shop, "iPhone 13")).toHaveLength(1);

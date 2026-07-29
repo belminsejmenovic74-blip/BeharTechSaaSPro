@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { useBeharStore } from "@/lib/behar-store";
+import { liveStockForPriceBook } from "@/lib/stock-catalog-link";
 import { mapRemoteWidgetAppointment, type RemoteWidgetAppointment } from "@/lib/widget/appointment-sync";
 
 const store = () => useBeharStore.getState();
@@ -66,6 +67,71 @@ beforeEach(() => {
 });
 
 describe("Achats — registre central", () => {
+  it("garde le stock central comme source de vérité dans la prise en charge", () => {
+    const stockId = store().addStockItem({
+      name: "Écran complet",
+      brandName: "Apple",
+      compatibleModels: ["iPhone 12 Regression"],
+      categoryName: "Écran",
+      quality: "LTPS",
+      sku: "IP12-LTPS-REGRESSION",
+      purchasePrice: 0,
+      salePrice: 0,
+      quantity: 2,
+      stock: 2,
+      threshold: 1,
+      supplier: "Fournisseur test",
+      itemType: "part",
+      skipPurchaseLog: true,
+      skipModelInference: true,
+    });
+
+    const priceBookId = store().addPriceBookItem({
+      source: "manual",
+      typeAppareil: "smartphone",
+      marque: "Apple",
+      modele: "iPhone 12 Regression",
+      reparation: "Écran",
+      piece: "Écran complet",
+      qualite: "LTPS",
+      sku: "IP12-LTPS-REGRESSION",
+      stockItemId: stockId,
+      stockDisponible: 1,
+      prixAchat: 0,
+      prixVentePiece: 89,
+      mainOeuvre: 30,
+    });
+
+    const stockItem = store().stockItems.find((entry) => entry.id === stockId);
+    const priceBookItem = store().priceBookItems.find((entry) => entry.id === priceBookId);
+
+    expect(stockItem?.stock).toBe(2);
+    expect(priceBookItem).toBeTruthy();
+    expect(priceBookItem && liveStockForPriceBook(priceBookItem, store().stockItems).quantity).toBe(2);
+
+    store().commitSupplierInvoice({
+      supplier: "Fournisseur test",
+      invoiceNumber: "REG-STOCK-001",
+      source: "manuel",
+      lines: [
+        {
+          itemName: "Écran complet iPhone 12 Regression LTPS",
+          sku: "IP12-LTPS-REGRESSION",
+          category: "Écran",
+          compatibleModel: "iPhone 12 Regression",
+          quality: "LTPS",
+          quantityPurchased: 1,
+          unitPurchasePriceExclTax: 20,
+        },
+      ],
+    });
+
+    const updatedStock = store().stockItems.find((entry) => entry.id === stockId);
+    const updatedPriceBook = store().priceBookItems.find((entry) => entry.id === priceBookId);
+    expect(updatedStock?.stock).toBe(3);
+    expect(updatedPriceBook?.stockDisponible).toBe(3);
+  });
+
   it("addPurchase crée une entrée avec id + numéro stables et total calculé", () => {
     const id = store().addPurchase({ kind: "piece", source: "Manuel", label: "Écran test", unitCost: 30, quantity: 2 });
     const purchase = store().purchases.find((entry) => entry.id === id);

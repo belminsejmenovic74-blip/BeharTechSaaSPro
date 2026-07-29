@@ -26,6 +26,7 @@ import { FinanceOverview } from "@/components/behar/finance-overview";
 import { KanbanBoard } from "@/components/behar/kanban";
 import { DetailRow, Panel, PrimaryButton, StatusBadge } from "@/components/behar/primitives";
 import { RevenueChart } from "@/components/behar/revenue-chart";
+import { SettlementModal, useSettlementModal } from "@/components/behar/settlement-modal";
 import {
   formatEuro,
   formatIsoToDisplay,
@@ -54,6 +55,7 @@ const repairActivityTime = (repair: Pick<Repair, "updatedAt" | "droppedAt" | "cr
 
 export function DashboardWorkspace() {
   const store = useBeharStore();
+  const settlement = useSettlementModal();
   const reconditioningFiles = useReconditioningStore((s) => s.files);
   const recondKpis = computeReconditioningKpis(reconditioningFiles);
   const selected = store.repairs.find((repair) => repair.id === store.selectedRepairId) ?? store.repairs[0];
@@ -456,6 +458,14 @@ export function DashboardWorkspace() {
                       {nextStep.label}
                     </PrimaryButton>
                   ) : null}
+                  {selected.status === "Prêt" ? (
+                    <PrimaryButton
+                      className="w-full"
+                      onClick={() => settlement.open(selected.id, { closeAfterSubmit: true })}
+                    >
+                      Téléphone rendu / règlement
+                    </PrimaryButton>
+                  ) : null}
                   <Link
                     className="flex h-10 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white px-3 font-medium text-[#101828] text-[13px] transition hover:border-[#2A9D8F]/40"
                     href={`/dashboard/dossiers/_/?id=${selected.id}`}
@@ -506,6 +516,16 @@ export function DashboardWorkspace() {
           )}
         </Panel>
       )}
+
+      <SettlementModal
+        draft={settlement.draft}
+        invoice={settlement.invoice}
+        isOpen={settlement.isOpen}
+        onClose={settlement.close}
+        onDraftChange={settlement.setDraft}
+        onSubmit={settlement.submit}
+        total={settlement.total}
+      />
     </div>
   );
 }

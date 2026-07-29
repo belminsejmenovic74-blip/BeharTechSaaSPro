@@ -882,12 +882,20 @@ export function RepairIntakeDocument({
         </div>
 
         {/* Intervention */}
-        <DocumentSection title="Intervention">
+        <DocumentSection title="Diagnostic / intervention">
           <div className="grid grid-cols-3 gap-3">
-            <IntakeKeyValue label="Demande" value={text(repair.issue)} />
+            <IntakeKeyValue label="Diagnostic" value={text(repair.diagnosticNotes || repair.notes || repair.issue)} />
+            <IntakeKeyValue
+              label="Photos"
+              value={
+                hasPhotos
+                  ? `${photos.length} photo${photos.length > 1 ? "s" : ""} jointe${photos.length > 1 ? "s" : ""}`
+                  : "Aucune photo jointe"
+              }
+            />
             <IntakeKeyValue label="Statut" value={text(repair.status)} />
-            <IntakeKeyValue label="Date dépôt" value={dateLabel(repair.droppedAt)} />
           </div>
+          <p className="mt-2 text-[#667085] text-[10px]">Date de dépôt : {dateLabel(repair.droppedAt)}</p>
         </DocumentSection>
 
         {/* Montant estimé — le client voit le prix convenu au dépôt. Mention

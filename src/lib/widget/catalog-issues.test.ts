@@ -5,8 +5,10 @@ import {
   deviceImageFor,
   ISSUE_CATEGORY_ORDER,
   issueCategory,
+  issueMatchKey,
   issuesForType,
   popularIssuesForType,
+  sameIssueLabel,
 } from "@/lib/widget/global-catalog";
 
 describe("popularIssuesForType", () => {
@@ -52,5 +54,14 @@ describe("deviceImageFor", () => {
     expect(deviceImageFor("Smartphone", "Samsung")).toContain("samsung-galaxy");
     expect(deviceImageFor("Smartphone", "MarqueInconnue")).toContain("smartphone-generic");
     expect(deviceImageFor("Montre connectée")).toBeNull();
+  });
+});
+
+describe("rapprochement des libellés de panne", () => {
+  it("associe le tarif « Écran » du catalogue à la panne « Écran cassé » du widget", () => {
+    expect(issueMatchKey("Écran")).toBe("ecran");
+    expect(issueMatchKey("Écran cassé")).toBe("ecran");
+    expect(sameIssueLabel("Écran", "Écran cassé")).toBe(true);
+    expect(sameIssueLabel("Batterie", "Écran cassé")).toBe(false);
   });
 });

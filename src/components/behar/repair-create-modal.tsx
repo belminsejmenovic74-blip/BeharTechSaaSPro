@@ -56,6 +56,7 @@ import {
   getPriceBookMarketPrice,
   groupCatalogByQualityLabel,
 } from "@/lib/price-book";
+import { liveStockForPriceBook } from "@/lib/stock-catalog-link";
 import {
   canonicalizeIntervention,
   filterSuggestionChips,
@@ -189,6 +190,7 @@ export function RepairModal({
   const {
     customers,
     priceBookItems,
+    stockItems,
     addCustomer,
     addPriceBookItem,
     addAppointment,
@@ -203,6 +205,7 @@ export function RepairModal({
     useShallow((s) => ({
       customers: s.customers,
       priceBookItems: s.priceBookItems,
+      stockItems: s.stockItems,
       addCustomer: s.addCustomer,
       addPriceBookItem: s.addPriceBookItem,
       addAppointment: s.addAppointment,
@@ -537,6 +540,8 @@ export function RepairModal({
     () => (selectedCatalogId ? priceBookItems.find((i) => i.id === selectedCatalogId) : undefined),
     [selectedCatalogId, priceBookItems],
   );
+  const catalogStockQuantity = (item: (typeof priceBookItems)[number]) =>
+    liveStockForPriceBook(item, stockItems).quantity;
 
   const prixPieceNum = parseFloat(prixPiece.replace(",", ".") || "0") || 0;
   const mainNum = parseFloat(mainOeuvre.replace(",", ".") || "0") || 0;
@@ -672,7 +677,7 @@ export function RepairModal({
         marge: totalClient - selectedMarketPrice.prixAchat,
         garantie: selectedCatalogItem.garantie,
         notes: notesInternes || selectedCatalogItem.notes,
-        stockDisponible: selectedCatalogItem.stockDisponible,
+        stockDisponible: catalogStockQuantity(selectedCatalogItem),
         selectedAt: new Date().toISOString(),
       };
     } else {
@@ -957,8 +962,8 @@ export function RepairModal({
               />
               <DoneAction
                 icon={<ClipboardCheck className="size-[18px]" />}
-                title="État d'entrée anti-litige"
-                desc="Compléter la fiche détaillée"
+                title="Diagnostic et photos"
+                desc="Compléter l'état d'entrée"
                 onClick={() => setView("intake")}
               />
               <DoneAction
@@ -1123,7 +1128,7 @@ export function RepairModal({
                   }}
                   type="button"
                 >
-                  {initial ? "Enregistrer sans fiche" : "Créer le dossier"}
+                  {initial ? "Enregistrer sans diagnostic/photos" : "Créer sans diagnostic/photos"}
                 </SecondaryButton>
                 <PrimaryButton className="h-11 justify-center gap-2" onClick={() => setView("intake")} type="button">
                   Continuer · Fiche anti-litige
@@ -1548,17 +1553,20 @@ export function RepairModal({
                                 ) : (
                                   <span className="text-[#667085] text-xs italic">Prix à définir</span>
                                 )}
-                                {entry.itemId && (
-                                  <span
-                                    className={`text-[10px] mt-0.5 ${
-                                      (priceBookItems.find((i) => i.id === entry.itemId)?.stockDisponible ?? 0 > 0)
-                                        ? "text-[#167B70]"
-                                        : "text-red-500 font-medium"
-                                    }`}
-                                  >
-                                    Stock: {priceBookItems.find((i) => i.id === entry.itemId)?.stockDisponible ?? 0}
-                                  </span>
-                                )}
+                                {entry.itemId &&
+                                  (() => {
+                                    const catalogItem = priceBookItems.find((i) => i.id === entry.itemId);
+                                    const quantity = catalogItem ? catalogStockQuantity(catalogItem) : 0;
+                                    return (
+                                      <span
+                                        className={`mt-0.5 text-[10px] ${
+                                          quantity > 0 ? "text-[#167B70]" : "font-medium text-red-500"
+                                        }`}
+                                      >
+                                        Stock: {quantity}
+                                      </span>
+                                    );
+                                  })()}
                               </div>
                             </button>
                           );
@@ -1694,6 +1702,7 @@ export function RepairModal({
                         <div className="grid gap-2 sm:grid-cols-2">
                           {qualityOptionsForIntervention.map((opt) => {
                             const active = selectedCatalogId === opt.itemId || selectedQuality === opt.label;
+                            const stockQuantity = catalogStockQuantity(opt.item);
                             return (
                               <button
                                 className={`rounded-lg border p-3 text-left text-sm transition ${
@@ -1718,9 +1727,11 @@ export function RepairModal({
                                       {opt.price > 0 ? formatDossier(opt.price) : "Tarif à définir"}
                                     </span>
                                     <span
-                                      className={`text-[10px] ${(opt.item.stockDisponible ?? 0 > 0) ? "text-[#167B70]" : "text-red-500 font-medium"}`}
+                                      className={`text-[10px] ${
+                                        stockQuantity > 0 ? "text-[#167B70]" : "font-medium text-red-500"
+                                      }`}
                                     >
-                                      Stock: {opt.item.stockDisponible ?? 0}
+                                      Stock: {stockQuantity}
                                     </span>
                                   </div>
                                 </div>
@@ -1746,6 +1757,7 @@ export function RepairModal({
                           const best = getBestPriceBookItem(items);
                           if (!best) return null;
                           const bestMarketPrice = getPriceBookMarketPrice(best, billingCountry);
+                          const stockQuantity = catalogStockQuantity(best);
                           const active = selectedCatalogId === best.id;
                           return (
                             <button
@@ -1775,9 +1787,11 @@ export function RepairModal({
                                   </span>
                                 </div>
                                 <span
-                                  className={`text-[10px] font-medium ${(best.stockDisponible ?? 0 > 0) ? "text-[#167B70]" : "text-red-500"}`}
+                                  className={`text-[10px] font-medium ${
+                                    stockQuantity > 0 ? "text-[#167B70]" : "text-red-500"
+                                  }`}
                                 >
-                                  Stock: {best.stockDisponible ?? 0}
+                                  Stock: {stockQuantity}
                                 </span>
                               </div>
                             </button>

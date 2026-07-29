@@ -5,7 +5,7 @@
 // elle existe. L'absence de configuration ne bloque jamais : on retombe sur
 // « Sur devis » / « Estimation personnalisée » et on taggue la demande.
 
-import { fold } from "@/lib/widget/global-catalog";
+import { fold, sameIssueLabel } from "@/lib/widget/global-catalog";
 import type { PublicService } from "@/lib/widget/public-types";
 
 export type IssueRow = {
@@ -13,10 +13,6 @@ export type IssueRow = {
   service?: PublicService; // prestation boutique correspondante, si configurée
   configured: boolean;
 };
-
-function sameLabel(a: string, b: string): boolean {
-  return fold(a) === fold(b);
-}
 
 // Prestations boutique disponibles pour le modèle sélectionné (tolérant).
 export function shopServicesForModel(shopServices: PublicService[], model: string): PublicService[] {
@@ -31,12 +27,12 @@ export function shopServicesForModel(shopServices: PublicService[], model: strin
 // Associe chaque panne globale à sa prestation boutique (si configurée).
 export function mergeIssues(globalIssues: string[], shopServices: PublicService[]): IssueRow[] {
   const rows: IssueRow[] = globalIssues.map((issue) => {
-    const service = shopServices.find((entry) => sameLabel(entry.issue, issue));
+    const service = shopServices.find((entry) => sameIssueLabel(entry.issue, issue));
     return { issue, service, configured: Boolean(service) };
   });
   // Pannes configurées en boutique mais absentes de la liste globale : on les ajoute.
   for (const service of shopServices) {
-    if (!rows.some((row) => sameLabel(row.issue, service.issue))) {
+    if (!rows.some((row) => sameIssueLabel(row.issue, service.issue))) {
       rows.push({ issue: service.issue, service, configured: true });
     }
   }
@@ -44,7 +40,7 @@ export function mergeIssues(globalIssues: string[], shopServices: PublicService[
 }
 
 export function bestServiceForIssue(shopServices: PublicService[], issue: string): PublicService | undefined {
-  return shopServices.find((service) => sameLabel(service.issue, issue));
+  return shopServices.find((service) => sameIssueLabel(service.issue, issue));
 }
 
 export type LeadTagInput = {

@@ -34,14 +34,17 @@ import type { LucideIcon } from "lucide-react";
 import { useAsyncList } from "@/components/widget/use-catalog";
 import type { StepContext } from "@/components/widget/widget-state";
 import { WidgetInput, WidgetSearch, WidgetTextarea } from "@/components/widget/widget-primitives";
-import { categorizeIssues, fold, issuesForType, popularIssuesForType } from "@/lib/widget/global-catalog";
+import {
+  categorizeIssues,
+  fold,
+  issueMatchKey,
+  issuesForType,
+  popularIssuesForType,
+  sameIssueLabel,
+} from "@/lib/widget/global-catalog";
 import { formatDuration, formatPrice } from "@/components/widget/widget-theme";
 import type { PublicService } from "@/lib/widget/public-types";
 import { cn } from "@/lib/utils";
-
-function sameIssue(a: string, b: string): boolean {
-  return fold(a) === fold(b);
-}
 
 const ISSUE_ICON_RULES: Array<{ keys: string[]; icon: LucideIcon }> = [
   { keys: ["ecran", "vitre", "oled", "lcd", "dalle", "tactile", "chassis"], icon: Smartphone },
@@ -90,11 +93,11 @@ export function IssueStep({ ctx, hideHeader = false }: { ctx: StepContext; hideH
   // Catalogue global ∪ pannes configurées en boutique.
   const allIssues = (() => {
     const global = issuesForType(draft.category);
-    const seen = new Set(global.map(fold));
+    const seen = new Set(global.map(issueMatchKey));
     const merged = [...global];
     for (const service of services.items) {
-      if (service.issue && !seen.has(fold(service.issue))) {
-        seen.add(fold(service.issue));
+      if (service.issue && !seen.has(issueMatchKey(service.issue))) {
+        seen.add(issueMatchKey(service.issue));
         merged.push(service.issue);
       }
     }
@@ -102,10 +105,10 @@ export function IssueStep({ ctx, hideHeader = false }: { ctx: StepContext; hideH
   })();
 
   const popular = popularIssuesForType(draft.category);
-  const popularSet = new Set(popular.map(fold));
-  const otherIssues = allIssues.filter((issue) => !popularSet.has(fold(issue)));
+  const popularSet = new Set(popular.map(issueMatchKey));
+  const otherIssues = allIssues.filter((issue) => !popularSet.has(issueMatchKey(issue)));
   const categories = categorizeIssues(otherIssues);
-  const customIssues = draft.issues.filter((issue) => !allIssues.some((entry) => sameIssue(entry, issue)));
+  const customIssues = draft.issues.filter((issue) => !allIssues.some((entry) => sameIssueLabel(entry, issue)));
 
   const q = fold(query.trim());
   const searchResults = q ? allIssues.filter((issue) => fold(issue).includes(q)) : [];
@@ -117,7 +120,7 @@ export function IssueStep({ ctx, hideHeader = false }: { ctx: StepContext; hideH
     const next = { ...draft.services };
     let changed = false;
     for (const issue of draft.issues) {
-      const matches = services.items.filter((service) => sameIssue(service.issue, issue));
+      const matches = services.items.filter((service) => sameIssueLabel(service.issue, issue));
       const current = draft.services[issue];
       const stillValid = current ? matches.some((match) => match.publicId === current.publicId) : false;
       if (matches.length === 0) {
@@ -191,7 +194,7 @@ export function IssueStep({ ctx, hideHeader = false }: { ctx: StepContext; hideH
   const subtitle = features.multiIssue ? "Sélectionnez une ou plusieurs pannes." : "Sélectionnez la panne concernée.";
 
   const renderCard = (issue: string) => {
-    const issueServices = services.items.filter((entry) => sameIssue(entry.issue, issue));
+    const issueServices = services.items.filter((entry) => sameIssueLabel(entry.issue, issue));
     return (
       <IssueCard
         key={issue}

@@ -78,6 +78,7 @@ import type { RepairCard } from "@/mock/repairs";
 
 import { DeviceThumb, Panel, PrimaryButton, SecondaryButton, StatusBadge } from "./primitives";
 import { useDocument } from "./print-provider";
+import { SettlementModal, useSettlementModal } from "./settlement-modal";
 
 const statuses: RepairStatus[] = [
   "Reçu",
@@ -151,6 +152,7 @@ function quoteUiSummary(quotes: Quote[], acceptedQuote: Quote | undefined): "Auc
 export function RepairsWorkspace() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const settlement = useSettlementModal();
   const {
     workshopInfo,
     repairs,
@@ -1138,6 +1140,15 @@ export function RepairsWorkspace() {
               ) : (
                 <div className="scrollbar-thin flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1 pb-4">
                   <div className="rounded-[16px] border border-[#E4E7EC] bg-[#FFFFFF] px-5 py-4">
+                    {selectedRepair.status === "Prêt" ? (
+                      <PrimaryButton
+                        className="h-11 w-full"
+                        onClick={() => settlement.open(selectedRepair.id, { closeAfterSubmit: true })}
+                      >
+                        <Smartphone className="mr-2 size-4" />
+                        Téléphone rendu / règlement
+                      </PrimaryButton>
+                    ) : null}
                     {primaryAction ? (
                       <>
                         {selectedRepair.status === "Prêt" && primaryInvoice?.status !== "Payée" && resteAPayer > 0 && (
@@ -1166,7 +1177,7 @@ export function RepairsWorkspace() {
                           </div>
                         )}
                         <PrimaryButton
-                          className="mt-4 h-11 w-full"
+                          className={cn("h-11 w-full", selectedRepair.status === "Prêt" ? "mt-2" : "mt-4")}
                           disabled={"disabled" in primaryAction ? Boolean(primaryAction.disabled) : false}
                           onClick={primaryAction.onClick}
                         >
@@ -1467,6 +1478,16 @@ export function RepairsWorkspace() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <SettlementModal
+        draft={settlement.draft}
+        invoice={settlement.invoice}
+        isOpen={settlement.isOpen}
+        onClose={settlement.close}
+        onDraftChange={settlement.setDraft}
+        onSubmit={settlement.submit}
+        total={settlement.total}
+      />
     </div>
   );
 }

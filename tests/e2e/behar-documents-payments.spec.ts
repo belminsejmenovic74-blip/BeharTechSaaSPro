@@ -262,6 +262,20 @@ async function gotoPublicTracking(page: Page, status: string) {
 }
 
 test.describe("Documents, impression et règlement", () => {
+  test("bon de prise en charge: diagnostic et état des photos restent visibles", async ({ browser }) => {
+    const { page, context } = await openPoste(browser, { name: "intake-diagnostic-photos" });
+    await injectSeed(page);
+    await page.goto("/dashboard/documents", { waitUntil: "domcontentloaded" });
+
+    const preview = page.getByTestId("document-preview-panel");
+    await expect(preview).toContainText("Diagnostic / intervention");
+    await expect(preview).toContainText("Diagnostic");
+    await expect(preview).toContainText("Photos");
+    await expect(preview).toContainText("Aucune photo jointe");
+
+    await context.close();
+  });
+
   const statusCases = [
     { status: "Reçu", title: "Suivi de votre réparation", badge: "Reçu", active: "Reçu" },
     { status: "Diagnostic", title: "Suivi de votre réparation", badge: "Diagnostic", active: "Diagnostic" },
@@ -502,6 +516,41 @@ test.describe("Documents, impression et règlement", () => {
     await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
     await expect(page.getByTestId("dashboard-finance-overview")).toContainText("CA encaissé");
     await expect(page.getByTestId("dashboard-finance-overview")).toContainText("149");
+    await context.close();
+  });
+
+  test("tableau de bord: un téléphone prêt peut être marqué rendu", async ({ browser }) => {
+    const { page, context } = await openPoste(browser, { name: "dashboard-return" });
+    await injectSeed(page);
+    await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
+
+    await page.getByRole("button", { name: "Téléphone rendu / règlement" }).click();
+    await page.getByRole("button", { name: "Non réglé", exact: true }).click();
+    await page.getByRole("button", { name: "Marquer le téléphone rendu" }).click();
+
+    const state = await readStoreState(page);
+    const repair = state.repairs.find((entry: any) => entry.id === "rep_doc_0");
+    expect(repair.status).toBe("Rendu");
+    expect(repair.externalSettlement).toMatchObject({ status: "Non réglé", amount: 0 });
+    await context.close();
+  });
+
+  test("site mobile: restitution accessible directement depuis le tableau de bord", async ({ browser }) => {
+    const { page, context } = await openPoste(browser, { name: "mobile-dashboard-return" });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await injectSeed(page);
+    await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
+
+    await expect(page.getByText("Téléphones prêts à rendre", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Téléphone rendu", exact: true }).click();
+    await expect(page.getByText("Téléphone rendu · indiquer le règlement", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Non réglé", exact: true }).click();
+    await page.getByRole("button", { name: "Marquer le téléphone rendu" }).click();
+
+    const state = await readStoreState(page);
+    const repair = state.repairs.find((entry: any) => entry.id === "rep_doc_0");
+    expect(repair.status).toBe("Rendu");
+    expect(repair.externalSettlement).toMatchObject({ status: "Non réglé", amount: 0 });
     await context.close();
   });
 });

@@ -16,11 +16,7 @@ import type { StepContext } from "@/components/widget/widget-state";
 import { formatDuration, formatPrice } from "@/components/widget/widget-theme";
 import type { PublicService } from "@/lib/widget/public-types";
 import { cn } from "@/lib/utils";
-import { fold } from "@/lib/widget/global-catalog";
-
-function sameIssue(a: string, b: string): boolean {
-  return fold(a) === fold(b);
-}
+import { sameIssueLabel } from "@/lib/widget/global-catalog";
 
 export function QualityStep({ ctx }: { ctx: StepContext }) {
   const { client, token, draft, patch, currency, locale, features } = ctx;
@@ -44,7 +40,7 @@ export function QualityStep({ ctx }: { ctx: StepContext }) {
     const next = { ...draft.services };
     let changed = false;
     for (const issue of draft.issues) {
-      const matches = services.items.filter((service) => sameIssue(service.issue, issue));
+      const matches = services.items.filter((service) => sameIssueLabel(service.issue, issue));
       const current = draft.services[issue];
       const stillValid = current ? matches.some((match) => match.publicId === current.publicId) : false;
       if (matches.length === 1 && (!current || !stillValid)) {
@@ -74,7 +70,7 @@ export function QualityStep({ ctx }: { ctx: StepContext }) {
         </div>
       ) : (
         issues.map((issue) => {
-          const options = services.items.filter((service) => sameIssue(service.issue, issue));
+          const options = services.items.filter((service) => sameIssueLabel(service.issue, issue));
           return (
             <section key={issue} className="grid gap-3">
               {issues.length > 1 ? <h3 className="text-sm font-semibold text-[var(--w-text)]">{issue}</h3> : null}

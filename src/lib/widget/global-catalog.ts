@@ -293,6 +293,29 @@ export function fold(value: string): string {
   return out;
 }
 
+/**
+ * Clé de rapprochement entre les libellés génériques proposés au client et
+ * ceux du catalogue atelier. Le catalogue peut publier « Écran » tandis que le
+ * parcours grand public emploie « Écran cassé » : il s'agit de la même panne,
+ * pas d'une demande « sur devis ».
+ */
+export function issueMatchKey(value: string): string {
+  const normalized = fold(value)
+    .replace(/[’']/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^(remplacement|changer|changement|reparation)\s+(de\s+|du\s+|d\s+)?/, "");
+
+  if (["ecran", "ecran casse", "ecran brise", "afficheur"].includes(normalized)) return "ecran";
+  return normalized;
+}
+
+export function sameIssueLabel(a: string, b: string): boolean {
+  const first = issueMatchKey(a);
+  return first.length > 0 && first === issueMatchKey(b);
+}
+
 // 4. Pannes / prestations.
 const COMMON_ISSUES = [
   "Écran cassé",

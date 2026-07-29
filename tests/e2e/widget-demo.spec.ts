@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { DEMO_CONFIG } from "../../src/lib/widget/demo-data";
+
 test("widget démo — parcours réel sans message technique", async ({ page }) => {
   await page.goto("/widget/demo", { waitUntil: "networkidle" });
   await expect(page.getByText("Atelier de démonstration")).toHaveCount(0);
@@ -63,4 +65,45 @@ test("recherche intégrée — appareil, marque et modèle ouvrent le widget pr�
     "src",
     /model=iPhone\+SE\+%282020%29/,
   );
+});
+
+test("widget publié — « Écran cassé » affiche le prix du service catalogue « Écran »", async ({ page }) => {
+  const publicId = "wdg_alias_price_123456";
+  await page.route(`**/api/public/widgets/${publicId}/**`, async (route) => {
+    const path = new URL(route.request().url()).pathname.replace(/\/$/, "");
+    const data = path.endsWith("/config")
+      ? { ...DEMO_CONFIG, id: publicId, sessionToken: "alias-price-token", offers: { enabled: false, offers: [] } }
+      : path.endsWith("/services")
+        ? {
+            services: [
+              {
+                publicId: "svc_iphone12_screen",
+                category: "Smartphone",
+                brand: "Apple",
+                model: "iPhone 12",
+                issue: "Écran",
+                service: "Remplacement écran",
+                price: { mode: "exact", amount: 99, currency: "EUR" },
+                warranty: "6 mois",
+              },
+            ],
+          }
+        : {};
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ data }),
+    });
+  });
+
+  await page.goto(
+    `/widget/${publicId}?type=Smartphone&brand=Apple&model=iPhone%2012&host=${encodeURIComponent("https://example.com")}`,
+    { waitUntil: "domcontentloaded" },
+  );
+  await page.getByRole("button", { name: /Écran cassé/ }).click();
+  await page.getByRole("button", { name: "Continuer" }).click();
+
+  await expect(page.getByRole("heading", { name: "Choisissez la qualité de votre réparation" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Remplacement écran.*99/ })).toBeVisible();
+  await expect(page.getByText("Cette réparation est réalisée sur devis.")).toHaveCount(0);
 });

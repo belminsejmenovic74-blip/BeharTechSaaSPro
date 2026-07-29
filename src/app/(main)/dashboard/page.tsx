@@ -4,10 +4,22 @@ import { useEffect, useState } from "react";
 
 import Link from "next/link";
 
-import { AlertTriangle, CalendarDays, ChevronRight, Clock, FileText, Files, Package, Wrench } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarDays,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  FileText,
+  Files,
+  Package,
+  Smartphone,
+  Wrench,
+} from "lucide-react";
 
 import { DashboardPremium } from "@/components/behar/dashboard-premium";
 import { PageShell } from "@/components/behar/page-shell";
+import { SettlementModal, useSettlementModal } from "@/components/behar/settlement-modal";
 import { StatusBadge } from "@/components/behar/primitives";
 import { isTerminalRepairStatus, normalizeAppointmentStatus, useBeharStore } from "@/lib/behar-store";
 
@@ -46,6 +58,7 @@ function useToday() {
 
 function MobileDashboard() {
   const store = useBeharStore();
+  const settlement = useSettlementModal();
   const today = useToday();
 
   const repairsInProgress = store.repairs.filter((r) => r.status !== "Prêt" && !isTerminalRepairStatus(r.status));
@@ -63,6 +76,7 @@ function MobileDashboard() {
     .sort((a, b) => timeRank(a.time) - timeRank(b.time));
 
   const lowStock = store.stockItems.filter((item) => item.stock <= (item.threshold ?? 0));
+  const readyRepairs = store.repairs.filter((repair) => repair.status === "Prêt");
 
   const pipelineConfig = [
     { key: "Reçu", label: "Reçu" },
@@ -254,6 +268,59 @@ function MobileDashboard() {
         </div>
       </SectionCard>
 
+      {/* Restitutions accessibles directement depuis le téléphone */}
+      {readyRepairs.length > 0 ? (
+        <SectionCard>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="font-semibold text-[#101828] text-[15px] tracking-tight">Téléphones prêts à rendre</p>
+              <p className="mt-0.5 text-[#667085] text-[11.5px]">
+                {readyRepairs.length} restitution{readyRepairs.length > 1 ? "s" : ""} en attente
+              </p>
+            </div>
+            <CheckCircle2 className="size-5 text-[#2A9D8F]" />
+          </div>
+          <ul className="mt-3 space-y-3">
+            {readyRepairs.slice(0, 4).map((repair) => {
+              const customer = store.customers.find((entry) => entry.id === repair.customerId);
+              return (
+                <li className="rounded-[14px] border border-[#E4E7EC] bg-[#FFFFFF] p-3" key={repair.id}>
+                  <div className="flex items-start gap-3">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white text-[#2A9D8F]">
+                      <Smartphone className="size-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold text-[#101828] text-[13px]">{customer?.name ?? "Client"}</p>
+                      <p className="mt-0.5 truncate text-[#667085] text-[11.5px]">
+                        {repair.deviceModel || repair.model || repair.device} · {repair.number}
+                      </p>
+                    </div>
+                    <StatusBadge status="Prêt" />
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <Link
+                      className="flex h-10 items-center justify-center rounded-[11px] border border-[#E4E7EC] bg-white font-semibold text-[#101828] text-xs"
+                      href={`/dashboard/dossiers/_/?id=${repair.id}`}
+                      onClick={() => store.setSelected("repair", repair.id)}
+                      prefetch={false}
+                    >
+                      Ouvrir
+                    </Link>
+                    <button
+                      className="flex h-10 items-center justify-center rounded-[11px] bg-[#2A9D8F] px-2 font-semibold text-white text-xs"
+                      onClick={() => settlement.open(repair.id, { closeAfterSubmit: true })}
+                      type="button"
+                    >
+                      Téléphone rendu
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </SectionCard>
+      ) : null}
+
       {/* Activité récente */}
       <SectionCard>
         <div className="flex items-center justify-between">
@@ -287,6 +354,16 @@ function MobileDashboard() {
 
       {/* Réparation en focus */}
       {repairsInProgress[0] && <FocusRepair repair={repairsInProgress[0]} />}
+
+      <SettlementModal
+        draft={settlement.draft}
+        invoice={settlement.invoice}
+        isOpen={settlement.isOpen}
+        onClose={settlement.close}
+        onDraftChange={settlement.setDraft}
+        onSubmit={settlement.submit}
+        total={settlement.total}
+      />
     </div>
   );
 }

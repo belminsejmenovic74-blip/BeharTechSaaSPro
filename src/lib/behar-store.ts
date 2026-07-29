@@ -4450,9 +4450,10 @@ const syncPriceBookToStockItems = (pbItems: PriceBookItem[], stockItems: StockIt
         priceBookItemId: pb.id,
         purchasePrice: Number.isFinite(pb.prixAchat) ? pb.prixAchat : nextStock[sIndex].purchasePrice,
         salePrice: Number.isFinite(pb.prixVentePiece) ? pb.prixVentePiece : nextStock[sIndex].salePrice,
-        // Only update quantity if it was explicitly provided in PriceBook
-        quantity: pb.stockDisponible ?? nextStock[sIndex].quantity,
-        stock: pb.stockDisponible ?? nextStock[sIndex].stock,
+        // Le stock central est la source de vérité. Une ancienne quantité
+        // mémorisée dans le catalogue ne doit jamais écraser l'inventaire réel.
+        quantity: nextStock[sIndex].quantity,
+        stock: nextStock[sIndex].stock,
         supplier: pb.fournisseur || nextStock[sIndex].supplier,
         updatedAt: pb.updatedAt || nextStock[sIndex].updatedAt,
       };
@@ -4508,6 +4509,7 @@ const applyStockPurchasePriceToPriceBook = (pbItems: PriceBookItem[], item: Stoc
       return {
         ...pb,
         stockItemId: pb.stockItemId || item.id,
+        stockDisponible: item.stock,
         updatedAt: getNowIso(),
       };
     }
@@ -4515,6 +4517,7 @@ const applyStockPurchasePriceToPriceBook = (pbItems: PriceBookItem[], item: Stoc
       ...pb,
       prixAchat: purchase,
       stockItemId: pb.stockItemId || item.id,
+      stockDisponible: item.stock,
       updatedAt: getNowIso(),
     };
   });
