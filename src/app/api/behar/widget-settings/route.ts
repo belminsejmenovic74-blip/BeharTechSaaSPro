@@ -18,7 +18,6 @@ import { applyCustomerReceptionPolicy, type CustomerReceptionMode } from "@/lib/
 // Volontairement permissif : le serveur le re-passe par la liste blanche
 // `publicServices` avant tout stockage — aucun champ interne ne peut être publié.
 const catalogSchema = z.array(z.record(z.string(), z.unknown())).max(5000).optional();
-const allowedDomainsSchema = z.array(z.string().trim().min(1).max(255)).max(20).optional();
 
 // Réduit le catalogue à ses champs publics (aucun fournisseur / coût / lot / SKU).
 function sanitizeCatalog(raw: unknown) {
@@ -44,6 +43,7 @@ const defaultsSchema = z
     currency: z.enum(["EUR", "CHF"]),
     businessHours: z.string().trim().max(500).optional(),
     customerReceptionMode: z.enum(["shop", "mobile", "hybrid"]).optional(),
+    website: z.string().trim().max(300).optional(),
   })
   .strict();
 
@@ -55,7 +55,7 @@ const requestSchema = z.discriminatedUnion("operation", [
       widgetId: z.string().uuid(),
       config: editableWidgetConfigSchema,
       catalog: catalogSchema,
-      allowedDomains: allowedDomainsSchema,
+      defaults: defaultsSchema,
     })
     .strict(),
   base
@@ -64,7 +64,7 @@ const requestSchema = z.discriminatedUnion("operation", [
       widgetId: z.string().uuid(),
       config: editableWidgetConfigSchema,
       catalog: catalogSchema,
-      allowedDomains: allowedDomainsSchema,
+      defaults: defaultsSchema,
     })
     .strict(),
   // Annuler les modifications / restaurer la version publiée : le brouillon
@@ -119,8 +119,8 @@ function requestDomain(request: Request): string {
   }
 }
 
-function allowedDomains(values: string[] | undefined, request: Request): string[] {
-  return [...new Set([...(values ?? []), requestDomain(request)].map(normalizeDomain).filter(Boolean))].slice(0, 20);
+function automaticDomains(website: string | undefined, request: Request): string[] {
+  return [...new Set([requestDomain(request), normalizeDomain(website ?? "")].filter(Boolean))];
 }
 
 function responseError(message: string, status: number) {
@@ -179,7 +179,7 @@ export async function POST(request: Request) {
           publicWidgetId: "wdg_QA2026BEHARTECH",
           publishedVersion: 1,
           publishedAt: new Date().toISOString(),
-          allowedDomains: [requestDomain(request)],
+          allowedDomains: automaticDomains(parsed.data.defaults.website, request),
           config,
         },
         versions: [],
@@ -259,7 +259,7 @@ export async function POST(request: Request) {
           step_config: initial.layout,
           icon_config: initial.icons,
           draft_config: mergeEditableWidgetConfig({}, initial),
-          allowed_domains: allowedDomains(undefined, request),
+          allowed_domains: automaticDomains(parsed.data.defaults.website, request),
         })
         .select(
           "id, shop_id, public_widget_id, internal_name, active, display_mode, draft_config, published_config, published_version, published_at, allowed_domains",
@@ -268,7 +268,7 @@ export async function POST(request: Request) {
       if (created.error || !created.data) return responseError("Création du widget impossible.", 503);
       widget = created.data;
     }
-    const normalizedDomains = allowedDomains(widget.allowed_domains, request);
+    const normalizedDomains = automaticDomains(parsed.data.defaults.website, request);
     if (normalizedDomains.join("|") !== (widget.allowed_domains || []).join("|")) {
       const domainUpdate = await admin
         .from("widget_settings")
@@ -360,7 +360,7 @@ export async function POST(request: Request) {
         field_config: parsed.data.config.features,
         step_config: parsed.data.config.layout,
         icon_config: parsed.data.config.icons,
-        allowed_domains: allowedDomains(parsed.data.allowedDomains, request),
+        allowed_domains: automaticDomains(parsed.data.defaults.website, request),
         draft_config: fullConfig,
       })
       .eq("tenant_id", workshopId)
@@ -380,7 +380,7 @@ export async function POST(request: Request) {
   if (error) return responseError("Publication du widget impossible.", 503);
   const domainUpdate = await admin
     .from("widget_settings")
-    .update({ allowed_domains: allowedDomains(parsed.data.allowedDomains, request) })
+    .update({ allowed_domains: automaticDomains(parsed.data.defaults.website, request) })
     .eq("tenant_id", workshopId)
     .eq("id", row.id);
   if (domainUpdate.error) return responseError("Publication des domaines impossible.", 503);

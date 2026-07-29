@@ -223,6 +223,7 @@ test("Widget client — aperçu direct, disposition contrôlée et publication",
   );
 
   await page.getByRole("button", { name: "Installer" }).click();
+  await expect(page.getByText("Sites autorisés", { exact: true })).toHaveCount(0);
   const integrationSection = page
     .getByRole("heading", { name: "Installer le widget sur votre site" })
     .locator("..")
