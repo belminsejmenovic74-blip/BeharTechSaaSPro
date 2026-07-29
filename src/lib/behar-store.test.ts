@@ -67,6 +67,48 @@ beforeEach(() => {
 });
 
 describe("Achats — registre central", () => {
+  it("conserve une option catalogue distincte pour chaque qualité d'écran", () => {
+    store().addPriceBookItem({
+      source: "manual",
+      typeAppareil: "smartphone",
+      marque: "Apple",
+      modele: "iPhone 12 Qualités",
+      reparation: "Écran",
+      piece: "Écran complet",
+      qualite: "LTPS",
+      sku: "IP12-QUALITY-LTPS",
+      stockDisponible: 2,
+      prixAchat: 20,
+      prixVentePiece: 89,
+      mainOeuvre: 20,
+    });
+
+    store().addStockItem({
+      name: "Écran complet",
+      brandName: "Apple",
+      compatibleModels: ["iPhone 12 Qualités"],
+      categoryName: "Écran",
+      quality: "Hard OLED",
+      sku: "IP12-QUALITY-HARD-OLED",
+      purchasePrice: 30,
+      salePrice: 109,
+      quantity: 1,
+      stock: 1,
+      threshold: 1,
+      supplier: "Fournisseur test",
+      itemType: "part",
+      skipPurchaseLog: true,
+      skipModelInference: true,
+    });
+
+    const qualities = store()
+      .priceBookItems.filter((entry) => entry.sku?.startsWith("IP12-QUALITY-"))
+      .map((entry) => entry.qualite)
+      .sort();
+
+    expect(qualities).toEqual(["Hard OLED", "LTPS"]);
+  });
+
   it("garde le stock central comme source de vérité dans la prise en charge", () => {
     const stockId = store().addStockItem({
       name: "Écran complet",

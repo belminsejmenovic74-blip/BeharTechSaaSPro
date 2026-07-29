@@ -67,7 +67,7 @@ test("recherche intégrée — appareil, marque et modèle ouvrent le widget pr�
   );
 });
 
-test("widget publié — « Écran cassé » affiche le prix du service catalogue « Écran »", async ({ page }) => {
+test("widget publié — « Écran cassé » propose les qualités et leurs prix du catalogue « Écran »", async ({ page }) => {
   const publicId = "wdg_alias_price_123456";
   await page.route(`**/api/public/widgets/${publicId}/**`, async (route) => {
     const path = new URL(route.request().url()).pathname.replace(/\/$/, "");
@@ -83,8 +83,20 @@ test("widget publié — « Écran cassé » affiche le prix du service catalogu
                 model: "iPhone 12",
                 issue: "Écran",
                 service: "Remplacement écran",
+                quality: "LTPS",
                 price: { mode: "exact", amount: 99, currency: "EUR" },
                 warranty: "6 mois",
+              },
+              {
+                publicId: "svc_iphone12_screen_hard_oled",
+                category: "Smartphone",
+                brand: "Apple",
+                model: "iPhone 12",
+                issue: "Écran",
+                service: "Remplacement écran",
+                quality: "Hard OLED",
+                price: { mode: "exact", amount: 129, currency: "EUR" },
+                warranty: "12 mois",
               },
             ],
           }
@@ -104,6 +116,7 @@ test("widget publié — « Écran cassé » affiche le prix du service catalogu
   await page.getByRole("button", { name: "Continuer" }).click();
 
   await expect(page.getByRole("heading", { name: "Choisissez la qualité de votre réparation" })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Remplacement écran.*99/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Remplacement écran · LTPS.*99/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Remplacement écran · Hard OLED.*129/ })).toBeVisible();
   await expect(page.getByText("Cette réparation est réalisée sur devis.")).toHaveCount(0);
 });

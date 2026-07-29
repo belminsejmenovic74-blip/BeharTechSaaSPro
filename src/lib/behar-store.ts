@@ -4492,15 +4492,19 @@ const applyStockPurchasePriceToPriceBook = (pbItems: PriceBookItem[], item: Stoc
   const itemBrand = (item.brandName || "").toLowerCase();
   const itemModels = (item.compatibleModels || []).map((m) => m.toLowerCase());
   const itemCat = (item.categoryName || item.category || "").toLowerCase();
+  const quality = normalizeStockQuality(item.quality);
+  const qualityKey = quality.toLowerCase();
   let matched = false;
   const next = pbItems.map((pb) => {
     if (matched) return pb;
     const linkMatch = pb.stockItemId === item.id || (Boolean(item.priceBookItemId) && pb.id === item.priceBookItemId);
     const skuMatch = Boolean(itemSku) && (pb.sku || "").toLowerCase() === itemSku;
+    const qualityMatch = !qualityKey || normalizeStockQuality(pb.qualite).toLowerCase() === qualityKey;
     const attrMatch =
       Boolean(itemBrand) &&
       (pb.marque || "").toLowerCase() === itemBrand &&
       itemModels.some((m) => m === (pb.modele || "").toLowerCase()) &&
+      qualityMatch &&
       ((pb.piece || "").toLowerCase() === itemName ||
         getCategoryFromIntervention(pb.reparation).toLowerCase() === itemCat);
     if (!(linkMatch || skuMatch || attrMatch)) return pb;
@@ -4508,6 +4512,7 @@ const applyStockPurchasePriceToPriceBook = (pbItems: PriceBookItem[], item: Stoc
     if (pb.prixAchat > 0) {
       return {
         ...pb,
+        qualite: quality || pb.qualite,
         stockItemId: pb.stockItemId || item.id,
         stockDisponible: item.stock,
         updatedAt: getNowIso(),
@@ -4515,6 +4520,7 @@ const applyStockPurchasePriceToPriceBook = (pbItems: PriceBookItem[], item: Stoc
     }
     return {
       ...pb,
+      qualite: quality || pb.qualite,
       prixAchat: purchase,
       stockItemId: pb.stockItemId || item.id,
       stockDisponible: item.stock,
@@ -4522,7 +4528,6 @@ const applyStockPurchasePriceToPriceBook = (pbItems: PriceBookItem[], item: Stoc
     };
   });
   const model = item.compatibleModels[0]?.trim();
-  const quality = normalizeStockQuality(item.quality);
   if (matched || !itemBrand || !model || !itemCat || !quality) return next;
   const typeAppareil: PriceBookDeviceType =
     item.deviceType === "Smartphone"
@@ -4615,16 +4620,19 @@ const syncStockToPriceBookItems = (stockItems: StockItem[], pbItems: PriceBookIt
       const intervention = getInterventionFromCategory(s.categoryName || s.category);
       const categoryRaw = (s.categoryName || s.category || "").toLowerCase();
       const interventionAliases = (INTERVENTION_ALIASES[intervention] ?? []).map((a) => a.toLowerCase());
+      const stockQuality = normalizeStockQuality(s.quality).toLowerCase();
       pbIndex = nextPB.findIndex((pb) => {
         const pbReparationLower = pb.reparation.toLowerCase();
         const reparationMatches =
           pbReparationLower === intervention.toLowerCase() ||
           pbReparationLower === categoryRaw ||
           interventionAliases.includes(pbReparationLower);
+        const qualityMatches = !stockQuality || normalizeStockQuality(pb.qualite).toLowerCase() === stockQuality;
         return (
           pb.marque.toLowerCase() === s.brandName?.toLowerCase() &&
           pb.modele.toLowerCase() === effectiveModel.toLowerCase() &&
-          reparationMatches
+          reparationMatches &&
+          qualityMatches
         );
       });
     }
@@ -4633,8 +4641,10 @@ const syncStockToPriceBookItems = (stockItems: StockItem[], pbItems: PriceBookIt
       // Update existing Price Book entry
       const existing = nextPB[pbIndex];
       const stockDrivenLabor = 0;
+      const stockQuality = normalizeStockQuality(s.quality);
       const nextItem = {
         ...existing,
+        qualite: stockQuality || existing.qualite,
         stockItemId: s.id,
         prixAchat: s.purchasePrice,
         prixVentePiece: s.salePrice,
@@ -4665,7 +4675,7 @@ const syncStockToPriceBookItems = (stockItems: StockItem[], pbItems: PriceBookIt
         modele: effectiveModel,
         piece: s.name,
         reparation: intervention,
-        qualite: "Standard",
+        qualite: normalizeStockQuality(s.quality) || "Standard",
         prixAchat: s.purchasePrice,
         prixVentePiece: s.salePrice,
         mainOeuvre: 0,

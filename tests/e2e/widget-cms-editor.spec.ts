@@ -88,8 +88,21 @@ test("Widget client — aperçu direct, disposition contrôlée et publication",
     stockDisponible: 2,
     source: "manual",
   });
+  const premiumMobilePrice = createPriceBookItem({
+    typeAppareil: "smartphone",
+    marque: "Apple",
+    modele: "iPhone 15",
+    reparation: "Batterie",
+    piece: "Batterie iPhone 15 Premium",
+    qualite: "Premium",
+    prixAchat: 45,
+    prixVentePiece: 119,
+    mainOeuvre: 30,
+    stockDisponible: 1,
+    source: "manual",
+  });
   const snapshotState = await page.evaluate(
-    ({ workshopId, mobilePrice }) => {
+    ({ workshopId, mobilePrice, premiumMobilePrice }) => {
       const key = "behar-tech-local-demo-v3";
       const parsed = JSON.parse(window.localStorage.getItem(key) || '{"state":{},"version":1}');
       parsed.state.cloudSync = { ...(parsed.state.cloudSync || {}), workshopId };
@@ -97,11 +110,11 @@ test("Widget client — aperçu direct, disposition contrôlée et publication",
         ...(parsed.state.workshopSettings || {}),
         customerReceptionMode: "mobile",
       };
-      parsed.state.priceBookItems = [mobilePrice];
+      parsed.state.priceBookItems = [mobilePrice, premiumMobilePrice];
       window.localStorage.setItem(key, JSON.stringify(parsed));
       return parsed.state;
     },
-    { workshopId: WORKSHOP_ID, mobilePrice },
+    { workshopId: WORKSHOP_ID, mobilePrice, premiumMobilePrice },
   );
   const snapshotUpdatedAt = new Date().toISOString();
   await page.route("**/api/behar/snapshot", async (route) => {
@@ -130,6 +143,13 @@ test("Widget client — aperçu direct, disposition contrôlée et publication",
 
   await page.getByRole("button", { name: "Style" }).click();
   await page.getByLabel("Couleur principale — code hexadécimal").fill("#7C3AED");
+  const previewRoot = page
+    .frameLocator('iframe[title="Aperçu réel du widget"]')
+    .locator('[style*="--w-primary"]')
+    .first();
+  await expect
+    .poll(() => previewRoot.evaluate((element) => (element as HTMLElement).style.getPropertyValue("--w-primary")))
+    .toBe("#7C3AED");
   await page.getByText("Style des boutons").scrollIntoViewIfNeeded();
   await page.getByRole("button", { name: "Contour" }).click();
 
@@ -183,13 +203,24 @@ test("Widget client — aperçu direct, disposition contrôlée et publication",
   expect(published.icons.phone.mode).toBe("library");
   expect(published.icons.poweredBy).toBe(true);
 
-  expect(publications[0].catalog).toHaveLength(1);
-  expect(publications[0].catalog[0]).toMatchObject({
-    brand: "Apple",
-    model: "iPhone 15",
-    issue: "Batterie",
-    price: { mode: "exact", amount: 129, currency: "EUR" },
-  });
+  expect(publications[0].catalog).toHaveLength(2);
+  expect(publications[0].catalog).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        brand: "Apple",
+        model: "iPhone 15",
+        issue: "Batterie",
+        price: { mode: "exact", amount: 129, currency: "EUR" },
+      }),
+      expect.objectContaining({
+        brand: "Apple",
+        model: "iPhone 15",
+        issue: "Batterie",
+        quality: "Premium",
+        price: { mode: "exact", amount: 149, currency: "EUR" },
+      }),
+    ]),
+  );
 
   await page.getByRole("button", { name: "Affichage" }).click();
   const integrationSection = page.getByRole("heading", { name: "Code d’intégration" }).locator("..").locator("..");
