@@ -69,6 +69,16 @@ const inputClass =
   "h-11 w-full rounded-xl border border-[#DEDFDA] bg-white px-3.5 text-sm text-[#101828] shadow-[0_1px_2px_rgba(16,24,40,.03)] outline-none transition placeholder:text-[#A2A29D] hover:border-[#C8CAC4] focus:border-[#2A9D8F] focus:ring-3 focus:ring-[#2A9D8F]/10";
 const labelClass = "mb-1.5 block text-xs font-semibold text-[#52524F]";
 
+function isTechnicalWidgetDomain(value: string) {
+  const domain = value
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .split("/")[0]
+    .replace(/^www\./, "");
+  return domain === "behartechpro.fr" || domain.endsWith(".vercel.app");
+}
+
 const BLOCK_LABELS: Record<WidgetBlockKey, string> = {
   header: "En-tête et logo",
   progress: "Progression",
@@ -1255,6 +1265,7 @@ function DisplayPanel({
   const integrationCode = `<div data-behar-widget-search></div>\n<script async src="${widgetScriptOrigin}/widget.js" data-widget-id="${publicWidgetId}"></script>`;
   const publicUrl = `${widgetScriptOrigin}/widget/${publicWidgetId}`;
   const iframeCode = `<iframe src="${publicUrl}" title="Prendre rendez-vous" loading="lazy" style="width:100%;min-height:720px;border:0;border-radius:16px" allow="clipboard-write"></iframe>`;
+  const customerDomains = allowedDomains.filter((domain) => !isTechnicalWidgetDomain(domain));
   const aiPrompt = `Intègre le widget public de prise de rendez-vous BEHAR TECH PRO sur mon site.
 
 URL publique : ${publicUrl}
@@ -1338,14 +1349,22 @@ Règles : le widget doit occuper 100 % de la largeur disponible, conserver une h
       </EditorSection>
       <EditorSection
         title="Sites autorisés"
-        description="Le domaine du SaaS est ajouté automatiquement pour l’aperçu. Ajoutez ici les sites du réparateur."
+        description="Ajoutez uniquement le nom de domaine du site sur lequel le réparateur veut afficher son widget."
       >
-        <div className="rounded-xl border border-[#DDEBE8] bg-[#F4FBF9] p-3 text-xs text-[#37635E]">
-          <Globe2 className="mr-2 inline size-4" /> Un domaine par ligne, par exemple monatelier.fr ou *.monreseau.fr.
+        <div className="space-y-1 rounded-xl border border-[#DDEBE8] bg-[#F4FBF9] p-3 text-xs leading-5 text-[#37635E]">
+          <p className="font-semibold">
+            <Globe2 className="mr-2 inline size-4" />
+            Exemple : si son site est https://www.monatelier.fr, inscrivez :
+          </p>
+          <code className="block whitespace-pre-line rounded-lg bg-white px-2.5 py-1.5 font-mono text-[#173F39]">
+            {"monatelier.fr\nwww.monatelier.fr"}
+          </code>
+          <p>Sans https://, sans page après le domaine et sans la clé de licence.</p>
+          <p>Les domaines Behar Tech et Vercel sont techniques : ne les donnez pas au client.</p>
         </div>
         <textarea
           className={`${inputClass} h-28 py-2 font-mono text-xs`}
-          value={allowedDomains.join("\n")}
+          value={customerDomains.join("\n")}
           onChange={(event) =>
             onAllowedDomainsChange(
               event.target.value
