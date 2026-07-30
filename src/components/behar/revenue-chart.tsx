@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 
 import { useBeharStore } from "@/lib/behar-store";
+import { repairInternalTotal, repairReturnedIsoDay, toIsoDay } from "@/lib/repair-revenue";
 import { formatMoneyShort } from "@/lib/workshop-country";
 
 const chartWidth = 720;
@@ -29,29 +30,31 @@ function formatDayShort(iso: string): string {
   return dt.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
 }
 
-export function RevenueChart() {
+export function RevenueChart({ canInvoice = true }: Readonly<{ canInvoice?: boolean }>) {
   const repairs = useBeharStore((s) => s.repairs);
   const currency = useBeharStore((s) => s.workshopInfo.currency);
 
-  // Agrégation des montants déclarés encaissés hors Behar Tech Pro.
+  // Agrégation des montants déclarés encaissés hors Behar Tech Pro. Sans
+  // facturation, le règlement déclaré n'existe pas : on agrège les dossiers
+  // restitués, valorisés par leur montant interne.
   const dailyRevenue = useMemo(() => {
     const days = buildLast30Days();
     const totals = new Map<string, number>(days.map((d) => [d, 0]));
     for (const repair of repairs) {
+      if (!canInvoice) {
+        const returnedIso = repairReturnedIsoDay(repair);
+        if (!returnedIso || !totals.has(returnedIso)) continue;
+        totals.set(returnedIso, (totals.get(returnedIso) ?? 0) + repairInternalTotal(repair));
+        continue;
+      }
       const declaration = repair.externalSettlement;
       if (!declaration || !["Réglé", "Partiellement réglé"].includes(declaration.status)) continue;
-      const source = String(declaration.date || declaration.recordedAt || "");
-      const french = /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})/.exec(source);
-      const iso = /^\d{4}-\d{2}-\d{2}/.test(source)
-        ? source.slice(0, 10)
-        : french
-          ? `${french[3]}-${french[2].padStart(2, "0")}-${french[1].padStart(2, "0")}`
-          : null;
+      const iso = toIsoDay(declaration.date || declaration.recordedAt);
       if (!iso || !totals.has(iso)) continue;
       totals.set(iso, (totals.get(iso) ?? 0) + declaration.amount);
     }
     return days.map((iso) => ({ iso, amount: totals.get(iso) ?? 0 }));
-  }, [repairs]);
+  }, [canInvoice, repairs]);
 
   const maxRevenue = Math.max(100, ...dailyRevenue.map((point) => point.amount));
   const totalPeriod = dailyRevenue.reduce((sum, point) => sum + point.amount, 0);

@@ -277,6 +277,9 @@ export async function getPublicRepair(token: string): Promise<PublicRepairDto | 
       deviceModel: repair.device_model || undefined,
       deviceType: repair.device_type || undefined,
       issueDescription: repair.issue_description || undefined,
+      // Sans capacité de facturation, le montant du dossier remplace les devis
+      // et factures qu'un atelier immatriculé aurait publiés.
+      customerPrice: billingAllowed ? undefined : Number(repair.customer_price ?? 0) || undefined,
       createdAt: repair.created_at,
       updatedAt: repair.updated_at,
     },

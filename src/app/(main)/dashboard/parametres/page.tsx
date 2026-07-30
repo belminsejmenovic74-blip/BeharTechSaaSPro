@@ -272,6 +272,18 @@ export default function SettingsPage() {
     );
   }, [capabilities.registrationNumber]);
 
+  // Sans immatriculation, aucun régime de TVA n'est applicable. La mention par
+  // défaut du produit vise l'article 293 B du CGI, qui concerne les entreprises
+  // immatriculées en franchise : elle serait fausse ici, donc on ne l'écrit pas.
+  useEffect(() => {
+    if (!capabilities.ready || capabilities.canInvoice) return;
+    setDraft((current) =>
+      current.vatApplicable === false && current.vatRate === 0 && !current.tvaMention
+        ? current
+        : { ...current, vatApplicable: false, taxRegime: "not_subject_to_vat", vatRate: 0, tvaMention: "" },
+    );
+  }, [capabilities.canInvoice, capabilities.ready]);
+
   const setField = <K extends keyof WorkshopSettings>(key: K, value: WorkshopSettings[K]) => {
     setDraft((prev) => ({ ...prev, [key]: value }));
     setSaved(false);
@@ -874,125 +886,127 @@ export default function SettingsPage() {
               </div>
             </Section>
 
-            {/* TVA & documents */}
-            <Section
-              icon={FileText}
-              title="TVA & documents"
-              description="Choisissez le régime de TVA pour vos documents."
-            >
-              <div className="space-y-4">
-                <Field label="Régime TVA" required error={errors.vatApplicable}>
-                  <select
-                    className={selectCls}
-                    value={
-                      draft.vatApplicable
-                        ? draft.vatRate === 8.1
-                          ? "vat_subject_ch"
-                          : draft.vatRate === 20
-                            ? "vat_subject_fr"
-                            : "vat_subject_other"
-                        : draft.tvaMention === "Exonéré de TVA"
-                          ? "exempt"
-                          : "not_subject_to_vat"
-                    }
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === "vat_subject_fr") {
-                        setField("vatApplicable", true);
-                        setField("taxRegime", "vat_subject");
-                        setField("vatRate", 20);
-                        setField("tvaMention", "");
-                      } else if (val === "vat_subject_ch") {
-                        setField("vatApplicable", true);
-                        setField("taxRegime", "vat_subject");
-                        setField("vatRate", 8.1);
-                        setField("tvaMention", "");
-                      } else if (val === "vat_subject_other") {
-                        setField("vatApplicable", true);
-                        setField("taxRegime", "vat_subject");
-                        setField("vatRate", draft.vatRate || 20);
-                        setField("tvaMention", "");
-                      } else if (val === "exempt") {
-                        setField("vatApplicable", false);
-                        setField("taxRegime", "not_subject_to_vat");
-                        setField("tvaMention", "Exonéré de TVA");
-                      } else {
-                        setField("vatApplicable", false);
-                        setField("taxRegime", "not_subject_to_vat");
-                        setField(
-                          "tvaMention",
-                          isSwiss
-                            ? "TVA non facturée — entreprise non assujettie à la TVA suisse."
-                            : "TVA non applicable, art. 293 B du CGI",
-                        );
+            {/* TVA & documents — sans facturation, il n'y a pas de régime à choisir. */}
+            {capabilities.canInvoice ? (
+              <Section
+                icon={FileText}
+                title="TVA & documents"
+                description="Choisissez le régime de TVA pour vos documents."
+              >
+                <div className="space-y-4">
+                  <Field label="Régime TVA" required error={errors.vatApplicable}>
+                    <select
+                      className={selectCls}
+                      value={
+                        draft.vatApplicable
+                          ? draft.vatRate === 8.1
+                            ? "vat_subject_ch"
+                            : draft.vatRate === 20
+                              ? "vat_subject_fr"
+                              : "vat_subject_other"
+                          : draft.tvaMention === "Exonéré de TVA"
+                            ? "exempt"
+                            : "not_subject_to_vat"
                       }
-                      setSaved(false);
-                    }}
-                  >
-                    <option value="vat_subject_fr">France (Assujetti à la TVA 20%)</option>
-                    <option value="vat_subject_ch">Suisse (Assujetti à la TVA suisse 8.1%)</option>
-                    <option value="not_subject_to_vat">Non assujetti (Franchise en base)</option>
-                    <option value="exempt">Exonéré</option>
-                    <option value="vat_subject_other">Autre / Personnalisé</option>
-                  </select>
-                </Field>
-
-                {draft.vatApplicable && (
-                  <Field label="Taux de TVA" error={errors.vatRate}>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(isSwiss ? [8.1, 3.8, 2.6] : [20, 10, 5.5]).map((rate) => (
-                        <button
-                          key={rate}
-                          type="button"
-                          onClick={() => {
-                            setField("vatRate", rate);
-                            setSaved(false);
-                          }}
-                          className={`h-11 rounded-[14px] border px-3 text-[13px] font-semibold transition ${
-                            Number(draft.vatRate ?? 20) === rate
-                              ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
-                              : "border-[#E4E7EC] bg-white text-[#101828] hover:border-[#D0D5DD]"
-                          }`}
-                        >
-                          {String(rate).replace(".", ",")} %
-                        </button>
-                      ))}
-                    </div>
-                    <input
-                      className={`${inputCls} mt-2`}
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.1"
-                      value={draft.vatRate ?? ""}
                       onChange={(e) => {
-                        setField("vatRate", Number(e.target.value));
+                        const val = e.target.value;
+                        if (val === "vat_subject_fr") {
+                          setField("vatApplicable", true);
+                          setField("taxRegime", "vat_subject");
+                          setField("vatRate", 20);
+                          setField("tvaMention", "");
+                        } else if (val === "vat_subject_ch") {
+                          setField("vatApplicable", true);
+                          setField("taxRegime", "vat_subject");
+                          setField("vatRate", 8.1);
+                          setField("tvaMention", "");
+                        } else if (val === "vat_subject_other") {
+                          setField("vatApplicable", true);
+                          setField("taxRegime", "vat_subject");
+                          setField("vatRate", draft.vatRate || 20);
+                          setField("tvaMention", "");
+                        } else if (val === "exempt") {
+                          setField("vatApplicable", false);
+                          setField("taxRegime", "not_subject_to_vat");
+                          setField("tvaMention", "Exonéré de TVA");
+                        } else {
+                          setField("vatApplicable", false);
+                          setField("taxRegime", "not_subject_to_vat");
+                          setField(
+                            "tvaMention",
+                            isSwiss
+                              ? "TVA non facturée — entreprise non assujettie à la TVA suisse."
+                              : "TVA non applicable, art. 293 B du CGI",
+                          );
+                        }
                         setSaved(false);
                       }}
-                      aria-label="Taux de TVA personnalisé"
-                      placeholder="Ex: 20"
-                    />
+                    >
+                      <option value="vat_subject_fr">France (Assujetti à la TVA 20%)</option>
+                      <option value="vat_subject_ch">Suisse (Assujetti à la TVA suisse 8.1%)</option>
+                      <option value="not_subject_to_vat">Non assujetti (Franchise en base)</option>
+                      <option value="exempt">Exonéré</option>
+                      <option value="vat_subject_other">Autre / Personnalisé</option>
+                    </select>
                   </Field>
-                )}
 
-                {!draft.vatApplicable && (
-                  <Field
-                    label="Mention affichée sur les documents"
-                    hint="Cette mention apparaîtra sur vos devis et factures."
-                    error={errors.tvaMention}
-                  >
-                    <textarea
-                      className={areaCls}
-                      value={draft.tvaMention || ""}
-                      onChange={(e) => setField("tvaMention", e.target.value)}
-                      maxLength={120}
-                      rows={2}
-                    />
-                    <p className="text-right text-[10px] text-[#98A2B3]">{(draft.tvaMention || "").length}/120</p>
-                  </Field>
-                )}
-              </div>
-            </Section>
+                  {draft.vatApplicable && (
+                    <Field label="Taux de TVA" error={errors.vatRate}>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(isSwiss ? [8.1, 3.8, 2.6] : [20, 10, 5.5]).map((rate) => (
+                          <button
+                            key={rate}
+                            type="button"
+                            onClick={() => {
+                              setField("vatRate", rate);
+                              setSaved(false);
+                            }}
+                            className={`h-11 rounded-[14px] border px-3 text-[13px] font-semibold transition ${
+                              Number(draft.vatRate ?? 20) === rate
+                                ? "border-[#2A9D8F] bg-[#FFFFFF] text-[#1E7A6E]"
+                                : "border-[#E4E7EC] bg-white text-[#101828] hover:border-[#D0D5DD]"
+                            }`}
+                          >
+                            {String(rate).replace(".", ",")} %
+                          </button>
+                        ))}
+                      </div>
+                      <input
+                        className={`${inputCls} mt-2`}
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        value={draft.vatRate ?? ""}
+                        onChange={(e) => {
+                          setField("vatRate", Number(e.target.value));
+                          setSaved(false);
+                        }}
+                        aria-label="Taux de TVA personnalisé"
+                        placeholder="Ex: 20"
+                      />
+                    </Field>
+                  )}
+
+                  {!draft.vatApplicable && (
+                    <Field
+                      label="Mention affichée sur les documents"
+                      hint="Cette mention apparaîtra sur vos devis et factures."
+                      error={errors.tvaMention}
+                    >
+                      <textarea
+                        className={areaCls}
+                        value={draft.tvaMention || ""}
+                        onChange={(e) => setField("tvaMention", e.target.value)}
+                        maxLength={120}
+                        rows={2}
+                      />
+                      <p className="text-right text-[10px] text-[#98A2B3]">{(draft.tvaMention || "").length}/120</p>
+                    </Field>
+                  )}
+                </div>
+              </Section>
+            ) : null}
 
             {/* Licence */}
             <LicenseCard />

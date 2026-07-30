@@ -614,6 +614,16 @@ export function PublicTrackingView({
                       {data.repair.finalTestStatus || data.repair.readyLabel || "—"}
                     </p>
                   </div>
+                  {/* Renseigné uniquement par un atelier sans facturation : pour
+                      les autres, le montant reste porté par le devis ou la facture. */}
+                  {typeof data.repair.customerPrice === "number" ? (
+                    <div className="min-w-0">
+                      <p style={{ color: COLORS.sub }}>Montant</p>
+                      <p className="break-words font-semibold">
+                        {formatMoney(data.repair.customerPrice, data.workshop.currency)}
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </section>

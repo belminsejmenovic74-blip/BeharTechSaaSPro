@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { useAddressAutocomplete } from "@/hooks/use-address-autocomplete";
 import { fetchPostalCodeByCity, usePostalCities } from "@/hooks/use-postal-cities";
 import { type Customer, formatEuro, formatIsoToDisplay, getNowIso, toLocalIso, useBeharStore } from "@/lib/behar-store";
+import { useCapabilities } from "@/lib/use-capabilities";
 import { CALLING_CODES, COUNTRY_NAMES } from "@/lib/countries";
 import { displayCustomerName } from "@/lib/customer-display";
 import { sendRealSms } from "@/lib/send-sms";
@@ -88,6 +89,7 @@ function normalizeSearch(value: unknown): string {
 export function CustomersWorkspace() {
   const store = useBeharStore();
   const router = useRouter();
+  const capabilities = useCapabilities();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Customer | null>(null);
   const [appointmentCustomerId, setAppointmentCustomerId] = useState<string | null>(null);
@@ -293,26 +295,32 @@ export function CustomersWorkspace() {
               type: undefined,
               id: appointment.id,
             })),
-          ...store.quotes
-            .filter((quote) => quote.customerId === selectedCustomer.id)
-            .map((quote) => ({
-              detail: `Devis ${quote.number} — ${formatEuro(quote.lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0))}`,
-              icon: ReceiptText,
-              time: quote.date,
-              title: `Devis ${quote.status}`,
-              type: "quote" as const,
-              id: quote.id,
-            })),
-          ...store.invoices
-            .filter((invoice) => invoice.customerId === selectedCustomer.id)
-            .map((invoice) => ({
-              detail: `Facture ${invoice.number} — ${invoice.status}`,
-              icon: ReceiptText,
-              time: invoice.date,
-              title: `Facture ${invoice.status}`,
-              type: "invoice" as const,
-              id: invoice.id,
-            })),
+          // Devis et factures n'existent pas sans capacité : ne pas les lister
+          // évite une chronologie client qui référence des objets inatteignables.
+          ...(capabilities.canInvoice
+            ? store.quotes
+                .filter((quote) => quote.customerId === selectedCustomer.id)
+                .map((quote) => ({
+                  detail: `Devis ${quote.number} — ${formatEuro(quote.lines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0))}`,
+                  icon: ReceiptText,
+                  time: quote.date,
+                  title: `Devis ${quote.status}`,
+                  type: "quote" as const,
+                  id: quote.id,
+                }))
+            : []),
+          ...(capabilities.canInvoice
+            ? store.invoices
+                .filter((invoice) => invoice.customerId === selectedCustomer.id)
+                .map((invoice) => ({
+                  detail: `Facture ${invoice.number} — ${invoice.status}`,
+                  icon: ReceiptText,
+                  time: invoice.date,
+                  title: `Facture ${invoice.status}`,
+                  type: "invoice" as const,
+                  id: invoice.id,
+                }))
+            : []),
           ...store.messageLogs
             .filter((message) => message.customerId === selectedCustomer.id)
             .map((message) => ({

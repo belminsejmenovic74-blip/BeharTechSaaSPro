@@ -256,6 +256,7 @@ export function ComptoirWorkspace({ initialScreen = "home" }: Readonly<{ initial
   const hasPermission = useBeharStore((s) => s.hasPermission);
   const logout = useBeharStore((s) => s.logout);
   const addAuditLog = useBeharStore((s) => s.addAuditLog);
+  const capabilities = useCapabilities();
 
   const [counterScreen, setCounterScreen] = useState<CounterScreen>(initialScreen);
   const [counterRepairId, setCounterRepairId] = useState("");
@@ -397,10 +398,18 @@ export function ComptoirWorkspace({ initialScreen = "home" }: Readonly<{ initial
     },
   ];
 
+  // Les tuiles commerciales disparaissent du DOM sans capacité : un bouton qui
+  // échouerait en aval est pire qu'un bouton absent, surtout devant le client.
+  const commercialTiles = new Set(["sale", "quotes"]);
   const visiblePrimary = useMemo(
-    () => primaryTiles.filter((t) => (t.permission === null ? true : hasPermission(t.permission))),
+    () =>
+      primaryTiles.filter(
+        (t) =>
+          (t.permission === null ? true : hasPermission(t.permission)) &&
+          (capabilities.canInvoice || !commercialTiles.has(t.id)),
+      ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [hasPermission, currentUser.id],
+    [hasPermission, currentUser.id, capabilities.canInvoice],
   );
   const openRepairDetail = (repairId: string) => {
     setCounterRepairId(repairId);
@@ -432,6 +441,15 @@ export function ComptoirWorkspace({ initialScreen = "home" }: Readonly<{ initial
     setIntakeInitialStep(customer?.type === "counter" ? 0 : 2);
     setCounterScreen("intake");
   };
+
+  // Filet côté écran : un état commercial atteint par un chemin résiduel
+  // (retour navigateur, écran initial) ramène à l'accueil comptoir plutôt que
+  // d'afficher un formulaire dont la soumission serait refusée.
+  const commercialScreens: CounterScreen[] = ["quote", "quotes", "sale", "checkout"];
+  if (capabilities.ready && !capabilities.canInvoice && commercialScreens.includes(counterScreen)) {
+    setCounterScreen("home");
+    return null;
+  }
 
   if (counterScreen !== "home") {
     return (
@@ -5151,6 +5169,7 @@ function CounterClientsScreen({
   const repairs = useBeharStore((s) => s.repairs);
   const quotes = useBeharStore((s) => s.quotes);
   const invoices = useBeharStore((s) => s.invoices);
+  const capabilities = useCapabilities();
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState("");
   // Vrais clients du dashboard (on masque le client comptoir anonyme).
@@ -5168,8 +5187,8 @@ function CounterClientsScreen({
     [repairs, selected],
   );
   const customerQuotes = useMemo(
-    () => (selected ? quotes.filter((q) => q.customerId === selected.id) : []),
-    [quotes, selected],
+    () => (selected && capabilities.canInvoice ? quotes.filter((q) => q.customerId === selected.id) : []),
+    [capabilities.canInvoice, quotes, selected],
   );
   const paymentRequestRepairId = customerRepairs.find((repair) =>
     invoices.some(
@@ -5264,7 +5283,7 @@ function CounterClientsScreen({
             </div>
           </div>
         </div>
-        <div className="mt-8 grid grid-cols-4 gap-4">
+        <div className={cn("mt-8 grid gap-4", capabilities.canInvoice ? "grid-cols-4" : "grid-cols-2")}>
           <ClientQuickAction
             icon={<Plus className="size-8" />}
             label="Nouvelle prise en charge"
@@ -5276,12 +5295,16 @@ function CounterClientsScreen({
             }
             primary
           />
-          <ClientQuickAction icon={<FileText className="size-7" />} label="Nouveau devis" onClick={onCreateQuote} />
-          <ClientQuickAction
-            icon={<CreditCard className="size-7" />}
-            label="Créer une demande de paiement"
-            onClick={() => onPay(paymentRequestRepairId)}
-          />
+          {capabilities.canInvoice ? (
+            <ClientQuickAction icon={<FileText className="size-7" />} label="Nouveau devis" onClick={onCreateQuote} />
+          ) : null}
+          {capabilities.canCollectPayment ? (
+            <ClientQuickAction
+              icon={<CreditCard className="size-7" />}
+              label="Créer une demande de paiement"
+              onClick={() => onPay(paymentRequestRepairId)}
+            />
+          ) : null}
           <ClientQuickAction
             icon={<ClipboardCheck className="size-7" />}
             label="Voir les dossiers"
@@ -5647,6 +5670,7 @@ function CounterRepairDetailScreen({
   const store = useBeharStore();
   const { print } = useDocument();
   const settlement = useSettlementModal();
+  const capabilities = useCapabilities();
   const [appointmentModalOpen, setAppointmentModalOpen] = useState(false);
   const [selectedQrRepairId, setSelectedQrRepairId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
@@ -5682,6 +5706,12 @@ function CounterRepairDetailScreen({
   };
 
   const openPaymentRequest = () => {
+    // Sans facturation, la restitution ne passe plus par la création d'une
+    // facture : c'est le seul chemin vers l'état terminal du dossier.
+    if (!capabilities.canInvoice) {
+      settlement.open(repair.id, { closeAfterSubmit: true });
+      return;
+    }
     const invoiceId = invoice?.id || store.createInvoiceFromRepair(repair.id);
     if (!invoiceId) return toast.error("Finalisez une facture avant d’indiquer le règlement.");
     settlement.open(repair.id, { closeAfterSubmit: true });
@@ -5866,22 +5896,29 @@ function CounterRepairDetailScreen({
         </section>
         <aside className="space-y-4">
           <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-4">
-            <p>Montant devis</p>
+            <p>{capabilities.canInvoice ? "Montant devis" : "Montant du dossier"}</p>
             <p className="font-black text-2xl">
-              {formatEuro(amount)} <span className="text-[#667085] text-sm">TTC</span>
+              {formatEuro(amount)}{" "}
+              {capabilities.canInvoice && store.workshopInfo.vatApplicable ? (
+                <span className="text-[#667085] text-sm">TTC</span>
+              ) : null}
             </p>
-            <div className="mt-4 border-[#E4E7EC] border-t pt-4">
-              <p>Facture</p>
-              <b className="text-[#1E7A6E]">{invoice ? "Finalisée" : "À finaliser"}</b>
-              <p className="mt-3 text-[#667085] text-sm">
-                Référence
-                <br />
-                <b className="text-[#101828]">{invoice ? `#${invoice.number}` : "Non renseigné"}</b>
-              </p>
-              <p className="mt-4 rounded-[12px] bg-[#FFFFFF] px-3 py-2.5 text-[#667085] text-xs leading-relaxed">
-                Le règlement est géré hors Behar Tech Pro via votre TPE ou prestataire externe.
-              </p>
-            </div>
+            {capabilities.canInvoice ? (
+              <div className="mt-4 border-[#E4E7EC] border-t pt-4">
+                <p>Facture</p>
+                <b className="text-[#1E7A6E]">{invoice ? "Finalisée" : "À finaliser"}</b>
+                <p className="mt-3 text-[#667085] text-sm">
+                  Référence
+                  <br />
+                  <b className="text-[#101828]">{invoice ? `#${invoice.number}` : "Non renseigné"}</b>
+                </p>
+                <p className="mt-4 rounded-[12px] bg-[#FFFFFF] px-3 py-2.5 text-[#667085] text-xs leading-relaxed">
+                  Le règlement est géré hors Behar Tech Pro via votre TPE ou prestataire externe.
+                </p>
+              </div>
+            ) : (
+              <p className="mt-3 text-[#667085] text-xs">Usage interne. Ne constitue pas un devis.</p>
+            )}
           </section>
           <section className="rounded-[18px] border border-[#E4E7EC] bg-white p-4 text-center">
             <h2 className="font-black text-left">QR Code dossier</h2>
@@ -6018,7 +6055,8 @@ function CounterRepairDetailScreen({
                 }}
                 className="flex h-12 w-full items-center gap-3 rounded-[12px] px-3 font-bold hover:bg-[#FFFFFF]"
               >
-                <Receipt className="size-4" /> Téléphone rendu / règlement
+                <Receipt className="size-4" />{" "}
+                {capabilities.canCollectPayment ? "Téléphone rendu / règlement" : "Marquer comme restitué"}
               </button>
               <button
                 type="button"
@@ -6367,6 +6405,7 @@ function CounterTrackingScreen({
   const invoices = useBeharStore((s) => s.invoices);
   const payments = useBeharStore((s) => s.payments);
   const updateRepair = useBeharStore((s) => s.updateRepair);
+  const capabilities = useCapabilities();
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState(initialRepairId || "");
   const [selectedQrRepairId, setSelectedQrRepairId] = useState<string | null>(null);
@@ -6489,9 +6528,18 @@ function CounterTrackingScreen({
             <DetailRowLite label="Client" value={customer?.name ?? "Non renseigné"} />
             <DetailRowLite label="Téléphone" value={customer?.phone || "Non renseigné"} />
             <DetailRowLite label="Appareil" value={repairDeviceLabel(selected)} />
-            <DetailRowLite label="Facture" value={invoice ? invoice.number : "Non générée"} />
+            {capabilities.canInvoice ? (
+              <DetailRowLite label="Facture" value={invoice ? invoice.number : "Non générée"} />
+            ) : null}
             <DetailRowLite label="Problème" value={selected.issue || "Non renseigné"} />
-            <DetailRowLite label="Montant" value={`${formatEuro(repairAmount(selected))} TTC`} />
+            <DetailRowLite
+              label="Montant"
+              value={
+                capabilities.canInvoice
+                  ? `${formatEuro(repairAmount(selected))} TTC`
+                  : formatEuro(repairAmount(selected))
+              }
+            />
           </dl>
           <CounterTimeline
             className="mt-6"

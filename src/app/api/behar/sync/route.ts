@@ -228,9 +228,11 @@ export async function POST(request: Request) {
   }
 
   let billingAllowed = false;
+  let purchasesAllowed = false;
   try {
     const capability = await getWorkshopCapabilityContext(supabase, workshopId, appSession?.licenseId);
     billingAllowed = capability.capabilities.canInvoice;
+    purchasesAllowed = capability.capabilities.canManagePurchases;
   } catch {
     return NextResponse.json({ error: "Vérification de capacité impossible." }, { status: 503 });
   }
@@ -245,6 +247,16 @@ export async function POST(request: Request) {
   ) {
     return NextResponse.json(
       { error: "Cet atelier n’est pas autorisé à synchroniser des données de facturation." },
+      { status: 403 },
+    );
+  }
+
+  // Les achats et factures fournisseurs sont persistés par cette même route.
+  // Sans cette vérification, la capacité « achats » ne tiendrait qu'au masquage
+  // de l'interface : un appel direct suffirait à écrire en base.
+  if (!purchasesAllowed && ((payload.purchases?.length ?? 0) > 0 || (payload.supplierInvoices?.length ?? 0) > 0)) {
+    return NextResponse.json(
+      { error: "Cet atelier n’est pas autorisé à synchroniser des données d’achat." },
       { status: 403 },
     );
   }

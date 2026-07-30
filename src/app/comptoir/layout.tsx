@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { AutoSyncProvider } from "@/components/behar/auto-sync-provider";
+import { CapabilityOfflineBanner } from "@/components/behar/capability-offline-banner";
 import { WidgetAppointmentsProvider } from "@/components/behar/widget-appointments-provider";
 import { WidgetLeadNotificationsProvider } from "@/components/behar/widget-lead-notifications-provider";
 import { InstallationGate } from "@/components/behar/installation-gate";
@@ -18,6 +19,7 @@ export default function ComptoirLayout({ children }: Readonly<{ children: ReactN
               <AutoSyncProvider />
               <WidgetAppointmentsProvider />
               <WidgetLeadNotificationsProvider />
+              <CapabilityOfflineBanner />
               {children}
             </ModeAccessGuard>
           </PinLoginGate>

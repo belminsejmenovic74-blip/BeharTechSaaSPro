@@ -50,6 +50,7 @@ import {
 } from "@/lib/behar-store";
 import { getPartTraceability } from "@/lib/part-traceability";
 import type { PriceBookItem } from "@/lib/price-book";
+import { useCapabilities } from "@/lib/use-capabilities";
 import { buildScannedPartUrl } from "@/lib/stock-label-url";
 import { downloadStockLabelPdf } from "@/lib/stock-label-pdf";
 import { getStockLotsForItem, stockLotInternalCode, type StockLot } from "@/lib/stock-lots";
@@ -862,6 +863,7 @@ function StockReferenceButton({ item }: Readonly<{ item: StockItem }>) {
 export function StockWorkspace() {
   const store = useBeharStore();
   const router = useRouter();
+  const capabilities = useCapabilities();
   const resolveStockItemByReference = useBeharStore((state) => state.resolveStockItemByReference);
   const setSelected = useBeharStore((state) => state.setSelected);
   const [open, setOpen] = useState(false);
@@ -982,7 +984,9 @@ export function StockWorkspace() {
             <Download className="size-4" />
             Exporter
           </SecondaryButton>
-          <SupplierInvoiceImportModal buttonLabel="Import facture" />
+          {/* Facturation fournisseur : masquée sans capacité achats. Le stock,
+              la traçabilité des pièces et l'historique restent entiers. */}
+          {capabilities.canManagePurchases ? <SupplierInvoiceImportModal buttonLabel="Import facture" /> : null}
           <PrimaryButton className="h-11" onClick={() => setOpen(true)} disabled={!canManageStock}>
             <Plus className="size-4" />
             Nouvelle pièce

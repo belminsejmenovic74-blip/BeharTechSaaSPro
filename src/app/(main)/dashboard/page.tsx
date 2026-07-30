@@ -21,7 +21,8 @@ import { DashboardPremium } from "@/components/behar/dashboard-premium";
 import { PageShell } from "@/components/behar/page-shell";
 import { SettlementModal, useSettlementModal } from "@/components/behar/settlement-modal";
 import { StatusBadge } from "@/components/behar/primitives";
-import { isTerminalRepairStatus, normalizeAppointmentStatus, useBeharStore } from "@/lib/behar-store";
+import { formatEuro, isTerminalRepairStatus, normalizeAppointmentStatus, useBeharStore } from "@/lib/behar-store";
+import { isoDaysAgo, repairRevenueBetween } from "@/lib/repair-revenue";
 import { useCapabilities } from "@/lib/use-capabilities";
 
 export default function Page() {
@@ -133,7 +134,17 @@ function MobileDashboard() {
             value={String(store.quotes.length)}
             subline="Liés aux dossiers"
           />
-        ) : null}
+        ) : (
+          <KpiCard
+            href="/dashboard/reparations"
+            icon={<FileText className="size-[18px]" />}
+            iconBg="bg-[#FFFFFF]"
+            iconColor="text-[#2A9D8F]"
+            label="Encaissé 30 j"
+            value={formatEuro(repairRevenueBetween(store.repairs, isoDaysAgo(29)))}
+            subline="Dossiers restitués"
+          />
+        )}
         <KpiCard
           href="/dashboard/documents"
           icon={<Files className="size-[18px]" />}

@@ -64,6 +64,7 @@ import { formatDeviceLabel } from "@/lib/format-device";
 import { getPartTraceability } from "@/lib/part-traceability";
 import { repairReadyStatusLabel } from "@/lib/repair-status";
 import { sendRealSms } from "@/lib/send-sms";
+import { useCapabilities } from "@/lib/use-capabilities";
 import {
   normalizePartReference,
   resolveStockItem,
@@ -567,6 +568,7 @@ export function AtelierWorkspace() {
   // Génération/téléchargement PDF réel (bon de dépôt, fiche d'intervention, devis, facture…).
   const { download: downloadDocument, uploadToCloud: uploadDocumentToCloud } = useDocument();
   const settlement = useSettlementModal();
+  const capabilities = useCapabilities();
 
   const selectedRepair = repairs.find((repair) => repair.id === selectedRepairId) ?? repairs[0];
   const selectedCustomer = customerFor(selectedRepair, customers);
@@ -928,8 +930,12 @@ export function AtelierWorkspace() {
     toast.success("Diagnostic enregistré dans le dossier central.");
   };
 
-  // Un devis ne peut être créé que depuis un statut compatible (jamais sur un dossier prêt/rendu).
-  const canCreateQuote = ["Reçu", "Diagnostic", "En attente"].includes(selectedRepair.status);
+  // Un devis ne peut être créé que depuis un statut compatible (jamais sur un
+  // dossier prêt/rendu), et jamais sans capacité de facturation.
+  // Le diagnostic reste ouvert sans facturation : seule l'émission du devis
+  // dépend de la capacité.
+  const canDiagnose = ["Reçu", "Diagnostic", "En attente"].includes(selectedRepair.status);
+  const canCreateQuote = capabilities.canQuote && canDiagnose;
 
   const createQuote = () => {
     if (!canCreateQuote) {
@@ -1420,12 +1426,10 @@ export function AtelierWorkspace() {
               />
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
-              {canCreateQuote && (
-                <PrimaryButton onClick={() => setView("diagnostic")}>Ajouter diagnostic</PrimaryButton>
-              )}
+              {canDiagnose && <PrimaryButton onClick={() => setView("diagnostic")}>Ajouter diagnostic</PrimaryButton>}
               <SecondaryButton onClick={() => setView("parts")}>Ajouter pièce</SecondaryButton>
               {canCreateQuote && <SecondaryButton onClick={createQuote}>Créer devis</SecondaryButton>}
-              {!canCreateQuote && (
+              {!canDiagnose && (
                 <SecondaryButton onClick={() => setView("history")}>Envoyer message client</SecondaryButton>
               )}
             </div>
@@ -1540,9 +1544,11 @@ export function AtelierWorkspace() {
           <Panel className="p-5">
             <SectionTitle title="Décision" />
             <div className="mt-4 space-y-3">
-              <PrimaryButton className="w-full" onClick={createQuote}>
-                Créer devis
-              </PrimaryButton>
+              {capabilities.canQuote ? (
+                <PrimaryButton className="w-full" onClick={createQuote}>
+                  Créer devis
+                </PrimaryButton>
+              ) : null}
               <PrimaryButton className="w-full" onClick={() => markWorkshopOutcome("Téléphone prêt")}>
                 Téléphone prêt
               </PrimaryButton>

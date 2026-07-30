@@ -6,11 +6,19 @@ import { PENDING_CAPABILITIES, type Capabilities } from "@/lib/capabilities";
 
 type ClientCapabilitySnapshot = Capabilities & {
   registrationNumber: string | null;
+  /**
+   * Vrai quand la dernière tentative de vérification a échoué. Les capacités
+   * valent alors toutes `false` — choix volontairement fail-closed — mais il
+   * s'agit d'une indisponibilité temporaire, pas d'un compte sans facturation.
+   * Les deux situations sont indiscernables sans ce drapeau.
+   */
+  unverified: boolean;
 };
 
 const pendingSnapshot: ClientCapabilitySnapshot = {
   ...PENDING_CAPABILITIES,
   registrationNumber: null,
+  unverified: false,
 };
 
 let currentSnapshot = pendingSnapshot;
@@ -77,11 +85,12 @@ export function refreshCapabilities(): Promise<void> {
         ...payload.capabilities,
         ready: true,
         registrationNumber: payload.registrationNumber || null,
+        unverified: false,
       };
       emit();
     })
     .catch(() => {
-      currentSnapshot = { ...pendingSnapshot, ready: true };
+      currentSnapshot = { ...pendingSnapshot, ready: true, unverified: true };
       emit();
     })
     .finally(() => {

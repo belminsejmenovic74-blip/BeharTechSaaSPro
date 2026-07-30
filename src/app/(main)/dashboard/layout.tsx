@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { AutoSyncProvider } from "@/components/behar/auto-sync-provider";
+import { CapabilityOfflineBanner } from "@/components/behar/capability-offline-banner";
 import { DashboardSidebar } from "@/components/behar/dashboard-sidebar";
 import { InstallationGate } from "@/components/behar/installation-gate";
 import { MobileTopbar } from "@/components/behar/mobile-topbar";
@@ -28,6 +29,7 @@ export default function Layout({ children }: Readonly<{ children: ReactNode }>) 
                   <Topbar />
                 </div>
                 <MobileTopbar />
+                <CapabilityOfflineBanner />
                 <main className="flex-1">
                   <PermissionRouteGuard>{children}</PermissionRouteGuard>
                 </main>

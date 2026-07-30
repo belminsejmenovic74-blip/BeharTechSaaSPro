@@ -38,6 +38,7 @@ import {
 } from "@/lib/behar-store";
 import { formatDeviceLabel } from "@/lib/format-device";
 import { computeReconditioningKpis, useReconditioningStore } from "@/lib/reconditioning-store";
+import { isoDaysAgo, repairReturnedCountBetween, repairRevenueBetween } from "@/lib/repair-revenue";
 import { useCapabilities } from "@/lib/use-capabilities";
 import type { RepairCard } from "@/mock/repairs";
 
@@ -138,9 +139,11 @@ export function DashboardWorkspace() {
       icon: AlertTriangle,
     },
   ];
-  const secondaryKpis: Array<{ label: string; value: string; href: string; icon: LucideIcon }> = capabilities.canInvoice
+  // Sans facturation, les KPI adossés aux factures et aux devis n'ont pas de
+  // source. Le chiffre reste mesuré, sur les dossiers restitués.
+  const internalCollected = repairRevenueBetween(store.repairs, isoDaysAgo(29));
+  const financialKpis: Array<{ label: string; value: string; href: string; icon: LucideIcon }> = capabilities.canInvoice
     ? [
-        ...operationalKpis.slice(0, 4),
         {
           label: "Factures émises aujourd'hui",
           value: String(todayInvoices.length),
@@ -150,9 +153,26 @@ export function DashboardWorkspace() {
         { label: "CA encaissé", value: formatEuro(collectedAmount), href: "/dashboard/factures", icon: TrendingUp },
         { label: "CA facturé", value: formatEuro(billedAmount), href: "/dashboard/factures", icon: FileText },
         { label: "Devis en attente", value: String(pendingQuotes.length), href: "/dashboard/devis", icon: FileText },
-        ...operationalKpis.slice(4),
       ]
-    : operationalKpis;
+    : [
+        {
+          label: "Encaissé 30 jours",
+          value: formatEuro(internalCollected),
+          href: "/dashboard/reparations",
+          icon: TrendingUp,
+        },
+        {
+          label: "Dossiers restitués",
+          value: String(repairReturnedCountBetween(store.repairs, isoDaysAgo(29))),
+          href: "/dashboard/reparations",
+          icon: CheckCheck,
+        },
+      ];
+  const secondaryKpis: Array<{ label: string; value: string; href: string; icon: LucideIcon }> = [
+    ...operationalKpis.slice(0, 4),
+    ...financialKpis,
+    ...operationalKpis.slice(4),
+  ];
   const repairFlowStatuses: RepairStatus[] = [
     "Reçu",
     "Diagnostic",
@@ -181,7 +201,7 @@ export function DashboardWorkspace() {
           customer: repairCustomer?.name || "Client comptoir",
           time: formatIsoToDisplay(repair.updatedAt || repair.droppedAt || repair.createdAt || ""),
           status: repair.status,
-          totalLabel: capabilities.canInvoice && total > 0 ? formatEuro(total) : undefined,
+          totalLabel: total > 0 ? formatEuro(total) : undefined,
           showReadyBadge: repair.status === "Prêt",
         } satisfies RepairCard;
       }),
@@ -201,7 +221,7 @@ export function DashboardWorkspace() {
       </section>
 
       {/* Volet facturation : montants des factures emises, sans resultat de reglement. */}
-      {capabilities.canInvoice ? <FinanceOverview /> : null}
+      <FinanceOverview canInvoice={capabilities.canInvoice} />
 
       {/* KPI secondaires : une ligne, flèches pour faire défiler. */}
       <SecondaryKpiStrip items={secondaryKpis} />
@@ -434,13 +454,11 @@ export function DashboardWorkspace() {
                 label="Statut"
                 value={<StatusBadge status={selected.status === "Test final" ? "Test" : selected.status} />}
               />
-              {capabilities.canInvoice ? (
-                <DetailRow
-                  emphasize
-                  label="Montant"
-                  value={selectedMontant > 0 ? formatEuro(selectedMontant) : "À chiffrer"}
-                />
-              ) : null}
+              <DetailRow
+                emphasize
+                label="Montant"
+                value={selectedMontant > 0 ? formatEuro(selectedMontant) : "À chiffrer"}
+              />
             </dl>
 
             {(() => {
@@ -481,15 +499,15 @@ export function DashboardWorkspace() {
         )}
       </section>
 
-      {capabilities.canInvoice ? (
-        <Panel className="p-4">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-semibold text-[#101828] text-[17px] tracking-tight">CA encaissé déclaré par jour</h2>
-            <span className="text-[#667085] text-[13px]">30 derniers jours</span>
-          </div>
-          <RevenueChart />
-        </Panel>
-      ) : null}
+      <Panel className="p-4">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="font-semibold text-[#101828] text-[17px] tracking-tight">
+            {capabilities.canInvoice ? "CA encaissé déclaré par jour" : "Encaissé par jour, usage interne"}
+          </h2>
+          <span className="text-[#667085] text-[13px]">30 derniers jours</span>
+        </div>
+        <RevenueChart canInvoice={capabilities.canInvoice} />
+      </Panel>
 
       {canViewAuditLog && (
         <Panel className="p-4">

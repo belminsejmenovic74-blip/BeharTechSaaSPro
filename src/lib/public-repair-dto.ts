@@ -7,6 +7,12 @@ import { getWorkshopCountryConfig } from "@/lib/workshop-country";
 
 const PUBLIC_DOCUMENT_TYPES = new Set(["intake", "quote", "invoice", "summary", "diagnostic_report"]);
 
+/** Montant client d'un dossier, dans l'ordre de priorité utilisé par l'app. */
+function repairClientTotal(repair: Repair): number {
+  const total = typeof repair.total === "number" ? repair.total : (repair.amount ?? 0);
+  return Number.isFinite(total) && total > 0 ? total : 0;
+}
+
 const PUBLIC_DOCUMENT_TITLE_BY_TYPE: Record<string, string> = {
   intake: "Bon de prise en charge",
   quote: "Devis",
@@ -144,6 +150,7 @@ export function buildPublicRepairDtoFromLocalState(
       deviceModel: repair.deviceModel || repair.device || undefined,
       deviceType: repair.deviceType || undefined,
       issueDescription: repair.issue || undefined,
+      customerPrice: canInvoice ? undefined : repairClientTotal(repair) || undefined,
       createdAt: repair.droppedAt || repair.createdAt || new Date().toISOString(),
       updatedAt: repair.updatedAt || repair.droppedAt || repair.createdAt || new Date().toISOString(),
     },

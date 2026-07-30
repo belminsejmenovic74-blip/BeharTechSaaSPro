@@ -393,12 +393,10 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
             {repair.status === "Prêt" && (
               <HeaderCol className="lg:px-6" label="Restitution" value={readyDisplayLabel} />
             )}
-            {capabilities.canInvoice ? (
-              <div className="pt-5 lg:pl-6 lg:pt-0">
-                <p className="text-[#667085] text-xs">Montant dossier</p>
-                <p className="mt-1 font-semibold text-[#167B70] text-2xl tracking-tight">{formatEuro(dossierTotal)}</p>
-              </div>
-            ) : null}
+            <div className="pt-5 lg:pl-6 lg:pt-0">
+              <p className="text-[#667085] text-xs">Montant dossier</p>
+              <p className="mt-1 font-semibold text-[#167B70] text-2xl tracking-tight">{formatEuro(dossierTotal)}</p>
+            </div>
           </div>
         </section>
 
@@ -654,7 +652,9 @@ function ClosureSettlementModal({
                 <span className="font-semibold text-[#167B70]">{formatEuro(total)} TTC</span>
               </p>
             ) : (
-              <p className="mt-1 text-[#667085] text-sm">Clôture opérationnelle, sans donnée de paiement.</p>
+              <p className="mt-1 text-[#667085] text-sm">
+                Montant du dossier · <span className="font-semibold text-[#167B70]">{formatEuro(total)}</span>
+              </p>
             )}
           </div>
         </section>
@@ -1527,7 +1527,7 @@ function InfosDossierCard({
   const rows: Array<[string, string]> = [
     ["Référence", repair.number],
     ["Statut", repair.status],
-    ...(capabilities.canInvoice ? ([["Montant", formatEuro(total)]] as Array<[string, string]>) : []),
+    ["Montant", formatEuro(total)],
     ["Date de création", formatIsoToDisplay(repair.droppedAt || repair.createdAt || "")],
     ["Dernière mise à jour", formatIsoToDisplay(repair.updatedAt || repair.droppedAt || "")],
     ["Technicien", repair.technician || "Atelier"],
@@ -2339,12 +2339,10 @@ function MobileRepairSummaryCard({
           </p>
         </div>
       </div>
-      {capabilities.canInvoice ? (
-        <div className="pt-3 border-t border-[#FFFFFF] flex items-center justify-between">
-          <span className="text-xs font-bold text-[#667085] uppercase tracking-wider">Montant dossier</span>
-          <span className="text-xl font-bold text-[#167B70] tracking-tight">{formatDossier(dossierTotal)}</span>
-        </div>
-      ) : null}
+      <div className="pt-3 border-t border-[#FFFFFF] flex items-center justify-between">
+        <span className="text-xs font-bold text-[#667085] uppercase tracking-wider">Montant dossier</span>
+        <span className="text-xl font-bold text-[#167B70] tracking-tight">{formatDossier(dossierTotal)}</span>
+      </div>
     </div>
   );
 }

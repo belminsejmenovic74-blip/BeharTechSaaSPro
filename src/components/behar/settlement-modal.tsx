@@ -85,12 +85,18 @@ export function SettlementModal({
     return (
       <Modal isOpen={isOpen} maxWidth="max-w-lg" onClose={onClose} title="Marquer comme restitué">
         <div className="space-y-5">
+          {total > 0 ? (
+            <section className="rounded-[14px] border border-[#E4E7EC] bg-white p-4 text-center">
+              <p className="text-[#667085] text-sm">Montant du dossier</p>
+              <p className="mt-1 font-bold text-[#167B70] text-3xl tracking-tight tabular-nums">{formatEuro(total)}</p>
+            </section>
+          ) : null}
           <section className="flex items-start gap-3 rounded-[14px] border border-[#D7EFEA] bg-[#F1FAF8] p-4">
             <Info className="mt-0.5 size-5 shrink-0 text-[#2A9D8F]" />
             <div className="text-sm">
               <p className="font-semibold text-[#101828]">Confirmer la restitution au client</p>
               <p className="mt-1 leading-relaxed text-[#667085]">
-                Le dossier passera au statut Rendu. Aucun montant, règlement ou chiffre d’affaires ne sera enregistré.
+                Le dossier passera au statut Rendu. Aucune facture ni règlement ne sera enregistré.
               </p>
             </div>
           </section>

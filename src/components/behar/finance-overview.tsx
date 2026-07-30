@@ -7,6 +7,12 @@ import Link from "next/link";
 import { TrendingDown, TrendingUp } from "lucide-react";
 
 import { formatEuro, getInvoiceTotal, getVatSummary, useBeharStore } from "@/lib/behar-store";
+import {
+  repairInternalTotal,
+  repairReturnedCountBetween,
+  repairRevenueBetween,
+  repairReturnedIsoDay,
+} from "@/lib/repair-revenue";
 import { cn } from "@/lib/utils";
 
 type PeriodKey = "day" | "week" | "month";
@@ -66,7 +72,7 @@ function DeltaBadge({ value, compare }: Readonly<{ value: number | null; compare
 }
 
 /** CA facturé et CA encaissé déclaré hors Behar Tech Pro. */
-export function FinanceOverview() {
+export function FinanceOverview({ canInvoice = true }: Readonly<{ canInvoice?: boolean }>) {
   const invoices = useBeharStore((state) => state.invoices);
   const repairs = useBeharStore((state) => state.repairs);
   const workshopInfo = useBeharStore((state) => state.workshopInfo);
@@ -76,6 +82,30 @@ export function FinanceOverview() {
   const stats = useMemo(() => {
     const start = isoDaysAgo(config.days - 1);
     const previousStart = isoDaysAgo(config.days * 2 - 1);
+    if (!canInvoice) {
+      // Sans facturation : ni facture, ni TVA, ni règlement déclaré. La mesure
+      // repose sur les dossiers restitués et leur montant interne.
+      const sparkDays = Math.min(config.days === 1 ? 7 : config.days, 30);
+      const daily = new Array<number>(sparkDays).fill(0);
+      const sparkStart = isoDaysAgo(sparkDays - 1);
+      for (const repair of repairs) {
+        const iso = repairReturnedIsoDay(repair);
+        if (!iso || iso < sparkStart) continue;
+        const index =
+          sparkDays - 1 - Math.max(0, Math.round((Date.parse(isoDaysAgo(0)) - Date.parse(iso)) / 86_400_000));
+        if (index >= 0 && index < sparkDays) daily[index] += repairInternalTotal(repair);
+      }
+      return {
+        billed: 0,
+        previousBilled: 0,
+        collected: repairRevenueBetween(repairs, start),
+        previousCollected: repairRevenueBetween(repairs, previousStart, start),
+        vat: 0,
+        invoiceCount: repairReturnedCountBetween(repairs, start),
+        creditNoteCount: 0,
+        daily,
+      };
+    }
     const issued = invoices.filter((invoice) => !["Brouillon", "Annulée"].includes(invoice.status));
     const inWindow = (iso: string | null, from: string, to?: string) =>
       Boolean(iso && iso >= from && (!to || iso < to));
@@ -126,14 +156,14 @@ export function FinanceOverview() {
       creditNoteCount,
       daily,
     };
-  }, [config.days, invoices, repairs, workshopInfo]);
+  }, [canInvoice, config.days, invoices, repairs, workshopInfo]);
 
   return (
     <section className="space-y-4" data-testid="dashboard-finance-overview">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-[#667085] text-[13px]">
-            CA encaissé déclaré ·{" "}
+            {canInvoice ? "CA encaissé déclaré" : "Total encaissé, usage interne"} ·{" "}
             {config.label === "Jour"
               ? "aujourd'hui"
               : config.label === "Semaine"
@@ -164,36 +194,57 @@ export function FinanceOverview() {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <FinanceCard
-          helper="déclaré hors Behar Tech Pro"
-          label="CA encaissé"
-          value={formatEuro(stats.collected)}
-          href="/dashboard/factures"
-        />
-        <FinanceCard
-          helper="net des avoirs"
-          label="CA facturé TTC"
-          value={formatEuro(stats.billed)}
-          href="/dashboard/factures"
-        />
-        <FinanceCard
-          helper="sur la période"
-          label="Factures et avoirs"
-          value={String(stats.invoiceCount)}
-          href="/dashboard/factures"
-        />
-        <FinanceCard
-          helper="calculée sur les factures"
-          label="TVA facturée"
-          value={formatEuro(stats.vat)}
-          href="/dashboard/factures"
-        />
+      <div className={cn("grid gap-3 sm:grid-cols-2", canInvoice ? "xl:grid-cols-4" : "xl:grid-cols-2")}>
+        {canInvoice ? (
+          <>
+            <FinanceCard
+              helper="déclaré hors Behar Tech Pro"
+              label="CA encaissé"
+              value={formatEuro(stats.collected)}
+              href="/dashboard/factures"
+            />
+            <FinanceCard
+              helper="net des avoirs"
+              label="CA facturé TTC"
+              value={formatEuro(stats.billed)}
+              href="/dashboard/factures"
+            />
+            <FinanceCard
+              helper="sur la période"
+              label="Factures et avoirs"
+              value={String(stats.invoiceCount)}
+              href="/dashboard/factures"
+            />
+            <FinanceCard
+              helper="calculée sur les factures"
+              label="TVA facturée"
+              value={formatEuro(stats.vat)}
+              href="/dashboard/factures"
+            />
+          </>
+        ) : (
+          <>
+            <FinanceCard
+              helper="dossiers restitués, usage interne"
+              label="Total encaissé"
+              value={formatEuro(stats.collected)}
+              href="/dashboard/reparations"
+            />
+            <FinanceCard
+              helper="sur la période"
+              label="Dossiers restitués"
+              value={String(stats.invoiceCount)}
+              href="/dashboard/reparations"
+            />
+          </>
+        )}
       </div>
 
       {stats.daily.some((value) => value !== 0) ? (
         <div className="rounded-[14px] border border-[#E4E7EC] bg-white p-4">
-          <p className="mb-2 font-semibold text-[#101828] text-[13px]">Facturation de la période</p>
+          <p className="mb-2 font-semibold text-[#101828] text-[13px]">
+            {canInvoice ? "Facturation de la période" : "Activité de la période"}
+          </p>
           <Sparkline values={stats.daily} />
         </div>
       ) : null}

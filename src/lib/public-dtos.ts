@@ -30,6 +30,13 @@ export type PublicRepairDto = {
     deviceModel?: string;
     deviceType?: string;
     issueDescription?: string;
+    /**
+     * Montant annoncé au client, exposé uniquement pour un atelier sans
+     * capacité de facturation. Un atelier immatriculé communique ses montants
+     * par devis ou facture (`quoteLinks` / `invoiceLinks`) et laisse ce champ
+     * vide, afin que sa page de suivi reste inchangée.
+     */
+    customerPrice?: number;
     createdAt: string;
     updatedAt: string;
   };
