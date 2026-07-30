@@ -49,9 +49,9 @@ export type PublicRepairDto = {
     body: string;
     createdAt: string;
   }>;
-  quoteLinks: Array<{ number: string; status: string; totalTtc: number; previewUrl: string; downloadUrl?: string }>;
-  invoiceLinks: Array<{ number: string; status: string; totalTtc: number; previewUrl: string; downloadUrl?: string }>;
-  receiptLinks: Array<{ number: string; status: string; amount: number; previewUrl: string; downloadUrl?: string }>;
+  quoteLinks: Array<{ number: string; status: string; totalTtc?: number; previewUrl: string; downloadUrl?: string }>;
+  invoiceLinks: Array<{ number: string; status: string; totalTtc?: number; previewUrl: string; downloadUrl?: string }>;
+  receiptLinks: Array<{ number: string; status: string; amount?: number; previewUrl: string; downloadUrl?: string }>;
 };
 
 export type PublicCommercialDocumentDto = {
@@ -61,11 +61,11 @@ export type PublicCommercialDocumentDto = {
   document: {
     number: string;
     status: string;
-    totalTtc: number;
+    totalTtc?: number;
     createdAt: string;
     publicUrl?: string;
   };
-  lines: Array<{ label: string; quantity: number; unitPriceTtc: number; totalTtc: number }>;
+  lines: Array<{ label: string; quantity: number; unitPriceTtc?: number; totalTtc?: number }>;
   relatedRepair?: { number: string; url?: string };
   documents: Array<{ type: string; title: string; status: string; previewUrl?: string; downloadUrl?: string }>;
 };
@@ -95,6 +95,6 @@ export type PublicPrintableDocumentDto = {
     publicUrl?: string;
     createdAt?: string;
   };
-  lines: Array<{ label: string; quantity: number; unitPriceTtc: number; totalTtc: number }>;
-  totalTtc: number;
+  lines: Array<{ label: string; quantity: number; unitPriceTtc?: number; totalTtc?: number }>;
+  totalTtc?: number;
 };

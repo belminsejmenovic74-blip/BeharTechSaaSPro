@@ -825,7 +825,8 @@ export function RepairIntakeDocument({
   repair,
   customer,
   workshop,
-}: Readonly<{ repair: Repair; customer: Customer; workshop?: WorkshopInfo }>) {
+  showClientAmount = true,
+}: Readonly<{ repair: Repair; customer: Customer; workshop?: WorkshopInfo; showClientAmount?: boolean }>) {
   const ws = workshop ?? defaultWorkshopInfo;
   const photos = (repair.intakeCondition?.photos ?? []).filter((photo): photo is typeof photo & { dataUrl: string } =>
     Boolean(photo.dataUrl),
@@ -900,18 +901,20 @@ export function RepairIntakeDocument({
 
         {/* Montant estimé — le client voit le prix convenu au dépôt. Mention
             « sous réserve » car le tarif peut évoluer après diagnostic. */}
-        <section className="flex items-center justify-between gap-4 rounded-[6px] border border-[#2A9D8F] bg-white px-4 py-3">
-          <div className="min-w-0">
-            <p className="font-bold text-[#2A9D8F] text-[11px] uppercase tracking-wide">Montant estimé</p>
-            <p className="mt-0.5 text-[#667085] text-[10px] leading-tight">
-              Estimation convenue au dépôt — susceptible d'évoluer après diagnostic.
+        {showClientAmount ? (
+          <section className="flex items-center justify-between gap-4 rounded-[6px] border border-[#2A9D8F] bg-white px-4 py-3">
+            <div className="min-w-0">
+              <p className="font-bold text-[#2A9D8F] text-[11px] uppercase tracking-wide">Montant estimé</p>
+              <p className="mt-0.5 text-[#667085] text-[10px] leading-tight">
+                Estimation convenue au dépôt — susceptible d'évoluer après diagnostic.
+              </p>
+            </div>
+            <p className="shrink-0 font-bold font-mono text-[#101828] text-[20px] tracking-tight">
+              {money(repair.total ?? repair.amount ?? 0, repair.currency)}{" "}
+              <span className="font-normal text-[#667085] text-[12px]">TTC</span>
             </p>
-          </div>
-          <p className="shrink-0 font-bold font-mono text-[#101828] text-[20px] tracking-tight">
-            {money(repair.total ?? repair.amount ?? 0, repair.currency)}{" "}
-            <span className="font-normal text-[#667085] text-[12px]">TTC</span>
-          </p>
-        </section>
+          </section>
+        ) : null}
 
         {/* État d'entrée — compact 2 col */}
         <section className="overflow-hidden rounded-[6px] border border-[#E4E7EC] bg-white">
@@ -1340,7 +1343,8 @@ export function RepairSummaryDocument({
   repair,
   customer,
   workshop,
-}: Readonly<{ repair: Repair; customer: Customer; workshop?: WorkshopInfo }>) {
+  showClientAmount = true,
+}: Readonly<{ repair: Repair; customer: Customer; workshop?: WorkshopInfo; showClientAmount?: boolean }>) {
   const ws = workshop ?? defaultWorkshopInfo;
   const usedParts = (repair.parts ?? []).filter((part) => part.confirmed);
   const testValidated = Boolean(repair.finalTest?.validatedAt);
@@ -1368,8 +1372,10 @@ export function RepairSummaryDocument({
           ))}
         </DocumentSection>
       )}
-      <DocumentSection title="Montant & garantie">
-        <KeyValue label="Total" value={money(repair.total ?? repair.amount, repair.currency)} />
+      <DocumentSection title={showClientAmount ? "Montant & garantie" : "Garantie"}>
+        {showClientAmount ? (
+          <KeyValue label="Total" value={money(repair.total ?? repair.amount, repair.currency)} />
+        ) : null}
         <KeyValue label="Garantie" value={dash(repair.diagnosticWarranty || ws.defaultWarranty)} />
       </DocumentSection>
       <NoticeCard title="Garantie">

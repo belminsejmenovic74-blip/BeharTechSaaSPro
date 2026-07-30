@@ -22,6 +22,7 @@ import { PageShell } from "@/components/behar/page-shell";
 import { SettlementModal, useSettlementModal } from "@/components/behar/settlement-modal";
 import { StatusBadge } from "@/components/behar/primitives";
 import { isTerminalRepairStatus, normalizeAppointmentStatus, useBeharStore } from "@/lib/behar-store";
+import { useCapabilities } from "@/lib/use-capabilities";
 
 export default function Page() {
   return (
@@ -58,6 +59,7 @@ function useToday() {
 
 function MobileDashboard() {
   const store = useBeharStore();
+  const capabilities = useCapabilities();
   const settlement = useSettlementModal();
   const today = useToday();
 
@@ -121,15 +123,17 @@ function MobileDashboard() {
           )}
           subline="Créés aujourd'hui"
         />
-        <KpiCard
-          href="/dashboard/devis"
-          icon={<FileText className="size-[18px]" />}
-          iconBg="bg-[#FFFFFF]"
-          iconColor="text-[#2A9D8F]"
-          label="Devis"
-          value={String(store.quotes.length)}
-          subline="Liés aux dossiers"
-        />
+        {capabilities.canQuote ? (
+          <KpiCard
+            href="/dashboard/devis"
+            icon={<FileText className="size-[18px]" />}
+            iconBg="bg-[#FFFFFF]"
+            iconColor="text-[#2A9D8F]"
+            label="Devis"
+            value={String(store.quotes.length)}
+            subline="Liés aux dossiers"
+          />
+        ) : null}
         <KpiCard
           href="/dashboard/documents"
           icon={<Files className="size-[18px]" />}

@@ -10,6 +10,7 @@ import {
   type useBeharStore,
   type WorkshopInfo,
 } from "@/lib/behar-store";
+import { withBillingRegistration } from "@/lib/capabilities";
 import { getDocumentFilename } from "@/lib/workshop-country";
 
 import {
@@ -133,8 +134,15 @@ function MissingDocument({ children }: Readonly<{ children: ReactNode }>) {
 
 export function LocalPrintableDocument({
   document,
+  showClientAmount = true,
   store,
-}: Readonly<{ document?: BeharDocument | null; store: BeharStoreSnapshot }>) {
+  workshopRegistrationNumber,
+}: Readonly<{
+  document?: BeharDocument | null;
+  showClientAmount?: boolean;
+  store: BeharStoreSnapshot;
+  workshopRegistrationNumber?: string | null;
+}>) {
   if (!document) return <MissingDocument>Document introuvable.</MissingDocument>;
 
   const customer = store.customers.find((entry) => entry.id === document.customerId);
@@ -154,9 +162,9 @@ export function LocalPrintableDocument({
     store.workshopInfo.country;
   // Snapshot légal figé à l'émission (devis verrouillé / facture émise), sinon document lui-même.
   const legalSnapshot = quote?.snapshot ?? invoice?.snapshot ?? document.snapshot;
-  const billingWorkshop = freezeWorkshopFromSnapshot(
-    getBillingWorkshopInfo(store.workshopInfo, billingCountry),
-    legalSnapshot,
+  const billingWorkshop = withBillingRegistration(
+    freezeWorkshopFromSnapshot(getBillingWorkshopInfo(store.workshopInfo, billingCountry), legalSnapshot),
+    workshopRegistrationNumber,
   );
 
   if (!customer && document.type !== "sale-receipt" && document.type !== "sale-invoice") {
@@ -166,7 +174,14 @@ export function LocalPrintableDocument({
   switch (document.type) {
     case "intake":
       if (!repair || !customer) return <MissingDocument>Bon de prise en charge incomplet.</MissingDocument>;
-      return <RepairIntakeDocument customer={customer} repair={repair} workshop={billingWorkshop} />;
+      return (
+        <RepairIntakeDocument
+          customer={customer}
+          repair={repair}
+          showClientAmount={showClientAmount}
+          workshop={billingWorkshop}
+        />
+      );
     case "quote":
       if (!quote || !customer) return <MissingDocument>Devis incomplet.</MissingDocument>;
       return <QuoteDocument customer={customer} quote={quote} repair={repair} workshop={billingWorkshop} />;
@@ -198,7 +213,14 @@ export function LocalPrintableDocument({
     case "summary":
       // Rapport de réparation côté client : version propre, sans données sensibles.
       if (!repair || !customer) return <MissingDocument>Rapport de réparation incomplet.</MissingDocument>;
-      return <RepairSummaryDocument customer={customer} repair={repair} workshop={billingWorkshop} />;
+      return (
+        <RepairSummaryDocument
+          customer={customer}
+          repair={repair}
+          showClientAmount={showClientAmount}
+          workshop={billingWorkshop}
+        />
+      );
     case "diagnostic_report":
       if (!repair || !customer) return <MissingDocument>Rapport diagnostic incomplet.</MissingDocument>;
       return <DiagnosticReportDocument customer={customer} repair={repair} workshop={billingWorkshop} />;

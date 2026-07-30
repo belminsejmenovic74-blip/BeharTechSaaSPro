@@ -38,6 +38,7 @@ import {
 } from "@/lib/behar-store";
 import { formatDeviceLabel } from "@/lib/format-device";
 import { computeReconditioningKpis, useReconditioningStore } from "@/lib/reconditioning-store";
+import { useCapabilities } from "@/lib/use-capabilities";
 import type { RepairCard } from "@/mock/repairs";
 
 // Action principale dynamique du panneau détail (même logique que le comptoir).
@@ -55,6 +56,7 @@ const repairActivityTime = (repair: Pick<Repair, "updatedAt" | "droppedAt" | "cr
 
 export function DashboardWorkspace() {
   const store = useBeharStore();
+  const capabilities = useCapabilities();
   const settlement = useSettlementModal();
   const reconditioningFiles = useReconditioningStore((s) => s.files);
   const recondKpis = computeReconditioningKpis(reconditioningFiles);
@@ -118,7 +120,7 @@ export function DashboardWorkspace() {
     : 0;
   const selectedMontant = selectedRepairTotal > 0 ? selectedRepairTotal : selectedInvoiceAmount || selectedQuoteAmount;
   // KPI secondaires : une seule ligne, navigation par flèches (les KPI financiers vivent dans FinanceOverview).
-  const secondaryKpis: Array<{ label: string; value: string; href: string; icon: LucideIcon }> = [
+  const operationalKpis: Array<{ label: string; value: string; href: string; icon: LucideIcon }> = [
     {
       label: "Réparations en cours",
       value: String(activeRepairs.length),
@@ -128,25 +130,6 @@ export function DashboardWorkspace() {
     { label: "Dossiers prêts", value: String(readyRepairs.length), href: "/dashboard/reparations", icon: CheckCheck },
     { label: "Dossiers du jour", value: String(todayRepairs.length), href: "/dashboard/dossiers", icon: FolderOpen },
     { label: "RDV du jour", value: String(todaysAppointments), href: "/dashboard/rendez-vous", icon: CalendarDays },
-    {
-      label: "Factures émises aujourd'hui",
-      value: String(todayInvoices.length),
-      href: "/dashboard/factures",
-      icon: FileText,
-    },
-    {
-      label: "CA encaissé",
-      value: formatEuro(collectedAmount),
-      href: "/dashboard/factures",
-      icon: TrendingUp,
-    },
-    {
-      label: "CA facturé",
-      value: formatEuro(billedAmount),
-      href: "/dashboard/factures",
-      icon: FileText,
-    },
-    { label: "Devis en attente", value: String(pendingQuotes.length), href: "/dashboard/devis", icon: FileText },
     { label: "Stock faible", value: String(lowStockItems.length), href: "/dashboard/stock", icon: Package },
     {
       label: "Dossiers bloqués",
@@ -155,6 +138,21 @@ export function DashboardWorkspace() {
       icon: AlertTriangle,
     },
   ];
+  const secondaryKpis: Array<{ label: string; value: string; href: string; icon: LucideIcon }> = capabilities.canInvoice
+    ? [
+        ...operationalKpis.slice(0, 4),
+        {
+          label: "Factures émises aujourd'hui",
+          value: String(todayInvoices.length),
+          href: "/dashboard/factures",
+          icon: FileText,
+        },
+        { label: "CA encaissé", value: formatEuro(collectedAmount), href: "/dashboard/factures", icon: TrendingUp },
+        { label: "CA facturé", value: formatEuro(billedAmount), href: "/dashboard/factures", icon: FileText },
+        { label: "Devis en attente", value: String(pendingQuotes.length), href: "/dashboard/devis", icon: FileText },
+        ...operationalKpis.slice(4),
+      ]
+    : operationalKpis;
   const repairFlowStatuses: RepairStatus[] = [
     "Reçu",
     "Diagnostic",
@@ -183,7 +181,7 @@ export function DashboardWorkspace() {
           customer: repairCustomer?.name || "Client comptoir",
           time: formatIsoToDisplay(repair.updatedAt || repair.droppedAt || repair.createdAt || ""),
           status: repair.status,
-          totalLabel: total > 0 ? formatEuro(total) : undefined,
+          totalLabel: capabilities.canInvoice && total > 0 ? formatEuro(total) : undefined,
           showReadyBadge: repair.status === "Prêt",
         } satisfies RepairCard;
       }),
@@ -203,7 +201,7 @@ export function DashboardWorkspace() {
       </section>
 
       {/* Volet facturation : montants des factures emises, sans resultat de reglement. */}
-      <FinanceOverview />
+      {capabilities.canInvoice ? <FinanceOverview /> : null}
 
       {/* KPI secondaires : une ligne, flèches pour faire défiler. */}
       <SecondaryKpiStrip items={secondaryKpis} />
@@ -436,11 +434,13 @@ export function DashboardWorkspace() {
                 label="Statut"
                 value={<StatusBadge status={selected.status === "Test final" ? "Test" : selected.status} />}
               />
-              <DetailRow
-                emphasize
-                label="Montant"
-                value={selectedMontant > 0 ? formatEuro(selectedMontant) : "À chiffrer"}
-              />
+              {capabilities.canInvoice ? (
+                <DetailRow
+                  emphasize
+                  label="Montant"
+                  value={selectedMontant > 0 ? formatEuro(selectedMontant) : "À chiffrer"}
+                />
+              ) : null}
             </dl>
 
             {(() => {
@@ -481,13 +481,15 @@ export function DashboardWorkspace() {
         )}
       </section>
 
-      <Panel className="p-4">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-semibold text-[#101828] text-[17px] tracking-tight">CA encaissé déclaré par jour</h2>
-          <span className="text-[#667085] text-[13px]">30 derniers jours</span>
-        </div>
-        <RevenueChart />
-      </Panel>
+      {capabilities.canInvoice ? (
+        <Panel className="p-4">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-semibold text-[#101828] text-[17px] tracking-tight">CA encaissé déclaré par jour</h2>
+            <span className="text-[#667085] text-[13px]">30 derniers jours</span>
+          </div>
+          <RevenueChart />
+        </Panel>
+      ) : null}
 
       {canViewAuditLog && (
         <Panel className="p-4">

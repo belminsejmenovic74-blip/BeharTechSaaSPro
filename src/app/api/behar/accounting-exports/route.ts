@@ -14,6 +14,7 @@ import {
 import { createAccountingCsv, createAccountingWorkbook } from "@/lib/accounting-export/serializers";
 import { createZip, type ZipEntry } from "@/lib/accounting-export/zip";
 import type { StoreState, WorkshopSettings } from "@/lib/behar-store";
+import { requireAccountingExportCapability } from "@/lib/server/capabilities";
 import { authorizeWorkshopLicense } from "@/lib/server/workshop-license-auth";
 
 export const dynamic = "force-dynamic";
@@ -166,6 +167,8 @@ async function accountingAuthorization(workshopId: string, licenseKey: string) {
       403,
     );
   }
+  const capability = await requireAccountingExportCapability(auth.admin, workshopId, auth.session.licenseId);
+  if (capability instanceof Response) return capability;
   return auth;
 }
 

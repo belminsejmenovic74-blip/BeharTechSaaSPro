@@ -17,6 +17,7 @@ import {
 } from "@/lib/behar-store";
 import { formatDeviceLabel } from "@/lib/format-device";
 import { getInternalDocumentUrl } from "@/lib/documents/document-actions";
+import { useCapabilities } from "@/lib/use-capabilities";
 import { formatIntakeBonNumber } from "@/lib/utils";
 
 import { getPrintableTarget, LocalPrintableDocument } from "./local-printable-document";
@@ -35,6 +36,14 @@ const TYPE_FILTERS: Array<{ key: FilterType; label: string }> = [
   { key: "internal", label: "Fiches internes" },
   { key: "summary", label: "Résumés" },
 ];
+
+const COMMERCIAL_DOCUMENT_TYPES = new Set<DocumentType>([
+  "quote",
+  "invoice",
+  "payment",
+  "sale-receipt",
+  "sale-invoice",
+]);
 
 const TYPE_LABEL: Record<DocumentType, string> = {
   intake: "Bon de prise en charge",
@@ -82,6 +91,7 @@ const documentSortValue = (createdAt: string, index: number) => {
 
 export function DocumentPreview() {
   const store = useBeharStore();
+  const capabilities = useCapabilities();
   const { print, download, preview } = useDocument();
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [filterStatus, setFilterStatus] = useState<StatusFilter>("Tous");
@@ -89,132 +99,161 @@ export function DocumentPreview() {
   const [viewMode, setViewMode] = useState<"all" | "byRepair" | "byClient" | "recent">("all");
 
   const enriched = useMemo(() => {
-    return store.documents.map((document, index) => {
-      const customer = store.customers.find((entry) => entry.id === document.customerId);
-      const repair = document.repairId ? store.repairs.find((entry) => entry.id === document.repairId) : undefined;
-      const quote = document.quoteId ? store.quotes.find((entry) => entry.id === document.quoteId) : undefined;
-      const invoice = document.invoiceId ? store.invoices.find((entry) => entry.id === document.invoiceId) : undefined;
-      const payment = document.paymentId ? store.payments.find((entry) => entry.id === document.paymentId) : undefined;
-      const sale = document.saleId ? store.sales.find((entry) => entry.id === document.saleId) : undefined;
+    return store.documents
+      .filter((document) => capabilities.canInvoice || !COMMERCIAL_DOCUMENT_TYPES.has(document.type))
+      .map((document, index) => {
+        const customer = store.customers.find((entry) => entry.id === document.customerId);
+        const repair = document.repairId ? store.repairs.find((entry) => entry.id === document.repairId) : undefined;
+        const quote = document.quoteId ? store.quotes.find((entry) => entry.id === document.quoteId) : undefined;
+        const invoice = document.invoiceId
+          ? store.invoices.find((entry) => entry.id === document.invoiceId)
+          : undefined;
+        const payment = document.paymentId
+          ? store.payments.find((entry) => entry.id === document.paymentId)
+          : undefined;
+        const sale = document.saleId ? store.sales.find((entry) => entry.id === document.saleId) : undefined;
 
-      const isCounter = customer?.type === "counter";
-      const customerLabel = isCounter ? "Client comptoir" : (customer?.name ?? "Client");
-      const quoteDeviceLabel = quote ? getQuoteDeviceListLabel(quote) : "";
-      const deviceLabel = repair ? formatDeviceLabel(repair, "") : quoteDeviceLabel;
+        const isCounter = customer?.type === "counter";
+        const customerLabel = isCounter ? "Client comptoir" : (customer?.name ?? "Client");
+        const quoteDeviceLabel = quote ? getQuoteDeviceListLabel(quote) : "";
+        const deviceLabel = repair ? formatDeviceLabel(repair, "") : quoteDeviceLabel;
 
-      const interventionLabel = repair?.issue ?? quote?.issue ?? "";
+        const interventionLabel = repair?.issue ?? quote?.issue ?? "";
 
-      const numberLabel =
-        document.type === "intake" && repair
-          ? formatIntakeBonNumber(repair.number)
-          : (sale?.number ??
-            invoice?.number ??
-            quote?.number ??
-            repair?.number ??
-            payment?.paymentNumber ??
-            document.id.slice(-6).toUpperCase());
+        const numberLabel =
+          document.type === "intake" && repair
+            ? formatIntakeBonNumber(repair.number)
+            : (sale?.number ??
+              invoice?.number ??
+              quote?.number ??
+              repair?.number ??
+              payment?.paymentNumber ??
+              document.id.slice(-6).toUpperCase());
 
-      const amount =
-        sale?.total ??
-        invoice?.lines?.reduce((s, l) => s + l.quantity * l.unitPrice, 0) ??
-        quote?.lines?.reduce((s, l) => s + l.quantity * l.unitPrice, 0) ??
-        payment?.amount ??
-        repair?.total ??
-        repair?.amount ??
-        0;
-      const currency =
-        sale?.currency ??
-        invoice?.currency ??
-        quote?.currency ??
-        payment?.currency ??
-        repair?.currency ??
-        store.workshopInfo.currency;
+        const amount =
+          sale?.total ??
+          invoice?.lines?.reduce((s, l) => s + l.quantity * l.unitPrice, 0) ??
+          quote?.lines?.reduce((s, l) => s + l.quantity * l.unitPrice, 0) ??
+          payment?.amount ??
+          repair?.total ??
+          repair?.amount ??
+          0;
+        const currency =
+          sale?.currency ??
+          invoice?.currency ??
+          quote?.currency ??
+          payment?.currency ??
+          repair?.currency ??
+          store.workshopInfo.currency;
 
-      const titleLabel =
-        document.type === "intake" && repair
-          ? `Bon de prise en charge / ${numberLabel} / ${customerLabel} / ${deviceLabel || repair.device}`
-          : document.title;
-      const listTitle =
-        document.type === "intake" && repair
-          ? `Bon ${numberLabel}`
-          : document.type === "internal" && repair
-            ? `Fiche interne ${repair.number}`
-            : document.type === "summary" && repair
-              ? `Résumé ${repair.number}`
-              : `${TYPE_SHORT_LABEL[document.type]} ${numberLabel}`;
-      const contextLabel = [customerLabel, deviceLabel || repair?.device, interventionLabel]
-        .filter(Boolean)
-        .join(" · ");
+        const titleLabel =
+          document.type === "intake" && repair
+            ? `Bon de prise en charge / ${numberLabel} / ${customerLabel} / ${deviceLabel || repair.device}`
+            : document.title;
+        const listTitle =
+          document.type === "intake" && repair
+            ? `Bon ${numberLabel}`
+            : document.type === "internal" && repair
+              ? `Fiche interne ${repair.number}`
+              : document.type === "summary" && repair
+                ? `Résumé ${repair.number}`
+                : `${TYPE_SHORT_LABEL[document.type]} ${numberLabel}`;
+        const contextLabel = [customerLabel, deviceLabel || repair?.device, interventionLabel]
+          .filter(Boolean)
+          .join(" · ");
 
-      let statusLabel = "—";
-      if (document.type === "invoice" && invoice) {
-        statusLabel = invoice.status === "Payée" ? "Payé" : invoice.status === "Annulée" ? "Annulé" : "Non payé";
-      } else if (document.type === "quote" && quote) {
-        statusLabel = quote.status === "Accepté" || quote.status === "Facturé" ? "Accepté" : quote.status;
-      } else if (document.type === "payment" && payment) {
-        statusLabel = payment.status === "Payé" ? "Payé" : payment.status;
-      } else if ((document.type === "sale-receipt" || document.type === "sale-invoice") && sale) {
-        statusLabel = sale.status;
-      } else if (document.type === "intake" && repair) {
-        statusLabel = repair.status;
-      } else if (document.type === "internal") {
-        statusLabel = "Interne";
-      }
+        let statusLabel = "—";
+        if (document.type === "invoice" && invoice) {
+          statusLabel = invoice.status === "Payée" ? "Payé" : invoice.status === "Annulée" ? "Annulé" : "Non payé";
+        } else if (document.type === "quote" && quote) {
+          statusLabel = quote.status === "Accepté" || quote.status === "Facturé" ? "Accepté" : quote.status;
+        } else if (document.type === "payment" && payment) {
+          statusLabel = payment.status === "Payé" ? "Payé" : payment.status;
+        } else if ((document.type === "sale-receipt" || document.type === "sale-invoice") && sale) {
+          statusLabel = sale.status;
+        } else if (document.type === "intake" && repair) {
+          statusLabel = repair.status;
+        } else if (document.type === "internal") {
+          statusLabel = "Interne";
+        }
 
-      const haystack = [
-        document.title,
-        titleLabel,
-        numberLabel,
-        customerLabel,
-        customer?.phone ?? "",
-        deviceLabel,
-        interventionLabel,
-        invoice?.number ?? "",
-        payment?.paymentNumber ?? "",
-        repair?.brandName ?? "",
-        repair?.deviceModel ?? "",
-        quote?.brandName ?? "",
-        quote?.deviceModel ?? "",
-        quote?.deviceType ?? "",
-        repair?.model ?? "",
-        repair?.device ?? "",
-        repair?.number ?? "",
-        invoice?.number ?? "",
-        quote?.number ?? "",
-        payment?.paymentNumber ?? "",
-        sale?.number ?? "",
-        isCounter ? "comptoir" : "",
-        // Montants searchables (réparateur peut taper "29" ou "29,00")
-        amount > 0 ? String(amount) : "",
-        amount > 0 ? amount.toFixed(2).replace(".", ",") : "",
-        amount > 0 ? formatCurrency(amount, currency) : "",
-      ]
-        .join(" ")
-        .toLowerCase();
+        const haystack = [
+          document.title,
+          titleLabel,
+          numberLabel,
+          customerLabel,
+          customer?.phone ?? "",
+          deviceLabel,
+          interventionLabel,
+          invoice?.number ?? "",
+          payment?.paymentNumber ?? "",
+          repair?.brandName ?? "",
+          repair?.deviceModel ?? "",
+          quote?.brandName ?? "",
+          quote?.deviceModel ?? "",
+          quote?.deviceType ?? "",
+          repair?.model ?? "",
+          repair?.device ?? "",
+          repair?.number ?? "",
+          invoice?.number ?? "",
+          quote?.number ?? "",
+          payment?.paymentNumber ?? "",
+          sale?.number ?? "",
+          isCounter ? "comptoir" : "",
+          // Montants searchables (réparateur peut taper "29" ou "29,00")
+          capabilities.canInvoice && amount > 0 ? String(amount) : "",
+          capabilities.canInvoice && amount > 0 ? amount.toFixed(2).replace(".", ",") : "",
+          capabilities.canInvoice && amount > 0 ? formatCurrency(amount, currency) : "",
+        ]
+          .join(" ")
+          .toLowerCase();
 
-      return {
-        document,
-        customer,
-        repair,
-        quote,
-        invoice,
-        payment,
-        isCounter,
-        customerLabel,
-        deviceLabel,
-        interventionLabel,
-        numberLabel,
-        amount,
-        currency,
-        titleLabel,
-        listTitle,
-        contextLabel,
-        statusLabel,
-        sortValue: documentSortValue(document.createdAt, index),
-        haystack,
-      };
-    });
-  }, [store.documents, store.customers, store.repairs, store.quotes, store.invoices, store.payments, store.sales]);
+        return {
+          document,
+          customer,
+          repair,
+          quote,
+          invoice,
+          payment,
+          isCounter,
+          customerLabel,
+          deviceLabel,
+          interventionLabel,
+          numberLabel,
+          amount,
+          currency,
+          titleLabel,
+          listTitle,
+          contextLabel,
+          statusLabel,
+          sortValue: documentSortValue(document.createdAt, index),
+          haystack,
+        };
+      });
+  }, [
+    capabilities.canInvoice,
+    store.documents,
+    store.customers,
+    store.repairs,
+    store.quotes,
+    store.invoices,
+    store.payments,
+    store.sales,
+  ]);
+
+  const visibleTypeFilters = useMemo(
+    () =>
+      capabilities.canInvoice
+        ? TYPE_FILTERS
+        : TYPE_FILTERS.filter((entry) => !["quote", "invoice", "payment", "sales"].includes(entry.key)),
+    [capabilities.canInvoice],
+  );
+
+  useEffect(() => {
+    if (!capabilities.canInvoice && ["quote", "invoice", "payment", "sales"].includes(filterType)) {
+      setFilterType("all");
+    }
+  }, [capabilities.canInvoice, filterType]);
 
   const filtered = useMemo(() => {
     // Recherche multi-mots, AND, insensible à l'ordre et aux mots intermédiaires.
@@ -298,8 +337,12 @@ export function DocumentPreview() {
         </div>
         <div className="mt-2 line-clamp-2 text-[#667085] text-xs">{row.contextLabel}</div>
         <div className="mt-1 text-[#667085] text-[11px]">{row.document.createdAt}</div>
-        <div className="mt-2 flex items-center justify-between text-xs">
-          <span className="font-semibold text-[#101828]">{formatCurrency(row.amount, row.currency)}</span>
+        <div
+          className={`mt-2 flex items-center text-xs ${capabilities.canInvoice ? "justify-between" : "justify-end"}`}
+        >
+          {capabilities.canInvoice ? (
+            <span className="font-semibold text-[#101828]">{formatCurrency(row.amount, row.currency)}</span>
+          ) : null}
           <span className="rounded-[7px] border border-[#E4E7EC] bg-[#FFFFFF] px-2 py-0.5 text-[#667085]">
             {row.statusLabel}
           </span>
@@ -328,7 +371,7 @@ export function DocumentPreview() {
             onChange={(e) => setFilterType(e.target.value as FilterType)}
             value={filterType}
           >
-            {TYPE_FILTERS.map((entry) => (
+            {visibleTypeFilters.map((entry) => (
               <option key={entry.key} value={entry.key}>
                 {entry.label}
               </option>
@@ -394,7 +437,11 @@ export function DocumentPreview() {
           {filtered.length === 0 && (
             <div className="rounded-[16px] border border-dashed border-[#E4E7EC] bg-[#FFFFFF] py-10 text-center">
               <p className="text-[13px] font-medium text-[#667085]">Aucun document ne correspond aux filtres.</p>
-              <p className="mt-1 text-[12px] text-[#98A2B3]">Les bons, devis, factures et reçus apparaîtront ici.</p>
+              <p className="mt-1 text-[12px] text-[#98A2B3]">
+                {capabilities.canInvoice
+                  ? "Les bons, devis, factures et reçus apparaîtront ici."
+                  : "Les bons et documents internes apparaîtront ici."}
+              </p>
             </div>
           )}
           {viewMode === "all" && filtered.map((row) => renderRow(row))}
@@ -515,7 +562,12 @@ export function DocumentPreview() {
               </div>
             </div>
             <ResponsivePreviewFrame>
-              <LocalPrintableDocument document={selected} store={store} />
+              <LocalPrintableDocument
+                document={selected}
+                showClientAmount={capabilities.canInvoice}
+                store={store}
+                workshopRegistrationNumber={capabilities.registrationNumber}
+              />
             </ResponsivePreviewFrame>
           </section>
         )}

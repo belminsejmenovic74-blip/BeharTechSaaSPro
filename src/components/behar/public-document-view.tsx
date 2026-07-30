@@ -8,7 +8,7 @@ import { useBeharStore } from "@/lib/behar-store";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
 import { buildPublicCommercialDtoFromLocalState } from "@/lib/public-commercial-dto";
 import type { PublicCommercialDocumentDto } from "@/lib/public-dtos";
-import { getSupabase } from "@/lib/supabase/client";
+import { getCapabilitiesSnapshot } from "@/lib/use-capabilities";
 import { formatMoney, getDocumentFilename } from "@/lib/workshop-country";
 
 const COLORS = { bg: "#FFFFFF", text: "#101828", sub: "#667085", accent: "#2A9D8F", border: "#E4E7EC" };
@@ -19,35 +19,18 @@ function isLocalhost() {
   return hostname === "localhost" || hostname === "127.0.0.1";
 }
 
-// Lecture publique du document commercial (devis/facture/reçu/vente) depuis la
-// table dénormalisée `public_tracking_documents`, alimentée côté client par
-// syncPublicTrackingDocumentsToCloud. Clé anon, aucune API serveur requise.
 async function readPublicCommercialDocument(
   kind: PublicCommercialDocumentDto["kind"],
   token: string,
 ): Promise<PublicCommercialDocumentDto | null> {
-  const supabase = getSupabase();
-  if (!supabase) {
-    console.error("[public-document] Supabase client non configuré.");
-    return null;
-  }
-  // On conserve les underscores : les tokens sont des ids d'entité (quote_…, sale_…).
   const safeToken = token.replace(/[^a-zA-Z0-9_-]/g, "");
   if (!safeToken) return null;
-
-  const { data, error } = await supabase
-    .from("public_tracking_documents")
-    .select("public_data")
-    .eq("token", safeToken)
-    .eq("kind", kind)
-    .limit(1);
-
-  if (error) {
-    console.error("[public-document] Error fetching document:", error.message);
-    return null;
-  }
-  if (!data || data.length === 0 || !data[0].public_data) return null;
-  return data[0].public_data as PublicCommercialDocumentDto;
+  const response = await fetch(
+    `/api/public/tracking-documents/${encodeURIComponent(safeToken)}?kind=${encodeURIComponent(kind)}`,
+    { cache: "no-store" },
+  );
+  if (!response.ok) return null;
+  return (await response.json()) as PublicCommercialDocumentDto;
 }
 
 function title(kind: PublicCommercialDocumentDto["kind"]) {
@@ -85,7 +68,11 @@ export function PublicDocumentView({ kind, token }: { kind: PublicCommercialDocu
         await (
           useBeharStore as typeof useBeharStore & { persist?: { rehydrate?: () => Promise<void> | void } }
         ).persist?.rehydrate?.();
-        finish(buildPublicCommercialDtoFromLocalState(useBeharStore.getState(), kind, token));
+        finish(
+          buildPublicCommercialDtoFromLocalState(useBeharStore.getState(), kind, token, {
+            canInvoice: getCapabilitiesSnapshot().canInvoice,
+          }),
+        );
       })();
       return () => {
         cancelled = true;
@@ -135,6 +122,9 @@ export function PublicDocumentView({ kind, token }: { kind: PublicCommercialDocu
       setDownloading(false);
     }
   };
+  const showAmounts =
+    typeof data.document.totalTtc === "number" ||
+    data.lines.some((line) => typeof line.unitPriceTtc === "number" || typeof line.totalTtc === "number");
 
   return (
     <div className="min-h-screen bg-[#F5F7FA] px-4 py-6 print:bg-white print:p-0" style={{ color: COLORS.text }}>
@@ -234,35 +224,57 @@ export function PublicDocumentView({ kind, token }: { kind: PublicCommercialDocu
           </section>
 
           <section className="overflow-hidden rounded-[6px] border border-[#E4E7EC]">
-            <div className="grid grid-cols-[minmax(0,1fr)_42px_90px] border-[#E4E7EC] border-b px-3 py-2.5 font-bold text-[#667085] text-[10px] uppercase tracking-wider sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 print:grid-cols-[1fr_70px_112px_112px] print:px-4">
+            <div
+              className={
+                showAmounts
+                  ? "grid grid-cols-[minmax(0,1fr)_42px_90px] border-[#E4E7EC] border-b px-3 py-2.5 font-bold text-[#667085] text-[10px] uppercase tracking-wider sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 print:grid-cols-[1fr_70px_112px_112px] print:px-4"
+                  : "grid grid-cols-[minmax(0,1fr)_70px] border-[#E4E7EC] border-b px-4 py-2.5 font-bold text-[#667085] text-[10px] uppercase tracking-wider"
+              }
+            >
               <span>Désignation</span>
               <span className="text-center">Qté</span>
-              <span className="hidden text-right sm:block print:block">Prix unitaire</span>
-              <span className="text-right">Total</span>
+              {showAmounts ? (
+                <>
+                  <span className="hidden text-right sm:block print:block">Prix unitaire</span>
+                  <span className="text-right">Total</span>
+                </>
+              ) : null}
             </div>
             <div className="divide-y divide-[#E4E7EC]">
               {data.lines.map((line) => (
                 <div
-                  className="grid grid-cols-[minmax(0,1fr)_42px_90px] items-center px-3 py-3.5 text-[11.5px] sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 print:grid-cols-[1fr_70px_112px_112px] print:px-4"
+                  className={
+                    showAmounts
+                      ? "grid grid-cols-[minmax(0,1fr)_42px_90px] items-center px-3 py-3.5 text-[11.5px] sm:grid-cols-[1fr_70px_112px_112px] sm:px-4 print:grid-cols-[1fr_70px_112px_112px] print:px-4"
+                      : "grid grid-cols-[minmax(0,1fr)_70px] items-center px-4 py-3.5 text-[11.5px]"
+                  }
                   key={`${line.label}-${line.quantity}-${line.totalTtc}`}
                 >
                   <span className="font-medium">{line.label}</span>
                   <span className="text-center text-[#667085]">{line.quantity}</span>
-                  <span className="hidden text-right text-[#667085] sm:block print:block">
-                    {formatMoney(line.unitPriceTtc, data.workshop.currency)}
-                  </span>
-                  <span className="text-right font-semibold">{formatMoney(line.totalTtc, data.workshop.currency)}</span>
+                  {showAmounts ? (
+                    <>
+                      <span className="hidden text-right text-[#667085] sm:block print:block">
+                        {formatMoney(line.unitPriceTtc ?? 0, data.workshop.currency)}
+                      </span>
+                      <span className="text-right font-semibold">
+                        {formatMoney(line.totalTtc ?? 0, data.workshop.currency)}
+                      </span>
+                    </>
+                  ) : null}
                 </div>
               ))}
             </div>
           </section>
 
-          <section className="ml-auto w-full max-w-[360px] rounded-[6px] border border-[#E4E7EC] p-4">
-            <div className="flex items-center justify-between gap-4 font-bold text-[#101828]">
-              <span>Total TTC</span>
-              <span className="text-[22px]">{formatMoney(data.document.totalTtc, data.workshop.currency)}</span>
-            </div>
-          </section>
+          {showAmounts ? (
+            <section className="ml-auto w-full max-w-[360px] rounded-[6px] border border-[#E4E7EC] p-4">
+              <div className="flex items-center justify-between gap-4 font-bold text-[#101828]">
+                <span>Total TTC</span>
+                <span className="text-[22px]">{formatMoney(data.document.totalTtc ?? 0, data.workshop.currency)}</span>
+              </div>
+            </section>
+          ) : null}
 
           {kind === "intake" ? (
             <section className="rounded-[6px] border border-[#E4E7EC] p-4 text-[#667085] text-[10px] leading-relaxed">

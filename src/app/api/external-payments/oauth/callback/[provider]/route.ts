@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { encryptPaymentToken } from "@/lib/server/external-payments/crypto";
+import { requireBillingCapability } from "@/lib/server/capabilities";
 import { getExternalPaymentProvider } from "@/lib/server/external-payments/providers";
 import { consumeOAuthState } from "@/lib/server/external-payments/security";
 import type { ExternalPaymentProviderName } from "@/lib/server/external-payments/types";
@@ -63,6 +64,8 @@ export async function GET(request: Request, context: { params: Promise<{ provide
     // Le nonce est consomme atomiquement avant l'echange du code : il est a
     // usage unique meme si le fournisseur ou la base repond ensuite en erreur.
     const state = await consumeOAuthState(admin, provider, callbackState);
+    const capability = await requireBillingCapability(admin, state.workshop_id);
+    if (capability instanceof Response) return settingsRedirect(request, "error", provider);
     const result = await getExternalPaymentProvider(provider).handleOAuthCallback(callbackCode);
     const now = new Date().toISOString();
 

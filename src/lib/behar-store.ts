@@ -41,6 +41,7 @@ import {
 import { ensureTrackingCode, getCustomerTrackingPath, getTrackingCode } from "@/lib/customer-tracking";
 import { publishDomainEvent } from "@/lib/domain-events";
 import { checkRepairQuota, checkSmsQuota, countSmsThisMonth, countThisMonth } from "@/lib/plan-limits";
+import { stripAccountCapabilityFields } from "@/lib/capabilities";
 import {
   generateStockScanToken,
   mergeLegacyReferences,
@@ -550,6 +551,8 @@ export type Repair = {
   paymentNote?: string;
   settlementReason?: string;
   closedAt?: string;
+  returnedAt?: string;
+  returnedBy?: string;
   diagnosticNotes?: string;
   diagnosticCause?: string;
   repairability?: "Oui" | "Non" | "Partiellement";
@@ -1473,6 +1476,7 @@ export type StoreState = {
   addPartToRepair: (repairId: string, stockItemId: string, quantity?: number) => boolean;
   addSaleLinesToRepair: (repairId: string, lines: Omit<SaleLine, "id">[], saleId?: string) => boolean;
   markRepairSaleLineDelivered: (repairId: string, lineId: string) => boolean;
+  markRepairReturned: (repairId: string) => boolean;
   removePartFromRepair: (repairId: string, stockItemId: string) => boolean;
   addQuote: (input: QuoteInput) => string;
   updateQuote: (id: string, patch: Partial<Quote>) => void;
@@ -8032,6 +8036,45 @@ export const useBeharStore = create<StoreState>()(
         });
         return true;
       },
+      markRepairReturned: (repairId) => {
+        if (!get().requirePermission("canChangeRepairStatus", "Rendre le téléphone au client")) return false;
+        const state = get();
+        const repair = state.repairs.find((entry) => entry.id === repairId);
+        if (!repair) return false;
+
+        const actor = state.currentUser ?? defaultCurrentUser;
+        const returnedAt = getNowIso();
+        set((current) => ({
+          repairs: current.repairs.map((entry) =>
+            entry.id === repairId
+              ? {
+                  ...entry,
+                  status: "Rendu" as RepairStatus,
+                  closedAt: returnedAt,
+                  returnedAt,
+                  returnedBy: actor.name,
+                  history: [...entry.history, `Téléphone restitué par ${actor.name}`],
+                  ...updateActorFields(actor),
+                }
+              : entry,
+          ),
+        }));
+        get().addAuditLog({
+          action: "repair.returned",
+          targetType: "repair",
+          targetId: repairId,
+          message: `${actor.name} a marqué ${repair.number} comme restitué`,
+          metadata: { returnedAt, returnedBy: actor.name },
+        });
+        get().addNotification({
+          type: "success",
+          title: "Téléphone restitué",
+          message: `${repair.number} a été marqué comme rendu, sans information de paiement.`,
+          targetType: "repair",
+          targetId: repairId,
+        });
+        return true;
+      },
       recordRepairSettlement: (repairId, input) => {
         if (legacyPaymentWriteBlocked()) return "";
         if (!get().requirePermission("canMarkPaymentPaid", "Créer une demande de paiement")) return "";
@@ -9717,10 +9760,11 @@ export const useBeharStore = create<StoreState>()(
       updateWorkshopInfo: (patch) => {
         if (!get().requirePermission("canEditSettings", "Modifier les paramètres")) return;
         const actor = get().currentUser ?? defaultCurrentUser;
+        const safePatch = stripAccountCapabilityFields({ workshopInfo: patch }).workshopInfo as Partial<WorkshopInfo>;
         set((state) => {
           const nextSettings = withWorkshopLocaleDefaults({
             ...(state.workshopSettings ?? defaultWorkshopSettings),
-            ...patch,
+            ...safePatch,
             updatedAt: nowLabel(),
           } as WorkshopSettings);
           return {
@@ -9739,11 +9783,13 @@ export const useBeharStore = create<StoreState>()(
       saveWorkshopSettings: (settings) => {
         if (!get().requirePermission("canEditSettings", "Enregistrer les paramètres")) return;
         const actor = get().currentUser ?? defaultCurrentUser;
+        const safeSettings = stripAccountCapabilityFields({ workshopSettings: settings })
+          .workshopSettings as Partial<WorkshopSettings>;
         set((state) => {
           const now = nowLabel();
           const nextSettings = withWorkshopLocaleDefaults({
             ...(state.workshopSettings ?? defaultWorkshopSettings),
-            ...settings,
+            ...safeSettings,
             configuredAt: state.configuredAt ?? now,
             updatedAt: now,
           } as WorkshopSettings);
@@ -9755,7 +9801,7 @@ export const useBeharStore = create<StoreState>()(
             updatedAt: nextSettings.updatedAt,
           };
         });
-        const settingsKeys = Object.keys(settings);
+        const settingsKeys = Object.keys(safeSettings);
         const onlyLogoChanged =
           settingsKeys.length > 0 && settingsKeys.every((key) => key === "logoUrl" || key === "showLogo");
         get().addAuditLog({

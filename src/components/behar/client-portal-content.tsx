@@ -1,6 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import {
@@ -21,6 +24,7 @@ import {
 
 import AccueilHome from "@/app/(main)/accueil/page";
 import { ExternalPaymentIntegrations } from "@/components/behar/external-payment-integrations";
+import { useCapabilities } from "@/lib/use-capabilities";
 import { PageHeader, PortalPage } from "@/components/behar/accueil-ui";
 import { useBeharStore } from "@/lib/behar-store";
 
@@ -140,6 +144,14 @@ const SECTION_CONTENT = {
 } as const;
 
 export function ClientPortalContent({ section }: Readonly<{ section: ClientSection }>) {
+  const router = useRouter();
+  const capabilities = useCapabilities();
+  useEffect(() => {
+    if (section === "paiements" && capabilities.ready && !capabilities.canCollectPayment) {
+      router.replace("/client");
+    }
+  }, [capabilities.canCollectPayment, capabilities.ready, router, section]);
+
   if (section === "accueil") return <AccueilHome />;
   if (section === "sms" || section === "emails") {
     const isSms = section === "sms";
@@ -177,6 +189,7 @@ export function ClientPortalContent({ section }: Readonly<{ section: ClientSecti
     );
   }
   if (section === "paiements") {
+    if (!capabilities.ready || !capabilities.canCollectPayment) return null;
     return (
       <PortalPage>
         <p className="mb-2 font-semibold text-[#667085] text-xs uppercase tracking-[0.18em]">Intégrations</p>

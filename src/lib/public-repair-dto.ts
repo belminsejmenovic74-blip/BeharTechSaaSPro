@@ -93,8 +93,8 @@ function documentNumber(document: BeharDocument, state: Pick<StoreState, "quotes
 }
 
 /**
- * Chemin public d'un document commercial (devis/facture), lu par les pages
- * /devis /facture depuis `public_tracking_documents`. Le token est l'id de
+ * Chemin public d'un document commercial (devis/facture), servi par la couche
+ * publique serveur depuis `public_tracking_documents`. Le token est l'id de
  * l'entité liée. Remplace l'ancienne route
  * `/print/document/...` qui n'est lisible qu'en local (cassée à distance).
  */
@@ -111,6 +111,7 @@ export function buildPublicRepairDtoFromLocalState(
     "customers" | "documents" | "invoices" | "quotes" | "repairs" | "workshopInfo" | "workshopSettings"
   >,
   token: string,
+  options: { canInvoice?: boolean } = {},
 ): PublicRepairDto | null {
   const repair = state.repairs.find(
     (entry) =>
@@ -123,7 +124,13 @@ export function buildPublicRepairDtoFromLocalState(
     (state.workshopSettings ?? state.workshopInfo) as WorkshopInfo,
     repair.billingCountry,
   );
-  const documents = state.documents.filter((document) => document.repairId === repair.id && isPublicDocument(document));
+  const canInvoice = options.canInvoice !== false;
+  const documents = state.documents.filter(
+    (document) =>
+      document.repairId === repair.id &&
+      isPublicDocument(document) &&
+      (canInvoice || !["quote", "invoice", "payment", "sale-receipt", "sale-invoice"].includes(document.type)),
+  );
 
   return {
     workshop: publicWorkshop(workshop),
@@ -169,30 +176,34 @@ export function buildPublicRepairDtoFromLocalState(
         body: message.body,
         createdAt: message.createdAt,
       })),
-    quoteLinks: state.quotes
-      .filter((quote) => quote.repairId === repair.id)
-      .map((quote) => {
-        const document = documents.find((entry) => entry.quoteId === quote.id && entry.type === "quote");
-        return {
-          number: quote.number,
-          status: quote.status,
-          totalTtc: quote.totalTtc ?? quote.totalAmount ?? 0,
-          previewUrl: `/devis/${quote.id}`,
-          downloadUrl: document?.fileUrl || undefined,
-        };
-      }),
-    invoiceLinks: state.invoices
-      .filter((invoice) => invoice.repairId === repair.id)
-      .map((invoice) => {
-        const document = documents.find((entry) => entry.invoiceId === invoice.id && entry.type === "invoice");
-        return {
-          number: invoice.number,
-          status: invoice.status,
-          totalTtc: invoice.lines.reduce((sum, line) => sum + (line.total ?? line.quantity * line.unitPrice), 0),
-          previewUrl: `/facture/${invoice.id}`,
-          downloadUrl: document?.fileUrl || undefined,
-        };
-      }),
+    quoteLinks: canInvoice
+      ? state.quotes
+          .filter((quote) => quote.repairId === repair.id)
+          .map((quote) => {
+            const document = documents.find((entry) => entry.quoteId === quote.id && entry.type === "quote");
+            return {
+              number: quote.number,
+              status: quote.status,
+              totalTtc: quote.totalTtc ?? quote.totalAmount ?? 0,
+              previewUrl: `/devis/${quote.id}`,
+              downloadUrl: document?.fileUrl || undefined,
+            };
+          })
+      : [],
+    invoiceLinks: canInvoice
+      ? state.invoices
+          .filter((invoice) => invoice.repairId === repair.id)
+          .map((invoice) => {
+            const document = documents.find((entry) => entry.invoiceId === invoice.id && entry.type === "invoice");
+            return {
+              number: invoice.number,
+              status: invoice.status,
+              totalTtc: invoice.lines.reduce((sum, line) => sum + (line.total ?? line.quantity * line.unitPrice), 0),
+              previewUrl: `/facture/${invoice.id}`,
+              downloadUrl: document?.fileUrl || undefined,
+            };
+          })
+      : [],
     receiptLinks: [],
   };
 }

@@ -1,6 +1,7 @@
 import type { Repair, StoreState } from "@/lib/behar-store";
 import { getTrackingCode, createShopSlug } from "@/lib/customer-tracking";
 import { buildPublicRepairDtoFromLocalState } from "@/lib/public-repair-dto";
+import { getCapabilitiesSnapshot } from "@/lib/use-capabilities";
 
 export async function syncPublicTrackingRepairsToCloud(
   repairs: Repair[],
@@ -29,12 +30,15 @@ export async function syncPublicTrackingRepairsToCloud(
     "behar-tech"
   ).trim();
   const shopSlug = createShopSlug(shopName);
+  const capabilities = getCapabilitiesSnapshot();
 
   const payload = repairs
     .map((repair) => {
       const token = getTrackingCode(repair);
       if (!token) return null;
-      const publicData = buildPublicRepairDtoFromLocalState(state, token);
+      const publicData = buildPublicRepairDtoFromLocalState(state, token, {
+        canInvoice: capabilities.canInvoice,
+      });
       if (!publicData) return null;
       return {
         tracking_id: token,

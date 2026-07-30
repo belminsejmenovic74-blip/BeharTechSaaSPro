@@ -5,6 +5,7 @@ import { createHash, randomBytes } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getCurrentAppSession } from "@/lib/auth/app-session";
+import { requireBillingCapability } from "@/lib/server/capabilities";
 import { authorizeWorkshopLicense } from "@/lib/server/workshop-license-auth";
 
 import type { ExternalPaymentProviderName } from "./types";
@@ -54,6 +55,8 @@ export async function authorizeExternalPayments(
   if (!["owner", "admin", "technician", "member"].includes(session.role)) {
     return Response.json({ error: "Role entreprise non autorise." }, { status: 403 });
   }
+  const capability = await requireBillingCapability(auth.admin, workshopId, session.licenseId);
+  if (capability instanceof Response) return capability;
   return { ...auth, userId: session.userId };
 }
 

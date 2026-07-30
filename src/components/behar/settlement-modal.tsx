@@ -6,6 +6,7 @@ import { CheckCircle2, Info } from "lucide-react";
 import { toast } from "sonner";
 
 import { formatEuro, type Invoice, type PaymentMethod, type SettlementStatus, useBeharStore } from "@/lib/behar-store";
+import { useCapabilities } from "@/lib/use-capabilities";
 import { cn } from "@/lib/utils";
 
 import { Modal, PrimaryButton, SecondaryButton } from "./primitives";
@@ -75,9 +76,36 @@ export function SettlementModal({
   total: number;
   invoice?: Invoice;
 }>) {
+  const capabilities = useCapabilities();
   const patch = (value: Partial<SettlementDraft>) => onDraftChange({ ...draft, ...value });
   const isPaid = draft.status === "Réglé" || draft.status === "Partiellement réglé";
   const isOffered = draft.status === "Offert / Garantie / SAV";
+
+  if (!capabilities.canCollectPayment) {
+    return (
+      <Modal isOpen={isOpen} maxWidth="max-w-lg" onClose={onClose} title="Marquer comme restitué">
+        <div className="space-y-5">
+          <section className="flex items-start gap-3 rounded-[14px] border border-[#D7EFEA] bg-[#F1FAF8] p-4">
+            <Info className="mt-0.5 size-5 shrink-0 text-[#2A9D8F]" />
+            <div className="text-sm">
+              <p className="font-semibold text-[#101828]">Confirmer la restitution au client</p>
+              <p className="mt-1 leading-relaxed text-[#667085]">
+                Le dossier passera au statut Rendu. Aucun montant, règlement ou chiffre d’affaires ne sera enregistré.
+              </p>
+            </div>
+          </section>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <SecondaryButton className="justify-center" onClick={onClose}>
+              Annuler
+            </SecondaryButton>
+            <PrimaryButton className="justify-center" onClick={onSubmit}>
+              Marquer comme restitué
+            </PrimaryButton>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal isOpen={isOpen} maxWidth="max-w-2xl" onClose={onClose} title="Téléphone rendu · indiquer le règlement">
@@ -232,6 +260,7 @@ export function SettlementModal({
 
 export function useSettlementModal() {
   const store = useBeharStore();
+  const capabilities = useCapabilities();
   const [isOpen, setIsOpen] = useState(false);
   const [repairId, setRepairId] = useState("");
   const [markReturned, setMarkReturned] = useState(true);
@@ -266,6 +295,16 @@ export function useSettlementModal() {
 
   const close = () => setIsOpen(false);
   const submit = (): boolean => {
+    if (!capabilities.canCollectPayment) {
+      const saved = store.markRepairReturned(repairId);
+      if (!saved) {
+        toast.error("Impossible d’enregistrer la restitution.");
+        return false;
+      }
+      setIsOpen(false);
+      toast.success("Téléphone marqué comme restitué.");
+      return true;
+    }
     const isPaid = draft.status === "Réglé" || draft.status === "Partiellement réglé";
     const amount = Number.parseFloat(draft.amount.replace(",", "."));
     if (isPaid && !draft.method) {

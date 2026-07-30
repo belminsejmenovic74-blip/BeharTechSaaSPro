@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { getCurrentAppSession } from "@/lib/auth/app-session";
+import {
+  commercialSnapshotHasContent,
+  getWorkshopCapabilityContext,
+  preserveCommercialSnapshot,
+  redactCommercialSnapshot,
+} from "@/lib/server/capabilities";
 import { isLicenseActive } from "@/lib/server/verify-license";
 import { buildWorkshopSnapshotWrite } from "@/lib/server/workshop-snapshot-write";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
@@ -31,13 +38,13 @@ function recoveryCode(workshopId: string): string {
   return `${hex.slice(0, 4)}-${hex.slice(4, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}`;
 }
 
-function snapshotDto(row: Record<string, unknown>) {
+function snapshotDto(row: Record<string, unknown>, stateOverride?: Record<string, unknown>) {
   return {
     id: String(row.id ?? ""),
     workshopId: String(row.workshop_id ?? ""),
     licenseKey: String(row.license_key ?? ""),
     workshopName: typeof row.workshop_name === "string" ? row.workshop_name : undefined,
-    state: row.state && typeof row.state === "object" ? row.state : {},
+    state: stateOverride ?? (row.state && typeof row.state === "object" ? row.state : {}),
     stateSizeBytes: Number(row.state_size_bytes ?? 0),
     updatedAt: String(row.updated_at ?? new Date().toISOString()),
   };
@@ -70,6 +77,10 @@ export async function POST(request: Request) {
   const admin = getSupabaseAdmin();
   if (!admin) return NextResponse.json({ error: "Service cloud indisponible." }, { status: 503 });
   const normalizedKey = parsed.data.licenseKey.trim().toUpperCase();
+  const appSession = await getCurrentAppSession();
+  if (appSession && parsed.data.action === "upsert" && appSession.workshopId !== parsed.data.workshopId) {
+    return NextResponse.json({ error: "Session entreprise invalide." }, { status: 403 });
+  }
 
   const { data: bound, error: bindingError } = await admin
     .from("workshop_snapshots")
@@ -78,13 +89,46 @@ export async function POST(request: Request) {
     .maybeSingle();
   if (bindingError) return NextResponse.json({ error: "Lecture cloud impossible." }, { status: 503 });
   if (parsed.data.action === "load") {
-    return NextResponse.json(
-      { snapshot: bound ? snapshotDto(bound) : null },
-      { headers: { "cache-control": "no-store" } },
-    );
+    if (!bound) {
+      return NextResponse.json({ snapshot: null }, { headers: { "cache-control": "no-store" } });
+    }
+    try {
+      const context = await getWorkshopCapabilityContext(admin, String(bound.workshop_id), appSession?.licenseId);
+      const state =
+        bound.state && typeof bound.state === "object"
+          ? (bound.state as Record<string, unknown>)
+          : ({} as Record<string, unknown>);
+      const visibleState = context.capabilities.canInvoice ? state : redactCommercialSnapshot(state);
+      return NextResponse.json(
+        { snapshot: snapshotDto(bound, visibleState) },
+        { headers: { "cache-control": "no-store" } },
+      );
+    } catch {
+      return NextResponse.json({ error: "Vérification de capacité impossible." }, { status: 503 });
+    }
   }
   if (bound && bound.workshop_id !== parsed.data.workshopId)
     return NextResponse.json({ error: "Cette licence appartient à un autre atelier." }, { status: 403 });
+
+  let stateForSave = parsed.data.state;
+  let billingAllowed = false;
+  try {
+    const context = await getWorkshopCapabilityContext(admin, parsed.data.workshopId, appSession?.licenseId);
+    billingAllowed = context.capabilities.canInvoice;
+    if (!billingAllowed) {
+      if (commercialSnapshotHasContent(parsed.data.state)) {
+        return NextResponse.json(
+          { error: "Cet atelier n’est pas autorisé à enregistrer des données de facturation." },
+          { status: 403 },
+        );
+      }
+      const existingState =
+        bound?.state && typeof bound.state === "object" ? (bound.state as Record<string, unknown>) : undefined;
+      stateForSave = preserveCommercialSnapshot(parsed.data.state, existingState);
+    }
+  } catch {
+    return NextResponse.json({ error: "Vérification de capacité impossible." }, { status: 503 });
+  }
 
   const { data: workshopOwner, error: ownerError } = await admin
     .from("workshop_snapshots")
@@ -104,8 +148,8 @@ export async function POST(request: Request) {
         licenseKey: normalizedKey,
         workshopName: parsed.data.workshopName,
         deviceLabel: parsed.data.deviceLabel,
-        state: parsed.data.state,
-        stateSizeBytes: parsed.data.stateSizeBytes,
+        state: stateForSave,
+        stateSizeBytes: Buffer.byteLength(JSON.stringify(stateForSave), "utf8"),
         schemaVersion: parsed.data.schemaVersion,
       }),
       { onConflict: "workshop_id" },
@@ -119,5 +163,9 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({ error: "Sauvegarde cloud impossible." }, { status: 503 });
   }
-  return NextResponse.json({ snapshot: snapshotDto(saved) }, { headers: { "cache-control": "no-store" } });
+  const savedState = saved.state && typeof saved.state === "object" ? (saved.state as Record<string, unknown>) : {};
+  return NextResponse.json(
+    { snapshot: snapshotDto(saved, billingAllowed ? savedState : redactCommercialSnapshot(savedState)) },
+    { headers: { "cache-control": "no-store" } },
+  );
 }

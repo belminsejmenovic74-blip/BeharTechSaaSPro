@@ -43,6 +43,7 @@ import {
 import { isValidCustomerPhone, normalizeCustomerPhone } from "@/lib/customer-phone";
 import { getPriceBookMarketPrice, type PriceBookDeviceType, type PriceBookItem } from "@/lib/price-book";
 import { cn } from "@/lib/utils";
+import { useCapabilities } from "@/lib/use-capabilities";
 import { getWorkshopCountryConfig } from "@/lib/workshop-country";
 
 type ClientMode = "counter" | "new" | "existing";
@@ -386,6 +387,7 @@ export function MobileRepairIntakeWizard({
 }: Readonly<{ initialStatus: RepairStatus; prefill?: Partial<Repair>; onClose: () => void }>) {
   const router = useRouter();
   const store = useBeharStore();
+  const capabilities = useCapabilities();
   const wizardRef = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState(1);
   const [clientMode, setClientMode] = useState<ClientMode>(prefill?.customerId ? "existing" : "counter");
@@ -1089,6 +1091,11 @@ export function MobileRepairIntakeWizard({
                   onChange={(event) => setPrice(event.target.value)}
                   placeholder={billingConfig.currency === "CHF" ? "0.00 CHF" : "0,00 €"}
                 />
+                {!capabilities.canInvoice ? (
+                  <span className="mt-1.5 block text-[#667085] text-[11px]">
+                    Usage interne. Ne constitue pas un devis.
+                  </span>
+                ) : null}
               </label>
               <div className="flex flex-col justify-end pb-3 text-right">
                 <span className="text-[#667085] text-[11px]">Total prévu</span>

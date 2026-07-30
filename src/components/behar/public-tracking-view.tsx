@@ -376,7 +376,9 @@ export function PublicTrackingView({
           doc.type === "invoice"
             ? (() => {
                 const invoice = data.invoiceLinks.find((entry) => entry.number === doc.number);
-                return invoice ? `${doc.title} - ${formatMoney(invoice.totalTtc, data.workshop.currency)}` : doc.title;
+                return invoice
+                  ? `${doc.title} - ${formatMoney(invoice.totalTtc ?? 0, data.workshop.currency)}`
+                  : doc.title;
               })()
             : doc.title,
         status: doc.status,
@@ -391,7 +393,7 @@ export function PublicTrackingView({
         ...data.quoteLinks.map((quote) => ({
           key: `quote:${quote.number}`,
           type: "quote",
-          title: `Devis ${quote.number} - ${formatMoney(quote.totalTtc, data.workshop.currency)}`,
+          title: `Devis ${quote.number} - ${formatMoney(quote.totalTtc ?? 0, data.workshop.currency)}`,
           status: quote.status,
           number: quote.number,
           previewUrl: quote.previewUrl,
@@ -404,7 +406,7 @@ export function PublicTrackingView({
         ...data.invoiceLinks.map((invoice) => ({
           key: `invoice:${invoice.number}`,
           type: "invoice",
-          title: `Facture ${invoice.number} - ${formatMoney(invoice.totalTtc, data.workshop.currency)}`,
+          title: `Facture ${invoice.number} - ${formatMoney(invoice.totalTtc ?? 0, data.workshop.currency)}`,
           status: invoice.status,
           number: invoice.number,
           previewUrl: invoice.previewUrl,
@@ -417,7 +419,7 @@ export function PublicTrackingView({
         ...data.receiptLinks.map((receipt) => ({
           key: `receipt:${receipt.number}`,
           type: "payment_confirmation",
-          title: `Confirmation de règlement - ${formatMoney(receipt.amount, data.workshop.currency)}`,
+          title: `Confirmation de règlement - ${formatMoney(receipt.amount ?? 0, data.workshop.currency)}`,
           status: receipt.status,
           number: receipt.number,
           previewUrl: receipt.previewUrl,

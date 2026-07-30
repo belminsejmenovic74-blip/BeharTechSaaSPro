@@ -105,6 +105,9 @@ export function PublicPrintableDocumentPage({ token }: { token: string }) {
       setDownloading(false);
     }
   };
+  const showAmounts =
+    typeof data.totalTtc === "number" ||
+    data.lines.some((line) => typeof line.unitPriceTtc === "number" || typeof line.totalTtc === "number");
 
   return (
     <div className="min-h-screen px-4 py-6" style={{ background: COLORS.bg, color: COLORS.text }}>
@@ -251,41 +254,61 @@ export function PublicPrintableDocumentPage({ token }: { token: string }) {
 
           <section className="overflow-hidden rounded-[14px] border" style={{ borderColor: COLORS.border }}>
             <div
-              className="grid grid-cols-[1fr_70px_112px_112px] px-4 py-3 font-semibold text-[11px] uppercase tracking-wide"
+              className={
+                showAmounts
+                  ? "grid grid-cols-[1fr_70px_112px_112px] px-4 py-3 font-semibold text-[11px] uppercase tracking-wide"
+                  : "grid grid-cols-[1fr_70px] px-4 py-3 font-semibold text-[11px] uppercase tracking-wide"
+              }
               style={{ background: COLORS.soft, color: COLORS.sub }}
             >
               <span>Désignation</span>
               <span className="text-center">Qté</span>
-              <span className="text-right">Prix unitaire</span>
-              <span className="text-right">Total</span>
+              {showAmounts ? (
+                <>
+                  <span className="text-right">Prix unitaire</span>
+                  <span className="text-right">Total</span>
+                </>
+              ) : null}
             </div>
             {data.lines.map((line, index) => (
               <div
                 key={`${line.label}-${index}`}
-                className="grid grid-cols-[1fr_70px_112px_112px] border-t px-4 py-4 text-[13px]"
+                className={
+                  showAmounts
+                    ? "grid grid-cols-[1fr_70px_112px_112px] border-t px-4 py-4 text-[13px]"
+                    : "grid grid-cols-[1fr_70px] border-t px-4 py-4 text-[13px]"
+                }
                 style={{ borderColor: COLORS.border }}
               >
                 <span className="font-medium">{line.label}</span>
                 <span className="text-center" style={{ color: COLORS.sub }}>
                   {line.quantity}
                 </span>
-                <span className="text-right" style={{ color: COLORS.sub }}>
-                  {formatMoney(line.unitPriceTtc, data.workshop.currency)}
-                </span>
-                <span className="text-right font-semibold">{formatMoney(line.totalTtc, data.workshop.currency)}</span>
+                {showAmounts ? (
+                  <>
+                    <span className="text-right" style={{ color: COLORS.sub }}>
+                      {formatMoney(line.unitPriceTtc ?? 0, data.workshop.currency)}
+                    </span>
+                    <span className="text-right font-semibold">
+                      {formatMoney(line.totalTtc ?? 0, data.workshop.currency)}
+                    </span>
+                  </>
+                ) : null}
               </div>
             ))}
           </section>
 
-          <section
-            className="ml-auto w-full max-w-[340px] rounded-[14px] border p-4"
-            style={{ borderColor: COLORS.border, background: COLORS.soft }}
-          >
-            <div className="flex items-center justify-between gap-4 font-bold">
-              <span>Total TTC</span>
-              <span className="text-[22px]">{formatMoney(data.totalTtc, data.workshop.currency)}</span>
-            </div>
-          </section>
+          {showAmounts ? (
+            <section
+              className="ml-auto w-full max-w-[340px] rounded-[14px] border p-4"
+              style={{ borderColor: COLORS.border, background: COLORS.soft }}
+            >
+              <div className="flex items-center justify-between gap-4 font-bold">
+                <span>Total TTC</span>
+                <span className="text-[22px]">{formatMoney(data.totalTtc ?? 0, data.workshop.currency)}</span>
+              </div>
+            </section>
+          ) : null}
 
           {data.workshop.vatMention ? (
             <section

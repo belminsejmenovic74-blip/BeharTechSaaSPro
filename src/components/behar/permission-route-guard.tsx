@@ -1,14 +1,15 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { ShieldAlert } from "lucide-react";
 
 import type { PermissionKey } from "@/lib/behar-store";
 import { useBeharStore } from "@/lib/behar-store";
+import { useCapabilities } from "@/lib/use-capabilities";
 
 const ROUTE_PERMISSIONS: Array<{ prefix: string; permission: PermissionKey; label: string }> = [
   { prefix: "/dashboard/parametres/equipe", permission: "canManageUsers", label: "gestion équipe" },
@@ -57,13 +58,48 @@ function AccessDenied({ label }: Readonly<{ label: string }>) {
 
 export function PermissionRouteGuard({ children }: Readonly<{ children: ReactNode }>) {
   const pathname = usePathname();
+  const router = useRouter();
+  const capabilities = useCapabilities();
   const hydrated = useBeharStore((state) => state._hasHydrated);
   const hasPermission = useBeharStore((state) => state.hasPermission);
   const requirement = routeRequirement(pathname || "/dashboard");
+  const billingRoute =
+    pathname.startsWith("/dashboard/devis") ||
+    pathname.startsWith("/dashboard/factures") ||
+    pathname.startsWith("/dashboard/paiements") ||
+    pathname.startsWith("/dashboard/ventes") ||
+    pathname.startsWith("/dashboard/achats") ||
+    pathname.startsWith("/dashboard/comptabilite/export");
+  const accountingExport = pathname.startsWith("/dashboard/comptabilite/export");
 
-  if (!hydrated) return null;
+  useEffect(() => {
+    if (capabilities.ready && billingRoute && !capabilities.canInvoice) {
+      router.replace("/dashboard");
+    }
+  }, [billingRoute, capabilities.canInvoice, capabilities.ready, router]);
+
+  if (!hydrated || !capabilities.ready) return null;
+  if (billingRoute && !capabilities.canInvoice) return null;
   if (requirement && !hasPermission(requirement.permission)) {
     return <AccessDenied label={requirement.label} />;
+  }
+  if (accountingExport && !capabilities.canExportAccounting) {
+    return (
+      <div className="grid min-h-[70vh] place-items-center px-5">
+        <section className="w-full max-w-[480px] rounded-[18px] border border-[#E4E7EC] bg-white p-6 text-center shadow-sm">
+          <h1 className="font-bold text-[#101828] text-xl">Export comptable</h1>
+          <p className="mt-2 text-[#667085] text-sm">
+            L’export comptable est disponible avec les offres Pro et Business.
+          </p>
+          <Link
+            className="mt-5 inline-flex h-11 items-center justify-center rounded-[12px] bg-[#101828] px-4 font-semibold text-sm text-white"
+            href="/client?section=offre"
+          >
+            Voir les forfaits
+          </Link>
+        </section>
+      </div>
+    );
   }
   return <>{children}</>;
 }

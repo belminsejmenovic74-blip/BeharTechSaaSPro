@@ -16,6 +16,7 @@ export type Database = {
           postal_code: string | null;
           city: string | null;
           siret: string | null;
+          has_billing: boolean;
           siren: string | null;
           vat_regime: string | null;
           created_at: string;

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import { NextResponse } from "next/server";
 
+import { stripAccountCapabilityFields } from "@/lib/capabilities";
 import type { NormalizedBusinessState } from "@/lib/data/normalized-sync";
 import { getCustomerTrackingPath, getTrackingCode } from "@/lib/customer-tracking";
 import { makePublicUrl } from "@/lib/public-access";
@@ -11,6 +12,7 @@ import { isLicenseActive } from "@/lib/server/verify-license";
 import { normalizePartReference } from "@/lib/stock-reference";
 import { syncWidgetShopFromLicense } from "@/lib/server/widget-license-data";
 import { syncPayloadToErpNext } from "@/lib/server/erpnext/payload-sync";
+import { commercialSnapshotHasContent, getWorkshopCapabilityContext } from "@/lib/server/capabilities";
 
 export const dynamic = "force-dynamic";
 
@@ -229,7 +231,31 @@ export async function POST(request: Request) {
     }
   }
 
-  const ws = payload.workshopSettings;
+  let billingAllowed = false;
+  try {
+    const capability = await getWorkshopCapabilityContext(supabase, workshopId, appSession?.licenseId);
+    billingAllowed = capability.capabilities.canInvoice;
+  } catch {
+    return NextResponse.json({ error: "Vérification de capacité impossible." }, { status: 503 });
+  }
+
+  if (
+    !billingAllowed &&
+    commercialSnapshotHasContent({
+      quotes: payload.quotes,
+      invoices: payload.invoices,
+      documents: payload.documents,
+    })
+  ) {
+    return NextResponse.json(
+      { error: "Cet atelier n’est pas autorisé à synchroniser des données de facturation." },
+      { status: 403 },
+    );
+  }
+
+  const ws = stripAccountCapabilityFields({
+    workshopSettings: payload.workshopSettings ?? {},
+  }).workshopSettings as NormalizedBusinessState["workshopSettings"];
   const workshop = {
     id: workshopId,
     name: text(ws?.name, "Atelier"),
@@ -241,8 +267,6 @@ export async function POST(request: Request) {
     address: text(ws?.address) || null,
     postal_code: text(ws?.postalCode) || null,
     city: text(ws?.city || ws?.postalCity) || null,
-    siret: text(ws?.siret) || null,
-    siren: text(ws?.siret).replace(/\D/g, "").slice(0, 9) || null,
     vat_regime: ws?.isMicroEnterprise ? "micro" : ws?.vatApplicable ? "vat" : null,
   };
 

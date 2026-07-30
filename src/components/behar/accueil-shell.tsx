@@ -22,6 +22,7 @@ import {
 
 import { BeharLogo } from "@/components/behar/behar-logo";
 import { useBeharStore } from "@/lib/behar-store";
+import { useCapabilities } from "@/lib/use-capabilities";
 import { cn } from "@/lib/utils";
 
 // Navigation canonique de l'espace client public. Les réglages sensibles
@@ -53,6 +54,8 @@ export function AccueilShell({ children }: Readonly<{ children: ReactNode }>) {
   const currentUser = useBeharStore((s) => s.currentUser);
   const logout = useBeharStore((s) => s.logout);
   const workshopName = useBeharStore((s) => s.workshopSettings.name || s.workshopInfo.name);
+  const capabilities = useCapabilities();
+  const visibleNav = NAV.filter((item) => item.section !== "paiements" || capabilities.canCollectPayment);
 
   const handleLogout = (event: ReactMouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
@@ -93,7 +96,7 @@ export function AccueilShell({ children }: Readonly<{ children: ReactNode }>) {
           </Link>
         </div>
         <nav className="mt-7 flex flex-1 flex-col gap-0.5">
-          {NAV.map((item) => {
+          {visibleNav.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.section);
             return (
@@ -160,7 +163,7 @@ export function AccueilShell({ children }: Readonly<{ children: ReactNode }>) {
               </button>
             </div>
             <nav className="mt-6 flex flex-col gap-0.5">
-              {NAV.map((item) => {
+              {visibleNav.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.section);
                 return (

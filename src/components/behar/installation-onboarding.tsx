@@ -103,9 +103,6 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
     if (compactPhone && !/^(?:\+41|0)\d{9}$/.test(compactPhone) && !/^\+\d{7,15}$/.test(compactPhone)) {
       nextErrors.push("Le téléphone est invalide.");
     }
-    if (draft.country === "FR" && !/^\d{14}$/.test(String(draft.siret || "").replace(/\D/g, ""))) {
-      nextErrors.push("Le numéro SIREN / SIRET est obligatoire.");
-    }
     if (draft.country === "CH" && !String(draft.swissCanton || "").trim()) {
       nextErrors.push("Le canton est obligatoire.");
     }
@@ -333,7 +330,7 @@ export function InstallationOnboarding({ open }: Readonly<Props>) {
             </>
           ) : (
             <>
-              <Field label="SIREN / SIRET (Obligatoire)">
+              <Field label="SIREN / SIRET (optionnel)">
                 <input
                   className={inputCls}
                   value={draft.siret || ""}

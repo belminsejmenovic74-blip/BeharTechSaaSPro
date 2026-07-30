@@ -9,6 +9,7 @@ import { syncPublicTrackingDocumentsToCloud } from "@/lib/public-tracking-docume
 import { syncPublicTrackingRepairsToCloud } from "@/lib/public-tracking-sync";
 import { installReconditioningSalesBridge } from "@/lib/reconditioning-store";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase/client";
+import { refreshCapabilities, resetCapabilitiesCache } from "@/lib/use-capabilities";
 import {
   getWorkshopStateVersion,
   hydrateStoreFromCloud,
@@ -315,6 +316,8 @@ export function AutoSyncProvider() {
               },
               false,
             );
+            resetCapabilitiesCache();
+            void refreshCapabilities();
             window.setTimeout(() => {
               applyingRemote = false;
             }, 0);

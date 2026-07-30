@@ -26,7 +26,7 @@ function resolveShopName(candidates: Array<string | undefined>): string {
   return "Votre atelier";
 }
 
-function publicWorkshop(workshop: WorkshopInfo): PublicWorkshopDto {
+function publicWorkshop(workshop: WorkshopInfo, registrationNumber?: string | null): PublicWorkshopDto {
   const config = getWorkshopCountryConfig(workshop.country);
   const isSwiss = config.country === "CH";
   return {
@@ -41,7 +41,7 @@ function publicWorkshop(workshop: WorkshopInfo): PublicWorkshopDto {
     currency: config.currency,
     locale: config.locale,
     canton: isSwiss ? workshop.swissCanton || undefined : undefined,
-    businessId: isSwiss ? workshop.swissUid || undefined : workshop.siret || undefined,
+    businessId: isSwiss ? workshop.swissUid || undefined : registrationNumber || undefined,
     vatNumber: isSwiss ? workshop.swissVatNumber || undefined : workshop.tvaNumber || undefined,
     vatApplicable: workshop.vatApplicable,
     vatMention: workshop.tvaMention || undefined,
@@ -88,19 +88,22 @@ export function buildPublicCommercialDtoFromLocalState(
   state: CommercialState,
   kind: CommercialKind,
   token: string,
+  options: { canInvoice?: boolean; registrationNumber?: string | null } = {},
 ): PublicCommercialDocumentDto | null {
   const cleanToken = String(token ?? "").trim();
   if (!cleanToken) return null;
 
   const workshopInfo = (state.workshopSettings ?? state.workshopInfo) as WorkshopInfo;
+  const canInvoice = options.canInvoice !== false;
 
   if (kind === "quote") {
+    if (!canInvoice) return null;
     const quote = state.quotes.find((entry) => entry.id === cleanToken);
     if (!quote) return null;
     const workshop = getBillingWorkshopInfo(workshopInfo, quote.billingCountry);
     return {
       kind,
-      workshop: publicWorkshop(workshop),
+      workshop: publicWorkshop(workshop, options.registrationNumber),
       client: { displayName: clientDisplayName(state, quote.customerId, quote.clientSnapshot?.name) },
       document: {
         number: quote.number,
@@ -115,6 +118,7 @@ export function buildPublicCommercialDtoFromLocalState(
   }
 
   if (kind === "invoice") {
+    if (!canInvoice) return null;
     const invoice = state.invoices.find((entry) => entry.id === cleanToken);
     if (!invoice) return null;
     const workshop = getBillingWorkshopInfo(workshopInfo, invoice.billingCountry);
@@ -124,7 +128,7 @@ export function buildPublicCommercialDtoFromLocalState(
     );
     return {
       kind,
-      workshop: publicWorkshop(workshop),
+      workshop: publicWorkshop(workshop, options.registrationNumber),
       client: { displayName: clientDisplayName(state, invoice.customerId) },
       document: {
         number: invoice.number,
@@ -139,13 +143,14 @@ export function buildPublicCommercialDtoFromLocalState(
   }
 
   if (kind === "sale") {
+    if (!canInvoice) return null;
     // Vente comptoir (téléphone reconditionné / accessoire). token = sale.id.
     const sale = state.sales.find((entry) => entry.id === cleanToken);
     if (!sale) return null;
     const workshop = getBillingWorkshopInfo(workshopInfo, sale.billingCountry);
     return {
       kind,
-      workshop: publicWorkshop(workshop),
+      workshop: publicWorkshop(workshop, options.registrationNumber),
       client: { displayName: clientDisplayName(state, sale.customerId, sale.customerName) },
       document: {
         number: sale.number,
@@ -177,23 +182,19 @@ export function buildPublicCommercialDtoFromLocalState(
     if (!repair) return null;
     const workshop = getBillingWorkshopInfo(workshopInfo, repair.billingCountry);
     const device = [repair.brandName, repair.deviceModel || repair.device].filter(Boolean).join(" ").trim();
-    const amount = Number(repair.amount ?? 0);
     return {
       kind,
-      workshop: publicWorkshop(workshop),
+      workshop: publicWorkshop(workshop, options.registrationNumber),
       client: { displayName: clientDisplayName(state, repair.customerId) },
       document: {
         number: repair.number,
         status: "Pris en charge",
-        totalTtc: amount,
         createdAt: repair.droppedAt || repair.createdAt || new Date().toISOString(),
       },
       lines: [
         {
           label: [device, repair.issue].filter(Boolean).join(" — ") || "Prise en charge de l'appareil",
           quantity: 1,
-          unitPriceTtc: amount,
-          totalTtc: amount,
         },
       ],
       relatedRepair: relatedRepair(state, repair.id, workshop),

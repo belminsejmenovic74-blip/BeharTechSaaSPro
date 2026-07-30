@@ -18,6 +18,7 @@ import {
 } from "@/lib/behar-store";
 import { displayCustomerName } from "@/lib/customer-display";
 import { formatDeviceLabel } from "@/lib/format-device";
+import { useCapabilities } from "@/lib/use-capabilities";
 import { cn } from "@/lib/utils";
 
 import { PrimaryButton, StatusBadge } from "./primitives";
@@ -55,6 +56,7 @@ function lastActivityValue(repair: Repair) {
 
 export function DossiersWorkspace() {
   const store = useBeharStore();
+  const capabilities = useCapabilities();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<RepairStatus | "all">("all");
 
@@ -181,7 +183,7 @@ export function DossiersWorkspace() {
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-4">
+      <section className={`grid gap-4 ${capabilities.canInvoice ? "lg:grid-cols-4" : "lg:grid-cols-2"}`}>
         <SummaryTile
           icon={FolderOpen}
           label="Dossiers actifs"
@@ -190,16 +192,20 @@ export function DossiersWorkspace() {
           )}
         />
         <SummaryTile icon={Wrench} label="En réparation" value={String(counts.get("En réparation") ?? 0)} />
-        <SummaryTile
-          icon={FileText}
-          label="Devis liés"
-          value={String(store.quotes.filter((quote) => quote.repairId).length)}
-        />
-        <SummaryTile
-          icon={Receipt}
-          label="Factures liées"
-          value={String(store.invoices.filter((invoice) => invoice.repairId).length)}
-        />
+        {capabilities.canInvoice ? (
+          <>
+            <SummaryTile
+              icon={FileText}
+              label="Devis liés"
+              value={String(store.quotes.filter((quote) => quote.repairId).length)}
+            />
+            <SummaryTile
+              icon={Receipt}
+              label="Factures liées"
+              value={String(store.invoices.filter((invoice) => invoice.repairId).length)}
+            />
+          </>
+        ) : null}
       </section>
 
       <section className="overflow-hidden rounded-[18px] border border-[#E4E7EC] bg-white shadow-[0_8px_24px_rgba(16,24,40,0.035)]">
@@ -210,7 +216,7 @@ export function DossiersWorkspace() {
         ) : (
           <ul className="divide-y divide-[#FFFFFF]">
             {rows.map((row) => (
-              <DossierRow key={row.repair.id} row={row} />
+              <DossierRow key={row.repair.id} row={row} showCommercial={capabilities.canInvoice} />
             ))}
           </ul>
         )}
@@ -226,6 +232,7 @@ export function DossiersWorkspace() {
 
 function DossierRow({
   row,
+  showCommercial,
 }: Readonly<{
   row: {
     repair: Repair;
@@ -235,6 +242,7 @@ function DossierRow({
     amount: number;
     lastActivity: number;
   };
+  showCommercial: boolean;
 }>) {
   const { repair, customer, quote, invoice, amount } = row;
   return (
@@ -258,13 +266,17 @@ function DossierRow({
             {formatDeviceLabel(repair, repair.device)} · {repair.issue || "Intervention à préciser"}
           </span>
         </span>
-        <span className="hidden w-[140px] shrink-0 text-[#667085] text-xs sm:block">
-          {quote ? `Devis ${quote.number}` : "Aucun devis"}
-          {invoice ? ` · Fac. ${invoice.number}` : ""}
-        </span>
-        <span className="w-[88px] shrink-0 text-right font-semibold text-[#101828] text-sm">
-          {formatCurrency(amount, repair.currency)}
-        </span>
+        {showCommercial ? (
+          <>
+            <span className="hidden w-[140px] shrink-0 text-[#667085] text-xs sm:block">
+              {quote ? `Devis ${quote.number}` : "Aucun devis"}
+              {invoice ? ` · Fac. ${invoice.number}` : ""}
+            </span>
+            <span className="w-[88px] shrink-0 text-right font-semibold text-[#101828] text-sm">
+              {formatCurrency(amount, repair.currency)}
+            </span>
+          </>
+        ) : null}
         <span className="w-[120px] shrink-0 text-right">
           <StatusBadge status={repair.status} />
         </span>

@@ -31,6 +31,7 @@ import { Panel, PrimaryButton, SecondaryButton } from "@/components/behar/primit
 import { UpdateChecker } from "@/components/behar/update-checker";
 import { useBeharStore, type WorkshopSettings } from "@/lib/behar-store";
 import { sanitizePaymentDataForPersistence } from "@/lib/payment-data-boundary";
+import { useCapabilities } from "@/lib/use-capabilities";
 import { createBillingProfile, getLegalFieldsByCountry, getWorkshopCountryConfig } from "@/lib/workshop-country";
 import { formatWorkshopWeeklyHours } from "@/lib/workshop-hours";
 import {
@@ -240,6 +241,7 @@ function Section({
 /* ── Page ─────────────────────────────────────────── */
 export default function SettingsPage() {
   const store = useBeharStore();
+  const capabilities = useCapabilities();
   const canViewSettings = store.hasPermission("canViewSettings");
   const canEditSettings = store.hasPermission("canEditSettings");
   const canExportData = store.hasPermission("canExportData");
@@ -251,6 +253,24 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(true);
   const [activeGroup, setActiveGroup] = useState<(typeof SETTING_GROUPS)[number]["key"]>("atelier");
   const pathname = usePathname();
+  const visibleSettingGroups = SETTING_GROUPS.filter(
+    (group) => group.key !== "integrations" || capabilities.canCollectPayment,
+  );
+
+  useEffect(() => {
+    if (activeGroup === "integrations" && capabilities.ready && !capabilities.canCollectPayment) {
+      setActiveGroup("atelier");
+    }
+  }, [activeGroup, capabilities.canCollectPayment, capabilities.ready]);
+
+  useEffect(() => {
+    if (!capabilities.registrationNumber) return;
+    setDraft((current) =>
+      current.siret === capabilities.registrationNumber
+        ? current
+        : { ...current, siret: capabilities.registrationNumber || "" },
+    );
+  }, [capabilities.registrationNumber]);
 
   const setField = <K extends keyof WorkshopSettings>(key: K, value: WorkshopSettings[K]) => {
     setDraft((prev) => ({ ...prev, [key]: value }));
@@ -285,7 +305,7 @@ export default function SettingsPage() {
       }
     }
     if (isWeakText(city)) e.city = "Renseignez une ville réelle.";
-    if (draft.country === "FR" && isInvalidLegalNumber(siret, 14)) {
+    if (capabilities.canInvoice && draft.country === "FR" && isInvalidLegalNumber(siret, 14)) {
       e.siret = "SIRET obligatoire : 14 chiffres, hors valeurs de test.";
     }
     if (typeof draft.vatApplicable !== "boolean") e.vatApplicable = "Sélectionnez un régime de TVA.";
@@ -553,7 +573,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="mb-6 flex gap-2 overflow-x-auto rounded-[18px] border border-[#E4E7EC] bg-white p-2">
-        {SETTING_GROUPS.map((group) => (
+        {visibleSettingGroups.map((group) => (
           <button
             key={group.key}
             type="button"
@@ -1084,119 +1104,121 @@ export default function SettingsPage() {
           </Section>
 
           {/* Documents — préfixes & conditions */}
-          <Section
-            icon={FileText}
-            title="Numérotation & conditions"
-            description="Préfixes et numéros de vos documents."
-          >
-            <div className="grid gap-3 grid-cols-2">
-              <Field label="Préfixe réparation">
-                <input
-                  className={inputCls}
-                  value={draft.repairPrefix || "REP"}
-                  onChange={(e) => setField("repairPrefix", e.target.value)}
-                />
-              </Field>
-              <Field label="N° suivant">
-                <input
-                  className={inputCls}
-                  type="number"
-                  min={1}
-                  value={String(draft.nextRepairNumber || 1)}
-                  onChange={(e) => setField("nextRepairNumber", Number(e.target.value) || 1)}
-                />
-              </Field>
-              <Field label="Préfixe devis">
-                <input
-                  className={inputCls}
-                  value={draft.quotePrefix || "DEV"}
-                  onChange={(e) => setField("quotePrefix", e.target.value)}
-                />
-              </Field>
-              <Field label="N° suivant">
-                <input
-                  className={inputCls}
-                  type="number"
-                  min={1}
-                  value={String(draft.nextQuoteNumber || 1)}
-                  onChange={(e) => setField("nextQuoteNumber", Number(e.target.value) || 1)}
-                />
-              </Field>
-              <Field label="Préfixe facture">
-                <input
-                  className={inputCls}
-                  value={draft.invoicePrefix || "FAC"}
-                  onChange={(e) => setField("invoicePrefix", e.target.value)}
-                />
-              </Field>
-              <Field label="N° suivant">
-                <input
-                  className={inputCls}
-                  type="number"
-                  min={1}
-                  value={String(draft.nextInvoiceNumber || 1)}
-                  onChange={(e) => setField("nextInvoiceNumber", Number(e.target.value) || 1)}
-                />
-              </Field>
-              <Field label="Préfixe reçu">
-                <input
-                  className={inputCls}
-                  value={draft.receiptPrefix || "REC"}
-                  onChange={(e) => setField("receiptPrefix", e.target.value)}
-                />
-              </Field>
-              <Field label="N° suivant">
-                <input
-                  className={inputCls}
-                  type="number"
-                  min={1}
-                  value={String(draft.nextReceiptNumber || 1)}
-                  onChange={(e) => setField("nextReceiptNumber", Number(e.target.value) || 1)}
-                />
-              </Field>
-            </div>
-            <div className="mt-4 grid gap-3">
-              <Field label="Conditions devis">
-                <textarea
-                  className={areaCls}
-                  value={draft.quoteTerms || ""}
-                  onChange={(e) => setField("quoteTerms", e.target.value)}
-                  rows={2}
-                />
-              </Field>
-              <Field label="Conditions facture">
-                <textarea
-                  className={areaCls}
-                  value={draft.invoiceTerms || ""}
-                  onChange={(e) => setField("invoiceTerms", e.target.value)}
-                  rows={2}
-                />
-              </Field>
-              <Field
-                label="Conditions bon de prise en charge"
-                hint="Texte libre ajouté aux mentions du bon de prise en charge."
-              >
-                <textarea
-                  className={areaCls}
-                  value={draft.intakeTerms || ""}
-                  onChange={(e) => setField("intakeTerms", e.target.value)}
-                  rows={3}
-                />
-              </Field>
-              <Field label="Pied de page document">
-                <textarea
-                  className={areaCls}
-                  value={draft.documentFooter || ""}
-                  onChange={(e) => setField("documentFooter", e.target.value)}
-                  rows={2}
-                />
-              </Field>
-            </div>
-          </Section>
+          {capabilities.canInvoice ? (
+            <Section
+              icon={FileText}
+              title="Numérotation & conditions"
+              description="Préfixes et numéros de vos documents."
+            >
+              <div className="grid gap-3 grid-cols-2">
+                <Field label="Préfixe réparation">
+                  <input
+                    className={inputCls}
+                    value={draft.repairPrefix || "REP"}
+                    onChange={(e) => setField("repairPrefix", e.target.value)}
+                  />
+                </Field>
+                <Field label="N° suivant">
+                  <input
+                    className={inputCls}
+                    type="number"
+                    min={1}
+                    value={String(draft.nextRepairNumber || 1)}
+                    onChange={(e) => setField("nextRepairNumber", Number(e.target.value) || 1)}
+                  />
+                </Field>
+                <Field label="Préfixe devis">
+                  <input
+                    className={inputCls}
+                    value={draft.quotePrefix || "DEV"}
+                    onChange={(e) => setField("quotePrefix", e.target.value)}
+                  />
+                </Field>
+                <Field label="N° suivant">
+                  <input
+                    className={inputCls}
+                    type="number"
+                    min={1}
+                    value={String(draft.nextQuoteNumber || 1)}
+                    onChange={(e) => setField("nextQuoteNumber", Number(e.target.value) || 1)}
+                  />
+                </Field>
+                <Field label="Préfixe facture">
+                  <input
+                    className={inputCls}
+                    value={draft.invoicePrefix || "FAC"}
+                    onChange={(e) => setField("invoicePrefix", e.target.value)}
+                  />
+                </Field>
+                <Field label="N° suivant">
+                  <input
+                    className={inputCls}
+                    type="number"
+                    min={1}
+                    value={String(draft.nextInvoiceNumber || 1)}
+                    onChange={(e) => setField("nextInvoiceNumber", Number(e.target.value) || 1)}
+                  />
+                </Field>
+                <Field label="Préfixe reçu">
+                  <input
+                    className={inputCls}
+                    value={draft.receiptPrefix || "REC"}
+                    onChange={(e) => setField("receiptPrefix", e.target.value)}
+                  />
+                </Field>
+                <Field label="N° suivant">
+                  <input
+                    className={inputCls}
+                    type="number"
+                    min={1}
+                    value={String(draft.nextReceiptNumber || 1)}
+                    onChange={(e) => setField("nextReceiptNumber", Number(e.target.value) || 1)}
+                  />
+                </Field>
+              </div>
+              <div className="mt-4 grid gap-3">
+                <Field label="Conditions devis">
+                  <textarea
+                    className={areaCls}
+                    value={draft.quoteTerms || ""}
+                    onChange={(e) => setField("quoteTerms", e.target.value)}
+                    rows={2}
+                  />
+                </Field>
+                <Field label="Conditions facture">
+                  <textarea
+                    className={areaCls}
+                    value={draft.invoiceTerms || ""}
+                    onChange={(e) => setField("invoiceTerms", e.target.value)}
+                    rows={2}
+                  />
+                </Field>
+                <Field
+                  label="Conditions bon de prise en charge"
+                  hint="Texte libre ajouté aux mentions du bon de prise en charge."
+                >
+                  <textarea
+                    className={areaCls}
+                    value={draft.intakeTerms || ""}
+                    onChange={(e) => setField("intakeTerms", e.target.value)}
+                    rows={3}
+                  />
+                </Field>
+                <Field label="Pied de page document">
+                  <textarea
+                    className={areaCls}
+                    value={draft.documentFooter || ""}
+                    onChange={(e) => setField("documentFooter", e.target.value)}
+                    rows={2}
+                  />
+                </Field>
+              </div>
+            </Section>
+          ) : null}
         </div>
       ) : null}
 
-      {activeGroup === "integrations" ? <ExternalPaymentIntegrations /> : null}
+      {activeGroup === "integrations" && capabilities.canCollectPayment ? <ExternalPaymentIntegrations /> : null}
 
       {/* Sidebar help */}
       <div className="mt-6 rounded-[16px] border border-[#FFFFFF] bg-[#FFFFFF] px-5 py-4 flex items-start gap-3 max-w-sm">

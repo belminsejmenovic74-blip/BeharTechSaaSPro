@@ -31,6 +31,7 @@ import { BusinessHoursEditor } from "@/components/behar/business-hours-editor";
 import { type TeamMember, useBeharStore, type WorkshopSettings } from "@/lib/behar-store";
 import { syncNormalizedBusinessState } from "@/lib/data/normalized-sync";
 import { cn } from "@/lib/utils";
+import { refreshCapabilities, resetCapabilitiesCache } from "@/lib/use-capabilities";
 import { normalizeLicenseKey, saveSnapshotState } from "@/lib/workshop-sync";
 import { getLegalFieldsByCountry, getWorkshopCountryConfig } from "@/lib/workshop-country";
 import { defaultWorkshopWeeklyHours, formatWorkshopWeeklyHours } from "@/lib/workshop-hours";
@@ -200,9 +201,8 @@ export function OnboardingWizard() {
 
   // Check if step 1 can advance
   const canAdvanceStep1 = useMemo(() => {
-    const siret = digitsOnly(draft.siret);
-    return !isWeakText(draft.name) && (draft.country === "CH" || (siret.length === 14 && !/^0+$/.test(siret)));
-  }, [draft.country, draft.name, draft.siret]);
+    return !isWeakText(draft.name);
+  }, [draft.name]);
 
   const nextStep = () => {
     if (step === 1) {
@@ -223,12 +223,6 @@ export function OnboardingWizard() {
         );
       }
       if (isWeakText(draft.city)) return toast.error("Ville obligatoire.");
-      if (draft.country === "FR") {
-        const siret = digitsOnly(draft.siret);
-        if (siret.length !== 14 || /^0+$/.test(siret) || /^123+$/.test(siret)) {
-          return toast.error("SIRET invalide : 14 chiffres requis, hors valeurs de test.");
-        }
-      }
       if (draft.country === "CH" && draft.vatApplicable && !normalizeSpaces(draft.swissVatNumber)) {
         return toast.error("Renseignez le numéro TVA suisse pour un atelier assujetti.");
       }
@@ -308,6 +302,8 @@ export function OnboardingWizard() {
           lastSyncedAt: snapshot.updatedAt,
         },
       }));
+      resetCapabilitiesCache();
+      await refreshCapabilities();
       await syncNormalizedBusinessState(useBeharStore.getState());
       toast.success("Atelier configuré et synchronisé avec succès !");
     } catch (error) {
@@ -602,9 +598,9 @@ function StepAtelier({ draft, setField }: any) {
         ) : (
           <>
             <Field
-              label="SIRET *"
+              label="SIRET"
               placeholder="12345678900012"
-              hint="14 chiffres. Le SIREN est déduit automatiquement."
+              hint="Optionnel à cette étape. L’immatriculation sera vérifiée depuis votre compte."
             >
               <input
                 className={inputCls}

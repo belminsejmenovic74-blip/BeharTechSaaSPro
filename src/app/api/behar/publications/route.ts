@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { isLicenseActive } from "@/lib/server/verify-license";
+import {
+  getWorkshopCapabilityContext,
+  redactPublicDocumentAmounts,
+  redactPublicRepairPayload,
+} from "@/lib/server/capabilities";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -84,6 +89,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Accès atelier refusé." }, { status: 403 });
 
   try {
+    const capability = await getWorkshopCapabilityContext(admin, parsed.data.workshopId);
+    const billingAllowed = capability.capabilities.canInvoice;
+    if (
+      !billingAllowed &&
+      parsed.data.documents.some((document) => ["quote", "invoice", "sale"].includes(document.kind))
+    ) {
+      return NextResponse.json(
+        { error: "Cet atelier n’est pas autorisé à publier des documents commerciaux." },
+        { status: 403 },
+      );
+    }
     const repairTokens = parsed.data.repairs.map((item) => item.tracking_id);
     const documentTokens = parsed.data.documents.map((item) => item.token);
     const [repairsOwned, documentsOwned] = await Promise.all([
@@ -96,14 +112,24 @@ export async function POST(request: Request) {
     const now = new Date().toISOString();
     if (parsed.data.repairs.length) {
       const { error } = await admin.from("public_tracking_repairs").upsert(
-        parsed.data.repairs.map((item) => ({ ...item, workshop_id: parsed.data.workshopId, updated_at: now })),
+        parsed.data.repairs.map((item) => ({
+          ...item,
+          public_data: billingAllowed ? item.public_data : redactPublicRepairPayload(item.public_data),
+          workshop_id: parsed.data.workshopId,
+          updated_at: now,
+        })),
         { onConflict: "tracking_id" },
       );
       if (error) throw error;
     }
     if (parsed.data.documents.length) {
       const { error } = await admin.from("public_tracking_documents").upsert(
-        parsed.data.documents.map((item) => ({ ...item, workshop_id: parsed.data.workshopId, updated_at: now })),
+        parsed.data.documents.map((item) => ({
+          ...item,
+          public_data: billingAllowed ? item.public_data : redactPublicDocumentAmounts(item.public_data),
+          workshop_id: parsed.data.workshopId,
+          updated_at: now,
+        })),
         { onConflict: "token" },
       );
       if (error) throw error;

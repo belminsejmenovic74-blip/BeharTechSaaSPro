@@ -13,7 +13,6 @@ export function isWorkshopConfigurationComplete(settings: WorkshopSettings): boo
   const phone = String(settings.phone || "").replace(/[\s().-]/g, "");
   const email = String(settings.email || "").trim();
   const postalCode = String(settings.postalCode || "").trim();
-  const siret = String(settings.siret || "").replace(/\D/g, "");
   const identityIsComplete =
     String(settings.name || "").trim().length >= 3 &&
     /^\+\d{7,15}$/.test(phone) &&
@@ -22,7 +21,7 @@ export function isWorkshopConfigurationComplete(settings: WorkshopSettings): boo
     String(settings.city || "").trim().length >= 2;
   if (!identityIsComplete) return false;
   if (settings.country === "CH") return /^\d{4}$/.test(postalCode);
-  return /^\d{5}$/.test(postalCode) && /^\d{14}$/.test(siret) && !/^0+$/.test(siret);
+  return /^\d{5}$/.test(postalCode);
 }
 
 export function getAppEntryState({

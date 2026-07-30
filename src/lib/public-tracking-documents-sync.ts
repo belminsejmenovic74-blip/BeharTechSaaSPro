@@ -2,6 +2,7 @@ import type { StoreState } from "@/lib/behar-store";
 import { createShopSlug } from "@/lib/customer-tracking";
 import { buildPublicCommercialDtoFromLocalState } from "@/lib/public-commercial-dto";
 import type { PublicCommercialDocumentDto } from "@/lib/public-dtos";
+import { getCapabilitiesSnapshot } from "@/lib/use-capabilities";
 
 type CommercialKind = PublicCommercialDocumentDto["kind"];
 
@@ -23,9 +24,8 @@ const SKIPPED_STATUSES = new Set(["Brouillon", "Annulée", "Annulé", "draft", "
 
 /**
  * Pousse les documents commerciaux (devis et factures) vers la table
- * dénormalisée `public_tracking_documents`, lue par les pages publiques
- * /devis /facture via la clé anon. Même mécanisme que les
- * réparations (cf. syncPublicTrackingRepairsToCloud). Fire-and-forget.
+ * dénormalisée `public_tracking_documents`, servie aux pages publiques par
+ * une route serveur qui applique les capacités. Fire-and-forget.
  */
 export async function syncPublicTrackingDocumentsToCloud(state: DocumentSyncState): Promise<boolean> {
   const workshopId = state.cloudSync?.workshopId;
@@ -38,13 +38,16 @@ export async function syncPublicTrackingDocumentsToCloud(state: DocumentSyncStat
     "behar-tech"
   ).trim();
   const shopSlug = createShopSlug(shopName);
+  const capabilities = getCapabilitiesSnapshot();
 
   const entries: Array<{ kind: CommercialKind; id: string; number?: string }> = [];
   for (const quote of state.quotes ?? []) {
+    if (!capabilities.canQuote) break;
     if (SKIPPED_STATUSES.has(quote.status)) continue;
     entries.push({ kind: "quote", id: quote.id, number: quote.number });
   }
   for (const invoice of state.invoices ?? []) {
+    if (!capabilities.canInvoice) break;
     if (SKIPPED_STATUSES.has(invoice.status)) continue;
     entries.push({ kind: "invoice", id: invoice.id, number: invoice.number });
   }
@@ -52,6 +55,7 @@ export async function syncPublicTrackingDocumentsToCloud(state: DocumentSyncStat
   // lu par la page publique /vente via la clé anon. On ne publie pas les
   // brouillons ni les ventes annulées.
   for (const sale of state.sales ?? []) {
+    if (!capabilities.canCollectPayment) break;
     if (SKIPPED_STATUSES.has(sale.status)) continue;
     entries.push({ kind: "sale", id: sale.id, number: sale.number });
   }
@@ -64,7 +68,10 @@ export async function syncPublicTrackingDocumentsToCloud(state: DocumentSyncStat
 
   const payload = entries
     .map((entry) => {
-      const publicData = buildPublicCommercialDtoFromLocalState(state, entry.kind, entry.id);
+      const publicData = buildPublicCommercialDtoFromLocalState(state, entry.kind, entry.id, {
+        canInvoice: capabilities.canInvoice,
+        registrationNumber: capabilities.registrationNumber,
+      });
       if (!publicData) return null;
       return {
         token: entry.id,

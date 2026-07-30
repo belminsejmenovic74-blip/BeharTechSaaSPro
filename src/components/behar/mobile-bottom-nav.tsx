@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 
 import { useBeharStore } from "@/lib/behar-store";
+import { useCapabilities } from "@/lib/use-capabilities";
 import { cn } from "@/lib/utils";
 
 // Sur mobile, on n'expose PAS les modes tablette « Atelier » et « Mode comptoir »
@@ -53,7 +54,13 @@ export function MobileBottomNav() {
   const currentUser = useBeharStore((s) => s.currentUser);
   const canViewPurchases = useBeharStore((s) => s.hasPermission("canViewPurchasePrice"));
   const logout = useBeharStore((s) => s.logout);
-  const visibleMoreItems = moreItems.filter((item) => item.href !== "/dashboard/achats" || canViewPurchases);
+  const capabilities = useCapabilities();
+  const visibleMobileItems = mobileItems.filter((item) => item.href !== "/dashboard/devis" || capabilities.canQuote);
+  const visibleMoreItems = moreItems.filter(
+    (item) =>
+      (item.href !== "/dashboard/achats" || canViewPurchases) &&
+      (!["/dashboard/factures", "/dashboard/achats"].includes(item.href) || capabilities.canInvoice),
+  );
 
   const moreActive = moreItems.some((m) => pathname.startsWith(m.href));
   const roleLabel =
@@ -62,8 +69,8 @@ export function MobileBottomNav() {
   return (
     <>
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[#E4E7EC] bg-white px-1.5 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] md:hidden">
-        <div className="grid grid-cols-5">
-          {mobileItems.map((item) => {
+        <div className={cn("grid", capabilities.canQuote ? "grid-cols-5" : "grid-cols-4")}>
+          {visibleMobileItems.map((item) => {
             const Icon = item.icon;
             const active = item.href === "/dashboard" ? pathname === item.href : pathname.startsWith(item.href);
             return (

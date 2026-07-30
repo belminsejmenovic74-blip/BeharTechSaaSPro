@@ -5,6 +5,8 @@
  * read during the separately approved purge. They must never be written back.
  */
 
+import { stripAccountCapabilityFields } from "@/lib/capabilities";
+
 const FORBIDDEN_KEYS = new Set([
   "payments",
   "payment",
@@ -58,7 +60,7 @@ function withoutPaymentTimeline(value: unknown): unknown {
 
 /** Removes all legacy financial-result data from a store-shaped object. */
 export function sanitizePaymentDataForPersistence<T extends Record<string, unknown>>(state: T): T {
-  const sanitized = sanitizeValue(state) as Record<string, unknown>;
+  const sanitized = stripAccountCapabilityFields(sanitizeValue(state) as Record<string, unknown>);
 
   // Explicit empty collection overwrites older persisted values during the next save.
   sanitized.payments = [];

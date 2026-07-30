@@ -66,6 +66,7 @@ import { getCustomerTrackingUrl } from "@/lib/customer-tracking";
 import { formatDeviceLabel } from "@/lib/format-device";
 import { getPartTraceability } from "@/lib/part-traceability";
 import { generateQrDataUrl, publicAbsoluteUrl } from "@/lib/public-link";
+import { useCapabilities } from "@/lib/use-capabilities";
 import { cn } from "@/lib/utils";
 
 import { useDocument } from "./print-provider";
@@ -167,6 +168,7 @@ function dossierIdFromBrowserUrl() {
 export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: string }>) {
   const router = useRouter();
   const store = useBeharStore();
+  const capabilities = useCapabilities();
   const { print, download, preview } = useDocument();
   const [browserDossierId, setBrowserDossierId] = useState("");
   const [tab, setTab] = useState<DossierTab>("Vue d'ensemble");
@@ -195,8 +197,20 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
   const documents = repair
     ? store.documents
         .filter((entry) => entry.repairId === repair.id)
+        .filter(
+          (entry) =>
+            capabilities.canInvoice ||
+            !["quote", "invoice", "payment", "sale-receipt", "sale-invoice"].includes(entry.type),
+        )
         .sort((a, b) => (docTypeOrder[a.type] ?? 9) - (docTypeOrder[b.type] ?? 9))
     : [];
+  const visibleTabs = capabilities.canInvoice ? tabs : tabs.filter((entry) => entry !== "Devis" && entry !== "Facture");
+  useEffect(() => {
+    if (!capabilities.canInvoice && (tab === "Devis" || tab === "Facture")) setTab("Vue d'ensemble");
+    if (!capabilities.canInvoice && (mobileTab === "Devis" || mobileTab === "Facture")) {
+      setMobileTab("Vue d'ensemble");
+    }
+  }, [capabilities.canInvoice, mobileTab, tab]);
   const quote = quotes[0];
   const acceptedQuote = quotes.find((entry) => entry.status === "Accepté" || entry.status === "Facturé");
   const invoice = invoices[0];
@@ -225,6 +239,7 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
   }
 
   const createQuote = () => {
+    if (!capabilities.canQuote) return;
     if (quote) {
       store.setSelected("quote", quote.id);
       router.push("/dashboard/devis");
@@ -256,6 +271,7 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
   };
 
   const createInvoice = () => {
+    if (!capabilities.canInvoice) return;
     if (invoice) {
       store.setSelected("invoice", invoice.id);
       router.push("/dashboard/factures");
@@ -377,10 +393,12 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
             {repair.status === "Prêt" && (
               <HeaderCol className="lg:px-6" label="Restitution" value={readyDisplayLabel} />
             )}
-            <div className="pt-5 lg:pl-6 lg:pt-0">
-              <p className="text-[#667085] text-xs">Montant dossier</p>
-              <p className="mt-1 font-semibold text-[#167B70] text-2xl tracking-tight">{formatEuro(dossierTotal)}</p>
-            </div>
+            {capabilities.canInvoice ? (
+              <div className="pt-5 lg:pl-6 lg:pt-0">
+                <p className="text-[#667085] text-xs">Montant dossier</p>
+                <p className="mt-1 font-semibold text-[#167B70] text-2xl tracking-tight">{formatEuro(dossierTotal)}</p>
+              </div>
+            ) : null}
           </div>
         </section>
 
@@ -389,7 +407,7 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
 
         {/* Onglets */}
         <div className="flex gap-1 overflow-x-auto border-[#E4E7EC] border-b pb-px">
-          {tabs.map((entry) => (
+          {visibleTabs.map((entry) => (
             <button
               className={cn(
                 "shrink-0 border-b-2 px-3.5 pb-2.5 text-sm font-semibold transition",
@@ -410,14 +428,14 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
           <OverviewTab
             customer={customer}
             documents={documents}
-            invoices={invoices}
+            invoices={capabilities.canInvoice ? invoices : []}
             onAdvance={advance}
             onClose={closeDossier}
             onCreateInvoice={createInvoice}
             onCreateQuote={createQuote}
             onNotes={openNotes}
             onPrint={() => setTab("Documents")}
-            quotes={quotes}
+            quotes={capabilities.canQuote ? quotes : []}
             repair={repair}
             total={dossierTotal}
           />
@@ -454,7 +472,7 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
 
         <MobileRepairStepper status={repair.status} />
 
-        <MobileRepairTabs activeTab={mobileTab} setActiveTab={setMobileTab} />
+        <MobileRepairTabs activeTab={mobileTab} canInvoice={capabilities.canInvoice} setActiveTab={setMobileTab} />
 
         <div className="space-y-4 pt-1">
           {mobileTab === "Vue d'ensemble" && (
@@ -462,8 +480,8 @@ export function DossierDetailWorkspace({ dossierId }: Readonly<{ dossierId: stri
               repair={repair}
               customer={customer}
               documents={documents}
-              invoices={invoices}
-              quotes={quotes}
+              invoices={capabilities.canInvoice ? invoices : []}
+              quotes={capabilities.canQuote ? quotes : []}
               total={dossierTotal}
               onAdvance={advance}
               onClose={closeDossier}
@@ -618,6 +636,7 @@ function ClosureSettlementModal({
   invoice?: Invoice;
   total: number;
 }>) {
+  const capabilities = useCapabilities();
   return (
     <Modal isOpen={isOpen} maxWidth="max-w-2xl" onClose={onClose} title="Clôturer le dossier">
       <div className="space-y-5">
@@ -629,10 +648,14 @@ function ClosureSettlementModal({
             <p className="font-semibold text-[#101828] text-sm">
               {repair.number} · {repair.deviceModel || repair.device || "Appareil"}
             </p>
-            <p className="mt-1 text-[#667085] text-sm">
-              {invoice ? `Facture ${invoice.number}` : "Facture à générer"} ·{" "}
-              <span className="font-semibold text-[#167B70]">{formatEuro(total)} TTC</span>
-            </p>
+            {capabilities.canInvoice ? (
+              <p className="mt-1 text-[#667085] text-sm">
+                {invoice ? `Facture ${invoice.number}` : "Facture à générer"} ·{" "}
+                <span className="font-semibold text-[#167B70]">{formatEuro(total)} TTC</span>
+              </p>
+            ) : (
+              <p className="mt-1 text-[#667085] text-sm">Clôture opérationnelle, sans donnée de paiement.</p>
+            )}
           </div>
         </section>
 
@@ -648,24 +671,26 @@ function ClosureSettlementModal({
           </div>
         </section>
 
-        <section className="rounded-[15px] border border-[#F0D9A7] bg-[#FFFDF8] p-4">
-          <h3 className="font-semibold text-[#101828] text-sm">Demande de paiement</h3>
-          <p className="mt-1.5 text-[#667085] text-sm">
-            Le règlement est géré en dehors de Behar Tech Pro. La clôture du dossier reste indépendante.
-          </p>
-          <p className="mt-3 text-[#98A2B3] text-xs">
-            {customer?.name || "Client"} · montant issu de la facture finalisée
-          </p>
-          <button
-            className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-[11px] border border-[#2A9D8F] bg-white font-semibold text-[#167B70] text-sm transition hover:bg-[#F1FAF8] disabled:cursor-not-allowed disabled:opacity-45"
-            disabled={!invoice}
-            onClick={onPayment}
-            type="button"
-          >
-            <Link2 className="size-4" />
-            Créer une demande de paiement
-          </button>
-        </section>
+        {capabilities.canCollectPayment ? (
+          <section className="rounded-[15px] border border-[#F0D9A7] bg-[#FFFDF8] p-4">
+            <h3 className="font-semibold text-[#101828] text-sm">Demande de paiement</h3>
+            <p className="mt-1.5 text-[#667085] text-sm">
+              Le règlement est géré en dehors de Behar Tech Pro. La clôture du dossier reste indépendante.
+            </p>
+            <p className="mt-3 text-[#98A2B3] text-xs">
+              {customer?.name || "Client"} · montant issu de la facture finalisée
+            </p>
+            <button
+              className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-[11px] border border-[#2A9D8F] bg-white font-semibold text-[#167B70] text-sm transition hover:bg-[#F1FAF8] disabled:cursor-not-allowed disabled:opacity-45"
+              disabled={!invoice}
+              onClick={onPayment}
+              type="button"
+            >
+              <Link2 className="size-4" />
+              Créer une demande de paiement
+            </button>
+          </section>
+        ) : null}
 
         <div className="grid gap-3 border-[#EFEFEC] border-t pt-4 sm:grid-cols-2">
           <SecondaryButton className="h-12 justify-center" onClick={onClose}>
@@ -1424,6 +1449,7 @@ function ActionsCard({
   onClose: () => void;
   onNotes: (target?: "internal" | "client") => void;
 }>) {
+  const capabilities = useCapabilities();
   const target = nextStatus[repair.status];
   const canAdvance = Boolean(target) && !isTerminalRepairStatus(repair.status);
   const canMarkReturned = repair.status === "Prêt";
@@ -1437,18 +1463,22 @@ function ActionsCard({
             {target ? `Passer en ${target}` : "Passer à l'étape suivante"}
           </span>
         </PrimaryButton>
-        {canQuoteFromStatus(repair.status) && (
+        {capabilities.canQuote && canQuoteFromStatus(repair.status) && (
           <ActionRow icon={<FileText className="size-4" />} label="Créer le devis" onClick={onCreateQuote} />
         )}
-        <ActionRow icon={<Receipt className="size-4" />} label="Créer la facture" onClick={onCreateInvoice} />
+        {capabilities.canInvoice ? (
+          <ActionRow icon={<Receipt className="size-4" />} label="Créer la facture" onClick={onCreateInvoice} />
+        ) : null}
         <ActionRow icon={<Printer className="size-4" />} label="Imprimer documents" onClick={onPrint} />
-        <Link
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-medium text-[#101828] text-sm hover:bg-[#FFFFFF]"
-          href="/dashboard/factures"
-        >
-          <Receipt className="size-4" />
-          Voir les factures
-        </Link>
+        {capabilities.canInvoice ? (
+          <Link
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-medium text-[#101828] text-sm hover:bg-[#FFFFFF]"
+            href="/dashboard/factures"
+          >
+            <Receipt className="size-4" />
+            Voir les factures
+          </Link>
+        ) : null}
         <ActionRow
           icon={<Lock className="size-4" />}
           label="Ajouter une note interne"
@@ -1493,10 +1523,11 @@ function InfosDossierCard({
   total,
 }: Readonly<{ repair: Repair; customer?: Pick<Customer, "name" | "phone">; total: number }>) {
   const workshop = useBeharStore((s) => s.workshopInfo);
+  const capabilities = useCapabilities();
   const rows: Array<[string, string]> = [
     ["Référence", repair.number],
     ["Statut", repair.status],
-    ["Montant", formatEuro(total)],
+    ...(capabilities.canInvoice ? ([["Montant", formatEuro(total)]] as Array<[string, string]>) : []),
     ["Date de création", formatIsoToDisplay(repair.droppedAt || repair.createdAt || "")],
     ["Dernière mise à jour", formatIsoToDisplay(repair.updatedAt || repair.droppedAt || "")],
     ["Technicien", repair.technician || "Atelier"],
@@ -2270,6 +2301,7 @@ function MobileRepairSummaryCard({
   dossierTotal: number;
   formatDossier: (val: number) => string;
 }>) {
+  const capabilities = useCapabilities();
   return (
     <div className="rounded-[20px] border border-[#E4E7EC] bg-white p-5 shadow-[0_4px_12px_rgba(16,24,40,0.02)] space-y-4">
       {/* Device Visual Header */}
@@ -2307,10 +2339,12 @@ function MobileRepairSummaryCard({
           </p>
         </div>
       </div>
-      <div className="pt-3 border-t border-[#FFFFFF] flex items-center justify-between">
-        <span className="text-xs font-bold text-[#667085] uppercase tracking-wider">Montant dossier</span>
-        <span className="text-xl font-bold text-[#167B70] tracking-tight">{formatDossier(dossierTotal)}</span>
-      </div>
+      {capabilities.canInvoice ? (
+        <div className="pt-3 border-t border-[#FFFFFF] flex items-center justify-between">
+          <span className="text-xs font-bold text-[#667085] uppercase tracking-wider">Montant dossier</span>
+          <span className="text-xl font-bold text-[#167B70] tracking-tight">{formatDossier(dossierTotal)}</span>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -2402,12 +2436,14 @@ function MobileRepairStepper({
 
 function MobileRepairTabs({
   activeTab,
+  canInvoice,
   setActiveTab,
 }: Readonly<{
   activeTab: string;
+  canInvoice: boolean;
   setActiveTab: (tab: string) => void;
 }>) {
-  const tabsList = [
+  const allTabs = [
     "Vue d'ensemble",
     "Fiche d'entrée",
     "Diagnostic",
@@ -2418,6 +2454,7 @@ function MobileRepairTabs({
     "Notes",
     "SAV",
   ];
+  const tabsList = canInvoice ? allTabs : allTabs.filter((tab) => tab !== "Devis" && tab !== "Facture");
 
   return (
     <div className="flex gap-2 overflow-x-auto py-1.5 scrollbar-none border-b border-[#E4E7EC]">
@@ -2582,6 +2619,7 @@ function MobileOverviewSection({
 }>) {
   const [showAllHistory, setShowAllHistory] = useState(false);
   const store = useBeharStore();
+  const capabilities = useCapabilities();
   const history = useMemo(() => {
     return [...(repair.history ?? [])].reverse();
   }, [repair]);
@@ -2609,6 +2647,48 @@ function MobileOverviewSection({
   const canCreateInvoice = hasAcceptedQuote || hasTotal;
 
   const renderStatusActions = () => {
+    if (!capabilities.canInvoice) {
+      return (
+        <>
+          {canAdvance ? (
+            <button
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#2A9D8F] font-semibold text-sm text-white"
+              onClick={onAdvance}
+              type="button"
+            >
+              <Wrench className="size-4" />
+              Passer en {targetStatus}
+            </button>
+          ) : null}
+          <button
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-bold text-[#101828] text-sm"
+            onClick={() => onNotes("internal")}
+            type="button"
+          >
+            <Lock className="size-4" />
+            Ajouter une note interne
+          </button>
+          <button
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#E4E7EC] bg-white font-bold text-[#101828] text-sm"
+            onClick={onPrint}
+            type="button"
+          >
+            <Printer className="size-4" />
+            Imprimer les documents
+          </button>
+          {status === "Prêt" ? (
+            <button
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] border border-[#F3D0CC] bg-white font-semibold text-[#B42318] text-sm"
+              onClick={onClose}
+              type="button"
+            >
+              <ClipboardList className="size-4" />
+              Marquer comme restitué
+            </button>
+          ) : null}
+        </>
+      );
+    }
     switch (status) {
       case "Reçu":
         return (

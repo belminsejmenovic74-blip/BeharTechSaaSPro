@@ -65,6 +65,7 @@ import {
   normalizeInterventionHint,
 } from "@/lib/repair-intervention";
 import { getWorkshopCountryConfig } from "@/lib/workshop-country";
+import { useCapabilities } from "@/lib/use-capabilities";
 
 const UI_DEVICE_TYPES: DeviceType[] = ["Smartphone", "Tablette", "Ordinateur", "Console", "Autre"];
 const countryOptions = COUNTRY_NAMES;
@@ -187,6 +188,7 @@ export function RepairModal({
   initialStatus,
   onClose,
 }: Readonly<{ initial?: Repair; prefill?: Partial<Repair>; initialStatus: RepairStatus; onClose: () => void }>) {
+  const capabilities = useCapabilities();
   const {
     customers,
     priceBookItems,
@@ -1625,6 +1627,11 @@ export function RepairModal({
                         placeholder={`Prix client final (${currency})`}
                         value={customInterventionFinal}
                       />
+                      {!capabilities.canInvoice ? (
+                        <p className="text-[#667085] text-xs sm:col-span-2">
+                          Usage interne. Ne constitue pas un devis.
+                        </p>
+                      ) : null}
                       <label className="flex items-center gap-2 text-xs sm:col-span-2">
                         <input
                           checked={customInterventionSave}

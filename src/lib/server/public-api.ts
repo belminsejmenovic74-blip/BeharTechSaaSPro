@@ -10,6 +10,11 @@ import type {
 } from "@/lib/public-dtos";
 import { isValidPublicRepairToken, PublicMessageError, publicRepairMessageSchema } from "@/lib/public-repair-message";
 import { PUBLIC_REPAIR_TIMELINE_STEPS, publicRepairProgress, publicRepairStatusLabel } from "@/lib/repair-status";
+import {
+  getWorkshopCapabilityContext,
+  redactPublicDocumentAmounts,
+  redactPublicRepairPayload,
+} from "@/lib/server/capabilities";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { getWorkshopCountryConfig } from "@/lib/workshop-country";
 
@@ -24,7 +29,7 @@ const PUBLIC_DOCUMENT_TITLES: Record<string, string> = {
   diagnostic_report: "Rapport diagnostic",
 };
 
-function workshopDto(workshop: any): PublicWorkshopDto {
+function workshopDto(workshop: any, options: { includeBusinessId?: boolean } = {}): PublicWorkshopDto {
   const name = workshop?.commercial_name || workshop?.name || workshop?.brand || "Votre atelier";
   const config = getWorkshopCountryConfig(workshop?.country);
   const isSwiss = config.country === "CH";
@@ -40,7 +45,12 @@ function workshopDto(workshop: any): PublicWorkshopDto {
     currency: config.currency,
     locale: config.locale,
     canton: isSwiss ? workshop?.swiss_canton || undefined : undefined,
-    businessId: isSwiss ? workshop?.swiss_uid || undefined : workshop?.siret || undefined,
+    businessId:
+      options.includeBusinessId === false
+        ? undefined
+        : isSwiss
+          ? workshop?.swiss_uid || undefined
+          : workshop?.siret || undefined,
     vatNumber: isSwiss ? workshop?.swiss_vat_number || undefined : workshop?.vat_number || undefined,
     vatApplicable: workshop?.vat_regime === "vat" || workshop?.vat_regime === "vat_subject",
     vatMention: workshop?.vat_mention || undefined,
@@ -141,6 +151,30 @@ export function publicError(message = "Ressource introuvable", status = 404) {
   return error(message, status);
 }
 
+export async function getPublishedTrackingDocument(
+  kind: PublicCommercialDocumentDto["kind"],
+  token: string,
+): Promise<PublicCommercialDocumentDto | null> {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) throw new Error("Supabase server non configuré.");
+  const safeToken = token.replace(/[^a-zA-Z0-9_-]/g, "");
+  if (!safeToken) return null;
+  const { data, error: queryError } = await supabase
+    .from("public_tracking_documents")
+    .select("public_data,workshop_id")
+    .eq("token", safeToken)
+    .eq("kind", kind)
+    .maybeSingle();
+  if (queryError) throw queryError;
+  if (!data?.public_data || !data.workshop_id) return null;
+
+  const capability = await getWorkshopCapabilityContext(supabase, String(data.workshop_id));
+  if (!capability.capabilities.canInvoice && kind !== "intake") return null;
+  return (capability.capabilities.canInvoice
+    ? data.public_data
+    : redactPublicDocumentAmounts(data.public_data)) as unknown as PublicCommercialDocumentDto;
+}
+
 export async function getPublicRepair(token: string): Promise<PublicRepairDto | null> {
   const supabase = getSupabaseAdmin();
   if (!supabase) throw new Error("Supabase server non configuré.");
@@ -159,14 +193,24 @@ export async function getPublicRepair(token: string): Promise<PublicRepairDto | 
     // QR existants indisponibles alors que la publication publique est valide.
     const { data: published, error: publishedError } = await supabase
       .from("public_tracking_repairs")
-      .select("public_data")
+      .select("public_data,workshop_id")
       .eq("tracking_id", token)
       .maybeSingle();
     if (publishedError) throw publishedError;
     if (!published?.public_data || typeof published.public_data !== "object" || Array.isArray(published.public_data))
       return null;
-    return published.public_data as unknown as PublicRepairDto;
+    try {
+      const capability = await getWorkshopCapabilityContext(supabase, String(published.workshop_id));
+      return (capability.capabilities.canInvoice
+        ? published.public_data
+        : redactPublicRepairPayload(published.public_data)) as unknown as PublicRepairDto;
+    } catch {
+      return redactPublicRepairPayload(published.public_data) as unknown as PublicRepairDto;
+    }
   }
+
+  const capability = await getWorkshopCapabilityContext(supabase, repair.workshop_id);
+  const billingAllowed = capability.capabilities.canInvoice;
 
   const [workshopRes, clientRes, eventsRes, docsRes, messagesRes, quotesRes, invoicesRes] = await Promise.all([
     supabase.from("workshops").select("*").eq("id", repair.workshop_id).single(),
@@ -211,7 +255,13 @@ export async function getPublicRepair(token: string): Promise<PublicRepairDto | 
   if (messagesRes.error) throw messagesRes.error;
   if (quotesRes.error) throw quotesRes.error;
   if (invoicesRes.error) throw invoicesRes.error;
-  const publicDocs = (docsRes.data ?? []).filter((doc: any) => isPublicRepairDocument(doc));
+  const publicDocs = (docsRes.data ?? [])
+    .filter((doc: any) => isPublicRepairDocument(doc))
+    .filter(
+      (doc: any) =>
+        billingAllowed ||
+        !["quote", "invoice", "payment", "payment_receipt", "sale_receipt"].includes(String(doc.document_type ?? "")),
+    );
   const repairProgress = publicRepairProgress(repair.status);
   const readyLabel = repairProgress.key === "ready" ? publicRepairStatusLabel(repair.status) : undefined;
 
@@ -246,24 +296,28 @@ export async function getPublicRepair(token: string): Promise<PublicRepairDto | 
       body: message.body,
       createdAt: message.created_at,
     })),
-    quoteLinks: (quotesRes.data ?? []).map((quote: any) => ({
-      number: quote.quote_number,
-      status: quote.status,
-      totalTtc: Number(quote.total_ttc ?? 0),
-      previewUrl: quote.public_url,
-      downloadUrl:
-        publicDocs.find((doc: any) => doc.document_type === "quote" && doc.quote_id === quote.id)?.file_url ||
-        undefined,
-    })),
-    invoiceLinks: (invoicesRes.data ?? []).map((invoice: any) => ({
-      number: invoice.invoice_number,
-      status: invoice.status,
-      totalTtc: Number(invoice.total_ttc ?? 0),
-      previewUrl: invoice.public_url,
-      downloadUrl:
-        publicDocs.find((doc: any) => doc.document_type === "invoice" && doc.invoice_id === invoice.id)?.file_url ||
-        undefined,
-    })),
+    quoteLinks: billingAllowed
+      ? (quotesRes.data ?? []).map((quote: any) => ({
+          number: quote.quote_number,
+          status: quote.status,
+          totalTtc: Number(quote.total_ttc ?? 0),
+          previewUrl: quote.public_url,
+          downloadUrl:
+            publicDocs.find((doc: any) => doc.document_type === "quote" && doc.quote_id === quote.id)?.file_url ||
+            undefined,
+        }))
+      : [],
+    invoiceLinks: billingAllowed
+      ? (invoicesRes.data ?? []).map((invoice: any) => ({
+          number: invoice.invoice_number,
+          status: invoice.status,
+          totalTtc: Number(invoice.total_ttc ?? 0),
+          previewUrl: invoice.public_url,
+          downloadUrl:
+            publicDocs.find((doc: any) => doc.document_type === "invoice" && doc.invoice_id === invoice.id)?.file_url ||
+            undefined,
+        }))
+      : [],
     receiptLinks: [],
   };
 }
@@ -367,6 +421,8 @@ export async function getPublicCommercialDocument(
   if (!record) return null;
 
   const workshopId = record.workshop_id;
+  const capability = await getWorkshopCapabilityContext(supabase, workshopId);
+  if (!capability.capabilities.canInvoice) return null;
   const clientId = record.client_id;
   const repairId = record.repair_id;
   const [workshopRes, clientRes, repairRes, docsRes] = await Promise.all([
@@ -415,7 +471,7 @@ export async function getPublicCommercialDocument(
 
   return {
     kind,
-    workshop: workshopDto(workshopRes.data),
+    workshop: workshopDto(workshopRes.data, { includeBusinessId: true }),
     client: { displayName: clientRes?.data?.full_name || "Client comptoir" },
     document: {
       number,
@@ -454,6 +510,8 @@ export async function respondToPublicQuote(token: string, decision: "accepted" |
     .maybeSingle();
   if (quoteError) throw quoteError;
   if (!quote) return null;
+  const capability = await getWorkshopCapabilityContext(supabase, quote.workshop_id);
+  if (!capability.capabilities.canQuote) return null;
 
   const now = new Date().toISOString();
   const patch =
@@ -503,6 +561,9 @@ export async function getPublicPrintableDocument(token: string): Promise<PublicP
   if (["payment", "payment_confirmation", "payment_receipt", "sale_receipt"].includes(document.document_type)) {
     return null;
   }
+  const capability = await getWorkshopCapabilityContext(supabase, document.workshop_id);
+  const billingAllowed = capability.capabilities.canInvoice;
+  if (!billingAllowed && ["quote", "invoice", "credit_note"].includes(document.document_type)) return null;
 
   const [workshopRes, clientRes, repairRes] = await Promise.all([
     supabase.from("workshops").select("*").eq("id", document.workshop_id).single(),
@@ -516,7 +577,7 @@ export async function getPublicPrintableDocument(token: string): Promise<PublicP
   let lines: PublicPrintableDocumentDto["lines"] = [];
   let totalTtc = 0;
 
-  if (document.document_type === "quote" && document.quote_id) {
+  if (billingAllowed && document.document_type === "quote" && document.quote_id) {
     const [quoteRes, lineRes] = await Promise.all([
       supabase.from("quotes").select("total_ttc").eq("id", document.quote_id).maybeSingle(),
       supabase
@@ -534,7 +595,7 @@ export async function getPublicPrintableDocument(token: string): Promise<PublicP
       unitPriceTtc: Number(line.unit_price_ttc ?? 0),
       totalTtc: Number(line.total_ttc ?? 0),
     }));
-  } else if (document.document_type === "invoice" && document.invoice_id) {
+  } else if (billingAllowed && document.document_type === "invoice" && document.invoice_id) {
     const [invoiceRes, lineRes] = await Promise.all([
       supabase.from("invoices").select("total_ttc").eq("id", document.invoice_id).maybeSingle(),
       supabase
@@ -554,7 +615,7 @@ export async function getPublicPrintableDocument(token: string): Promise<PublicP
     }));
   }
 
-  if (!lines.length && repairRes?.data) {
+  if (billingAllowed && !lines.length && repairRes?.data) {
     const price = Number(repairRes.data.customer_price ?? 0);
     totalTtc = price;
     lines = [
@@ -569,7 +630,7 @@ export async function getPublicPrintableDocument(token: string): Promise<PublicP
 
   return {
     documentType: document.document_type,
-    workshop: workshopDto(workshopRes.data),
+    workshop: workshopDto(workshopRes.data, { includeBusinessId: billingAllowed }),
     client: {
       displayName: clientRes?.data?.full_name || "Client comptoir",
       phone: clientRes?.data?.phone || undefined,
@@ -594,12 +655,12 @@ export async function getPublicPrintableDocument(token: string): Promise<PublicP
           imei: repairRes.data.imei || undefined,
           issueDescription: repairRes.data.issue_description || undefined,
           interventionLabel: repairRes.data.intervention_label || undefined,
-          customerPrice: Number(repairRes.data.customer_price ?? 0),
+          customerPrice: billingAllowed ? Number(repairRes.data.customer_price ?? 0) : undefined,
           publicUrl: repairRes.data.public_url || undefined,
           createdAt: repairRes.data.created_at || undefined,
         }
       : undefined,
     lines,
-    totalTtc,
+    totalTtc: billingAllowed ? totalTtc : undefined,
   };
 }

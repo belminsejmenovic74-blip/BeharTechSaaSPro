@@ -28,6 +28,7 @@ import {
 
 import { BeharLogo } from "@/components/behar/behar-logo";
 import { type PermissionKey, useBeharStore } from "@/lib/behar-store";
+import { useCapabilities } from "@/lib/use-capabilities";
 import { getUserFirstName } from "@/lib/user-display";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +58,12 @@ const navGroups = [
       { label: "Factures", href: "/dashboard/factures", icon: Receipt, permission: "canViewInvoices" },
       { label: "Stock", href: "/dashboard/stock", icon: Package, permission: "canViewStock" },
       { label: "Achats", href: "/dashboard/achats", icon: ShoppingCart, permission: "canViewPurchasePrice" },
+      {
+        label: "Export comptable",
+        href: "/dashboard/comptabilite/export",
+        icon: Landmark,
+        permission: "canExportData",
+      },
     ],
   },
   {
@@ -93,13 +100,24 @@ export function DashboardSidebar() {
   const hasPermission = useBeharStore((s) => s.hasPermission);
   const currentUser = useBeharStore((s) => s.currentUser);
   const logout = useBeharStore((s) => s.logout);
+  const capabilities = useCapabilities();
   const userRoleLabel =
     currentUser.role === "admin" ? "Gérant" : currentUser.role === "technician" ? "Technicien" : "Accueil";
   const userFirstName = getUserFirstName(currentUser.name, currentUser.id);
   const visibleGroups = navGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => hasPermission(item.permission)),
+      items: group.items.filter((item) => {
+        if (!hasPermission(item.permission)) return false;
+        if (
+          ["/dashboard/devis", "/dashboard/factures", "/dashboard/achats", "/dashboard/comptabilite/export"].includes(
+            item.href,
+          )
+        ) {
+          return capabilities.canInvoice;
+        }
+        return true;
+      }),
     }))
     .filter((group) => group.items.length > 0);
 

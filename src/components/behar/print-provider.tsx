@@ -11,7 +11,9 @@ import {
   useBeharStore,
   type WorkshopCountry,
 } from "@/lib/behar-store";
+import { withBillingRegistration } from "@/lib/capabilities";
 import { generatePdfFromElement } from "@/lib/pdf-generator";
+import { getCapabilitiesSnapshot, useCapabilities } from "@/lib/use-capabilities";
 import { getDocumentFilename } from "@/lib/workshop-country";
 import { downloadPdfFile } from "@/lib/download-file.client";
 import { downloadDocumentPdf, printDocument, printDocumentPdf } from "@/lib/documents/document-actions";
@@ -95,6 +97,7 @@ export const usePrint = useDocument;
 
 export function PrintProvider({ children }: { children: ReactNode }) {
   const store = useBeharStore();
+  const capabilities = useCapabilities();
   const [activeDoc, setActiveDoc] = useState<{
     type: DocumentType;
     id: string;
@@ -223,6 +226,9 @@ export function PrintProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const print = useCallback((type: DocumentType, id: string) => {
+    if (["quote", "invoice", "payment", "sale-receipt"].includes(type) && !getCapabilitiesSnapshot().canInvoice) {
+      return;
+    }
     const document = documentForTarget(useBeharStore.getState().documents, type, id);
     if (document?.fileUrl && printDocumentPdf(document)) return;
     if (document && printDocument(document)) return;
@@ -230,6 +236,9 @@ export function PrintProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const preview = useCallback((type: DocumentType, id: string) => {
+    if (["quote", "invoice", "payment", "sale-receipt"].includes(type) && !getCapabilitiesSnapshot().canInvoice) {
+      return;
+    }
     const newWin = window.open("", "_blank");
     if (newWin) {
       newWin.document.title = "Génération du PDF...";
@@ -247,6 +256,9 @@ export function PrintProvider({ children }: { children: ReactNode }) {
 
   const download = useCallback(
     (type: DocumentType, id: string) => {
+      if (["quote", "invoice", "payment", "sale-receipt"].includes(type) && !getCapabilitiesSnapshot().canInvoice) {
+        return;
+      }
       if (inFlightRef.current) {
         toast.info("Un téléchargement est déjà en cours…");
         return;
@@ -295,6 +307,10 @@ export function PrintProvider({ children }: { children: ReactNode }) {
   const uploadToCloud = useCallback(
     (type: DocumentType, id: string, documentId: string, opts?: { silent?: boolean }): Promise<boolean> => {
       return new Promise<boolean>((resolve) => {
+        if (["quote", "invoice", "payment", "sale-receipt"].includes(type) && !getCapabilitiesSnapshot().canInvoice) {
+          resolve(false);
+          return;
+        }
         if (inFlightRef.current) {
           resolve(false);
           return;
@@ -343,7 +359,12 @@ export function PrintProvider({ children }: { children: ReactNode }) {
   const autoAttemptedRef = useRef<Set<string>>(new Set());
   const autoRunningRef = useRef(false);
   const pendingDocsSignature = store.documents
-    .filter((d) => !d.fileUrl && clientDocTarget(d))
+    .filter(
+      (d) =>
+        !d.fileUrl &&
+        clientDocTarget(d) &&
+        (capabilities.canInvoice || !["quote", "invoice", "payment", "sale-receipt", "sale-invoice"].includes(d.type)),
+    )
     .map((d) => d.id)
     .join(",");
   useEffect(() => {
@@ -736,6 +757,10 @@ export function PrintProvider({ children }: { children: ReactNode }) {
     if (!activeDoc) return null;
 
     const { type, id } = activeDoc;
+    const workshopFor = (country: Parameters<typeof getBillingWorkshopInfo>[1]) => {
+      const workshop = getBillingWorkshopInfo(store.workshopInfo, country);
+      return withBillingRegistration(workshop, capabilities.registrationNumber);
+    };
 
     if (type === "intake") {
       const repair = store.repairs.find((repair) => repair.id === id);
@@ -745,7 +770,8 @@ export function PrintProvider({ children }: { children: ReactNode }) {
         <RepairIntakeDocument
           repair={repair}
           customer={customer}
-          workshop={getBillingWorkshopInfo(store.workshopInfo, repair.billingCountry)}
+          workshop={workshopFor(repair.billingCountry)}
+          showClientAmount={capabilities.canInvoice}
         />
       );
     }
@@ -756,12 +782,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
       const repair = store.repairs.find((repair) => repair.id === quote?.repairId);
       if (!quote || !customer) return null;
       return (
-        <QuoteDocument
-          quote={quote}
-          customer={customer}
-          repair={repair}
-          workshop={getBillingWorkshopInfo(store.workshopInfo, quote.billingCountry)}
-        />
+        <QuoteDocument quote={quote} customer={customer} repair={repair} workshop={workshopFor(quote.billingCountry)} />
       );
     }
 
@@ -777,7 +798,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
           invoice={invoice}
           quote={quote}
           repair={repair}
-          workshop={getBillingWorkshopInfo(store.workshopInfo, invoice.billingCountry)}
+          workshop={workshopFor(invoice.billingCountry)}
         />
       );
     }
@@ -794,7 +815,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
           invoice={invoice}
           payment={payment}
           repair={repair}
-          workshop={getBillingWorkshopInfo(store.workshopInfo, payment.billingCountry)}
+          workshop={workshopFor(payment.billingCountry)}
         />
       );
     }
@@ -804,11 +825,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
       const customer = store.customers.find((customer) => customer.id === repair?.customerId);
       if (!repair || !customer) return null;
       return (
-        <InternalRepairDocument
-          repair={repair}
-          customer={customer}
-          workshop={getBillingWorkshopInfo(store.workshopInfo, repair.billingCountry)}
-        />
+        <InternalRepairDocument repair={repair} customer={customer} workshop={workshopFor(repair.billingCountry)} />
       );
     }
 
@@ -820,7 +837,8 @@ export function PrintProvider({ children }: { children: ReactNode }) {
         <RepairSummaryDocument
           repair={repair}
           customer={customer}
-          workshop={getBillingWorkshopInfo(store.workshopInfo, repair.billingCountry)}
+          workshop={workshopFor(repair.billingCountry)}
+          showClientAmount={capabilities.canInvoice}
         />
       );
     }
@@ -830,11 +848,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
       const customer = store.customers.find((customer) => customer.id === repair?.customerId);
       if (!repair || !customer) return null;
       return (
-        <DiagnosticReportDocument
-          repair={repair}
-          customer={customer}
-          workshop={getBillingWorkshopInfo(store.workshopInfo, repair.billingCountry)}
-        />
+        <DiagnosticReportDocument repair={repair} customer={customer} workshop={workshopFor(repair.billingCountry)} />
       );
     }
 
@@ -842,13 +856,7 @@ export function PrintProvider({ children }: { children: ReactNode }) {
       const sale = store.sales.find((s) => s.id === id);
       const customer = store.customers.find((c) => c.id === sale?.customerId) || store.customers[0];
       if (!sale) return null;
-      return (
-        <SaleReceiptDocument
-          sale={sale}
-          customer={customer!}
-          workshop={getBillingWorkshopInfo(store.workshopInfo, sale.billingCountry)}
-        />
-      );
+      return <SaleReceiptDocument sale={sale} customer={customer!} workshop={workshopFor(sale.billingCountry)} />;
     }
 
     return null;

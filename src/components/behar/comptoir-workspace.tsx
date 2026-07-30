@@ -103,6 +103,7 @@ import type { PriceBookItem } from "@/lib/price-book";
 import { cn, formatDateTimeFr, formatIntakeBonNumber } from "@/lib/utils";
 import { getWorkshopCountryConfig, normalizeAllowedMarkets } from "@/lib/workshop-country";
 import { getCustomerTrackingUrl } from "@/lib/customer-tracking";
+import { useCapabilities } from "@/lib/use-capabilities";
 
 type Tile = {
   id: string;
@@ -1244,6 +1245,7 @@ function MoneySummary({
   showPriceCard?: boolean;
 }>) {
   const ws = useBeharStore((s) => s.workshopInfo);
+  const capabilities = useCapabilities();
   return (
     <div className="space-y-4">
       {showPriceCard && (
@@ -1251,6 +1253,9 @@ function MoneySummary({
           <p className="font-bold text-[15px]">Prix client</p>
           <p className="mt-4 font-black text-[#1E7A6E] text-[38px] tracking-tight tabular-nums">{formatEuro(amount)}</p>
           <p className="mt-1 text-[#667085]">{ws.vatApplicable ? "TTC" : ""}</p>
+          {!capabilities.canInvoice ? (
+            <p className="mt-2 text-[#667085] text-xs">Usage interne. Ne constitue pas un devis.</p>
+          ) : null}
         </section>
       )}
       {lines && (
