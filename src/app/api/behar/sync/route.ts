@@ -6,6 +6,7 @@ import { stripAccountCapabilityFields } from "@/lib/capabilities";
 import type { NormalizedBusinessState } from "@/lib/data/normalized-sync";
 import { getCustomerTrackingPath, getTrackingCode } from "@/lib/customer-tracking";
 import { makePublicUrl } from "@/lib/public-access";
+import { registrationNumberForStorage } from "@/lib/registration-number";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { getCurrentAppSession } from "@/lib/auth/app-session";
 import { isLicenseActive } from "@/lib/server/verify-license";
@@ -282,6 +283,30 @@ export async function POST(request: Request) {
   if (workshopError) {
     console.error("[behar-sync] workshop upsert failed", { code: workshopError.code, workshopId });
     return NextResponse.json({ error: "Synchronisation atelier impossible. Réessayez." }, { status: 500 });
+  }
+
+  // Reprise unique de l'immatriculation historique.
+  //
+  // Le numéro ne transite plus par le stockage local ni par les snapshots : il
+  // vit désormais dans `workshops.siret`, alimenté par l'onboarding ou la
+  // console admin. Les ateliers antérieurs ne l'ont donc nulle part côté
+  // serveur, alors qu'ils l'avaient saisi dans leurs réglages — leurs
+  // documents s'imprimeraient sans mention légale. On adopte la valeur reçue,
+  // une seule fois, sans jamais écraser un numéro déjà enregistré ni toucher à
+  // la capacité de facturation.
+  const incomingRegistration = registrationNumberForStorage(
+    ws?.country === "CH" ? "CH" : "FR",
+    ws?.country === "CH" ? payload.workshopSettings?.swissUid : payload.workshopSettings?.siret,
+  );
+  if (incomingRegistration) {
+    const { data: current } = await supabase.from("workshops").select("siret").eq("id", workshopId).maybeSingle();
+    if (current && !String(current.siret ?? "").trim()) {
+      const { error: adoptError } = await supabase
+        .from("workshops")
+        .update({ siret: incomingRegistration })
+        .eq("id", workshopId);
+      if (adoptError) console.error("[behar-sync] registration adoption failed", { code: adoptError.code, workshopId });
+    }
   }
 
   await supabase.from("app_settings").upsert(

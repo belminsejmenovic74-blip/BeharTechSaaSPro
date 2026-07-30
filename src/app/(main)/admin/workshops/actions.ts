@@ -8,6 +8,7 @@ import {
   type RegistrationCountry,
 } from "@/lib/registration-number";
 import { ADMIN_ACTOR, isAdminSession, openAdminSession } from "@/lib/server/admin-auth";
+import { isLegacySchemaError } from "@/lib/server/capabilities";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export type AdminWorkshopRow = {
@@ -46,6 +47,15 @@ export async function fetchAdminWorkshops(): Promise<AdminWorkshopRow[]> {
     .from("workshops")
     .select("id,name,commercial_name,country,siret,has_billing,created_at")
     .order("created_at", { ascending: false });
+  if (isLegacySchemaError(error)) {
+    // Message explicite plutôt qu'une liste vide, qui ferait croire à un
+    // problème de clé Supabase alors que seule la migration manque.
+    // Un fichier « use server » n'exporte que des fonctions : pas de classe
+    // d'erreur dédiée, la console se contente du message.
+    throw new Error(
+      "Migration de capacité non appliquée : exécutez 20260729231517_add_workshop_billing_capability.sql avant d’utiliser cette console.",
+    );
+  }
   if (error) {
     console.error("[admin-workshops] fetch failed", error.message);
     return [];

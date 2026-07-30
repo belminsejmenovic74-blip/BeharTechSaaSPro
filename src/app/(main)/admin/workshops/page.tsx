@@ -38,6 +38,7 @@ export default function AdminWorkshopsPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [auditFor, setAuditFor] = useState<string | null>(null);
   const [audit, setAudit] = useState<AdminAuditRow[]>([]);
+  const [blockingError, setBlockingError] = useState("");
 
   useEffect(() => {
     isWorkshopAdminAuthed().then((ok) => {
@@ -47,9 +48,15 @@ export default function AdminWorkshopsPage() {
   }, []);
 
   async function load() {
-    const rows = await fetchAdminWorkshops();
-    setWorkshops(rows);
-    setDrafts(Object.fromEntries(rows.map((row) => [row.id, row.siret ?? ""])));
+    try {
+      const rows = await fetchAdminWorkshops();
+      setBlockingError("");
+      setWorkshops(rows);
+      setDrafts(Object.fromEntries(rows.map((row) => [row.id, row.siret ?? ""])));
+    } catch (error) {
+      setWorkshops([]);
+      setBlockingError(error instanceof Error ? error.message : "Console indisponible.");
+    }
   }
 
   async function handleLogin(event: React.FormEvent) {
@@ -146,7 +153,11 @@ export default function AdminWorkshopsPage() {
         </div>
       </header>
 
-      {workshops.length === 0 ? (
+      {blockingError ? (
+        <p className="rounded-[18px] border border-[#F2C8C3] bg-white p-6 text-[#7A271A] text-sm">{blockingError}</p>
+      ) : null}
+
+      {!blockingError && workshops.length === 0 ? (
         <p className="rounded-[18px] border border-[#E4E7EC] bg-white p-6 text-[#667085] text-sm">
           Aucun atelier. Vérifiez que la service key Supabase est configurée sur ce serveur.
         </p>

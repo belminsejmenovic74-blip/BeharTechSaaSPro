@@ -10,21 +10,55 @@ export type ServerCapabilityContext = {
   registrationNumber: string | null;
 };
 
+/** Code PostgreSQL `undefined_column`, remonté tel quel par PostgREST. */
+const UNDEFINED_COLUMN = "42703";
+
+/**
+ * Vrai tant que la migration `20260729231517` n'est pas passée sur la base
+ * ciblée. La capacité n'existant pas encore, tous les ateliers étaient
+ * facturables : c'est cet état-là qu'on rejoue, et rien d'autre.
+ */
+export function isLegacySchemaError(error: { code?: string } | null): boolean {
+  return error?.code === UNDEFINED_COLUMN;
+}
+
+/**
+ * Capacités d'un atelier, tolérantes aux deux états du schéma.
+ *
+ * Le code et la migration ne sont jamais déployés dans la même seconde. Sans
+ * cette tolérance, publier l'application avant la migration ferait échouer
+ * chaque lecture de capacité : synchronisation en 503 et facturation retirée à
+ * tous les ateliers, alors que rien n'a changé pour eux. On ne retombe sur le
+ * mode historique que sur `undefined_column`, jamais sur une erreur réseau ou
+ * de permission, qui doivent rester bloquantes.
+ */
 export async function getWorkshopCapabilityContext(
   admin: SupabaseClient,
   workshopId: string,
   licenseId?: string | null,
 ): Promise<ServerCapabilityContext> {
+  const licenseQuery = licenseId
+    ? admin.from("license_keys").select("plan").eq("id", licenseId).maybeSingle()
+    : admin.from("license_keys").select("plan").eq("workshop_id", workshopId).maybeSingle();
+
   const [workshopResult, licenseResult] = await Promise.all([
     admin.from("workshops").select("has_billing,siret").eq("id", workshopId).maybeSingle(),
-    licenseId
-      ? admin.from("license_keys").select("plan").eq("id", licenseId).maybeSingle()
-      : admin.from("license_keys").select("plan").eq("workshop_id", workshopId).maybeSingle(),
+    licenseQuery,
   ]);
+  if (licenseResult.error) throw new Error("Forfait de l’atelier indisponible.");
+
+  if (isLegacySchemaError(workshopResult.error)) {
+    const legacy = await admin.from("workshops").select("siret").eq("id", workshopId).maybeSingle();
+    if (legacy.error) throw new Error("Capacité de l’atelier indisponible.");
+    if (!legacy.data) throw new Error("Atelier introuvable.");
+    return {
+      capabilities: deriveCapabilities({ billingEnabled: true, plan: licenseResult.data?.plan }),
+      registrationNumber: legacy.data.siret || null,
+    };
+  }
 
   if (workshopResult.error) throw new Error("Capacité de l’atelier indisponible.");
   if (!workshopResult.data) throw new Error("Atelier introuvable.");
-  if (licenseResult.error) throw new Error("Forfait de l’atelier indisponible.");
 
   return {
     capabilities: deriveCapabilities({
