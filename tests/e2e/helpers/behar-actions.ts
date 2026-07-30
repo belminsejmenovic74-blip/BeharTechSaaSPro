@@ -14,12 +14,18 @@ import { LICENSE_MAIN, STORAGE_KEY } from "./behar-data";
  * Crée un contexte navigateur "propre" et active la licence.
  *
  * Deux modes :
- *  - `BEHAR_QA_FAST_LICENSE=1` (défaut) : injection directe dans localStorage
- *    avant le 1er load. Pas de modale → le test démarre sur le dashboard.
- *    Plus rapide pour les runs CI / multi-postes.
+ *  - `BEHAR_QA_FAST_SEED=1` : amorçage direct de `localStorage` avant le 1er
+ *    load. Pas de modale → le test démarre sur le dashboard. Plus rapide pour
+ *    les runs CI / multi-postes.
  *  - sinon : on ouvre l'app, on tape la licence dans le champ de la modale
  *    « Activer Behar Tech Pro », on clique « Activer ». C'est le mode "comme
  *    un vrai utilisateur" — bien visible en headed.
+ *
+ * Ce drapeau ne concerne que la fixture navigateur. Le serveur n'a plus aucun
+ * mode de contournement : les capacités sont toujours lues en base. Un scénario
+ * qui exerce la facturation exige donc un atelier de test réellement
+ * immatriculé — `workshops.has_billing = true` et un SIRET renseigné — sans
+ * quoi les surfaces commerciales seront légitimement absentes.
  */
 export async function openPoste(
   browser: Browser,
@@ -36,7 +42,7 @@ export async function openPoste(
   });
 
   const page = await context.newPage();
-  const useFastInject = process.env.BEHAR_QA_FAST_LICENSE === "1";
+  const useFastInject = process.env.BEHAR_QA_FAST_SEED === "1";
 
   if (useFastInject) {
     // Mode rapide — injection localStorage avant le 1er load
@@ -70,7 +76,9 @@ export async function openPoste(
             city: "Annemasse",
             postalCode: "74100",
             country: "France",
-            siret: "000 000 000 00000",
+            // Format valide : le validateur rejette les zéros et les séquences
+            // de test, un SIRET factice « 000… » ne passerait plus.
+            siret: "83014861800017",
             email: "qa@behartechpro.fr",
             phone: "06 00 00 00 00",
             configuredAt: new Date().toISOString(),

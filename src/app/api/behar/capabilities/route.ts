@@ -1,24 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentAppSession } from "@/lib/auth/app-session";
-import { deriveCapabilities } from "@/lib/capabilities";
 import { getSessionCapabilityContext, getWorkshopCapabilityContext } from "@/lib/server/capabilities";
 import { authorizeWorkshopLicense } from "@/lib/server/workshop-license-auth";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-function qaCapabilitiesResponse() {
-  if (process.env.NODE_ENV === "production" || process.env.BEHAR_QA_FAST_LICENSE !== "1") return null;
-  return NextResponse.json(
-    { capabilities: deriveCapabilities({ billingEnabled: true, plan: "Pilote" }), registrationNumber: null },
-    { headers: { "cache-control": "private, no-store" } },
-  );
-}
-
 export async function GET() {
-  const qaResponse = qaCapabilitiesResponse();
-  if (qaResponse) return qaResponse;
   const session = await getCurrentAppSession();
   if (!session) return NextResponse.json({ error: "Session entreprise requise." }, { status: 401 });
   const admin = getSupabaseAdmin();
@@ -33,8 +22,6 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const qaResponse = qaCapabilitiesResponse();
-  if (qaResponse) return qaResponse;
   let payload: { workshopId?: unknown; licenseKey?: unknown };
   try {
     payload = (await request.json()) as typeof payload;

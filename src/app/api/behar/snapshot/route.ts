@@ -54,24 +54,6 @@ export async function POST(request: Request) {
   const raw = await request.json().catch(() => null);
   const parsed = z.union([loadSchema, upsertSchema]).safeParse(raw);
   if (!parsed.success) return NextResponse.json({ error: "Requête snapshot invalide." }, { status: 400 });
-  if (process.env.NODE_ENV !== "production" && process.env.BEHAR_QA_FAST_LICENSE === "1") {
-    if (parsed.data.action === "load")
-      return NextResponse.json({ snapshot: null }, { headers: { "cache-control": "no-store" } });
-    return NextResponse.json(
-      {
-        snapshot: {
-          id: `qa-${parsed.data.workshopId}`,
-          workshopId: parsed.data.workshopId,
-          licenseKey: parsed.data.licenseKey.trim().toUpperCase(),
-          workshopName: parsed.data.workshopName ?? undefined,
-          state: parsed.data.state,
-          stateSizeBytes: parsed.data.stateSizeBytes,
-          updatedAt: new Date().toISOString(),
-        },
-      },
-      { headers: { "cache-control": "no-store" } },
-    );
-  }
   if (!(await isLicenseActive(parsed.data.licenseKey)))
     return NextResponse.json({ error: "Licence invalide ou inactive." }, { status: 401 });
   const admin = getSupabaseAdmin();

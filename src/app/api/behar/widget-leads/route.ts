@@ -74,13 +74,6 @@ function responseError(message: string, status: number) {
 export async function POST(request: Request) {
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return responseError("Requête invalide.", 400);
-  if (process.env.NODE_ENV !== "production" && process.env.BEHAR_QA_FAST_LICENSE === "1") {
-    if (parsed.data.operation === "appointments") return NextResponse.json({ appointments: [] });
-    if (parsed.data.operation === "notifications") return NextResponse.json({ notifications: [] });
-    if (parsed.data.operation === "list")
-      return NextResponse.json({ leads: [], history: [], assignees: [], notifications: [] });
-    return NextResponse.json({ ok: true });
-  }
   const auth = await authorizeWorkshopLicense(parsed.data.workshopId, parsed.data.licenseKey);
   if (auth instanceof Response) return auth;
   const { admin, workshopId } = auth;

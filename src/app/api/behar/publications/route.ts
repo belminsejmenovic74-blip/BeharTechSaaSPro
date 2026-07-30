@@ -69,8 +69,6 @@ export async function POST(request: Request) {
   if (contentLength > 5 * 1024 * 1024)
     return NextResponse.json({ error: "Publication trop volumineuse." }, { status: 413 });
   const raw = await request.json().catch(() => null);
-  if (process.env.NODE_ENV !== "production" && process.env.BEHAR_QA_FAST_LICENSE === "1")
-    return NextResponse.json({ ok: true });
   const parsed = payloadSchema.safeParse(raw);
   if (!parsed.success) return NextResponse.json({ error: "Publication invalide." }, { status: 400 });
   if (!(await isLicenseActive(parsed.data.licenseKey)))

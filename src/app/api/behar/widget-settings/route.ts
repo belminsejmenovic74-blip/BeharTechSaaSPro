@@ -156,43 +156,6 @@ async function loadWidget(admin: SupabaseClient, workshopId: string, widgetId?: 
 export async function POST(request: Request) {
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return responseError("Configuration invalide.", 400);
-  if (process.env.NODE_ENV !== "production" && process.env.BEHAR_QA_FAST_LICENSE === "1") {
-    if (parsed.data.operation === "get") {
-      const config = normalizeEditableWidgetConfig(DEFAULT_WIDGET_CMS_CONFIG, {
-        active: true,
-        general: {
-          ...DEFAULT_WIDGET_CMS_CONFIG.general,
-          commercialName: parsed.data.defaults.commercialName,
-          phone: parsed.data.defaults.phone,
-          address: parsed.data.defaults.address,
-          locale: parsed.data.defaults.locale,
-          currency: parsed.data.defaults.currency,
-        },
-        features: applyCustomerReceptionPolicy(
-          DEFAULT_WIDGET_CMS_CONFIG.features,
-          parsed.data.defaults.customerReceptionMode || "shop",
-        ),
-      });
-      return NextResponse.json({
-        widget: {
-          id: "10000000-0000-4000-8000-000000000099",
-          publicWidgetId: "wdg_QA2026BEHARTECH",
-          publishedVersion: 1,
-          publishedAt: new Date().toISOString(),
-          allowedDomains: automaticDomains(parsed.data.defaults.website, request),
-          config,
-        },
-        versions: [],
-      });
-    }
-    return NextResponse.json({
-      ok: true,
-      publication:
-        parsed.data.operation === "publish" || parsed.data.operation === "restore_version"
-          ? { version: 2, publishedAt: new Date().toISOString() }
-          : undefined,
-    });
-  }
   const auth = await authorizeWorkshopLicense(parsed.data.workshopId, parsed.data.licenseKey);
   if (auth instanceof Response) return auth;
   const { admin, workshopId } = auth;

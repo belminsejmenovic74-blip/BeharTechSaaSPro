@@ -30,8 +30,10 @@ import { Panel, PrimaryButton, SecondaryButton } from "@/components/behar/primit
 import { BusinessHoursEditor } from "@/components/behar/business-hours-editor";
 import { type TeamMember, useBeharStore, type WorkshopSettings } from "@/lib/behar-store";
 import { syncNormalizedBusinessState } from "@/lib/data/normalized-sync";
+import { isValidRegistrationNumber, normalizeSiret, normalizeSwissUid } from "@/lib/registration-number";
 import { cn } from "@/lib/utils";
 import { refreshCapabilities, resetCapabilitiesCache } from "@/lib/use-capabilities";
+import { type RegistrationChoice, submitWorkshopRegistration } from "@/lib/workshop-registration";
 import { normalizeLicenseKey, saveSnapshotState } from "@/lib/workshop-sync";
 import { getLegalFieldsByCountry, getWorkshopCountryConfig } from "@/lib/workshop-country";
 import { defaultWorkshopWeeklyHours, formatWorkshopWeeklyHours } from "@/lib/workshop-hours";
@@ -151,6 +153,9 @@ export function OnboardingWizard() {
   const [step, setStep] = useState<Step>(1);
   const [errors, setErrors] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  // Immatriculation : choix explicite, sans valeur par défaut. Un atelier suisse
+  // n'a pas de SIRET, la question ne lui est donc pas posée.
+  const [registration, setRegistration] = useState<RegistrationChoice>("");
 
   const [draft, setDraft] = useState<WorkshopSettings>(() => ({
     ...store.workshopSettings,
@@ -200,9 +205,13 @@ export function OnboardingWizard() {
   };
 
   // Check if step 1 can advance
+  const registrationNumber = draft.country === "CH" ? draft.swissUid : draft.siret;
   const canAdvanceStep1 = useMemo(() => {
-    return !isWeakText(draft.name);
-  }, [draft.name]);
+    if (isWeakText(draft.name)) return false;
+    if (registration === "none") return true;
+    if (registration !== "registered") return false;
+    return isValidRegistrationNumber(draft.country === "CH" ? "CH" : "FR", registrationNumber);
+  }, [draft.country, draft.name, registration, registrationNumber]);
 
   const nextStep = () => {
     if (step === 1) {
@@ -223,6 +232,17 @@ export function OnboardingWizard() {
         );
       }
       if (isWeakText(draft.city)) return toast.error("Ville obligatoire.");
+      if (registration === "") return toast.error("Indiquez si votre entreprise est immatriculée.");
+      if (
+        registration === "registered" &&
+        !isValidRegistrationNumber(draft.country === "CH" ? "CH" : "FR", registrationNumber)
+      ) {
+        return toast.error(
+          draft.country === "CH"
+            ? "IDE / UID invalide : format CHE-123.456.789 attendu."
+            : "SIRET invalide : 14 chiffres requis, hors valeurs de test.",
+        );
+      }
       if (draft.country === "CH" && draft.vatApplicable && !normalizeSpaces(draft.swissVatNumber)) {
         return toast.error("Renseignez le numéro TVA suisse pour un atelier assujetti.");
       }
@@ -254,9 +274,9 @@ export function OnboardingWizard() {
       currency: draft.country === "CH" ? "CHF" : "EUR",
       defaultPhonePrefix: draft.country === "CH" ? "+41" : "+33",
       taxRegime: draft.vatApplicable ? "vat_subject" : "not_subject_to_vat",
-      siret: draft.country === "CH" ? "" : digitsOnly(draft.siret),
+      siret: draft.country === "CH" || registration !== "registered" ? "" : normalizeSiret(draft.siret),
       tvaNumber: draft.country === "CH" ? "" : normalizeSpaces(draft.tvaNumber),
-      swissUid: draft.country === "CH" ? normalizeSpaces(draft.swissUid) : "",
+      swissUid: draft.country === "CH" && registration === "registered" ? normalizeSwissUid(draft.swissUid) : "",
       swissVatNumber: draft.country === "CH" && draft.vatApplicable ? normalizeSpaces(draft.swissVatNumber) : "",
       swissCanton: draft.country === "CH" ? normalizeSpaces(draft.swissCanton) : "",
       postalCity: [postalCode, city].filter(Boolean).join(" ").trim(),
@@ -302,6 +322,26 @@ export function OnboardingWizard() {
           lastSyncedAt: snapshot.updatedAt,
         },
       }));
+      // L'immatriculation est écrite par le serveur, jamais par le snapshot :
+      // `has_billing` n'existe pas dans l'état local et ne doit pas y entrer.
+      // Un échec ici n'est pas rattrapé par la synchronisation périodique, on le
+      // signale donc distinctement au lieu de promettre une reprise automatique.
+      try {
+        await submitWorkshopRegistration({
+          workshopId: snapshot.workshopId,
+          licenseKey,
+          country: draft.country === "CH" ? "CH" : "FR",
+          registered: registration === "registered",
+          registrationNumber,
+        });
+      } catch (registrationError) {
+        console.error("[onboarding] registration write failed", registrationError);
+        toast.error(
+          registration === "registered"
+            ? "Immatriculation non enregistrée. La facturation reste inactive : reprenez depuis les réglages."
+            : "Statut d’immatriculation non enregistré. Reprenez depuis les réglages.",
+        );
+      }
       resetCapabilitiesCache();
       await refreshCapabilities();
       await syncNormalizedBusinessState(useBeharStore.getState());
@@ -331,10 +371,17 @@ export function OnboardingWizard() {
         {/* Main Card */}
         <div className="flex-1 w-full bg-white rounded-[24px] border border-[#E4E7EC] shadow-[0_1px_3px_rgba(16,24,40,0.04),0_8px_24px_rgba(16,24,40,0.025)] overflow-hidden">
           <div className="p-8 md:p-12">
-            {step === 1 && <StepAtelier draft={draft} setField={setField} />}
+            {step === 1 && (
+              <StepAtelier
+                draft={draft}
+                setField={setField}
+                registration={registration}
+                setRegistration={setRegistration}
+              />
+            )}
             {step === 2 && <StepSettings draft={draft} setField={setField} />}
             {step === 3 && <StepTeam team={teamDraft} setTeam={setTeamDraft} />}
-            {step === 4 && <StepSummary draft={draft} team={teamDraft} />}
+            {step === 4 && <StepSummary draft={draft} team={teamDraft} registration={registration} />}
 
             {/* Navigation Buttons */}
             <div className="mt-14 pt-8 border-t border-[#FFFFFF] flex items-center justify-between">
@@ -413,7 +460,7 @@ export function OnboardingWizard() {
 
 // --- Sub-components for Steps ---
 
-function StepAtelier({ draft, setField }: any) {
+function StepAtelier({ draft, setField, registration, setRegistration }: any) {
   const isSwiss = draft.country === "CH";
   const legalFields = getLegalFieldsByCountry(draft.country);
   const phone = phoneParts(draft.phone);
@@ -578,13 +625,6 @@ function StepAtelier({ draft, setField }: any) {
                 onChange={(e) => setField("swissCanton", e.target.value)}
               />
             </Field>
-            <Field label="IDE / UID entreprise suisse" placeholder="CHE-123.456.789">
-              <input
-                className={inputCls}
-                value={draft.swissUid || ""}
-                onChange={(e) => setField("swissUid", e.target.value)}
-              />
-            </Field>
             {draft.vatApplicable ? (
               <Field label="Numéro TVA suisse *" placeholder="CHE-123.456.789 TVA">
                 <input
@@ -595,28 +635,85 @@ function StepAtelier({ draft, setField }: any) {
               </Field>
             ) : null}
           </>
-        ) : (
-          <>
-            <Field
-              label="SIRET"
-              placeholder="12345678900012"
-              hint="Optionnel à cette étape. L’immatriculation sera vérifiée depuis votre compte."
+        ) : null}
+
+        <div className="md:col-span-2">
+          <p className="mb-1 font-medium text-[#101828] text-sm">Votre entreprise est-elle immatriculée ?</p>
+          <p className="mb-3 text-[#667085] text-[13px]">Cette réponse détermine l’accès à la facturation.</p>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <label
+              className={cn(
+                "flex cursor-pointer items-start gap-3 rounded-2xl border bg-[#FFFFFF] p-4 transition",
+                registration === "registered" ? "border-[#2A9D8F]" : "border-[#E4E7EC]",
+              )}
             >
               <input
-                className={inputCls}
-                value={draft.siret}
-                inputMode="numeric"
-                onChange={(e) => setField("siret", digitsOnly(e.target.value).slice(0, 14))}
+                checked={registration === "registered"}
+                className="mt-1 size-4 accent-[#2A9D8F]"
+                name="workshop-registration"
+                onChange={() => setRegistration("registered")}
+                type="radio"
+                value="registered"
               />
-            </Field>
-            <Field label="TVA Intracommunautaire (optionnel)">
+              <span>
+                <span className="block font-medium text-[#101828] text-sm">J’ai une entreprise immatriculée</span>
+                <span className="mt-1 block text-[#667085] text-[13px]">
+                  Facturation, devis et encaissement disponibles.
+                </span>
+              </span>
+            </label>
+            <label
+              className={cn(
+                "flex cursor-pointer items-start gap-3 rounded-2xl border bg-[#FFFFFF] p-4 transition",
+                registration === "none" ? "border-[#2A9D8F]" : "border-[#E4E7EC]",
+              )}
+            >
               <input
-                className={inputCls}
-                value={draft.tvaNumber}
-                onChange={(e) => setField("tvaNumber", e.target.value)}
+                checked={registration === "none"}
+                className="mt-1 size-4 accent-[#2A9D8F]"
+                name="workshop-registration"
+                onChange={() => setRegistration("none")}
+                type="radio"
+                value="none"
               />
-            </Field>
-          </>
+              <span>
+                <span className="block font-medium text-[#101828] text-sm">Pas encore d’entreprise</span>
+                <span className="mt-1 block text-[#667085] text-[13px]">
+                  Disponible : gestion des dossiers, atelier, suivi client, historique. Non disponible : facturation,
+                  devis, encaissement.
+                </span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        {registration === "registered" && isSwiss ? (
+          <Field label="IDE / UID entreprise suisse *" placeholder="CHE-123.456.789" hint="CHE suivi de 9 chiffres.">
+            <input
+              className={inputCls}
+              value={draft.swissUid || ""}
+              onChange={(e) => setField("swissUid", e.target.value)}
+            />
+          </Field>
+        ) : null}
+        {registration === "registered" && !isSwiss ? (
+          <Field label="SIRET *" placeholder="12345678900012" hint="14 chiffres.">
+            <input
+              className={inputCls}
+              value={draft.siret}
+              inputMode="numeric"
+              onChange={(e) => setField("siret", normalizeSiret(e.target.value))}
+            />
+          </Field>
+        ) : null}
+        {isSwiss ? null : (
+          <Field label="TVA Intracommunautaire (optionnel)">
+            <input
+              className={inputCls}
+              value={draft.tvaNumber}
+              onChange={(e) => setField("tvaNumber", e.target.value)}
+            />
+          </Field>
         )}
 
         <div className="md:col-span-2 mt-4">
@@ -917,7 +1014,15 @@ function StepTeam({ team, setTeam }: { team: Omit<TeamMember, "id">[]; setTeam: 
   );
 }
 
-function StepSummary({ draft, team }: { draft: WorkshopSettings; team: any[] }) {
+function StepSummary({
+  draft,
+  team,
+  registration,
+}: {
+  draft: WorkshopSettings;
+  team: any[];
+  registration: RegistrationChoice;
+}) {
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div>
@@ -950,7 +1055,11 @@ function StepSummary({ draft, team }: { draft: WorkshopSettings; team: any[] }) 
             <SummaryItem
               icon={<FileText className="size-3" />}
               label={
-                draft.country === "CH" ? `IDE / CHE : ${draft.swissUid || "Non renseigné"}` : `SIRET: ${draft.siret}`
+                registration === "registered"
+                  ? draft.country === "CH"
+                    ? `IDE / CHE : ${draft.swissUid}`
+                    : `SIRET : ${draft.siret}`
+                  : "Entreprise non immatriculée"
               }
             />
           </div>

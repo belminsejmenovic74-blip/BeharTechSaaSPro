@@ -228,6 +228,17 @@ export type Database = {
       app_settings: {
         Row: { id: string; workshop_id: string; settings: Json; created_at: string; updated_at: string };
       };
+      workshop_capability_audit: {
+        Row: {
+          id: string;
+          workshop_id: string;
+          actor: string;
+          field: string;
+          previous_value: string | null;
+          next_value: string | null;
+          created_at: string;
+        };
+      };
     };
   };
 };
