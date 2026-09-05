@@ -37,7 +37,9 @@
 </script>
 
 <ModeWatcher />
-<ThirdPartyScripts />
+{#if $page.url.pathname !== '/'}
+	<ThirdPartyScripts />
+{/if}
 
 <div style={styleVars}>
 	<div class="cms-stage" data-bp={stageBp}>
